@@ -16,17 +16,21 @@
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "components/network_hints/common/network_hints_common.h"
 #include "components/network_hints/common/network_hints_messages.h"
+#include "content/common/widget_messages.h"
 #include "content/public/browser/browser_context.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/atom_browser_context.h"
+#include "shell/common/mouse_util.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 
 using content::BrowserThread;
+using electron::api::WebContents;
 
 namespace {
 
 const uint32_t kRenderFilteredMessageClasses[] = {
     NetworkHintsMsgStart,
+    WidgetMsgStart,
 };
 
 void EmitPreconnect(content::BrowserContext* browser_context,
@@ -40,13 +44,22 @@ void EmitPreconnect(content::BrowserContext* browser_context,
   }
 }
 
+void ForwardCursorChange(mate::Handle<WebContents> web_contents,
+                         const content::WebCursor& cursor) {
+  if (!web_contents.IsEmpty()) {
+    web_contents->OnCursorChange(cursor);
+  }
+}
+
 }  // namespace
 
 ElectronRenderMessageFilter::ElectronRenderMessageFilter(
-    content::BrowserContext* browser_context)
+    content::BrowserContext* browser_context,
+    mate::Handle<WebContents> web_contents)
     : BrowserMessageFilter(kRenderFilteredMessageClasses,
                            base::size(kRenderFilteredMessageClasses)),
-      browser_context_(browser_context) {}
+      browser_context_(browser_context),
+      web_contents_(web_contents) {}
 
 ElectronRenderMessageFilter::~ElectronRenderMessageFilter() {}
 
@@ -55,6 +68,8 @@ bool ElectronRenderMessageFilter::OnMessageReceived(
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(ElectronRenderMessageFilter, message)
     IPC_MESSAGE_HANDLER(NetworkHintsMsg_Preconnect, OnPreconnect)
+    IPC_MESSAGE_HANDLER_CODE(WidgetHostMsg_SetCursor, OnCursorChange,
+                             handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -79,6 +94,12 @@ void ElectronRenderMessageFilter::OnPreconnect(int render_frame_id,
   base::PostTask(FROM_HERE, {BrowserThread::UI},
                  base::BindOnce(&EmitPreconnect, browser_context_, url,
                                 allow_credentials));
+}
+
+void ElectronRenderMessageFilter::OnCursorChange(
+    const content::WebCursor& cursor) {
+  base::PostTask(FROM_HERE, {BrowserThread::UI},
+                 base::BindOnce(&ForwardCursorChange, web_contents_, cursor));
 }
 
 namespace predictors {

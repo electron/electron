@@ -325,6 +325,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   WebContents* embedder() { return embedder_; }
 
+  // Called when we receive a CursorChange message from chromium.
+  void OnCursorChange(const content::WebCursor& cursor);
+
  protected:
   // Does not manage lifetime of |web_contents|.
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
@@ -441,8 +444,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
       content::NavigationHandle* navigation_handle) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
-  bool OnMessageReceived(const IPC::Message& message,
-                         content::RenderFrameHost* render_frame_host) override;
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
@@ -510,9 +511,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
-
-  // Called when we receive a CursorChange message from chromium.
-  void OnCursorChange(const content::WebCursor& cursor);
 
   // Called when received a synchronous message from renderer to
   // get the zoom level.

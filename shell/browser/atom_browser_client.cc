@@ -57,7 +57,6 @@
 #include "shell/browser/atom_autofill_driver_factory.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
-#include "shell/browser/atom_message_filter.h"
 #include "shell/browser/atom_navigation_throttle.h"
 #include "shell/browser/atom_paths.h"
 #include "shell/browser/atom_quota_permission_context.h"
@@ -358,10 +357,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 #endif
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
-
-  if (web_contents)
-    host->AddFilter(new AtomMessageFilter(web_contents));
-
   ProcessPreferences prefs;
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   if (web_preferences) {
@@ -373,7 +368,10 @@ void AtomBrowserClient::RenderProcessWillLaunch(
                                                     true /* default value */);
   }
 
-  host->AddFilter(new ElectronRenderMessageFilter(host->GetBrowserContext()));
+  auto api_web_contents =
+      api::WebContents::From(v8::Isolate::GetCurrent(), web_contents);
+  host->AddFilter(new ElectronRenderMessageFilter(host->GetBrowserContext(),
+                                                  api_web_contents));
 
   AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later

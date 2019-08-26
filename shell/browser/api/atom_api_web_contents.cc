@@ -1163,19 +1163,6 @@ void WebContents::DevToolsClosed() {
   Emit("devtools-closed");
 }
 
-bool WebContents::OnMessageReceived(
-    const IPC::Message& message,
-    content::RenderFrameHost* render_frame_host) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(WebContents, message)
-    IPC_MESSAGE_HANDLER_CODE(WidgetHostMsg_SetCursor, OnCursorChange,
-                             handled = false)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled;
-}
-
 // There are three ways of destroying a webContents:
 // 1. call webContents.destroy();
 // 2. garbage collection;

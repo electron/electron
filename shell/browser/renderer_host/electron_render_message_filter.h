@@ -9,12 +9,14 @@
 #include <vector>
 
 #include "content/public/browser/browser_message_filter.h"
+#include "shell/browser/api/atom_api_web_contents.h"
 
 class GURL;
 
 namespace content {
 class BrowserContext;
-}
+class WebCursor;
+}  // namespace content
 
 namespace predictors {
 class PreconnectManager;
@@ -24,8 +26,9 @@ class PreconnectManager;
 // process on the IPC thread.
 class ElectronRenderMessageFilter : public content::BrowserMessageFilter {
  public:
-  explicit ElectronRenderMessageFilter(
-      content::BrowserContext* browser_context);
+  ElectronRenderMessageFilter(
+      content::BrowserContext* browser_context,
+      mate::Handle<electron::api::WebContents> web_contents);
 
   // content::BrowserMessageFilter methods:
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -37,8 +40,10 @@ class ElectronRenderMessageFilter : public content::BrowserMessageFilter {
                     const GURL& url,
                     bool allow_credentials,
                     int count);
+  void OnCursorChange(const content::WebCursor& cursor);
 
   content::BrowserContext* browser_context_;
+  mate::Handle<electron::api::WebContents> web_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronRenderMessageFilter);
 };
