@@ -1,18 +1,16 @@
-const { expect } = require('chai')
-const { remote } = require('electron')
-const path = require('path')
-const http = require('http')
-
-const { emittedNTimes, emittedOnce } = require('./events-helpers')
-const { closeWindow } = require('./window-helpers')
-
-const { app, BrowserWindow, ipcMain } = remote
+import { expect } from 'chai'
+import * as path from 'path'
+import * as http from 'http'
+import { emittedNTimes, emittedOnce } from './events-helpers'
+import { closeWindow } from './window-helpers'
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { AddressInfo } from 'net'
 
 describe('renderer nodeIntegrationInSubFrames', () => {
-  const generateTests = (description, webPreferences) => {
+  const generateTests = (description: string, webPreferences: any) => {
     describe(description, () => {
       const fixtureSuffix = webPreferences.webviewTag ? '-webview' : ''
-      let w
+      let w: BrowserWindow
 
       beforeEach(async () => {
         await closeWindow(w)
@@ -24,10 +22,9 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         })
       })
 
-      afterEach(() => {
-        return closeWindow(w).then(() => {
-          w = null
-        })
+      afterEach(async () => {
+        await closeWindow(w)
+        w = null as unknown as BrowserWindow
       })
 
       it('should load preload scripts in top level iframes', async () => {
@@ -103,8 +100,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
     })
   }
 
-  const generateConfigs = (webPreferences, ...permutations) => {
-    const configs = [{ webPreferences, names: [] }]
+  const generateConfigs = (webPreferences: any, ...permutations: {name: string, webPreferences: any}[]) => {
+    const configs = [{ webPreferences, names: [] as string[] }]
     for (let i = 0; i < permutations.length; i++) {
       const length = configs.length
       for (let j = 0; j < length; j++) {
@@ -117,7 +114,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       }
     }
 
-    return configs.map(config => {
+    return configs.map((config: any) => {
       if (config.names.length > 0) {
         config.title = `with ${config.names.join(', ')} on`
       } else {
@@ -125,7 +122,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       }
       delete config.names
 
-      return config
+      return config as {title: string, webPreferences: any}
     })
   }
 
@@ -151,7 +148,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
   })
 
   describe('internal <iframe> inside of <webview>', () => {
-    let w
+    let w: BrowserWindow
 
     beforeEach(async () => {
       await closeWindow(w)
@@ -167,10 +164,9 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       })
     })
 
-    afterEach(() => {
-      return closeWindow(w).then(() => {
-        w = null
-      })
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
     })
 
     it('should not load preload scripts', async () => {
@@ -185,39 +181,34 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 })
 
 describe('cross-site frame sandboxing', () => {
-  let server = null
-
-  beforeEach(function () {
-    if (process.platform === 'linux') {
-      this.skip()
-    }
-  })
+  let server: http.Server
+  let crossSiteUrl: string
+  let serverUrl: string
 
   before(function (done) {
     server = http.createServer((req, res) => {
-      res.end(`<iframe name="frame" src="${server.cross_site_url}" />`)
+      res.end(`<iframe name="frame" src="${crossSiteUrl}" />`)
     })
     server.listen(0, '127.0.0.1', () => {
-      server.url = `http://127.0.0.1:${server.address().port}/`
-      server.cross_site_url = `http://localhost:${server.address().port}/`
+      serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`
+      crossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}/`
       done()
     })
   })
 
   after(() => {
     server.close()
-    server = null
+    server = null as unknown as http.Server
   })
 
-  let w
+  let w: BrowserWindow
 
-  afterEach(() => {
-    return closeWindow(w).then(() => {
-      w = null
-    })
+  afterEach(async () => {
+    await closeWindow(w)
+    w = null as unknown as BrowserWindow
   })
 
-  const generateSpecs = (description, webPreferences) => {
+  const generateSpecs = (description: string, webPreferences: any) => {
     describe(description, () => {
       it('iframe process is sandboxed if possible', async () => {
         w = new BrowserWindow({
@@ -225,13 +216,13 @@ describe('cross-site frame sandboxing', () => {
           webPreferences
         })
 
-        await w.loadURL(server.url)
+        await w.loadURL(serverUrl)
 
         const pidMain = w.webContents.getOSProcessId()
-        const pidFrame = w.webContents._getOSProcessIdForFrame('frame', server.cross_site_url)
+        const pidFrame = (w.webContents as any)._getOSProcessIdForFrame('frame', crossSiteUrl)
 
         const metrics = app.getAppMetrics()
-        const isProcessSandboxed = function (pid) {
+        const isProcessSandboxed = function (pid: number) {
           const entry = metrics.filter(metric => metric.pid === pid)[0]
           return entry && entry.sandboxed
         }
