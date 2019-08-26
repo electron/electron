@@ -1,19 +1,16 @@
-'use strict'
+import { expect } from 'chai'
+import * as path from 'path'
 
-const { expect } = require('chai')
-const path = require('path')
-
-const { remote } = require('electron')
-const { ipcMain, BrowserWindow } = remote
-const { closeWindow } = require('./window-helpers')
+import { ipcMain, BrowserWindow } from 'electron'
+import { closeWindow } from './window-helpers'
 
 describe('BrowserWindow with affinity module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures')
+  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
   const myAffinityName = 'myAffinity'
   const myAffinityNameUpper = 'MYAFFINITY'
   const anotherAffinityName = 'anotherAffinity'
 
-  async function createWindowWithWebPrefs (webPrefs) {
+  async function createWindowWithWebPrefs (webPrefs: any) {
     const w = new BrowserWindow({
       show: false,
       width: 400,
@@ -24,16 +21,16 @@ describe('BrowserWindow with affinity module', () => {
     return w
   }
 
-  function testAffinityProcessIds (name, webPreferences = {}) {
+  function testAffinityProcessIds (name: string, webPreferences = {}) {
     describe(name, () => {
-      let mAffinityWindow
+      let mAffinityWindow: BrowserWindow
       before(async () => {
         mAffinityWindow = await createWindowWithWebPrefs({ affinity: myAffinityName, ...webPreferences })
       })
 
       after(async () => {
-        await closeWindow(mAffinityWindow, { assertSingleWindow: false })
-        mAffinityWindow = null
+        await closeWindow(mAffinityWindow, { assertNotWindows: false })
+        mAffinityWindow = null as unknown as BrowserWindow
       })
 
       it('should have a different process id than a default window', async () => {
@@ -42,7 +39,7 @@ describe('BrowserWindow with affinity module', () => {
         const wcID = w.webContents.getOSProcessId()
 
         expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
-        await closeWindow(w, { assertSingleWindow: false })
+        await closeWindow(w, { assertNotWindows: false })
       })
 
       it(`should have a different process id than a window with a different affinity '${anotherAffinityName}'`, async () => {
@@ -51,7 +48,7 @@ describe('BrowserWindow with affinity module', () => {
         const wcID = w.webContents.getOSProcessId()
 
         expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
-        await closeWindow(w, { assertSingleWindow: false })
+        await closeWindow(w, { assertNotWindows: false })
       })
 
       it(`should have the same OS process id than a window with the same affinity '${myAffinityName}'`, async () => {
@@ -60,7 +57,7 @@ describe('BrowserWindow with affinity module', () => {
         const wcID = w.webContents.getOSProcessId()
 
         expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
-        await closeWindow(w, { assertSingleWindow: false })
+        await closeWindow(w, { assertNotWindows: false })
       })
 
       it(`should have the same OS process id than a window with an equivalent affinity '${myAffinityNameUpper}' (case insensitive)`, async () => {
@@ -69,7 +66,7 @@ describe('BrowserWindow with affinity module', () => {
         const wcID = w.webContents.getOSProcessId()
 
         expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
-        await closeWindow(w, { assertSingleWindow: false })
+        await closeWindow(w, { assertNotWindows: false })
       })
     })
   }
@@ -83,7 +80,7 @@ describe('BrowserWindow with affinity module', () => {
     const affinityWithNodeTrue = 'affinityWithNodeTrue'
     const affinityWithNodeFalse = 'affinityWithNodeFalse'
 
-    function testNodeIntegration (present) {
+    function testNodeIntegration (present: boolean) {
       return new Promise((resolve, reject) => {
         ipcMain.once('answer', (event, typeofProcess, typeofBuffer) => {
           if (present) {
@@ -107,7 +104,7 @@ describe('BrowserWindow with affinity module', () => {
           nodeIntegration: false
         })
       ])
-      await closeWindow(w, { assertSingleWindow: false })
+      await closeWindow(w, { assertNotWindows: false })
     })
     it('disables node integration when first window is false', async () => {
       const [, w1] = await Promise.all([
@@ -127,8 +124,8 @@ describe('BrowserWindow with affinity module', () => {
         })
       ])
       await Promise.all([
-        closeWindow(w1, { assertSingleWindow: false }),
-        closeWindow(w2, { assertSingleWindow: false })
+        closeWindow(w1, { assertNotWindows: false }),
+        closeWindow(w2, { assertNotWindows: false })
       ])
     })
 
@@ -141,7 +138,7 @@ describe('BrowserWindow with affinity module', () => {
           nodeIntegration: true
         })
       ])
-      await closeWindow(w, { assertSingleWindow: false })
+      await closeWindow(w, { assertNotWindows: false })
     })
 
     it('enables node integration when first window is true', async () => {
@@ -162,8 +159,8 @@ describe('BrowserWindow with affinity module', () => {
         })
       ])
       await Promise.all([
-        closeWindow(w1, { assertSingleWindow: false }),
-        closeWindow(w2, { assertSingleWindow: false })
+        closeWindow(w1, { assertNotWindows: false }),
+        closeWindow(w2, { assertNotWindows: false })
       ])
     })
   })
