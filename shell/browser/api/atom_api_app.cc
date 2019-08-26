@@ -811,15 +811,17 @@ void App::SetAppPath(const base::FilePath& app_path) {
 
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          base::Optional<base::FilePath> custom_path) {
+  base::FilePath logs_path;
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
       thrower.ThrowError("Path must be absolute");
       return;
     }
+    logs_path = custom_path.value();
   } else {
-    AppPathService::GetDefault(DIR_APP_LOGS, &custom_path);
+    AppPathService::GetDefault(DIR_APP_LOGS, &logs_path);
   }
-  AppPathService::Override(DIR_APP_LOGS, custom_path);
+  AppPathService::Override(DIR_APP_LOGS, logs_path);
 }
 
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
