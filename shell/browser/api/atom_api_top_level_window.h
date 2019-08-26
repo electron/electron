@@ -200,6 +200,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
   void PreviewFile(const std::string& path, mate::Arguments* args);
   void CloseFilePreview();
+  void SetGTKDarkThemeEnabled(bool use_dark_theme);
 
   // Public getters of NativeWindow.
   v8::Local<v8::Value> GetContentView() const;
