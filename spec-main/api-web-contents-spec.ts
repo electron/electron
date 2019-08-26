@@ -6,6 +6,7 @@ import * as http from 'http'
 import { BrowserWindow, ipcMain, webContents } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
+import { ifdescribe } from './spec-helpers';
 
 const { expect } = chai
 
@@ -533,4 +534,36 @@ describe('webContents module', () => {
       })
     })
   })
+
+  // On Mac, zooming isn't done with the mouse wheel.
+  ifdescribe(process.platform !== 'darwin')('zoom-changed', () => {
+    afterEach(closeAllWindows)
+    it('is emitted with the correct zooming info', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))
+      await emittedOnce(w.webContents, 'did-finish-load')
+
+      const testZoomChanged = async ({ zoomingIn }: { zoomingIn: boolean }) => {
+        const promise = emittedOnce(w.webContents, 'zoom-changed')
+
+        w.webContents.sendInputEvent({
+          type: 'mouseWheel',
+          x: 300,
+          y: 300,
+          deltaX: 0,
+          deltaY: zoomingIn ? 1 : -1,
+          wheelTicksX: 0,
+          wheelTicksY: zoomingIn ? 1 : -1,
+          modifiers: ['control', 'meta']
+        })
+
+        const [, zoomDirection] = await promise
+        expect(zoomDirection).to.equal(zoomingIn ? 'in' : 'out')
+      }
+
+      await testZoomChanged({ zoomingIn: true })
+      await testZoomChanged({ zoomingIn: false })
+    })
+  })
+
 })

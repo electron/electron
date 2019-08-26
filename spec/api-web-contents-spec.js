@@ -40,45 +40,6 @@ describe('webContents module', () => {
 
   afterEach(() => closeWindow(w).then(() => { w = null }))
 
-  describe('zoom-changed', () => {
-    beforeEach(function () {
-      // On Mac, zooming isn't done with the mouse wheel.
-      if (process.platform === 'darwin') {
-        return closeWindow(w).then(() => {
-          w = null
-          this.skip()
-        })
-      }
-    })
-
-    it('is emitted with the correct zooming info', async () => {
-      w.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
-      await emittedOnce(w.webContents, 'did-finish-load')
-
-      const testZoomChanged = async ({ zoomingIn }) => {
-        const promise = emittedOnce(w.webContents, 'zoom-changed')
-
-        w.webContents.sendInputEvent({
-          type: 'mousewheel',
-          x: 300,
-          y: 300,
-          deltaX: 0,
-          deltaY: zoomingIn ? 1 : -1,
-          wheelTicksX: 0,
-          wheelTicksY: zoomingIn ? 1 : -1,
-          phase: 'began',
-          modifiers: ['control', 'meta']
-        })
-
-        const [, zoomDirection] = await promise
-        expect(zoomDirection).to.equal(zoomingIn ? 'in' : 'out')
-      }
-
-      await testZoomChanged({ zoomingIn: true })
-      await testZoomChanged({ zoomingIn: false })
-    })
-  })
-
   describe('devtools window', () => {
     let testFn = it
     if (process.platform === 'darwin' && isCi) {
