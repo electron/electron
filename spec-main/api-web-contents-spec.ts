@@ -348,11 +348,19 @@ describe('webContents module', () => {
 
     it('does not crash when called on a detached dev tools window', async () => {
       const w = new BrowserWindow({show: true})
-      const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened')
+
       w.webContents.openDevTools({ mode: 'detach' })
       w.webContents.inspectElement(100, 100)
-      await devToolsOpened
+
+      // For some reason we have to wait for two focused events...?
+      await emittedOnce(w.webContents, 'devtools-focused')
+      await emittedOnce(w.webContents, 'devtools-focused')
+
       expect(webContents.getFocusedWebContents()).not.to.be.null()
+
+      // Work around https://github.com/electron/electron/issues/19985
+      await new Promise(r => setTimeout(r, 0))
+
       const devToolsClosed = emittedOnce(w.webContents, 'devtools-closed')
       w.webContents.closeDevTools()
       await devToolsClosed
