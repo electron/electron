@@ -54,6 +54,7 @@
 #include "shell/browser/api/atom_api_protocol_ns.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/atom_api_web_request_ns.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_navigation_throttle.h"
@@ -1014,12 +1015,12 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
     bool* bypass_redirect_checks) {
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(frame_host);
-  api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
-      v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
-  if (!protocol)
-    return false;
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  api::ProtocolNS* protocol =
+      api::ProtocolNS::FromWrappedClass(isolate, browser_context);
+  DCHECK(protocol);
+  auto web_request = api::WebRequestNS::FromOrCreate(isolate, browser_context);
+  DCHECK(web_request.get());
 
   auto proxied_receiver = std::move(*factory_receiver);
   network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
@@ -1030,8 +1031,9 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     header_client_request = mojo::MakeRequest(header_client);
 
   new ProxyingURLLoaderFactory(
-      protocol->intercept_handlers(), std::move(proxied_receiver),
-      std::move(target_factory_info), std::move(header_client_request));
+      web_request.get(), protocol->intercept_handlers(), render_process_id,
+      std::move(proxied_receiver), std::move(target_factory_info),
+      std::move(header_client_request));
 
   *bypass_redirect_checks = true;
   return true;

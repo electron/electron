@@ -5,12 +5,14 @@
 #ifndef SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 #define SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
 
 #include "base/optional.h"
+#include "extensions/browser/api/web_request/web_request_info.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -18,6 +20,48 @@
 #include "shell/browser/net/atom_url_loader_factory.h"
 
 namespace electron {
+
+// Defines the interface for WebRequest API, implemented by api::WebRequestNS.
+class WebRequestAPI {
+ public:
+  virtual ~WebRequestAPI() {}
+
+  using BeforeSendHeadersCallback =
+      base::OnceCallback<void(const std::set<std::string>& removed_headers,
+                              const std::set<std::string>& set_headers,
+                              int error_code)>;
+
+  virtual bool HasListener() const = 0;
+  virtual int OnBeforeRequest(extensions::WebRequestInfo* info,
+                              const network::ResourceRequest& request,
+                              net::CompletionOnceCallback callback,
+                              GURL* new_url) = 0;
+  virtual int OnBeforeSendHeaders(extensions::WebRequestInfo* info,
+                                  const network::ResourceRequest& request,
+                                  BeforeSendHeadersCallback callback,
+                                  net::HttpRequestHeaders* headers) = 0;
+  virtual int OnHeadersReceived(
+      extensions::WebRequestInfo* info,
+      const network::ResourceRequest& request,
+      net::CompletionOnceCallback callback,
+      const net::HttpResponseHeaders* original_response_headers,
+      scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
+      GURL* allowed_unsafe_redirect_url) = 0;
+  virtual void OnSendHeaders(extensions::WebRequestInfo* info,
+                             const network::ResourceRequest& request,
+                             const net::HttpRequestHeaders& headers) = 0;
+  virtual void OnBeforeRedirect(extensions::WebRequestInfo* info,
+                                const network::ResourceRequest& request,
+                                const GURL& new_location) = 0;
+  virtual void OnResponseStarted(extensions::WebRequestInfo* info,
+                                 const network::ResourceRequest& request) = 0;
+  virtual void OnErrorOccurred(extensions::WebRequestInfo* info,
+                               const network::ResourceRequest& request,
+                               int net_error) = 0;
+  virtual void OnCompleted(extensions::WebRequestInfo* info,
+                           const network::ResourceRequest& request,
+                           int net_error) = 0;
+};
 
 // This class is responsible for following tasks when NetworkService is enabled:
 // 1. handling intercepted protocols;
@@ -35,6 +79,7 @@ class ProxyingURLLoaderFactory
    public:
     InProgressRequest(
         ProxyingURLLoaderFactory* factory,
+        int64_t web_request_id,
         int32_t routing_id,
         int32_t network_service_request_id,
         uint32_t options,
@@ -99,12 +144,15 @@ class ProxyingURLLoaderFactory
     ProxyingURLLoaderFactory* factory_;
     network::ResourceRequest request_;
     const base::Optional<url::Origin> original_initiator_;
+    const uint64_t request_id_;
     const int32_t routing_id_;
     const int32_t network_service_request_id_;
     const uint32_t options_;
     const net::MutableNetworkTrafficAnnotationTag traffic_annotation_;
     mojo::Binding<network::mojom::URLLoader> proxied_loader_binding_;
     network::mojom::URLLoaderClientPtr target_client_;
+
+    base::Optional<extensions::WebRequestInfo> info_;
 
     network::ResourceResponseHead current_response_;
     scoped_refptr<net::HttpResponseHeaders> override_headers_;
@@ -148,7 +196,9 @@ class ProxyingURLLoaderFactory
   };
 
   ProxyingURLLoaderFactory(
+      WebRequestAPI* web_request_api,
       const HandlersMap& intercepted_handlers,
+      int render_process_id,
       network::mojom::URLLoaderFactoryRequest loader_request,
       network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
       network::mojom::TrustedURLLoaderHeaderClientRequest
@@ -171,9 +221,16 @@ class ProxyingURLLoaderFactory
       int32_t request_id,
       network::mojom::TrustedHeaderClientRequest request) override;
 
+  WebRequestAPI* web_request_api() { return web_request_api_; }
+
  private:
   void OnTargetFactoryError();
   void OnProxyBindingError();
+  void RemoveRequest(int32_t network_service_request_id, uint64_t request_id);
+  void MaybeDeleteThis();
+
+  // Passed from api::WebRequestNS.
+  WebRequestAPI* web_request_api_;
 
   // This is passed from api::ProtocolNS.
   //
@@ -184,10 +241,19 @@ class ProxyingURLLoaderFactory
   // In this way we can avoid using code from api namespace in this file.
   const HandlersMap& intercepted_handlers_;
 
+  const int render_process_id_;
   mojo::BindingSet<network::mojom::URLLoaderFactory> proxy_bindings_;
   network::mojom::URLLoaderFactoryPtr target_factory_;
   mojo::Binding<network::mojom::TrustedURLLoaderHeaderClient>
       url_loader_header_client_binding_;
+
+  // Mapping from our own internally generated request ID to an
+  // InProgressRequest instance.
+  std::map<uint64_t, std::unique_ptr<InProgressRequest>> requests_;
+
+  // A mapping from the network stack's notion of request ID to our own
+  // internally generated request ID for the same request.
+  std::map<int32_t, uint64_t> network_request_id_to_web_request_id_;
 
   DISALLOW_COPY_AND_ASSIGN(ProxyingURLLoaderFactory);
 };

@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "extensions/browser/extension_navigation_ui_data.h"
 #include "mojo/public/cpp/bindings/binding.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/http/http_util.h"
@@ -14,6 +15,12 @@
 
 namespace electron {
 
+namespace {
+
+int64_t g_request_id = 0;
+
+}  // namespace
+
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
     FollowRedirectParams() = default;
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
@@ -21,6 +28,7 @@ ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
 
 ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     ProxyingURLLoaderFactory* factory,
+    int64_t web_request_id,
     int32_t routing_id,
     int32_t network_service_request_id,
     uint32_t options,
@@ -31,6 +39,7 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     : factory_(factory),
       request_(request),
       original_initiator_(request.request_initiator),
+      request_id_(web_request_id),
       routing_id_(routing_id),
       network_service_request_id_(network_service_request_id),
       options_(options),
@@ -49,7 +58,9 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       network::URLLoaderCompletionStatus(net::ERR_ABORTED)));
 }
 
-ProxyingURLLoaderFactory::InProgressRequest::~InProgressRequest() {}
+ProxyingURLLoaderFactory::InProgressRequest::~InProgressRequest() {
+  // TODO(zcbenz): Do cleanup here.
+}
 
 void ProxyingURLLoaderFactory::InProgressRequest::Restart() {
   UpdateRequestInfo();
@@ -57,13 +68,27 @@ void ProxyingURLLoaderFactory::InProgressRequest::Restart() {
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
+  // Derive a new WebRequestInfo value any time |Restart()| is called, because
+  // the details in |request_| may have changed e.g. if we've been redirected.
+  // |request_initiator| can be modified on redirects, but we keep the original
+  // for |initiator| in the event. See also
+  // https://developer.chrome.com/extensions/webRequest#event-onBeforeRequest.
+  network::ResourceRequest request_for_info = request_;
+  request_for_info.request_initiator = original_initiator_;
+  info_.emplace(extensions::WebRequestInfoInitParams(
+      request_id_, factory_->render_process_id_, request_.render_frame_id,
+      nullptr, routing_id_, request_for_info, false,
+      !(options_ & network::mojom::kURLLoadOptionSynchronous)));
+
   current_request_uses_header_client_ =
       factory_->url_loader_header_client_binding_ &&
       network_service_request_id_ != 0 &&
-      false /* HasExtraHeadersListenerForRequest */;
+      false /* TODO(zcbenz): HasExtraHeadersListenerForRequest */;
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::RestartInternal() {
+  DCHECK_EQ(info_->url, request_.url)
+      << "UpdateRequestInfo must have been called first";
   request_completed_ = false;
 
   // If the header client will be used, we start the request immediately, and
@@ -79,8 +104,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::RestartInternal() {
                             weak_factory_.GetWeakPtr());
   }
   redirect_url_ = GURL();
-  // TODO(zcbenz): Call webRequest.onBeforeRequest.
-  int result = net::OK;
+  int result = factory_->web_request_api()->OnBeforeRequest(
+      &info_.value(), request_, continuation, &redirect_url_);
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     // The request was cancelled synchronously. Dispatch an error notification
     // and terminate the request.
@@ -239,10 +264,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
   }
 
   target_client_->OnComplete(status);
-  // TODO(zcbenz): Call webRequest.onCompleted.
+  factory_->web_request_api()->OnCompleted(&info_.value(), request_,
+                                           status.error_code);
 
-  // TODO(zcbenz): Disassociate from factory.
-  delete this;
+  // Deletes |this|.
+  factory_->RemoveRequest(network_service_request_id_, request_id_);
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnLoaderCreated(
@@ -297,8 +323,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeSendHeaders(
   auto continuation = base::BindRepeating(
       &InProgressRequest::ContinueToSendHeaders, weak_factory_.GetWeakPtr());
   // Note: In Electron onBeforeSendHeaders is called for all protocols.
-  // TODO(zcbenz): Call webRequest.onBeforeSendHeaders.
-  int result = net::OK;
+  int result = factory_->web_request_api()->OnBeforeSendHeaders(
+      &info_.value(), request_, continuation, &request_.headers);
 
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     // The request was cancelled synchronously. Dispatch an error notification
@@ -365,7 +391,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToSendHeaders(
     proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
   // Note: In Electron onSendHeaders is called for all protocols.
-  // TODO(zcbenz): Call webRequest.onSendHeaders.
+  factory_->web_request_api()->OnSendHeaders(&info_.value(), request_,
+                                             request_.headers);
 
   if (!current_request_uses_header_client_)
     ContinueToStartRequest(net::OK);
@@ -474,9 +501,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToResponseStarted(
     return;
   }
 
+  info_->AddResponseInfoFromResourceResponse(current_response_);
+
   proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
-  // TODO(zcbenz): Call webRequest.onResponseStarted.
+  factory_->web_request_api()->OnResponseStarted(&info_.value(), request_);
   target_client_->OnReceiveResponse(current_response_);
 }
 
@@ -488,10 +517,13 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
     return;
   }
 
+  info_->AddResponseInfoFromResourceResponse(current_response_);
+
   if (proxied_client_binding_.is_bound())
     proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
-  // TODO(zcbenz): Call WebRequest.onBeforeRedirect.
+  factory_->web_request_api()->OnBeforeRedirect(&info_.value(), request_,
+                                                redirect_info.new_url);
   target_client_->OnReceiveRedirect(redirect_info, current_response_);
   request_.url = redirect_info.new_url;
   request_.method = redirect_info.new_method;
@@ -581,10 +613,14 @@ void ProxyingURLLoaderFactory::InProgressRequest::
   override_headers_ = nullptr;
   redirect_url_ = GURL();
 
+  info_->AddResponseInfoFromResourceResponse(current_response_);
+
   net::CompletionRepeatingCallback copyable_callback =
       base::AdaptCallbackForRepeating(std::move(continuation));
-  // TODO(zcbenz): Call webRequest.onHeadersReceived.
-  int result = net::OK;
+  DCHECK(info_.has_value());
+  int result = factory_->web_request_api()->OnHeadersReceived(
+      &info_.value(), request_, copyable_callback,
+      current_response_.headers.get(), &override_headers_, &redirect_url_);
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     OnRequestError(network::URLLoaderCompletionStatus(result));
     return;
@@ -609,19 +645,24 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
     const network::URLLoaderCompletionStatus& status) {
   if (!request_completed_) {
     target_client_->OnComplete(status);
-    // TODO(zcbenz): Call webRequest.onErrorOccurred.
+    factory_->web_request_api()->OnErrorOccurred(&info_.value(), request_,
+                                                 status.error_code);
   }
 
-  // TODO(zcbenz): Disassociate from factory.
-  delete this;
+  // Deletes |this|.
+  factory_->RemoveRequest(network_service_request_id_, request_id_);
 }
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
+    WebRequestAPI* web_request_api,
     const HandlersMap& intercepted_handlers,
+    int render_process_id,
     network::mojom::URLLoaderFactoryRequest loader_request,
     network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
     network::mojom::TrustedURLLoaderHeaderClientRequest header_client_request)
-    : intercepted_handlers_(intercepted_handlers),
+    : web_request_api_(web_request_api),
+      intercepted_handlers_(intercepted_handlers),
+      render_process_id_(render_process_id),
       url_loader_header_client_binding_(this) {
   target_factory_.Bind(std::move(target_factory_info));
   target_factory_.set_connection_error_handler(base::BindOnce(
@@ -663,12 +704,29 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     return;
   }
 
-  // Pass-through to the original factory.
-  target_factory_->CreateLoaderAndStart(std::move(loader), routing_id,
-                                        request_id, options, request,
-                                        std::move(client), traffic_annotation);
+  if (!web_request_api()->HasListener()) {
+    // Pass-through to the original factory.
+    target_factory_->CreateLoaderAndStart(
+        std::move(loader), routing_id, request_id, options, request,
+        std::move(client), traffic_annotation);
+    return;
+  }
 
-  // TODO(zcbenz): Create InProgressRequest.
+  // The request ID doesn't really matter. It just needs to be unique
+  // per-BrowserContext so extensions can make sense of it.  Note that
+  // |network_service_request_id_| by contrast is not necessarily unique, so we
+  // don't use it for identity here.
+  const uint64_t web_request_id = ++g_request_id;
+
+  if (request_id)
+    network_request_id_to_web_request_id_.emplace(request_id, web_request_id);
+
+  auto result = requests_.emplace(
+      web_request_id,
+      std::make_unique<InProgressRequest>(
+          this, web_request_id, routing_id, request_id, options, request,
+          traffic_annotation, std::move(loader), std::move(client)));
+  result.first->second->Restart();
 }
 
 void ProxyingURLLoaderFactory::Clone(
@@ -679,16 +737,44 @@ void ProxyingURLLoaderFactory::Clone(
 void ProxyingURLLoaderFactory::OnLoaderCreated(
     int32_t request_id,
     network::mojom::TrustedHeaderClientRequest request) {
-  // TODO(zcbenz): Call |OnLoaderCreated| for |InProgressRequest|.
+  auto it = network_request_id_to_web_request_id_.find(request_id);
+  if (it == network_request_id_to_web_request_id_.end())
+    return;
+
+  auto request_it = requests_.find(it->second);
+  DCHECK(request_it != requests_.end());
+  request_it->second->OnLoaderCreated(std::move(request));
 }
 
 void ProxyingURLLoaderFactory::OnTargetFactoryError() {
-  delete this;
+  target_factory_.reset();
+  proxy_bindings_.CloseAllBindings();
+
+  MaybeDeleteThis();
 }
 
 void ProxyingURLLoaderFactory::OnProxyBindingError() {
   if (proxy_bindings_.empty())
-    delete this;
+    target_factory_.reset();
+
+  MaybeDeleteThis();
+}
+
+void ProxyingURLLoaderFactory::RemoveRequest(int32_t network_service_request_id,
+                                             uint64_t request_id) {
+  network_request_id_to_web_request_id_.erase(network_service_request_id);
+  requests_.erase(request_id);
+
+  MaybeDeleteThis();
+}
+
+void ProxyingURLLoaderFactory::MaybeDeleteThis() {
+  // Even if all URLLoaderFactory pipes connected to this object have been
+  // closed it has to stay alive until all active requests have completed.
+  if (target_factory_.is_bound() || !requests_.empty())
+    return;
+
+  delete this;
 }
 
 }  // namespace electron
