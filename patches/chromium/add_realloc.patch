@@ -39,10 +39,10 @@ index 2aef366ac8194aa261cbca6abc051f7da8a988d3..3c7d66c81032636abcca4f1538ce9b7f
  
    GIN_EXPORT static ArrayBufferAllocator* SharedInstance();
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 7ca876bc7f2afa192167f0689690d73d5a420c60..d58085e0b14241d666f533cb23dd89159c27d8b2 100644
+index b747d8afba334747787485582d89cd5599b7b8ae..581c2ffce679dd131e8b8af86f3d3a9a89485e78 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -642,6 +642,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+@@ -641,6 +641,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
          size, WTF::ArrayBufferContents::kDontInitialize);
    }
  
@@ -70,7 +70,7 @@ index ac76d127b96b80c8260a7e2cda0b669cd98787ad..dcab64586700a8740262aede8dba2755
    Partitions::ArrayBufferPartition()->Free(data);
  }
 diff --git a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
-index ee7c89a4950d6b3c97a810c41a62fee7e372018d..c2b60f20a72cca46d05af369f33d9c19395b34ef 100644
+index 3f44cd2fdf648057be8defcf041574b4c91e0363..55c0e7c66649ae9d9cbef6179daac7ad771b755c 100644
 --- a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
 +++ b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
 @@ -140,6 +140,7 @@ class WTF_EXPORT ArrayBufferContents {

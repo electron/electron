@@ -40,7 +40,7 @@ index b77b8a53b0246b05e3c45e74eaf2b5c44c6dad88..7af171f6cd5d76e87e2fca32f5dbcc34
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index af391345a4c893e3fbde4f750af429a0567188d2..febfb06f18b6f51e6ebcc0c59e2a81b259e97997 100644
+index 7fd49a2e26968daaa16ed3322b516f53ff60fb56..f902910ecc8e5b4945187e836655362ebba49204 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -56,6 +56,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
@@ -58,7 +58,7 @@ index af391345a4c893e3fbde4f750af429a0567188d2..febfb06f18b6f51e6ebcc0c59e2a81b2
        // FocusableBorder
        case NativeTheme::kColorId_FocusedBorderColor:
          return SkColorSetA(gfx::kGoogleBlue300, 0x66);
-@@ -357,6 +365,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -359,6 +367,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return SkColorSetA(SK_ColorBLACK, 0x66);
  

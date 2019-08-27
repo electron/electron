@@ -40,7 +40,6 @@ enable_widevine.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
-ssl_security_state_tab_helper.patch
 exclude-a-few-test-files-from-build.patch
 desktop_media_list.patch
 proxy_config_monitor.patch
@@ -76,3 +75,4 @@ add_contentgpuclient_precreatemessageloop_callback.patch
 fix_disabling_compositor_recycling.patch
 picture-in-picture.patch
 allow_new_privileges_in_unsandboxed_child_processes.patch
+ssl_security_state_tab_helper.patch

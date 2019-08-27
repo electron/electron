@@ -22,21 +22,28 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 20d0b4a801bdbe0300f878f369fc9017fc8aea3f..6302948343ee810a9d35a70be0c91a1ffbfb7647 100644
+index c03a741347a620a0039171aaad7ae94a4ce0660a..e7e61bbba1a4ed730a80cf38b32b080719033c16 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -378,6 +378,10 @@ class RendererSandboxedProcessLauncherDelegate
-     : public SandboxedProcessLauncherDelegate {
-  public:
-   RendererSandboxedProcessLauncherDelegate() {}
-+#if BUILDFLAG(USE_ZYGOTE_HANDLE)
-+  RendererSandboxedProcessLauncherDelegate(bool use_zygote):
-+    use_zygote_(use_zygote) {}
-+#endif
+@@ -389,6 +389,17 @@ class RendererSandboxedProcessLauncherDelegate
+   {
+   }
  
++#if BUILDFLAG(USE_ZYGOTE_HANDLE)
++  RendererSandboxedProcessLauncherDelegate(bool use_zygote)
++      : use_zygote_(use_zygote)
++#if defined(OS_WIN)
++      , renderer_code_integrity_enabled_(
++            GetContentClient()->browser()->IsRendererCodeIntegrityEnabled())
++#endif
++  {
++  }
++#endif
++
    ~RendererSandboxedProcessLauncherDelegate() override {}
  
-@@ -397,6 +401,9 @@ class RendererSandboxedProcessLauncherDelegate
+ #if defined(OS_WIN)
+@@ -410,6 +421,9 @@ class RendererSandboxedProcessLauncherDelegate
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
    service_manager::ZygoteHandle GetZygote() override {
@@ -46,19 +53,22 @@ index 20d0b4a801bdbe0300f878f369fc9017fc8aea3f..6302948343ee810a9d35a70be0c91a1f
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -410,6 +417,11 @@ class RendererSandboxedProcessLauncherDelegate
-   service_manager::SandboxType GetSandboxType() override {
+@@ -424,10 +438,13 @@ class RendererSandboxedProcessLauncherDelegate
      return service_manager::SANDBOX_TYPE_RENDERER;
    }
-+
-+ private:
+ 
+-#if defined(OS_WIN)
+  private:
++#if defined(OS_WIN)
+   const bool renderer_code_integrity_enabled_;
+ #endif
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +  bool use_zygote_ = true;
 +#endif
  };
  
  const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1746,11 +1758,18 @@ bool RenderProcessHostImpl::Init() {
+@@ -1688,11 +1705,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  

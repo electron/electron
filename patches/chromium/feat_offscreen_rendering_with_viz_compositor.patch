@@ -555,10 +555,10 @@ index 359e7d21a4a5e7acaed9bd7f42f40019e650a182..cd90aab9d3a7b5335c829d964d92e3fa
    Layer* root_layer_ = nullptr;
  
 diff --git a/ui/compositor/host/host_context_factory_private.cc b/ui/compositor/host/host_context_factory_private.cc
-index 84b2623bd3dd8a7fdfa8e453eda3574e3b71ef99..974eb17c1d1f50c45b4d3a539a8d1a67b687642d 100644
+index 747d01865657b0bd055c7bb1515dfc84ddbe92aa..0453999f6513176bd8e835741292ecf3ad51f5b1 100644
 --- a/ui/compositor/host/host_context_factory_private.cc
 +++ b/ui/compositor/host/host_context_factory_private.cc
-@@ -99,8 +99,12 @@ void HostContextFactoryPrivate::ConfigureCompositor(
+@@ -98,8 +98,12 @@ void HostContextFactoryPrivate::ConfigureCompositor(
        mojo::MakeRequest(&root_params->compositor_frame_sink_client);
    root_params->display_private =
        mojo::MakeRequest(&compositor_data.display_private);

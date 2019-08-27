@@ -42,7 +42,7 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index b95ab6369324c29763d4320dcc4b16820a0e5e95..a0179277fe51d336cbcb19d76e28d2111926184a 100644
+index ba10b76c4cdec0137aeb39c7edbfed723ed7426f..eadf6a06d22a345776fd832827ba9b3d44738ce4 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2228,6 +2228,21 @@ bool RenderFrameHostManager::InitRenderView(
@@ -159,10 +159,10 @@ index b95ab6369324c29763d4320dcc4b16820a0e5e95..a0179277fe51d336cbcb19d76e28d211
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index 47067d774c0490e3f0daf1f0d7ee60e4f51fc110..54aab183e80538173045c68d539c197af8b8d063 100644
+index d0d4e89f4190752fa00a575bb91842a72f4c0070..7b8d9af4005c6c7b7f4ebf0090d718fd276d012b 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -367,6 +367,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
+@@ -368,6 +368,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
    return browsing_instance_->HasSiteInstance(url);
  }
  
@@ -186,7 +186,7 @@ index 1edb9fd6b0c383f291735dd1a952fcb7b17cc87f..23967f040eb346be265faa2a92562e1f
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 15081967b0a29316ab82746ca6fe7d188a9efc58..2f894fdcc72f9e31e62f660e2eaff686b0bde95a 100644
+index 6d9e947f1ebd5e92a21d907161dcee6d6b825403..1e2b9f7b80a3f667be2715a6eaa48cc6f8bc253e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -44,6 +44,21 @@
@@ -212,7 +212,7 @@ index 15081967b0a29316ab82746ca6fe7d188a9efc58..2f894fdcc72f9e31e62f660e2eaff686
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 678b25401338a624dc37a11c45331d65082934e9..bed09d49f1f8ca3a14a5306144faf4ae4d1f7de9 100644
+index 74c4515224aea1dc1b1e5dae3104607209fc4969..3241b167137be9d4cbb8cfb5e66ba835cd83611e 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -205,8 +205,45 @@ struct WebPreferences;
