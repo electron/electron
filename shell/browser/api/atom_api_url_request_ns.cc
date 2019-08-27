@@ -10,7 +10,9 @@
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "shell/browser/api/atom_api_session.h"
+#include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
@@ -178,9 +180,35 @@ URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
   }
 
   auto* browser_context = session->browser_context();
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context);
+
+  network::mojom::URLLoaderFactoryPtr network_factory;
+  mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_request =
+      mojo::MakeRequest(&network_factory);
+
+  // Consult the embedder.
+  network::mojom::TrustedURLLoaderHeaderClientPtrInfo header_client;
+  static_cast<content::ContentBrowserClient*>(AtomBrowserClient::Get())
+      ->WillCreateURLLoaderFactory(browser_context, nullptr, -1,
+                                   true /* is_navigation */,
+                                   false /* is_download */, url::Origin(),
+                                   &factory_request, &header_client, nullptr);
+
+  network::mojom::URLLoaderFactoryParamsPtr params =
+      network::mojom::URLLoaderFactoryParams::New();
+  params->header_client = std::move(header_client);
+  params->process_id = network::mojom::kBrowserProcessId;
+  params->is_corb_enabled = false;
+  // The tests of net module would fail if this setting is true, it seems that
+  // the non-NetworkService implementation always has web security enabled.
+  params->disable_web_security = false;
+
+  storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
+      std::move(factory_request), std::move(params));
   url_loader_factory_ =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context)
-          ->GetURLLoaderFactoryForBrowserProcess();
+      base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
+          std::move(network_factory));
 
   InitWith(args->isolate(), args->GetThis());
 }
