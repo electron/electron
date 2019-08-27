@@ -10,7 +10,6 @@ import { expect } from 'chai'
 import * as dbus from 'dbus-native'
 import { ifdescribe } from './spec-helpers'
 import { promisify } from 'util'
-import { powerMonitor } from 'electron'
 
 describe('powerMonitor', () => {
   let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any
@@ -41,7 +40,7 @@ describe('powerMonitor', () => {
     before(done => {
       logindMock.on('MethodCalled', onceMethodCalled(done))
       // lazy load powerMonitor after we listen to MethodCalled mock signal
-      dbusMockPowerMonitor = require('electron').remote.powerMonitor
+      dbusMockPowerMonitor = require('electron').powerMonitor
     })
 
     it('should call Inhibit to delay suspend', async () => {
@@ -117,6 +116,10 @@ describe('powerMonitor', () => {
   })
 
   describe('when powerMonitor module is loaded', () => {
+    let powerMonitor: typeof Electron.powerMonitor
+    before(() => {
+      powerMonitor = require('electron').powerMonitor
+    })
     describe('powerMonitor.getSystemIdleState', () => {
       it('gets current system idle state', () => {
         // this function is not mocked out, so we can test the result's
