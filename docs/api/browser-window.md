@@ -51,6 +51,9 @@ This event is usually emitted after the `did-finish-load` event, but for
 pages with many remote resources, it may be emitted before the `did-finish-load`
 event.
 
+Please note that using this event implies that the renderer will be considered "visible" and
+paint even though `show` is false.  This event will never fire if you use `paintWhenInitiallyHidden: false`
+
 ## Setting `backgroundColor`
 
 For a complex app, the `ready-to-show` event could be emitted too late, making
@@ -184,6 +187,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     leave it undefined so the executable's icon will be used.
   * `show` Boolean (optional) - Whether window should be shown when created. Default is
     `true`.
+  * `paintWhenInitiallyHidden` Boolean (optional) - Whether the renderer should be active when `show` is `false` and it has just been created.  In order for `document.visibilityState` to work correctly on first load with `show: false` you should set this to `false`.  Setting this to `false` will cause the `ready-to-show` event to not fire.  Default is `true`.
   * `frame` Boolean (optional) - Specify `false` to create a
     [Frameless Window](frameless-window.md). Default is `true`.
   * `parent` BrowserWindow (optional) - Specify parent window. Default is `null`.
@@ -484,6 +488,9 @@ Emitted when the window is hidden.
 
 Emitted when the web page has been rendered (while not being shown) and window can be displayed without
 a visual flash.
+
+Please note that using this event implies that the renderer will be considered "visible" and
+paint even though `show` is false.  This event will never fire if you use `paintWhenInitiallyHidden: false`
 
 #### Event: 'maximize'
 
