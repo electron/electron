@@ -13,6 +13,7 @@
 #include "base/memory/ref_counted_delete_on_sequence.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
+#include "chrome/browser/predictors/preconnect_manager.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
@@ -90,6 +91,8 @@ class AtomBrowserContext
   // Get the request context, if there is none, create it.
   net::URLRequestContextGetter* GetRequestContext();
   ResolveProxyHelper* GetResolveProxyHelper();
+
+  predictors::PreconnectManager* GetPreconnectManager();
 
   // content::BrowserContext:
   base::FilePath GetPath() override;
@@ -174,6 +177,8 @@ class AtomBrowserContext
   // Tracks the ProxyConfig to use, and passes any updates to a NetworkContext
   // ProxyConfigClient.
   std::unique_ptr<ProxyConfigMonitor> proxy_config_monitor_;
+
+  std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;
 
   std::string user_agent_;
   base::FilePath path_;
