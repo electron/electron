@@ -3,7 +3,7 @@ import { AddressInfo } from 'net'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
 import * as http from 'http'
-import { BrowserWindow, ipcMain, webContents } from 'electron'
+import { BrowserWindow, ipcMain, webContents, session } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import { ifdescribe } from './spec-helpers';
@@ -715,6 +715,225 @@ describe('webContents module', () => {
 
       await w.loadURL('about:blank')
       expect(w.webContents.getOSProcessId()).to.be.above(0)
+    })
+  })
+
+  describe('zoom api', () => {
+    const scheme = (global as any).standardScheme
+    const hostZoomMap: Record<string, number> = {
+      host1: 0.3,
+      host2: 0.7,
+      host3: 0.2
+    }
+
+    before((done) => {
+      const protocol = session.defaultSession.protocol
+      protocol.registerStringProtocol(scheme, (request, callback) => {
+        const response = `<script>
+                            const {ipcRenderer, remote} = require('electron')
+                            ipcRenderer.send('set-zoom', window.location.hostname)
+                            ipcRenderer.on(window.location.hostname + '-zoom-set', () => {
+                              const { zoomLevel } = remote.getCurrentWebContents()
+                              ipcRenderer.send(window.location.hostname + '-zoom-level', zoomLevel)
+                            })
+                          </script>`
+        callback({ data: response, mimeType: 'text/html' })
+      }, (error) => done(error))
+    })
+
+    after((done) => {
+      const protocol = session.defaultSession.protocol
+      protocol.unregisterProtocol(scheme, (error) => done(error))
+    })
+
+    afterEach(closeAllWindows)
+
+    // TODO(codebytere): remove in Electron v8.0.0
+    it('can set the correct zoom level (functions)', async () => {
+      const w = new BrowserWindow({ show: false })
+      try {
+        await w.loadURL('about:blank')
+        const zoomLevel = w.webContents.getZoomLevel()
+        expect(zoomLevel).to.eql(0.0)
+        w.webContents.setZoomLevel(0.5)
+        const newZoomLevel = w.webContents.getZoomLevel()
+        expect(newZoomLevel).to.eql(0.5)
+      } finally {
+        w.webContents.setZoomLevel(0)
+      }
+    })
+
+    it('can set the correct zoom level', async () => {
+      const w = new BrowserWindow({ show: false })
+      try {
+        await w.loadURL('about:blank')
+        const zoomLevel = w.webContents.zoomLevel
+        expect(zoomLevel).to.eql(0.0)
+        w.webContents.zoomLevel = 0.5
+        const newZoomLevel = w.webContents.zoomLevel
+        expect(newZoomLevel).to.eql(0.5)
+      } finally {
+        w.webContents.zoomLevel = 0
+      }
+    })
+
+    it('can persist zoom level across navigation', (done) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      let finalNavigation = false
+      ipcMain.on('set-zoom', (e, host) => {
+        const zoomLevel = hostZoomMap[host]
+        if (!finalNavigation) w.webContents.zoomLevel = zoomLevel
+        e.sender.send(`${host}-zoom-set`)
+      })
+      ipcMain.on('host1-zoom-level', (e, zoomLevel) => {
+        const expectedZoomLevel = hostZoomMap.host1
+        expect(zoomLevel).to.equal(expectedZoomLevel)
+        if (finalNavigation) {
+          done()
+        } else {
+          w.loadURL(`${scheme}://host2`)
+        }
+      })
+      ipcMain.once('host2-zoom-level', (e, zoomLevel) => {
+        const expectedZoomLevel = hostZoomMap.host2
+        expect(zoomLevel).to.equal(expectedZoomLevel)
+        finalNavigation = true
+        w.webContents.goBack()
+      })
+      w.loadURL(`${scheme}://host1`)
+    })
+
+    it('can propagate zoom level across same session', (done) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      const w2 = new BrowserWindow({ show: false })
+      w2.webContents.on('did-finish-load', () => {
+        const zoomLevel1 = w.webContents.zoomLevel
+        expect(zoomLevel1).to.equal(hostZoomMap.host3)
+
+        const zoomLevel2 = w2.webContents.zoomLevel
+        expect(zoomLevel1).to.equal(zoomLevel2)
+        w2.setClosable(true)
+        w2.close()
+        done()
+      })
+      w.webContents.on('did-finish-load', () => {
+        w.webContents.zoomLevel = hostZoomMap.host3
+        w2.loadURL(`${scheme}://host3`)
+      })
+      w.loadURL(`${scheme}://host3`)
+    })
+
+    it('cannot propagate zoom level across different session', (done) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      const w2 = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'temp'
+        }
+      })
+      const protocol = w2.webContents.session.protocol
+      protocol.registerStringProtocol(scheme, (request, callback) => {
+        callback('hello')
+      }, (error) => {
+        if (error) return done(error)
+        w2.webContents.on('did-finish-load', () => {
+          const zoomLevel1 = w.webContents.zoomLevel
+          expect(zoomLevel1).to.equal(hostZoomMap.host3)
+
+          const zoomLevel2 = w2.webContents.zoomLevel
+          expect(zoomLevel2).to.equal(0)
+          expect(zoomLevel1).to.not.equal(zoomLevel2)
+
+          protocol.unregisterProtocol(scheme, (error) => {
+            if (error) return done(error)
+            w2.setClosable(true)
+            w2.close()
+            done()
+          })
+        })
+        w.webContents.on('did-finish-load', () => {
+          w.webContents.zoomLevel = hostZoomMap.host3
+          w2.loadURL(`${scheme}://host3`)
+        })
+        w.loadURL(`${scheme}://host3`)
+      })
+    })
+
+    it('can persist when it contains iframe', (done) => {
+      const w = new BrowserWindow({ show: false })
+      const server = http.createServer((req, res) => {
+        setTimeout(() => {
+          res.end()
+        }, 200)
+      })
+      server.listen(0, '127.0.0.1', () => {
+        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port
+        const content = `<iframe src=${url}></iframe>`
+        w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
+          if (!isMainFrame) {
+            const zoomLevel = w.webContents.zoomLevel
+            expect(zoomLevel).to.equal(2.0)
+
+            w.webContents.zoomLevel = 0
+            server.close()
+            done()
+          }
+        })
+        w.webContents.on('dom-ready', () => {
+          w.webContents.zoomLevel = 2.0
+        })
+        w.loadURL(`data:text/html,${content}`)
+      })
+    })
+
+    it('cannot propagate when used with webframe', (done) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      let finalZoomLevel = 0
+      const w2 = new BrowserWindow({
+        show: false
+      })
+      w2.webContents.on('did-finish-load', () => {
+        const zoomLevel1 = w.webContents.zoomLevel
+        expect(zoomLevel1).to.equal(finalZoomLevel)
+
+        const zoomLevel2 = w2.webContents.zoomLevel
+        expect(zoomLevel2).to.equal(0)
+        expect(zoomLevel1).to.not.equal(zoomLevel2)
+
+        w2.setClosable(true)
+        w2.close()
+        done()
+      })
+      ipcMain.once('temporary-zoom-set', (e, zoomLevel) => {
+        w2.loadFile(path.join(fixturesPath, 'pages', 'c.html'))
+        finalZoomLevel = zoomLevel
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', 'webframe-zoom.html'))
+    })
+
+    it('cannot persist zoom level after navigation with webFrame', (done) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      let initialNavigation = true
+      const source = `
+        const {ipcRenderer, webFrame} = require('electron')
+        webFrame.setZoomLevel(0.6)
+        ipcRenderer.send('zoom-level-set', webFrame.getZoomLevel())
+      `
+      w.webContents.on('did-finish-load', () => {
+        if (initialNavigation) {
+          w.webContents.executeJavaScript(source)
+        } else {
+          const zoomLevel = w.webContents.zoomLevel
+          expect(zoomLevel).to.equal(0)
+          done()
+        }
+      })
+      ipcMain.once('zoom-level-set', (e, zoomLevel) => {
+        expect(zoomLevel).to.equal(0.6)
+        w.loadFile(path.join(fixturesPath, 'pages', 'd.html'))
+        initialNavigation = false
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', 'c.html'))
     })
   })
 })

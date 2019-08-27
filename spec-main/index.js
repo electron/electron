@@ -25,8 +25,10 @@ app.on('window-all-closed', () => null)
 app.commandLine.appendSwitch('ignore-certificate-errors')
 
 global.standardScheme = 'app'
+global.zoomScheme = 'zoom'
 protocol.registerSchemesAsPrivileged([
   { scheme: global.standardScheme, privileges: { standard: true, secure: true } },
+  { scheme: global.zoomScheme, privileges: { standard: true, secure: true } },
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
