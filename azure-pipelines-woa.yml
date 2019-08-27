@@ -82,3 +82,9 @@ steps:
     echo "Verifying mksnapshot"
     python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd%
   displayName: 'Verify mksnapshot'
+
+- script: |
+    taskkill /F /IM electron.exe
+    taskkill /F /IM MicrosoftEdge.exe
+  displayName: 'Kill processes left running from the test run'
+  condition: always()
