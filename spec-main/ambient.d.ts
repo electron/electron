@@ -21,4 +21,11 @@ declare namespace Electron {
   interface Session {
     destroy(): void;
   }
+
+  // Experimental views API
+  class TopLevelWindow {
+    constructor(args: {show: boolean})
+    setContentView(view: View): void
+  }
+  class View {}
 }
