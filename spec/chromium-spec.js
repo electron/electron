@@ -59,7 +59,8 @@ describe('chromium feature', () => {
     })
 
     describe('--remote-debugging-port switch', () => {
-      it('should display the discovery page', (done) => {
+      // TODO: fix this flaky test. https://github.com/electron/electron/issues/19422
+      xit('should display the discovery page', (done) => {
         const electronPath = remote.getGlobal('process').execPath
         let output = ''
         const appProcess = ChildProcess.spawn(electronPath, [`--remote-debugging-port=`])
