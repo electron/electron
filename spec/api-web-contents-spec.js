@@ -605,7 +605,7 @@ describe('webContents module', () => {
     })
   })
 
-  // FIXME: disable during chromium update due to crash in content::WorkerScriptFetchInitation::CreateScriptLoaderOnIO
+  // FIXME: disable during chromium update due to crash in content::WorkerScriptFetchInitation::CreateScriptLoaderOnIO.
   xdescribe('Shared Workers', () => {
     let worker1
     let worker2
