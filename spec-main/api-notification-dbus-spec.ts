@@ -86,7 +86,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
     before(done => {
       mock.on('MethodCalled', onMethodCalled(done))
       // lazy load Notification after we listen to MethodCalled mock signal
-      Notification = require('electron').remote.Notification
+      Notification = require('electron').Notification
       const n = new Notification({
         title: 'title',
         subtitle: 'subtitle',
