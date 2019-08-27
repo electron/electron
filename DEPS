@@ -5,7 +5,8 @@ gclient_gn_args = [
   'checkout_android_native_support',
   'checkout_libaom',
   'checkout_nacl',
-  'checkout_oculus_sdk'
+  'checkout_oculus_sdk',
+  'checkout_openxr'
 ]
 
 vars = {
@@ -59,6 +60,8 @@ vars = {
   'checkout_libaom':
     True,
   'checkout_oculus_sdk':
+    False,
+  'checkout_openxr':
     False,
   'build_with_chromium':
     True,
