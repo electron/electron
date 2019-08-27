@@ -438,9 +438,9 @@ describe('webContents module', () => {
       w.show()
       await focused
       expect(w.isFocused()).to.be.true()
-      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
       w.webContents.openDevTools({ mode: 'detach', activate: true })
-      await devtoolsOpened
+      await emittedOnce(w.webContents, 'devtools-focused')
+      await emittedOnce(w.webContents, 'devtools-focused')
       expect(w.isFocused()).to.be.false()
     })
 
