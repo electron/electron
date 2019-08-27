@@ -356,7 +356,7 @@ describe('webContents module', () => {
       await emittedOnce(w.webContents, 'devtools-focused')
       await emittedOnce(w.webContents, 'devtools-focused')
 
-      expect(webContents.getFocusedWebContents()).not.to.be.null()
+      expect(() => { webContents.getFocusedWebContents() }).to.not.throw()
 
       // Work around https://github.com/electron/electron/issues/19985
       await new Promise(r => setTimeout(r, 0))
@@ -364,7 +364,7 @@ describe('webContents module', () => {
       const devToolsClosed = emittedOnce(w.webContents, 'devtools-closed')
       w.webContents.closeDevTools()
       await devToolsClosed
-      expect(webContents.getFocusedWebContents()).to.be.null()
+      expect(() => { webContents.getFocusedWebContents() }).to.not.throw()
     })
   })
 
@@ -441,6 +441,8 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'detach', activate: true })
       await emittedOnce(w.webContents, 'devtools-focused')
       await emittedOnce(w.webContents, 'devtools-focused')
+      await emittedOnce(w.webContents, 'devtools-opened')
+      await new Promise(resolve => setTimeout(resolve, 0))
       expect(w.isFocused()).to.be.false()
     })
 
