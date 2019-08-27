@@ -226,7 +226,7 @@ index 97079241f54b876c6863097ab523daed4884f410..628a3892a6f5de1247313b64a00cdae2
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 49d3f53ec30e9c9c86f8399511a7086afa4342e1..ea5791daf2f3941b5da8ecae28f5b3eb661858e2 100644
+index 9dc22fa933edc33017e4b1491f710c45c111ad19..3a4f7ee98c5a611a27ae1126d6b7d67f11b8530e 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -33,6 +33,8 @@ class PrintJob;
@@ -249,7 +249,7 @@ index 49d3f53ec30e9c9c86f8399511a7086afa4342e1..ea5791daf2f3941b5da8ecae28f5b3eb
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Prints the document in |print_data| with settings specified in
-@@ -198,9 +202,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -202,9 +206,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // The current RFH that is printing with a system printing dialog.
    content::RenderFrameHost* printing_rfh_;
  
@@ -393,7 +393,7 @@ index a134a000bd3ccb229a26b3e2cb3425f91a85618e..fd768d372ac15be9b0553fd7d98ce5e2
  // Like PrintMsg_PrintPages, but using the print preview document's frame/node.
  IPC_MESSAGE_ROUTED0(PrintMsg_PrintForSystemDialog)
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index a7780f1beabca9d7335333357fe7cf9f1fcb0d3c..8351ed13f30372dc5e0dcd5b39d9a6947384f8e4 100644
+index 0ac2712275f33274351a99c6c25400d75fc60829..b097dd78c7dab74dabfe91a8b8c4b486121acca4 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -37,6 +37,7 @@
@@ -618,7 +618,7 @@ index cd5c27c87df175676504a06b4e1904f6b836dc90..c4f6acf66bc69f1e7db633aa5b3b03a9
      NOTREACHED();
      return OnError();
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 6a5a7c90ef5b..a033c58076ff 100644
+index 6a5a7c90ef5ba82837095c7bb934881b108797f7..a033c58076ff229ae45ed7c454fc60a57e5707b7 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
 @@ -131,12 +131,12 @@ class PRINTING_EXPORT PrintingContext {

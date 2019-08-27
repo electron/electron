@@ -9,22 +9,22 @@ index 8e4deafa1746eeb48802a0503fefb37bedb33d04..127c62efd2327e1f3f09e9b93a0b8344
 --- a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
 @@ -4,7 +4,7 @@
-
+ 
  #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
-
+ 
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "third_party/skia/include/core/SkColor.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index 0aca25164dcad26cc000e289d6eb9010e336e6fc..70114b5aa865b96d3ace898d1faf515b9098abd9 100644
+index e9b64a823ae7e25361f37190d247af0fa6a6f68a..43fdb0ad50d2b11a1bc28aa0f358c6dd6feb72b8 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
 @@ -4,7 +4,7 @@
-
+ 
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
-
+ 
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "third_party/skia/include/core/SkColor.h"
@@ -36,7 +36,7 @@ index 8c88ef08dd5165c0429dd90e8a76b711ac15a4df..ebdb06a6391b8108fa51796a4ad5f3a8
 +++ b/chrome/browser/ui/views/overlay/mute_image_button.cc
 @@ -5,7 +5,7 @@
  #include "chrome/browser/ui/views/overlay/mute_image_button.h"
-
+ 
  #include "chrome/app/vector_icons/vector_icons.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
@@ -44,7 +44,7 @@ index 8c88ef08dd5165c0429dd90e8a76b711ac15a4df..ebdb06a6391b8108fa51796a4ad5f3a8
  #include "third_party/skia/include/core/SkColor.h"
  #include "ui/base/l10n/l10n_util.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 780863193ca12ec1295752969dfc47ac06a9ae64..e2947b893cfcdb1beaa27beac80a1885ed011ce4 100644
+index 049a0dc9b721d3db4e78d4d18888069c1204d204..ebeaf51227990ef48144e380716861acc9cafdac 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -20,7 +20,7 @@
@@ -62,7 +62,7 @@ index d9e5174ed622fb030bc37d32fbb40b132d7c4c23..1bf19c344721e74bb29c11a4c5c762a7
 +++ b/chrome/browser/ui/views/overlay/playback_image_button.cc
 @@ -5,7 +5,7 @@
  #include "chrome/browser/ui/views/overlay/playback_image_button.h"
-
+ 
  #include "chrome/app/vector_icons/vector_icons.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
@@ -75,7 +75,7 @@ index ee6b3612d7bdda591e05e5af338a80167ce6cd53..af093f14f1ef49c6de7228b296c32532
 +++ b/chrome/browser/ui/views/overlay/resize_handle_button.cc
 @@ -5,7 +5,7 @@
  #include "chrome/browser/ui/views/overlay/resize_handle_button.h"
-
+ 
  #include "chrome/app/vector_icons/vector_icons.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
@@ -87,9 +87,9 @@ index da780c96bb757d7382df5f419e2c0fd644ac72b0..ae520bcf73cf6c39ca428c03975746e2
 --- a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
 +++ b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
 @@ -4,7 +4,7 @@
-
+ 
  #include "chrome/browser/ui/views/overlay/skip_ad_label_button.h"
-
+ 
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "ui/base/l10n/l10n_util.h"
@@ -101,7 +101,7 @@ index 8f42277409a216f81d21723eb03045ac54525b0e..f7a15bfde9a43c15b18e8afbd60a0b19
 +++ b/chrome/browser/ui/views/overlay/track_image_button.cc
 @@ -5,7 +5,7 @@
  #include "chrome/browser/ui/views/overlay/track_image_button.h"
-
+ 
  #include "chrome/app/vector_icons/vector_icons.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"

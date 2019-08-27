@@ -55,7 +55,7 @@ index 5253f6be778cc78571b3df0a33d364a9b1e6ef52..dc5307e6500b0bfb5da83e8d8ff8886b
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index f64eb733ede38501c34b2af89f42255189abd982..3c2dfad7ac9ba64b0b49ebef41a303edd1470cb1 100644
+index ce997528ce2973b54dbbf965220cc30bcb19a094..e84b0b62d853b044e590a0c764f1b21ad3210886 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
 @@ -138,7 +138,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
@@ -108,10 +108,10 @@ index 4bf25bf1fa69f7d3869369172d375e2e489e62a1..f80ef2cecc8b111dc54e109646573a59
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
 diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index 63e8a6a260c0a63d4eee365330352b3112878384..2d20c32e631bc7edf51f02d7d10e8fbbf1516f90 100644
+index a0886861b7ef41c9fc1e01d716ac35f75ad1fe0e..e204a488b0a46e171c98d7177375e1f97e5226db 100644
 --- a/content/browser/renderer_interface_binders.cc
 +++ b/content/browser/renderer_interface_binders.cc
-@@ -200,7 +200,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
+@@ -253,7 +253,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
           RenderProcessHost* host, const url::Origin& origin) {
          static_cast<StoragePartitionImpl*>(host->GetStoragePartition())
              ->GetPlatformNotificationContext()
