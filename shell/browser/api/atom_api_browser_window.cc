@@ -302,6 +302,16 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   auto* view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->SetBackgroundColor(ParseHexColor(color_name));
+  // Also update the web preferences object otherwise the view will be reset on
+  // the next load URL call
+  if (api_web_contents_) {
+    auto* web_preferences =
+        WebContentsPreferences::From(api_web_contents_->web_contents());
+    if (web_preferences) {
+      web_preferences->preference()->SetStringKey(options::kBackgroundColor,
+                                                  color_name);
+    }
+  }
 }
 
 void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
