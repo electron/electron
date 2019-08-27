@@ -1,0 +1,5 @@
+{
+  "src/electron/patches/win_arm64/chromium": "src",
+
+  "src/electron/patches/win_arm64/v8":  "src/v8"
+}

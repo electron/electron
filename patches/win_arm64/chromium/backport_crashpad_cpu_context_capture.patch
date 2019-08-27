@@ -1,0 +1,178 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Richard Townsend <Richard.Townsend@arm.com>
+Date: Tue, 23 Jul 2019 15:36:43 +0100
+Subject: feat: backport crashpad CPU context capture
+
+Backport of [1] for Windows on Arm (originally writen by @kaadam).
+This allows you to see register values within the crash report.
+
+[1] https://chromium-review.googlesource.com/c/crashpad/crashpad/+/1632749
+
+diff --git a/third_party/crashpad/crashpad/handler/BUILD.gn b/third_party/crashpad/crashpad/handler/BUILD.gn
+index dc32b94e651c906f9ab1868165448805c71fe258..67c77e5fbc131d789b77dcca215f507027fd1fd0 100644
+--- a/third_party/crashpad/crashpad/handler/BUILD.gn
++++ b/third_party/crashpad/crashpad/handler/BUILD.gn
+@@ -180,8 +180,6 @@ if (crashpad_is_android) {
+     if (crashpad_is_in_chromium) {
+       no_default_deps = true
+     }
+-    remove_configs =
+-        [ "//build/config/android:default_orderfile_instrumentation" ]
+   }
+ }
+ 
+diff --git a/third_party/crashpad/crashpad/util/BUILD.gn b/third_party/crashpad/crashpad/util/BUILD.gn
+index 620ae2550a0ba81fb9ad903d570d5ddbb8915b79..088a7b59a4e34bb5489ab34a0ac928f706efc8d3 100644
+--- a/third_party/crashpad/crashpad/util/BUILD.gn
++++ b/third_party/crashpad/crashpad/util/BUILD.gn
+@@ -396,8 +396,17 @@ static_library("util") {
+           "win/safe_terminate_process.asm",
+         ]
+       } else {
+-        # TODO: Add assembly code of CaptureContext for Windows ARM64.
+-        sources += [ "misc/capture_context_broken.cc" ]
++        # Most Crashpad builds use Microsoft's armasm64.exe macro assembler for
++        # .asm source files. When building in Chromium, clang-cl is used as the
++        # assembler instead. Since the two assemblers recognize different
++        # assembly dialects, the same .asm file can't be used for each. As a
++        # workaround, use a prebuilt .obj file when the Microsoft-dialect
++        # assembler isn't available.
++        if (crashpad_is_in_chromium) {
++          sources += [ "misc/capture_context_win_arm64.obj" ]
++        } else {
++          sources += [ "misc/capture_context_win_arm64.asm" ]
++        }
+       }
+     } else {
+       sources += [
+diff --git a/third_party/crashpad/crashpad/util/misc/capture_context_fuchsia.S b/third_party/crashpad/crashpad/util/misc/capture_context_fuchsia.S
+index 21aefad0b1ed0e05112060e427bbef8fd86dfee2..0ebc7f7fe8ca159268bec6dd34c2e043bc1cfc63 100644
+--- a/third_party/crashpad/crashpad/util/misc/capture_context_fuchsia.S
++++ b/third_party/crashpad/crashpad/util/misc/capture_context_fuchsia.S
+@@ -116,7 +116,7 @@ CAPTURECONTEXT_SYMBOL:
+   movq 0x90(%rdi), %rax
+   movq 0x28(%rdi), %r8
+ 
+-  // TODO(scottmg): save floating-point registers.
++  // TODO(https://crashpad.chromium.org/bug/300): save floating-point registers.
+ 
+   popfq
+ 
+@@ -166,7 +166,7 @@ CAPTURECONTEXT_SYMBOL:
+   // Restore x1 from the saved context.
+   ldr x1, [x0, #0xc0]
+ 
+-  // TODO(scottmg): save floating-point registers.
++  // TODO(https://crashpad.chromium.org/bug/300): save floating-point registers.
+ 
+   ret
+ 
+diff --git a/third_party/crashpad/crashpad/util/misc/capture_context_linux.S b/third_party/crashpad/crashpad/util/misc/capture_context_linux.S
+index 657a979a76ea1cfc02633e8553d41005fd1a2749..de71e7231273ac2a79b3eebfde2357e3eda9f94d 100644
+--- a/third_party/crashpad/crashpad/util/misc/capture_context_linux.S
++++ b/third_party/crashpad/crashpad/util/misc/capture_context_linux.S
+@@ -282,7 +282,7 @@ CAPTURECONTEXT_SYMBOL2:
+   // Restore r1.
+   ldr r1, [r0, #0x24]
+ 
+-  // TODO(jperaza): save floating-point registers.
++  // TODO(https://crashpad.chromium.org/bug/300): save floating-point registers.
+ 
+   mov PC, LR
+ 
+@@ -326,7 +326,7 @@ CAPTURECONTEXT_SYMBOL2:
+   // Restore x1 from the saved context.
+   ldr x1, [x0, #0xc0]
+ 
+-  // TODO(jperaza): save floating-point registers.
++  // TODO(https://crashpad.chromium.org/bug/300): save floating-point registers.
+ 
+   ret
+ #elif defined(__mips__)
+diff --git a/third_party/crashpad/crashpad/util/misc/capture_context_win_arm64.asm b/third_party/crashpad/crashpad/util/misc/capture_context_win_arm64.asm
+new file mode 100644
+index 0000000000000000000000000000000000000000..5630698f8d8ef198eb9f8cf28692eeaf97a961a5
+--- /dev/null
++++ b/third_party/crashpad/crashpad/util/misc/capture_context_win_arm64.asm
+@@ -0,0 +1,64 @@
++; Copyright 2019 The Crashpad Authors. All rights reserved.
++;
++; Licensed under the Apache License, Version 2.0 (the "License");
++; you may not use this file except in compliance with the License.
++; You may obtain a copy of the License at
++;
++;     http://www.apache.org/licenses/LICENSE-2.0
++;
++; Unless required by applicable law or agreed to in writing, software
++; distributed under the License is distributed on an "AS IS" BASIS,
++; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++; See the License for the specific language governing permissions and
++; limitations under the License.
++
++  EXPORT |?CaptureContext@crashpad@@YAXPEAU_CONTEXT@@@Z|
++  AREA |.text|, CODE
++|?CaptureContext@crashpad@@YAXPEAU_CONTEXT@@@Z| PROC
++  ; Save general purpose registers in context.regs[i].
++  ; The original x0 can't be recovered.
++  stp x0, x1, [x0, #0x008]
++  stp x2, x3, [x0, #0x018]
++  stp x4, x5, [x0, #0x028]
++  stp x6, x7, [x0, #0x038]
++  stp x8, x9, [x0, #0x048]
++  stp x10, x11, [x0, #0x058]
++  stp x12, x13, [x0, #0x068]
++  stp x14, x15, [x0, #0x078]
++  stp x16, x17, [x0, #0x088]
++  stp x18, x19, [x0, #0x098]
++  stp x20, x21, [x0, #0x0a8]
++  stp x22, x23, [x0, #0x0b8]
++  stp x24, x25, [x0, #0x0c8]
++  stp x26, x27, [x0, #0x0d8]
++  stp x28, x29, [x0, #0x0e8]
++
++  ; The original LR can't be recovered.
++  str LR, [x0, #0x0f8]
++
++  ; Use x1 as a scratch register.
++  mov x1, SP
++  str x1, [x0, #0x100] ; context.sp
++
++  ; The link register holds the return address for this function.
++  str LR, [x0, #0x108]  ; context.pc
++
++  ; pstate should hold SPSR but NZCV are the only bits we know about.
++  mrs x1, NZCV
++
++  ; Enable Control flags, such as CONTEXT_ARM64, CONTEXT_CONTROL,
++  ; CONTEXT_INTEGER
++  ldr w1, =0x00400003
++
++  ; Set ControlFlags /0x000/ and pstate /0x004/ at the same time.
++  str x1, [x0, #0x000]
++
++  ; Restore x1 from the saved context.
++  ldr x1, [x0, #0x010]
++
++  ; TODO(https://crashpad.chromium.org/bug/300): save floating-point registers
++
++  ret
++  ENDP
++
++  END
+diff --git a/third_party/crashpad/crashpad/util/misc/capture_context_win_arm64.obj b/third_party/crashpad/crashpad/util/misc/capture_context_win_arm64.obj
+new file mode 100644
+index 0000000000000000000000000000000000000000..11c76a1aae15f8331d37063a3adc5e6ad37fcc8f
+GIT binary patch
+literal 614
+zcmYdU#l-MIOFuS-k%57S0Rr?&QY%WJY!H<K#YjR73JeYjdMT+%rRgfcF!3os#t9e)
+zN;@zJI5D&^tYqq8T*)$pX(ihn=9L^vSXOeaVO`0yg>5C@9`=<2M>tjro#9+5a)oQ9
+z*d6Yb5>I$mO1<G-Df5MIrCbfe&xgzm6B!#Ae#*5l{A6^pzS_vZAOUplPeu-hp9h%Z
+zuQ4+?Ft7ma`v}AxK<vT5C<wCN*(#>EC^;s%D6u%BATb5OC@sm%iOJ0@2FfKCl#~{w
+z#wX|Jfjk{wo|zY)Sd?pKqL-hP#lT?0U?a%P#K7<kWE>dqF$gfs$Yf;j%}g%JFV0UZ
+zQP2p|RB#OPRq#y&iYPc17pLYX<)jt?RXZf-=N9N?rp(A>X8ix3fdS~wwA92BJp%&)
+zpe#g0FD)}C6=F2QKcJd)7K&V*Sey$ri~%_ofuY5~%m|7{RDc|VKyL!ofZ`AnfI=4p
+sK;|$p7y(IpXGq97LjukL7RU|`k&Y1ou8yJc&i;NOt`Q*)4h~Ta0HmRmk^lez
+
+literal 0
+HcmV?d00001
+

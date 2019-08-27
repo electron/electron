@@ -1,0 +1,1533 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Tan <Tom.Tan@microsoft.com>
+Date: Fri, 26 Jul 2019 23:36:52 -0700
+Subject: Unwind V8 frames correctly on Windows ARM64
+
+On Windows ARM64, OS stack walking does not work because the V8 ARM64 backend
+doesn't emit unwinding info and also because it doesn't emit ABI compliant
+stack frames. This was fixed for Windows X64 (https://crrev.com/c/1469329) and
+documented below:
+
+https://docs.google.com/document/d/1-wf50jFlii0c_Pr52lm2ZU-49m220nhYMrHDi3vXnh0
+
+This problem can be fixed similarly for Windows ARM64 by observing that V8
+frames usually all have the same prolog which maintains a chain via frame
+pointer (fp or x29 register).
+
+stp fp, lr, [sp, ...]
+
+One exception is JSEntry which stops fp pointer chain and needs to be handled
+specially.
+
+So it is possible to define XDATA with UNWIND_CODE which specify how Windows
+should walk through V8 dynamic frames. The same as X64, since V8 Code objects
+are all allocated in the same code-range for an Isolate, it is possible to
+register at most 2 XDATA and a group of PDATA entries to cover stack walking
+for all the code generated inside that code-range. This is more than 1
+PDATA/XDATA because according to the Windows ARM64 exeption handling document,
+1 PDATA can cover less than 1MB code range (see below doc).
+
+https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling
+
+This PR implements stackwalk for Windows ARM64 to be on par with X64, including
+embedded builtins, jitted code and wasm jitted code, but not including register
+handler for handling exception only, because there is no backward compatibility
+to maintain for Windows ARM64 which was released since 1709 windows build.
+
+Bug: chromium:893460
+Change-Id: Ic74cbdad8af5cf342185030a4c53796f12ea5429
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/1701133
+Reviewed-by: Michael Starzinger <mstarzinger@chromium.org>
+Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#63002}
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 071a85c3f57ae92dcf90d47a13299e43f81753ec..d3cc60935541d080234ebc30b231904a48e68862 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -91,7 +91,7 @@ declare_args() {
+   # Enable embedded builtins.
+   v8_enable_embedded_builtins = true
+ 
+-  # Enable the registration of unwinding info for Windows/x64.
++  # Enable the registration of unwinding info for Windows x64 and ARM64.
+   v8_win64_unwinding_info = true
+ 
+   # Enable code comments for builtins in the snapshot (impacts performance).
+@@ -3131,6 +3131,12 @@ v8_source_set("v8_base_without_compiler") {
+       "src/regexp/arm64/regexp-macro-assembler-arm64.h",
+       "src/wasm/baseline/arm64/liftoff-assembler-arm64.h",
+     ]
++    if (is_win) {
++      sources += [
++        "src/diagnostics/unwinding-info-win64.cc",
++        "src/diagnostics/unwinding-info-win64.h",
++      ]
++    }
+     jumbo_excluded_sources += [
+       # TODO(mostynb@vewd.com): fix this code so it doesn't need
+       # to be excluded, see the comments inside.
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 6117189ad11a189e03c4db1307d919b818751b18..5b8f980929b21305f6846e8e6a3342926251efbf 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -121,9 +121,9 @@
+ #include <windows.h>
+ #include "include/v8-wasm-trap-handler-win.h"
+ #include "src/trap-handler/handler-inside-win.h"
+-#if V8_TARGET_ARCH_X64
++#if defined(V8_OS_WIN64)
+ #include "src/diagnostics/unwinding-info-win64.h"
+-#endif  // V8_TARGET_ARCH_X64
++#endif  // V8_OS_WIN64
+ #endif  // V8_OS_WIN
+ 
+ namespace v8 {
+@@ -5609,14 +5609,14 @@ bool V8::EnableWebAssemblyTrapHandler(bool use_v8_signal_handler) {
+ #if defined(V8_OS_WIN)
+ void V8::SetUnhandledExceptionCallback(
+     UnhandledExceptionCallback unhandled_exception_callback) {
+-#if defined(V8_TARGET_ARCH_X64)
++#if defined(V8_OS_WIN64)
+   v8::internal::win64_unwindinfo::SetUnhandledExceptionCallback(
+       unhandled_exception_callback);
+ #else
+-  // Not implemented on ARM64.
+-#endif
++  // Not implemented, port needed.
++#endif  // V8_OS_WIN64
+ }
+-#endif
++#endif  // V8_OS_WIN
+ 
+ void v8::V8::SetEntropySource(EntropySource entropy_source) {
+   base::RandomNumberGenerator::SetEntropySource(entropy_source);
+diff --git a/src/builtins/arm64/builtins-arm64.cc b/src/builtins/arm64/builtins-arm64.cc
+index f81a1955eeb474c527f25f9e59edb0522e81824b..0619fbfe55e0efad72ae5f2cb9623285025cacb2 100644
+--- a/src/builtins/arm64/builtins-arm64.cc
++++ b/src/builtins/arm64/builtins-arm64.cc
+@@ -24,6 +24,10 @@
+ #include "src/runtime/runtime.h"
+ #include "src/wasm/wasm-objects.h"
+ 
++#if defined(V8_OS_WIN)
++#include "src/diagnostics/unwinding-info-win64.h"
++#endif  // V8_OS_WIN
++
+ namespace v8 {
+ namespace internal {
+ 
+@@ -623,6 +627,23 @@ void Generate_JSEntryVariant(MacroAssembler* masm, StackFrame::Type type,
+     // will have no effect on the model or real hardware.
+     __ EnableInstrumentation();
+ 
++#if defined(V8_OS_WIN)
++    // Windows ARM64 relies on a frame pointer (fp/x29 which are aliases to each
++    // other) chain to do stack unwinding, but JSEntry breaks that by setting fp
++    // to point to bad_frame_pointer below. To fix unwind information for this
++    // case, JSEntry registers the offset (from current fp to the caller's fp
++    // saved by PushCalleeSavedRegisters on stack) to xdata_encoder which then
++    // emits the offset value as part of result unwind data accordingly. The
++    // current offset is kFramePointerOffset which includes bad_frame_pointer
++    // saved below plus kFramePointerOffsetInPushCalleeSavedRegisters.
++    const int kFramePointerOffset =
++        kFramePointerOffsetInPushCalleeSavedRegisters + kSystemPointerSize;
++    win64_unwindinfo::XdataEncoder* xdata_encoder = masm->GetXdataEncoder();
++    if (xdata_encoder) {
++      xdata_encoder->onFramePointerAdjustment(kFramePointerOffset);
++    }
++#endif
++
+     __ PushCalleeSavedRegisters();
+ 
+     // Set up the reserved register for 0.0.
+diff --git a/src/builtins/setup-builtins-internal.cc b/src/builtins/setup-builtins-internal.cc
+index 7b4a068300e20f56a1491a494ed8978dbb95398a..39cbf15b6504ce380d165b56ca20e52460d65b23 100644
+--- a/src/builtins/setup-builtins-internal.cc
++++ b/src/builtins/setup-builtins-internal.cc
+@@ -119,9 +119,9 @@ Code BuildWithMacroAssembler(Isolate* isolate, int32_t builtin_index,
+                           .set_self_reference(masm.CodeObject())
+                           .set_builtin_index(builtin_index)
+                           .Build();
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   isolate->SetBuiltinUnwindData(builtin_index, masm.GetUnwindInfo());
+-#endif
++#endif  // V8_OS_WIN64
+   return *code;
+ }
+ 
+diff --git a/src/codegen/arm64/assembler-arm64.cc b/src/codegen/arm64/assembler-arm64.cc
+index 53da75760ba31bed3e3cf19397474b353bc83fdf..d94370f5d7d6456a21f681bd81afa54e06863ce3 100644
+--- a/src/codegen/arm64/assembler-arm64.cc
++++ b/src/codegen/arm64/assembler-arm64.cc
+@@ -520,6 +520,12 @@ Assembler::Assembler(const AssemblerOptions& options,
+   const_pool_blocked_nesting_ = 0;
+   veneer_pool_blocked_nesting_ = 0;
+   Reset();
++
++#if defined(V8_OS_WIN)
++  if (options.collect_win64_unwind_info) {
++    xdata_encoder_ = std::make_unique<win64_unwindinfo::XdataEncoder>(*this);
++  }
++#endif
+ }
+ 
+ Assembler::~Assembler() {
+@@ -546,6 +552,14 @@ void Assembler::Reset() {
+   no_const_pool_before_ = 0;
+ }
+ 
++#if defined(V8_OS_WIN)
++win64_unwindinfo::BuiltinUnwindInfo Assembler::GetUnwindInfo() const {
++  DCHECK(options().collect_win64_unwind_info);
++  DCHECK_NOT_NULL(xdata_encoder_);
++  return xdata_encoder_->unwinding_info();
++}
++#endif
++
+ void Assembler::AllocateAndInstallRequestedHeapObjects(Isolate* isolate) {
+   DCHECK_IMPLIES(isolate == nullptr, heap_object_requests_.empty());
+   for (auto& request : heap_object_requests_) {
+@@ -1395,6 +1409,12 @@ void Assembler::ldp(const CPURegister& rt, const CPURegister& rt2,
+ void Assembler::stp(const CPURegister& rt, const CPURegister& rt2,
+                     const MemOperand& dst) {
+   LoadStorePair(rt, rt2, dst, StorePairOpFor(rt, rt2));
++
++#if defined(V8_OS_WIN)
++  if (xdata_encoder_ && rt == x29 && rt2 == lr && dst.base().IsSP()) {
++    xdata_encoder_->onSaveFpLr();
++  }
++#endif
+ }
+ 
+ void Assembler::ldpsw(const Register& rt, const Register& rt2,
+diff --git a/src/codegen/arm64/assembler-arm64.h b/src/codegen/arm64/assembler-arm64.h
+index fb5feb23074ac888e85a3676c1cbbb63126e72d5..7d1f10ad1132a51d5e93a0866ed2f13c4c9d4857 100644
+--- a/src/codegen/arm64/assembler-arm64.h
++++ b/src/codegen/arm64/assembler-arm64.h
+@@ -25,6 +25,10 @@
+ #undef mvn
+ #endif
+ 
++#if defined(V8_OS_WIN)
++#include "src/diagnostics/unwinding-info-win64.h"
++#endif  // V8_OS_WIN
++
+ namespace v8 {
+ namespace internal {
+ 
+@@ -2452,6 +2456,14 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+     DISALLOW_IMPLICIT_CONSTRUCTORS(BlockPoolsScope);
+   };
+ 
++#if defined(V8_OS_WIN)
++  win64_unwindinfo::XdataEncoder* GetXdataEncoder() {
++    return xdata_encoder_.get();
++  }
++
++  win64_unwindinfo::BuiltinUnwindInfo GetUnwindInfo() const;
++#endif
++
+  protected:
+   inline const Register& AppropriateZeroRegFor(const CPURegister& reg) const;
+ 
+@@ -2774,6 +2786,10 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+   // veneer margin (or kMaxInt if there are no unresolved branches).
+   int next_veneer_pool_check_;
+ 
++#if defined(V8_OS_WIN)
++  std::unique_ptr<win64_unwindinfo::XdataEncoder> xdata_encoder_;
++#endif
++
+  private:
+   // Avoid overflows for displacements etc.
+   static const int kMaximalBufferSize = 512 * MB;
+diff --git a/src/codegen/arm64/macro-assembler-arm64.cc b/src/codegen/arm64/macro-assembler-arm64.cc
+index aab9fc79a2c2c25e7f97a8bd41b3e25a1f2f0af1..6c559549759b198734154abf36353e6d730c8e46 100644
+--- a/src/codegen/arm64/macro-assembler-arm64.cc
++++ b/src/codegen/arm64/macro-assembler-arm64.cc
+@@ -1302,6 +1302,14 @@ void MacroAssembler::PushCalleeSavedRegisters() {
+   stp(d8, d9, tos);
+ 
+   stp(x29, x30, tos);
++#if defined(V8_OS_WIN)
++  // kFramePointerOffsetInPushCalleeSavedRegisters is the offset from tos at
++  // the end of this function to the saved caller's fp/x29 pointer. It includes
++  // registers from x19 to x28, which is 10 pointers defined by below stp
++  // instructions.
++  STATIC_ASSERT(kFramePointerOffsetInPushCalleeSavedRegisters ==
++                10 * kSystemPointerSize);
++#endif  // defined(V8_OS_WIN)
+   stp(x27, x28, tos);
+   stp(x25, x26, tos);
+   stp(x23, x24, tos);
+diff --git a/src/codegen/arm64/macro-assembler-arm64.h b/src/codegen/arm64/macro-assembler-arm64.h
+index 6961428f35a0c052c9faf6afb3db42b9afabe0cf..651524795cdf78935220ef24bac637cd013c9aae 100644
+--- a/src/codegen/arm64/macro-assembler-arm64.h
++++ b/src/codegen/arm64/macro-assembler-arm64.h
+@@ -83,6 +83,12 @@ inline MemOperand FieldMemOperand(Register object, int offset);
+ // ----------------------------------------------------------------------------
+ // MacroAssembler
+ 
++#if defined(V8_OS_WIN)
++// This offset is originated from PushCalleeSavedRegisters.
++static constexpr int kFramePointerOffsetInPushCalleeSavedRegisters =
++    10 * kSystemPointerSize;
++#endif  // V8_OS_WIN
++
+ enum BranchType {
+   // Copies of architectural conditions.
+   // The associated conditions can be used in place of those, the code will
+diff --git a/src/common/globals.h b/src/common/globals.h
+index 5d4b957e84fc01e12854dc8fed23b967cd971dcd..b981670263f9091677591f806affc9def9044366 100644
+--- a/src/common/globals.h
++++ b/src/common/globals.h
+@@ -101,6 +101,14 @@ constexpr int kStackSpaceRequiredForCompilation = 40;
+ #define V8_OS_WIN_X64 true
+ #endif
+ 
++#if defined(V8_OS_WIN) && defined(V8_TARGET_ARCH_ARM64)
++#define V8_OS_WIN_ARM64 true
++#endif
++
++#if defined(V8_OS_WIN_X64) || defined(V8_OS_WIN_ARM64)
++#define V8_OS_WIN64 true
++#endif
++
+ // Superclass for classes only using static method functions.
+ // The subclass of AllStatic cannot be instantiated at all.
+ class AllStatic {
+diff --git a/src/compiler/backend/code-generator.cc b/src/compiler/backend/code-generator.cc
+index bb83a8497bbe3e7a398eeb65b5050673311cbd6a..5d20d88cd1351184cac02d69eda4b9455fef328d 100644
+--- a/src/compiler/backend/code-generator.cc
++++ b/src/compiler/backend/code-generator.cc
+@@ -396,12 +396,12 @@ MaybeHandle<Code> CodeGenerator::FinalizeCode() {
+   CodeDesc desc;
+   tasm()->GetCode(isolate(), &desc, safepoints(), handler_table_offset_);
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   if (Builtins::IsBuiltinId(info_->builtin_index())) {
+     isolate_->SetBuiltinUnwindData(info_->builtin_index(),
+                                    tasm()->GetUnwindInfo());
+   }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   if (unwinding_info_writer_.eh_frame_writer()) {
+     unwinding_info_writer_.eh_frame_writer()->GetEhFrame(&desc);
+diff --git a/src/diagnostics/unwinding-info-win64.cc b/src/diagnostics/unwinding-info-win64.cc
+index 8fb01dba9a55c75de677286baa19bb9edae74231..6cc53da51f16a45c3a8ad14ca0b2150bed43d766 100644
+--- a/src/diagnostics/unwinding-info-win64.cc
++++ b/src/diagnostics/unwinding-info-win64.cc
+@@ -4,12 +4,18 @@
+ 
+ #include "src/diagnostics/unwinding-info-win64.h"
+ 
+-#if defined(V8_OS_WIN_X64)
+-
+ #include "src/codegen/macro-assembler.h"
+-#include "src/codegen/x64/assembler-x64.h"
+ #include "src/utils/allocation.h"
+ 
++#if defined(V8_OS_WIN_X64)
++#include "src/codegen/x64/assembler-x64.h"
++#elif defined(V8_OS_WIN_ARM64)
++#include "src/codegen/arm64/assembler-arm64-inl.h"
++#include "src/codegen/arm64/macro-assembler-arm64-inl.h"
++#else
++#error "Unsupported OS"
++#endif  // V8_OS_WIN_X64
++
+ namespace v8 {
+ namespace internal {
+ namespace win64_unwindinfo {
+@@ -22,9 +28,36 @@ bool CanRegisterUnwindInfoForNonABICompliantCodeRange() {
+ 
+ bool RegisterUnwindInfoForExceptionHandlingOnly() {
+   DCHECK(CanRegisterUnwindInfoForNonABICompliantCodeRange());
++#if defined(V8_OS_WIN_ARM64)
++  return !FLAG_win64_unwinding_info;
++#else
+   return !IsWindows8OrGreater() || !FLAG_win64_unwinding_info;
++#endif
++}
++
++v8::UnhandledExceptionCallback unhandled_exception_callback_g = nullptr;
++
++void SetUnhandledExceptionCallback(
++    v8::UnhandledExceptionCallback unhandled_exception_callback) {
++  unhandled_exception_callback_g = unhandled_exception_callback;
++}
++
++// This function is registered as exception handler for V8-generated code as
++// part of the registration of unwinding info. It is referenced by
++// RegisterNonABICompliantCodeRange(), below, and by the unwinding info for
++// builtins declared in the embedded blob.
++extern "C" __declspec(dllexport) int CRASH_HANDLER_FUNCTION_NAME(
++    PEXCEPTION_RECORD ExceptionRecord, ULONG64 EstablisherFrame,
++    PCONTEXT ContextRecord, PDISPATCHER_CONTEXT DispatcherContext) {
++  if (unhandled_exception_callback_g != nullptr) {
++    EXCEPTION_POINTERS info = {ExceptionRecord, ContextRecord};
++    return unhandled_exception_callback_g(&info);
++  }
++  return ExceptionContinueSearch;
+ }
+ 
++#if defined(V8_OS_WIN_X64)
++
+ #pragma pack(push, 1)
+ 
+ /*
+@@ -49,9 +82,12 @@ struct UNWIND_INFO {
+   unsigned char FrameOffset : 4;
+ };
+ 
++static constexpr int kNumberOfUnwindCodes = 2;
++static constexpr int kMaxExceptionThunkSize = 12;
++
+ struct V8UnwindData {
+   UNWIND_INFO unwind_info;
+-  UNWIND_CODE unwind_codes[2];
++  UNWIND_CODE unwind_codes[kNumberOfUnwindCodes];
+ 
+   V8UnwindData() {
+     static constexpr int kOpPushNonvol = 0;
+@@ -87,46 +123,244 @@ struct ExceptionHandlerUnwindData {
+   }
+ };
+ 
++struct CodeRangeUnwindingRecord {
++  void* dynamic_table;
++  uint32_t runtime_function_count;
++  V8UnwindData unwind_info;
++  uint32_t exception_handler;
++  uint8_t exception_thunk[kMaxExceptionThunkSize];
++  RUNTIME_FUNCTION runtime_function[kDefaultRuntimeFunctionCount];
++};
++
++struct ExceptionHandlerRecord {
++  uint32_t runtime_function_count;
++  RUNTIME_FUNCTION runtime_function[kDefaultRuntimeFunctionCount];
++  ExceptionHandlerUnwindData unwind_info;
++  uint32_t exception_handler;
++  uint8_t exception_thunk[kMaxExceptionThunkSize];
++};
++
+ #pragma pack(pop)
+ 
+-v8::UnhandledExceptionCallback unhandled_exception_callback_g = nullptr;
++std::vector<uint8_t> GetUnwindInfoForBuiltinFunctions() {
++  V8UnwindData xdata;
++  return std::vector<uint8_t>(
++      reinterpret_cast<uint8_t*>(&xdata),
++      reinterpret_cast<uint8_t*>(&xdata) + sizeof(xdata));
++}
+ 
+-void SetUnhandledExceptionCallback(
+-    v8::UnhandledExceptionCallback unhandled_exception_callback) {
+-  unhandled_exception_callback_g = unhandled_exception_callback;
++template <typename Record>
++void InitUnwindingRecord(Record* record, size_t code_size_in_bytes) {
++  // We assume that the first page of the code range is executable and
++  // committed and reserved to contain PDATA/XDATA.
++
++  // All addresses are 32bit relative offsets to start.
++  record->runtime_function[0].BeginAddress = 0;
++  record->runtime_function[0].EndAddress =
++      static_cast<DWORD>(code_size_in_bytes);
++  record->runtime_function[0].UnwindData = offsetof(Record, unwind_info);
++  record->runtime_function_count = 1;
++  record->exception_handler = offsetof(Record, exception_thunk);
++
++  // Hardcoded thunk.
++  AssemblerOptions options;
++  options.record_reloc_info_for_serialization = false;
++  MacroAssembler masm(nullptr, options, CodeObjectRequired::kNo,
++                      NewAssemblerBuffer(64));
++  masm.movq(rax, reinterpret_cast<uint64_t>(&CRASH_HANDLER_FUNCTION_NAME));
++  masm.jmp(rax);
++  DCHECK_LE(masm.instruction_size(), sizeof(record->exception_thunk));
++  memcpy(&record->exception_thunk[0], masm.buffer_start(),
++         masm.instruction_size());
+ }
+ 
+-// This function is registered as exception handler for V8-generated code as
+-// part of the registration of unwinding info. It is referenced by
+-// RegisterNonABICompliantCodeRange(), below, and by the unwinding info for
+-// builtins declared in the embedded blob.
+-extern "C" __declspec(dllexport) int CRASH_HANDLER_FUNCTION_NAME(
+-    PEXCEPTION_RECORD ExceptionRecord, ULONG64 EstablisherFrame,
+-    PCONTEXT ContextRecord, PDISPATCHER_CONTEXT DispatcherContext) {
+-  if (unhandled_exception_callback_g != nullptr) {
+-    EXCEPTION_POINTERS info = {ExceptionRecord, ContextRecord};
+-    return unhandled_exception_callback_g(&info);
+-  }
+-  return ExceptionContinueSearch;
++#elif defined(V8_OS_WIN_ARM64)
++
++#pragma pack(push, 1)
++
++// ARM64 unwind codes are defined in below doc.
++// https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling#unwind-codes
++enum UnwindOp8Bit {
++  OpNop = 0xE3,
++  OpSaveFpLr = 0x40,
++  OpSaveFpLrX = 0x80,
++  OpSetFp = 0xE1,
++  OpEnd = 0xE4,
++};
++
++typedef uint32_t UNWIND_CODE;
++
++constexpr UNWIND_CODE Combine8BitUnwindCodes(uint8_t code0,
++                                             uint8_t code1 = OpNop,
++                                             uint8_t code2 = OpNop,
++                                             uint8_t code3 = OpNop) {
++  return static_cast<uint32_t>(code0) | (static_cast<uint32_t>(code1) << 8) |
++         (static_cast<uint32_t>(code2) << 16) |
++         (static_cast<uint32_t>(code3) << 24);
+ }
+ 
+-static constexpr int kMaxExceptionThunkSize = 12;
++// UNWIND_INFO defines the static part (first 32-bit) of the .xdata record in
++// below doc.
++// https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling#xdata-records
++struct UNWIND_INFO {
++  uint32_t FunctionLength : 18;
++  uint32_t Version : 2;
++  uint32_t X : 1;
++  uint32_t E : 1;
++  uint32_t EpilogCount : 5;
++  uint32_t CodeWords : 5;
++};
++
++static constexpr int kNumberOfUnwindCodes = 1;
++static constexpr int kMaxExceptionThunkSize = 16;
++static constexpr int kFunctionLengthShiftSize = 2;
++static constexpr int kFunctionLengthMask = (1 << kFunctionLengthShiftSize) - 1;
++static constexpr int kFramePointerAdjustmentShiftSize = 3;
++static constexpr int kFramePointerAdjustmentShiftMask =
++    (1 << kFramePointerAdjustmentShiftSize) - 1;
++
++struct V8UnwindData {
++  UNWIND_INFO unwind_info;
++  UNWIND_CODE unwind_codes[kNumberOfUnwindCodes];
++
++  V8UnwindData() {
++    memset(&unwind_info, 0, sizeof(UNWIND_INFO));
++    unwind_info.X = 1;  // has exception handler after unwind-codes.
++    unwind_info.CodeWords = 1;
++
++    // stp fp, lr, [sp, #offset]!
++    unwind_codes[0] = Combine8BitUnwindCodes(OpSetFp, OpSaveFpLrX, OpEnd);
++  }
++};
+ 
+ struct CodeRangeUnwindingRecord {
+-  RUNTIME_FUNCTION runtime_function;
++  void* dynamic_table;
++  uint32_t runtime_function_count;
+   V8UnwindData unwind_info;
+   uint32_t exception_handler;
+-  uint8_t exception_thunk[kMaxExceptionThunkSize];
+-  void* dynamic_table;
+-};
+ 
+-struct ExceptionHandlerRecord {
+-  RUNTIME_FUNCTION runtime_function;
+-  ExceptionHandlerUnwindData unwind_info;
+-  uint32_t exception_handler;
++  // For Windows ARM64 unwinding, register 2 unwind_info for each code range,
++  // unwind_info for all full size ranges (1MB - 4 bytes) and unwind_info1 for
++  // the remaining non full size range. There is at most 1 range which is less
++  // than full size.
++  V8UnwindData unwind_info1;
++  uint32_t exception_handler1;
+   uint8_t exception_thunk[kMaxExceptionThunkSize];
++
++  // More RUNTIME_FUNCTION structs could follow below array because the number
++  // of RUNTIME_FUNCTION needed to cover given code range is computed at
++  // runtime.
++  RUNTIME_FUNCTION runtime_function[kDefaultRuntimeFunctionCount];
+ };
+ 
++#pragma pack(pop)
++
++std::vector<uint8_t> GetUnwindInfoForBuiltinFunction(uint32_t func_len,
++                                                     int32_t fp_adjustment) {
++  DCHECK_LE(func_len, kMaxFunctionLength);
++  DCHECK_EQ((func_len & kFunctionLengthMask), 0);
++  USE(kFunctionLengthMask);
++
++  // Unwind code save_fplr requires the offset to be within range [0, 504].
++  // This range is defined in below doc for unwind code save_fplr.
++  // https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling#unwind-codes
++  DCHECK_GE(fp_adjustment, 0);
++  DCHECK_LE(fp_adjustment, 504);
++  DCHECK_EQ((fp_adjustment & kFramePointerAdjustmentShiftMask), 0);
++  USE(kFramePointerAdjustmentShiftMask);
++
++  V8UnwindData xdata;
++  // FunctionLength is ensured to be aligned at instruction size and Windows
++  // ARM64 doesn't encoding its 2 LSB.
++  xdata.unwind_info.FunctionLength = func_len >> kFunctionLengthShiftSize;
++  xdata.unwind_info.CodeWords = 1;
++  xdata.unwind_codes[0] = Combine8BitUnwindCodes(
++      OpSetFp,
++      (OpSaveFpLr | (fp_adjustment >> kFramePointerAdjustmentShiftSize)),
++      OpEnd);
++
++  return std::vector<uint8_t>(
++      reinterpret_cast<uint8_t*>(&xdata),
++      reinterpret_cast<uint8_t*>(&xdata) + sizeof(xdata));
++}
++
++template <typename Record>
++void InitUnwindingRecord(Record* record, size_t code_size_in_bytes) {
++  // We assume that the first page of the code range is executable and
++  // committed and reserved to contain multiple PDATA/XDATA to cover the whole
++  // range. All addresses are 32bit relative offsets to start.
++
++  // Maximum RUNTIME_FUNCTION count available in reserved memory, this includes
++  // static part in Record as kDefaultRuntimeFunctionCount plus dynamic part in
++  // the remaining reserved memory.
++  constexpr uint32_t max_runtime_function_count = static_cast<uint32_t>(
++      (kOSPageSize - sizeof(Record)) / sizeof(RUNTIME_FUNCTION) +
++      kDefaultRuntimeFunctionCount);
++
++  uint32_t runtime_function_index = 0;
++  uint32_t current_unwind_start_address = 0;
++  int64_t remaining_size_in_bytes = static_cast<int64_t>(code_size_in_bytes);
++
++  // Divide the code range into chunks in size kMaxFunctionLength and create a
++  // RUNTIME_FUNCTION for each of them. All the chunks in the same size can
++  // share 1 unwind_info struct, but a separate unwind_info is needed for the
++  // last chunk if it is smaller than kMaxFunctionLength, because unlike X64,
++  // unwind_info encodes the function/chunk length.
++  while (remaining_size_in_bytes >= kMaxFunctionLength &&
++         runtime_function_index < max_runtime_function_count) {
++    record->runtime_function[runtime_function_index].BeginAddress =
++        current_unwind_start_address;
++    record->runtime_function[runtime_function_index].UnwindData =
++        static_cast<DWORD>(offsetof(Record, unwind_info));
++
++    runtime_function_index++;
++    current_unwind_start_address += kMaxFunctionLength;
++    remaining_size_in_bytes -= kMaxFunctionLength;
++  }
++  // FunctionLength is ensured to be aligned at instruction size and Windows
++  // ARM64 doesn't encoding 2 LSB.
++  record->unwind_info.unwind_info.FunctionLength = kMaxFunctionLength >> 2;
++
++  if (remaining_size_in_bytes > 0 &&
++      runtime_function_index < max_runtime_function_count) {
++    DCHECK_EQ(remaining_size_in_bytes % kInstrSize, 0);
++
++    record->unwind_info1.unwind_info.FunctionLength = static_cast<uint32_t>(
++        remaining_size_in_bytes >> kFunctionLengthShiftSize);
++    record->runtime_function[runtime_function_index].BeginAddress =
++        current_unwind_start_address;
++    record->runtime_function[runtime_function_index].UnwindData =
++        static_cast<DWORD>(offsetof(Record, unwind_info1));
++
++    remaining_size_in_bytes -= kMaxFunctionLength;
++    record->exception_handler1 = offsetof(Record, exception_thunk);
++    record->runtime_function_count = runtime_function_index + 1;
++  } else {
++    record->runtime_function_count = runtime_function_index;
++  }
++
++  // 1 page can cover kMaximalCodeRangeSize for ARM64 (128MB). If
++  // kMaximalCodeRangeSize is changed for ARM64 and makes 1 page insufficient to
++  // cover it, more pages will need to reserved for unwind data.
++  DCHECK_LE(remaining_size_in_bytes, 0);
++
++  record->exception_handler = offsetof(Record, exception_thunk);
++
++  // Hardcoded thunk.
++  AssemblerOptions options;
++  options.record_reloc_info_for_serialization = false;
++  TurboAssembler masm(nullptr, options, CodeObjectRequired::kNo,
++                      NewAssemblerBuffer(64));
++  masm.Mov(x16,
++           Operand(reinterpret_cast<uint64_t>(&CRASH_HANDLER_FUNCTION_NAME)));
++  masm.Br(x16);
++  DCHECK_LE(masm.instruction_size(), sizeof(record->exception_thunk));
++  memcpy(&record->exception_thunk[0], masm.buffer_start(),
++         masm.instruction_size());
++}
++
++#endif  // V8_OS_WIN_X64
++
+ namespace {
+ 
+ V8_DECLARE_ONCE(load_ntdll_unwinding_functions_once);
+@@ -185,37 +419,6 @@ void DeleteGrowableFunctionTable(PVOID dynamic_table) {
+ 
+ }  // namespace
+ 
+-std::vector<uint8_t> GetUnwindInfoForBuiltinFunctions() {
+-  V8UnwindData xdata;
+-  return std::vector<uint8_t>(
+-      reinterpret_cast<uint8_t*>(&xdata),
+-      reinterpret_cast<uint8_t*>(&xdata) + sizeof(xdata));
+-}
+-
+-template <typename Record>
+-void InitUnwindingRecord(Record* record, size_t code_size_in_bytes) {
+-  // We assume that the first page of the code range is executable and
+-  // committed and reserved to contain PDATA/XDATA.
+-
+-  // All addresses are 32bit relative offsets to start.
+-  record->runtime_function.BeginAddress = 0;
+-  record->runtime_function.EndAddress = static_cast<DWORD>(code_size_in_bytes);
+-  record->runtime_function.UnwindData = offsetof(Record, unwind_info);
+-
+-  record->exception_handler = offsetof(Record, exception_thunk);
+-
+-  // Hardcoded thunk.
+-  AssemblerOptions options;
+-  options.record_reloc_info_for_serialization = false;
+-  MacroAssembler masm(nullptr, options, CodeObjectRequired::kNo,
+-                      NewAssemblerBuffer(64));
+-  masm.movq(rax, reinterpret_cast<uint64_t>(&CRASH_HANDLER_FUNCTION_NAME));
+-  masm.jmp(rax);
+-  DCHECK_LE(masm.instruction_size(), sizeof(record->exception_thunk));
+-  memcpy(&record->exception_thunk[0], masm.buffer_start(),
+-         masm.instruction_size());
+-}
+-
+ void RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
+   DCHECK(CanRegisterUnwindInfoForNonABICompliantCodeRange());
+ 
+@@ -231,24 +434,30 @@ void RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
+   // by the embedder (like Crashpad).
+ 
+   if (RegisterUnwindInfoForExceptionHandlingOnly()) {
++#if defined(V8_OS_WIN_X64)
++    // Windows ARM64 starts since 1709 Windows build, no need to have exception
++    // handling only unwind info for compatibility.
+     if (unhandled_exception_callback_g) {
+       ExceptionHandlerRecord* record = new (start) ExceptionHandlerRecord();
+       InitUnwindingRecord(record, size_in_bytes);
+ 
+-      CHECK(::RtlAddFunctionTable(&record->runtime_function, 1,
++      CHECK(::RtlAddFunctionTable(record->runtime_function,
++                                  kDefaultRuntimeFunctionCount,
+                                   reinterpret_cast<DWORD64>(start)));
+ 
+       // Protect reserved page against modifications.
+       DWORD old_protect;
+-      CHECK(VirtualProtect(start, sizeof(CodeRangeUnwindingRecord),
++      CHECK(VirtualProtect(start, sizeof(ExceptionHandlerRecord),
+                            PAGE_EXECUTE_READ, &old_protect));
+     }
++#endif  // V8_OS_WIN_X64
+   } else {
+     CodeRangeUnwindingRecord* record = new (start) CodeRangeUnwindingRecord();
+     InitUnwindingRecord(record, size_in_bytes);
+ 
+     CHECK(AddGrowableFunctionTable(
+-        &record->dynamic_table, &record->runtime_function, 1, 1,
++        &record->dynamic_table, record->runtime_function,
++        record->runtime_function_count, record->runtime_function_count,
+         reinterpret_cast<DWORD64>(start),
+         reinterpret_cast<DWORD64>(reinterpret_cast<uint8_t*>(start) +
+                                   size_in_bytes)));
+@@ -264,11 +473,15 @@ void UnregisterNonABICompliantCodeRange(void* start) {
+   DCHECK(CanRegisterUnwindInfoForNonABICompliantCodeRange());
+ 
+   if (RegisterUnwindInfoForExceptionHandlingOnly()) {
++#if defined(V8_OS_WIN_X64)
++    // Windows ARM64 starts since 1709 Windows build, no need to have exception
++    // handling only unwind info for compatibility.
+     if (unhandled_exception_callback_g) {
+       ExceptionHandlerRecord* record =
+           reinterpret_cast<ExceptionHandlerRecord*>(start);
+-      CHECK(::RtlDeleteFunctionTable(&record->runtime_function));
++      CHECK(::RtlDeleteFunctionTable(record->runtime_function));
+     }
++#endif  // V8_OS_WIN_X64
+   } else {
+     CodeRangeUnwindingRecord* record =
+         reinterpret_cast<CodeRangeUnwindingRecord*>(start);
+@@ -278,19 +491,41 @@ void UnregisterNonABICompliantCodeRange(void* start) {
+   }
+ }
+ 
++#if defined(V8_OS_WIN_X64)
++
+ void XdataEncoder::onPushRbp() {
+-  current_push_rbp_offset_ = assembler_.pc_offset() - kPushRbpInstructionLength;
++  current_frame_code_offset_ =
++      assembler_.pc_offset() - kPushRbpInstructionLength;
+ }
+ 
+ void XdataEncoder::onMovRbpRsp() {
+-  if (current_push_rbp_offset_ >= 0 &&
+-      current_push_rbp_offset_ == assembler_.pc_offset() - kRbpPrefixLength) {
+-    fp_offsets_.push_back(current_push_rbp_offset_);
++  if (current_frame_code_offset_ >= 0 &&
++      current_frame_code_offset_ == assembler_.pc_offset() - kRbpPrefixLength) {
++    fp_offsets_.push_back(current_frame_code_offset_);
++  }
++}
++
++#elif defined(V8_OS_WIN_ARM64)
++
++void XdataEncoder::onSaveFpLr() {
++  current_frame_code_offset_ = assembler_.pc_offset() - 4;
++  fp_offsets_.push_back(current_frame_code_offset_);
++  fp_adjustments_.push_back(current_frame_adjustment_);
++  if (current_frame_adjustment_ != 0) {
++    current_frame_adjustment_ = 0;
+   }
+ }
+ 
++void XdataEncoder::onFramePointerAdjustment(int bytes) {
++  // According to below doc, offset for save_fplr is aligned to pointer size.
++  // https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling#unwind-codes
++  DCHECK_EQ((bytes & kPointerAlignmentMask), 0);
++
++  current_frame_adjustment_ = bytes;
++}
++
++#endif  // V8_OS_WIN_X64
++
+ }  // namespace win64_unwindinfo
+ }  // namespace internal
+ }  // namespace v8
+-
+-#endif  // defined(V8_OS_WIN_X64)
+diff --git a/src/diagnostics/unwinding-info-win64.h b/src/diagnostics/unwinding-info-win64.h
+index f6611e7e2ec5a8afc1769886593f112eb4ad0f89..8f8c9469ebf92c1f81af8364486cd45f4778b248 100644
+--- a/src/diagnostics/unwinding-info-win64.h
++++ b/src/diagnostics/unwinding-info-win64.h
+@@ -9,7 +9,7 @@
+ #include "include/v8config.h"
+ #include "src/common/globals.h"
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+ #include "src/base/win32-headers.h"
+ 
+ namespace v8 {
+@@ -21,11 +21,7 @@ namespace win64_unwindinfo {
+ #define CRASH_HANDLER_FUNCTION_NAME_STRING \
+   "CrashForExceptionInNonABICompliantCodeRange"
+ 
+-static const int kPushRbpInstructionLength = 1;
+-static const int kMovRbpRspInstructionLength = 3;
+-static const int kRbpPrefixCodes = 2;
+-static const int kRbpPrefixLength =
+-    kPushRbpInstructionLength + kMovRbpRspInstructionLength;
++static const int kOSPageSize = 4096;
+ 
+ /**
+  * Returns true if V8 is configured to emit unwinding data for embedded in the
+@@ -50,15 +46,33 @@ bool CanRegisterUnwindInfoForNonABICompliantCodeRange();
+ void SetUnhandledExceptionCallback(
+     v8::UnhandledExceptionCallback unhandled_exception_callback);
+ 
++void RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes);
++void UnregisterNonABICompliantCodeRange(void* start);
++
+ /**
+- * Returns a vector of bytes that contains the Win64 unwind data used for all
++ * Default count of RUNTIME_FUNCTION needed. For Windows X64, 1 RUNTIME_FUNCTION
++ * covers 4GB range which is sufficient to cover the whole code range of an
++ * isolate or WASM module. For Windows ARM64, 1 RUNTIME_FUNCTION covers
++ * kMaxFunctionLength bytes so multiple RUNTIME_FUNCTION structs could be needed
++ * to cover the whole code range of an isolate or WASM module. The extra
++ * RUNTIME_FUNCTIONs are assumed following the first one in the reserved page.
++ */
++static const uint32_t kDefaultRuntimeFunctionCount = 1;
++
++#if defined(V8_OS_WIN_X64)
++
++static const int kPushRbpInstructionLength = 1;
++static const int kMovRbpRspInstructionLength = 3;
++static const int kRbpPrefixCodes = 2;
++static const int kRbpPrefixLength =
++    kPushRbpInstructionLength + kMovRbpRspInstructionLength;
++
++/**
++ * Returns a vector of bytes that contains the Win X64 unwind data used for all
+  * V8 builtin functions.
+  */
+ std::vector<uint8_t> GetUnwindInfoForBuiltinFunctions();
+ 
+-void RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes);
+-void UnregisterNonABICompliantCodeRange(void* start);
+-
+ class BuiltinUnwindInfo {
+  public:
+   BuiltinUnwindInfo() : is_leaf_function_(true) {}
+@@ -76,7 +90,7 @@ class BuiltinUnwindInfo {
+ class XdataEncoder {
+  public:
+   explicit XdataEncoder(const Assembler& assembler)
+-      : assembler_(assembler), current_push_rbp_offset_(-1) {}
++      : assembler_(assembler), current_frame_code_offset_(-1) {}
+ 
+   void onPushRbp();
+   void onMovRbpRsp();
+@@ -88,14 +102,77 @@ class XdataEncoder {
+  private:
+   const Assembler& assembler_;
+   std::vector<int> fp_offsets_;
+-  int current_push_rbp_offset_;
++  int current_frame_code_offset_;
+ };
+ 
+-}  // namespace win64_unwindinfo
++#elif defined(V8_OS_WIN_ARM64)
+ 
++/**
++ * Base on below doc, unwind record has 18 bits (unsigned) to encode function
++ * length, besides 2 LSB which are always 0.
++ * https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling#xdata-records
++ */
++static const int kMaxFunctionLength = ((1 << 18) - 1) << 2;
++
++/**
++ * Returns a vector of bytes that contains the Win ARM64 unwind data used for
++ * all V8 builtin functions.
++ *
++ * func_len: length in bytes of current function/region to unwind.
++ * fp_adjustment: offset of the saved caller's fp based on fp in current frame.
++ *                this is necessary to encode unwind data for Windows stack
++ *                unwinder to find correct caller's fp.
++ */
++std::vector<uint8_t> GetUnwindInfoForBuiltinFunction(uint32_t func_len,
++                                                     int32_t fp_adjustment);
++class BuiltinUnwindInfo {
++ public:
++  BuiltinUnwindInfo() : is_leaf_function_(true) {}
++  explicit BuiltinUnwindInfo(const std::vector<int>& fp_offsets,
++                             const std::vector<int>& fp_adjustments)
++      : is_leaf_function_(false),
++        fp_offsets_(fp_offsets),
++        fp_adjustments_(fp_adjustments) {}
++
++  const std::vector<int>& fp_adjustments() const { return fp_adjustments_; }
++
++  bool is_leaf_function() const { return is_leaf_function_; }
++  const std::vector<int>& fp_offsets() const { return fp_offsets_; }
++
++ private:
++  bool is_leaf_function_;
++  std::vector<int> fp_offsets_;
++  std::vector<int> fp_adjustments_;
++};
++
++class XdataEncoder {
++ public:
++  explicit XdataEncoder(const Assembler& assembler)
++      : assembler_(assembler),
++        current_frame_code_offset_(-1),
++        current_frame_adjustment_(0) {}
++
++  void onSaveFpLr();
++  void onFramePointerAdjustment(int bytes);
++
++  BuiltinUnwindInfo unwinding_info() const {
++    return BuiltinUnwindInfo(fp_offsets_, fp_adjustments_);
++  }
++
++ private:
++  const Assembler& assembler_;
++  std::vector<int> fp_offsets_;
++  int current_frame_code_offset_;
++  int current_frame_adjustment_;
++  std::vector<int> fp_adjustments_;
++};
++
++#endif
++
++}  // namespace win64_unwindinfo
+ }  // namespace internal
+ }  // namespace v8
+ 
+-#endif  // defined(V8_OS_WIN_X64)
++#endif  // V8_OS_WIN64
+ 
+ #endif  // V8_DIAGNOSTICS_UNWINDING_INFO_WIN64_H_
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index 8a8db12ca3f59577436d148bb2693c836720af2d..380131730c7e87eced53d7a4d68d328cc9b01b8a 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -85,9 +85,9 @@
+ #include "unicode/uobject.h"
+ #endif  // V8_INTL_SUPPORT
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+ #include "src/diagnostics/unwinding-info-win64.h"
+-#endif
++#endif  // V8_OS_WIN64
+ 
+ extern "C" const uint8_t* v8_Default_embedded_blob_;
+ extern "C" uint32_t v8_Default_embedded_blob_size_;
+@@ -2935,7 +2935,7 @@ void Isolate::Deinit() {
+     heap_profiler()->StopSamplingHeapProfiler();
+   }
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   if (win64_unwindinfo::CanRegisterUnwindInfoForNonABICompliantCodeRange() &&
+       heap()->memory_allocator()) {
+     const base::AddressRegion& code_range =
+@@ -2943,7 +2943,7 @@ void Isolate::Deinit() {
+     void* start = reinterpret_cast<void*>(code_range.begin());
+     win64_unwindinfo::UnregisterNonABICompliantCodeRange(start);
+   }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   debug()->Unload();
+ 
+@@ -3512,7 +3512,7 @@ bool Isolate::Init(ReadOnlyDeserializer* read_only_deserializer,
+                                                sampling_flags);
+   }
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   if (win64_unwindinfo::CanRegisterUnwindInfoForNonABICompliantCodeRange()) {
+     const base::AddressRegion& code_range =
+         heap()->memory_allocator()->code_range();
+@@ -3520,7 +3520,7 @@ bool Isolate::Init(ReadOnlyDeserializer* read_only_deserializer,
+     size_t size_in_bytes = code_range.size();
+     win64_unwindinfo::RegisterNonABICompliantCodeRange(start, size_in_bytes);
+   }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   if (create_heap_objects && FLAG_profile_deserialization) {
+     double ms = timer.Elapsed().InMillisecondsF();
+@@ -4324,7 +4324,7 @@ void Isolate::PrepareBuiltinSourcePositionMap() {
+   }
+ }
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+ void Isolate::SetBuiltinUnwindData(
+     int builtin_index,
+     const win64_unwindinfo::BuiltinUnwindInfo& unwinding_info) {
+@@ -4332,7 +4332,7 @@ void Isolate::SetBuiltinUnwindData(
+     embedded_file_writer_->SetBuiltinUnwindData(builtin_index, unwinding_info);
+   }
+ }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+ void Isolate::SetPrepareStackTraceCallback(PrepareStackTraceCallback callback) {
+   prepare_stack_trace_callback_ = callback;
+diff --git a/src/execution/isolate.h b/src/execution/isolate.h
+index 4b4bf9cd7c61687b0f36da1eaa672979c59dab67..33e43c81113ea88d611aa134edc82c2e6d06cfde 100644
+--- a/src/execution/isolate.h
++++ b/src/execution/isolate.h
+@@ -1484,11 +1484,11 @@ class Isolate final : private HiddenFactory {
+   // annotate the builtin blob with debugging information.
+   void PrepareBuiltinSourcePositionMap();
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   void SetBuiltinUnwindData(
+       int builtin_index,
+       const win64_unwindinfo::BuiltinUnwindInfo& unwinding_info);
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   void SetPrepareStackTraceCallback(PrepareStackTraceCallback callback);
+   MaybeHandle<Object> RunPrepareStackTraceCallback(Handle<Context>,
+diff --git a/src/snapshot/embedded/embedded-file-writer.cc b/src/snapshot/embedded/embedded-file-writer.cc
+index 4703ef48224f9f155ef2f8f0cd47507968a3fdfe..5f57993fc3255a68ce6ebcc2368b1c02b1953eff 100644
+--- a/src/snapshot/embedded/embedded-file-writer.cc
++++ b/src/snapshot/embedded/embedded-file-writer.cc
+@@ -92,7 +92,7 @@ void EmbeddedFileWriter::WriteFileEpilogue(PlatformEmbeddedFileWriterBase* w,
+     w->Newline();
+   }
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   {
+     i::EmbeddedVector<char, kTemporaryStringLength> unwind_info_symbol;
+     i::SNPrintF(unwind_info_symbol, "%s_Builtins_UnwindInfo",
+@@ -102,7 +102,7 @@ void EmbeddedFileWriter::WriteFileEpilogue(PlatformEmbeddedFileWriterBase* w,
+                            EmbeddedBlobDataSymbol().c_str(), blob,
+                            reinterpret_cast<const void*>(&unwind_infos_[0]));
+   }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   w->FileEpilogue();
+ }
+diff --git a/src/snapshot/embedded/embedded-file-writer.h b/src/snapshot/embedded/embedded-file-writer.h
+index c26465ae6a7d26b799ad2582784973638fbd41cd..e487b9be9bcc77e97d2da6109e1218f3fee69ce4 100644
+--- a/src/snapshot/embedded/embedded-file-writer.h
++++ b/src/snapshot/embedded/embedded-file-writer.h
+@@ -13,9 +13,9 @@
+ #include "src/snapshot/embedded/embedded-data.h"
+ #include "src/snapshot/embedded/platform-embedded-file-writer-base.h"
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+ #include "src/diagnostics/unwinding-info-win64.h"
+-#endif
++#endif  // V8_OS_WIN64
+ 
+ namespace v8 {
+ namespace internal {
+@@ -35,11 +35,11 @@ class EmbeddedFileWriterInterface {
+   // compiled builtin Code objects with trampolines.
+   virtual void PrepareBuiltinSourcePositionMap(Builtins* builtins) = 0;
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   virtual void SetBuiltinUnwindData(
+       int builtin_index,
+       const win64_unwindinfo::BuiltinUnwindInfo& unwinding_info) = 0;
+-#endif
++#endif  // V8_OS_WIN64
+ };
+ 
+ // Generates the embedded.S file which is later compiled into the final v8
+@@ -59,14 +59,14 @@ class EmbeddedFileWriter : public EmbeddedFileWriterInterface {
+ 
+   void PrepareBuiltinSourcePositionMap(Builtins* builtins) override;
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   void SetBuiltinUnwindData(
+       int builtin_index,
+       const win64_unwindinfo::BuiltinUnwindInfo& unwinding_info) override {
+     DCHECK_LT(builtin_index, Builtins::builtin_count);
+     unwind_infos_[builtin_index] = unwinding_info;
+   }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   void SetEmbeddedFile(const char* embedded_src_path) {
+     embedded_src_path_ = embedded_src_path;
+@@ -172,9 +172,6 @@ class EmbeddedFileWriter : public EmbeddedFileWriterInterface {
+                          const i::EmbeddedData* blob) const;
+ 
+ #if defined(V8_OS_WIN_X64)
+-  std::string BuiltinsUnwindInfoLabel() const;
+-  void WriteUnwindInfo(PlatformEmbeddedFileWriterBase* w,
+-                       const i::EmbeddedData* blob) const;
+   void WriteUnwindInfoEntry(PlatformEmbeddedFileWriterBase* w,
+                             uint64_t rva_start, uint64_t rva_end) const;
+ #endif
+@@ -194,9 +191,9 @@ class EmbeddedFileWriter : public EmbeddedFileWriterInterface {
+  private:
+   std::vector<byte> source_positions_[Builtins::builtin_count];
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   win64_unwindinfo::BuiltinUnwindInfo unwind_infos_[Builtins::builtin_count];
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   std::map<const char*, int> external_filenames_;
+   std::vector<const char*> external_filenames_by_index_;
+diff --git a/src/snapshot/embedded/platform-embedded-file-writer-win.cc b/src/snapshot/embedded/platform-embedded-file-writer-win.cc
+index 69457e11a5537a6500b20adb43051e25f645403f..9a9a26fbd0abef6f5b1967cdbd5fe3fcbaef4f20 100644
+--- a/src/snapshot/embedded/platform-embedded-file-writer-win.cc
++++ b/src/snapshot/embedded/platform-embedded-file-writer-win.cc
+@@ -6,13 +6,14 @@
+ 
+ #include <algorithm>
+ 
+-#include "src/common/globals.h"  // For V8_OS_WIN_X64.
++#include "src/common/globals.h"  // For V8_OS_WIN64
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+ #include "src/builtins/builtins.h"
+ #include "src/diagnostics/unwinding-info-win64.h"
+ #include "src/snapshot/embedded/embedded-data.h"
+-#endif
++#include "src/snapshot/embedded/embedded-file-writer.h"
++#endif  // V8_OS_WIN64
+ 
+ namespace v8 {
+ namespace internal {
+@@ -213,20 +214,118 @@ void EmitUnwindData(PlatformEmbeddedFileWriterWin* w,
+   w->EndPdataSection();
+   w->Newline();
+ }
+-#endif  // defined(V8_OS_WIN_X64)
++
++#elif defined(V8_OS_WIN_ARM64)
++
++void EmitUnwindData(PlatformEmbeddedFileWriterWin* w,
++                    const char* unwind_info_symbol,
++                    const char* embedded_blob_data_symbol,
++                    const EmbeddedData* blob,
++                    const win64_unwindinfo::BuiltinUnwindInfo* unwind_infos) {
++  DCHECK(win64_unwindinfo::CanEmitUnwindInfoForBuiltins());
++
++  // Fairly arbitrary but should fit all symbol names.
++  static constexpr int kTemporaryStringLength = 256;
++  i::EmbeddedVector<char, kTemporaryStringLength> unwind_info_full_symbol;
++
++  // Emit a RUNTIME_FUNCTION (PDATA) entry for each builtin function, as
++  // documented here:
++  // https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling.
++  w->Comment(
++      "pdata for all the code in the embedded blob (structs of type "
++      "RUNTIME_FUNCTION).");
++  w->Comment("    BeginAddress");
++  w->Comment("    UnwindInfoAddress");
++  w->StartPdataSection();
++  std::vector<int> code_chunks;
++  std::vector<int> fp_adjustments;
++
++  for (int i = 0; i < Builtins::builtin_count; i++) {
++    if (!blob->ContainsBuiltin(i)) continue;
++    if (unwind_infos[i].is_leaf_function()) continue;
++
++    uint64_t builtin_start_offset = blob->InstructionStartOfBuiltin(i) -
++                                    reinterpret_cast<Address>(blob->data());
++    uint32_t builtin_size = blob->InstructionSizeOfBuiltin(i);
++
++    const std::vector<int>& xdata_desc = unwind_infos[i].fp_offsets();
++    const std::vector<int>& xdata_fp_adjustments =
++        unwind_infos[i].fp_adjustments();
++    DCHECK_EQ(xdata_desc.size(), xdata_fp_adjustments.size());
++
++    for (size_t j = 0; j < xdata_desc.size(); j++) {
++      int chunk_start = xdata_desc[j];
++      int chunk_end =
++          (j < xdata_desc.size() - 1) ? xdata_desc[j + 1] : builtin_size;
++      int chunk_len = ::RoundUp(chunk_end - chunk_start, kInstrSize);
++
++      while (chunk_len > 0) {
++        int allowed_chunk_len =
++            std::min(chunk_len, win64_unwindinfo::kMaxFunctionLength);
++        chunk_len -= win64_unwindinfo::kMaxFunctionLength;
++
++        // Record the chunk length and fp_adjustment for emitting UNWIND_INFO
++        // later.
++        code_chunks.push_back(allowed_chunk_len);
++        fp_adjustments.push_back(xdata_fp_adjustments[j]);
++        i::SNPrintF(unwind_info_full_symbol, "%s_%u", unwind_info_symbol,
++                    code_chunks.size());
++        w->DeclareRvaToSymbol(embedded_blob_data_symbol,
++                              builtin_start_offset + chunk_start);
++        w->DeclareRvaToSymbol(unwind_info_full_symbol.begin());
++      }
++    }
++  }
++  w->EndPdataSection();
++  w->Newline();
++
++  // Emit an UNWIND_INFO (XDATA) structs, which contains the unwinding
++  // information.
++  w->DeclareExternalFunction(CRASH_HANDLER_FUNCTION_NAME_STRING);
++  w->StartXdataSection();
++  {
++    for (size_t i = 0; i < code_chunks.size(); i++) {
++      i::SNPrintF(unwind_info_full_symbol, "%s_%u", unwind_info_symbol, i + 1);
++      w->DeclareLabel(unwind_info_full_symbol.begin());
++      std::vector<uint8_t> xdata =
++          win64_unwindinfo::GetUnwindInfoForBuiltinFunction(code_chunks[i],
++                                                            fp_adjustments[i]);
++
++      w->IndentedDataDirective(kByte);
++      for (size_t j = 0; j < xdata.size(); j++) {
++        if (j > 0) fprintf(w->fp(), ",");
++        w->HexLiteral(xdata[j]);
++      }
++      w->Newline();
++      w->DeclareRvaToSymbol(CRASH_HANDLER_FUNCTION_NAME_STRING);
++    }
++  }
++  w->EndXdataSection();
++  w->Newline();
++}
++
++#endif  // V8_OS_WIN_X64
+ 
+ }  // namespace
+ 
+ void PlatformEmbeddedFileWriterWin::MaybeEmitUnwindData(
+     const char* unwind_info_symbol, const char* embedded_blob_data_symbol,
+     const EmbeddedData* blob, const void* unwind_infos) {
+-#if defined(V8_OS_WIN_X64)
++// Windows ARM64 supports cross build which could require unwind info for
++// host_os. Ignore this case because it is only used in build time.
++#if defined(V8_OS_WIN_ARM64)
++  if (target_arch_ != EmbeddedTargetArch::kArm64) {
++    return;
++  }
++#endif  // V8_OS_WIN_ARM64
++
++#if defined(V8_OS_WIN64)
+   if (win64_unwindinfo::CanEmitUnwindInfoForBuiltins()) {
+     EmitUnwindData(this, unwind_info_symbol, embedded_blob_data_symbol, blob,
+                    reinterpret_cast<const win64_unwindinfo::BuiltinUnwindInfo*>(
+                        unwind_infos));
+   }
+-#endif  // defined(V8_OS_WIN_X64)
++#endif  // V8_OS_WIN64
+ }
+ 
+ // Windows, MSVC, not arm/arm64.
+@@ -544,6 +643,7 @@ void PlatformEmbeddedFileWriterWin::DeclareFunctionBegin(const char* name) {
+   if (target_arch_ == EmbeddedTargetArch::kArm64) {
+     // Windows ARM64 assembly is in GAS syntax, but ".type" is invalid directive
+     // in PE/COFF for Windows.
++    DeclareSymbolGlobal(name);
+   } else {
+     // The directives for inserting debugging information on Windows come
+     // from the PE (Portable Executable) and COFF (Common Object File Format)
+diff --git a/src/wasm/wasm-code-manager.cc b/src/wasm/wasm-code-manager.cc
+index 2eddce3d956ffcfbf5c668d5eb6e778c66959e45..9be2e75c3e9ed7bfbf31dd7cbbe9c4a634b0abc4 100644
+--- a/src/wasm/wasm-code-manager.cc
++++ b/src/wasm/wasm-code-manager.cc
+@@ -29,9 +29,9 @@
+ #include "src/wasm/wasm-objects-inl.h"
+ #include "src/wasm/wasm-objects.h"
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+ #include "src/diagnostics/unwinding-info-win64.h"
+-#endif
++#endif  // V8_OS_WIN64
+ 
+ #define TRACE_HEAP(...)                                   \
+   do {                                                    \
+@@ -630,7 +630,7 @@ NativeModule::NativeModule(WasmEngine* engine, const WasmFeatures& enabled,
+       CompilationState::New(*shared_this, std::move(async_counters));
+   DCHECK_NOT_NULL(module_);
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   // On some platforms, specifically Win64, we need to reserve some pages at
+   // the beginning of an executable space.
+   // See src/heap/spaces.cc, MemoryAllocator::InitializeCodePageAllocator() and
+@@ -640,7 +640,7 @@ NativeModule::NativeModule(WasmEngine* engine, const WasmFeatures& enabled,
+           ->CanRegisterUnwindInfoForNonABICompliantCodeRange()) {
+     code_allocator_.AllocateForCode(this, Heap::GetCodeRangeReservedAreaSize());
+   }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   uint32_t num_wasm_functions = module_->num_declared_functions;
+   if (num_wasm_functions > 0) {
+@@ -1159,21 +1159,21 @@ WasmCodeManager::WasmCodeManager(WasmMemoryTracker* memory_tracker,
+                                  size_t max_committed)
+     : memory_tracker_(memory_tracker),
+       max_committed_code_space_(max_committed),
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+       is_win64_unwind_info_disabled_for_testing_(false),
+-#endif
++#endif  // V8_OS_WIN64
+       total_committed_code_space_(0),
+       critical_committed_code_space_(max_committed / 2) {
+   DCHECK_LE(max_committed, kMaxWasmCodeMemory);
+ }
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+ bool WasmCodeManager::CanRegisterUnwindInfoForNonABICompliantCodeRange() const {
+   return win64_unwindinfo::CanRegisterUnwindInfoForNonABICompliantCodeRange() &&
+          FLAG_win64_unwinding_info &&
+          !is_win64_unwind_info_disabled_for_testing_;
+ }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+ bool WasmCodeManager::Commit(base::AddressRegion region) {
+   // TODO(v8:8462): Remove eager commit once perf supports remapping.
+@@ -1341,12 +1341,12 @@ std::shared_ptr<NativeModule> WasmCodeManager::NewNativeModule(
+   TRACE_HEAP("New NativeModule %p: Mem: %" PRIuPTR ",+%zu\n", ret.get(), start,
+              size);
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   if (CanRegisterUnwindInfoForNonABICompliantCodeRange()) {
+     win64_unwindinfo::RegisterNonABICompliantCodeRange(
+         reinterpret_cast<void*>(start), size);
+   }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   base::MutexGuard lock(&native_modules_mutex_);
+   lookup_map_.insert(std::make_pair(start, std::make_pair(end, ret.get())));
+@@ -1460,12 +1460,12 @@ void WasmCodeManager::FreeNativeModule(Vector<VirtualMemory> owned_code_space,
+     TRACE_HEAP("VMem Release: 0x%" PRIxPTR ":0x%" PRIxPTR " (%zu)\n",
+                code_space.address(), code_space.end(), code_space.size());
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+     if (CanRegisterUnwindInfoForNonABICompliantCodeRange()) {
+       win64_unwindinfo::UnregisterNonABICompliantCodeRange(
+           reinterpret_cast<void*>(code_space.address()));
+     }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+     lookup_map_.erase(code_space.address());
+     memory_tracker_->ReleaseReservation(code_space.size());
+diff --git a/src/wasm/wasm-code-manager.h b/src/wasm/wasm-code-manager.h
+index 49c287df2c8efa718e2599206e069c26fc03b255..1fd00743996acae7b6c84517baa512e15bc32386 100644
+--- a/src/wasm/wasm-code-manager.h
++++ b/src/wasm/wasm-code-manager.h
+@@ -605,9 +605,9 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
+   }
+ #endif
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   bool CanRegisterUnwindInfoForNonABICompliantCodeRange() const;
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   NativeModule* LookupNativeModule(Address pc) const;
+   WasmCode* LookupCode(Address pc) const;
+@@ -617,11 +617,11 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
+ 
+   void SetMaxCommittedMemoryForTesting(size_t limit);
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   void DisableWin64UnwindInfoForTesting() {
+     is_win64_unwind_info_disabled_for_testing_ = true;
+   }
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   static size_t EstimateNativeModuleCodeSize(const WasmModule* module);
+   static size_t EstimateNativeModuleNonCodeSize(const WasmModule* module);
+@@ -649,9 +649,9 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
+ 
+   size_t max_committed_code_space_;
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN64)
+   bool is_win64_unwind_info_disabled_for_testing_;
+-#endif
++#endif  // V8_OS_WIN64
+ 
+   std::atomic<size_t> total_committed_code_space_;
+   // If the committed code space exceeds {critical_committed_code_space_}, then
+diff --git a/test/cctest/BUILD.gn b/test/cctest/BUILD.gn
+index 42396087eedd844b07f8ca842ce1a0c17d8a94f7..f2d5693793da6d45593b3f18712e959fcac8eecf 100644
+--- a/test/cctest/BUILD.gn
++++ b/test/cctest/BUILD.gn
+@@ -310,6 +310,9 @@ v8_source_set("cctest_sources") {
+       "test-utils-arm64.cc",
+       "test-utils-arm64.h",
+     ]
++    if (is_win) {
++      sources += [ "test-stack-unwinding-win64.cc" ]
++    }
+   } else if (v8_current_cpu == "x86") {
+     sources += [  ### gcmole(arch:ia32) ###
+       "test-assembler-ia32.cc",
+@@ -348,7 +351,7 @@ v8_source_set("cctest_sources") {
+       "test-macro-assembler-x64.cc",
+     ]
+     if (is_win) {
+-      sources += [ "test-stack-unwinding-x64.cc" ]
++      sources += [ "test-stack-unwinding-win64.cc" ]
+     }
+   } else if (v8_current_cpu == "ppc" || v8_current_cpu == "ppc64") {
+     sources += [  ### gcmole(arch:ppc) ###
+diff --git a/test/cctest/test-stack-unwinding-x64.cc b/test/cctest/test-stack-unwinding-win64.cc
+similarity index 76%
+rename from test/cctest/test-stack-unwinding-x64.cc
+rename to test/cctest/test-stack-unwinding-win64.cc
+index 583e14111ad676cf7cb9984407ca9cd0bf9f5f7c..84f1318a29525ae5c71275ecaa6096dfaabcc90c 100644
+--- a/test/cctest/test-stack-unwinding-x64.cc
++++ b/test/cctest/test-stack-unwinding-win64.cc
+@@ -6,9 +6,15 @@
+ #include "src/init/v8.h"
+ #include "test/cctest/cctest.h"
+ 
+-class UnwindingWinX64Callbacks {
++#if defined(V8_OS_WIN_X64)
++#define CONTEXT_PC(context) (context.Rip)
++#elif defined(V8_OS_WIN_ARM64)
++#define CONTEXT_PC(context) (context.Pc)
++#endif
++
++class UnwindingWin64Callbacks {
+  public:
+-  UnwindingWinX64Callbacks() = default;
++  UnwindingWin64Callbacks() = default;
+ 
+   static void Getter(v8::Local<v8::String> name,
+                      const v8::PropertyCallbackInfo<v8::Value>& info) {
+@@ -31,25 +37,26 @@ class UnwindingWinX64Callbacks {
+     int iframe = 0;
+     while (++iframe < max_frames) {
+       uint64_t image_base;
+-      PRUNTIME_FUNCTION function_entry =
+-          ::RtlLookupFunctionEntry(context_record.Rip, &image_base, nullptr);
++      PRUNTIME_FUNCTION function_entry = ::RtlLookupFunctionEntry(
++          CONTEXT_PC(context_record), &image_base, nullptr);
+       if (!function_entry) break;
+ 
+       void* handler_data;
+       uint64_t establisher_frame;
+-      ::RtlVirtualUnwind(UNW_FLAG_NHANDLER, image_base, context_record.Rip,
+-                         function_entry, &context_record, &handler_data,
+-                         &establisher_frame, NULL);
++      ::RtlVirtualUnwind(UNW_FLAG_NHANDLER, image_base,
++                         CONTEXT_PC(context_record), function_entry,
++                         &context_record, &handler_data, &establisher_frame,
++                         NULL);
+     }
+     return iframe;
+   }
+ };
+ 
+-// Verifies that stack unwinding data has been correctly registered on Win/x64.
+-UNINITIALIZED_TEST(StackUnwindingWinX64) {
++// Verifies that stack unwinding data has been correctly registered on Win64.
++UNINITIALIZED_TEST(StackUnwindingWin64) {
+ #ifdef V8_WIN64_UNWINDING_INFO
+ 
+-  static const char* unwinding_win_x64_test_source =
++  static const char* unwinding_win64_test_source =
+       "function start(count) {\n"
+       "  for (var i = 0; i < count; i++) {\n"
+       "    var o = instance.foo;\n"
+@@ -79,18 +86,18 @@ UNINITIALIZED_TEST(StackUnwindingWinX64) {
+     v8::Local<v8::ObjectTemplate> instance_template =
+         func_template->InstanceTemplate();
+ 
+-    UnwindingWinX64Callbacks accessors;
++    UnwindingWin64Callbacks accessors;
+     v8::Local<v8::External> data = v8::External::New(isolate, &accessors);
+     instance_template->SetAccessor(v8_str("foo"),
+-                                   &UnwindingWinX64Callbacks::Getter,
+-                                   &UnwindingWinX64Callbacks::Setter, data);
++                                   &UnwindingWin64Callbacks::Getter,
++                                   &UnwindingWin64Callbacks::Setter, data);
+     v8::Local<v8::Function> func =
+         func_template->GetFunction(env.local()).ToLocalChecked();
+     v8::Local<v8::Object> instance =
+         func->NewInstance(env.local()).ToLocalChecked();
+     env->Global()->Set(env.local(), v8_str("instance"), instance).FromJust();
+ 
+-    CompileRun(unwinding_win_x64_test_source);
++    CompileRun(unwinding_win64_test_source);
+     v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(
+         env->Global()->Get(env.local(), v8_str("start")).ToLocalChecked());
+ 
+@@ -106,3 +113,5 @@ UNINITIALIZED_TEST(StackUnwindingWinX64) {
+ 
+ #endif  // V8_WIN64_UNWINDING_INFO
+ }
++
++#undef CONTEXT_PC
