@@ -4,6 +4,7 @@
 
 #include "shell/common/api/atom_api_native_theme.h"
 
+#include "base/mac/sdk_forward_declarations.h"
 #include "shell/browser/mac/atom_application.h"
 
 namespace electron {
