@@ -512,6 +512,10 @@ void WrapVerifyProc(base::Callback<void(const VerifyRequestParams& request,
                                         base::Callback<void(int)>)> proc,
                     const VerifyRequestParams& request,
                     base::OnceCallback<void(int)> cb) {
+  if (proc.is_null()) {
+    LOG(ERROR) << "WrapVerifyProc (proc=null)";
+    return;
+  }
   proc.Run(request, base::AdaptCallbackForRepeating(std::move(cb)));
 }
 
