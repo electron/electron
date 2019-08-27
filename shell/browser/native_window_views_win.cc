@@ -409,10 +409,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     case WM_SIZE: {
       // Handle window state change.
       HandleSizeEvent(w_param, l_param);
-
-      consecutive_moves_ = false;
-      last_normal_bounds_before_move_ = last_normal_bounds_;
-
       return false;
     }
     case WM_MOVING: {
@@ -425,15 +421,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         return true;  // Tells Windows that the Move is handled. If not true,
                       // frameless windows can be moved using
                       // -webkit-app-region: drag elements.
-      }
-      return false;
-    }
-    case WM_MOVE: {
-      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
-        if (consecutive_moves_)
-          last_normal_bounds_ = last_normal_bounds_candidate_;
-        last_normal_bounds_candidate_ = GetBounds();
-        consecutive_moves_ = true;
       }
       return false;
     }
@@ -467,9 +454,6 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   switch (w_param) {
     case SIZE_MAXIMIZED: {
       last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
-      if (consecutive_moves_) {
-        last_normal_bounds_ = last_normal_bounds_before_move_;
-      }
 
       if (!has_frame()) {
         TriggerNCCalcSize(GetAcceleratedWidget());
@@ -491,40 +475,27 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       NotifyWindowMinimize();
       break;
     case SIZE_RESTORED:
-      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
-        // Window was resized so we save it's new size.
-        last_normal_bounds_ = GetBounds();
-        last_normal_bounds_before_move_ = last_normal_bounds_;
-      } else {
-        switch (last_window_state_) {
-          case ui::SHOW_STATE_MAXIMIZED:
+      switch (last_window_state_) {
+        case ui::SHOW_STATE_MAXIMIZED:
+          last_window_state_ = ui::SHOW_STATE_NORMAL;
+          NotifyWindowUnmaximize();
+
+          if (!has_frame()) {
+            TriggerNCCalcSize(GetAcceleratedWidget());
+          }
+
+          break;
+        case ui::SHOW_STATE_MINIMIZED:
+          if (IsFullscreen()) {
+            last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+            NotifyWindowEnterFullScreen();
+          } else {
             last_window_state_ = ui::SHOW_STATE_NORMAL;
-            NotifyWindowUnmaximize();
-
-            if (!has_frame()) {
-              TriggerNCCalcSize(GetAcceleratedWidget());
-            }
-
-            break;
-          case ui::SHOW_STATE_MINIMIZED:
-            if (IsFullscreen()) {
-              last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
-              NotifyWindowEnterFullScreen();
-            } else {
-              last_window_state_ = ui::SHOW_STATE_NORMAL;
-
-              // When the window is restored we resize it to the previous known
-              // normal size.
-              if (has_frame()) {
-                SetBounds(last_normal_bounds_, false);
-              }
-
-              NotifyWindowRestore();
-            }
-            break;
-          default:
-            break;
-        }
+            NotifyWindowRestore();
+          }
+          break;
+        default:
+          break;
       }
       break;
   }
