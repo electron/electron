@@ -549,12 +549,9 @@ describe('webContents module', () => {
     afterEach(closeAllWindows)
     it('is emitted with the correct zooming info', async () => {
       const w = new BrowserWindow({ show: false })
-      w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))
-      await emittedOnce(w.webContents, 'did-finish-load')
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))
 
       const testZoomChanged = async ({ zoomingIn }: { zoomingIn: boolean }) => {
-        const promise = emittedOnce(w.webContents, 'zoom-changed')
-
         w.webContents.sendInputEvent({
           type: 'mouseWheel',
           x: 300,
@@ -566,8 +563,10 @@ describe('webContents module', () => {
           modifiers: ['control', 'meta']
         })
 
-        const [, zoomDirection] = await promise
+        const [, zoomDirection] = await emittedOnce(w.webContents, 'zoom-changed')
         expect(zoomDirection).to.equal(zoomingIn ? 'in' : 'out')
+        // Apparently we get two zoom-changed events??
+        await emittedOnce(w.webContents, 'zoom-changed')
       }
 
       await testZoomChanged({ zoomingIn: true })
