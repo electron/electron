@@ -5,6 +5,7 @@ import { emittedNTimes, emittedOnce } from './events-helpers'
 import { closeWindow } from './window-helpers'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { AddressInfo } from 'net'
+import { ifdescribe } from './spec-helpers';
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description: string, webPreferences: any) => {
@@ -180,7 +181,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
   })
 })
 
-describe('cross-site frame sandboxing', () => {
+// app.getAppMetrics() does not return sandbox information on Linux.
+ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
   let server: http.Server
   let crossSiteUrl: string
   let serverUrl: string
