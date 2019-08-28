@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/ui/message_box.h"
+#include "atom/browser/ui/util_gtk.h"
 
 #include <glib/gi18n.h>
 
@@ -127,13 +128,13 @@ class GtkMessageBox : public NativeWindowObserver {
   const char* TranslateToStock(int id, const std::string& text) {
     const std::string lower = base::ToLowerASCII(text);
     if (lower == "cancel")
-      return _("_Cancel");
+      return util_gtk::kCancelLabel;
     if (lower == "no")
-      return _("_No");
+      return util_gtk::kNoLabel;
     if (lower == "ok")
-      return _("_OK");
+      return util_gtk::kOkLabel;
     if (lower == "yes")
-      return _("_Yes");
+      return util_gtk::kYesLabel;
     return text.c_str();
   }
 
@@ -237,8 +238,8 @@ void ShowMessageBox(NativeWindow* parent,
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
-    GtkMessageBox(nullptr, MESSAGE_BOX_TYPE_ERROR, {"OK"}, -1, 0, "Error",
-                  base::UTF16ToUTF8(title).c_str(),
+    GtkMessageBox(nullptr, MESSAGE_BOX_TYPE_ERROR, {util_gtk::kOkLabel}, -1, 0,
+                  "Error", base::UTF16ToUTF8(title).c_str(),
                   base::UTF16ToUTF8(content).c_str(), "", false,
                   gfx::ImageSkia())
         .RunSynchronous();
