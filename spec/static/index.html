@@ -65,7 +65,7 @@
   if (!process.env.MOCHA_REPORTER) {
     mocha.ui('bdd').reporter(isCi ? 'tap' : 'html')
   }
-  mocha.timeout(isCi ? 30000 : 10000)
+  mocha.timeout(isCi ? 20000 : 10000)
 
   const query = Mocha.utils.parseQuery(window.location.search || '')
   if (query.grep) mocha.grep(query.grep)
