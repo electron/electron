@@ -59,27 +59,29 @@ describe('chromium feature', () => {
     })
 
     describe('--remote-debugging-port switch', () => {
-      it('should display the discovery page', (done) => {
-        const electronPath = remote.getGlobal('process').execPath
-        let output = ''
-        const appProcess = ChildProcess.spawn(electronPath, [`--remote-debugging-port=`])
+      for (let i = 0; i < 100; ++i) {
+        it('should display the discovery page', (done) => {
+          const electronPath = remote.getGlobal('process').execPath
+          let output = ''
+          const appProcess = ChildProcess.spawn(electronPath, [`--remote-debugging-port=`])
 
-        appProcess.stderr.on('data', (data) => {
-          output += data
-          const m = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//.exec(output)
-          if (m) {
-            appProcess.stderr.removeAllListeners('data')
-            const port = m[1]
-            http.get(`http://127.0.0.1:${port}`, (res) => {
-              res.destroy()
-              appProcess.kill()
-              expect(res.statusCode).to.eql(200)
-              expect(parseInt(res.headers['content-length'])).to.be.greaterThan(0)
-              done()
-            })
-          }
+          appProcess.stderr.on('data', (data) => {
+            output += data
+            const m = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//.exec(output)
+            if (m) {
+              appProcess.stderr.removeAllListeners('data')
+              const port = m[1]
+              http.get(`http://127.0.0.1:${port}`, (res) => {
+                res.destroy()
+                appProcess.kill()
+                expect(res.statusCode).to.eql(200)
+                expect(parseInt(res.headers['content-length'])).to.be.greaterThan(0)
+                done()
+              })
+            }
+          })
         })
-      })
+      }
     })
   })
 
