@@ -251,12 +251,15 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
-      .SetMethod("setTitle", &Tray::SetTitle)
-      .SetMethod("getTitle", &Tray::GetTitle)
-      .SetMethod("setIgnoreDoubleClickEvents",
+      .SetMethod("_setTitle", &Tray::SetTitle)
+      .SetMethod("_getTitle", &Tray::GetTitle)
+      .SetProperty("title", &Tray::GetTitle, &Tray::SetTitle)
+      .SetMethod("_setIgnoreDoubleClickEvents",
                  &Tray::SetIgnoreDoubleClickEvents)
-      .SetMethod("getIgnoreDoubleClickEvents",
+      .SetMethod("_getIgnoreDoubleClickEvents",
                  &Tray::GetIgnoreDoubleClickEvents)
+      .SetProperty("ignoreDoubleClickEvents", &Tray::GetIgnoreDoubleClickEvents,
+                   &Tray::SetIgnoreDoubleClickEvents)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
       .SetMethod("removeBalloon", &Tray::RemoveBalloon)
       .SetMethod("focus", &Tray::Focus)

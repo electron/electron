@@ -12,7 +12,7 @@ describe('tray module', () => {
     tray = null as any
   })
 
-  ifdescribe(process.platform === 'darwin')('tray get/set ignoreDoubleClickEvents', () => {
+  ifdescribe(process.platform === 'darwin')('tray get/set ignoreDoubleClickEvents (functions)', () => {
     it('returns false by default', () => {
       const ignored = tray.getIgnoreDoubleClickEvents()
       expect(ignored).to.be.false('ignored')
@@ -22,6 +22,20 @@ describe('tray module', () => {
       tray.setIgnoreDoubleClickEvents(true)
 
       const ignored = tray.getIgnoreDoubleClickEvents()
+      expect(ignored).to.be.true('not ignored')
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('tray get/set ignoreDoubleClickEvents', () => {
+    it('returns false by default', () => {
+      const ignored = tray.ignoreDoubleClickEvents
+      expect(ignored).to.be.false('ignored')
+    })
+
+    it('can be set to true', () => {
+      tray.ignoreDoubleClickEvents = true
+
+      const ignored = tray.ignoreDoubleClickEvents
       expect(ignored).to.be.true('not ignored')
     })
   })
@@ -74,7 +88,7 @@ describe('tray module', () => {
     })
   })
 
-  ifdescribe(process.platform === 'darwin')('tray get/set title', () => {
+  ifdescribe(process.platform === 'darwin')('tray get/set title (functions)', () => {
     it('sets/gets non-empty title', () => {
       const title = 'Hello World!'
       tray.setTitle(title)
@@ -89,6 +103,22 @@ describe('tray module', () => {
       const newTitle = tray.getTitle()
 
       expect(newTitle).to.equal(title)
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('tray get/set title', () => {
+    it('sets/gets non-empty title', () => {
+      const title = 'Hello World!'
+      tray.title  = title
+
+      expect(tray.title).to.equal(title)
+    })
+
+    it('sets/gets empty title', () => {
+      const title = ''
+      tray.title = title
+
+      expect(tray.title).to.equal(title)
     })
   })
 })

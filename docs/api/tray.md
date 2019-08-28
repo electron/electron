@@ -202,9 +202,13 @@ Sets the hover text for this tray icon.
 
 Sets the title displayed next to the tray icon in the status bar (Support ANSI colors).
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `tray.getTitle()` _macOS_
 
-Returns `String` - the title displayed next to the tray icon in the status bar
+Returns `String` - the title displayed next to the tray icon in the status bar.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `tray.setIgnoreDoubleClickEvents(ignore)` _macOS_
 
@@ -215,9 +219,13 @@ to detect every individual click of the tray icon.
 
 This value is set to false by default.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `tray.getIgnoreDoubleClickEvents()` _macOS_
 
 Returns `Boolean` - Whether double click events will be ignored.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `tray.displayBalloon(options)` _Windows_
 
@@ -274,3 +282,18 @@ The `bounds` of this tray icon as `Object`.
 Returns `Boolean` - Whether the tray icon is destroyed.
 
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
+
+### Instance Properties
+
+The following properties are available on instances of `Tray`:
+
+#### `tray.title`
+
+A `String` property that sets the title displayed next to the tray icon in the status bar.
+
+#### `tray.ignoreDoubleClickEvents` _macOS_
+
+A `Boolean` property that determines whether double click events are ignored. Ignoring these events allows you
+to detect every individual click of the tray icon.
+
+This property is set to false by default.

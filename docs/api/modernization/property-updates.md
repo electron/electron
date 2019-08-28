@@ -45,6 +45,9 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `isMacTemplateImage`
 * `SystemPreferences` module
   * `appLevelAppearance`
+* `Tray` module
+  * `title`
+  * `ignoreDoubleClickEvents`
 * `webContents` module
   * `audioMuted`
   * `frameRate`
