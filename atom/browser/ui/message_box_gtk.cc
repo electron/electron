@@ -3,13 +3,13 @@
 // found in the LICENSE file.
 
 #include "atom/browser/ui/message_box.h"
-#include "atom/browser/ui/util_gtk.h"
 
 #include <glib/gi18n.h>
 
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/native_window_views.h"
+#include "atom/browser/ui/util_gtk.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
