@@ -83,7 +83,6 @@ describe('chromium feature', () => {
 
           fetch(`http://127.0.0.1:${port}`).then(response => {
             console.log(`${new Date().toUTCString()} got response ${response.ok}`)
-            console.log(JSON.stringify(response.headers.raw(), null, 2))
             appProcess.kill()
             expect(response.ok).to.be.true()
             expect(parseInt(response.headers.get('content-length'))).to.be.greaterThan(0)
