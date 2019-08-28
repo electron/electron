@@ -29,3 +29,5 @@ declare namespace Electron {
   }
   class View {}
 }
+
+declare module 'dbus-native';

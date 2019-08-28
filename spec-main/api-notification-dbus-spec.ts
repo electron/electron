@@ -6,20 +6,19 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
-const { expect } = require('chai')
-const dbus = require('dbus-native')
-const Promise = require('bluebird')
-
-const { remote } = require('electron')
-const { app } = remote
+import { expect } from 'chai'
+import * as dbus from 'dbus-native'
+import { app } from 'electron'
+import { ifdescribe } from './spec-helpers'
+import { promisify } from 'util';
 
 const skip = process.platform !== 'linux' ||
              process.arch === 'ia32' ||
              process.arch.indexOf('arm') === 0 ||
-             !process.env.DBUS_SESSION_BUS_ADDRESS;
+             !process.env.DBUS_SESSION_BUS_ADDRESS
 
-(skip ? describe.skip : describe)('Notification module (dbus)', () => {
-  let mock, Notification, getCalls, reset
+ifdescribe(!skip)('Notification module (dbus)', () => {
+  let mock: any, Notification, getCalls: any, reset: any
   const realAppName = app.name
   const realAppVersion = app.getVersion()
   const appName = 'api-notification-dbus-spec'
@@ -35,10 +34,10 @@ const skip = process.platform !== 'linux' ||
     const bus = dbus.sessionBus()
     console.log(`session bus: ${process.env.DBUS_SESSION_BUS_ADDRESS}`)
     const service = bus.getService(serviceName)
-    const getInterface = Promise.promisify(service.getInterface, { context: service })
+    const getInterface = promisify(service.getInterface.bind(service))
     mock = await getInterface(path, iface)
-    getCalls = Promise.promisify(mock.GetCalls, { context: mock })
-    reset = Promise.promisify(mock.Reset, { context: mock })
+    getCalls = promisify(mock.GetCalls.bind(mock))
+    reset = promisify(mock.Reset.bind(mock))
   })
 
   after(async () => {
@@ -50,8 +49,8 @@ const skip = process.platform !== 'linux' ||
   })
 
   describe(`Notification module using ${serviceName}`, () => {
-    function onMethodCalled (done) {
-      function cb (name) {
+    function onMethodCalled (done: () => void) {
+      function cb (name: string) {
         console.log(`onMethodCalled: ${name}`)
         if (name === 'Notify') {
           mock.removeListener('MethodCalled', cb)
@@ -62,8 +61,8 @@ const skip = process.platform !== 'linux' ||
       return cb
     }
 
-    function unmarshalDBusNotifyHints (dbusHints) {
-      const o = {}
+    function unmarshalDBusNotifyHints (dbusHints: any) {
+      const o: Record<string, any> = {}
       for (const hint of dbusHints) {
         const key = hint[0]
         const value = hint[1][1][0]
@@ -72,7 +71,7 @@ const skip = process.platform !== 'linux' ||
       return o
     }
 
-    function unmarshalDBusNotifyArgs (dbusArgs) {
+    function unmarshalDBusNotifyArgs (dbusArgs: any) {
       return {
         app_name: dbusArgs[0][1][0],
         replaces_id: dbusArgs[1][1][0],
@@ -87,7 +86,7 @@ const skip = process.platform !== 'linux' ||
     before(done => {
       mock.on('MethodCalled', onMethodCalled(done))
       // lazy load Notification after we listen to MethodCalled mock signal
-      Notification = require('electron').remote.Notification
+      Notification = require('electron').Notification
       const n = new Notification({
         title: 'title',
         subtitle: 'subtitle',

@@ -129,9 +129,14 @@ async function runRemoteBasedElectronTests () {
 }
 
 async function runMainProcessElectronTests () {
-  const exe = path.resolve(BASE, utils.getElectronExec())
+  let exe = path.resolve(BASE, utils.getElectronExec())
+  const runnerArgs = ['electron/spec-main', ...unknownArgs.slice(2)]
+  if (process.platform === 'linux') {
+    runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe)
+    exe = 'python'
+  }
 
-  const { status } = childProcess.spawnSync(exe, ['electron/spec-main', ...unknownArgs.slice(2)], {
+  const { status } = childProcess.spawnSync(exe, runnerArgs, {
     cwd: path.resolve(__dirname, '../..'),
     stdio: 'inherit'
   })
