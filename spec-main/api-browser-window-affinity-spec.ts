@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import * as path from 'path'
 
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, WebPreferences } from 'electron'
 import { closeWindow } from './window-helpers'
 
 describe('BrowserWindow with affinity module', () => {
@@ -10,7 +10,7 @@ describe('BrowserWindow with affinity module', () => {
   const myAffinityNameUpper = 'MYAFFINITY'
   const anotherAffinityName = 'anotherAffinity'
 
-  async function createWindowWithWebPrefs (webPrefs: any) {
+  async function createWindowWithWebPrefs (webPrefs: WebPreferences) {
     const w = new BrowserWindow({
       show: false,
       width: 400,
@@ -21,7 +21,7 @@ describe('BrowserWindow with affinity module', () => {
     return w
   }
 
-  function testAffinityProcessIds (name: string, webPreferences = {}) {
+  function testAffinityProcessIds (name: string, webPreferences: WebPreferences = {}) {
     describe(name, () => {
       let mAffinityWindow: BrowserWindow
       before(async () => {
