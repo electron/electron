@@ -6,8 +6,8 @@ const ELECTRON_DIR = path.resolve(__dirname, '..', '..')
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..')
 
 require('colors')
-const pass = '\u2713'.green
-const fail = '\u2717'.red
+const pass = '✓'.green
+const fail = '✗'.red
 
 function getElectronExec () {
   const OUT_DIR = getOutDir()
