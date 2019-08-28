@@ -89,7 +89,9 @@ v8::Local<v8::Promise> StopRecording(mate::Arguments* args) {
   } else {
     // use a temporary file.
     base::PostTaskWithTraitsAndReplyWithResult(
-        FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
+        FROM_HERE,
+        {base::ThreadPool(), base::MayBlock(),
+         base::TaskPriority::USER_VISIBLE},
         base::BindOnce(CreateTemporaryFileOnIO),
         base::BindOnce(StopTracing, std::move(promise)));
   }

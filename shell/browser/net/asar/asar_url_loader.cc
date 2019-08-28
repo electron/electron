@@ -299,7 +299,7 @@ void CreateAsarURLLoader(
     network::mojom::URLLoaderClientPtr client,
     scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
   auto task_runner = base::CreateSequencedTaskRunnerWithTraits(
-      {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_VISIBLE,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
   task_runner->PostTask(
       FROM_HERE, base::BindOnce(&AsarURLLoader::CreateAndStart, request,
