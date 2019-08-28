@@ -91,4 +91,13 @@ describe('tray module', () => {
       expect(newTitle).to.equal(title)
     })
   })
+
+  ifdescribe(process.platform === 'darwin')('tray icon visibility', () => {
+    it('sets/gets tray icon visibility', () => {
+      expect(tray.visible).to.equal(true)
+      
+      tray.visible = false
+      expect(tray.visible).to.equal(false)
+    })
+  })
 })

@@ -274,3 +274,13 @@ The `bounds` of this tray icon as `Object`.
 Returns `Boolean` - Whether the tray icon is destroyed.
 
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
+
+### Instance Properties
+
+The following properties are available on instances of `Tray`:
+
+#### `tray.visible` _macOS_
+
+A `Boolean` property indicating if the menu bar currently displays the status item.
+
+This property is only available on macOS 10.12 or later.

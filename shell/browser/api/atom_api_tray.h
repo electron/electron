@@ -72,6 +72,8 @@ class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
   std::string GetTitle();
   void SetIgnoreDoubleClickEvents(bool ignore);
   bool GetIgnoreDoubleClickEvents();
+  void SetVisible(bool visible);
+  bool GetVisible();
   void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
   void RemoveBalloon();
   void Focus();

@@ -29,6 +29,8 @@ class TrayIconCocoa : public TrayIcon {
   std::string GetTitle() override;
   void SetIgnoreDoubleClickEvents(bool ignore) override;
   bool GetIgnoreDoubleClickEvents() override;
+  void SetVisible(bool visible) override;
+  bool GetVisible() override;
   void PopUpOnUI(AtomMenuModel* menu_model);
   void PopUpContextMenu(const gfx::Point& pos,
                         AtomMenuModel* menu_model) override;

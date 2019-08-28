@@ -121,6 +121,17 @@
   [self updateDimensions];
 }
 
+- (void)setVisible:(BOOL)visible {
+  if (@available(macOS 10.12, *))
+    [statusItem_ setVisible:visible];
+}
+
+- (BOOL)getVisible {
+  if (@available(macOS 10.12, *))
+    return [statusItem_ isVisible];
+  return true;
+}
+
 - (NSString*)title {
   return [statusItem_ button].title;
 }
@@ -293,6 +304,14 @@ void TrayIconCocoa::SetIgnoreDoubleClickEvents(bool ignore) {
 
 bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
   return [status_item_view_ getIgnoreDoubleClickEvents];
+}
+
+void TrayIconCocoa::SetVisible(bool visible) {
+  [status_item_view_ setVisible:visible];
+}
+
+bool TrayIconCocoa::GetVisible() {
+  return [status_item_view_ getVisible];
 }
 
 void TrayIconCocoa::PopUpOnUI(AtomMenuModel* menu_model) {

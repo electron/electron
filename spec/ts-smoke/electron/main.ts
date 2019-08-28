@@ -935,6 +935,8 @@ app.on('ready', () => {
     title: 'Hello World!',
     content: 'This the the balloon content.'
   })
+
+  appIcon.visible = true;
 })
 
 // clipboard

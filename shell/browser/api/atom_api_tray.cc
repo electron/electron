@@ -188,6 +188,20 @@ bool Tray::GetIgnoreDoubleClickEvents() {
 #endif
 }
 
+void Tray::SetVisible(bool visible) {
+#if defined(OS_MACOSX)
+  tray_icon_->SetVisible(visible);
+#endif
+}
+
+bool Tray::GetVisible() {
+#if defined(OS_MACOSX)
+  return tray_icon_->GetVisible();
+#else
+  return false;
+#endif
+}
+
 void Tray::DisplayBalloon(mate::Arguments* args,
                           const mate::Dictionary& options) {
   TrayIcon::BalloonOptions balloon_options;
@@ -253,6 +267,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setToolTip", &Tray::SetToolTip)
       .SetMethod("setTitle", &Tray::SetTitle)
       .SetMethod("getTitle", &Tray::GetTitle)
+      .SetProperty("visible", &Tray::GetVisible, &Tray::SetVisible)
       .SetMethod("setIgnoreDoubleClickEvents",
                  &Tray::SetIgnoreDoubleClickEvents)
       .SetMethod("getIgnoreDoubleClickEvents",
