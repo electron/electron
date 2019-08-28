@@ -1452,6 +1452,8 @@ On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
 mode set (but with a value within the valid range), `normal` will be assumed.
 
+Alternatively, you can use a third-party progressbar lib `electronjs-progressbar` which simply displays the progressbar above the document's body or specified div see [Electronjs-Progressbar](https://github.com/developersunesis/Electron-Progressbar).
+
 #### `win.setOverlayIcon(overlay, description)` _Windows_
 
 * `overlay` [NativeImage](native-image.md) | null - the icon to display on the bottom
