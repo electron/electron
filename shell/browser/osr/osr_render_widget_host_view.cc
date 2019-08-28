@@ -127,8 +127,7 @@ class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
                       const base::Closure& callback)
       : callback_(callback) {
     time_source_.reset(new viz::DelayBasedTimeSource(
-        base::CreateSingleThreadTaskRunnerWithTraits(
-            {content::BrowserThread::UI})
+        base::CreateSingleThreadTaskRunner({content::BrowserThread::UI})
             .get()));
     time_source_->SetTimebaseAndInterval(
         base::TimeTicks(),
