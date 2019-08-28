@@ -852,4 +852,31 @@ describe('session module', () => {
       expect(name).to.deep.equal('SecurityError')
     })
   })
+
+  describe('ses.setUserAgent()', () => {
+    afterEach(closeAllWindows)
+
+    it('can be retrieved with getUserAgent()', () => {
+      const userAgent = 'test-agent'
+      const ses = session.fromPartition(''+Math.random())
+      ses.setUserAgent(userAgent)
+      expect(ses.getUserAgent()).to.equal(userAgent)
+    })
+
+    it('sets the User-Agent header for web requests made from renderers', async () => {
+      const userAgent = 'test-agent'
+      const ses = session.fromPartition(''+Math.random())
+      ses.setUserAgent(userAgent)
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } })
+      let headers: http.IncomingHttpHeaders | null = null
+      const server = http.createServer((req, res) => {
+        headers = req.headers
+        res.end()
+        server.close()
+      })
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+      await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)
+      expect(headers!['user-agent']).to.equal(userAgent)
+    })
+  })
 })

@@ -76,3 +76,4 @@ add_contentgpuclient_precreatemessageloop_callback.patch
 picture-in-picture.patch
 disable_compositor_recycling.patch
 allow_new_privileges_in_unsandboxed_child_processes.patch
+expose_setuseragent_on_networkcontext.patch

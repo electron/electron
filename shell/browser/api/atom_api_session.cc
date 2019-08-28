@@ -489,8 +489,10 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
 
 void Session::SetUserAgent(const std::string& user_agent,
                            mate::Arguments* args) {
-  CHECK(false)
-      << "TODO: This was disabled when the network service was turned on";
+  browser_context_->SetUserAgent(user_agent);
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->SetUserAgent(user_agent);
 }
 
 std::string Session::GetUserAgent() {
