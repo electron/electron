@@ -1,16 +1,11 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+import { expect } from 'chai'
+import * as http from 'http'
+import * as qs from 'querystring'
+import * as path from 'path'
+import { session, WebContents, webContents } from 'electron'
+import { AddressInfo } from 'net';
 
-const http = require('http')
-const qs = require('querystring')
-const remote = require('electron').remote
-const session = remote.session
-
-const { expect } = chai
-chai.use(dirtyChai)
-
-/* The whole webRequest API doesn't use standard callbacks */
-/* eslint-disable standard/no-callback-literal */
+const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
 describe('webRequest module', () => {
   const ses = session.defaultSession
@@ -28,12 +23,12 @@ describe('webRequest module', () => {
       res.end(content)
     }
   })
-  let defaultURL = null
+  let defaultURL: string
 
   before((done) => {
     server.listen(0, '127.0.0.1', () => {
-      const port = server.address().port
-      defaultURL = 'http://127.0.0.1:' + port + '/'
+      const port = (server.address() as AddressInfo).port
+      defaultURL = `http://127.0.0.1:${port}/`
       done()
     })
   })
@@ -42,48 +37,43 @@ describe('webRequest module', () => {
     server.close()
   })
 
+  let contents: WebContents = null as unknown as WebContents
+  // NB. sandbox: true is used because it makes navigations much (~8x) faster.
+  before(async () => {
+    contents = (webContents as any).create({sandbox: true})
+    await contents.loadFile(path.join(fixturesPath, 'pages', 'jquery.html'))
+  })
+  after(() => (contents as any).destroy())
+
+  async function ajax (url: string, options = {}) {
+    return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`)
+  }
+
   describe('webRequest.onBeforeRequest', () => {
     afterEach(() => {
       ses.webRequest.onBeforeRequest(null)
     })
 
-    it('can cancel the request', (done) => {
+    it('can cancel the request', async () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         callback({
           cancel: true
         })
       })
-      $.ajax({
-        url: defaultURL,
-        success: () => {
-          done('unexpected success')
-        },
-        error: () => {
-          done()
-        }
-      })
+      await expect(ajax(defaultURL)).to.eventually.be.rejectedWith('404')
     })
 
-    it('can filter URLs', (done) => {
+    it('can filter URLs', async () => {
       const filter = { urls: [defaultURL + 'filter/*'] }
       ses.webRequest.onBeforeRequest(filter, (details, callback) => {
         callback({ cancel: true })
       })
-      $.ajax({
-        url: `${defaultURL}nofilter/test`,
-        success: (data) => {
-          expect(data).to.equal('/nofilter/test')
-          $.ajax({
-            url: `${defaultURL}filter/test`,
-            success: () => done('unexpected success'),
-            error: () => done()
-          })
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data } = await ajax(`${defaultURL}nofilter/test`)
+      expect(data).to.equal('/nofilter/test')
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejectedWith('404')
     })
 
-    it('receives details object', (done) => {
+    it('receives details object', async () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         expect(details.id).to.be.a('number')
         expect(details.timestamp).to.be.a('number')
@@ -94,17 +84,11 @@ describe('webRequest module', () => {
         expect(details.uploadData).to.be.undefined()
         callback({})
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data) => {
-          expect(data).to.equal('/')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data } = await ajax(defaultURL)
+      expect(data).to.equal('/')
     })
 
-    it('receives post data in details object', (done) => {
+    it('receives post data in details object', async () => {
       const postData = {
         name: 'post test',
         type: 'string'
@@ -117,16 +101,13 @@ describe('webRequest module', () => {
         expect(data).to.deep.equal(postData)
         callback({ cancel: true })
       })
-      $.ajax({
-        url: defaultURL,
+      await expect(ajax(defaultURL, {
         type: 'POST',
         data: postData,
-        success: () => {},
-        error: () => done()
-      })
+      })).to.eventually.be.rejectedWith('404')
     })
 
-    it('can redirect the request', (done) => {
+    it('can redirect the request', async () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === defaultURL) {
           callback({ redirectURL: `${defaultURL}redirect` })
@@ -134,14 +115,8 @@ describe('webRequest module', () => {
           callback({})
         }
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data) => {
-          expect(data).to.equal('/redirect')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data } = await ajax(defaultURL)
+      expect(data).to.equal('/redirect')
     })
   })
 
@@ -150,40 +125,27 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeSendHeaders(null)
     })
 
-    it('receives details object', (done) => {
+    it('receives details object', async () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         expect(details.requestHeaders).to.be.an('object')
         expect(details.requestHeaders['Foo.Bar']).to.equal('baz')
         callback({})
       })
-      $.ajax({
-        url: defaultURL,
-        headers: { 'Foo.Bar': 'baz' },
-        success: (data) => {
-          expect(data).to.equal('/')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data } = await ajax(defaultURL, { headers: { 'Foo.Bar': 'baz' } })
+      expect(data).to.equal('/')
     })
 
-    it('can change the request headers', (done) => {
+    it('can change the request headers', async () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders
         requestHeaders.Accept = '*/*;test/header'
         callback({ requestHeaders: requestHeaders })
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data) => {
-          expect(data).to.equal('/header/received')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data } = await ajax(defaultURL)
+      expect(data).to.equal('/header/received')
     })
 
-    it('resets the whole headers', (done) => {
+    it('resets the whole headers', async () => {
       const requestHeaders = {
         Test: 'header'
       }
@@ -192,12 +154,8 @@ describe('webRequest module', () => {
       })
       ses.webRequest.onSendHeaders((details) => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders)
-        done()
       })
-      $.ajax({
-        url: defaultURL,
-        error: (xhr, errorType) => done(errorType)
-      })
+      await ajax(defaultURL)
     })
   })
 
@@ -206,18 +164,12 @@ describe('webRequest module', () => {
       ses.webRequest.onSendHeaders(null)
     })
 
-    it('receives details object', (done) => {
+    it('receives details object', async () => {
       ses.webRequest.onSendHeaders((details) => {
         expect(details.requestHeaders).to.be.an('object')
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data) => {
-          expect(data).to.equal('/')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data } = await ajax(defaultURL)
+      expect(data).to.equal('/')
     })
   })
 
@@ -226,71 +178,46 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived(null)
     })
 
-    it('receives details object', (done) => {
+    it('receives details object', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         expect(details.statusLine).to.equal('HTTP/1.1 200 OK')
         expect(details.statusCode).to.equal(200)
-        expect(details.responseHeaders['Custom']).to.deep.equal(['Header'])
+        expect(details.responseHeaders!['Custom']).to.deep.equal(['Header'])
         callback({})
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data) => {
-          expect(data).to.equal('/')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data } = await ajax(defaultURL)
+      expect(data).to.equal('/')
     })
 
-    it('can change the response header', (done) => {
+    it('can change the response header', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
-        const responseHeaders = details.responseHeaders
-        responseHeaders['Custom'] = ['Changed']
+        const responseHeaders = details.responseHeaders!
+        responseHeaders['Custom'] = ['Changed'] as any
         callback({ responseHeaders: responseHeaders })
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data, status, xhr) => {
-          expect(xhr.getResponseHeader('Custom')).to.equal('Changed')
-          expect(data).to.equal('/')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { headers } = await ajax(defaultURL)
+      expect(headers).to.match(/^custom: Changed$/m)
     })
 
-    it('does not change header by default', (done) => {
+    it('does not change header by default', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         callback({})
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data, status, xhr) => {
-          expect(xhr.getResponseHeader('Custom')).to.equal('Header')
-          expect(data).to.equal('/')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data, headers } = await ajax(defaultURL)
+      expect(headers).to.match(/^custom: Header$/m)
+      expect(data).to.equal('/')
     })
 
-    it('follows server redirect', (done) => {
+    it('follows server redirect', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders
         callback({ responseHeaders: responseHeaders })
       })
-      $.ajax({
-        url: defaultURL + 'serverRedirect',
-        success: (data, status, xhr) => {
-          expect(xhr.getResponseHeader('Custom')).to.equal('Header')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { headers } = await ajax(defaultURL + 'serverRedirect')
+      expect(headers).to.match(/^custom: Header$/m)
     })
 
-    it('can change the header status', (done) => {
+    it('can change the header status', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders
         callback({
@@ -298,14 +225,19 @@ describe('webRequest module', () => {
           statusLine: 'HTTP/1.1 404 Not Found'
         })
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data, status, xhr) => {},
-        error: (xhr, errorType) => {
-          expect(xhr.getResponseHeader('Custom')).to.equal('Header')
-          done()
+      const { headers } = await contents.executeJavaScript(`new Promise((resolve, reject) => {
+        const options = {
+          ...${JSON.stringify({url: defaultURL})},
+          success: (data, status, request) => {
+            reject(new Error('expected failure'))
+          },
+          error: (xhr) => {
+            resolve({ headers: xhr.getAllResponseHeaders() })
+          }
         }
-      })
+        $.ajax(options)
+      })`)
+      expect(headers).to.match(/^custom: Header$/m)
     })
   })
 
@@ -314,22 +246,16 @@ describe('webRequest module', () => {
       ses.webRequest.onResponseStarted(null)
     })
 
-    it('receives details object', (done) => {
+    it('receives details object', async () => {
       ses.webRequest.onResponseStarted((details) => {
         expect(details.fromCache).to.be.a('boolean')
         expect(details.statusLine).to.equal('HTTP/1.1 200 OK')
         expect(details.statusCode).to.equal(200)
-        expect(details.responseHeaders['Custom']).to.deep.equal(['Header'])
+        expect(details.responseHeaders!['Custom']).to.deep.equal(['Header'])
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data, status, xhr) => {
-          expect(xhr.getResponseHeader('Custom')).to.equal('Header')
-          expect(data).to.equal('/')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data, headers } = await ajax(defaultURL)
+      expect(headers).to.match(/^custom: Header$/m)
+      expect(data).to.equal('/')
     })
   })
 
@@ -339,7 +265,7 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(null)
     })
 
-    it('receives details object', (done) => {
+    it('receives details object', async () => {
       const redirectURL = defaultURL + 'redirect'
       ses.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === defaultURL) {
@@ -354,14 +280,8 @@ describe('webRequest module', () => {
         expect(details.statusCode).to.equal(307)
         expect(details.redirectURL).to.equal(redirectURL)
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data) => {
-          expect(data).to.equal('/redirect')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data } = await ajax(defaultURL)
+      expect(data).to.equal('/redirect')
     })
   })
 
@@ -370,20 +290,14 @@ describe('webRequest module', () => {
       ses.webRequest.onCompleted(null)
     })
 
-    it('receives details object', (done) => {
+    it('receives details object', async () => {
       ses.webRequest.onCompleted((details) => {
         expect(details.fromCache).to.be.a('boolean')
         expect(details.statusLine).to.equal('HTTP/1.1 200 OK')
         expect(details.statusCode).to.equal(200)
       })
-      $.ajax({
-        url: defaultURL,
-        success: (data) => {
-          expect(data).to.equal('/')
-          done()
-        },
-        error: (xhr, errorType) => done(errorType)
-      })
+      const { data } = await ajax(defaultURL)
+      expect(data).to.equal('/')
     })
   })
 
@@ -393,18 +307,14 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(null)
     })
 
-    it('receives details object', (done) => {
+    it('receives details object', async () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         callback({ cancel: true })
       })
       ses.webRequest.onErrorOccurred((details) => {
         expect(details.error).to.equal('net::ERR_BLOCKED_BY_CLIENT')
-        done()
       })
-      $.ajax({
-        url: defaultURL,
-        success: () => done('unexpected success')
-      })
+      await expect(ajax(defaultURL)).to.eventually.be.rejectedWith('404')
     })
   })
 })
