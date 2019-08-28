@@ -2,6 +2,7 @@ const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const http = require('http')
 const { shell, remote } = require('electron')
 const { BrowserWindow } = remote
 
@@ -43,31 +44,27 @@ describe('shell module', () => {
     })
 
     it('opens an external link asynchronously', done => {
-      const url = 'http://www.example.com'
+      let url
+      let requestReceived
       if (process.platform === 'linux') {
         process.env.BROWSER = '/bin/true'
         process.env.DE = 'generic'
         process.env.DISPLAY = ''
+        requestReceived = Promise.resolve()
+        url = 'http://127.0.0.1'
+      } else {
+        const server = http.createServer((req, res) => {
+          res.end()
+        })
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+        requestReceived = new Promise(resolve => server.on('connection', () => resolve()))
+        url = `http://127.0.0.1:${server.address().port}`
       }
 
-      // Ensure an external window is activated via a new window's blur event
-      w = new BrowserWindow()
-      let promiseResolved = false
-      let blurEventEmitted = false
-
-      w.on('blur', () => {
-        blurEventEmitted = true
-        if (promiseResolved) {
-          done()
-        }
-      })
-
-      shell.openExternal(url).then(() => {
-        promiseResolved = true
-        if (blurEventEmitted || process.platform === 'linux') {
-          done()
-        }
-      })
+      await Promise.all([
+        shell.openExternal(url),
+        requestReceived
+      ])
     })
 
     it('opens an external link synchronously', () => {
