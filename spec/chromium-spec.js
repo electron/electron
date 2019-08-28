@@ -62,25 +62,25 @@ describe('chromium feature', () => {
       it('should display the discovery page', (done) => {
         const electronPath = remote.getGlobal('process').execPath
         let output = ''
-        console.log(`spawning ${electronPath} --remote-debugging-port=`)
+        console.log(`${new Date().toUTCString()} spawning ${electronPath} --remote-debugging-port=`)
         const appProcess = ChildProcess.spawn(electronPath, [`--remote-debugging-port=`])
         if (process.platform === 'linux') {
-          console.log(`setting stderr encoding to utf8`)
+          console.log(`${new Date().toUTCString()} setting stderr encoding to utf8`)
           appProcess.stderr.setEncoding('utf8')
         }
         const portRegex = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//
         appProcess.stderr.on('data', (data) => {
           output += data
-          console.log(`got more data: '${data}'`)
-          console.log(`output is now: '${output}'`)
+          console.log(`${new Date().toUTCString()} got more data: '${data}'`)
+          console.log(`${new Date().toUTCString()} output is now: '${output}'`)
           const m = output.match(portRegex)
           if (m) {
-            console.log(`found a regex match: ${m}`)
+            console.log(`${new Date().toUTCString()} found a regex match: ${m}`)
             appProcess.stderr.removeAllListeners('data')
             const port = m[1]
-            console.log(`pinging 127.0.0.1`)
+            console.log(`${new Date().toUTCString()} pinging 127.0.0.1`)
             http.get(`http://127.0.0.1:${port}`, (res) => {
-              console.log(`got res ${res.statusCode}`)
+              console.log(`${new Date().toUTCString()} got res ${res.statusCode}`)
               res.destroy()
               appProcess.kill()
               expect(res.statusCode).to.eql(200)
