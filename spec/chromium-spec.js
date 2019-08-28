@@ -59,37 +59,41 @@ describe('chromium feature', () => {
     })
 
     describe('--remote-debugging-port switch', () => {
-      it('should display the discovery page', (done) => {
-        const electronPath = remote.getGlobal('process').execPath
-        let output = ''
-        console.log(`${new Date().toUTCString()} spawning ${electronPath} --remote-debugging-port=`)
-        const appProcess = ChildProcess.spawn(electronPath, [`--remote-debugging-port=`])
-        if (process.platform === 'linux') {
-          console.log(`${new Date().toUTCString()} setting stderr encoding to utf8`)
-          appProcess.stderr.setEncoding('utf8')
-        }
-        const portRegex = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//
-        appProcess.stderr.on('data', (data) => {
-          output += data
-          console.log(`${new Date().toUTCString()} got more data: '${data}'`)
-          console.log(`${new Date().toUTCString()} output is now: '${output}'`)
-          const m = output.match(portRegex)
-          if (!m) return
+      const runCount = 100
+      for (let i = 0; i < runCount; ++i) {
+        it('should display the discovery page', (done) => {
+          const electronPath = remote.getGlobal('process').execPath
+          let output = ''
+          console.log(`${new Date().toUTCString()} spawning ${electronPath} --remote-debugging-port=`)
+          const appProcess = ChildProcess.spawn(electronPath, [`--remote-debugging-port=`])
+          const { stderr } = appProcess
+          if (process.platform === 'linux') {
+            console.log(`${new Date().toUTCString()} setting stderr encoding to utf8`)
+            stderr.setEncoding('utf8')
+          }
+          const portRegex = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//
+          stderr.on('data', (data) => {
+            output += data
+            console.log(`${new Date().toUTCString()} got more data: '${data}'`)
+            console.log(`${new Date().toUTCString()} output is now: '${output}'`)
+            const m = output.match(portRegex)
+            if (!m) return
 
-          console.log(`${new Date().toUTCString()} found a regex match: ${m}`)
-          appProcess.stderr.removeAllListeners('data')
-          const port = m[1]
-          console.log(`${new Date().toUTCString()} pinging 127.0.0.1`)
+            console.log(`${new Date().toUTCString()} found a regex match: ${m}`)
+            stderr.removeAllListeners('data')
+            const port = m[1]
+            console.log(`${new Date().toUTCString()} pinging 127.0.0.1`)
 
-          fetch(`http://127.0.0.1:${port}`).then(response => {
-            console.log(`${new Date().toUTCString()} got response ${response.ok}`)
-            appProcess.kill()
-            expect(response.ok).to.be.true()
-            expect(parseInt(response.headers.get('content-length'))).to.be.greaterThan(0)
-            done()
+            fetch(`http://127.0.0.1:${port}`, { method: 'HEAD' }).then(response => {
+              console.log(`${new Date().toUTCString()} got response ${response.ok}`)
+              appProcess.kill()
+              expect(response.status).to.equal(200)
+              expect(parseInt(response.headers.get('content-length'))).to.be.greaterThan(0)
+              done()
+            })
           })
         })
-      })
+      }
     })
   })
 
