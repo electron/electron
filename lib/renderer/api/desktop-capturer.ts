@@ -16,3 +16,8 @@ function getCurrentStack () {
 export async function getSources (options: Electron.SourcesOptions) {
   return deserialize(await ipcRendererInternal.invoke('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', options, getCurrentStack()));
 }
+
+export function setSkipCursor (sourceId: string, skipCursor: boolean) {
+  ipcRendererInternal.invoke<any>('ELECTRON_BROWSER_DESKTOP_CAPTURER_SET_SKIP_CURSOR',
+    sourceId, skipCursor, getCurrentStack());
+}
