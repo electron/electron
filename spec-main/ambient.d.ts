@@ -1,4 +1,5 @@
 declare var isCI: boolean;
+declare var standardScheme: string;
 
 declare namespace Electron {
   interface Menu {
@@ -15,6 +16,10 @@ declare namespace Electron {
 
   interface WebContents {
     getOwnerBrowserWindow(): BrowserWindow;
+  }
+
+  interface Session {
+    destroy(): void;
   }
 
   // Experimental views API

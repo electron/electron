@@ -582,6 +582,22 @@ const views::Widget* NativeWindow::GetWidget() const {
   return widget();
 }
 
+base::string16 NativeWindow::GetAccessibleWindowTitle() const {
+  if (accessible_title_.empty()) {
+    return views::WidgetDelegate::GetAccessibleWindowTitle();
+  }
+
+  return accessible_title_;
+}
+
+void NativeWindow::SetAccessibleTitle(const std::string& title) {
+  accessible_title_ = base::UTF8ToUTF16(title);
+}
+
+std::string NativeWindow::GetAccessibleTitle() {
+  return base::UTF16ToUTF8(accessible_title_);
+}
+
 // static
 void NativeWindowRelay::CreateForWebContents(
     content::WebContents* web_contents,

@@ -145,6 +145,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   std::vector<int> GetPosition();
   void SetTitle(const std::string& title);
   std::string GetTitle();
+  void SetAccessibleTitle(const std::string& title);
+  std::string GetAccessibleTitle();
   void FlashFrame(bool flash);
   void SetSkipTaskbar(bool skip);
   void SetExcludedFromShownWindowsMenu(bool excluded);

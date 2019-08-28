@@ -197,8 +197,9 @@ content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
   // If the process is a pending process, we should use the web contents
   // for the frame host passed into RegisterPendingProcess.
-  if (base::Contains(pending_processes_, process_id))
-    return pending_processes_[process_id];
+  const auto iter = pending_processes_.find(process_id);
+  if (iter != std::end(pending_processes_))
+    return iter->second;
 
   // Certain render process will be created with no associated render view,
   // for example: ServiceWorker.
@@ -988,18 +989,11 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
     bool* bypass_redirect_checks) {
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(frame_host);
-  // For service workers there might be no WebContents.
-  if (!web_contents)
-    return false;
-
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
-      isolate, web_contents->GetBrowserContext());
+  api::ProtocolNS* protocol =
+      api::ProtocolNS::FromWrappedClass(isolate, browser_context);
   DCHECK(protocol);
-  auto web_request = api::WebRequestNS::FromOrCreate(
-      isolate, web_contents->GetBrowserContext());
+  auto web_request = api::WebRequestNS::FromOrCreate(isolate, browser_context);
   DCHECK(web_request.get());
 
   auto proxied_receiver = std::move(*factory_receiver);

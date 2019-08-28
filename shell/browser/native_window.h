@@ -134,6 +134,11 @@ class NativeWindow : public base::SupportsUserData,
   virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
+
+  // Ability to augment the window title for the screen readers.
+  void SetAccessibleTitle(const std::string& title);
+  std::string GetAccessibleTitle();
+
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetSkipTaskbar(bool skip) = 0;
   virtual void SetExcludedFromShownWindowsMenu(bool excluded) = 0;
@@ -301,6 +306,7 @@ class NativeWindow : public base::SupportsUserData,
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
+  base::string16 GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
 
@@ -354,6 +360,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;
+
+  // Accessible title.
+  base::string16 accessible_title_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 

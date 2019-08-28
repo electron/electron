@@ -575,6 +575,14 @@ std::string TopLevelWindow::GetTitle() {
   return window_->GetTitle();
 }
 
+void TopLevelWindow::SetAccessibleTitle(const std::string& title) {
+  window_->SetAccessibleTitle(title);
+}
+
+std::string TopLevelWindow::GetAccessibleTitle() {
+  return window_->GetAccessibleTitle();
+}
+
 void TopLevelWindow::FlashFrame(bool flash) {
   window_->FlashFrame(flash);
 }
@@ -964,9 +972,6 @@ bool TopLevelWindow::HookWindowMessage(UINT message,
 }
 
 void TopLevelWindow::UnhookWindowMessage(UINT message) {
-  if (!base::Contains(messages_callback_map_, message))
-    return;
-
   messages_callback_map_.erase(message);
 }
 
@@ -1124,6 +1129,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getPosition", &TopLevelWindow::GetPosition)
       .SetMethod("setTitle", &TopLevelWindow::SetTitle)
       .SetMethod("getTitle", &TopLevelWindow::GetTitle)
+      .SetProperty("accessibleTitle", &TopLevelWindow::GetAccessibleTitle,
+                   &TopLevelWindow::SetAccessibleTitle)
       .SetMethod("flashFrame", &TopLevelWindow::FlashFrame)
       .SetMethod("setSkipTaskbar", &TopLevelWindow::SetSkipTaskbar)
       .SetMethod("setSimpleFullScreen", &TopLevelWindow::SetSimpleFullScreen)
