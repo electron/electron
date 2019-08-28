@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/ptr_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/window_list.h"
