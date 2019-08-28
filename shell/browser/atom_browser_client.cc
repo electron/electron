@@ -562,9 +562,6 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   if (web_contents) {
-    if (web_contents->GetVisibleURL().SchemeIs("devtools")) {
-      command_line->AppendSwitch(switches::kDisableRemoteModule);
-    }
     auto* web_preferences = WebContentsPreferences::From(web_contents);
     if (web_preferences)
       web_preferences->AppendCommandLineSwitches(

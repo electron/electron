@@ -119,7 +119,7 @@ void RendererClientBase::DidCreateScriptContext(
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   bool enableRemoteModule =
-      !command_line->HasSwitch(switches::kDisableRemoteModule);
+      command_line->HasSwitch(switches::kEnableRemoteModule);
   global.SetHidden("enableRemoteModule", enableRemoteModule);
 }
 

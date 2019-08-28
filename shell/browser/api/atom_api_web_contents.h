@@ -291,8 +291,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
   v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
-  bool IsRemoteModuleEnabled() const;
-
   // Returns the owner window.
   v8::Local<v8::Value> GetOwnerBrowserWindow() const;
 
