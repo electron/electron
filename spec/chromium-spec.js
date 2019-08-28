@@ -74,20 +74,21 @@ describe('chromium feature', () => {
           console.log(`${new Date().toUTCString()} got more data: '${data}'`)
           console.log(`${new Date().toUTCString()} output is now: '${output}'`)
           const m = output.match(portRegex)
-          if (m) {
-            console.log(`${new Date().toUTCString()} found a regex match: ${m}`)
-            appProcess.stderr.removeAllListeners('data')
-            const port = m[1]
-            console.log(`${new Date().toUTCString()} pinging 127.0.0.1`)
-            http.get(`http://127.0.0.1:${port}`, (res) => {
-              console.log(`${new Date().toUTCString()} got res ${res.statusCode}`)
-              res.destroy()
-              appProcess.kill()
-              expect(res.statusCode).to.eql(200)
-              expect(parseInt(res.headers['content-length'])).to.be.greaterThan(0)
-              done()
-            })
-          }
+          if (!m) return
+
+          console.log(`${new Date().toUTCString()} found a regex match: ${m}`)
+          appProcess.stderr.removeAllListeners('data')
+          const port = m[1]
+          console.log(`${new Date().toUTCString()} pinging 127.0.0.1`)
+
+          fetch(`http://127.0.0.1:${port}`).then(response => {
+            console.log(`${new Date().toUTCString()} got response ${response.ok}`)
+            console.log(JSON.stringify(response.headers.raw(), null, 2))
+            appProcess.kill()
+            expect(response.ok).to.be.true()
+            expect(parseInt(response.headers.get('content-length'))).to.be.greaterThan(0)
+            done()
+          })
         })
       })
     })
