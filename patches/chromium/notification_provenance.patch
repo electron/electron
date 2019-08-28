@@ -108,7 +108,7 @@ index 4bf25bf1fa69f7d3869369172d375e2e489e62a1..f80ef2cecc8b111dc54e109646573a59
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
 diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index a0886861b7ef41c9fc1e01d716ac35f75ad1fe0e..e204a488b0a46e171c98d7177375e1f97e5226db 100644
+index 39321f13c6b906ab9a3dab1f62d2eaa951a763a8..ac15adcd060fd2dfc7a1fc472ca617cac6319227 100644
 --- a/content/browser/renderer_interface_binders.cc
 +++ b/content/browser/renderer_interface_binders.cc
 @@ -253,7 +253,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {

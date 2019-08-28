@@ -30,24 +30,11 @@ index e9b64a823ae7e25361f37190d247af0fa6a6f68a..43fdb0ad50d2b11a1bc28aa0f358c6dd
  #include "third_party/skia/include/core/SkColor.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
-diff --git a/chrome/browser/ui/views/overlay/mute_image_button.cc b/chrome/browser/ui/views/overlay/mute_image_button.cc
-index 8c88ef08dd5165c0429dd90e8a76b711ac15a4df..ebdb06a6391b8108fa51796a4ad5f3a8ca489b60 100644
---- a/chrome/browser/ui/views/overlay/mute_image_button.cc
-+++ b/chrome/browser/ui/views/overlay/mute_image_button.cc
-@@ -5,7 +5,7 @@
- #include "chrome/browser/ui/views/overlay/mute_image_button.h"
- 
- #include "chrome/app/vector_icons/vector_icons.h"
--#include "chrome/grit/generated_resources.h"
-+#include "electron/grit/electron_resources.h"
- #include "components/vector_icons/vector_icons.h"
- #include "third_party/skia/include/core/SkColor.h"
- #include "ui/base/l10n/l10n_util.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 049a0dc9b721d3db4e78d4d18888069c1204d204..ebeaf51227990ef48144e380716861acc9cafdac 100644
+index 39d6339bd2b954b55ed8a4b16657c00a860e79a6..8c82fbe734be172fa124ba0348a46a3c7dfef3dc 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-@@ -20,7 +20,7 @@
+@@ -19,7 +19,7 @@
  #include "chrome/browser/ui/views/overlay/resize_handle_button.h"
  #include "chrome/browser/ui/views/overlay/skip_ad_label_button.h"
  #include "chrome/browser/ui/views/overlay/track_image_button.h"

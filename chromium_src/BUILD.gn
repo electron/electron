@@ -202,8 +202,6 @@ static_library("chrome") {
       "//chrome/browser/ui/views/overlay/back_to_tab_image_button.h",
       "//chrome/browser/ui/views/overlay/close_image_button.cc",
       "//chrome/browser/ui/views/overlay/close_image_button.h",
-      "//chrome/browser/ui/views/overlay/mute_image_button.cc",
-      "//chrome/browser/ui/views/overlay/mute_image_button.h",
       "//chrome/browser/ui/views/overlay/overlay_window_views.cc",
       "//chrome/browser/ui/views/overlay/overlay_window_views.h",
       "//chrome/browser/ui/views/overlay/playback_image_button.cc",
