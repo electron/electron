@@ -216,7 +216,7 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
   base::FilePath default_download_path =
       browser_context->prefs()->GetFilePath(prefs::kDownloadDefaultDirectory);
 
-  base::PostTaskWithTraitsAndReplyWithResult(
+  base::PostTaskAndReplyWithResult(
       FROM_HERE,
       {base::ThreadPool(), base::MayBlock(), base::TaskPriority::BEST_EFFORT,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},

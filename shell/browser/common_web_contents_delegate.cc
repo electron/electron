@@ -178,7 +178,7 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 
 CommonWebContentsDelegate::CommonWebContentsDelegate()
     : devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
-      file_task_runner_(base::CreateSequencedTaskRunnerWithTraits(
+      file_task_runner_(base::CreateSequencedTaskRunner(
           {base::ThreadPool(), base::MayBlock()})),
       weak_factory_(this) {}
 

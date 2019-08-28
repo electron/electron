@@ -36,8 +36,7 @@ RenderFrame* GetCurrentRenderFrame() {
 class IPCRenderer : public mate::Wrappable<IPCRenderer> {
  public:
   explicit IPCRenderer(v8::Isolate* isolate)
-      : task_runner_(base::CreateSingleThreadTaskRunnerWithTraits(
-            {base::ThreadPool()})) {
+      : task_runner_(base::CreateSingleThreadTaskRunner({base::ThreadPool()})) {
     Init(isolate);
     RenderFrame* render_frame = GetCurrentRenderFrame();
     DCHECK(render_frame);

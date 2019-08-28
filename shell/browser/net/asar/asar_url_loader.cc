@@ -298,7 +298,7 @@ void CreateAsarURLLoader(
     network::mojom::URLLoaderRequest loader,
     network::mojom::URLLoaderClientPtr client,
     scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
-  auto task_runner = base::CreateSequencedTaskRunnerWithTraits(
+  auto task_runner = base::CreateSequencedTaskRunner(
       {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_VISIBLE,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
   task_runner->PostTask(
