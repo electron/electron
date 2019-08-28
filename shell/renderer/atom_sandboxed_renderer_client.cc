@@ -294,9 +294,8 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
 void AtomSandboxedRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  if (injected_frames_.find(render_frame) == injected_frames_.end())
+  if (injected_frames_.erase(render_frame) == 0)
     return;
-  injected_frames_.erase(render_frame);
 
   auto* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);

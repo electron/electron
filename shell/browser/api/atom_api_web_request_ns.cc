@@ -396,10 +396,11 @@ template <typename... Args>
 void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
                                      extensions::WebRequestInfo* request_info,
                                      Args... args) {
-  if (!base::Contains(simple_listeners_, event))
+  const auto iter = simple_listeners_.find(event);
+  if (iter == std::end(simple_listeners_))
     return;
 
-  const auto& info = simple_listeners_[event];
+  const auto& info = iter->second;
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return;
 
@@ -416,10 +417,11 @@ int WebRequestNS::HandleResponseEvent(ResponseEvent event,
                                       net::CompletionOnceCallback callback,
                                       Out out,
                                       Args... args) {
-  if (!base::Contains(response_listeners_, event))
+  const auto iter = response_listeners_.find(event);
+  if (iter == std::end(response_listeners_))
     return net::OK;
 
-  const auto& info = response_listeners_[event];
+  const auto& info = iter->second;
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return net::OK;
 
@@ -441,7 +443,8 @@ template <typename T>
 void WebRequestNS::OnListenerResult(uint64_t id,
                                     T out,
                                     v8::Local<v8::Value> response) {
-  if (!base::Contains(callbacks_, id))
+  const auto iter = callbacks_.find(id);
+  if (iter == std::end(callbacks_))
     return;
 
   int result = net::OK;
@@ -461,7 +464,7 @@ void WebRequestNS::OnListenerResult(uint64_t id,
   // asynchronously, because it used to work on IO thread before NetworkService.
   base::SequencedTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(std::move(callbacks_[id]), result));
-  callbacks_.erase(id);
+  callbacks_.erase(iter);
 }
 
 // static
