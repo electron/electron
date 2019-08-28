@@ -460,10 +460,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
     DevToolsManagerDelegate::StartHttpHandler();
 
-#if defined(USE_X11)
-  libgtkui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
-#endif
-
 #if !defined(OS_MACOSX)
   // The corresponding call in macOS is in AtomApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
