@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index ff4b97d1996b58ed6ab150894a6e02d9bbc9fd8c..77bd4c0ae13a6561cabbd964734753f6a8c96e47 100644
+index ff4b97d1996b58ed6ab150894a6e02d9bbc9fd8c..20123d3d9636cfc7605628367c5bece588d33ca0 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -389,6 +389,11 @@ class RendererSandboxedProcessLauncherDelegate
@@ -47,23 +47,22 @@ index ff4b97d1996b58ed6ab150894a6e02d9bbc9fd8c..77bd4c0ae13a6561cabbd964734753f6
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -424,9 +432,15 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -424,10 +432,13 @@ class RendererSandboxedProcessLauncherDelegate
      return service_manager::SANDBOX_TYPE_RENDERER;
    }
  
-+<<<<<<< HEAD
- #if defined(OS_WIN)
+-#if defined(OS_WIN)
   private:
++#if defined(OS_WIN)
    const bool renderer_code_integrity_enabled_;
-+=======
-+ private:
+ #endif
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +  bool use_zygote_ = true;
-+>>>>>>> support_mixed_sandbox_with_zygote.patch
- #endif
++#endif
  };
  
-@@ -1688,11 +1702,18 @@ bool RenderProcessHostImpl::Init() {
+ const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
+@@ -1688,11 +1699,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  
