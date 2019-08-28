@@ -366,6 +366,20 @@ Returns:
 
 Emitted when the renderer process of `webContents` crashes or is killed.
 
+**Note:** This event is emitted separately for each `webContents` hosted in the same crashed renderer.
+
+**Deprecated:** Should use the new [`renderer-crashed`](#event-renderer-crashed) event.
+
+### Event: 'renderer-crashed'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)[]
+* `killed` Boolean
+
+Emitted when the renderer process hosting the `webContents` crashes or is killed.
+
 ### Event: 'accessibility-support-changed' _macOS_ _Windows_
 
 Returns:

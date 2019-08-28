@@ -20,6 +20,19 @@ const { remote } = require('electron')
 remote.webContents.fromId(webview.getWebContentsId())
 ```
 
+### `app` event `renderer-process-crashed`
+
+The `renderer-process-crashed` event is now deprecated and will be removed in Electron 9.0.
+
+There is a new replacement event `renderer-crashed`, which is emitted only once per group
+of all `webContents` affected by a renderer process crash.
+
+```js
+// Deprecated
+app.on('renderer-process-crashed', (event, webContents, wasKilled) => { /* listener */ })
+// Replace with
+app.on('renderer-crashed', (event, webContents, wasKilled) => { /* listener */ })
+
 ## Planned Breaking API Changes (8.0)
 
 ### Values sent over IPC are now serialized with Structured Clone Algorithm

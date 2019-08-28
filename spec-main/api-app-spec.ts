@@ -416,6 +416,44 @@ describe('app module', () => {
       expect(webContents).to.equal(w.webContents)
     })
 
+    it('should emit renderer-crashed event when renderer crashes', async function() {
+      // FIXME: re-enable this test on win32.
+      if (process.platform === 'win32')
+        return this.skip()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nativeWindowOpen: true
+        }
+      })
+      await w.loadURL('about:blank')
+
+      let childWindow: Electron.BrowserWindow | null
+      w.webContents.once('new-window', (event: any, url, frameName, disposition, options) => {
+        event.preventDefault()
+        childWindow = new BrowserWindow({
+          ...options,
+          show: false
+        })
+        event.newGuest = childWindow
+      })
+
+      await w.webContents.executeJavaScript('open()')
+      expect(childWindow!.webContents.getOSProcessId()).to.equal(w.webContents.getOSProcessId())
+
+      const promise = emittedOnce(app, 'renderer-crashed')
+      w.webContents.executeJavaScript('process.crash()')
+
+      const [, webContents] = await promise
+      expect(webContents).to.be.an('array').with.lengthOf(2)
+      expect(webContents).to.contain(w.webContents)
+      expect(webContents).to.contain(childWindow!.webContents)
+
+      childWindow!.destroy()
+      childWindow = null
+    })
+
     ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
       it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
         w = new BrowserWindow({
