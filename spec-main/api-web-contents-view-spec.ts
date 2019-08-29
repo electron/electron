@@ -1,30 +1,23 @@
-'use strict'
+import { expect } from 'chai'
+import * as ChildProcess from 'child_process'
+import * as path from 'path'
+import { emittedOnce } from './events-helpers'
+import { closeWindow } from './window-helpers'
 
-const chai = require('chai')
-const ChildProcess = require('child_process')
-const dirtyChai = require('dirty-chai')
-const path = require('path')
-const { emittedOnce } = require('./events-helpers')
-const { closeWindow } = require('./window-helpers')
-
-const { remote } = require('electron')
-const { webContents, TopLevelWindow, WebContentsView } = remote
-
-const { expect } = chai
-chai.use(dirtyChai)
+import { webContents, TopLevelWindow, WebContentsView } from 'electron'
 
 describe('WebContentsView', () => {
-  let w = null
-  afterEach(() => closeWindow(w).then(() => { w = null }))
+  let w: TopLevelWindow
+  afterEach(() => closeWindow(w as any).then(() => { w = null as unknown as TopLevelWindow }))
 
   it('can be used as content view', () => {
-    const web = webContents.create({})
+    const web = (webContents as any).create({})
     w = new TopLevelWindow({ show: false })
     w.setContentView(new WebContentsView(web))
   })
 
   it('prevents adding same WebContents', () => {
-    const web = webContents.create({})
+    const web = (webContents as any).create({})
     w = new TopLevelWindow({ show: false })
     w.setContentView(new WebContentsView(web))
     expect(() => {
@@ -35,7 +28,7 @@ describe('WebContentsView', () => {
   describe('new WebContentsView()', () => {
     it('does not crash on exit', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-webcontentsview.js')
-      const electronPath = remote.getGlobal('process').execPath
+      const electronPath = process.execPath
       const appProcess = ChildProcess.spawn(electronPath, [appPath])
       const [code] = await emittedOnce(appProcess, 'close')
       expect(code).to.equal(0)
