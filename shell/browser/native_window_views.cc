@@ -274,7 +274,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (has_frame()) {
     // TODO(zcbenz): This was used to force using native frame on Windows 2003,
     // we should check whether setting it in InitParams can work.
-    widget()->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
+    widget()->set_frame_type(views::Widget::FrameType::kForceNative);
     widget()->FrameTypeChanged();
 #if defined(OS_WIN)
     // thickFrame also works for normal window.
