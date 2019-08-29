@@ -1042,7 +1042,8 @@ AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
 }
 
 #if defined(OS_WIN)
-bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy) {
+bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy,
+                                         RendererSpawnFlags flags) {
   // Allow crashpad to communicate via named pipe.
   sandbox::ResultCode result = policy->AddRule(
       sandbox::TargetPolicy::SUBSYS_FILES,
