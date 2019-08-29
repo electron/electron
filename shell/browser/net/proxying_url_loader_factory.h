@@ -13,6 +13,7 @@
 
 #include "base/optional.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
+#include "mojo/public/cpp/bindings/receiver.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -114,7 +115,7 @@ class ProxyingURLLoaderFactory
     void OnComplete(const network::URLLoaderCompletionStatus& status) override;
 
     void OnLoaderCreated(
-        mojo::PendingReceiver<network::mojom::TrustedHeaderClient> request);
+        mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver);
 
     // network::mojom::TrustedHeaderClient:
     void OnBeforeSendHeaders(const net::HttpRequestHeaders& headers,
@@ -173,7 +174,8 @@ class ProxyingURLLoaderFactory
     bool current_request_uses_header_client_ = false;
     OnBeforeSendHeadersCallback on_before_send_headers_callback_;
     OnHeadersReceivedCallback on_headers_received_callback_;
-    mojo::Binding<network::mojom::TrustedHeaderClient> header_client_binding_;
+    mojo::Receiver<network::mojom::TrustedHeaderClient> header_client_receiver_{
+        this};
 
     // If |has_any_extra_headers_listeners_| is set to false and a redirect is
     // in progress, this stores the parameters to FollowRedirect that came from
@@ -201,8 +203,8 @@ class ProxyingURLLoaderFactory
       int render_process_id,
       network::mojom::URLLoaderFactoryRequest loader_request,
       network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
-      network::mojom::TrustedURLLoaderHeaderClientRequest
-          header_client_request);
+      mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
+          header_client_receiver);
   ~ProxyingURLLoaderFactory() override;
 
   // network::mojom::URLLoaderFactory:
@@ -219,7 +221,7 @@ class ProxyingURLLoaderFactory
   // network::mojom::TrustedURLLoaderHeaderClient:
   void OnLoaderCreated(
       int32_t request_id,
-      mojo::PendingReceiver<network::mojom::TrustedHeaderClient> request)
+      mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver)
       override;
 
   WebRequestAPI* web_request_api() { return web_request_api_; }
@@ -245,8 +247,8 @@ class ProxyingURLLoaderFactory
   const int render_process_id_;
   mojo::BindingSet<network::mojom::URLLoaderFactory> proxy_bindings_;
   network::mojom::URLLoaderFactoryPtr target_factory_;
-  mojo::Binding<network::mojom::TrustedURLLoaderHeaderClient>
-      url_loader_header_client_binding_;
+  mojo::Receiver<network::mojom::TrustedURLLoaderHeaderClient>
+      url_loader_header_client_receiver_{this};
 
   // Mapping from our own internally generated request ID to an
   // InProgressRequest instance.
