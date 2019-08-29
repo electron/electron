@@ -17,12 +17,17 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
+#include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/url_request_context_getter.h"
 
 class PrefRegistrySimple;
 class PrefService;
 class ValueMapPrefStore;
+
+namespace network {
+class SharedURLLoaderFactory;
+}
 
 namespace storage {
 class SpecialStoragePolicy;
@@ -91,8 +96,8 @@ class AtomBrowserContext
   // Get the request context, if there is none, create it.
   net::URLRequestContextGetter* GetRequestContext();
   ResolveProxyHelper* GetResolveProxyHelper();
-
   predictors::PreconnectManager* GetPreconnectManager();
+  scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
 
   // content::BrowserContext:
   base::FilePath GetPath() override;
@@ -190,6 +195,9 @@ class AtomBrowserContext
   // Owned by the KeyedService system.
   extensions::AtomExtensionSystem* extension_system_;
 #endif
+
+  // Shared URLLoaderFactory.
+  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
 
   base::WeakPtrFactory<AtomBrowserContext> weak_factory_;
 

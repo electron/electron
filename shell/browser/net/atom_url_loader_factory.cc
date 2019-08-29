@@ -392,12 +392,9 @@ void AtomURLLoaderFactory::StartLoadingHttp(
     }
   }
 
-  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context.get())
-          ->GetURLLoaderFactoryForBrowserProcess();
   new URLPipeLoader(
-      url_loader_factory, std::move(request), std::move(loader),
-      std::move(client),
+      browser_context->GetURLLoaderFactory(), std::move(request),
+      std::move(loader), std::move(client),
       static_cast<net::NetworkTrafficAnnotationTag>(traffic_annotation),
       std::move(upload_data));
 }
