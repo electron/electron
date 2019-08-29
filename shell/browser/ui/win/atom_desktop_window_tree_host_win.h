@@ -19,6 +19,19 @@ class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
   ~AtomDesktopWindowTreeHostWin() override;
 
+  void Init(const views::Widget::InitParams& params) override;
+  void Show(ui::WindowShowState show_state,
+            const gfx::Rect& restore_bounds) override;
+  void SetSize(const gfx::Size& size) override;
+  void SetBoundsInDIP(const gfx::Rect& bounds) override;
+  void CenterWindow(const gfx::Size& size) override;
+  void GetWindowPlacement(gfx::Rect* bounds,
+                          ui::WindowShowState* show_state) const override;
+  gfx::Rect GetWindowBoundsInScreen() const override;
+  gfx::Rect GetClientAreaBoundsInScreen() const override;
+  gfx::Rect GetRestoredBounds() const override;
+  gfx::Rect GetWorkAreaBoundsInScreen() const override;
+
  protected:
   bool PreHandleMSG(UINT message,
                     WPARAM w_param,

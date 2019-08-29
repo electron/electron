@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Heilig Benedek <benecene@gmail.com>
+Date: Thu, 29 Aug 2019 22:17:17 +0200
+Subject: fix: use rounded scaling for window sizing on Windows
+
+Chromium uses ceiled sizes when translating between DIP coordinates and screen
+coordinates to ensure that content of native widgets isn't cut off ever. This
+however has some side effects, mostly that window sizing behaves very weirdly
+when using fractional scaling (1.25 for example) - if you set the bounds of a
+window, you might not get the same bounds back when you query the window for it.
+This patch exposes a couple of things so we can override this behaviour in our
+code.
+
+diff --git a/ui/display/win/screen_win.h b/ui/display/win/screen_win.h
+index e47db8c64fce4cee9f5af282229aef7de4093a7a..f4a3f70f4bc464a5526940e13b8dc6c6efce0f81 100644
+--- a/ui/display/win/screen_win.h
++++ b/ui/display/win/screen_win.h
+@@ -148,7 +148,7 @@ class DISPLAY_EXPORT ScreenWin : public Screen,
+   // Returns the NativeView associated with the HWND.
+   virtual gfx::NativeWindow GetNativeWindowFromHWND(HWND hwnd) const;
+ 
+- protected:
++ // protected:
+   ScreenWin(bool initialize);
+ 
+   // Screen:
+@@ -183,7 +183,7 @@ class DISPLAY_EXPORT ScreenWin : public Screen,
+   virtual HWND GetRootWindow(HWND hwnd) const;
+   virtual int GetSystemMetrics(int metric) const;
+ 
+- private:
++ // private:
+   void Initialize();
+   void OnWndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+   void UpdateAllDisplaysAndNotify();
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+index 335db0db49bbfba35b064c93d75b2dd7ae8e79f9..719180a5990b756a5fffe9908fcb76f47fa6080d 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+@@ -230,7 +230,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+   const Widget* GetWidget() const;
+   HWND GetHWND() const;
+ 
+- private:
++ // private:
+   friend class ::views::test::DesktopWindowTreeHostWinTestApi;
+ 
+   void SetWindowTransparency();
