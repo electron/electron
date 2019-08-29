@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/win/atom_desktop_window_tree_host_win.h"
 
+#include <algorithm>
+
 #include "ui/aura/client/aura_constants.h"
 #include "ui/base/win/shell.h"
 #include "ui/display/win/screen_win.h"
