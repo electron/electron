@@ -95,7 +95,7 @@ async function runElectronTests () {
 
   const testResultsDir = process.env.ELECTRON_TEST_RESULTS_DIR
   for (const [runnerId, { description, run }] of runners) {
-    if (runnersToRun && runnersToRun.includes(runnerId)) {
+    if (runnersToRun && !runnersToRun.includes(runnerId)) {
       console.info('\nSkipping:', description)
       continue
     }
