@@ -385,8 +385,8 @@ std::unique_ptr<SkRegion> BrowserWindow::DraggableRegionsToSkRegion(
   auto sk_region = std::make_unique<SkRegion>();
   for (const auto& region : regions) {
     sk_region->op(
-        region->bounds.x(), region->bounds.y(), region->bounds.right(),
-        region->bounds.bottom(),
+        {region->bounds.x(), region->bounds.y(), region->bounds.right(),
+         region->bounds.bottom()},
         region->draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
   return sk_region;
