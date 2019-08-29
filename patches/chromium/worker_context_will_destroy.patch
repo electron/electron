@@ -5,7 +5,7 @@ Subject: worker_context_will_destroy.patch
 
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 76d775b20307a3c9a779489e754c6849a0f21d64..533a1621e82461d8611ba1d8f2ed2fc527085a03 100644
+index 43febd2179926b6c1f56bfb0907e64dfe608994f..775e89ec0addb93a3065456e12dd2f7b79b86ded 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -384,6 +384,11 @@ class CONTENT_EXPORT ContentRendererClient {
@@ -21,10 +21,10 @@ index 76d775b20307a3c9a779489e754c6849a0f21d64..533a1621e82461d8611ba1d8f2ed2fc5
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index e9bfa54b42c83098f7722066b531ed4f72ad87fe..cbce4b19dad7b58becf273ac7520dd66bb09debe 100644
+index 944011afc9acf8ed9b46d9a1c6ccfe052d3536c0..43fa87dcfa985f5a63a1205bb1e3f4b2b7d9b19f 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -914,6 +914,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -934,6 +934,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -38,10 +38,10 @@ index e9bfa54b42c83098f7722066b531ed4f72ad87fe..cbce4b19dad7b58becf273ac7520dd66
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 7c601c7473703855712560d9d50257935df0a252..75fbe2acb9c73f815bbc37591dfa09701c66463e 100644
+index b772dfa6a64827253d63c922259cbc3c213daeb1..52fa6521b95974380ef2a5028c2875a9b88f01c6 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -187,6 +187,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -189,6 +189,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
@@ -50,10 +50,10 @@ index 7c601c7473703855712560d9d50257935df0a252..75fbe2acb9c73f815bbc37591dfa0970
        const blink::WebString& header_name) override;
  
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index e67d44113821ce7a071060da12747d40aa742201..1748df3948d666d3bfd7c9eeac383c8b9430e4f9 100644
+index 00724bc9b4fdc8b4507818683aaf2e1c9b923cdb..190b177ab5bec090ae90c56bea915f826449e93f 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -673,6 +673,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -679,6 +679,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
@@ -62,10 +62,10 @@ index e67d44113821ce7a071060da12747d40aa742201..1748df3948d666d3bfd7c9eeac383c8b
        const WebSecurityOrigin& script_origin) {
      return false;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index 391a9d1099ac3226c6c0d42e74e672f958e5a58b..3d66c80a190a533fade36d452f8093116a0d6c1b 100644
+index 06b529f8beaa0a2ab1f750b21f7e511709008b45..773e98cc058fb13b8b1b127d83a8caf4358909ca 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -658,6 +658,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+@@ -662,6 +662,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
      nested_runner_->QuitNow();
    }
  

@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 4cc2d57aee03bb2241caddf370c466a8ffc374ba..672b8c3200a9044d381e455d28d3b7916b38e20e 100644
+index 8fdcc4194291910c42c103b77cf4e8267b81f566..1ad01316f2e5aca2bdd3c2ce752bd5a478a920ee 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -95,6 +95,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -215,7 +215,7 @@ index 350e8aa2ed6cb7b5725b23795a25edc710b3c6be..4c6e78f9dba1e607bee61842a884201a
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 76e29b92cbcacec4abe5e9c36d59881853926ef3..9843a25e3b3b85a321656158ba34e3579a1f2b1c 100644
+index 7bcc45b7673408ca88e0f8406bfa69ce41ebeabf..6406e714e0d59a615e123f5cdf0d28e7da46e5eb 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -218,6 +218,7 @@
@@ -226,7 +226,7 @@ index 76e29b92cbcacec4abe5e9c36d59881853926ef3..9843a25e3b3b85a321656158ba34e357
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/url_constants.h"
-@@ -2906,6 +2907,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2897,6 +2898,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -235,10 +235,10 @@ index 76e29b92cbcacec4abe5e9c36d59881853926ef3..9843a25e3b3b85a321656158ba34e357
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index e9c5648afd93deb749115b929db98ac9ce7d06b1..bbe36538ba1843402725cfdb41e6cba63659c8b0 100644
+index f15823dd27ae8f91257afd8ae81a9c3915c50059..c8d239ff9a5a66f02248ef6b9e202e7c347c356c 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2859,6 +2859,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2861,6 +2861,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

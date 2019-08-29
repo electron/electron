@@ -61,7 +61,7 @@ index 13f9d7af3ae796ecec3a9189aa59f4b20171fd7a..9c35b294340cce070a9f428dac6aa587
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 97079241f54b876c6863097ab523daed4884f410..628a3892a6f5de1247313b64a00cdae2a8557c57 100644
+index da3383624ff83c20fd94578a80e94d00689bfefc..9f2016e6308f81f8753aa7649b6a3dd81e673797 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -180,16 +180,16 @@ index 97079241f54b876c6863097ab523daed4884f410..628a3892a6f5de1247313b64a00cdae2
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetRenderViewHost() ||
-@@ -554,8 +561,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
-   DCHECK(!print_job_);
-   print_job_ = base::MakeRefCounted<PrintJob>();
-   print_job_->Initialize(std::move(query), RenderSourceName(), number_pages_);
+@@ -558,8 +565,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+   print_job_->SetSource(PrintJob::Source::PRINT_PREVIEW, /*source_id=*/"");
+ #endif  // defined(OS_CHROMEOS)
+ 
 -  registrar_.Add(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
 -                 content::Source<PrintJob>(print_job_.get()));
    printing_succeeded_ = false;
    return true;
  }
-@@ -604,6 +609,13 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -608,6 +613,13 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -203,7 +203,7 @@ index 97079241f54b876c6863097ab523daed4884f410..628a3892a6f5de1247313b64a00cdae2
    if (!print_job_)
      return;
  
-@@ -613,8 +625,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -617,8 +629,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
      rfh->Send(msg.release());
    }
  
@@ -215,7 +215,7 @@ index 97079241f54b876c6863097ab523daed4884f410..628a3892a6f5de1247313b64a00cdae2
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -684,6 +697,9 @@ bool PrintViewManagerBase::PrintNowInternal(
+@@ -688,6 +701,9 @@ bool PrintViewManagerBase::PrintNowInternal(
    // Don't print / print preview interstitials or crashed tabs.
    if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
      return false;

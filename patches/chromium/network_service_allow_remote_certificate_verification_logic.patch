@@ -5,7 +5,7 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index ace1397d74dc49d730fd635aed0206febf8711f4..13fcd399516c7c26cf89a15dda083faea97ea969 100644
+index 0c8af73113c7462579a1cd99da7f4d4cb678cf56..06f380054856f0490cb8e4356d2d0f06867ad110 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -90,6 +90,11 @@
@@ -134,7 +134,7 @@ index ace1397d74dc49d730fd635aed0206febf8711f4..13fcd399516c7c26cf89a15dda083fae
    std::unique_ptr<net::NetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(this);
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 936ed0637758cb8b0b39d04dc0bf84a80b38eeec..f765e5e232de56f070d404e16149abd6627159cd 100644
+index 483eaa9db408c1d325376c5ce61fd21d4b43c383..0402e1dfa414df8ddb82af42222d8a9886c3807b 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -80,6 +80,7 @@ class DomainReliabilityMonitor;
@@ -163,7 +163,7 @@ index 936ed0637758cb8b0b39d04dc0bf84a80b38eeec..f765e5e232de56f070d404e16149abd6
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index a08498e7d079bfc19ae1b3d9f0fe59c4c4946025..d7a183cede95b10a670d5ed88d6864cb9192e98c 100644
+index 9abceaef003d92df3761051c557b358284ec7dd6..141b0297329911ebe17ebb888d11dbff3d465027 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -164,6 +164,17 @@ interface TrustedURLLoaderHeaderClient {
