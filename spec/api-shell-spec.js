@@ -7,6 +7,7 @@ const { shell, remote } = require('electron')
 const { BrowserWindow } = remote
 
 const { closeWindow } = require('./window-helpers')
+const { emittedOnce } = require('./events-helpers')
 
 describe('shell module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -52,6 +53,13 @@ describe('shell module', () => {
         process.env.DISPLAY = ''
         requestReceived = Promise.resolve()
         url = 'http://127.0.0.1'
+      } else if (process.platform === 'darwin') {
+        // On the Mac CI machines, Safari tries to ask for a password to the
+        // code signing keychain we set up to test code signing (see
+        // https://github.com/electron/electron/pull/19969#issuecomment-526278890),
+        // so use a blur event as a crude proxy.
+        w = new BrowserWindow({ show: true })
+        requestReceived = emittedOnce(w, 'blur')
       } else {
         const server = http.createServer((req, res) => {
           res.end()
