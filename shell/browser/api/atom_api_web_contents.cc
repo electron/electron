@@ -100,10 +100,12 @@
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
+#else
+#include "ui/base/cocoa/defaults_utils.h"
 #endif
 
-#if defined(OS_MACOSX)
-#include "ui/base/cocoa/defaults_utils.h"
+#if defined(OS_LINUX)
+#include "ui/views/linux_ui/linux_ui.h"
 #endif
 
 #if defined(OS_LINUX) || defined(OS_WIN)
@@ -466,6 +468,10 @@ void WebContents::InitWithSessionAndOptions(
   base::TimeDelta interval;
   if (ui::TextInsertionCaretBlinkPeriod(&interval))
     prefs->caret_blink_interval = interval;
+#elif defined(OS_LINUX)
+  views::LinuxUI* linux_ui = views::LinuxUI::instance();
+  if (linux_ui)
+    prefs->caret_blink_interval = linux_ui->GetCursorBlinkInterval();
 #endif
 
   // Save the preferences in C++.
