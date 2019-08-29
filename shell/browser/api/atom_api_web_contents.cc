@@ -102,6 +102,10 @@
 #include "ui/aura/window.h"
 #endif
 
+#if defined(OS_MACOSX)
+#include "ui/base/cocoa/defaults_utils.h"
+#endif
+
 #if defined(OS_LINUX) || defined(OS_WIN)
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/gfx/font_render_params.h"
@@ -456,6 +460,12 @@ void WebContents::InitWithSessionAndOptions(
   prefs->use_autohinter = params->autohinter;
   prefs->use_bitmaps = params->use_bitmaps;
   prefs->subpixel_rendering = params->subpixel_rendering;
+#endif
+
+#if defined(OS_MACOSX)
+  base::TimeDelta interval;
+  if (ui::TextInsertionCaretBlinkPeriod(&interval))
+    prefs->caret_blink_interval = interval;
 #endif
 
   // Save the preferences in C++.
