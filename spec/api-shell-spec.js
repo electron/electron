@@ -50,14 +50,13 @@ describe('shell module', () => {
     })
 
     it('opens an external link', async () => {
-      let url
+      let url = 'http://127.0.0.1'
       let requestReceived
       if (process.platform === 'linux') {
         process.env.BROWSER = '/bin/true'
         process.env.DE = 'generic'
         process.env.DISPLAY = ''
         requestReceived = Promise.resolve()
-        url = 'http://127.0.0.1'
       } else if (process.platform === 'darwin') {
         // On the Mac CI machines, Safari tries to ask for a password to the
         // code signing keychain we set up to test code signing (see
