@@ -267,7 +267,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnLoaderCreated(
-    network::mojom::TrustedHeaderClientRequest request) {
+    mojo::PendingReceiver<network::mojom::TrustedHeaderClient> request) {
   header_client_binding_.Bind(std::move(request));
 }
 
@@ -731,7 +731,7 @@ void ProxyingURLLoaderFactory::Clone(
 
 void ProxyingURLLoaderFactory::OnLoaderCreated(
     int32_t request_id,
-    network::mojom::TrustedHeaderClientRequest request) {
+    mojo::PendingReceiver<network::mojom::TrustedHeaderClient> request) {
   auto it = network_request_id_to_web_request_id_.find(request_id);
   if (it == network_request_id_to_web_request_id_.end())
     return;
