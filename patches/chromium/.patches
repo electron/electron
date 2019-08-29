@@ -76,3 +76,4 @@ fix_disabling_compositor_recycling.patch
 picture-in-picture.patch
 allow_new_privileges_in_unsandboxed_child_processes.patch
 ssl_security_state_tab_helper.patch
+revert_cleanup_remove_menu_subtitles_sublabels.patch
