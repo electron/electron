@@ -657,9 +657,6 @@ describe('app module', () => {
     })
   })
 
-    })
-  })
-
   describe('getPath("logs")', () => {
     const logsPaths = {
       'darwin': path.resolve(homedir(), 'Library', 'Logs'),
@@ -680,7 +677,9 @@ describe('app module', () => {
       expect(() => { app.getPath('logs') }).to.not.throw()
 
       const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.true
+      expect(fs.existsSync(osLogPath)).to.be.true    })
+  })
+
   describe('select-client-certificate event', () => {
     let w: BrowserWindow
 
