@@ -97,6 +97,10 @@
 #include "ui/base/cocoa/defaults_utils.h"
 #endif
 
+#if defined(TOOLKIT_VIEWS)
+#include "ui/views/controls/textfield/textfield.h"
+#endif
+
 #if defined(OS_LINUX)
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
@@ -448,6 +452,13 @@ void WebContents::InitWithSessionAndOptions(
   views::LinuxUI* linux_ui = views::LinuxUI::instance();
   if (linux_ui)
     prefs->caret_blink_interval = linux_ui->GetCursorBlinkInterval();
+#endif
+
+#if defined(OS_WIN)
+  static const size_t system_value = ::GetCaretBlinkTime();
+  if (system_value != 0 && system_value != INFINITE)
+    prefs->caret_blink_interval =
+        base::TimeDelta::FromMilliseconds(system_value);
 #endif
 
   // Save the preferences in C++.
