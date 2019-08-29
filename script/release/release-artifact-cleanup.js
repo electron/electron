@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 
 if (!process.env.CI) require('dotenv-safe').load()
-require('colors')
-const pass = '\u2713'.green
-const fail = '\u2717'.red
 const args = require('minimist')(process.argv.slice(2), {
   string: ['tag', 'releaseID'],
   default: { releaseID: '' }
 })
+const path = require('path')
 const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js')
@@ -16,7 +14,9 @@ const octokit = require('@octokit/rest')({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 })
 
-const path = require('path')
+require('colors')
+const pass = '✓'.green
+const fail = '✗'.red
 
 function getLastBumpCommit (tag) {
   const data = execSync(`git log -n1 --grep "Bump ${tag}" --format='format:{"hash": "%H", "message": "%s"}'`).toString()
