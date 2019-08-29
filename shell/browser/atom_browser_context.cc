@@ -28,6 +28,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "shell/browser/atom_blob_reader.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_main_parts.h"
@@ -269,6 +270,43 @@ predictors::PreconnectManager* AtomBrowserContext::GetPreconnectManager() {
     preconnect_manager_.reset(new predictors::PreconnectManager(nullptr, this));
   }
   return preconnect_manager_.get();
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+AtomBrowserContext::GetURLLoaderFactory() {
+  if (url_loader_factory_)
+    return url_loader_factory_;
+
+  network::mojom::URLLoaderFactoryPtr network_factory;
+  mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_request =
+      mojo::MakeRequest(&network_factory);
+
+  // Consult the embedder.
+  network::mojom::TrustedURLLoaderHeaderClientPtrInfo header_client;
+  static_cast<content::ContentBrowserClient*>(AtomBrowserClient::Get())
+      ->WillCreateURLLoaderFactory(
+          this, nullptr, -1,
+          content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
+          url::Origin(), &factory_request, &header_client, nullptr);
+
+  network::mojom::URLLoaderFactoryParamsPtr params =
+      network::mojom::URLLoaderFactoryParams::New();
+  params->header_client = std::move(header_client);
+  params->process_id = network::mojom::kBrowserProcessId;
+  params->is_trusted = true;
+  params->is_corb_enabled = false;
+  // The tests of net module would fail if this setting is true, it seems that
+  // the non-NetworkService implementation always has web security enabled.
+  params->disable_web_security = false;
+
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(this);
+  storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
+      std::move(factory_request), std::move(params));
+  url_loader_factory_ =
+      base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
+          std::move(network_factory));
+  return url_loader_factory_;
 }
 
 content::PushMessagingService* AtomBrowserContext::GetPushMessagingService() {
