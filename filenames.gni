@@ -468,6 +468,8 @@ filenames = {
     "atom/browser/ui/tray_icon_cocoa.mm",
     "atom/browser/ui/tray_icon_observer.h",
     "atom/browser/ui/tray_icon_win.cc",
+    "atom/browser/ui/util_gtk.cc",
+    "atom/browser/ui/util_gtk.h",
     "atom/browser/ui/views/atom_views_delegate.cc",
     "atom/browser/ui/views/atom_views_delegate.h",
     "atom/browser/ui/views/autofill_popup_view.cc",
