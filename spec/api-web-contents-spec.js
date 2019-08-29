@@ -605,8 +605,7 @@ describe('webContents module', () => {
     })
   })
 
-  // FIXME: disable during chromium update due to crash in content::WorkerScriptFetchInitation::CreateScriptLoaderOnIO.
-  xdescribe('Shared Workers', () => {
+  describe('Shared Workers', () => {
     let worker1
     let worker2
 
@@ -632,7 +631,7 @@ describe('webContents module', () => {
     })
 
     it('can inspect a specific shared worker', (done) => {
-      const contents = webContents.getAllWebContents()
+      const contents = remote.getCurrentWebContents()
       const sharedWorkers = contents.getAllSharedWorkers()
 
       contents.once('devtools-opened', () => {
