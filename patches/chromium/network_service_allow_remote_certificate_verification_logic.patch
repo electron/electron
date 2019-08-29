@@ -5,7 +5,7 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index cd44eaba776c364dbcc389f191a18f6e3939a061..6cbdc3abee5c8e10f6d8a09bf823d38a2cb89a57 100644
+index ace1397d74dc49d730fd635aed0206febf8711f4..13fcd399516c7c26cf89a15dda083faea97ea969 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -90,6 +90,11 @@
@@ -134,7 +134,7 @@ index cd44eaba776c364dbcc389f191a18f6e3939a061..6cbdc3abee5c8e10f6d8a09bf823d38a
    std::unique_ptr<net::NetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(this);
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 8c4ade92188379213aae4f6a00c731b5d0e7dbd2..5eed60cb19839efb695ad5f089390625d6d62c1d 100644
+index 936ed0637758cb8b0b39d04dc0bf84a80b38eeec..f765e5e232de56f070d404e16149abd6627159cd 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -80,6 +80,7 @@ class DomainReliabilityMonitor;
@@ -163,11 +163,11 @@ index 8c4ade92188379213aae4f6a00c731b5d0e7dbd2..5eed60cb19839efb695ad5f089390625
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 85ec0fceed8c6ef4ac4b7343dec6315a568f55a5..e256274a418be08cc471a725aaf850724ac22dcf 100644
+index bd03a47acefb77d0271f58ba28866f689ac21ad3..4e21a1276d83ce0154aa06e169e4b4394d215164 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -163,6 +163,17 @@ interface TrustedURLLoaderHeaderClient {
-   OnLoaderCreated(int32 request_id, TrustedHeaderClient& header_client);
+@@ -164,6 +164,17 @@ interface TrustedURLLoaderHeaderClient {
+                   pending_receiver<TrustedHeaderClient> header_client);
  };
  
 +interface CertVerifierClient {
@@ -184,7 +184,7 @@ index 85ec0fceed8c6ef4ac4b7343dec6315a568f55a5..e256274a418be08cc471a725aaf85072
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -696,6 +707,9 @@ interface NetworkContext {
+@@ -697,6 +708,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(NetworkContextClient client);
  
