@@ -444,6 +444,7 @@ void WebContents::InitWithSessionAndOptions(
   prefs->subpixel_rendering = params->subpixel_rendering;
 #endif
 
+// Honor the system's cursor blink rate settings
 #if defined(OS_MACOSX)
   base::TimeDelta interval;
   if (ui::TextInsertionCaretBlinkPeriod(&interval))
@@ -452,13 +453,14 @@ void WebContents::InitWithSessionAndOptions(
   views::LinuxUI* linux_ui = views::LinuxUI::instance();
   if (linux_ui)
     prefs->caret_blink_interval = linux_ui->GetCursorBlinkInterval();
-#endif
-
-#if defined(OS_WIN)
-  static const size_t system_value = ::GetCaretBlinkTime();
-  if (system_value != 0 && system_value != INFINITE)
+#elif defined(OS_WIN)
+  const auto system_msec = ::GetCaretBlinkTime();
+  if (system_msec != 0) {
     prefs->caret_blink_interval =
-        base::TimeDelta::FromMilliseconds(system_value);
+        (system_msec == INFINITE)
+            ? base::TimeDelta()
+            : base::TimeDelta::FromMilliseconds(system_msec);
+  }
 #endif
 
   // Save the preferences in C++.
