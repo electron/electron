@@ -494,8 +494,8 @@ describe('session module', () => {
     })
   })
 
-  describe.skip('ses.clearAuthCache(options)', () => {
-    it('can clear http auth info from cache', (done) => {
+  describe('ses.clearAuthCache(options)', () => {
+    it('can clear http auth info from cache', async () => {
       const ses = session.fromPartition('auth-cache')
       const server = http.createServer((req, res) => {
         const credentials = auth(req)
@@ -507,44 +507,31 @@ describe('session module', () => {
           res.end('authenticated')
         }
       })
-      server.listen(0, '127.0.0.1', () => {
-        const port = server.address().port
-        function issueLoginRequest (attempt = 1) {
-          if (attempt > 2) {
-            server.close()
-            return done()
-          }
-          const request = net.request({
-            url: `http://127.0.0.1:${port}`,
-            session: ses
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+      const port = server.address().port
+      const fetch = (url) => new Promise((resolve, reject) => {
+        const request = net.request({ url, session: ses })
+        request.on('response', (response) => {
+          let data = ''
+          response.on('data', (chunk) => {
+            data += chunk
           })
-          request.on('login', (info, callback) => {
-            attempt += 1
-            expect(info.scheme).to.equal('basic')
-            expect(info.realm).to.equal('Restricted')
-            callback('test', 'test')
+          response.on('end', () => {
+            resolve(data)
           })
-          request.on('response', (response) => {
-            let data = ''
-            response.pause()
-            response.on('data', (chunk) => {
-              data += chunk
-            })
-            response.on('end', () => {
-              expect(data).to.equal('authenticated')
-              ses.clearAuthCache({ type: 'password' }).then(() => {
-                issueLoginRequest(attempt)
-              })
-            })
-            response.on('error', (error) => { done(error) })
-            response.resume()
-          })
-          // Internal api to bypass cache for testing.
-          request.urlRequest._setLoadFlags(1 << 1)
-          request.end()
-        }
-        issueLoginRequest()
+          response.on('error', (error) => { reject(new Error(error)) })
+        });
+        request.end()
       })
+      // the first time should throw due to unauthenticated
+      await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected()
+      // passing the password should let us in
+      expect(await fetch(`http://test:test@127.0.0.1:${port}`)).to.equal('authenticated')
+      // subsequently, the credentials are cached
+      expect(await fetch(`http://127.0.0.1:${port}`)).to.equal('authenticated')
+      await ses.clearAuthCache({ type: 'password' })
+      // once the cache is cleared, we should get an error again
+      await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected()
     })
   })
 
@@ -594,7 +581,7 @@ describe('session module', () => {
     }
 
     it('can download using WebContents.downloadURL', (done) => {
-      const port = address.port
+      const port = downloadServer.address().port
       const w = new BrowserWindow({ show: false })
       w.webContents.session.once('will-download', function (e, item) {
         item.savePath = downloadFilePath
@@ -875,15 +862,15 @@ describe('session module', () => {
       const ses = session.fromPartition(''+Math.random())
       ses.setUserAgent(userAgent)
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } })
-      let headers: http.IncomingHttpHeaders | null = null
+      let headers = null
       const server = http.createServer((req, res) => {
         headers = req.headers
         res.end()
         server.close()
       })
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-      await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)
-      expect(headers!['user-agent']).to.equal(userAgent)
+      await w.loadURL(`http://127.0.0.1:${server.address().port}`)
+      expect(headers['user-agent']).to.equal(userAgent)
     })
   })
 })
