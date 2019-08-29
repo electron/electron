@@ -236,9 +236,9 @@ describe('app path module', () => {
 
   describe('getPath("logs")', () => {
     const logsPaths = {
-      'darwin': path.resolve(homedir(), 'Library', 'Logs'),
-      'linux': path.resolve(homedir(), 'AppData', app.name),
-      'win32': path.resolve(homedir(), 'AppData', app.name),
+      'darwin': path.resolve(os.homedir(), 'Library', 'Logs'),
+      'linux': path.resolve(os.homedir(), 'AppData', app.name),
+      'win32': path.resolve(os.homedir(), 'AppData', app.name),
     }
 
     it('has no logs directory by default', () => {
