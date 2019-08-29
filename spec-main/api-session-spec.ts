@@ -492,8 +492,8 @@ describe('session module', () => {
     })
   })
 
-  describe.skip('ses.clearAuthCache(options)', () => {
-    it('can clear http auth info from cache', (done) => {
+  describe('ses.clearAuthCache(options)', () => {
+    it('can clear http auth info from cache', async () => {
       const ses = session.fromPartition('auth-cache')
       const server = http.createServer((req, res) => {
         const credentials = auth(req)
@@ -505,42 +505,31 @@ describe('session module', () => {
           res.end('authenticated')
         }
       })
-      server.listen(0, '127.0.0.1', () => {
-        const port = (server.address() as AddressInfo).port
-        function issueLoginRequest (attempt = 1) {
-          if (attempt > 2) {
-            server.close()
-            return done()
-          }
-          const request = net.request({
-            url: `http://127.0.0.1:${port}`,
-            session: ses
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+      const port = (server.address() as AddressInfo).port
+      const fetch = (url: string) => new Promise((resolve, reject) => {
+        const request = net.request({ url, session: ses })
+        request.on('response', (response) => {
+          let data = ''
+          response.on('data', (chunk) => {
+            data += chunk
           })
-          request.on('login', (info, callback) => {
-            attempt += 1
-            expect(info.scheme).to.equal('basic')
-            expect(info.realm).to.equal('Restricted')
-            callback('test', 'test')
+          response.on('end', () => {
+            resolve(data)
           })
-          request.on('response', (response) => {
-            let data = ''
-            response.on('data', (chunk) => {
-              data += chunk
-            })
-            response.on('end', () => {
-              expect(data).to.equal('authenticated')
-              ses.clearAuthCache({ type: 'password' }).then(() => {
-                issueLoginRequest(attempt)
-              })
-            })
-            response.on('error', (error: any) => { done(error) })
-          });
-          // Internal api to bypass cache for testing.
-          (request as any).urlRequest._setLoadFlags(1 << 1)
-          request.end()
-        }
-        issueLoginRequest()
+          response.on('error', (error: any) => { reject(new Error(error)) })
+        });
+        request.end()
       })
+      // the first time should throw due to unauthenticated
+      await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected()
+      // passing the password should let us in
+      expect(await fetch(`http://test:test@127.0.0.1:${port}`)).to.equal('authenticated')
+      // subsequently, the credentials are cached
+      expect(await fetch(`http://127.0.0.1:${port}`)).to.equal('authenticated')
+      await ses.clearAuthCache({ type: 'password' })
+      // once the cache is cleared, we should get an error again
+      await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected()
     })
   })
 
