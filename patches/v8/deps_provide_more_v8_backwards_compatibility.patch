@@ -22,7 +22,7 @@ Reviewed-By: Yang Guo <yangguo@chromium.org>
 Reviewed-By: Michaël Zasso <targos@protonmail.com>
 
 diff --git a/include/v8.h b/include/v8.h
-index 69c2c314c27bcba09510092284194251a7b91719..729c023ced3f11bcab4b943038b3fa0872a3e041 100644
+index 01344fec995e38d741b89a062f5fa5c7a9d9b821..7b183a64e71be4916f721c1b804f4882d08e2aaf 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -1167,6 +1167,10 @@ class V8_EXPORT PrimitiveArray {
@@ -143,7 +143,7 @@ index 69c2c314c27bcba09510092284194251a7b91719..729c023ced3f11bcab4b943038b3fa08
  
    Local<String> ValueOf() const;
  
-@@ -10682,6 +10723,29 @@ template <class T> Value* Value::Cast(T* value) {
+@@ -10688,6 +10729,29 @@ template <class T> Value* Value::Cast(T* value) {
  }
  
  
@@ -174,7 +174,7 @@ index 69c2c314c27bcba09510092284194251a7b91719..729c023ced3f11bcab4b943038b3fa08
  #ifdef V8_ENABLE_CHECKS
    CheckCast(value);
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 2596e93d3bbbef09bca0cd430fa392c2a43f48cd..86317710ae15413a5a176019f234ce1d2ab226c5 100644
+index fc8246b47c4cc6b5b3a22570c37840cbeafa7811..01e47df41cd1d3d1a59b495d60688ee035845e06 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -2196,6 +2196,10 @@ int PrimitiveArray::Length() const {
@@ -324,7 +324,7 @@ index 2596e93d3bbbef09bca0cd430fa392c2a43f48cd..86317710ae15413a5a176019f234ce1d
  Local<v8::Value> v8::StringObject::New(Isolate* v8_isolate,
                                         Local<String> value) {
    i::Handle<i::String> string = Utils::OpenHandle(*value);
-@@ -8723,6 +8800,9 @@ bool MicrotasksScope::IsRunningMicrotasks(Isolate* v8_isolate) {
+@@ -8726,6 +8803,9 @@ bool MicrotasksScope::IsRunningMicrotasks(Isolate* v8_isolate) {
    return microtask_queue->IsRunningMicrotasks();
  }
  
@@ -334,7 +334,7 @@ index 2596e93d3bbbef09bca0cd430fa392c2a43f48cd..86317710ae15413a5a176019f234ce1d
  String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
      : str_(nullptr), length_(0) {
    if (obj.IsEmpty()) return;
-@@ -8740,6 +8820,9 @@ String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
+@@ -8743,6 +8823,9 @@ String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
  
  String::Utf8Value::~Utf8Value() { i::DeleteArray(str_); }
  
