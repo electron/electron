@@ -673,26 +673,29 @@ describe('app module', () => {
   })
 
   describe('getPath("logs")', () => {
+    // this won't be deterministic except on CI
+    before(function () {
+      if (!isCI) this.skip()
+    })
+  
     const logsPaths = {
-      'darwin': path.resolve(homedir(), 'Library', 'Logs'),
-      'linux': path.resolve(homedir(), 'AppData', app.name),
-      'win32': path.resolve(homedir(), 'AppData', app.name),
+      'darwin': path.resolve(homedir(),'Library', 'Logs', 'Electron'),
+      'linux': path.resolve(app.getPath('userData'), app.name, 'logs'),
+      'win32': path.resolve(app.getPath('userData'), app.name, 'logs'),
     }
 
     it('has no logs directory by default', () => {
-      // this won't be deterministic except on CI since
-      // users may or may not have this dir
-      if (!isCI) return
-
       const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.false
+      expect(fs.existsSync(osLogPath)).to.be.false(`${osLogPath} exists`)
     })
 
     it('creates a new logs directory if one does not exist', () => {
       expect(() => { app.getPath('logs') }).to.not.throw()
 
       const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.true
+      expect(fs.existsSync(osLogPath)).to.be.true(`${osLogPath} does not exist`)
+
+      if (isCI) fs.rmdirSync(osLogPath)
     })
   })
 
