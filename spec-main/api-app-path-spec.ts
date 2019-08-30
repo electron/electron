@@ -199,7 +199,7 @@ describe('app path module', () => {
   })
 
   describe('setAppLogsPath', () => {
-    const appLogsPath = path.join(os.tmpdir(), 'mylogs')
+    // const appLogsPath = path.join(os.tmpdir(), 'mylogs')
     it('by default', async () => {
       const output = await runTestApp('app-custom-path')
       switch (process.platform) {
