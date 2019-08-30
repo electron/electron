@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { ifdescribe } from './spec-helpers'
 import { emittedOnce } from './events-helpers'
-import { closeWindow } from 'spec/window-helpers';
+import { closeWindow } from './window-helpers';
 
 const fixtures = path.join(__dirname, 'fixtures')
 
