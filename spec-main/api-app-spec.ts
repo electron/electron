@@ -5,7 +5,6 @@ import * as https from 'https'
 import * as net from 'net'
 import * as fs from 'fs'
 import * as path from 'path'
-import { homedir } from 'os'
 import split = require('split')
 import { app, BrowserWindow, Menu } from 'electron'
 import { emittedOnce } from './events-helpers';
