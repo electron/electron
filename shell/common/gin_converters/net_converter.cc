@@ -22,6 +22,7 @@
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
 #include "services/network/public/cpp/resource_request.h"
+#include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter_gin_adapter.h"
@@ -267,6 +268,13 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
       case network::mojom::DataElementType::kBlob:
         upload_data.Set("blobUUID", element.blob_uuid());
         break;
+      case network::mojom::DataElementType::kDataPipe: {
+        auto holder = electron::api::DataPipeHolder::Create(isolate, element);
+        upload_data.Set("blobUUID", holder->id());
+        // The lifetime of data pipe is bound to the uploadData object.
+        upload_data.Set("dataPipe", holder);
+        break;
+      }
       default:
         NOTREACHED() << "Found unsupported data element";
     }

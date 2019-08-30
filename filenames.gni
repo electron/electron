@@ -47,6 +47,8 @@ filenames = {
     "shell/browser/api/atom_api_content_tracing.cc",
     "shell/browser/api/atom_api_cookies.cc",
     "shell/browser/api/atom_api_cookies.h",
+    "shell/browser/api/atom_api_data_pipe_holder.cc",
+    "shell/browser/api/atom_api_data_pipe_holder.h",
     "shell/browser/api/atom_api_debugger.cc",
     "shell/browser/api/atom_api_debugger.h",
     "shell/browser/api/atom_api_dialog.cc",
