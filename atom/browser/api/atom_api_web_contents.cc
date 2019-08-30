@@ -103,10 +103,6 @@
 #include "ui/base/cocoa/defaults_utils.h"
 #endif
 
-#if defined(TOOLKIT_VIEWS)
-#include "ui/views/controls/textfield/textfield.h"
-#endif
-
 #if defined(OS_LINUX)
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
