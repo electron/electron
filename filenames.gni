@@ -131,8 +131,6 @@ filenames = {
     "shell/browser/atom_autofill_driver_factory.h",
     "shell/browser/atom_autofill_driver.cc",
     "shell/browser/atom_autofill_driver.h",
-    "shell/browser/atom_blob_reader.cc",
-    "shell/browser/atom_blob_reader.h",
     "shell/browser/atom_browser_client.cc",
     "shell/browser/atom_browser_client.h",
     "shell/browser/atom_browser_context.cc",

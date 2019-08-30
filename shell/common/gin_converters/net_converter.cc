@@ -265,9 +265,6 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
                                                     element.length())
                                      .ToLocalChecked());
         break;
-      case network::mojom::DataElementType::kBlob:
-        upload_data.Set("blobUUID", element.blob_uuid());
-        break;
       case network::mojom::DataElementType::kDataPipe: {
         // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
         // becomes unecessarily complex, we should deprecate the getBlobData API
