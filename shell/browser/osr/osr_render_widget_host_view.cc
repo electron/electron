@@ -127,8 +127,7 @@ class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
                       const base::Closure& callback)
       : callback_(callback) {
     time_source_.reset(new viz::DelayBasedTimeSource(
-        base::CreateSingleThreadTaskRunnerWithTraits(
-            {content::BrowserThread::UI})
+        base::CreateSingleThreadTaskRunner({content::BrowserThread::UI})
             .get()));
     time_source_->SetTimebaseAndInterval(
         base::TimeTicks(),
@@ -276,7 +275,8 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
   // Marking the DelegatedFrameHost as removed from the window hierarchy is
   // necessary to remove all connections to its old ui::Compositor.
   if (is_showing_)
-    delegated_frame_host_->WasHidden();
+    delegated_frame_host_->WasHidden(
+        content::DelegatedFrameHost::HiddenCause::kOther);
   delegated_frame_host_->DetachFromCompositor();
 
   delegated_frame_host_.reset(NULL);
@@ -397,7 +397,9 @@ void OffScreenRenderWidgetHostView::Hide() {
   if (render_widget_host_)
     render_widget_host_->WasHidden();
 
-  GetDelegatedFrameHost()->WasHidden();
+  // TODO(deermichel): correct or kOther?
+  GetDelegatedFrameHost()->WasHidden(
+      content::DelegatedFrameHost::HiddenCause::kOccluded);
   GetDelegatedFrameHost()->DetachFromCompositor();
 
   is_showing_ = false;
@@ -480,10 +482,6 @@ void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
     const viz::LocalSurfaceId& local_surface_id,
     viz::CompositorFrame frame,
     base::Optional<viz::HitTestRegionList> hit_test_region_list) {
-  NOTREACHED();
-}
-
-void OffScreenRenderWidgetHostView::ClearCompositorFrame() {
   NOTREACHED();
 }
 

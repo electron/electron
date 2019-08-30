@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 
+#include <utility>
+
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_impl.h"
@@ -191,7 +193,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked, bool activate) {
                                               &params.wm_class_class);
 #endif
 
-    devtools_window_->Init(params);
+    devtools_window_->Init(std::move(params));
     devtools_window_->UpdateWindowIcon();
   }
 

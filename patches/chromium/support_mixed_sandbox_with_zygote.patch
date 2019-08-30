@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Wed, 28 Nov 2018 13:20:27 -0800
-Subject: support mixed-sandbox with zygote
+Subject: support_mixed_sandbox_with_zygote.patch
 
 On Linux, Chromium launches all new renderer processes via a "zygote"
 process which has the sandbox pre-initialized (see
@@ -22,21 +22,28 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 9b15d22bc109751516999e7d8449430143eaef5d..6f0671a753879d7b327681979090508e610cc129 100644
+index cbdff071f830cf31f4ed985e3c202b0fcb46f68c..299acbb8973f8b603575b006cfd1d296869f7c2a 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -399,6 +399,10 @@ class RendererSandboxedProcessLauncherDelegate
-     : public SandboxedProcessLauncherDelegate {
-  public:
-   RendererSandboxedProcessLauncherDelegate() {}
-+#if BUILDFLAG(USE_ZYGOTE_HANDLE)
-+  RendererSandboxedProcessLauncherDelegate(bool use_zygote):
-+    use_zygote_(use_zygote) {}
-+#endif
+@@ -389,6 +389,17 @@ class RendererSandboxedProcessLauncherDelegate
+   {
+   }
  
++#if BUILDFLAG(USE_ZYGOTE_HANDLE)
++  RendererSandboxedProcessLauncherDelegate(bool use_zygote)
++      : use_zygote_(use_zygote)
++#if defined(OS_WIN)
++      , renderer_code_integrity_enabled_(
++            GetContentClient()->browser()->IsRendererCodeIntegrityEnabled())
++#endif
++  {
++  }
++#endif
++
    ~RendererSandboxedProcessLauncherDelegate() override {}
  
-@@ -418,6 +422,9 @@ class RendererSandboxedProcessLauncherDelegate
+ #if defined(OS_WIN)
+@@ -410,6 +421,9 @@ class RendererSandboxedProcessLauncherDelegate
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
    service_manager::ZygoteHandle GetZygote() override {
@@ -46,19 +53,22 @@ index 9b15d22bc109751516999e7d8449430143eaef5d..6f0671a753879d7b327681979090508e
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -431,6 +438,11 @@ class RendererSandboxedProcessLauncherDelegate
-   service_manager::SandboxType GetSandboxType() override {
+@@ -424,10 +438,13 @@ class RendererSandboxedProcessLauncherDelegate
      return service_manager::SANDBOX_TYPE_RENDERER;
    }
-+
-+ private:
+ 
+-#if defined(OS_WIN)
+  private:
++#if defined(OS_WIN)
+   const bool renderer_code_integrity_enabled_;
+ #endif
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +  bool use_zygote_ = true;
 +#endif
  };
  
  const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1745,11 +1757,18 @@ bool RenderProcessHostImpl::Init() {
+@@ -1688,11 +1705,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  

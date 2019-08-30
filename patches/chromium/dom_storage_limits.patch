@@ -31,27 +31,10 @@ With that in mind, an acceptable alternative to disabling the limit at compile-t
 for a given `BrowserWindow` via a `webPreferences` option,
 similar to [`nodeIntegration`](https://electronjs.org/docs/tutorial/security#2-disable-nodejs-integration-for-remote-content).
 
-diff --git a/content/common/dom_storage/dom_storage_map.cc b/content/common/dom_storage/dom_storage_map.cc
-index fd088fb170bead6452ded14016f21f0c29659e03..b90b6cf9132d16bc3b2076c3fa313916e2b5ea7d 100644
---- a/content/common/dom_storage/dom_storage_map.cc
-+++ b/content/common/dom_storage/dom_storage_map.cc
-@@ -185,10 +185,12 @@ bool DOMStorageMap::SetItemInternal(MapType* map_type,
-   size_t new_item_size = size_in_storage(key, value);
-   size_t new_storage_used = storage_used_ - old_item_size + new_item_size;
- 
-+#if 0
-   // Only check quota if the size is increasing, this allows
-   // shrinking changes to pre-existing files that are over budget.
-   if (new_item_size > old_item_size && new_storage_used > quota_)
-     return false;
-+#endif
- 
-   (*map_type)[key] = value;
-   ResetKeyIterator();
-diff --git a/content/common/dom_storage/dom_storage_types.h b/content/common/dom_storage/dom_storage_types.h
-index e87afe5b8ee07f7038a7cc9c40832b6cd27884da..61c9a0dfff60f79c7b36ff5c7d741c06dca03ada 100644
---- a/content/common/dom_storage/dom_storage_types.h
-+++ b/content/common/dom_storage/dom_storage_types.h
+diff --git a/content/browser/dom_storage/dom_storage_types.h b/content/browser/dom_storage/dom_storage_types.h
+index 6c0b831ebaaa2c1749bbc7436ce1025656588310..b67767751cadc6072c133297c7a6cdcc6bfd0c98 100644
+--- a/content/browser/dom_storage/dom_storage_types.h
++++ b/content/browser/dom_storage/dom_storage_types.h
 @@ -21,6 +21,7 @@ typedef std::map<base::string16, base::NullableString16> DOMStorageValuesMap;
  
  // The quota for each storage area.
@@ -61,7 +44,7 @@ index e87afe5b8ee07f7038a7cc9c40832b6cd27884da..61c9a0dfff60f79c7b36ff5c7d741c06
  
  // In the browser process we allow some overage to
 diff --git a/third_party/blink/renderer/modules/storage/cached_storage_area.cc b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
-index 4b976b74490234cd9ad5ac7a0a63708b6edbbae3..183ed46369dc0f0026c53521d19209011d2d0eea 100644
+index d91fdc2a7d52307126bc04d44167edadb8c743a8..630acfca527aaec44742d45e47ce29d7754e3385 100644
 --- a/third_party/blink/renderer/modules/storage/cached_storage_area.cc
 +++ b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
 @@ -107,11 +107,13 @@ bool CachedStorageArea::SetItem(const String& key,

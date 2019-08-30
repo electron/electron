@@ -7,10 +7,10 @@ Dont compare RC.exe and RC.py output.
 FIXME: It has to be reverted once the script is fixed.
 
 diff --git a/build/toolchain/win/tool_wrapper.py b/build/toolchain/win/tool_wrapper.py
-index 926086670dac3ccf85f4085b513740aec1ebe9e5..cbb32f1143420d47af23f1ad92ee8656543a93e0 100644
+index 3834cf2c01a9c63bfe7a6fc9e7549930a5eda01c..454b831a37c13fdd2fe4d8953d60dab661386f9a 100644
 --- a/build/toolchain/win/tool_wrapper.py
 +++ b/build/toolchain/win/tool_wrapper.py
-@@ -224,7 +224,11 @@ class WinTool(object):
+@@ -250,7 +250,11 @@ class WinTool(object):
        if rc_exe_exit_code == 0:
          import filecmp
          # Strip "/fo" prefix.

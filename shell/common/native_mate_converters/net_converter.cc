@@ -20,13 +20,12 @@
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
-#include "net/url_request/url_request.h"
 #include "services/network/public/cpp/resource_request.h"
+#include "shell/browser/net/cert_verifier_client.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
-#include "storage/browser/blob/upload_blob_element_reader.h"
 
 namespace mate {
 
@@ -276,6 +275,18 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
   return ConvertToV8(isolate, dict);
 }
 
+// static
+v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
+    v8::Isolate* isolate,
+    electron::VerifyRequestParams val) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("hostname", val.hostname);
+  dict.Set("certificate", val.certificate);
+  dict.Set("verificationResult", val.default_result);
+  dict.Set("errorCode", val.error_code);
+  return dict.GetHandle();
+}
+
 }  // namespace mate
 
 namespace electron {
@@ -320,11 +331,12 @@ void GetUploadData(base::ListValue* upload_data_list,
       const net::UploadFileElementReader* file_reader = reader->AsFileReader();
       auto file_path = file_reader->path().AsUTF8Unsafe();
       upload_data_dict->SetKey("file", base::Value(file_path));
-    } else {
-      const storage::UploadBlobElementReader* blob_reader =
-          static_cast<storage::UploadBlobElementReader*>(reader.get());
-      upload_data_dict->SetString("blobUUID", blob_reader->uuid());
     }
+    // else {
+    //   const storage::UploadBlobElementReader* blob_reader =
+    //       static_cast<storage::UploadBlobElementReader*>(reader.get());
+    //   upload_data_dict->SetString("blobUUID", blob_reader->uuid());
+    // }
     upload_data_list->Append(std::move(upload_data_dict));
   }
 }

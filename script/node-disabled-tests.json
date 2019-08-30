@@ -1,4 +1,5 @@
 [
+  "parallel/test-assert",
   "parallel/test-async-hooks-close-during-destroy",
   "parallel/test-async-hooks-promise",
   "parallel/test-async-hooks-promise-triggerid",

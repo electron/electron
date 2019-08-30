@@ -61,7 +61,8 @@ bool ElectronRenderMessageFilter::OnMessageReceived(
   return handled;
 }
 
-void ElectronRenderMessageFilter::OnPreconnect(const GURL& url,
+void ElectronRenderMessageFilter::OnPreconnect(int render_frame_id,
+                                               const GURL& url,
                                                bool allow_credentials,
                                                int count) {
   if (count < 1) {
@@ -85,7 +86,7 @@ namespace predictors {
 PreconnectRequest::PreconnectRequest(
     const GURL& origin,
     int num_sockets,
-    net::NetworkIsolationKey network_isolation_key)
+    const net::NetworkIsolationKey& network_isolation_key)
     : origin(origin), num_sockets(num_sockets) {
   DCHECK_GE(num_sockets, 0);
 }

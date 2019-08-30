@@ -160,7 +160,8 @@ void RootView::RestoreFocus() {
   View* last_focused_view = last_focused_view_tracker_->view();
   if (last_focused_view) {
     GetFocusManager()->SetFocusedViewWithReason(
-        last_focused_view, views::FocusManager::kReasonFocusRestore);
+        last_focused_view,
+        views::FocusManager::FocusChangeReason::kFocusRestore);
   }
   if (menu_bar_autohide_)
     SetMenuBarVisibility(false);

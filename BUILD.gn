@@ -300,14 +300,6 @@ source_set("manifests") {
     "//printing/buildflags",
     "//services/service_manager/public/cpp",
   ]
-
-  if (enable_basic_printing) {
-    deps += [ "//components/services/pdf_compositor/public/cpp:manifest" ]
-  }
-
-  if (enable_print_preview) {
-    deps += [ "//chrome/services/printing/public/cpp:manifest" ]
-  }
 }
 
 npm_action("electron_version_args") {
@@ -354,6 +346,7 @@ source_set("electron_lib") {
     "//base:base_static",
     "//base/allocator:buildflags",
     "//chrome/app/resources:platform_locale_settings",
+    "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
     "//components/net_log",
     "//components/network_hints/common",
@@ -373,7 +366,7 @@ source_set("electron_lib") {
     "//device/bluetooth/public/cpp",
     "//gin",
     "//media/capture/mojom:video_capture",
-    "//media/mojo/interfaces",
+    "//media/mojo/mojom",
     "//net:extras",
     "//net:net_resources",
     "//net:net_with_v8",
@@ -386,7 +379,7 @@ source_set("electron_lib") {
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
     "//services/video_capture/public/mojom:constants",
-    "//services/viz/privileged/interfaces/compositing",
+    "//services/viz/privileged/mojom/compositing",
     "//skia",
     "//third_party/blink/public:blink",
     "//third_party/boringssl",
@@ -581,7 +574,7 @@ source_set("electron_lib") {
     ]
     deps += [
       "//components/viz/service",
-      "//services/viz/public/interfaces",
+      "//services/viz/public/mojom",
       "//ui/compositor",
     ]
   }

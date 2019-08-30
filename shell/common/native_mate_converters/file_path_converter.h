@@ -24,6 +24,12 @@ struct Converter<base::FilePath> {
     if (val->IsNull())
       return true;
 
+    v8::String::Value str(isolate, val);
+    if (str.length() == 0) {
+      *out = base::FilePath();
+      return true;
+    }
+
     base::FilePath::StringType path;
     if (Converter<base::FilePath::StringType>::FromV8(isolate, val, &path)) {
       *out = base::FilePath(path);

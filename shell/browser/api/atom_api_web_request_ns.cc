@@ -128,12 +128,9 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   details->Set("url", info->url);
   details->Set("method", info->method);
   details->Set("timestamp", base::Time::Now().ToDoubleT() * 1000);
+  details->Set("resourceType", info->type);
   if (!info->response_ip.empty())
     details->Set("ip", info->response_ip);
-  if (info->type.has_value())
-    details->Set("resourceType", info->type.value());
-  else
-    details->Set("resourceType", base::StringPiece("other"));
   if (info->response_headers) {
     details->Set("fromCache", info->response_from_cache);
     details->Set("statusLine", info->response_headers->GetStatusLine());

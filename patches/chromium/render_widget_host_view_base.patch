@@ -25,7 +25,7 @@ index f41270e262784602c90b79b7aefbcd1a7af43dd8..a28ea7ee72fbf596b2b1d10cacaad406
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 8e523d78e7655262b18e1b52d8365120df387908..cf9e284267d767ed35013a7aa5f675cebb3c68bb 100644
+index 41288f633262f49ed7fb174c1af4e1834061c940..7fac11ee38f50165a0089473de5be601b1edf040 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -24,9 +24,11 @@
@@ -62,7 +62,7 @@ index 8e523d78e7655262b18e1b52d8365120df387908..cf9e284267d767ed35013a7aa5f675ce
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -353,6 +360,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -348,6 +355,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

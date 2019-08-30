@@ -1,20 +1,21 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
-Date: Thu, 20 Sep 2018 17:50:34 -0700
+Date: Tue, 27 Aug 2019 15:11:55 -0700
 Subject: ssl_security_state_tab_helper.patch
 
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index f271b01fad91c169afb06795d9b8aa7207744139..6c3fcf193d5f47670c6642a5643b639dd7ed99a7 100644
+index 17a01036811666c92e066d5b5cbe8cd9068f2d2c..ecbf7530d405e399a2421b2855126a3be070ad14 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
-@@ -13,14 +13,18 @@
+@@ -13,16 +13,20 @@
  #include "base/strings/pattern.h"
  #include "base/strings/string_util.h"
  #include "build/build_config.h"
 +#if 0
  #include "chrome/browser/browser_process.h"
+ #include "chrome/browser/lookalikes/safety_tips/reputation_web_contents_observer.h"
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/safe_browsing/safe_browsing_service.h"
  #include "chrome/browser/safe_browsing/ui_manager.h"
@@ -24,33 +25,49 @@ index f271b01fad91c169afb06795d9b8aa7207744139..6c3fcf193d5f47670c6642a5643b639d
  #include "components/omnibox/browser/omnibox_field_trial.h"
  #include "components/omnibox/common/omnibox_features.h"
  #include "components/password_manager/core/browser/password_manager_metrics_util.h"
-+#endif
  #include "components/safe_browsing/buildflags.h"
++#endif
  #include "components/security_state/content/content_utils.h"
  #include "content/public/browser/browser_context.h"
-@@ -44,8 +48,10 @@
+ #include "content/public/browser/navigation_entry.h"
+@@ -44,7 +48,7 @@
+ #include "chrome/browser/chromeos/policy/policy_cert_service_factory.h"
  #endif  // defined(OS_CHROMEOS)
  
- #if BUILDFLAG(FULL_SAFE_BROWSING)
+-#if BUILDFLAG(FULL_SAFE_BROWSING)
 +#if 0
  #include "chrome/browser/safe_browsing/chrome_password_protection_service.h"
  #endif
-+#endif
  
- namespace {
- 
-@@ -65,8 +71,9 @@ void RecordSecurityLevel(
+@@ -66,8 +70,11 @@ void RecordSecurityLevel(
  
  }  // namespace
  
++
 +#if 0
  using password_manager::metrics_util::PasswordType;
--using safe_browsing::SafeBrowsingUIManager;
+ using safe_browsing::SafeBrowsingUIManager;
 +#endif
  
  SecurityStateTabHelper::SecurityStateTabHelper(
      content::WebContents* web_contents)
-@@ -154,6 +161,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -89,6 +96,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() const {
+   // information is still being initialized, thus no need to check for that.
+   state->malicious_content_status = GetMaliciousContentStatus();
+ 
++#if 0
+   safety_tips::ReputationWebContentsObserver* reputation_web_contents_observer =
+       safety_tips::ReputationWebContentsObserver::FromWebContents(
+           web_contents());
+@@ -97,6 +105,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() const {
+           ? reputation_web_contents_observer
+                 ->GetSafetyTipStatusForVisibleNavigation()
+           : security_state::SafetyTipStatus::kUnknown;
++  #endif
+   return state;
+ }
+ 
+@@ -165,6 +174,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
        web_contents()->GetController().GetVisibleEntry();
    if (!entry)
      return security_state::MALICIOUS_CONTENT_STATUS_NONE;
@@ -58,7 +75,7 @@ index f271b01fad91c169afb06795d9b8aa7207744139..6c3fcf193d5f47670c6642a5643b639d
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -220,6 +228,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -243,6 +253,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }

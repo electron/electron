@@ -31,7 +31,7 @@ SystemPreferences::~SystemPreferences() {
 
 #if !defined(OS_MACOSX)
 bool SystemPreferences::IsDarkMode() {
-  return ui::NativeTheme::GetInstanceForNativeUi()->SystemDarkModeEnabled();
+  return ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
 }
 #endif
 

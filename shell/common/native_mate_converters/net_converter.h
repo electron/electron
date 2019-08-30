@@ -13,6 +13,10 @@ class DictionaryValue;
 class ListValue;
 }  // namespace base
 
+namespace electron {
+struct VerifyRequestParams;
+}
+
 namespace net {
 class AuthChallengeInfo;
 class URLRequest;
@@ -77,6 +81,12 @@ template <>
 struct Converter<network::ResourceRequest> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const network::ResourceRequest& val);
+};
+
+template <>
+struct Converter<electron::VerifyRequestParams> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::VerifyRequestParams val);
 };
 
 }  // namespace mate

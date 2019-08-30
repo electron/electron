@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
@@ -60,6 +61,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
+  base::FilePath GetFontLookupTableCacheDir() override;
 
   // content::ContentBrowserClient:
   bool ShouldEnableStrictSiteIsolation() override;
@@ -71,9 +73,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   bool CanUseCustomSiteInstance() override;
 
  protected:
-  void RenderProcessWillLaunch(
-      content::RenderProcessHost* host,
-      service_manager::mojom::ServiceRequest* service_request) override;
+  void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
   content::SpeechRecognitionManagerDelegate*
   CreateSpeechRecognitionManagerDelegate() override;
   content::TtsControllerDelegate* GetTtsControllerDelegate() override;
@@ -108,7 +108,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       const GURL& request_url,
       bool is_main_frame_request,
       bool strict_enforcement,
-      bool expired_previous_decision,
       const base::Callback<void(content::CertificateRequestResultType)>&
           callback) override;
   base::OnceClosure SelectClientCertificate(
@@ -151,7 +150,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
   base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
-  std::vector<service_manager::Manifest> GetExtraServiceManifests() override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(
@@ -164,7 +162,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void OnNetworkServiceCreated(
       network::mojom::NetworkService* network_service) override;
   std::vector<base::FilePath> GetNetworkContextsParentDirectory() override;
-  bool ShouldBypassCORB(int render_process_id) const override;
   std::string GetProduct() override;
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
@@ -177,19 +174,27 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::BrowserContext* browser_context,
       content::RenderFrameHost* frame,
       int render_process_id,
-      bool is_navigation,
-      bool is_download,
+      URLLoaderFactoryType type,
       const url::Origin& request_initiator,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
-      network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+      mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
+          header_client,
       bool* bypass_redirect_checks) override;
+  network::mojom::URLLoaderFactoryPtrInfo
+  CreateURLLoaderFactoryForNetworkRequests(
+      content::RenderProcessHost* process,
+      network::mojom::NetworkContext* network_context,
+      mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
+          header_client,
+      const url::Origin& request_initiator) override;
 #if defined(OS_WIN)
-  bool PreSpawnRenderer(sandbox::TargetPolicy* policy) override;
+  bool PreSpawnRenderer(sandbox::TargetPolicy* policy,
+                        RendererSpawnFlags flags) override;
 #endif
 
   bool HandleExternalProtocol(
       const GURL& url,
-      content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
+      content::WebContents::Getter web_contents_getter,
       int child_id,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
@@ -254,7 +259,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   Delegate* delegate_ = nullptr;
 
-  mutable base::Lock process_preferences_lock_;
   std::map<int, ProcessPreferences> process_preferences_;
 
   std::string user_agent_override_ = "";

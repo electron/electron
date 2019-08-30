@@ -21,7 +21,6 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "shell/browser/atom_browser_client.h"
-#include "shell/browser/io_thread.h"
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
@@ -41,10 +40,6 @@ network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
   return auth_static_params;
 }
 
-}  // namespace
-
-namespace electron {
-
 network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
@@ -60,7 +55,7 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
   return auth_dynamic_params;
 }
 
-}  // namespace electron
+}  // namespace
 
 // SharedURLLoaderFactory backed by a SystemNetworkContextManager and its
 // network context. Transparently handles crashes.
@@ -116,14 +111,7 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
 };
 
 network::mojom::NetworkContext* SystemNetworkContextManager::GetContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    // SetUp should already have been called.
-    DCHECK(io_thread_network_context_);
-    return io_thread_network_context_.get();
-  }
-
-  if (!network_service_network_context_ ||
-      network_service_network_context_.encountered_error()) {
+  if (!network_context_ || network_context_.encountered_error()) {
     // This should call into OnNetworkServiceCreated(), which will re-create
     // the network service, if needed. There's a chance that it won't be
     // invoked, if the NetworkContext has encountered an error but the
@@ -131,9 +119,9 @@ network::mojom::NetworkContext* SystemNetworkContextManager::GetContext() {
     // trying to create a new NetworkContext would fail, anyways, and hopefully
     // a new NetworkContext will be created on the next GetContext() call.
     content::GetNetworkService();
-    DCHECK(network_service_network_context_);
+    DCHECK(network_context_);
   }
-  return network_service_network_context_.get();
+  return network_context_.get();
 }
 
 network::mojom::URLLoaderFactory*
@@ -176,23 +164,6 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   return network_context_params;
 }
 
-void SystemNetworkContextManager::SetUp(
-    network::mojom::NetworkContextRequest* network_context_request,
-    network::mojom::NetworkContextParamsPtr* network_context_params,
-    network::mojom::HttpAuthStaticParamsPtr* http_auth_static_params,
-    network::mojom::HttpAuthDynamicParamsPtr* http_auth_dynamic_params) {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    *network_context_request = mojo::MakeRequest(&io_thread_network_context_);
-    *network_context_params = CreateNetworkContextParams();
-  } else {
-    // Just use defaults if the network service is enabled, since
-    // CreateNetworkContextParams() can only be called once.
-    *network_context_params = CreateDefaultNetworkContextParams();
-  }
-  *http_auth_static_params = CreateHttpAuthStaticParams();
-  *http_auth_dynamic_params = electron::CreateHttpAuthDynamicParams();
-}
-
 // static
 SystemNetworkContextManager* SystemNetworkContextManager::CreateInstance(
     PrefService* pref_service) {
@@ -225,18 +196,13 @@ SystemNetworkContextManager::~SystemNetworkContextManager() {
 
 void SystemNetworkContextManager::OnNetworkServiceCreated(
     network::mojom::NetworkService* network_service) {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
-    return;
-
   network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
-  network_service->ConfigureHttpAuthPrefs(
-      electron::CreateHttpAuthDynamicParams());
+  network_service->ConfigureHttpAuthPrefs(CreateHttpAuthDynamicParams());
 
   // The system NetworkContext must be created first, since it sets
   // |primary_network_context| to true.
-  network_service->CreateNetworkContext(
-      MakeRequest(&network_service_network_context_),
-      CreateNetworkContextParams());
+  network_service->CreateNetworkContext(MakeRequest(&network_context_),
+                                        CreateNetworkContextParams());
 }
 
 network::mojom::NetworkContextParamsPtr

@@ -43,6 +43,8 @@ static_library("chrome") {
     "//chrome/browser/predictors/proxy_lookup_client_impl.h",
     "//chrome/browser/predictors/resolve_host_client_impl.cc",
     "//chrome/browser/predictors/resolve_host_client_impl.h",
+    "//chrome/browser/printing/printing_service.cc",
+    "//chrome/browser/printing/printing_service.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
     "//chrome/browser/ui/autofill/popup_view_common.cc",
@@ -167,16 +169,18 @@ static_library("chrome") {
       "//chrome/browser/printing/printing_message_filter.cc",
       "//chrome/browser/printing/printing_message_filter.h",
     ]
+
     public_deps += [
       "//chrome/services/printing:lib",
       "//components/printing/browser",
       "//components/printing/renderer",
-      "//components/services/pdf_compositor/public/cpp:factory",
+      "//components/services/pdf_compositor",
+      "//components/services/pdf_compositor/public/cpp",
       "//components/services/pdf_compositor/public/mojom",
     ]
+
     deps += [
       "//components/printing/common",
-      "//components/services/pdf_compositor",
       "//printing",
     ]
 
@@ -198,8 +202,6 @@ static_library("chrome") {
       "//chrome/browser/ui/views/overlay/back_to_tab_image_button.h",
       "//chrome/browser/ui/views/overlay/close_image_button.cc",
       "//chrome/browser/ui/views/overlay/close_image_button.h",
-      "//chrome/browser/ui/views/overlay/mute_image_button.cc",
-      "//chrome/browser/ui/views/overlay/mute_image_button.h",
       "//chrome/browser/ui/views/overlay/overlay_window_views.cc",
       "//chrome/browser/ui/views/overlay/overlay_window_views.h",
       "//chrome/browser/ui/views/overlay/playback_image_button.cc",

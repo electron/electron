@@ -1,17 +1,17 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: John Kleinschmidt <jkleinsc@github.com>
 Date: Thu, 20 Jun 2019 16:49:25 -0400
-Subject: put back deleted colors for autofill
+Subject: put_back_deleted_colors_for_autofill.patch
 
 https://chromium-review.googlesource.com/c/chromium/src/+/1652925 removed colors as they are no longer
 needed in chromium but our autofill implementation uses them.  This patch can be removed if we refactor
-our autofill implementation to work like chromium.
+our autofill implementation to work like Chromium's.
 
 diff --git a/chrome/browser/ui/libgtkui/native_theme_gtk.cc b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-index 3044d7b1829397a97b9a1ef9f115587bab74339d..c578d16c995c11daf90484593b5f9649d37b7041 100644
+index 80542c2cab345f991079453b66f58439d0f214eb..d460eb8d2432df1209412a28cecc22f2db9af99b 100644
 --- a/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 +++ b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-@@ -280,6 +280,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
+@@ -279,6 +279,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -40,10 +40,10 @@ index 3044d7b1829397a97b9a1ef9f115587bab74339d..c578d16c995c11daf90484593b5f9649
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 489369300d48dbfacb8c5489e06b77218f526bf4..340026b3dac4e833d3448d83db7b92c136134726 100644
+index 7fd49a2e26968daaa16ed3322b516f53ff60fb56..f902910ecc8e5b4945187e836655362ebba49204 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -51,6 +51,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -56,6 +56,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
        case NativeTheme::kColorId_BubbleFooterBackground:
          return SkColorSetRGB(0x32, 0x36, 0x39);
  
@@ -58,7 +58,7 @@ index 489369300d48dbfacb8c5489e06b77218f526bf4..340026b3dac4e833d3448d83db7b92c1
        // FocusableBorder
        case NativeTheme::kColorId_FocusedBorderColor:
          return SkColorSetA(gfx::kGoogleBlue300, 0x66);
-@@ -351,6 +359,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -359,6 +367,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return SkColorSetA(SK_ColorBLACK, 0x66);
  
@@ -78,10 +78,10 @@ index 489369300d48dbfacb8c5489e06b77218f526bf4..340026b3dac4e833d3448d83db7b92c1
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 97ced9d2495c33aad710d8ec5208b8107cd94ed9..62dc2fdad120e0cee44b15848d1ebb813ccb8559 100644
+index 3604105e43ee1866a8517c52ed05205b3ed10b56..70389e0245993faa2c17e9deefeb000280ef2368 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -367,6 +367,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -389,6 +389,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
      kColorId_TableHeaderText,
      kColorId_TableHeaderBackground,
      kColorId_TableHeaderSeparator,
@@ -94,24 +94,24 @@ index 97ced9d2495c33aad710d8ec5208b8107cd94ed9..62dc2fdad120e0cee44b15848d1ebb81
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index c6a0c1b9775f9d7e7a9be15d6f15ce84acf68b68..3b3a909bd920a7bf8f54fac4c00f29ce9556c20c 100644
+index 257206023976b889590bc225f6542881e8a5d463..3003643bfb78cec2f5e84fc9e1471e1ef54aae41 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -548,6 +548,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id) const {
+@@ -559,6 +559,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
      case kColorId_TableGroupingIndicatorColor:
-       return system_colors_[COLOR_GRAYTEXT];
+       return system_colors_[SystemThemeColor::kGrayText];
  
 +    // Results Tables
 +    case kColorId_ResultsTableNormalBackground:
-+      return system_colors_[COLOR_WINDOW];
++      return system_colors_[SystemThemeColor::kWindow];
 +    case kColorId_ResultsTableHoveredBackground:
-+      return color_utils::AlphaBlend(system_colors_[COLOR_HIGHLIGHT],
-+                                     system_colors_[COLOR_WINDOW], 0.25f);
++      return color_utils::AlphaBlend(system_colors_[SystemThemeColor::kWindowText],
++                                     system_colors_[SystemThemeColor::kWindow], 0.25f);
 +    case kColorId_ResultsTableNormalText:
-+      return system_colors_[COLOR_WINDOWTEXT];
++      return system_colors_[SystemThemeColor::kWindowText];
 +    case kColorId_ResultsTableDimmedText:
-+      return color_utils::AlphaBlend(system_colors_[COLOR_WINDOWTEXT],
-+                                     system_colors_[COLOR_WINDOW], 0.5f);
++      return color_utils::AlphaBlend(system_colors_[SystemThemeColor::kWindowText],
++                                     system_colors_[SystemThemeColor::kWindow], 0.5f);
      default:
        break;
    }
