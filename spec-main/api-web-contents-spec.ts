@@ -246,10 +246,7 @@ describe('webContents module', () => {
 
     // Temporarily disable on WOA until
     // https://github.com/electron/electron/issues/20008 is resolved
-    let testFn = it
-    if (process.platform === 'win32' && process.arch === 'arm64') {
-      testFn = it.skip
-    }
+    const testFn = (process.platform === 'win32' && process.arch === 'arm64' ? it.skip : it)
     testFn('rejects when loading fails due to DNS not resolved', async () => {
       await expect(w.loadURL('https://err.name.not.resolved')).to.eventually.be.rejected()
         .and.have.property('code', 'ERR_NAME_NOT_RESOLVED')
