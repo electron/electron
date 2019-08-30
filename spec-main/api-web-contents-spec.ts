@@ -337,6 +337,8 @@ describe('webContents module', () => {
     it('returns the focused web contents', async () => {
       const w = new BrowserWindow({show: true})
       await w.loadURL('about:blank')
+      const webContentsDOMReady = emittedOnce(w.webContents, 'dom-ready')
+      await webContentsDOMReady
       expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id)
 
       const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened')
