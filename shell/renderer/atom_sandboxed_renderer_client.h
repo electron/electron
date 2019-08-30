@@ -1,6 +1,7 @@
 // Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
+
 #ifndef SHELL_RENDERER_ATOM_SANDBOXED_RENDERER_CLIENT_H_
 #define SHELL_RENDERER_ATOM_SANDBOXED_RENDERER_CLIENT_H_
 
@@ -32,13 +33,12 @@ class AtomSandboxedRendererClient : public RendererClientBase {
   void SetupExtensionWorldOverrides(v8::Handle<v8::Context> context,
                                     content::RenderFrame* render_frame,
                                     int world_id) override;
+
+ private:
   // content::ContentRendererClient:
-  void RenderFrameCreated(content::RenderFrame*) override;
-  void RenderViewCreated(content::RenderView*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
 
- private:
   std::unique_ptr<base::ProcessMetrics> metrics_;
 
   // Getting main script context from web frame would lazily initializes

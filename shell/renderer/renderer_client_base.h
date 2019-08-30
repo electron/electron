@@ -86,6 +86,11 @@ class RendererClientBase : public content::ContentRendererClient {
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame) override;
+  bool ShouldFork(blink::WebLocalFrame* frame,
+                  const GURL& url,
+                  const std::string& http_method,
+                  bool is_initial_navigation,
+                  bool is_server_redirect) override;
 
  protected:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

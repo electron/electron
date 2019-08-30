@@ -153,17 +153,6 @@ void AtomSandboxedRendererClient::InitializeBindings(
           command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
 }
 
-void AtomSandboxedRendererClient::RenderFrameCreated(
-    content::RenderFrame* render_frame) {
-  new AtomRenderFrameObserver(render_frame, this);
-  RendererClientBase::RenderFrameCreated(render_frame);
-}
-
-void AtomSandboxedRendererClient::RenderViewCreated(
-    content::RenderView* render_view) {
-  RendererClientBase::RenderViewCreated(render_view);
-}
-
 void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentStart(render_frame);

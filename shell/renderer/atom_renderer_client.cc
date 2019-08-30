@@ -43,12 +43,6 @@ AtomRendererClient::~AtomRendererClient() {
   asar::ClearArchives();
 }
 
-void AtomRendererClient::RenderFrameCreated(
-    content::RenderFrame* render_frame) {
-  new AtomRenderFrameObserver(render_frame, this);
-  RendererClientBase::RenderFrameCreated(render_frame);
-}
-
 void AtomRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentStart(render_frame);
@@ -178,18 +172,6 @@ void AtomRendererClient::WillReleaseScriptContext(
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);
-}
-
-bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
-                                    const GURL& url,
-                                    const std::string& http_method,
-                                    bool is_initial_navigation,
-                                    bool is_server_redirect) {
-  // Handle all the navigations and reloads in browser.
-  // FIXME We only support GET here because http method will be ignored when
-  // the OpenURLFromTab is triggered, which means form posting would not work,
-  // we should solve this by patching Chromium in future.
-  return http_method == "GET";
 }
 
 void AtomRendererClient::DidInitializeWorkerContextOnWorkerThread(

@@ -2009,8 +2009,7 @@ describe('BrowserWindow module', () => {
             'did-finish-load',
             'did-frame-finish-load',
             'did-navigate-in-page',
-            // TODO(nornagon): sandboxed pages should also emit will-navigate
-            // 'will-navigate',
+            'will-navigate',
             'did-start-loading',
             'did-stop-loading',
             'did-frame-finish-load',
