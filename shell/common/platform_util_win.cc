@@ -312,7 +312,7 @@ namespace platform_util {
 
 void ShowItemInFolder(const base::FilePath& full_path) {
   base::CreateCOMSTATaskRunnerWithTraits(
-      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_BLOCKING})
       ->PostTask(FROM_HERE,
                  base::BindOnce(&ShowItemInFolderOnWorkerThread, full_path));
 }
@@ -329,7 +329,8 @@ void OpenExternal(const GURL& url,
                   OpenExternalCallback callback) {
   base::PostTaskAndReplyWithResult(
       base::CreateCOMSTATaskRunnerWithTraits(
-          {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+          {base::ThreadPool(), base::MayBlock(),
+           base::TaskPriority::USER_BLOCKING})
           .get(),
       FROM_HERE, base::BindOnce(&OpenExternalOnWorkerThread, url, options),
       std::move(callback));
