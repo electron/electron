@@ -389,8 +389,21 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         // https://blogs.msdn.microsoft.com/wpfsdk/2008/09/08/custom-window-chrome-in-wpf/
         DefWindowProcW(GetAcceleratedWidget(), WM_NCCALCSIZE, w_param, l_param);
 
+        // When fullscreen the window has no border
+        int border = 0;
+        if (!IsFullscreen()) {
+          // When not fullscreen calculate the border size
+          border = GetSystemMetrics(SM_CXFRAME) +
+                   GetSystemMetrics(SM_CXPADDEDBORDER);
+          if (!thick_frame_) {
+            border -= GetSystemMetrics(SM_CXBORDER);
+          }
+        }
+
         if (last_window_state_ == ui::SHOW_STATE_MAXIMIZED) {
-          params->rgrc[0].top = 0;
+          // Position the top of the frame offset from where windows thinks by
+          // exactly the border amount.  When fullscreen this is 0.
+          params->rgrc[0].top = PROPOSED.top + border;
         } else {
           params->rgrc[0] = PROPOSED;
           params->rgrc[1] = BEFORE;
