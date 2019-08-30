@@ -269,6 +269,9 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
         upload_data.Set("blobUUID", element.blob_uuid());
         break;
       case network::mojom::DataElementType::kDataPipe: {
+        // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
+        // becomes unecessarily complex, we should deprecate the getBlobData API
+        // and return the DataPipeHolder wrapper directly.
         auto holder = electron::api::DataPipeHolder::Create(isolate, element);
         upload_data.Set("blobUUID", holder->id());
         // The lifetime of data pipe is bound to the uploadData object.

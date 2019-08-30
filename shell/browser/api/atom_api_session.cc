@@ -41,6 +41,7 @@
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/atom_api_cookies.h"
+#include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/browser/api/atom_api_download_item.h"
 #include "shell/browser/api/atom_api_net_log.h"
 #include "shell/browser/api/atom_api_protocol_ns.h"
@@ -502,15 +503,14 @@ std::string Session::GetUserAgent() {
 
 v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
                                             const std::string& uuid) {
-  util::Promise<v8::Local<v8::Value>> promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
+  gin::Handle<DataPipeHolder> holder = DataPipeHolder::From(isolate, uuid);
+  if (holder.IsEmpty()) {
+    util::Promise<v8::Local<v8::Value>> promise(isolate);
+    promise.RejectWithErrorMessage("Could not get blob data handle");
+    return promise.GetHandle();
+  }
 
-  AtomBlobReader* blob_reader = browser_context()->GetBlobReader();
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&AtomBlobReader::StartReading,
-                     base::Unretained(blob_reader), uuid, std::move(promise)));
-  return handle;
+  return holder->ReadAll(isolate);
 }
 
 void Session::DownloadURL(const GURL& url) {

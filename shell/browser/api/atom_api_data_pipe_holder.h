@@ -27,8 +27,13 @@ class DataPipeHolder : public gin::Wrappable<DataPipeHolder> {
   static gin::Handle<DataPipeHolder> From(v8::Isolate* isolate,
                                           const std::string& id);
 
-  network::mojom::DataPipeGetterPtr Release();
+  // Read all data at once.
+  //
+  // TODO(zcbenz): This is apparently not suitable for really large data, but
+  // no one has complained about it yet.
+  v8::Local<v8::Promise> ReadAll(v8::Isolate* isolate);
 
+  // The unique ID that can be used to receive the object.
   const std::string& id() const { return id_; }
 
  private:
