@@ -202,8 +202,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
     like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha in #AARRGGBB format is supported if
     `transparent` is set to `true`). Default is `#FFF` (white).
-  * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
-    implemented on macOS. Default is `true`.
+  * `hasShadow` Boolean (optional) - Whether window should have a shadow. Default is `true`.
   * `opacity` Number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
   * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
