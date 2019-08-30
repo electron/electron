@@ -13,6 +13,7 @@ v8_embedder_string = "-electron.0"
 v8_enable_snapshot_native_code_counters = false
 
 enable_cdm_host_verification = false
+enable_widevine_cdm_component = false
 proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
