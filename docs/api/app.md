@@ -598,8 +598,6 @@ Returns `String` - The current application directory.
     * `~/Library/Application Support` on macOS
   * `userData` The directory for storing your app's configuration files, which by
     default it is the `appData` directory appended with your app's name.
-     * `userCache` The directory for storing your app's Electron cache, which by
-    default it is the `appData` directory appended with your app's name.
   * `cache`
   * `temp` Temporary directory.
   * `exe` The current executable file.
@@ -651,7 +649,7 @@ You can only override paths of a `name` defined in `app.getPath`.
 
 By default, web pages' cookies and caches will be stored under the `userData`
 directory. If you want to change this location, you have to override the
-`userData` or `userCache` paths before the `ready` event of the `app` module is emitted.
+`userData` path before the `ready` event of the `app` module is emitted.
 
 ### `app.getVersion()`
 
