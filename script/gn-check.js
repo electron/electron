@@ -27,7 +27,7 @@ const gnCheckDirs = [
 
 for (const dir of gnCheckDirs) {
   const args = ['check', `../out/${OUT_DIR}`, dir]
-  const result = cp.spawnSync('gn', args, { stdio: 'inherit' })
+  const result = cp.spawnSync('gn', args, { env, stdio: 'inherit' })
   if (result.status !== 0) process.exit(result.status)
 }
 
