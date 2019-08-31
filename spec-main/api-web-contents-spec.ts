@@ -334,11 +334,11 @@ describe('webContents module', () => {
 
   describe('getFocusedWebContents() API', () => {
     afterEach(closeAllWindows)
-    it('returns the focused web contents', async () => {
+
+    const testFn = (process.platform === 'win32' && process.arch === 'arm64' ? it.skip : it)
+    testFn('returns the focused web contents', async () => {
       const w = new BrowserWindow({show: true})
       await w.loadURL('about:blank')
-      await emittedOnce(w, 'focus')
-      await emittedOnce(w, 'focus')
       expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id)
 
       const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened')
