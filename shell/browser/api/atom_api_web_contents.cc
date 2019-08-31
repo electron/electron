@@ -314,6 +314,25 @@ void OnCapturePageDone(util::Promise<gfx::Image> promise,
   promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
+base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
+#if defined(OS_MACOSX)
+  base::TimeDelta interval;
+  if (ui::TextInsertionCaretBlinkPeriod(&interval))
+    return interval;
+#elif defined(OS_LINUX)
+  if (auto* linux_ui = views::LinuxUI::instance())
+    return linux_ui->GetCursorBlinkInterval();
+#elif defined(OS_WIN)
+  const auto system_msec = ::GetCaretBlinkTime();
+  if (system_msec != 0) {
+    return (system_msec == INFINITE)
+               ? base::TimeDelta()
+               : base::TimeDelta::FromMilliseconds(system_msec);
+  }
+#endif
+  return base::nullopt;
+}
+
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -464,24 +483,9 @@ void WebContents::InitWithSessionAndOptions(
   prefs->subpixel_rendering = params->subpixel_rendering;
 #endif
 
-// Honor the system's cursor blink rate settings
-#if defined(OS_MACOSX)
-  base::TimeDelta interval;
-  if (ui::TextInsertionCaretBlinkPeriod(&interval))
-    prefs->caret_blink_interval = interval;
-#elif defined(OS_LINUX)
-  views::LinuxUI* linux_ui = views::LinuxUI::instance();
-  if (linux_ui)
-    prefs->caret_blink_interval = linux_ui->GetCursorBlinkInterval();
-#elif defined(OS_WIN)
-  const auto system_msec = ::GetCaretBlinkTime();
-  if (system_msec != 0) {
-    prefs->caret_blink_interval =
-        (system_msec == INFINITE)
-            ? base::TimeDelta()
-            : base::TimeDelta::FromMilliseconds(system_msec);
-  }
-#endif
+  // Honor the system's cursor blink rate settings
+  if (auto interval = GetCursorBlinkInterval())
+    prefs->caret_blink_interval = *interval;
 
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents(), options);
