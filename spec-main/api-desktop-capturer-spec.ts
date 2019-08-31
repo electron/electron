@@ -1,53 +1,48 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
-const chaiAsPromised = require('chai-as-promised')
-const { desktopCapturer, ipcRenderer, remote } = require('electron')
-const { screen } = remote
+import { expect } from 'chai'
+import { desktopCapturer, ipcRenderer, screen, BrowserWindow, SourcesOptions } from 'electron'
+import { emittedOnce } from './events-helpers'
+import { ifdescribe } from './spec-helpers';
+import { closeAllWindows } from './window-helpers';
+
 const features = process.electronBinding('features')
-const { emittedOnce } = require('./events-helpers')
 
-const { expect } = chai
-chai.use(dirtyChai)
-chai.use(chaiAsPromised)
-
-const isCI = remote.getGlobal('isCi')
-
-describe('desktopCapturer', () => {
-  before(function () {
-    if (!features.isDesktopCapturerEnabled() || process.arch.indexOf('arm') === 0) {
-      // It's been disabled during build time.
-      this.skip()
-      return
-    }
-
-    if (isCI && process.platform === 'win32') {
-      this.skip()
-    }
+ifdescribe(features.isDesktopCapturerEnabled() && !process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
+  let w: BrowserWindow
+  before(async () => {
+    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+    await w.loadURL('about:blank')
   })
+  after(closeAllWindows)
+
+  const getSources: typeof desktopCapturer.getSources = (options: SourcesOptions) => {
+    return w.webContents.executeJavaScript(`
+      require('electron').desktopCapturer.getSources(${JSON.stringify(options)})
+    `)
+  }
 
   it('should return a non-empty array of sources', async () => {
-    const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] })
+    const sources = await getSources({ types: ['window', 'screen'] })
     expect(sources).to.be.an('array').that.is.not.empty()
   })
 
   it('throws an error for invalid options', async () => {
-    const promise = desktopCapturer.getSources(['window', 'screen'])
+    const promise = getSources(['window', 'screen'] as any)
     expect(promise).to.be.eventually.rejectedWith(Error, 'Invalid options')
   })
 
   it('does not throw an error when called more than once (regression)', async () => {
-    const sources1 = await desktopCapturer.getSources({ types: ['window', 'screen'] })
+    const sources1 = await getSources({ types: ['window', 'screen'] })
     expect(sources1).to.be.an('array').that.is.not.empty()
 
-    const sources2 = await desktopCapturer.getSources({ types: ['window', 'screen'] })
+    const sources2 = await getSources({ types: ['window', 'screen'] })
     expect(sources2).to.be.an('array').that.is.not.empty()
   })
 
   it('responds to subsequent calls of different options', async () => {
-    const promise1 = desktopCapturer.getSources({ types: ['window'] })
+    const promise1 = getSources({ types: ['window'] })
     expect(promise1).to.not.eventually.be.rejected()
 
-    const promise2 = desktopCapturer.getSources({ types: ['screen'] })
+    const promise2 = getSources({ types: ['screen'] })
     expect(promise2).to.not.eventually.be.rejected()
   })
 
@@ -55,10 +50,9 @@ describe('desktopCapturer', () => {
     // Linux doesn't return any window sources.
     if (process.platform !== 'win32' && process.platform !== 'darwin') return
 
-    const { BrowserWindow } = remote
     const w = new BrowserWindow({ width: 200, height: 200 })
 
-    const sources = await desktopCapturer.getSources({ types: ['window'] })
+    const sources = await getSources({ types: ['window'] })
     w.destroy()
     expect(sources).to.be.an('array').that.is.not.empty()
     for (const { display_id: displayId } of sources) {
@@ -70,7 +64,7 @@ describe('desktopCapturer', () => {
     if (process.platform !== 'win32' && process.platform !== 'darwin') return
 
     const displays = screen.getAllDisplays()
-    const sources = await desktopCapturer.getSources({ types: ['screen'] })
+    const sources = await getSources({ types: ['screen'] })
     expect(sources).to.be.an('array').of.length(displays.length)
 
     for (let i = 0; i < sources.length; i++) {
@@ -79,32 +73,32 @@ describe('desktopCapturer', () => {
 
     it('returns empty sources when blocked', async () => {
       ipcRenderer.send('handle-next-desktop-capturer-get-sources')
-      const sources = await desktopCapturer.getSources({ types: ['screen'] })
+      const sources = await getSources({ types: ['screen'] })
       expect(sources).to.be.empty()
     })
   })
 
   it('disabling thumbnail should return empty images', async () => {
-    const { BrowserWindow } = remote
-    const w = new BrowserWindow({ show: false, width: 200, height: 200 })
-    const wShown = emittedOnce(w, 'show')
-    w.show()
+    const w2 = new BrowserWindow({ show: false, width: 200, height: 200 })
+    const wShown = emittedOnce(w2, 'show')
+    w2.show()
     await wShown
 
-    const sources = await desktopCapturer.getSources({
-      types: ['window', 'screen'],
-      thumbnailSize: { width: 0, height: 0 }
-    })
-    w.destroy()
-    expect(sources).to.be.an('array').that.is.not.empty()
-    for (const { thumbnail: thumbnailImage } of sources) {
-      expect(thumbnailImage).to.be.a('NativeImage')
-      expect(thumbnailImage.isEmpty()).to.be.true()
-    }
+    const isEmpties: boolean[] = await w.webContents.executeJavaScript(`
+      require('electron').desktopCapturer.getSources({
+        types: ['window', 'screen'],
+        thumbnailSize: { width: 0, height: 0 }
+      }).then((sources) => {
+        return sources.map(s => s.thumbnail.constructor.name === 'NativeImage' && s.thumbnail.isEmpty())
+      })
+    `)
+
+    w2.destroy()
+    expect(isEmpties).to.be.an('array').that.is.not.empty()
+    expect(isEmpties.every(e => e === true)).to.be.true()
   })
 
   it('getMediaSourceId should match DesktopCapturerSource.id', async () => {
-    const { BrowserWindow } = remote
     const w = new BrowserWindow({ show: false, width: 100, height: 100 })
     const wShown = emittedOnce(w, 'show')
     const wFocused = emittedOnce(w, 'focus')
@@ -114,7 +108,7 @@ describe('desktopCapturer', () => {
     await wFocused
 
     const mediaSourceId = w.getMediaSourceId()
-    const sources = await desktopCapturer.getSources({
+    const sources = await getSources({
       types: ['window'],
       thumbnailSize: { width: 0, height: 0 }
     })
@@ -132,18 +126,16 @@ describe('desktopCapturer', () => {
     const foundSource = sources.find((source) => {
       return source.id === mediaSourceId
     })
-    expect(mediaSourceId).to.equal(foundSource.id)
+    expect(mediaSourceId).to.equal(foundSource!.id)
   })
 
   it('moveAbove should move the window at the requested place', async () => {
     // DesktopCapturer.getSources() is guaranteed to return in the correct
     // z-order from foreground to background.
     const MAX_WIN = 4
-    const { BrowserWindow } = remote
-    const mainWindow = remote.getCurrentWindow()
+    const mainWindow = w
     const wList = [mainWindow]
     try {
-      // Add MAX_WIN-1 more window so we have MAX_WIN in total.
       for (let i = 0; i < MAX_WIN - 1; i++) {
         const w = new BrowserWindow({ show: true, width: 100, height: 100 })
         wList.push(w)
@@ -160,7 +152,7 @@ describe('desktopCapturer', () => {
 
       // DesktopCapturer.getSources() returns sources sorted from foreground to
       // background, i.e. top to bottom.
-      let sources = await desktopCapturer.getSources({
+      let sources = await getSources({
         types: ['window'],
         thumbnailSize: { width: 0, height: 0 }
       })
@@ -206,7 +198,7 @@ describe('desktopCapturer', () => {
         }
       })
 
-      sources = await desktopCapturer.getSources({
+      sources = await getSources({
         types: ['window'],
         thumbnailSize: { width: 0, height: 0 }
       })
