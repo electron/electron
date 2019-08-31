@@ -1739,14 +1739,14 @@ removed in future Electron releases.
 
 #### `win.setBrowserView(browserView)` _Experimental_
 
-* `browserView` [BrowserView](browser-view.md) | null - Attach browserView to win.
-If there is some other browserViews was attached they will be removed from
+* `browserView` [BrowserView](browser-view.md) | null - Attach `browserView` to `win`.
+If there are other `BrowserView`s attached, they will be removed from
 this window.
 
 #### `win.getBrowserView()` _Experimental_
 
-Returns `BrowserView | null` - an BrowserView what is attached. Returns `null`
-if none is attached. Throw error if multiple BrowserViews is attached.
+Returns `BrowserView | null` - The `BrowserView` attached to `win`. Returns `null`
+if none is attached. Throws an error if multiple `BrowserView`s are attached.
 
 #### `win.addBrowserView(browserView)` _Experimental_
 
