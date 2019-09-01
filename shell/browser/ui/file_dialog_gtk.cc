@@ -77,12 +77,12 @@ class FileChooserDialog {
 
     if (parent_) {
       parent_->SetEnabled(false);
-      if (GTK_IS_WIDGET(dialog_))
+      if (GTK_IS_DIALOG(dialog_))
         libgtkui::SetGtkTransientForAura(GTK_WIDGET(dialog_),
                                          parent_->GetNativeWindow());
       else
         SetGtkTransientForAura(parent_->GetNativeWindow());
-      if (GTK_IS_WINDOW(dialog_)) {
+      if (GTK_IS_DIALOG(dialog_)) {
         gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
       } else {
         void (*dl_gtk_native_dialog_set_modal)(void*, bool) = NULL;
@@ -123,7 +123,7 @@ class FileChooserDialog {
   }
 
   ~FileChooserDialog() {
-    if (GTK_IS_WIDGET(dialog_)) {
+    if (GTK_IS_DIALOG(dialog_)) {
       gtk_widget_destroy(GTK_WIDGET(dialog_));
     } else {
       void (*dl_gtk_native_dialog_destroy)(void*) = NULL;
@@ -161,13 +161,13 @@ class FileChooserDialog {
   }
 
   void RunAsynchronous() {
-    if (GTK_IS_WIDGET(dialog_)) {
+    if (GTK_IS_DIALOG(dialog_)) {
       g_signal_connect(dialog_, "delete-event",
                        G_CALLBACK(gtk_widget_hide_on_delete), NULL);
     }
     g_signal_connect(dialog_, "response", G_CALLBACK(OnFileDialogResponseThunk),
                      this);
-    if (GTK_IS_WIDGET(dialog_)) {
+    if (GTK_IS_DIALOG(dialog_)) {
       gtk_widget_show_all(GTK_WIDGET(dialog_));
 
       // We need to call gtk_window_present after making the widgets visible to
@@ -256,7 +256,7 @@ class FileChooserDialog {
 
 void FileChooserDialog::OnFileDialogResponse(GtkFileChooser* widget,
                                              int response) {
-  if (GTK_IS_WIDGET(dialog_)) {
+  if (GTK_IS_DIALOG(dialog_)) {
     gtk_widget_hide(GTK_WIDGET(dialog_));
   } else {
     void (*dl_gtk_native_dialog_hide)(void*) = NULL;
@@ -340,7 +340,7 @@ void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
 }  // namespace
 
 void ShowFileDialog(const FileChooserDialog& dialog) {
-  if (GTK_IS_WIDGET(dialog.dialog())) {
+  if (GTK_IS_DIALOG(dialog.dialog())) {
     gtk_widget_show_all(GTK_WIDGET(dialog.dialog()));
   } else {
     void (*dl_gtk_native_dialog_show)(void*) = NULL;
@@ -352,7 +352,7 @@ void ShowFileDialog(const FileChooserDialog& dialog) {
 
 int RunFileDialog(const FileChooserDialog& dialog) {
   int response = 0;
-  if (GTK_IS_WIDGET(dialog.dialog())) {
+  if (GTK_IS_DIALOG(dialog.dialog())) {
     response = gtk_dialog_run(GTK_DIALOG(dialog.dialog()));
   } else {
     int (*dl_gtk_native_dialog_run)(void*) = NULL;
