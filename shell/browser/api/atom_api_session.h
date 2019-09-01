@@ -79,6 +79,7 @@ class Session : public mate::TrackableObject<Session>,
   std::string GetUserAgent();
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
                                      const std::string& uuid);
+  void DownloadURL(const GURL& url);
   void CreateInterruptedDownload(const mate::Dictionary& options);
   void SetPreloads(const std::vector<base::FilePath::StringType>& preloads);
   std::vector<base::FilePath::StringType> GetPreloads() const;
@@ -86,6 +87,7 @@ class Session : public mate::TrackableObject<Session>,
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
+  void Preconnect(const mate::Dictionary& options, mate::Arguments* args);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void LoadChromeExtension(const base::FilePath extension_path);

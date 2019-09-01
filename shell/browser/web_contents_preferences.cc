@@ -124,7 +124,6 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
-  SetDefaultBoolIfUndefined(options::kEnableRemoteModule, true);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
@@ -171,6 +170,8 @@ WebContentsPreferences::~WebContentsPreferences() {
 }
 
 void WebContentsPreferences::SetDefaults() {
+  SetDefaultBoolIfUndefined(options::kEnableRemoteModule, true);
+
   if (IsEnabled(options::kSandbox)) {
     SetBool(options::kNativeWindowOpen, true);
   }
@@ -218,10 +219,6 @@ void WebContentsPreferences::Clear() {
 bool WebContentsPreferences::GetPreference(base::StringPiece name,
                                            std::string* value) const {
   return GetAsString(&preference_, name, value);
-}
-
-bool WebContentsPreferences::IsRemoteModuleEnabled() const {
-  return IsEnabled(options::kEnableRemoteModule, true);
 }
 
 bool WebContentsPreferences::GetPreloadPath(
@@ -327,8 +324,8 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   }
 
   // Whether to enable the remote module
-  if (!IsRemoteModuleEnabled())
-    command_line->AppendSwitch(switches::kDisableRemoteModule);
+  if (IsEnabled(options::kEnableRemoteModule))
+    command_line->AppendSwitch(switches::kEnableRemoteModule);
 
   // Run Electron APIs and preload script in isolated world
   if (IsEnabled(options::kContextIsolation))

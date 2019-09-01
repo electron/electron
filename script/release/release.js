@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 if (!process.env.CI) require('dotenv-safe').load()
-require('colors')
+
 const args = require('minimist')(process.argv.slice(2), {
   boolean: [
     'validateRelease',
@@ -17,12 +17,14 @@ const nugget = require('nugget')
 const got = require('got')
 const pkg = require('../../package.json')
 const pkgVersion = `v${pkg.version}`
-const pass = '\u2713'.green
 const path = require('path')
-const fail = '\u2717'.red
 const sumchecker = require('sumchecker')
 const temp = require('temp').track()
 const { URL } = require('url')
+
+require('colors')
+const pass = '✓'.green
+const fail = '✗'.red
 
 const { ELECTRON_DIR } = require('../lib/utils')
 

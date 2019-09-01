@@ -3,8 +3,7 @@
 // found in the LICENSE file.
 
 #include "shell/browser/ui/message_box.h"
-
-#include <glib/gi18n.h>
+#include "shell/browser/ui/util_gtk.h"
 
 #include "base/callback.h"
 #include "base/strings/string_util.h"
@@ -123,13 +122,13 @@ class GtkMessageBox : public NativeWindowObserver {
   const char* TranslateToStock(int id, const std::string& text) {
     const std::string lower = base::ToLowerASCII(text);
     if (lower == "cancel")
-      return _("_Cancel");
+      return gtk_util::kCancelLabel;
     if (lower == "no")
-      return _("_No");
+      return gtk_util::kNoLabel;
     if (lower == "ok")
-      return _("_OK");
+      return gtk_util::kOkLabel;
     if (lower == "yes")
-      return _("_Yes");
+      return gtk_util::kYesLabel;
     return text.c_str();
   }
 

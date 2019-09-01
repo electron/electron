@@ -55,6 +55,10 @@
 #include "shell/browser/printing/print_preview_message_handler.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+#include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -214,7 +218,6 @@ void CommonWebContentsDelegate::SetOwnerWindow(
     NativeWindow* owner_window) {
   if (owner_window) {
     owner_window_ = owner_window->GetWeakPtr();
-    autofill_popup_.reset(new AutofillPopup());
     NativeWindowRelay::CreateForWebContents(web_contents,
                                             owner_window->GetWeakPtr());
   } else {
@@ -637,24 +640,23 @@ void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
   native_fullscreen_ = false;
 }
 
-void CommonWebContentsDelegate::ShowAutofillPopup(
-    content::RenderFrameHost* frame_host,
-    content::RenderFrameHost* embedder_frame_host,
-    bool offscreen,
-    const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {
-  if (!owner_window())
-    return;
-
-  autofill_popup_->CreateView(frame_host, embedder_frame_host, offscreen,
-                              owner_window()->content_view(), bounds);
-  autofill_popup_->SetItems(values, labels);
+content::PictureInPictureResult
+CommonWebContentsDelegate::EnterPictureInPicture(
+    content::WebContents* web_contents,
+    const viz::SurfaceId& surface_id,
+    const gfx::Size& natural_size) {
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  return PictureInPictureWindowManager::GetInstance()->EnterPictureInPicture(
+      web_contents, surface_id, natural_size);
+#else
+  return content::PictureInPictureResult::kNotSupported;
+#endif
 }
 
-void CommonWebContentsDelegate::HideAutofillPopup() {
-  if (autofill_popup_)
-    autofill_popup_->Hide();
+void CommonWebContentsDelegate::ExitPictureInPicture() {
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  PictureInPictureWindowManager::GetInstance()->ExitPictureInPicture();
+#endif
 }
 
 }  // namespace electron

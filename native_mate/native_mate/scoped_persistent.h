@@ -54,7 +54,7 @@ class ScopedPersistent {
   v8::Isolate* isolate() const { return isolate_; }
 
  private:
-  v8::Isolate* isolate_;
+  v8::Isolate* isolate_ = nullptr;
   v8::Persistent<T> handle_;
 
   DISALLOW_COPY_AND_ASSIGN(ScopedPersistent);
@@ -64,7 +64,7 @@ template <typename T>
 class RefCountedPersistent : public ScopedPersistent<T>,
                              public base::RefCounted<RefCountedPersistent<T>> {
  public:
-  RefCountedPersistent() {}
+  RefCountedPersistent() = default;
 
   RefCountedPersistent(v8::Isolate* isolate, v8::Local<v8::Value> handle)
       : ScopedPersistent<T>(isolate, handle) {}
@@ -72,7 +72,7 @@ class RefCountedPersistent : public ScopedPersistent<T>,
  protected:
   friend class base::RefCounted<RefCountedPersistent<T>>;
 
-  ~RefCountedPersistent() {}
+  ~RefCountedPersistent() = default;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(RefCountedPersistent);

@@ -65,7 +65,8 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
     if (it == pending_requests_.end())
       return;
 
-    electron::util::Promise promise = std::move(it->second);
+    electron::util::Promise<base::DictionaryValue> promise =
+        std::move(it->second);
     pending_requests_.erase(it);
 
     base::DictionaryValue* error = nullptr;
@@ -129,7 +130,7 @@ void Debugger::Detach() {
 }
 
 v8::Local<v8::Promise> Debugger::SendCommand(mate::Arguments* args) {
-  electron::util::Promise promise(isolate());
+  electron::util::Promise<base::DictionaryValue> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!agent_host_) {

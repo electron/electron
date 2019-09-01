@@ -21,7 +21,6 @@
 @class AtomPreviewItem;
 @class AtomTouchBar;
 @class CustomWindowButtonView;
-@class FullSizeContentView;
 
 namespace electron {
 
@@ -59,6 +58,7 @@ class NativeWindowMac : public NativeWindow {
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
+  bool MoveAbove(const std::string& sourceId) override;
   void MoveTop() override;
   bool IsResizable() override;
   void SetMovable(bool movable) override;
@@ -108,6 +108,7 @@ class NativeWindowMac : public NativeWindow {
   void AddBrowserView(NativeBrowserView* browser_view) override;
   void RemoveBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
+  content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
@@ -183,10 +184,12 @@ class NativeWindowMac : public NativeWindow {
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;
 
-  // The view that will fill the whole frameless window.
-  base::scoped_nsobject<FullSizeContentView> container_view_;
+  // The NSView that used as contentView of window.
+  //
+  // For frameless window it would fill the whole window.
+  base::scoped_nsobject<NSView> container_view_;
 
-  // The view that fills the client area.
+  // The views::View that fills the client area.
   std::unique_ptr<RootViewMac> root_view_;
 
   bool is_kiosk_ = false;

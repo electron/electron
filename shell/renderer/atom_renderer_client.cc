@@ -153,14 +153,12 @@ void AtomRendererClient::DidCreateScriptContext(
 void AtomRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  if (injected_frames_.find(render_frame) == injected_frames_.end())
+  if (injected_frames_.erase(render_frame) == 0)
     return;
-  injected_frames_.erase(render_frame);
 
   node::Environment* env = node::Environment::GetCurrent(context);
-  if (environments_.find(env) == environments_.end())
+  if (environments_.erase(env) == 0)
     return;
-  environments_.erase(env);
 
   mate::EmitEvent(env->isolate(), env->process_object(), "exit");
 

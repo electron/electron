@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "8.0.0-nightly.20190813",
+  "version": "8.0.0-nightly.20190830",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -8,6 +8,7 @@
     "@electron/typescript-definitions": "^8.6.1",
     "@octokit/rest": "^16.3.2",
     "@primer/octicons": "^9.1.1",
+    "@types/basic-auth": "^1.1.2",
     "@types/chai": "^4.1.7",
     "@types/chai-as-promised": "^7.1.0",
     "@types/dirty-chai": "^2.0.0",
@@ -15,6 +16,7 @@
     "@types/fs-extra": "^5.0.5",
     "@types/mocha": "^5.2.6",
     "@types/node": "^12.0.10",
+    "@types/send": "^0.14.5",
     "@types/split": "^1.0.0",
     "@types/webpack": "^4.4.32",
     "@types/webpack-env": "^1.13.9",
@@ -77,6 +79,7 @@
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --api=electron-api.json && node spec/ts-smoke/runner.js",
     "gn-typescript-definitions": "npm run create-typescript-definitions && shx cp electron.d.ts",
     "pre-flight": "pre-flight",
+    "gn-check": "node ./script/gn-check.js",
     "preinstall": "node -e 'process.exit(0)'",
     "prepack": "check-for-leaks",
     "repl": "node ./script/start.js --interactive",
@@ -113,6 +116,7 @@
       "remark -qf"
     ],
     "*.{gn,gni}": [
+      "npm run gn-check",
       "python script/run-gn-format.py",
       "git add"
     ],

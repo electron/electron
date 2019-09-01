@@ -239,6 +239,15 @@ int GetAppbarAutohideEdges(HWND hwnd) {
   return edges;
 }
 
+void TriggerNCCalcSize(HWND hwnd) {
+  RECT rcClient;
+  ::GetWindowRect(hwnd, &rcClient);
+
+  ::SetWindowPos(hwnd, NULL, rcClient.left, rcClient.top,
+                 rcClient.right - rcClient.left, rcClient.bottom - rcClient.top,
+                 SWP_FRAMECHANGED);
+}
+
 }  // namespace
 
 std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
@@ -336,24 +345,35 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return false;
     }
     case WM_GETMINMAXINFO: {
-      WINDOWPLACEMENT wp;
-      wp.length = sizeof(WINDOWPLACEMENT);
+      // We need to handle GETMINMAXINFO ourselves because chromium tries to
+      // get the scale factor of the window during it's version of this handler
+      // based on the window position, which is invalid at this point. The
+      // previous method of calling SetWindowPlacement fixed the window
+      // position for the scale factor calculation but broke other things.
+      MINMAXINFO* info = reinterpret_cast<MINMAXINFO*>(l_param);
 
-      // We do this to work around a Windows bug, where the minimized Window
-      // would report that the closest display to it is not the one that it was
-      // previously on (but the leftmost one instead). We restore the position
-      // of the window during the restore operation, this way chromium can
-      // use the proper display to calculate the scale factor to use.
-      if (!last_normal_placement_bounds_.IsEmpty() &&
-          GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
-        last_normal_placement_bounds_.set_size(gfx::Size(0, 0));
-        wp.rcNormalPosition = last_normal_placement_bounds_.ToRECT();
-        SetWindowPlacement(GetAcceleratedWidget(), &wp);
+      display::Display display =
+          display::Screen::GetScreen()->GetDisplayNearestPoint(
+              last_normal_placement_bounds_.origin());
 
-        last_normal_placement_bounds_ = gfx::Rect();
+      gfx::Size min_size = gfx::ScaleToCeiledSize(
+          widget()->GetMinimumSize(), display.device_scale_factor());
+      gfx::Size max_size = gfx::ScaleToCeiledSize(
+          widget()->GetMaximumSize(), display.device_scale_factor());
+
+      info->ptMinTrackSize.x = min_size.width();
+      info->ptMinTrackSize.y = min_size.height();
+      if (max_size.width() || max_size.height()) {
+        if (!max_size.width())
+          max_size.set_width(GetSystemMetrics(SM_CXMAXTRACK));
+        if (!max_size.height())
+          max_size.set_height(GetSystemMetrics(SM_CYMAXTRACK));
+        info->ptMaxTrackSize.x = max_size.width();
+        info->ptMaxTrackSize.y = max_size.height();
       }
 
-      return false;
+      *result = 1;
+      return true;
     }
     case WM_NCCALCSIZE: {
       if (!has_frame() && w_param == TRUE) {
@@ -369,8 +389,25 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         // https://blogs.msdn.microsoft.com/wpfsdk/2008/09/08/custom-window-chrome-in-wpf/
         DefWindowProcW(GetAcceleratedWidget(), WM_NCCALCSIZE, w_param, l_param);
 
-        params->rgrc[0] = PROPOSED;
-        params->rgrc[1] = BEFORE;
+        // When fullscreen the window has no border
+        int border = 0;
+        if (!IsFullscreen()) {
+          // When not fullscreen calculate the border size
+          border = GetSystemMetrics(SM_CXFRAME) +
+                   GetSystemMetrics(SM_CXPADDEDBORDER);
+          if (!thick_frame_) {
+            border -= GetSystemMetrics(SM_CXBORDER);
+          }
+        }
+
+        if (last_window_state_ == ui::SHOW_STATE_MAXIMIZED) {
+          // Position the top of the frame offset from where windows thinks by
+          // exactly the border amount.  When fullscreen this is 0.
+          params->rgrc[0].top = PROPOSED.top + border;
+        } else {
+          params->rgrc[0] = PROPOSED;
+          params->rgrc[1] = BEFORE;
+        }
 
         return true;
       } else {
@@ -396,10 +433,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     case WM_SIZE: {
       // Handle window state change.
       HandleSizeEvent(w_param, l_param);
-
-      consecutive_moves_ = false;
-      last_normal_bounds_before_move_ = last_normal_bounds_;
-
       return false;
     }
     case WM_MOVING: {
@@ -412,15 +445,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         return true;  // Tells Windows that the Move is handled. If not true,
                       // frameless windows can be moved using
                       // -webkit-app-region: drag elements.
-      }
-      return false;
-    }
-    case WM_MOVE: {
-      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
-        if (consecutive_moves_)
-          last_normal_bounds_ = last_normal_bounds_candidate_;
-        last_normal_bounds_candidate_ = GetBounds();
-        consecutive_moves_ = true;
       }
       return false;
     }
@@ -453,24 +477,10 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   // window state and notify the user accordingly.
   switch (w_param) {
     case SIZE_MAXIMIZED: {
-      // Frameless maximized windows are size compensated by Windows for a
-      // border that's not actually there, so we must conter-compensate.
-      // https://blogs.msdn.microsoft.com/wpfsdk/2008/09/08/custom-window-chrome-in-wpf/
-      if (!has_frame()) {
-        float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(
-            GetAcceleratedWidget());
-
-        int border =
-            GetSystemMetrics(SM_CXFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-        if (!thick_frame_) {
-          border -= GetSystemMetrics(SM_CXBORDER);
-        }
-        root_view_->SetInsets(gfx::Insets(border).Scale(1.0f / scale_factor));
-      }
-
       last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
-      if (consecutive_moves_) {
-        last_normal_bounds_ = last_normal_bounds_before_move_;
+
+      if (!has_frame()) {
+        TriggerNCCalcSize(GetAcceleratedWidget());
       }
 
       NotifyWindowMaximize();
@@ -489,36 +499,27 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       NotifyWindowMinimize();
       break;
     case SIZE_RESTORED:
-      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
-        // Window was resized so we save it's new size.
-        last_normal_bounds_ = GetBounds();
-        last_normal_bounds_before_move_ = last_normal_bounds_;
-      } else {
-        switch (last_window_state_) {
-          case ui::SHOW_STATE_MAXIMIZED:
+      switch (last_window_state_) {
+        case ui::SHOW_STATE_MAXIMIZED:
+          last_window_state_ = ui::SHOW_STATE_NORMAL;
+          NotifyWindowUnmaximize();
+
+          if (!has_frame()) {
+            TriggerNCCalcSize(GetAcceleratedWidget());
+          }
+
+          break;
+        case ui::SHOW_STATE_MINIMIZED:
+          if (IsFullscreen()) {
+            last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+            NotifyWindowEnterFullScreen();
+          } else {
             last_window_state_ = ui::SHOW_STATE_NORMAL;
-            root_view_->SetInsets(gfx::Insets(0));
-            NotifyWindowUnmaximize();
-            break;
-          case ui::SHOW_STATE_MINIMIZED:
-            if (IsFullscreen()) {
-              last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
-              NotifyWindowEnterFullScreen();
-            } else {
-              last_window_state_ = ui::SHOW_STATE_NORMAL;
-
-              // When the window is restored we resize it to the previous known
-              // normal size.
-              if (has_frame()) {
-                SetBounds(last_normal_bounds_, false);
-              }
-
-              NotifyWindowRestore();
-            }
-            break;
-          default:
-            break;
-        }
+            NotifyWindowRestore();
+          }
+          break;
+        default:
+          break;
       }
       break;
   }

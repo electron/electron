@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Heilig Benedek <benecene@gmail.com>
 Date: Wed, 20 Mar 2019 20:30:44 +0100
-Subject: feat: offscreen rendering with viz compositor
+Subject: feat_offscreen_rendering_with_viz_compositor.patch
 
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
@@ -98,10 +98,10 @@ index ced30727ab67e557265c3a61f7c213763da973ce..f422786fe6cd9cab47494fe6028f3c3b
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 892e89b990297f663fbf142c5d4b8c9b59cbc9ae..c83135ace35448876e130d949533dc600f201901 100644
+index ce7ceb3e82e95e49442d77a61d6bf765e8e86e4e..90db4660e0184daa773c9fbd1314cd64132ebd2e 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -119,6 +119,8 @@ viz_component("service") {
+@@ -118,6 +118,8 @@ viz_component("service") {
      "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",

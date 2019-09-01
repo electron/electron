@@ -55,7 +55,7 @@ class WrappableBase {
   static void SecondWeakCallback(
       const v8::WeakCallbackInfo<WrappableBase>& data);
 
-  v8::Isolate* isolate_;
+  v8::Isolate* isolate_ = nullptr;
   v8::Global<v8::Object> wrapper_;  // Weak
 
   DISALLOW_COPY_AND_ASSIGN(WrappableBase);

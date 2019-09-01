@@ -4,13 +4,13 @@ const path = require('path')
 
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..')
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..')
-const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
 
 require('colors')
-const pass = '\u2713'.green
-const fail = '\u2717'.red
+const pass = '✓'.green
+const fail = '✗'.red
 
 function getElectronExec () {
+  const OUT_DIR = getOutDir()
   switch (process.platform) {
     case 'darwin':
       return `out/${OUT_DIR}/Electron.app/Contents/MacOS/Electron`
@@ -20,6 +20,20 @@ function getElectronExec () {
       return `out/${OUT_DIR}/electron`
     default:
       throw new Error('Unknown platform')
+  }
+}
+
+function getOutDir (shouldLog) {
+  if (process.env.ELECTRON_OUT_DIR) {
+    return process.env.ELECTRON_OUT_DIR
+  } else {
+    for (const buildType of ['Debug', 'Testing', 'Release']) {
+      const outPath = path.resolve(SRC_DIR, 'out', buildType)
+      if (fs.existsSync(outPath)) {
+        if (shouldLog) console.log(`OUT_DIR is: ${buildType}`)
+        return buildType
+      }
+    }
   }
 }
 
@@ -49,7 +63,7 @@ async function getCurrentBranch (gitDir) {
       '--remote'
     ], gitDir)).split('\n')
 
-    branch = branches.filter(b => b === 'master' || b.match(/[0-9]+-[0-9]+-x/))[0]
+    branch = branches.filter(b => b.trim() === 'master' || b.match(/[0-9]+-[0-9]+-x/))[0]
     if (!branch) {
       console.log(`${fail} no release branch exists for this ref`)
       process.exit(1)
@@ -62,8 +76,8 @@ async function getCurrentBranch (gitDir) {
 module.exports = {
   getCurrentBranch,
   getElectronExec,
+  getOutDir,
   getAbsoluteElectronExec,
   ELECTRON_DIR,
-  OUT_DIR,
   SRC_DIR
 }

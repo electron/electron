@@ -37,6 +37,14 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_config_monitor.h",
     "//chrome/browser/net/proxy_service_factory.cc",
     "//chrome/browser/net/proxy_service_factory.h",
+    "//chrome/browser/predictors/preconnect_manager.cc",
+    "//chrome/browser/predictors/preconnect_manager.h",
+    "//chrome/browser/predictors/proxy_lookup_client_impl.cc",
+    "//chrome/browser/predictors/proxy_lookup_client_impl.h",
+    "//chrome/browser/predictors/resolve_host_client_impl.cc",
+    "//chrome/browser/predictors/resolve_host_client_impl.h",
+    "//chrome/browser/printing/printing_service.cc",
+    "//chrome/browser/printing/printing_service.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
     "//chrome/browser/ui/autofill/popup_view_common.cc",
@@ -55,6 +63,7 @@ static_library("chrome") {
     "//content/public/browser",
   ]
   deps = [
+    "//chrome/browser:resource_prefetch_predictor_proto",
     "//components/feature_engagement:buildflags",
   ]
 
@@ -160,16 +169,18 @@ static_library("chrome") {
       "//chrome/browser/printing/printing_message_filter.cc",
       "//chrome/browser/printing/printing_message_filter.h",
     ]
+
     public_deps += [
       "//chrome/services/printing:lib",
       "//components/printing/browser",
       "//components/printing/renderer",
-      "//components/services/pdf_compositor/public/cpp:factory",
+      "//components/services/pdf_compositor",
+      "//components/services/pdf_compositor/public/cpp",
       "//components/services/pdf_compositor/public/mojom",
     ]
+
     deps += [
       "//components/printing/common",
-      "//components/services/pdf_compositor",
       "//printing",
     ]
 
@@ -181,5 +192,33 @@ static_library("chrome") {
         "//chrome/utility/printing_handler.h",
       ]
     }
+  }
+
+  if (enable_picture_in_picture) {
+    sources += [
+      "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc",
+      "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
+      "//chrome/browser/ui/views/overlay/back_to_tab_image_button.cc",
+      "//chrome/browser/ui/views/overlay/back_to_tab_image_button.h",
+      "//chrome/browser/ui/views/overlay/close_image_button.cc",
+      "//chrome/browser/ui/views/overlay/close_image_button.h",
+      "//chrome/browser/ui/views/overlay/mute_image_button.cc",
+      "//chrome/browser/ui/views/overlay/mute_image_button.h",
+      "//chrome/browser/ui/views/overlay/overlay_window_views.cc",
+      "//chrome/browser/ui/views/overlay/overlay_window_views.h",
+      "//chrome/browser/ui/views/overlay/playback_image_button.cc",
+      "//chrome/browser/ui/views/overlay/playback_image_button.h",
+      "//chrome/browser/ui/views/overlay/resize_handle_button.cc",
+      "//chrome/browser/ui/views/overlay/resize_handle_button.h",
+      "//chrome/browser/ui/views/overlay/skip_ad_label_button.cc",
+      "//chrome/browser/ui/views/overlay/skip_ad_label_button.h",
+      "//chrome/browser/ui/views/overlay/track_image_button.cc",
+      "//chrome/browser/ui/views/overlay/track_image_button.h",
+    ]
+
+    deps += [
+      "//chrome/app/vector_icons",
+      "//components/vector_icons:vector_icons",
+    ]
   }
 }

@@ -300,14 +300,6 @@ source_set("manifests") {
     "//printing/buildflags",
     "//services/service_manager/public/cpp",
   ]
-
-  if (enable_basic_printing) {
-    deps += [ "//components/services/pdf_compositor/public/cpp:manifest" ]
-  }
-
-  if (enable_print_preview) {
-    deps += [ "//chrome/services/printing/public/cpp:manifest" ]
-  }
 }
 
 npm_action("electron_version_args") {
@@ -354,8 +346,11 @@ source_set("electron_lib") {
     "//base:base_static",
     "//base/allocator:buildflags",
     "//chrome/app/resources:platform_locale_settings",
+    "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
     "//components/net_log",
+    "//components/network_hints/common",
+    "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//components/spellcheck/renderer",
@@ -371,7 +366,7 @@ source_set("electron_lib") {
     "//device/bluetooth/public/cpp",
     "//gin",
     "//media/capture/mojom:video_capture",
-    "//media/mojo/interfaces",
+    "//media/mojo/mojom",
     "//net:extras",
     "//net:net_resources",
     "//net:net_with_v8",
@@ -585,9 +580,10 @@ source_set("electron_lib") {
   }
 
   if (enable_desktop_capturer) {
-    if (is_component_build && is_win) {
+    if (is_component_build && !is_linux) {
       # On windows the implementation relies on unexported
-      # DxgiDuplicatorController class.
+      # DxgiDuplicatorController class.  On macOS the implementation
+      # relies on unexported webrtc::GetWindowOwnerPid method.
       deps += [ "//third_party/webrtc/modules/desktop_capture" ]
     }
     sources += [

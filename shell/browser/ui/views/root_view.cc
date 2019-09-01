@@ -160,7 +160,8 @@ void RootView::RestoreFocus() {
   View* last_focused_view = last_focused_view_tracker_->view();
   if (last_focused_view) {
     GetFocusManager()->SetFocusedViewWithReason(
-        last_focused_view, views::FocusManager::kReasonFocusRestore);
+        last_focused_view,
+        views::FocusManager::FocusChangeReason::kFocusRestore);
   }
   if (menu_bar_autohide_)
     SetMenuBarVisibility(false);
@@ -175,18 +176,14 @@ void RootView::Layout() {
     return;
 
   const auto menu_bar_bounds =
-      menu_bar_visible_
-          ? gfx::Rect(insets_.left(), insets_.top(),
-                      size().width() - insets_.width(), kMenuBarHeight)
-          : gfx::Rect();
+      menu_bar_visible_ ? gfx::Rect(0, 0, size().width(), kMenuBarHeight)
+                        : gfx::Rect();
   if (menu_bar_)
     menu_bar_->SetBoundsRect(menu_bar_bounds);
 
   window_->content_view()->SetBoundsRect(
-      gfx::Rect(insets_.left(),
-                menu_bar_visible_ ? menu_bar_bounds.bottom() : insets_.top(),
-                size().width() - insets_.width(),
-                size().height() - menu_bar_bounds.height() - insets_.height()));
+      gfx::Rect(0, menu_bar_visible_ ? menu_bar_bounds.bottom() : 0,
+                size().width(), size().height() - menu_bar_bounds.height()));
 }
 
 gfx::Size RootView::GetMinimumSize() const {
@@ -221,13 +218,6 @@ void RootView::UnregisterAcceleratorsWithFocusManager() {
   views::FocusManager* focus_manager = GetFocusManager();
   accelerator_table_.clear();
   focus_manager->UnregisterAccelerators(this);
-}
-
-void RootView::SetInsets(const gfx::Insets& insets) {
-  if (insets != insets_) {
-    insets_ = insets;
-    Layout();
-  }
 }
 
 }  // namespace electron

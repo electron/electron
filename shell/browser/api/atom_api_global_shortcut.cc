@@ -107,10 +107,9 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
 }
 
 void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
-  if (!base::Contains(accelerator_callback_map_, accelerator))
+  if (accelerator_callback_map_.erase(accelerator) == 0)
     return;
 
-  accelerator_callback_map_.erase(accelerator);
   GlobalShortcutListener::GetInstance()->UnregisterAccelerator(accelerator,
                                                                this);
 }

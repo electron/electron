@@ -16,7 +16,7 @@ namespace mate {
 template <typename T>
 class Handle {
  public:
-  Handle() : object_(NULL) {}
+  Handle() = default;
 
   Handle(v8::Local<v8::Object> wrapper, T* object)
       : wrapper_(wrapper), object_(object) {}
@@ -34,7 +34,7 @@ class Handle {
 
  private:
   v8::Local<v8::Object> wrapper_;
-  T* object_;
+  T* object_ = nullptr;
 };
 
 template <typename T>

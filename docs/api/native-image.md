@@ -14,11 +14,11 @@ image file path as a `String`:
 const { BrowserWindow, Tray } = require('electron')
 
 const appIcon = new Tray('/Users/somebody/images/icon.png')
-let win = new BrowserWindow({ icon: '/Users/somebody/images/window.png' })
+const win = new BrowserWindow({ icon: '/Users/somebody/images/window.png' })
 console.log(appIcon, win)
 ```
 
-Or read the image from the clipboard which returns a `NativeImage`:
+Or read the image from the clipboard, which returns a `NativeImage`:
 
 ```javascript
 const { clipboard, Tray } = require('electron')
@@ -33,19 +33,19 @@ Currently `PNG` and `JPEG` image formats are supported. `PNG` is recommended
 because of its support for transparency and lossless compression.
 
 On Windows, you can also load `ICO` icons from file paths. For best visual
-quality it is recommended to include at least the following sizes in the:
+quality, it is recommended to include at least the following sizes in the:
 
 * Small icon
- * 16x16 (100% DPI scale)
- * 20x20 (125% DPI scale)
- * 24x24 (150% DPI scale)
- * 32x32 (200% DPI scale)
+  * 16x16 (100% DPI scale)
+  * 20x20 (125% DPI scale)
+  * 24x24 (150% DPI scale)
+  * 32x32 (200% DPI scale)
 * Large icon
- * 32x32 (100% DPI scale)
- * 40x40 (125% DPI scale)
- * 48x48 (150% DPI scale)
- * 64x64 (200% DPI scale)
-* 256x256
+  * 32x32 (100% DPI scale)
+  * 40x40 (125% DPI scale)
+  * 48x48 (150% DPI scale)
+  * 64x64 (200% DPI scale)
+  * 256x256
 
 Check the *Size requirements* section in [this article][icons].
 
@@ -56,7 +56,7 @@ Check the *Size requirements* section in [this article][icons].
 On platforms that have high-DPI support such as Apple Retina displays, you can
 append `@2x` after image's base filename to mark it as a high resolution image.
 
-For example if `icon.png` is a normal image that has standard resolution, then
+For example, if `icon.png` is a normal image that has standard resolution, then
 `icon@2x.png` will be treated as a high resolution image that has double DPI
 density.
 
@@ -73,11 +73,11 @@ images/
 
 ```javascript
 const { Tray } = require('electron')
-let appIcon = new Tray('/Users/somebody/images/icon.png')
+const appIcon = new Tray('/Users/somebody/images/icon.png')
 console.log(appIcon)
 ```
 
-Following suffixes for DPI are also supported:
+The following suffixes for DPI are also supported:
 
 * `@1x`
 * `@1.25x`
@@ -97,7 +97,7 @@ Template images consist of black and an alpha channel.
 Template images are not intended to be used as standalone images and are usually
 mixed with other content to create the desired final appearance.
 
-The most common case is to use template images for a menu bar icon so it can
+The most common case is to use template images for a menu bar icon, so it can
 adapt to both light and dark menu bars.
 
 **Note:** Template image is only supported on macOS.
@@ -132,7 +132,7 @@ a valid image.
 ```javascript
 const nativeImage = require('electron').nativeImage
 
-let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
+const image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 console.log(image)
 ```
 
@@ -180,7 +180,8 @@ Creates a new `NativeImage` instance from the NSImage that maps to the
 given image name. See [`System Icons`](https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/system-icons/)
 for a list of possible values.
 
-The `hslShift` is applied to the image with the following rules
+The `hslShift` is applied to the image with the following rules:
+
 * `hsl_shift[0]` (hue): The absolute hue value for the image - 0 and 1 map
      to 0 and 360 on the hue color wheel (red).
 * `hsl_shift[1]` (saturation): A saturation shift for the image, with the
@@ -248,9 +249,9 @@ Returns `String` - The data URL of the image.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's raw bitmap pixel data.
 
-The difference between `getBitmap()` and `toBitmap()` is, `getBitmap()` does not
+The difference between `getBitmap()` and `toBitmap()` is that `getBitmap()` does not
 copy the bitmap data, so you have to use the returned Buffer immediately in
-current event loop tick, otherwise the data might be changed or destroyed.
+current event loop tick; otherwise the data might be changed or destroyed.
 
 #### `image.getNativeHandle()` _macOS_
 
@@ -295,7 +296,7 @@ Returns `NativeImage` - The cropped image.
   * `width` Integer (optional) - Defaults to the image's width.
   * `height` Integer (optional) - Defaults to the image's height.
   * `quality` String (optional) - The desired quality of the resize image.
-    Possible values are `good`, `better` or `best`. The default is `best`.
+    Possible values are `good`, `better`, or `best`. The default is `best`.
     These values express a desired quality/speed tradeoff. They are translated
     into an algorithm-specific method that depends on the capabilities
     (CPU, GPU) of the underlying platform. It is possible for all three methods

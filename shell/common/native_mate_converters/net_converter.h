@@ -5,86 +5,71 @@
 #ifndef SHELL_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_
 #define SHELL_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_
 
-#include "base/memory/ref_counted.h"
 #include "native_mate/converter.h"
-
-namespace base {
-class DictionaryValue;
-class ListValue;
-}  // namespace base
-
-namespace electron {
-struct VerifyRequestParams;
-}
-
-namespace net {
-class AuthChallengeInfo;
-class URLRequest;
-class X509Certificate;
-class HttpResponseHeaders;
-struct CertPrincipal;
-}  // namespace net
-
-namespace network {
-struct ResourceRequest;
-}
+#include "shell/common/gin_converters/net_converter.h"
 
 namespace mate {
 
 template <>
 struct Converter<net::AuthChallengeInfo> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::AuthChallengeInfo& val);
+                                   const net::AuthChallengeInfo& val) {
+    return gin::ConvertToV8(isolate, val);
+  }
 };
 
 template <>
 struct Converter<scoped_refptr<net::X509Certificate>> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const scoped_refptr<net::X509Certificate>& val);
+      const scoped_refptr<net::X509Certificate>& val) {
+    return gin::ConvertToV8(isolate, val);
+  }
 
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     scoped_refptr<net::X509Certificate>* out);
+                     scoped_refptr<net::X509Certificate>* out) {
+    return gin::ConvertFromV8(isolate, val, out);
+  }
 };
 
 template <>
 struct Converter<net::CertPrincipal> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::CertPrincipal& val);
+                                   const net::CertPrincipal& val) {
+    return gin::ConvertToV8(isolate, val);
+  }
 };
 
 template <>
 struct Converter<net::HttpResponseHeaders*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   net::HttpResponseHeaders* headers);
+                                   net::HttpResponseHeaders* headers) {
+    return gin::ConvertToV8(isolate, headers);
+  }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     net::HttpResponseHeaders* out);
+                     net::HttpResponseHeaders* out) {
+    return gin::Converter<net::HttpResponseHeaders*>::FromV8(isolate, val, out);
+  }
 };
 
 template <>
 struct Converter<network::ResourceRequest> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const network::ResourceRequest& val);
+                                   const network::ResourceRequest& val) {
+    return gin::ConvertToV8(isolate, val);
+  }
 };
 
 template <>
 struct Converter<electron::VerifyRequestParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::VerifyRequestParams val);
+                                   electron::VerifyRequestParams val) {
+    return gin::ConvertToV8(isolate, val);
+  }
 };
 
 }  // namespace mate
-
-namespace electron {
-
-void FillRequestDetails(base::DictionaryValue* details,
-                        const net::URLRequest* request);
-
-void GetUploadData(base::ListValue* upload_data_list,
-                   const net::URLRequest* request);
-
-}  // namespace electron
 
 #endif  // SHELL_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_

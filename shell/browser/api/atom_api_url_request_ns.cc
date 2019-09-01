@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "content/public/browser/storage_partition.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -179,10 +178,7 @@ URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
       session = Session::FromPartition(args->isolate(), "");
   }
 
-  auto* browser_context = session->browser_context();
-  url_loader_factory_ =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context)
-          ->GetURLLoaderFactoryForBrowserProcess();
+  url_loader_factory_ = session->browser_context()->GetURLLoaderFactory();
 
   InitWith(args->isolate(), args->GetThis());
 }

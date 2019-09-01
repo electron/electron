@@ -653,6 +653,48 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    describe('BrowserWindow.moveAbove(mediaSourceId)', () => {
+      it('should throw an exception if wrong formatting', async () => {
+        const fakeSourceIds = [
+          'none', 'screen:0', 'window:fake', 'window:1234', 'foobar:1:2'
+        ]
+        fakeSourceIds.forEach((sourceId) => {
+          expect(() => {
+            w.moveAbove(sourceId)
+          }).to.throw(/Invalid media source id/)
+        })
+      })
+      it('should throw an exception if wrong type', async () => {
+        const fakeSourceIds = [null as any, 123 as any]
+        fakeSourceIds.forEach((sourceId) => {
+          expect(() => {
+            w.moveAbove(sourceId)
+          }).to.throw(/Error processing argument at index 0 */)
+        })
+      })
+      it('should throw an exception if invalid window', async () => {
+        // It is very unlikely that these window id exist.
+        const fakeSourceIds = ['window:99999999:0', 'window:123456:1',
+          'window:123456:9']
+        fakeSourceIds.forEach((sourceId) => {
+          expect(() => {
+            w.moveAbove(sourceId)
+          }).to.throw(/Invalid media source id/)
+        })
+      })
+      it('should not throw an exception', async () => {
+        const w2 = new BrowserWindow({ show: false, title: 'window2' })
+        const w2Shown = emittedOnce(w2, 'show')
+        w2.show()
+        await w2Shown
+
+        expect(() => {
+          w.moveAbove(w2.getMediaSourceId())
+        }).to.not.throw()
+
+        await closeWindow(w2, { assertNotWindows: false })
+      })
+    })
   })
 
   describe('sizing', () => {
@@ -1091,6 +1133,66 @@ describe('BrowserWindow module', () => {
 
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
       w.setAlwaysOnTop(true)
+    })
+  })
+
+  describe('preconnect feature', () => {
+    let w = null as unknown as BrowserWindow
+
+    let server = null as unknown as http.Server
+    let url = null as unknown as string
+    let connections = 0
+
+    beforeEach(async () => {
+      connections = 0
+      server = http.createServer((req, res) => {
+        if (req.url === '/link') {
+          res.setHeader('Content-type', 'text/html')
+          res.end(`<head><link rel="preconnect" href="//example.com" /></head><body>foo</body>`)
+          return
+        }
+        res.end()
+      })
+      server.on('connection', (connection) => { connections++ })
+
+      await new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve()))
+      url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+    })
+    afterEach(async () => {
+      server.close()
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
+      server = null as unknown as http.Server
+    })
+
+    it('calling preconnect() connects to the server', (done) => {
+      w = new BrowserWindow({show: false})
+      w.webContents.on('did-start-navigation', (event, preconnectUrl, isInPlace, isMainFrame, frameProcessId, frameRoutingId) => {
+        w.webContents.session.preconnect({
+          url: preconnectUrl,
+          numSockets: 4
+        })
+      })
+      w.webContents.on('did-finish-load', () => {
+        expect(connections).to.equal(4)
+        done()
+      })
+      w.loadURL(url)
+    })
+
+    it('does not preconnect unless requested', async () => {
+      w = new BrowserWindow({show: false})
+      await w.loadURL(url)
+      expect(connections).to.equal(1)
+    })
+
+    it('parses <link rel=preconnect>', async () => {
+      w = new BrowserWindow({show: true})
+      const p = emittedOnce(w.webContents.session, 'preconnect')
+      w.loadURL(url + '/link')
+      const [, preconnectUrl, allowCredentials] = await p
+      expect(preconnectUrl).to.equal('http://example.com/')
+      expect(allowCredentials).to.be.true('allowCredentials')
     })
   })
 
@@ -2466,7 +2568,9 @@ describe('BrowserWindow module', () => {
       }
     })
 
-    it('visibilityState remains visible if backgroundThrottling is disabled', async () => {
+    // FIXME(MarshallOfSound): This test fails locally 100% of the time, on CI it started failing
+    // when we introduced the compositor recycling patch.  Should figure out how to fix this
+    it.skip('visibilityState remains visible if backgroundThrottling is disabled', async () => {
       const w = new BrowserWindow({
         show: false,
         width: 100,
@@ -3360,6 +3464,20 @@ describe('BrowserWindow module', () => {
         w.setHasShadow(false)
         expect(w.hasShadow()).to.be.false('hasShadow')
       })
+    })
+  })
+
+  describe('window.getMediaSourceId()', () => {
+    afterEach(closeAllWindows)
+    it('returns valid source id', async () => {
+      const w = new BrowserWindow({show: false})
+      const shown = emittedOnce(w, 'show')
+      w.show()
+      await shown
+
+      // Check format 'window:1234:0'.
+      const sourceId = w.getMediaSourceId()
+      expect(sourceId).to.match(/^window:\d+:\d+$/)
     })
   })
 

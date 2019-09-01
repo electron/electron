@@ -138,6 +138,18 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   shell_->NotifyWindowResize();
 }
 
+- (void)windowWillMove:(NSNotification*)notification {
+  NSWindow* window = [notification object];
+  NSSize size = [[window contentView] frame].size;
+  NSRect new_bounds = NSMakeRect(window.frame.origin.x, window.frame.origin.y,
+                                 size.width, size.height);
+  bool prevent_default = false;
+
+  // prevent_default has no effect
+  shell_->NotifyWindowWillMove(gfx::ScreenRectFromNSRect(new_bounds),
+                               &prevent_default);
+}
+
 - (void)windowDidMove:(NSNotification*)notification {
   [super windowDidMove:notification];
   // TODO(zcbenz): Remove the alias after figuring out a proper

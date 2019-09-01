@@ -11,6 +11,7 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
+#include "components/network_hints/renderer/prescient_networking_dispatcher.h"
 #include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
@@ -118,7 +119,7 @@ void RendererClientBase::DidCreateScriptContext(
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   bool enableRemoteModule =
-      !command_line->HasSwitch(switches::kDisableRemoteModule);
+      command_line->HasSwitch(switches::kEnableRemoteModule);
   global.SetHidden("enableRemoteModule", enableRemoteModule);
 }
 
@@ -200,6 +201,9 @@ void RendererClientBase::RenderThreadStarted() {
   // FIXME(zcbenz): Can this be moved elsewhere?
   blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
+
+  prescient_networking_dispatcher_.reset(
+      new network_hints::PrescientNetworkingDispatcher());
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.
@@ -316,6 +320,10 @@ void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 #if BUILDFLAG(ENABLE_PRINTING)
   printing::SetAgent(user_agent);
 #endif
+}
+
+blink::WebPrescientNetworking* RendererClientBase::GetPrescientNetworking() {
+  return prescient_networking_dispatcher_.get();
 }
 
 void RendererClientBase::RunScriptsAtDocumentStart(

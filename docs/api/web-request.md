@@ -99,16 +99,16 @@ Some examples of valid `urls`:
     * `timestamp` Double
     * `requestHeaders` Record<string, string>
   * `callback` Function
-    * `response` Object
+    * `beforeSendResponse` Object
       * `cancel` Boolean (optional)
-      * `requestHeaders` Record<string, string> (optional) - When provided, request will be made
+      * `requestHeaders` Record<string, string | string[]> (optional) - When provided, request will be made
   with these headers.
 
 The `listener` will be called with `listener(details, callback)` before sending
 an HTTP request, once the request headers are available. This may occur after a
 TCP connection is made to the server, but before any http data is sent.
 
-The `callback` has to be called with an `response` object.
+The `callback` has to be called with a `response` object.
 
 #### `webRequest.onSendHeaders([filter, ]listener)`
 
@@ -148,9 +148,9 @@ response are visible by the time this listener is fired.
     * `statusCode` Integer
     * `responseHeaders` Record<string, string> (optional)
   * `callback` Function
-    * `response` Object
+    * `headersReceivedResponse` Object
       * `cancel` Boolean (optional)
-      * `responseHeaders` Record<string, string> (optional) - When provided, the server is assumed
+      * `responseHeaders` Record<string, string | string[]> (optional) - When provided, the server is assumed
         to have responded with these headers.
       * `statusLine` String (optional) - Should be provided when overriding
         `responseHeaders` to change header status otherwise original response
@@ -159,7 +159,7 @@ response are visible by the time this listener is fired.
 The `listener` will be called with `listener(details, callback)` when HTTP
 response headers of a request have been received.
 
-The `callback` has to be called with an `response` object.
+The `callback` has to be called with a `response` object.
 
 #### `webRequest.onResponseStarted([filter, ]listener)`
 
@@ -201,6 +201,7 @@ and response headers are available.
     * `timestamp` Double
     * `redirectURL` String
     * `statusCode` Integer
+    * `statusLine` String
     * `ip` String (optional) - The server IP address that the request was
       actually sent to.
     * `fromCache` Boolean

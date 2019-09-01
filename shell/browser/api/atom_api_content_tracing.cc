@@ -64,13 +64,13 @@ base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
   return base::make_optional(std::move(temp_file_path));
 }
 
-void StopTracing(electron::util::Promise promise,
+void StopTracing(electron::util::Promise<base::FilePath> promise,
                  base::Optional<base::FilePath> file_path) {
   if (file_path) {
     auto endpoint = TracingController::CreateFileEndpoint(
         *file_path,
         base::AdaptCallbackForRepeating(base::BindOnce(
-            &electron::util::Promise::ResolvePromise<base::FilePath>,
+            &electron::util::Promise<base::FilePath>::ResolvePromise,
             std::move(promise), *file_path)));
     TracingController::GetInstance()->StopTracing(endpoint);
   } else {
@@ -80,7 +80,7 @@ void StopTracing(electron::util::Promise promise,
 }
 
 v8::Local<v8::Promise> StopRecording(mate::Arguments* args) {
-  electron::util::Promise promise(args->isolate());
+  electron::util::Promise<base::FilePath> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::FilePath path;
@@ -98,12 +98,12 @@ v8::Local<v8::Promise> StopRecording(mate::Arguments* args) {
 }
 
 v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
-  electron::util::Promise promise(isolate);
+  electron::util::Promise<const std::set<std::string>&> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Note: This method always succeeds.
   TracingController::GetInstance()->GetCategories(base::BindOnce(
-      electron::util::Promise::ResolvePromise<const std::set<std::string>&>,
+      electron::util::Promise<const std::set<std::string>&>::ResolvePromise,
       std::move(promise)));
 
   return handle;
@@ -112,34 +112,35 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
 v8::Local<v8::Promise> StartTracing(
     v8::Isolate* isolate,
     const base::trace_event::TraceConfig& trace_config) {
-  electron::util::Promise promise(isolate);
+  electron::util::Promise<void*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!TracingController::GetInstance()->StartTracing(
           trace_config,
-          base::BindOnce(electron::util::Promise::ResolveEmptyPromise,
+          base::BindOnce(electron::util::Promise<void*>::ResolveEmptyPromise,
                          std::move(promise)))) {
     // If StartTracing returns false, that means it didn't invoke its callback.
     // Return an already-resolved promise and abandon the previous promise (it
     // was std::move()d into the StartTracing callback and has been deleted by
     // this point).
-    return electron::util::Promise::ResolvedPromise(isolate);
+    return electron::util::Promise<void*>::ResolvedPromise(isolate);
   }
   return handle;
 }
 
-void OnTraceBufferUsageAvailable(electron::util::Promise promise,
-                                 float percent_full,
-                                 size_t approximate_count) {
+void OnTraceBufferUsageAvailable(
+    electron::util::Promise<mate::Dictionary> promise,
+    float percent_full,
+    size_t approximate_count) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("percentage", percent_full);
   dict.Set("value", approximate_count);
 
-  promise.Resolve(dict.GetHandle());
+  promise.Resolve(dict);
 }
 
 v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {
-  electron::util::Promise promise(isolate);
+  electron::util::Promise<mate::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Note: This method always succeeds.

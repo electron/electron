@@ -24,16 +24,12 @@ std::string V8TypeAsString(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 
 }  // namespace
 
-Arguments::Arguments()
-    : isolate_(NULL), info_(NULL), next_(0), insufficient_arguments_(false) {}
+Arguments::Arguments() = default;
 
 Arguments::Arguments(const v8::FunctionCallbackInfo<v8::Value>& info)
-    : isolate_(info.GetIsolate()),
-      info_(&info),
-      next_(0),
-      insufficient_arguments_(false) {}
+    : isolate_(info.GetIsolate()), info_(&info) {}
 
-Arguments::~Arguments() {}
+Arguments::~Arguments() = default;
 
 v8::Local<v8::Value> Arguments::PeekNext() const {
   if (next_ >= info_->Length())

@@ -3,10 +3,7 @@
 // found in the LICENSE file.
 
 #include "shell/browser/ui/file_dialog.h"
-
-#include <glib/gi18n.h>  // _() macro
-#include <gmodule.h>
-#include <functional>
+#include "shell/browser/ui/util_gtk.h"
 
 #include "base/callback.h"
 #include "base/files/file_util.h"
@@ -50,14 +47,14 @@ class FileChooserDialog {
       : parent_(
             static_cast<electron::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
-    const char* confirm_text = _("_OK");
+    const char* confirm_text = gtk_util::kOkLabel;
 
     if (!settings.button_label.empty())
       confirm_text = settings.button_label.c_str();
     else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
-      confirm_text = _("_Save");
+      confirm_text = gtk_util::kOpenLabel;
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
-      confirm_text = _("_Open");
+      confirm_text = gtk_util::kSaveLabel;
 
     gtk_module_ = g_module_open("libgtk-3.so.0", G_MODULE_BIND_LAZY);
     void* (*dl_gtk_file_chooser_native_new)(const char*, GtkWindow*,
@@ -68,10 +65,10 @@ class FileChooserDialog {
         reinterpret_cast<void**>(&dl_gtk_file_chooser_native_new));
     if (found && dl_gtk_file_chooser_native_new != NULL) {
       dialog_ = GTK_FILE_CHOOSER(dl_gtk_file_chooser_native_new(
-          settings.title.c_str(), NULL, action, _("_Cancel"), confirm_text));
+          settings.title.c_str(), NULL, action, gtk_util::kCancelLabel, confirm_text));
     } else {
       dialog_ = GTK_FILE_CHOOSER(gtk_file_chooser_dialog_new(
-          settings.title.c_str(), NULL, action, _("_Cancel"),
+          settings.title.c_str(), NULL, action, gtk_util::kCancelLabel,
           GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, NULL));
     }
 
@@ -182,13 +179,15 @@ class FileChooserDialog {
     }
   }
 
-  void RunSaveAsynchronous(electron::util::Promise promise) {
-    save_promise_.reset(new electron::util::Promise(std::move(promise)));
+  void RunSaveAsynchronous(electron::util::Promise<mate::Dictionary> promise) {
+    save_promise_.reset(
+        new electron::util::Promise<mate::Dictionary>(std::move(promise)));
     RunAsynchronous();
   }
 
-  void RunOpenAsynchronous(electron::util::Promise promise) {
-    open_promise_.reset(new electron::util::Promise(std::move(promise)));
+  void RunOpenAsynchronous(electron::util::Promise<mate::Dictionary> promise) {
+    open_promise_.reset(
+        new electron::util::Promise<mate::Dictionary>(std::move(promise)));
     RunAsynchronous();
   }
 
@@ -231,8 +230,8 @@ class FileChooserDialog {
   GModule* gtk_module_;
 
   Filters filters_;
-  std::unique_ptr<electron::util::Promise> save_promise_;
-  std::unique_ptr<electron::util::Promise> open_promise_;
+  std::unique_ptr<electron::util::Promise<mate::Dictionary>> save_promise_;
+  std::unique_ptr<electron::util::Promise<mate::Dictionary>> open_promise_;
 
   // Sets |dialog| as transient for |parent|, which will keep it on top and
   // center it above |parent|. Do nothing if |parent| is nullptr.
@@ -274,7 +273,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkFileChooser* widget,
       dict.Set("canceled", true);
       dict.Set("filePath", base::FilePath());
     }
-    save_promise_->Resolve(dict.GetHandle());
+    save_promise_->Resolve(dict);
   } else if (open_promise_) {
     mate::Dictionary dict =
         mate::Dictionary::CreateEmpty(open_promise_->isolate());
@@ -285,7 +284,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkFileChooser* widget,
       dict.Set("canceled", true);
       dict.Set("filePaths", std::vector<base::FilePath>());
     }
-    open_promise_->Resolve(dict.GetHandle());
+    open_promise_->Resolve(dict);
   }
   delete this;
 }
@@ -383,7 +382,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise promise) {
+                    electron::util::Promise<mate::Dictionary> promise) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   if (settings.properties & OPEN_DIALOG_OPEN_DIRECTORY)
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
@@ -406,7 +405,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise promise) {
+                    electron::util::Promise<mate::Dictionary> promise) {
   FileChooserDialog* save_dialog =
       new FileChooserDialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
   save_dialog->RunSaveAsynchronous(std::move(promise));

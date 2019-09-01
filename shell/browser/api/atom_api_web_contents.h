@@ -14,6 +14,7 @@
 #include "base/observer_list_types.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_binding_set.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -27,7 +28,6 @@
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/common_web_contents_delegate.h"
-#include "shell/browser/ui/autofill_popup.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -291,8 +291,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
   v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
-  bool IsRemoteModuleEnabled() const;
-
   // Returns the owner window.
   v8::Local<v8::Value> GetOwnerBrowserWindow() const;
 
@@ -305,7 +303,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Properties.
   int32_t ID() const;
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
-  content::WebContents* HostWebContents();
+  content::WebContents* HostWebContents() const;
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
@@ -322,6 +320,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
+
+  WebContents* embedder() { return embedder_; }
 
  protected:
   // Does not manage lifetime of |web_contents|.
@@ -469,13 +469,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsOpened() override;
   void DevToolsClosed() override;
 
-#if defined(TOOLKIT_VIEWS)
-  void ShowAutofillPopup(content::RenderFrameHost* frame_host,
-                         const gfx::RectF& bounds,
-                         const std::vector<base::string16>& values,
-                         const std::vector<base::string16>& labels);
-#endif
-
  private:
   AtomBrowserContext* GetBrowserContext() const;
 
@@ -496,7 +489,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Message(bool internal,
                const std::string& channel,
                base::Value arguments) override;
-  void Invoke(const std::string& channel,
+  void Invoke(bool internal,
+              const std::string& channel,
               base::Value arguments,
               InvokeCallback callback) override;
   void MessageSync(bool internal,
@@ -513,11 +507,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
-
-  void ShowAutofillPopup(const gfx::RectF& bounds,
-                         const std::vector<base::string16>& values,
-                         const std::vector<base::string16>& labels) override;
-  void HideAutofillPopup() override;
 
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);

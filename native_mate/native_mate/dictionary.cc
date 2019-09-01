@@ -6,7 +6,7 @@
 
 namespace mate {
 
-Dictionary::Dictionary() : isolate_(NULL) {}
+Dictionary::Dictionary() = default;
 
 Dictionary::Dictionary(v8::Isolate* isolate, v8::Local<v8::Object> object)
     : isolate_(isolate), object_(object) {}

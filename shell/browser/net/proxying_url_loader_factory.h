@@ -31,26 +31,35 @@ class WebRequestAPI {
                               const std::set<std::string>& set_headers,
                               int error_code)>;
 
-  virtual int OnBeforeRequest(extensions::WebRequestInfo* request,
+  virtual bool HasListener() const = 0;
+  virtual int OnBeforeRequest(extensions::WebRequestInfo* info,
+                              const network::ResourceRequest& request,
                               net::CompletionOnceCallback callback,
                               GURL* new_url) = 0;
-  virtual int OnBeforeSendHeaders(extensions::WebRequestInfo* request,
+  virtual int OnBeforeSendHeaders(extensions::WebRequestInfo* info,
+                                  const network::ResourceRequest& request,
                                   BeforeSendHeadersCallback callback,
                                   net::HttpRequestHeaders* headers) = 0;
   virtual int OnHeadersReceived(
-      extensions::WebRequestInfo* request,
+      extensions::WebRequestInfo* info,
+      const network::ResourceRequest& request,
       net::CompletionOnceCallback callback,
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
       GURL* allowed_unsafe_redirect_url) = 0;
-  virtual void OnSendHeaders(extensions::WebRequestInfo* request,
+  virtual void OnSendHeaders(extensions::WebRequestInfo* info,
+                             const network::ResourceRequest& request,
                              const net::HttpRequestHeaders& headers) = 0;
-  virtual void OnBeforeRedirect(extensions::WebRequestInfo* request,
+  virtual void OnBeforeRedirect(extensions::WebRequestInfo* info,
+                                const network::ResourceRequest& request,
                                 const GURL& new_location) = 0;
-  virtual void OnResponseStarted(extensions::WebRequestInfo* request) = 0;
-  virtual void OnErrorOccurred(extensions::WebRequestInfo* request,
+  virtual void OnResponseStarted(extensions::WebRequestInfo* info,
+                                 const network::ResourceRequest& request) = 0;
+  virtual void OnErrorOccurred(extensions::WebRequestInfo* info,
+                               const network::ResourceRequest& request,
                                int net_error) = 0;
-  virtual void OnCompleted(extensions::WebRequestInfo* request,
+  virtual void OnCompleted(extensions::WebRequestInfo* info,
+                           const network::ResourceRequest& request,
                            int net_error) = 0;
 };
 

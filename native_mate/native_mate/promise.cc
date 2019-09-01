@@ -6,13 +6,13 @@
 
 namespace mate {
 
-Promise::Promise() : isolate_(NULL) {}
+Promise::Promise() = default;
 
 Promise::Promise(v8::Isolate* isolate) : isolate_(isolate) {
   resolver_ = v8::Promise::Resolver::New(isolate);
 }
 
-Promise::~Promise() {}
+Promise::~Promise() = default;
 
 Promise Promise::Create(v8::Isolate* isolate) {
   return Promise(isolate);

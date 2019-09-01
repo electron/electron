@@ -10,7 +10,7 @@
 
 namespace mate {
 
-WrappableBase::WrappableBase() : isolate_(nullptr) {}
+WrappableBase::WrappableBase() = default;
 
 WrappableBase::~WrappableBase() {
   if (wrapper_.IsEmpty())

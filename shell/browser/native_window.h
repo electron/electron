@@ -14,7 +14,10 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
+#include "base/strings/string16.h"
 #include "base/supports_user_data.h"
+#include "base/values.h"
+#include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
@@ -111,6 +114,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual double GetSheetOffsetX();
   virtual double GetSheetOffsetY();
   virtual void SetResizable(bool resizable) = 0;
+  virtual bool MoveAbove(const std::string& sourceId) = 0;
   virtual void MoveTop() = 0;
   virtual bool IsResizable() = 0;
   virtual void SetMovable(bool movable) = 0;
@@ -132,6 +136,11 @@ class NativeWindow : public base::SupportsUserData,
   virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
+
+  // Ability to augment the window title for the screen readers.
+  void SetAccessibleTitle(const std::string& title);
+  std::string GetAccessibleTitle();
+
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetSkipTaskbar(bool skip) = 0;
   virtual void SetExcludedFromShownWindowsMenu(bool excluded) = 0;
@@ -156,6 +165,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetParentWindow(NativeWindow* parent);
   virtual void AddBrowserView(NativeBrowserView* browser_view) = 0;
   virtual void RemoveBrowserView(NativeBrowserView* browser_view) = 0;
+  virtual content::DesktopMediaID GetDesktopMediaID() const = 0;
   virtual gfx::NativeView GetNativeView() const = 0;
   virtual gfx::NativeWindow GetNativeWindow() const = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() const = 0;
@@ -298,6 +308,7 @@ class NativeWindow : public base::SupportsUserData,
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
+  base::string16 GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
 
@@ -351,6 +362,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;
+
+  // Accessible title.
+  base::string16 accessible_title_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 

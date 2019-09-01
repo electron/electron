@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Wed, 28 Nov 2018 13:20:27 -0800
-Subject: support mixed-sandbox with zygote
+Subject: support_mixed_sandbox_with_zygote.patch
 
 On Linux, Chromium launches all new renderer processes via a "zygote"
 process which has the sandbox pre-initialized (see
@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 44b360508bff35646564ee6a74d605a96727aef0..6e568d750c8b1520ad5e4e8ac2f39feeba992dc2 100644
+index 20d0b4a801bdbe0300f878f369fc9017fc8aea3f..6302948343ee810a9d35a70be0c91a1ffbfb7647 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -372,6 +372,10 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -378,6 +378,10 @@ class RendererSandboxedProcessLauncherDelegate
      : public SandboxedProcessLauncherDelegate {
   public:
    RendererSandboxedProcessLauncherDelegate() {}
@@ -36,7 +36,7 @@ index 44b360508bff35646564ee6a74d605a96727aef0..6e568d750c8b1520ad5e4e8ac2f39fee
  
    ~RendererSandboxedProcessLauncherDelegate() override {}
  
-@@ -391,6 +395,9 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -397,6 +401,9 @@ class RendererSandboxedProcessLauncherDelegate
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
    service_manager::ZygoteHandle GetZygote() override {
@@ -46,7 +46,7 @@ index 44b360508bff35646564ee6a74d605a96727aef0..6e568d750c8b1520ad5e4e8ac2f39fee
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -404,6 +411,11 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -410,6 +417,11 @@ class RendererSandboxedProcessLauncherDelegate
    service_manager::SandboxType GetSandboxType() override {
      return service_manager::SANDBOX_TYPE_RENDERER;
    }
@@ -58,7 +58,7 @@ index 44b360508bff35646564ee6a74d605a96727aef0..6e568d750c8b1520ad5e4e8ac2f39fee
  };
  
  const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1718,11 +1730,18 @@ bool RenderProcessHostImpl::Init() {
+@@ -1746,11 +1758,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  

@@ -85,6 +85,7 @@ class EventEmitter : public Wrappable<T> {
       base::Optional<electron::mojom::ElectronBrowser::MessageSyncCallback>
           callback,
       Args&&... args) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
     v8::Local<v8::Object> wrapper = GetWrapper();
