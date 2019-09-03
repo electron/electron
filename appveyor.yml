@@ -32,6 +32,9 @@ environment:
   ELECTRON_OUT_DIR: Default
 build_script:
   - ps: >-
+      if($env:APPVEYOR_PROJECT_NAME -eq "electron-woa-testing") {
+        Write-warning "WOA builds not supported on older versions of Electron"; Exit-AppveyorBuild
+      }
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
         Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
       }
