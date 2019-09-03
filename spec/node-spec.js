@@ -5,12 +5,11 @@ const dirtyChai = require('dirty-chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const { ipcRenderer, remote } = require('electron')
+const { ipcRenderer } = require('electron')
 const features = process.electronBinding('features')
 
 const { emittedOnce } = require('./events-helpers')
 
-const isCI = remote.getGlobal('isCi')
 chai.use(dirtyChai)
 
 describe('node feature', () => {
@@ -56,16 +55,6 @@ describe('node feature', () => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'fork_ping.js'), [], {
           path: process.env['PATH']
         })
-        child.on('message', (msg) => {
-          expect(msg).to.equal('message')
-          done()
-        })
-        child.send('message')
-      })
-
-      it('works in browser process', (done) => {
-        const fork = remote.require('child_process').fork
-        const child = fork(path.join(fixtures, 'module', 'ping.js'))
         child.on('message', (msg) => {
           expect(msg).to.equal('message')
           done()
@@ -215,16 +204,6 @@ describe('node feature', () => {
       })
     })
 
-    describe('setTimeout called under Chromium event loop in browser process', () => {
-      it('can be scheduled in time', (done) => {
-        remote.getGlobal('setTimeout')(done, 0)
-      })
-
-      it('can be promisified', (done) => {
-        remote.getGlobal('setTimeoutPromisified')(0).then(done)
-      })
-    })
-
     describe('setTimeout called under blink env in renderer process', () => {
       it('can be scheduled in time', (done) => {
         setTimeout(done, 10)
@@ -232,24 +211,6 @@ describe('node feature', () => {
 
       it('works from the timers module', (done) => {
         require('timers').setTimeout(done, 10)
-      })
-    })
-
-    describe('setInterval called under Chromium event loop in browser process', () => {
-      it('can be scheduled in time', (done) => {
-        let interval = null
-        let clearing = false
-        const clear = () => {
-          if (interval === null || clearing) return
-
-          // interval might trigger while clearing (remote is slow sometimes)
-          clearing = true
-          remote.getGlobal('clearInterval')(interval)
-          clearing = false
-          interval = null
-          done()
-        }
-        interval = remote.getGlobal('setInterval')(clear, 10)
       })
     })
 
@@ -284,150 +245,6 @@ describe('node feature', () => {
           done()
         }
         interval = require('timers').setInterval(clear, 10)
-      })
-    })
-  })
-
-  describe('inspector', () => {
-    let child = null
-    let exitPromise = null
-
-    beforeEach(function () {
-      if (!features.isRunAsNodeEnabled()) {
-        this.skip()
-      }
-    })
-
-    afterEach(async () => {
-      if (child && exitPromise) {
-        const [code, signal] = await exitPromise
-        expect(signal).to.equal(null)
-        expect(code).to.equal(0)
-      } else if (child) {
-        child.kill()
-      }
-    })
-
-    it('supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
-      child = ChildProcess.spawn(process.execPath, ['--inspect-brk', path.join(__dirname, 'fixtures', 'module', 'run-as-node.js')], {
-        env: {
-          ELECTRON_RUN_AS_NODE: true
-        }
-      })
-
-      let output = ''
-      function cleanup () {
-        child.stderr.removeListener('data', errorDataListener)
-        child.stdout.removeListener('data', outDataHandler)
-      }
-      function errorDataListener (data) {
-        output += data
-        if (output.trim().startsWith('Debugger listening on ws://')) {
-          cleanup()
-          done()
-        }
-      }
-      function outDataHandler (data) {
-        cleanup()
-        done(new Error(`Unexpected output: ${data.toString()}`))
-      }
-      child.stderr.on('data', errorDataListener)
-      child.stdout.on('data', outDataHandler)
-    })
-
-    it('supports starting the v8 inspector with --inspect and a provided port', (done) => {
-      child = ChildProcess.spawn(process.execPath, ['--inspect=17364', path.join(__dirname, 'fixtures', 'module', 'run-as-node.js')], {
-        env: {
-          ELECTRON_RUN_AS_NODE: true
-        }
-      })
-      exitPromise = emittedOnce(child, 'exit')
-
-      let output = ''
-      function cleanup () {
-        child.stderr.removeListener('data', errorDataListener)
-        child.stdout.removeListener('data', outDataHandler)
-      }
-      function errorDataListener (data) {
-        output += data
-        if (output.trim().startsWith('Debugger listening on ws://')) {
-          expect(output.trim()).to.contain(':17364', 'should be listening on port 17364')
-          cleanup()
-          done()
-        }
-      }
-      function outDataHandler (data) {
-        cleanup()
-        done(new Error(`Unexpected output: ${data.toString()}`))
-      }
-      child.stderr.on('data', errorDataListener)
-      child.stdout.on('data', outDataHandler)
-    })
-
-    it('does not start the v8 inspector when --inspect is after a -- argument', (done) => {
-      child = ChildProcess.spawn(remote.process.execPath, [path.join(__dirname, 'fixtures', 'module', 'noop.js'), '--', '--inspect'])
-      exitPromise = emittedOnce(child, 'exit')
-
-      let output = ''
-      function dataListener (data) {
-        output += data
-      }
-      child.stderr.on('data', dataListener)
-      child.stdout.on('data', dataListener)
-      child.on('exit', () => {
-        if (output.trim().startsWith('Debugger listening on ws://')) {
-          done(new Error('Inspector was started when it should not have been'))
-        } else {
-          done()
-        }
-      })
-    })
-
-    it('does does not crash when quitting with the inspector connected', function (done) {
-      // IPC Electron child process not supported on Windows
-      if (process.platform === 'win32') return this.skip()
-      child = ChildProcess.spawn(remote.process.execPath, [path.join(__dirname, 'fixtures', 'module', 'delay-exit'), '--inspect=0'], {
-        stdio: ['ipc']
-      })
-      exitPromise = emittedOnce(child, 'exit')
-
-      let output = ''
-      function dataListener (data) {
-        output += data
-
-        if (output.trim().indexOf('Debugger listening on ws://') > -1 && output.indexOf('\n') > -1) {
-          const socketMatch = output.trim().match(/(ws:\/\/.+:[0-9]+\/.+?)\n/gm)
-          if (socketMatch && socketMatch[0]) {
-            child.stderr.removeListener('data', dataListener)
-            child.stdout.removeListener('data', dataListener)
-            const connection = new WebSocket(socketMatch[0])
-            connection.onopen = () => {
-              child.send('plz-quit')
-              connection.close()
-              done()
-            }
-          }
-        }
-      }
-      child.stderr.on('data', dataListener)
-      child.stdout.on('data', dataListener)
-    })
-
-    it('supports js binding', (done) => {
-      child = ChildProcess.spawn(process.execPath, ['--inspect', path.join(__dirname, 'fixtures', 'module', 'inspector-binding.js')], {
-        env: {
-          ELECTRON_RUN_AS_NODE: true
-        },
-        stdio: ['ipc']
-      })
-      exitPromise = emittedOnce(child, 'exit')
-
-      child.on('message', ({ cmd, debuggerEnabled, success }) => {
-        if (cmd === 'assert') {
-          expect(debuggerEnabled).to.be.true()
-          expect(success).to.be.true()
-          done()
-        }
       })
     })
   })
@@ -527,7 +344,7 @@ describe('node feature', () => {
     })
 
     it('should have isTTY defined on Mac and Linux', function () {
-      if (isCI || process.platform === 'win32') {
+      if (process.platform === 'win32') {
         this.skip()
         return
       }
@@ -536,7 +353,7 @@ describe('node feature', () => {
     })
 
     it('should have isTTY undefined on Windows', function () {
-      if (isCI || process.platform !== 'win32') {
+      if (process.platform !== 'win32') {
         this.skip()
         return
       }
@@ -635,10 +452,5 @@ describe('node feature', () => {
       .to.have.own.property('chrome')
       .that.is.a('string')
       .and.matches(/^\d+\.\d+\.\d+\.\d+$/)
-  })
-
-  it('can find a module using a package.json main field', () => {
-    const result = ChildProcess.spawnSync(remote.process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')])
-    expect(result.status).to.equal(0)
   })
 })
