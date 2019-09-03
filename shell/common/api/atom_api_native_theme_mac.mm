@@ -12,20 +12,18 @@ namespace electron {
 namespace api {
 
 void NativeTheme::UpdateMacOSAppearanceForOverrideValue(
-    ui::NativeTheme::OverrideShouldUseDarkColors override) {
+    ui::NativeTheme::ThemeSource override) {
   if (@available(macOS 10.14, *)) {
     NSAppearance* new_appearance;
     switch (override) {
-      case ui::NativeTheme::OverrideShouldUseDarkColors::
-          kForceDarkColorsEnabled:
+      case ui::NativeTheme::ThemeSource::kForcedDark:
         new_appearance =
             [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
         break;
-      case ui::NativeTheme::OverrideShouldUseDarkColors::
-          kForceDarkColorsDisabled:
+      case ui::NativeTheme::ThemeSource::kForcedLight:
         new_appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
         break;
-      case ui::NativeTheme::OverrideShouldUseDarkColors::kNoOverride:
+      case ui::NativeTheme::ThemeSource::kSystem:
       default:
         new_appearance = nil;
         break;

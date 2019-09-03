@@ -23,23 +23,24 @@ The `nativeTheme` module has the following properties:
 
 A `Boolean` for if the OS / Chromium currently has a dark mode enabled or is
 being instructed to show a dark-style UI.  If you want to modify this value you
-should use `shouldUseDarkColorsOverride` below.
+should use `themeSource` below.
 
-### `nativeTheme.shouldUseDarkColorsOverride`
+### `nativeTheme.themeSource`
 
-A `Boolean | null` property used to override and supercede the value that Chromium has
-chosen to use internally.  Setting this property to `null` will remove the override and
-everything will be reset to the OS default.  By default `shouldUseDarkColors` tracks the
-OS dark mode setting.
+A `String` property that can be `system`, `light` or `dark`.  It is used to override and supercede
+the value that Chromium has chosen to use internally.
 
-Settings this property to `true` will have the following effects:
+Setting this property to `system` will remove the override and
+everything will be reset to the OS default.  By default `themeSource` is `system`.
+
+Settings this property to `dark` will have the following effects:
 * `nativeTheme.shouldUseDarkColors` will be `true` when accessed
 * Any UI Electron renders on Linux and Windows including context menus, devtools, etc. will use the dark UI.
 * Any UI the OS renders on macOS including menus, window frames, etc. will use the dark UI.
 * The [`prefers-color-scheme`](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme) CSS query will match `dark` mode.
 * The `updated` event will be emitted
 
-Settings this property to `false` will have the following effects:
+Settings this property to `light` will have the following effects:
 * `nativeTheme.shouldUseDarkColors` will be `false` when accessed
 * Any UI Electron renders on Linux and Windows including context menus, devtools, etc. will use the light UI.
 * Any UI the OS renders on macOS including menus, window frames, etc. will use the light UI.
@@ -48,9 +49,9 @@ Settings this property to `false` will have the following effects:
 
 The usage of this property should align with a classic "dark mode" state machine in your application
 where the user has three options.
-* `Follow OS` --> `shouldUseDarkColorsOverride = null`
-* `Dark Mode` --> `shouldUseDarkColorsOverride = true`
-* `Light Mode` --> `shouldUseDarkColorsOverride = false`
+* `Follow OS` --> `themeSource = 'system'`
+* `Dark Mode` --> `themeSource = 'dark'`
+* `Light Mode` --> `themeSource = 'light'`
 
 Your application should then always use `shouldUseDarkColors` to determine what CSS to apply.
 

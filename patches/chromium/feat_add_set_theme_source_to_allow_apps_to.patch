@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sattard@slack-corp.com>
 Date: Mon, 26 Aug 2019 14:32:41 -0700
-Subject: feat: add set_override_should_use_dark_colors to allow apps to
+Subject: feat: add set_theme_source to allow apps to
  override chromiums internal theme choice
 
 
@@ -26,8 +26,8 @@ index 70389e0245993faa2c17e9deefeb000280ef2368..4d56998a391c1c7508bb911eea0c16cd
  #include "ui/native_theme/native_theme_observer.h"
  
 +#define HANDLE_OVERRIDDEN_SHOULD_USE_DARK_COLORS \
-+  if (override_should_use_dark_colors() == OverrideShouldUseDarkColors::kForceDarkColorsDisabled) return false; \
-+  if (override_should_use_dark_colors() == OverrideShouldUseDarkColors::kForceDarkColorsEnabled) return true;
++  if (theme_source() == ThemeSource::kForcedLight) return false; \
++  if (theme_source() == ThemeSource::kForcedDark) return true;
 +
 +
  namespace gfx {
@@ -37,19 +37,19 @@ index 70389e0245993faa2c17e9deefeb000280ef2368..4d56998a391c1c7508bb911eea0c16cd
        ColorId color_id,
        ColorScheme color_scheme = ColorScheme::kDefault) const = 0;
  
-+  enum OverrideShouldUseDarkColors {
-+    kNoOverride,
-+    kForceDarkColorsEnabled,
-+    kForceDarkColorsDisabled,
++  enum ThemeSource {
++    kSystem,
++    kForcedDark,
++    kForcedLight,
 +  };
 +
-+  OverrideShouldUseDarkColors override_should_use_dark_colors() const {
-+    return override_should_use_dark_colors_;
++  ThemeSource theme_source() const {
++    return theme_source_;
 +  }
 +
-+  void set_override_should_use_dark_colors(OverrideShouldUseDarkColors override_should_use_dark_colors) {
++  void set_theme_source(ThemeSource theme_source) {
 +    bool original = ShouldUseDarkColors();
-+    override_should_use_dark_colors_ = override_should_use_dark_colors;
++    theme_source_ = theme_source;
 +    if (ShouldUseDarkColors() != original) NotifyObservers();
 +  }
 +
@@ -60,7 +60,7 @@ index 70389e0245993faa2c17e9deefeb000280ef2368..4d56998a391c1c7508bb911eea0c16cd
    PreferredColorScheme preferred_color_scheme_ =
        PreferredColorScheme::kNoPreference;
  
-+  OverrideShouldUseDarkColors override_should_use_dark_colors_ = OverrideShouldUseDarkColors::kNoOverride;
++  ThemeSource theme_source_ = ThemeSource::kSystem;
 +
    DISALLOW_COPY_AND_ASSIGN(NativeTheme);
  };

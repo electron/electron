@@ -26,14 +26,12 @@ class NativeTheme : public mate::EventEmitter<NativeTheme>,
   NativeTheme(v8::Isolate* isolate, ui::NativeTheme* theme);
   ~NativeTheme() override;
 
-  void SetShouldUseDarkColorsOverride(
-      ui::NativeTheme::OverrideShouldUseDarkColors override);
+  void SetThemeSource(ui::NativeTheme::ThemeSource override);
 #if defined(OS_MACOSX)
   void UpdateMacOSAppearanceForOverrideValue(
-      ui::NativeTheme::OverrideShouldUseDarkColors override);
+      ui::NativeTheme::ThemeSource override);
 #endif
-  ui::NativeTheme::OverrideShouldUseDarkColors GetShouldUseDarkColorsOverride()
-      const;
+  ui::NativeTheme::ThemeSource GetThemeSource() const;
   bool ShouldUseDarkColors();
   bool ShouldUseHighContrastColors();
   bool ShouldUseInvertedColorScheme();
@@ -54,13 +52,12 @@ class NativeTheme : public mate::EventEmitter<NativeTheme>,
 namespace mate {
 
 template <>
-struct Converter<ui::NativeTheme::OverrideShouldUseDarkColors> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const ui::NativeTheme::OverrideShouldUseDarkColors& val);
+struct Converter<ui::NativeTheme::ThemeSource> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const ui::NativeTheme::ThemeSource& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     ui::NativeTheme::OverrideShouldUseDarkColors* out);
+                     ui::NativeTheme::ThemeSource* out);
 };
 
 }  // namespace mate

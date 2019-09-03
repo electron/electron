@@ -8,39 +8,39 @@ describe('nativeTheme module', () => {
     })
   })
 
-  describe('nativeTheme.shouldUseDarkColorsOverride', () => {
+  describe('nativeTheme.themeSource', () => {
     afterEach(() => {
-      nativeTheme.shouldUseDarkColorsOverride = null
+      nativeTheme.themeSource = 'system'
     })
 
-    it('is null by default', () => {
-      expect(nativeTheme.shouldUseDarkColorsOverride).to.equal(null)
+    it('is system by default', () => {
+      expect(nativeTheme.themeSource).to.equal('system')
     })
 
     it('should override the value of shouldUseDarkColors', () => {
-      nativeTheme.shouldUseDarkColorsOverride = true
+      nativeTheme.themeSource = 'dark'
       expect(nativeTheme.shouldUseDarkColors).to.equal(true)
-      nativeTheme.shouldUseDarkColorsOverride = false
+      nativeTheme.themeSource = 'light'
       expect(nativeTheme.shouldUseDarkColors).to.equal(false)
     })
 
     it('should emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value changes', () => {
-      nativeTheme.shouldUseDarkColorsOverride = true
+      nativeTheme.themeSource = 'dark'
       let called = false
       nativeTheme.once('updated', () => {
         called = true
       })
-      nativeTheme.shouldUseDarkColorsOverride = false
+      nativeTheme.themeSource = 'light'
       expect(called).to.equal(true)
     })
 
     it('should not emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value is the same', () => {
-      nativeTheme.shouldUseDarkColorsOverride = true
+      nativeTheme.themeSource = 'dark'
       let called = false
       nativeTheme.once('updated', () => {
         called = true
       })
-      nativeTheme.shouldUseDarkColorsOverride = true
+      nativeTheme.themeSource = 'dark'
       expect(called).to.equal(false)
     })
 
@@ -50,9 +50,9 @@ describe('nativeTheme module', () => {
       })
 
       it('should update appLevelAppearance when set', () => {
-        nativeTheme.shouldUseDarkColorsOverride = true
+        nativeTheme.themeSource = 'dark'
         expect(systemPreferences.appLevelAppearance).to.equal('dark')
-        nativeTheme.shouldUseDarkColorsOverride = false
+        nativeTheme.themeSource = 'light'
         expect(systemPreferences.appLevelAppearance).to.equal('light')
       })
     })
