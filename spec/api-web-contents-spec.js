@@ -98,63 +98,6 @@ describe('webContents module', () => {
     })
   })
 
-  describe('did-change-theme-color event', () => {
-    it('is triggered with correct theme color', (done) => {
-      let count = 0
-      w.webContents.on('did-change-theme-color', (e, color) => {
-        if (count === 0) {
-          count += 1
-          expect(color).to.equal('#FFEEDD')
-          w.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
-        } else if (count === 1) {
-          expect(color).to.be.null()
-          done()
-        }
-      })
-      w.loadFile(path.join(fixtures, 'pages', 'theme-color.html'))
-    })
-  })
-
-  describe('console-message event', () => {
-    it('is triggered with correct log message', (done) => {
-      w.webContents.on('console-message', (e, level, message) => {
-        // Don't just assert as Chromium might emit other logs that we should ignore.
-        if (message === 'a') {
-          done()
-        }
-      })
-      w.loadFile(path.join(fixtures, 'pages', 'a.html'))
-    })
-  })
-
-  describe('ipc-message event', () => {
-    it('emits when the renderer process sends an asynchronous message', async () => {
-      const webContents = remote.getCurrentWebContents()
-      const promise = emittedOnce(webContents, 'ipc-message')
-
-      ipcRenderer.send('message', 'Hello World!')
-
-      const [, channel, message] = await promise
-      expect(channel).to.equal('message')
-      expect(message).to.equal('Hello World!')
-    })
-  })
-
-  describe('ipc-message-sync event', () => {
-    it('emits when the renderer process sends a synchronous message', async () => {
-      const webContents = remote.getCurrentWebContents()
-      const promise = emittedOnce(webContents, 'ipc-message-sync')
-
-      ipcRenderer.send('handle-next-ipc-message-sync', 'foobar')
-      const result = ipcRenderer.sendSync('message', 'Hello World!')
-
-      const [, channel, message] = await promise
-      expect(channel).to.equal('message')
-      expect(message).to.equal('Hello World!')
-      expect(result).to.equal('foobar')
-    })
-  })
-
   describe('referrer', () => {
     it('propagates referrer information to new target=_blank windows', (done) => {
       const server = http.createServer((req, res) => {

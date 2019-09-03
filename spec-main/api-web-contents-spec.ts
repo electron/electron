@@ -1117,4 +1117,74 @@ describe('webContents module', () => {
       })
     }
   })
+
+  describe('did-change-theme-color event', () => {
+    afterEach(closeAllWindows)
+    it('is triggered with correct theme color', (done) => {
+      const w = new BrowserWindow({ show: true })
+      let count = 0
+      w.webContents.on('did-change-theme-color', (e, color) => {
+        if (count === 0) {
+          count += 1
+          expect(color).to.equal('#FFEEDD')
+          w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))
+        } else if (count === 1) {
+          expect(color).to.be.null()
+          done()
+        }
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html'))
+    })
+  })
+
+  describe('console-message event', () => {
+    afterEach(closeAllWindows)
+    it('is triggered with correct log message', (done) => {
+      const w = new BrowserWindow({ show: true })
+      w.webContents.on('console-message', (e, level, message) => {
+        // Don't just assert as Chromium might emit other logs that we should ignore.
+        if (message === 'a') {
+          done()
+        }
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', 'a.html'))
+    })
+  })
+
+  describe('ipc-message event', () => {
+    afterEach(closeAllWindows)
+    it('emits when the renderer process sends an asynchronous message', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } })
+      await w.webContents.loadURL('about:blank')
+      w.webContents.executeJavaScript(`
+        require('electron').ipcRenderer.send('message', 'Hello World!')
+      `)
+
+      const [, channel, message] = await emittedOnce(w.webContents, 'ipc-message')
+      expect(channel).to.equal('message')
+      expect(message).to.equal('Hello World!')
+    })
+  })
+
+  describe('ipc-message-sync event', () => {
+    afterEach(closeAllWindows)
+    it('emits when the renderer process sends a synchronous message', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } })
+      await w.webContents.loadURL('about:blank')
+      const promise: Promise<[string, string]> = new Promise(resolve => {
+        w.webContents.once('ipc-message-sync', (event, channel, arg) => {
+          event.returnValue = 'foobar' as any
+          resolve([channel, arg])
+        })
+      })
+      const result = await w.webContents.executeJavaScript(`
+        require('electron').ipcRenderer.sendSync('message', 'Hello World!')
+      `)
+
+      const [channel, message] = await promise
+      expect(channel).to.equal('message')
+      expect(message).to.equal('Hello World!')
+      expect(result).to.equal('foobar')
+    })
+  })
 })
