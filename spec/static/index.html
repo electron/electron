@@ -84,14 +84,17 @@
     ? new RegExp(process.env.npm_config_match, 'g')
     : null
 
+  const testFiles = []
   walker.on('file', (file) => {
     if (/-spec\.js$/.test(file) && !file.includes(crashSpec) &&
         (!moduleMatch || moduleMatch.test(file))) {
-      mocha.addFile(file)
+      testFiles.push(file)
     }
   })
 
   walker.on('end', () => {
+    testFiles.sort()
+    testFiles.forEach((file) => mocha.addFile(file))
     if (!process.env.npm_config_match || new RegExp(process.env.npm_config_match, 'g').test(crashSpec)) {
       mocha.addFile(path.resolve(__dirname, '..', crashSpec))
     }
