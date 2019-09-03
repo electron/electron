@@ -13,7 +13,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "shell/browser/api/trackable_object.h"
-#include "shell/browser/atom_blob_reader.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/promise_util.h"
 
