@@ -5,14 +5,22 @@
 #ifndef SHELL_COMMON_GIN_DESTROYABLE_H_
 #define SHELL_COMMON_GIN_DESTROYABLE_H_
 
-#include "native_mate/arguments.h"
+#include "v8/include/v8.h"
+
+namespace mate {
+class Arguments;
+class ObjectTemplateBuilder;
+}  // namespace mate
 
 namespace gin {
 
 // Used by gin helpers to destroy native objects.
 struct Destroyable {
-  static void Destroy(mate::Arguments* args);
-  static bool IsDestroyed(mate::Arguments* args);
+  static void Destroy(const v8::FunctionCallbackInfo<v8::Value>& info);
+  static bool IsDestroyed(const v8::FunctionCallbackInfo<v8::Value>& info);
+  // TODO(zcbenz): mate::ObjectTemplateBuilder will be removed.
+  static void MakeDestroyable(v8::Isolate* isolate,
+                              mate::ObjectTemplateBuilder* builder);
 };
 
 }  // namespace gin

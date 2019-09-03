@@ -9,6 +9,7 @@
 #include "../shell/common/gin/destroyable.h"
 #include "base/callback.h"
 #include "base/logging.h"
+#include "native_mate/arguments.h"
 #include "native_mate/wrappable_base.h"
 #include "v8/include/v8.h"
 
@@ -149,7 +150,7 @@ struct ArgumentHolder {
 
   ArgumentHolder(Arguments* args, int create_flags) {
     if (index == 0 && (create_flags & HolderIsFirstArgument) &&
-        gin::Destroyable::IsDestroyed(args)) {
+        gin::Destroyable::IsDestroyed(*args->info())) {
       args->ThrowError("Object has been destroyed");
       return;
     }

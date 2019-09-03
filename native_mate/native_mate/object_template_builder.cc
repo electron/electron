@@ -4,6 +4,8 @@
 
 #include "native_mate/object_template_builder.h"
 
+#include "../shell/common/gin/destroyable.h"
+
 namespace mate {
 
 ObjectTemplateBuilder::ObjectTemplateBuilder(
@@ -29,8 +31,7 @@ ObjectTemplateBuilder& ObjectTemplateBuilder::SetPropertyImpl(
 }
 
 ObjectTemplateBuilder& ObjectTemplateBuilder::MakeDestroyable() {
-  SetMethod("destroy", base::Bind(gin::Destroyable::Destroy));
-  SetMethod("isDestroyed", base::Bind(gin::Destroyable::IsDestroyed));
+  gin::Destroyable::MakeDestroyable(isolate_, this);
   return *this;
 }
 

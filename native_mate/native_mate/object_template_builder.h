@@ -12,6 +12,10 @@
 #include "native_mate/function_template.h"
 #include "v8/include/v8.h"
 
+namespace gin {
+struct Destroyable;
+}
+
 namespace mate {
 
 // Base template - used only for non-member function pointers. Other types
@@ -105,6 +109,8 @@ class ObjectTemplateBuilder {
   v8::Local<v8::ObjectTemplate> Build();
 
  private:
+  friend struct gin::Destroyable;
+
   ObjectTemplateBuilder& SetImpl(base::StringPiece name,
                                  v8::Local<v8::Data> val);
   ObjectTemplateBuilder& SetPropertyImpl(

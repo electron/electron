@@ -93,6 +93,7 @@ class Arguments {
   v8::Local<v8::Value> ThrowTypeError(const std::string& message) const;
 
   v8::Isolate* isolate() const { return isolate_; }
+  const v8::FunctionCallbackInfo<v8::Value>* info() const { return info_; }
 
  private:
   v8::Isolate* isolate_ = nullptr;
