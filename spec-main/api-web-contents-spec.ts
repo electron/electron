@@ -3,7 +3,8 @@ import { AddressInfo } from 'net'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
 import * as http from 'http'
-import { BrowserWindow, ipcMain, webContents, session } from 'electron'
+import * as ChildProcess from 'child_process'
+import { BrowserWindow, ipcMain, webContents, session, WebContents } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import { ifdescribe } from './spec-helpers';
@@ -1047,5 +1048,73 @@ describe('webContents module', () => {
       })
       w.loadURL(`${serverUrl}/redirect-cross-site`)
     })
+  })
+
+  describe('setIgnoreMenuShortcuts(ignore)', () => {
+    afterEach(closeAllWindows)
+    it('does not throw', () => {
+      const w = new BrowserWindow({ show: false })
+      expect(() => {
+        w.webContents.setIgnoreMenuShortcuts(true)
+        w.webContents.setIgnoreMenuShortcuts(false)
+      }).to.not.throw()
+    })
+  })
+
+  describe('create()', () => {
+    it('does not crash on exit', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-webcontents.js')
+      const electronPath = process.execPath
+      const appProcess = ChildProcess.spawn(electronPath, [appPath])
+      const [code] = await emittedOnce(appProcess, 'close')
+      expect(code).to.equal(0)
+    })
+  })
+
+  // Destroying webContents in its event listener is going to crash when
+  // Electron is built in Debug mode.
+  describe('destroy()', () => {
+    let server: http.Server
+    let serverUrl: string
+
+    before((done) => {
+      server = http.createServer((request, response) => {
+        switch (request.url) {
+          case '/net-error':
+            response.destroy()
+            break
+          case '/200':
+            response.end()
+            break
+          default:
+            done('unsupported endpoint')
+        }
+      }).listen(0, '127.0.0.1', () => {
+        serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port
+        done()
+      })
+    })
+
+    after(() => {
+      server.close()
+    })
+
+    const events = [
+      { name: 'did-start-loading', url: '/200' },
+      { name: 'dom-ready', url: '/200' },
+      { name: 'did-stop-loading', url: '/200' },
+      { name: 'did-finish-load', url: '/200' },
+      { name: 'did-frame-finish-load', url: '/200' },
+      { name: 'did-fail-load', url: '/net-error' }
+    ]
+    for (const e of events) {
+      it(`should not crash when invoked synchronously inside ${e.name} handler`, async () => {
+        const contents = (webContents as any).create() as WebContents
+        contents.once(e.name as any, () => (contents as any).destroy())
+        const destroyed = emittedOnce(contents, 'destroyed')
+        contents.loadURL(serverUrl + e.url)
+        await destroyed
+      })
+    }
   })
 })
