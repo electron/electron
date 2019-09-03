@@ -682,7 +682,7 @@ mate::Handle<Session> Session::FromPartition(
 void Session::BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Session"));
-  gin::Destroyable::MakeDestroyable(isolate, prototype);
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)

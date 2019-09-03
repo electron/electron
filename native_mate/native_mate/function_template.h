@@ -6,7 +6,7 @@
 #define NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 
 #include "../shell/common/error_util.h"
-#include "../shell/common/gin/destroyable.h"
+#include "../shell/common/gin_helper/destroyable.h"
 #include "base/callback.h"
 #include "base/logging.h"
 #include "native_mate/arguments.h"
@@ -150,7 +150,7 @@ struct ArgumentHolder {
 
   ArgumentHolder(Arguments* args, int create_flags) {
     if (index == 0 && (create_flags & HolderIsFirstArgument) &&
-        gin::Destroyable::IsDestroyed(*args->info())) {
+        gin_helper::Destroyable::IsDestroyed(*args->info())) {
       args->ThrowError("Object has been destroyed");
       return;
     }

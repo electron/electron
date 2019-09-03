@@ -2,17 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_DESTROYABLE_H_
-#define SHELL_COMMON_GIN_DESTROYABLE_H_
+#ifndef SHELL_COMMON_GIN_HELPER_DESTROYABLE_H_
+#define SHELL_COMMON_GIN_HELPER_DESTROYABLE_H_
 
 #include "v8/include/v8.h"
 
-namespace mate {
-class Arguments;
-class ObjectTemplateBuilder;
-}  // namespace mate
-
-namespace gin {
+namespace gin_helper {
 
 // Used by gin helpers to destroy native objects.
 struct Destroyable {
@@ -22,6 +17,6 @@ struct Destroyable {
                               v8::Local<v8::FunctionTemplate> prototype);
 };
 
-}  // namespace gin
+}  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_DESTROYABLE_H_
+#endif  // SHELL_COMMON_GIN_HELPER_DESTROYABLE_H_

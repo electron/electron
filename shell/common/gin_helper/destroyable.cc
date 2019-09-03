@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/gin/destroyable.h"
+#include "shell/common/gin_helper/destroyable.h"
 
 #include "gin/converter.h"
 #include "native_mate/wrappable_base.h"
 
-namespace gin {
+namespace gin_helper {
 
 namespace {
 
@@ -56,11 +56,11 @@ void Destroyable::MakeDestroyable(v8::Isolate* isolate,
 
   auto proto_templ = prototype->PrototypeTemplate();
   proto_templ->Set(
-      StringToSymbol(isolate, "destroy"),
+      gin::StringToSymbol(isolate, "destroy"),
       v8::Local<v8::FunctionTemplate>::New(isolate, g_destroy_func));
   proto_templ->Set(
-      StringToSymbol(isolate, "isDestroyed"),
+      gin::StringToSymbol(isolate, "isDestroyed"),
       v8::Local<v8::FunctionTemplate>::New(isolate, g_is_destroyed_func));
 }
 
-}  // namespace gin
+}  // namespace gin_helper

@@ -225,7 +225,7 @@ bool Notification::IsSupported() {
 void Notification::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Notification"));
-  gin::Destroyable::MakeDestroyable(isolate, prototype);
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)

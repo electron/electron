@@ -140,7 +140,7 @@ v8::Local<v8::Value> BrowserView::GetWebContents() {
 void BrowserView::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "BrowserView"));
-  gin::Destroyable::MakeDestroyable(isolate, prototype);
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)

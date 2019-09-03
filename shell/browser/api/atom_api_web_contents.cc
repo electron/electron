@@ -2381,7 +2381,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
 void WebContents::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "WebContents"));
-  gin::Destroyable::MakeDestroyable(isolate, prototype);
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setBackgroundThrottling",
                  &WebContents::SetBackgroundThrottling)

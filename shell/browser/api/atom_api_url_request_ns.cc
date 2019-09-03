@@ -520,7 +520,7 @@ mate::WrappableBase* URLRequestNS::New(mate::Arguments* args) {
 void URLRequestNS::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "URLRequest"));
-  gin::Destroyable::MakeDestroyable(isolate, prototype);
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("write", &URLRequestNS::Write)
       .SetMethod("cancel", &URLRequestNS::Cancel)
