@@ -26,6 +26,9 @@ const vstsArmJobs = [
   'electron-woa-testing'
 ]
 
+let jobRequestedCount = 0
+let jobSuccessfulCount = 0
+
 async function makeRequest (requestOptions, parseResponse) {
   return new Promise((resolve, reject) => {
     request(requestOptions, (err, res, body) => {
@@ -64,7 +67,7 @@ async function circleCIcall (buildUrl, targetBranch, job, options) {
   if (!options.ghRelease) {
     buildRequest.build_parameters.UPLOAD_TO_S3 = 1
   }
-
+  jobRequestedCount++
   const circleResponse = await makeRequest({
     method: 'POST',
     url: buildUrl,
@@ -76,6 +79,7 @@ async function circleCIcall (buildUrl, targetBranch, job, options) {
   }, true).catch(err => {
     console.log('Error calling CircleCI:', err)
   })
+  jobSuccessfulCount++
   console.log(`CircleCI release build request for ${job} successful.  Check ${circleResponse.build_url} for status.`)
 }
 
@@ -115,9 +119,11 @@ async function callAppVeyor (targetBranch, job, options) {
     }),
     method: 'POST'
   }
+  jobRequestedCount++
   const appVeyorResponse = await makeRequest(requestOpts, true).catch(err => {
     console.log('Error calling AppVeyor:', err)
   })
+  jobSuccessfulCount++
   const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${appVeyorResponse.version}`
   console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`)
 }
@@ -192,9 +198,11 @@ async function callVSTSBuild (build, targetBranch, environmentVariables) {
     body: JSON.stringify(buildBody),
     method: 'POST'
   }
+  jobRequestedCount++
   const vstsResponse = await makeRequest(requestOpts, true).catch(err => {
     console.log(`Error calling VSTS for job ${build.name}`, err)
   })
+  jobSuccessfulCount++
   console.log(`VSTS release build request for ${build.name} successful. Check ${vstsResponse._links.web.href} for status.`)
 }
 
@@ -223,6 +231,7 @@ function runRelease (targetBranch, options) {
     buildAppVeyor(targetBranch, options)
     buildVSTS(targetBranch, options)
   }
+  console.log(`${jobRequestedCount} jobs were requested.  ${jobSuccessfulCount} succeeded.`)
 }
 
 module.exports = runRelease
