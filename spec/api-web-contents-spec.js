@@ -98,57 +98,6 @@ describe('webContents module', () => {
     })
   })
 
-  describe('setBackgroundThrottling()', () => {
-    it('does not crash when allowing', (done) => {
-      w.webContents.setBackgroundThrottling(true)
-      done()
-    })
-
-    it('does not crash when disallowing', (done) => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        webPreferences: {
-          backgroundThrottling: true
-        }
-      })
-
-      w.webContents.setBackgroundThrottling(false)
-      done()
-    })
-
-    it('does not crash when called via BrowserWindow', (done) => {
-      w.setBackgroundThrottling(true)
-      done()
-    })
-  })
-
-  describe('getPrinterList()', () => {
-    before(function () {
-      if (!features.isPrintingEnabled()) {
-        return closeWindow(w).then(() => {
-          w = null
-          this.skip()
-        })
-      }
-    })
-
-    it('can get printer list', async () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          sandbox: true
-        }
-      })
-      await w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
-      const printers = w.webContents.getPrinters()
-      expect(printers).to.be.an('array')
-    })
-  })
-
   describe('printToPDF()', () => {
     before(function () {
       if (!features.isPrintingEnabled()) {

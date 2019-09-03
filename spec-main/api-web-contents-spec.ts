@@ -1362,4 +1362,35 @@ describe('webContents module', () => {
       return expect(promise).to.be.eventually.rejectedWith(Error, 'takeHeapSnapshot failed')
     })
   })
+
+  describe('setBackgroundThrottling()', () => {
+    afterEach(closeAllWindows)
+    it('does not crash when allowing', () => {
+      const w = new BrowserWindow({ show: false })
+      w.webContents.setBackgroundThrottling(true)
+    })
+
+    it('does not crash when called via BrowserWindow', () => {
+      const w = new BrowserWindow({ show: false });
+
+      (w as any).setBackgroundThrottling(true)
+    })
+
+    it('does not crash when disallowing', () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { backgroundThrottling: true } })
+
+      w.webContents.setBackgroundThrottling(false)
+    })
+  })
+
+  const features = process.electronBinding('features')
+  ifdescribe(features.isPrintingEnabled())('getPrinters()', () => {
+    afterEach(closeAllWindows)
+    it('can get printer list', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+      await w.loadURL('about:blank')
+      const printers = w.webContents.getPrinters()
+      expect(printers).to.be.an('array')
+    })
+  })
 })
