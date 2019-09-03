@@ -979,7 +979,6 @@ describe('app module', () => {
   describe('getAppMetrics() API', () => {
     it('returns memory and cpu stats of all running electron processes', () => {
       const appMetrics = app.getAppMetrics()
-      console.log('Returned appMetrics are:', appMetrics)
       expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0')
 
       const types = []
@@ -989,7 +988,6 @@ describe('app module', () => {
         expect(entry.creationTime).to.be.a('number').that.is.greaterThan(0)
 
         types.push(entry.type)
-        console.log('Entry.cpu:', entry.cpu)
         expect(entry.cpu).to.have.ownProperty('percentCPUUsage').that.is.a('number')
         expect(entry.cpu).to.have.ownProperty('idleWakeupsPerSecond').that.is.a('number')
 
@@ -1020,7 +1018,6 @@ describe('app module', () => {
   describe('getGPUFeatureStatus() API', () => {
     it('returns the graphic features statuses', () => {
       const features = app.getGPUFeatureStatus()
-      console.log('getGPUFeatureStatus', features);
       expect(features).to.have.ownProperty('webgl').that.is.a('string')
       expect(features).to.have.ownProperty('gpu_compositing').that.is.a('string')
     })
@@ -1063,13 +1060,11 @@ describe('app module', () => {
 
     it('succeeds with basic GPUInfo', async () => {
       const gpuInfo = await getGPUInfo('basic')
-      console.log('gpuInfo:', gpuInfo)
       await verifyBasicGPUInfo(gpuInfo)
     })
 
     it('succeeds with complete GPUInfo', async () => {
       const completeInfo = await getGPUInfo('complete')
-      console.log('completeInfo:', completeInfo)
       if (process.platform === 'linux') {
         // For linux and macOS complete info is same as basic info
         await verifyBasicGPUInfo(completeInfo)
