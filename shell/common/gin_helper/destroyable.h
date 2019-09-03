@@ -9,10 +9,12 @@
 
 namespace gin_helper {
 
-// Used by gin helpers to destroy native objects.
+// Manage the native object wrapped in JS wrappers.
 struct Destroyable {
   static void Destroy(const v8::FunctionCallbackInfo<v8::Value>& info);
   static bool IsDestroyed(const v8::FunctionCallbackInfo<v8::Value>& info);
+
+  // Add "destroy" and "isDestroyed" to prototype chain.
   static void MakeDestroyable(v8::Isolate* isolate,
                               v8::Local<v8::FunctionTemplate> prototype);
 };

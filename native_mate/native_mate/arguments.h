@@ -93,6 +93,9 @@ class Arguments {
   v8::Local<v8::Value> ThrowTypeError(const std::string& message) const;
 
   v8::Isolate* isolate() const { return isolate_; }
+
+  // TODO(zcbenz): Used by native_mate/function_template.h, we will remove this
+  // so do not use it in other places.
   const v8::FunctionCallbackInfo<v8::Value>* info() const { return info_; }
 
  private:
