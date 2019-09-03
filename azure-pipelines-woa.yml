@@ -6,8 +6,8 @@ steps:
 
 - script: |
     cd src\electron
-    npm install --verbose
-  displayName: 'NPM install'
+    node script/yarn.js install --frozen-lockfile
+  displayName: 'Yarn install'
 
 - powershell: |
     $localArtifactPath = "$pwd\dist.zip"
@@ -24,16 +24,6 @@ steps:
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
     & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\ffmpeg $localArtifactPath
   displayName: 'Download and extract ffmpeg.zip for test'
-  env:
-    APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
-
-- powershell: |
-    $localArtifactPath = "$pwd\src\out\Default\mksnapshot.zip"
-    $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/mksnapshot.zip"
-    Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-    cd src\out\Default
-    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y mksnapshot.zip
-  displayName: 'Download and unzip mksnapshot.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
 
@@ -70,6 +60,16 @@ steps:
   env:
     ELECTRON_OUT_DIR: Default
     IGNORE_YARN_INSTALL_ERROR: 1
+    ELECTRON_TEST_RESULTS_DIR: junit
+    MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
+    MOCHA_REPORTER: mocha-multi-reporters
+
+- task: PublishTestResults@2
+  displayName: 'Publish Test Results'
+  inputs:
+    testResultsFiles: '*.xml'
+    searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
+  condition: always()
 
 - script: |
     cd src
@@ -78,13 +78,7 @@ steps:
   displayName: 'Verify ffmpeg'
 
 - script: |
-    cd src
-    echo "Verifying mksnapshot"
-    python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd%
-  displayName: 'Verify mksnapshot'
-
-- script: |
     taskkill /F /IM electron.exe
     taskkill /F /IM MicrosoftEdge.exe
-  displayName: 'Kill processes left running from the test run'
+  displayName: 'Kill processes left running from last test run'
   condition: always()
