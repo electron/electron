@@ -21,6 +21,7 @@
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
 #include "services/network/public/cpp/resource_request.h"
+#include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
@@ -248,9 +249,16 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
                                                     element.length())
                                      .ToLocalChecked());
         break;
-      case network::mojom::DataElementType::kBlob:
-        upload_data.Set("blobUUID", element.blob_uuid());
+      case network::mojom::DataElementType::kDataPipe: {
+        // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
+        // becomes unecessarily complex, we should deprecate the getBlobData API
+        // and return the DataPipeHolder wrapper directly.
+        auto holder = electron::api::DataPipeHolder::Create(isolate, element);
+        upload_data.Set("blobUUID", holder->id());
+        // The lifetime of data pipe is bound to the uploadData object.
+        upload_data.Set("dataPipe", gin::ConvertToV8(isolate, holder));
         break;
+      }
       default:
         NOTREACHED() << "Found unsupported data element";
     }

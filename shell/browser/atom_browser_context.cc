@@ -29,7 +29,6 @@
 #include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
-#include "shell/browser/atom_blob_reader.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_download_manager_delegate.h"
@@ -254,15 +253,6 @@ storage::SpecialStoragePolicy* AtomBrowserContext::GetSpecialStoragePolicy() {
 
 std::string AtomBrowserContext::GetUserAgent() const {
   return user_agent_;
-}
-
-AtomBlobReader* AtomBrowserContext::GetBlobReader() {
-  if (!blob_reader_.get()) {
-    content::ChromeBlobStorageContext* blob_context =
-        content::ChromeBlobStorageContext::GetFor(this);
-    blob_reader_.reset(new AtomBlobReader(blob_context));
-  }
-  return blob_reader_.get();
 }
 
 predictors::PreconnectManager* AtomBrowserContext::GetPreconnectManager() {
