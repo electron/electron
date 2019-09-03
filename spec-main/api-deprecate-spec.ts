@@ -1,11 +1,5 @@
-'use strict'
-
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
-const { deprecate } = require('electron')
-
-const { expect } = chai
-chai.use(dirtyChai)
+import { expect } from 'chai'
+import { deprecate } from 'electron'
 
 describe('deprecate', () => {
   beforeEach(() => {
@@ -14,7 +8,7 @@ describe('deprecate', () => {
   })
 
   it('allows a deprecation handler function to be specified', () => {
-    const messages = []
+    const messages: string[] = []
 
     deprecate.setHandler(message => {
       messages.push(message)
@@ -43,9 +37,9 @@ describe('deprecate', () => {
     const newProp = 'shinyNewName'
 
     let value = 0
-    const o = { [newProp]: value }
-    expect(o).to.not.have.a.property(oldProp)
-    expect(o).to.have.a.property(newProp).that.is.a('number')
+    const o: Record<string, number> = { [newProp]: value }
+    expect(o).to.not.have.property(oldProp)
+    expect(o).to.have.property(newProp).that.is.a('number')
 
     deprecate.renameProperty(o, oldProp, newProp)
     o[oldProp] = ++value
@@ -54,12 +48,12 @@ describe('deprecate', () => {
     expect(msg).to.include(oldProp)
     expect(msg).to.include(newProp)
 
-    expect(o).to.have.a.property(newProp).that.is.equal(value)
-    expect(o).to.have.a.property(oldProp).that.is.equal(value)
+    expect(o).to.have.property(newProp).that.is.equal(value)
+    expect(o).to.have.property(oldProp).that.is.equal(value)
   })
 
   it('doesn\'t deprecate a property not on an object', () => {
-    const o = {}
+    const o: any = {}
 
     expect(() => {
       deprecate.removeProperty(o, 'iDoNotExist')
@@ -109,7 +103,7 @@ describe('deprecate', () => {
   })
 
   it('warns only once per item', () => {
-    const messages = []
+    const messages: string[] = []
     deprecate.setHandler(message => messages.push(message))
 
     const key = 'foo'
@@ -130,7 +124,7 @@ describe('deprecate', () => {
     const oldProp = 'dingyOldName'
     const newProp = 'shinyNewName'
 
-    const o = { [oldProp]: 0 }
+    const o: Record<string, number> = { [oldProp]: 0 }
     deprecate.renameProperty(o, oldProp, newProp)
 
     expect(msg).to.be.a('string')
@@ -145,11 +139,11 @@ describe('deprecate', () => {
   })
 
   it('warns when a function is deprecated in favor of a property', () => {
-    const warnings = []
+    const warnings: string[] = []
     deprecate.setHandler(warning => warnings.push(warning))
 
     const newProp = 'newProp'
-    const mod = {
+    const mod: any = {
       _oldGetterFn () { return 'getter' },
       _oldSetterFn () { return 'setter' }
     }
@@ -187,7 +181,7 @@ describe('deprecate', () => {
     })
 
     it('should log the deprecation warning once', () => {
-      const warnings = []
+      const warnings: string[] = []
       deprecate.setHandler(warning => warnings.push(warning))
 
       const deprecated = deprecate.moveAPI(() => null, 'old', 'new')
@@ -201,8 +195,8 @@ describe('deprecate', () => {
 
   describe('promisify', () => {
     const expected = 'Hello, world!'
-    let promiseFunc
-    let warnings
+    let promiseFunc: (param: any) => Promise<any>
+    let warnings: string[]
 
     const enableCallbackWarnings = () => {
       warnings = []
@@ -226,22 +220,30 @@ describe('deprecate', () => {
       expect(warnings).to.have.lengthOf(0)
     })
 
-    it('only calls back an error if the callback is called with (err, data)', (done) => {
+    it('only calls back an error if the callback is called with (err, data)', async () => {
       enableCallbackWarnings()
-      let erringPromiseFunc = () => new Promise((resolve, reject) => {
-        reject(new Error('fail'))
-      })
-      erringPromiseFunc = deprecate.promisify(erringPromiseFunc)
-
-      erringPromiseFunc((err, data) => {
-        expect(data).to.be.an('undefined')
-        expect(err).to.be.an.instanceOf(Error).with.property('message', 'fail')
-        erringPromiseFunc(data => {
-          expect(data).to.not.be.an.instanceOf(Error)
-          expect(data).to.be.an('undefined')
-          done()
+      const erringPromiseFunc = deprecate.promisify(
+        () => new Promise((resolve, reject) => {
+          reject(new Error('fail'))
         })
-      })
+      )
+
+      {
+        const [err, data] = await new Promise(resolve => {
+          (erringPromiseFunc as any)((err: Error | undefined, data: any) => {
+            resolve([err, data])
+          }).catch(() => { /* silence deprecation warning */ })
+        });
+        expect(data).to.be.undefined()
+        expect(err).to.be.an.instanceOf(Error).with.property('message', 'fail')
+      }
+      {
+        const data = await new Promise(resolve => {
+          (erringPromiseFunc as any)(((data: any) => { resolve(data) }))
+            .catch(() => { /* silence deprecation warning */ })
+        })
+        expect(data).to.be.undefined()
+      }
     })
 
     it('warns exactly once for callback-based invocations', (done) => {
@@ -250,7 +252,7 @@ describe('deprecate', () => {
 
       let callbackCount = 0
       const invocationCount = 3
-      const callback = (actual) => {
+      const callback = (actual: number) => {
         expect(actual).to.equal(expected)
         expect(warnings).to.have.lengthOf(1)
         expect(warnings[0]).to.include('promiseFunc')
@@ -261,7 +263,7 @@ describe('deprecate', () => {
       }
 
       for (let i = 0; i < invocationCount; i += 1) {
-        promiseFunc(expected, callback)
+        (promiseFunc as any)(expected, callback)
       }
     })
   })
