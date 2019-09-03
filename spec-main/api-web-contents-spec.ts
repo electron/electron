@@ -2,9 +2,10 @@ import * as chai from 'chai'
 import { AddressInfo } from 'net'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
+import * as fs from 'fs'
 import * as http from 'http'
 import * as ChildProcess from 'child_process'
-import { BrowserWindow, ipcMain, webContents, session, WebContents } from 'electron'
+import { BrowserWindow, ipcMain, webContents, session, WebContents, app } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import { ifdescribe } from './spec-helpers';
@@ -1235,6 +1236,130 @@ describe('webContents module', () => {
         })
         w.loadURL(url)
       })
+    })
+  })
+
+  describe('webframe messages in sandboxed contents', () => {
+    afterEach(closeAllWindows)
+    it('responds to executeJavaScript', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+      await w.loadURL('about:blank')
+      const result = await w.webContents.executeJavaScript('37 + 5')
+      expect(result).to.equal(42)
+    })
+  })
+
+  describe('preload-error event', () => {
+    afterEach(closeAllWindows)
+    const generateSpecs = (description: string, sandbox: boolean) => {
+      describe(description, () => {
+        it('is triggered when unhandled exception is thrown', async () => {
+          const preload = path.join(fixturesPath, 'module', 'preload-error-exception.js')
+
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox,
+              preload
+            }
+          })
+
+          const promise = emittedOnce(w.webContents, 'preload-error')
+          w.loadURL('about:blank')
+
+          const [, preloadPath, error] = await promise
+          expect(preloadPath).to.equal(preload)
+          expect(error.message).to.equal('Hello World!')
+        })
+
+        it('is triggered on syntax errors', async () => {
+          const preload = path.join(fixturesPath, 'module', 'preload-error-syntax.js')
+
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox,
+              preload
+            }
+          })
+
+          const promise = emittedOnce(w.webContents, 'preload-error')
+          w.loadURL('about:blank')
+
+          const [, preloadPath, error] = await promise
+          expect(preloadPath).to.equal(preload)
+          expect(error.message).to.equal('foobar is not defined')
+        })
+
+        it('is triggered when preload script loading fails', async () => {
+          const preload = path.join(fixturesPath, 'module', 'preload-invalid.js')
+
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox,
+              preload
+            }
+          })
+
+          const promise = emittedOnce(w.webContents, 'preload-error')
+          w.loadURL('about:blank')
+
+          const [, preloadPath, error] = await promise
+          expect(preloadPath).to.equal(preload)
+          expect(error.message).to.contain('preload-invalid.js')
+        })
+      })
+    }
+
+    generateSpecs('without sandbox', false)
+    generateSpecs('with sandbox', true)
+  })
+
+  describe('takeHeapSnapshot()', () => {
+    afterEach(closeAllWindows)
+
+    it('works with sandboxed renderers', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+
+      await w.loadURL('about:blank')
+
+      const filePath = path.join(app.getPath('temp'), 'test.heapsnapshot')
+
+      const cleanup = () => {
+        try {
+          fs.unlinkSync(filePath)
+        } catch (e) {
+          // ignore error
+        }
+      }
+
+      try {
+        await w.webContents.takeHeapSnapshot(filePath)
+        const stats = fs.statSync(filePath)
+        expect(stats.size).not.to.be.equal(0)
+      } finally {
+        cleanup()
+      }
+    })
+
+    it('fails with invalid file path', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+
+      await w.loadURL('about:blank')
+
+      const promise = w.webContents.takeHeapSnapshot('')
+      return expect(promise).to.be.eventually.rejectedWith(Error, 'takeHeapSnapshot failed')
     })
   })
 })
