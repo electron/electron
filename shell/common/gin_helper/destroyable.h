@@ -11,8 +11,8 @@ namespace gin_helper {
 
 // Manage the native object wrapped in JS wrappers.
 struct Destroyable {
-  static void Destroy(const v8::FunctionCallbackInfo<v8::Value>& info);
-  static bool IsDestroyed(const v8::FunctionCallbackInfo<v8::Value>& info);
+  // Determine whether the native object has been destroyed.
+  static bool IsDestroyed(v8::Local<v8::Object> object);
 
   // Add "destroy" and "isDestroyed" to prototype chain.
   static void MakeDestroyable(v8::Isolate* isolate,

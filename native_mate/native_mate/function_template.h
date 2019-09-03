@@ -150,7 +150,7 @@ struct ArgumentHolder {
 
   ArgumentHolder(Arguments* args, int create_flags) {
     if (index == 0 && (create_flags & HolderIsFirstArgument) &&
-        gin_helper::Destroyable::IsDestroyed(*args->info())) {
+        gin_helper::Destroyable::IsDestroyed(args->GetHolder())) {
       args->ThrowError("Object has been destroyed");
       return;
     }

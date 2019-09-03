@@ -94,10 +94,6 @@ class Arguments {
 
   v8::Isolate* isolate() const { return isolate_; }
 
-  // TODO(zcbenz): Used by native_mate/function_template.h, we will remove this
-  // so do not use it in other places.
-  const v8::FunctionCallbackInfo<v8::Value>* info() const { return info_; }
-
  private:
   v8::Isolate* isolate_ = nullptr;
   const v8::FunctionCallbackInfo<v8::Value>* info_ = nullptr;
