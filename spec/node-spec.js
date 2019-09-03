@@ -311,13 +311,20 @@ describe('node feature', () => {
         output += data
         if (output.trim().startsWith('Debugger listening on ws://')) {
           cleanup()
-          done()
+          child.kill('SIGTERM')
         }
       }
       function outDataHandler (data) {
         cleanup()
         done(new Error(`Unexpected output: ${data.toString()}`))
       }
+      child.on('close', (code, signal) => {
+        if (signal !== 'SIGTERM') {
+          done(new Error(`Unexpected termination with code: ${code} and signal: ${signal}`))
+        } else {
+          done()
+        }
+      })
       child.stderr.on('data', errorDataListener)
       child.stdout.on('data', outDataHandler)
     })
