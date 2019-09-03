@@ -97,47 +97,4 @@ describe('webContents module', () => {
       expect(val).to.equal('test value', 'value should eventually become the pasted value')
     })
   })
-
-  describe('printToPDF()', () => {
-    before(function () {
-      if (!features.isPrintingEnabled()) {
-        return closeWindow(w).then(() => {
-          w = null
-          this.skip()
-        })
-      }
-    })
-
-    it('can print to PDF', async () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          sandbox: true
-        }
-      })
-      await w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
-      const data = await w.webContents.printToPDF({})
-      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
-    })
-  })
-
-  describe('PictureInPicture video', () => {
-    it('works as expected', (done) => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          sandbox: true
-        }
-      })
-      w.webContents.once('did-finish-load', async () => {
-        const result = await w.webContents.executeJavaScript(
-          `runTest(${features.isPictureInPictureEnabled()})`, true)
-        expect(result).to.be.true()
-        done()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'picture-in-picture.html'))
-    })
-  })
 })

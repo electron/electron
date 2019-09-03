@@ -15,6 +15,7 @@ const { expect } = chai
 chai.use(chaiAsPromised)
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
+const features = process.electronBinding('features')
 
 describe('webContents module', () => {
   describe('getAllWebContents() API', () => {
@@ -1383,7 +1384,6 @@ describe('webContents module', () => {
     })
   })
 
-  const features = process.electronBinding('features')
   ifdescribe(features.isPrintingEnabled())('getPrinters()', () => {
     afterEach(closeAllWindows)
     it('can get printer list', async () => {
@@ -1391,6 +1391,30 @@ describe('webContents module', () => {
       await w.loadURL('about:blank')
       const printers = w.webContents.getPrinters()
       expect(printers).to.be.an('array')
+    })
+  })
+
+  ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
+    afterEach(closeAllWindows)
+    it('can print to PDF', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
+      const data = await w.webContents.printToPDF({})
+      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
+    })
+  })
+
+  describe('PictureInPicture video', () => {
+    afterEach(closeAllWindows)
+    it('works as expected', (done) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+      w.webContents.once('did-finish-load', async () => {
+        const result = await w.webContents.executeJavaScript(
+          `runTest(${features.isPictureInPictureEnabled()})`, true)
+        expect(result).to.be.true()
+        done()
+      })
+      w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'))
     })
   })
 })
