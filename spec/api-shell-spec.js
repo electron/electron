@@ -44,7 +44,7 @@ describe('shell module', () => {
       }
     })
 
-    it('opens an external link asynchronously', done => {
+    it('opens an external link asynchronously', async () => {
       let url = 'http://127.0.0.1'
       let requestReceived
       if (process.platform === 'linux') {
