@@ -12,6 +12,10 @@
 #include "base/optional.h"
 #include "native_mate/converter.h"
 
+// =============================== NOTICE ===============================
+// Do not add code here, native_mate is being removed. Any new code
+// should use gin instead.
+
 namespace mate {
 
 // Arguments is a wrapper around v8::FunctionCallbackInfo that integrates

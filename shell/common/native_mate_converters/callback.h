@@ -16,6 +16,10 @@
 #include "native_mate/scoped_persistent.h"
 #include "shell/common/api/locker.h"
 
+// =============================== NOTICE ===============================
+// Do not add code here, native_mate is being removed. Any new code
+// should use gin instead.
+
 namespace mate {
 
 namespace internal {

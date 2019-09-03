@@ -13,6 +13,10 @@
 #include "native_mate/wrappable_base.h"
 #include "v8/include/v8.h"
 
+// =============================== NOTICE ===============================
+// Do not add code here, native_mate is being removed. Any new code
+// should use gin instead.
+
 namespace mate {
 
 enum CreateFunctionTemplateFlags {
