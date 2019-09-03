@@ -81,6 +81,7 @@ app.whenReady().then(() => {
   walker.on('file', (file) => {
     if (/-spec\.[tj]s$/.test(file) &&
         (!moduleMatch || moduleMatch.test(file))) {
+      console.log('Adding file:', file)
       mocha.addFile(file)
     }
   })
