@@ -1187,4 +1187,54 @@ describe('webContents module', () => {
       expect(result).to.equal('foobar')
     })
   })
+
+  describe('referrer', () => {
+    afterEach(closeAllWindows)
+    it('propagates referrer information to new target=_blank windows', (done) => {
+      const w = new BrowserWindow({ show: false })
+      const server = http.createServer((req, res) => {
+        if (req.url === '/should_have_referrer') {
+          expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`)
+          server.close()
+          return done()
+        }
+        res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>')
+      })
+      server.listen(0, '127.0.0.1', () => {
+        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/'
+        w.webContents.once('did-finish-load', () => {
+          w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
+            expect(referrer.url).to.equal(url)
+            expect(referrer.policy).to.equal('no-referrer-when-downgrade')
+          })
+          w.webContents.executeJavaScript('a.click()')
+        })
+        w.loadURL(url)
+      })
+    })
+
+    // TODO(jeremy): window.open() in a real browser passes the referrer, but
+    // our hacked-up window.open() shim doesn't. It should.
+    xit('propagates referrer information to windows opened with window.open', (done) => {
+      const w = new BrowserWindow({ show: false })
+      const server = http.createServer((req, res) => {
+        if (req.url === '/should_have_referrer') {
+          expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`)
+          return done()
+        }
+        res.end('')
+      })
+      server.listen(0, '127.0.0.1', () => {
+        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/'
+        w.webContents.once('did-finish-load', () => {
+          w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
+            expect(referrer.url).to.equal(url)
+            expect(referrer.policy).to.equal('no-referrer-when-downgrade')
+          })
+          w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")')
+        })
+        w.loadURL(url)
+      })
+    })
+  })
 })
