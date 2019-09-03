@@ -1034,6 +1034,8 @@ describe('app module', () => {
         return JSON.parse(gpuInfoData)
       } else {
         // return error if not clean exit
+        console.log('Error getting GPU INFO', errorData)
+        console.log('GPU data: ', gpuInfoData)
         return Promise.reject(new Error(errorData))
       }
     }
