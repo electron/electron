@@ -1060,8 +1060,8 @@ mate::WrappableBase* TopLevelWindow::New(mate::Arguments* args) {
 void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
                                     v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "TopLevelWindow"));
+  gin::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
       .SetMethod("setContentView", &TopLevelWindow::SetContentView)
       .SetMethod("close", &TopLevelWindow::Close)
       .SetMethod("focus", &TopLevelWindow::Focus)

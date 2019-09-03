@@ -4,8 +4,6 @@
 
 #include "native_mate/object_template_builder.h"
 
-#include "../shell/common/gin/destroyable.h"
-
 namespace mate {
 
 ObjectTemplateBuilder::ObjectTemplateBuilder(
@@ -27,11 +25,6 @@ ObjectTemplateBuilder& ObjectTemplateBuilder::SetPropertyImpl(
     v8::Local<v8::FunctionTemplate> setter) {
   template_->SetAccessorProperty(StringToSymbol(isolate_, name), getter,
                                  setter);
-  return *this;
-}
-
-ObjectTemplateBuilder& ObjectTemplateBuilder::MakeDestroyable() {
-  gin::Destroyable::MakeDestroyable(isolate_, this);
   return *this;
 }
 

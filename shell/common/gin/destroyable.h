@@ -18,9 +18,8 @@ namespace gin {
 struct Destroyable {
   static void Destroy(const v8::FunctionCallbackInfo<v8::Value>& info);
   static bool IsDestroyed(const v8::FunctionCallbackInfo<v8::Value>& info);
-  // TODO(zcbenz): mate::ObjectTemplateBuilder will be removed.
   static void MakeDestroyable(v8::Isolate* isolate,
-                              mate::ObjectTemplateBuilder* builder);
+                              v8::Local<v8::FunctionTemplate> prototype);
 };
 
 }  // namespace gin

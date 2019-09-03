@@ -4,7 +4,7 @@
 
 #include "shell/common/gin/destroyable.h"
 
-#include "native_mate/object_template_builder.h"
+#include "gin/converter.h"
 #include "native_mate/wrappable_base.h"
 
 namespace gin {
@@ -43,7 +43,7 @@ bool Destroyable::IsDestroyed(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 // static
 void Destroyable::MakeDestroyable(v8::Isolate* isolate,
-                                  mate::ObjectTemplateBuilder* builder) {
+                                  v8::Local<v8::FunctionTemplate> prototype) {
   // Cache the FunctionTemplate of "destroy" and "isDestroyed".
   if (g_destroy_func.IsEmpty()) {
     auto templ = v8::FunctionTemplate::New(isolate, Destroy);
@@ -54,10 +54,13 @@ void Destroyable::MakeDestroyable(v8::Isolate* isolate,
     g_is_destroyed_func.Reset(isolate, templ);
   }
 
-  builder->SetImpl(
-      "destroy", v8::Local<v8::FunctionTemplate>::New(isolate, g_destroy_func));
-  builder->SetImpl("isDestroyed", v8::Local<v8::FunctionTemplate>::New(
-                                      isolate, g_is_destroyed_func));
+  auto proto_templ = prototype->PrototypeTemplate();
+  proto_templ->Set(
+      StringToSymbol(isolate, "destroy"),
+      v8::Local<v8::FunctionTemplate>::New(isolate, g_destroy_func));
+  proto_templ->Set(
+      StringToSymbol(isolate, "isDestroyed"),
+      v8::Local<v8::FunctionTemplate>::New(isolate, g_is_destroyed_func));
 }
 
 }  // namespace gin
