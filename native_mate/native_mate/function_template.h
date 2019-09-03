@@ -6,9 +6,9 @@
 #define NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 
 #include "../shell/common/error_util.h"
+#include "../shell/common/gin/destroyable.h"
 #include "base/callback.h"
 #include "base/logging.h"
-#include "native_mate/arguments.h"
 #include "native_mate/wrappable_base.h"
 #include "v8/include/v8.h"
 
@@ -19,23 +19,6 @@ enum CreateFunctionTemplateFlags {
 };
 
 namespace internal {
-
-struct Destroyable {
-  static void Destroy(Arguments* args) {
-    if (IsDestroyed(args))
-      return;
-
-    v8::Local<v8::Object> holder = args->GetHolder();
-    delete static_cast<WrappableBase*>(
-        holder->GetAlignedPointerFromInternalField(0));
-    holder->SetAlignedPointerInInternalField(0, nullptr);
-  }
-  static bool IsDestroyed(Arguments* args) {
-    v8::Local<v8::Object> holder = args->GetHolder();
-    return holder->InternalFieldCount() == 0 ||
-           holder->GetAlignedPointerFromInternalField(0) == nullptr;
-  }
-};
 
 template <typename T>
 struct CallbackParamTraits {
@@ -166,7 +149,7 @@ struct ArgumentHolder {
 
   ArgumentHolder(Arguments* args, int create_flags) {
     if (index == 0 && (create_flags & HolderIsFirstArgument) &&
-        Destroyable::IsDestroyed(args)) {
+        gin::Destroyable::IsDestroyed(args)) {
       args->ThrowError("Object has been destroyed");
       return;
     }

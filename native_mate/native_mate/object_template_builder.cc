@@ -29,8 +29,8 @@ ObjectTemplateBuilder& ObjectTemplateBuilder::SetPropertyImpl(
 }
 
 ObjectTemplateBuilder& ObjectTemplateBuilder::MakeDestroyable() {
-  SetMethod("destroy", base::Bind(internal::Destroyable::Destroy));
-  SetMethod("isDestroyed", base::Bind(internal::Destroyable::IsDestroyed));
+  SetMethod("destroy", base::Bind(gin::Destroyable::Destroy));
+  SetMethod("isDestroyed", base::Bind(gin::Destroyable::IsDestroyed));
   return *this;
 }
 
