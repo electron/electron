@@ -946,4 +946,106 @@ describe('webContents module', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'c.html'))
     })
   })
+
+  describe('webrtc ip policy api', () => {
+    afterEach(closeAllWindows)
+    it('can set and get webrtc ip policies', () => {
+      const w = new BrowserWindow({ show: false })
+      const policies = [
+        'default',
+        'default_public_interface_only',
+        'default_public_and_private_interfaces',
+        'disable_non_proxied_udp'
+      ]
+      policies.forEach((policy) => {
+        w.webContents.setWebRTCIPHandlingPolicy(policy as any)
+        expect(w.webContents.getWebRTCIPHandlingPolicy()).to.equal(policy)
+      })
+    })
+  })
+
+  describe('render view deleted events', () => {
+    let server: http.Server
+    let serverUrl: string
+    let crossSiteUrl: string
+
+    before((done) => {
+      server = http.createServer((req, res) => {
+        const respond = () => {
+          if (req.url === '/redirect-cross-site') {
+            res.setHeader('Location', `${crossSiteUrl}/redirected`)
+            res.statusCode = 302
+            res.end()
+          } else if (req.url === '/redirected') {
+            res.end('<html><script>window.localStorage</script></html>')
+          } else {
+            res.end()
+          }
+        }
+        setTimeout(respond, 0)
+      })
+      server.listen(0, '127.0.0.1', () => {
+        serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+        crossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}`
+        done()
+      })
+    })
+
+    after(() => {
+      server.close()
+    })
+
+    afterEach(closeAllWindows)
+
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted', (done) => {
+      const w = new BrowserWindow({ show: false })
+      let currentRenderViewDeletedEmitted = false
+      w.webContents.once('destroyed', () => {
+        expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted')
+        done()
+      })
+      const renderViewDeletedHandler = () => {
+        currentRenderViewDeletedEmitted = true
+      }
+      w.webContents.on('current-render-view-deleted' as any, renderViewDeletedHandler)
+      w.webContents.on('did-finish-load', () => {
+        w.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler)
+        w.close()
+      })
+      w.loadURL(`${serverUrl}/redirect-cross-site`)
+    })
+
+    it('emits current-render-view-deleted if the current RVHs are deleted', (done) => {
+      const w = new BrowserWindow({ show: false })
+      let currentRenderViewDeletedEmitted = false
+      w.webContents.once('destroyed', () => {
+        expect(currentRenderViewDeletedEmitted).to.be.true('current-render-view-deleted wasn\'t emitted')
+        done()
+      })
+      w.webContents.on('current-render-view-deleted' as any, () => {
+        currentRenderViewDeletedEmitted = true
+      })
+      w.webContents.on('did-finish-load', () => {
+        w.close()
+      })
+      w.loadURL(`${serverUrl}/redirect-cross-site`)
+    })
+
+    it('emits render-view-deleted if any RVHs are deleted', (done) => {
+      const w = new BrowserWindow({ show: false })
+      let rvhDeletedCount = 0
+      w.webContents.once('destroyed', () => {
+        const expectedRenderViewDeletedEventCount = 3 // 1 speculative upon redirection + 2 upon window close.
+        expect(rvhDeletedCount).to.equal(expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times')
+        done()
+      })
+      w.webContents.on('render-view-deleted' as any, () => {
+        rvhDeletedCount++
+      })
+      w.webContents.on('did-finish-load', () => {
+        w.close()
+      })
+      w.loadURL(`${serverUrl}/redirect-cross-site`)
+    })
+  })
 })
