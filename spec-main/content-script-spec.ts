@@ -1,17 +1,16 @@
-const { expect } = require('chai')
-const { remote } = require('electron')
-const path = require('path')
+import { expect } from 'chai'
+import * as path from 'path'
 
-const { closeWindow } = require('./window-helpers')
-const { emittedNTimes } = require('./events-helpers')
+import { closeWindow } from './window-helpers'
+import { emittedNTimes } from './events-helpers'
 
-const { BrowserWindow, ipcMain } = remote
+import { BrowserWindow, ipcMain, WebContents } from 'electron'
 
 describe('chrome extension content scripts', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures')
+  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
   const extensionPath = path.resolve(fixtures, 'extensions')
 
-  const addExtension = (name) => BrowserWindow.addExtension(path.resolve(extensionPath, name))
+  const addExtension = (name: string) => BrowserWindow.addExtension(path.resolve(extensionPath, name))
   const removeAllExtensions = () => {
     Object.keys(BrowserWindow.getExtensions()).map(extName => {
       BrowserWindow.removeExtension(extName)
@@ -19,7 +18,7 @@ describe('chrome extension content scripts', () => {
   }
 
   let responseIdCounter = 0
-  const executeJavaScriptInFrame = (webContents, frameRoutingId, code) => {
+  const executeJavaScriptInFrame = (webContents: WebContents, frameRoutingId: number, code: string) => {
     return new Promise(resolve => {
       const responseId = responseIdCounter++
       ipcMain.once(`executeJavaScriptInFrame_${responseId}`, (event, result) => {
@@ -29,9 +28,9 @@ describe('chrome extension content scripts', () => {
     })
   }
 
-  const generateTests = (sandboxEnabled, contextIsolationEnabled) => {
+  const generateTests = (sandboxEnabled: boolean, contextIsolationEnabled: boolean) => {
     describe(`with sandbox ${sandboxEnabled ? 'enabled' : 'disabled'} and context isolation ${contextIsolationEnabled ? 'enabled' : 'disabled'}`, () => {
-      let w
+      let w: BrowserWindow
 
       describe('supports "run_at" option', () => {
         beforeEach(async () => {
@@ -49,7 +48,7 @@ describe('chrome extension content scripts', () => {
 
         afterEach(() => {
           removeAllExtensions()
-          return closeWindow(w).then(() => { w = null })
+          return closeWindow(w).then(() => { w = null as unknown as BrowserWindow })
         })
 
         it('should run content script at document_start', () => {
@@ -107,7 +106,7 @@ describe('chrome extension content scripts', () => {
 
         afterEach(() =>
           closeWindow(w).then(() => {
-            w = null
+            w = null as unknown as BrowserWindow
           })
         )
 
@@ -118,7 +117,7 @@ describe('chrome extension content scripts', () => {
           await Promise.all(
             frameEvents.map(async frameEvent => {
               const [, isMainFrame, , frameRoutingId] = frameEvent
-              const result = await executeJavaScriptInFrame(
+              const result: any = await executeJavaScriptInFrame(
                 w.webContents,
                 frameRoutingId,
                 `(() => {
