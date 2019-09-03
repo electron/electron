@@ -7,7 +7,8 @@ const vstsURL = 'https://github.visualstudio.com/electron/_apis/build'
 
 const appVeyorJobs = {
   'electron-x64': 'electron-x64-release',
-  'electron-ia32': 'electron-ia32-release'
+  'electron-ia32': 'electron-ia32-release',
+  'electron-woa': 'electron-woa-release'
 }
 
 const circleCIJobs = [
