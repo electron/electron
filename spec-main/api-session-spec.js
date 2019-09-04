@@ -373,7 +373,7 @@ describe('session module', () => {
     })
   })
 
-  describe.skip('ses.getBlobData()', () => {
+  describe('ses.getBlobData()', () => {
     const scheme = 'cors-blob'
     const protocol = session.defaultSession.protocol
     const url = `${scheme}://host`

@@ -40,7 +40,6 @@ class AtomExtensionSystem;
 
 namespace electron {
 
-class AtomBlobReader;
 class AtomBrowserContext;
 class AtomDownloadManagerDelegate;
 class AtomPermissionManager;
@@ -90,7 +89,6 @@ class AtomBrowserContext
   std::string GetUserAgent() const;
   bool CanUseHttpCache() const;
   int GetMaxCacheSize() const;
-  AtomBlobReader* GetBlobReader();
   ResolveProxyHelper* GetResolveProxyHelper();
   predictors::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
@@ -163,7 +161,6 @@ class AtomBrowserContext
   std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<AtomPermissionManager> permission_manager_;
-  std::unique_ptr<AtomBlobReader> blob_reader_;
   std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
   scoped_refptr<ResolveProxyHelper> resolve_proxy_helper_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
