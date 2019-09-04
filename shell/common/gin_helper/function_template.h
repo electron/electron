@@ -142,11 +142,11 @@ struct ArgumentHolder {
   ArgLocalType value;
   bool ok = false;
 
-  ArgumentHolder(const v8::FunctionCallbackInfo<v8::Value>& info,
-                 gin::Arguments* args,
-                 int create_flags) {
+  ArgumentHolder(gin::Arguments* args, int create_flags) {
+    v8::Local<v8::Object> holder;
     if (index == 0 && (create_flags & HolderIsFirstArgument) &&
-        gin_helper::Destroyable::IsDestroyed(info.Holder())) {
+        args->GetHolder(&holder) &&
+        gin_helper::Destroyable::IsDestroyed(holder)) {
       args->ThrowTypeError("Object has been destroyed");
       return;
     }
@@ -173,11 +173,8 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   // C++ has always been strict about the class initialization order,
   // so it is guaranteed ArgumentHolders will be initialized (and thus, will
   // extract arguments from Arguments) in the right order.
-  Invoker(const v8::FunctionCallbackInfo<v8::Value>& info,
-          gin::Arguments* args,
-          int create_flags)
-      : ArgumentHolder<indices, ArgTypes>(info, args, create_flags)...,
-        args_(args) {
+  Invoker(gin::Arguments* args, int create_flags)
+      : ArgumentHolder<indices, ArgTypes>(args, create_flags)..., args_(args) {
     // GCC thinks that create_flags is going unused, even though the
     // expansion above clearly makes use of it. Per jyasskin@, casting
     // to void is the commonly accepted way to convince the compiler
@@ -232,7 +229,7 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
     HolderT* holder = static_cast<HolderT*>(holder_base);
 
     using Indices = typename IndicesGenerator<sizeof...(ArgTypes)>::type;
-    Invoker<Indices, ArgTypes...> invoker(info, &args, holder->flags);
+    Invoker<Indices, ArgTypes...> invoker(&args, holder->flags);
     if (invoker.IsOK())
       invoker.DispatchToCallback(holder->callback);
   }

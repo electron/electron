@@ -14,6 +14,17 @@
 
 // Implements safe convertions between JS functions and base::Callback.
 
+namespace gin {
+
+// Make it possible to convert move-only types.
+template <typename T>
+v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
+  return Converter<typename std::remove_reference<T>::type>::ToV8(
+      isolate, std::move(input));
+}
+
+}  // namespace gin
+
 namespace gin_helper {
 
 template <typename T>
