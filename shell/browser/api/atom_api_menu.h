@@ -144,4 +144,17 @@ struct Converter<electron::AtomMenuModel*> {
 
 }  // namespace mate
 
+namespace gin {
+
+template <>
+struct Converter<electron::AtomMenuModel*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::AtomMenuModel** out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+};
+
+}  // namespace gin
+
 #endif  // SHELL_BROWSER_API_ATOM_API_MENU_H_
