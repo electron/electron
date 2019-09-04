@@ -566,4 +566,22 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
 }  // namespace electron
 
+namespace gin {
+
+// TODO(zcbenz): Remove this after converting WebContents to gin::Wrapper.
+template <>
+struct Converter<electron::api::WebContents*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::WebContents** out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::WebContents* in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+}  // namespace gin
+
 #endif  // SHELL_BROWSER_API_ATOM_API_WEB_CONTENTS_H_

@@ -6,9 +6,9 @@
 
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_monitor_device_source.h"
-#include "native_mate/dictionary.h"
+#include "gin/dictionary.h"
 #include "shell/browser/browser.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 
 namespace mate {
@@ -138,9 +138,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("createPowerMonitor",
-           base::BindRepeating(&PowerMonitor::Create, isolate));
+  gin::Dictionary dict(isolate, exports);
+  dict.Set("createPowerMonitor", base::BindRepeating(&PowerMonitor::Create));
   dict.Set("PowerMonitor", PowerMonitor::GetConstructor(isolate)
                                ->GetFunction(context)
                                .ToLocalChecked());

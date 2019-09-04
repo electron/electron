@@ -11,6 +11,17 @@
 
 namespace gin {
 
+#if !defined(OS_LINUX) && !defined(OS_FREEBSD)
+template <>
+struct Converter<unsigned long> {  // NOLINT(runtime/int)
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   unsigned long val);  // NOLINT(runtime/int)
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     unsigned long* out);  // NOLINT(runtime/int)
+};
+#endif
+
 template <>
 struct Converter<v8::Local<v8::Array>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,

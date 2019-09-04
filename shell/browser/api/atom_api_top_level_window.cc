@@ -16,7 +16,6 @@
 #include "shell/browser/api/atom_api_view.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/color_util.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gfx_converter.h"
 #include "shell/common/native_mate_converters/image_converter.h"
