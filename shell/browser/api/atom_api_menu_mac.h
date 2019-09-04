@@ -35,6 +35,7 @@ class MenuMac : public Menu {
                  int positioning_item,
                  base::Closure callback);
   void ClosePopupAt(int32_t window_id) override;
+  void ClosePopupOnUI(int32_t window_id);
 
  private:
   friend class Menu;

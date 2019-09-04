@@ -48,7 +48,7 @@ void MenuMac::PopupAt(TopLevelWindow* window,
       base::BindOnce(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
                      native_window->GetWeakPtr(), window->weak_map_id(), x, y,
                      positioning_item, callback);
-  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, std::move(popup));
+  base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(popup));
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
@@ -117,6 +117,13 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 }
 
 void MenuMac::ClosePopupAt(int32_t window_id) {
+  auto close_popup = base::BindOnce(&MenuMac::ClosePopupOnUI,
+                                    weak_factory_.GetWeakPtr(), window_id);
+  base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE,
+                                                   std::move(close_popup));
+}
+
+void MenuMac::ClosePopupOnUI(int32_t window_id) {
   auto controller = popup_controllers_.find(window_id);
   if (controller != popup_controllers_.end()) {
     // Close the controller for the window.
