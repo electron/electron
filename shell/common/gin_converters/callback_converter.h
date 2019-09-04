@@ -33,6 +33,24 @@ struct Converter<base::RepeatingCallback<Sig>> {
   }
 };
 
+template <typename Sig>
+struct Converter<base::OnceCallback<Sig>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   base::OnceCallback<Sig> in) {
+    return gin::ConvertToV8(isolate,
+                            base::AdaptCallbackForRepeating(std::move(in)));
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     base::OnceCallback<Sig>* out) {
+    if (!val->IsFunction())
+      return false;
+    *out = base::BindOnce(&gin_helper::V8FunctionInvoker<Sig>::Go, isolate,
+                          gin_helper::SafeV8Function(isolate, val));
+    return true;
+  }
+};
+
 }  // namespace gin
 
 #endif  // SHELL_COMMON_GIN_CONVERTERS_CALLBACK_CONVERTER_H_
