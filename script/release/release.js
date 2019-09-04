@@ -94,7 +94,7 @@ function check (condition, statement, exitIfFail = false) {
 
 function assetsForVersion (version, validatingRelease) {
   const patterns = [
-    `chromedriver-${version}-darwin-x64.zip`
+    `chromedriver-${version}-darwin-x64.zip`,
     `chromedriver-${version}-linux-arm64.zip`,
     `chromedriver-${version}-linux-armv7l.zip`,
     `chromedriver-${version}-linux-ia32.zip`,
