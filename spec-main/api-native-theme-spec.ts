@@ -47,12 +47,6 @@ describe('nativeTheme module', () => {
     })
 
     ifdescribe(process.platform === 'darwin' && semver.gte(os.release(), '18.0.0'))('on macOS 10.14', () => {
-      before(function () {
-        if (process.platform !== 'darwin') return this.skip()
-        // Darwin 18.0.0 === Mojave 10.14
-        if (semver.lt(os.release(), '18.0.0')) return this.skip()
-      })
-
       it('should update appLevelAppearance when set', () => {
         nativeTheme.themeSource = 'dark'
         expect(systemPreferences.appLevelAppearance).to.equal('dark')
