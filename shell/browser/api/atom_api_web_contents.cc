@@ -927,10 +927,14 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
   bool is_main_frame = !render_frame_host->GetParent();
   int frame_process_id = render_frame_host->GetProcess()->GetID();
   int frame_routing_id = render_frame_host->GetRoutingID();
+  auto weak_this = GetWeakPtr();
   Emit("did-frame-finish-load", is_main_frame, frame_process_id,
        frame_routing_id);
 
-  if (is_main_frame)
+  // ⚠️WARNING!⚠️
+  // Emit() triggers JS which can call destroy() on |this|. It's not safe to
+  // assume that |this| points to valid memory at this point.
+  if (is_main_frame && weak_this)
     Emit("did-finish-load");
 }
 
@@ -1086,6 +1090,9 @@ void WebContents::DidFinishNavigation(
     frame_routing_id = frame_host->GetRoutingID();
   }
   if (!navigation_handle->IsErrorPage()) {
+    // FIXME: All the Emit() calls below could potentially result in |this|
+    // being destroyed (by JS listening for the event and calling
+    // webContents.destroy()).
     auto url = navigation_handle->GetURL();
     bool is_same_document = navigation_handle->IsSameDocument();
     if (is_same_document) {
@@ -1339,6 +1346,9 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
   }
 
+  // Calling LoadURLWithParams() can trigger JS which destroys |this|.
+  auto weak_this = GetWeakPtr();
+
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
@@ -1347,10 +1357,16 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   web_contents()->GetController().DiscardNonCommittedEntries();
   web_contents()->GetController().LoadURLWithParams(params);
 
+  // ⚠️WARNING!⚠️
+  // LoadURLWithParams() triggers JS events which can call destroy() on |this|.
+  // It's not safe to assume that |this| points to valid memory at this point.
+  if (!weak_this)
+    return;
+
   // Set the background color of RenderWidgetHostView.
   // We have to call it right after LoadURL because the RenderViewHost is only
   // created after loading a page.
-  auto* const view = web_contents()->GetRenderWidgetHostView();
+  auto* const view = weak_this->web_contents()->GetRenderWidgetHostView();
   if (view) {
     auto* web_preferences = WebContentsPreferences::From(web_contents());
     std::string color_name;

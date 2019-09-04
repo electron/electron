@@ -1106,12 +1106,17 @@ describe('webContents module', () => {
       { name: 'dom-ready', url: '/200' },
       { name: 'did-stop-loading', url: '/200' },
       { name: 'did-finish-load', url: '/200' },
+      // FIXME: Multiple Emit calls inside an observer assume that object
+      // will be alive till end of the observer. Synchronous `destroy` api
+      // violates this contract and crashes.
       { name: 'did-frame-finish-load', url: '/200' },
       { name: 'did-fail-load', url: '/net-error' }
     ]
     for (const e of events) {
       it(`should not crash when invoked synchronously inside ${e.name} handler`, async () => {
         const contents = (webContents as any).create() as WebContents
+        const originalEmit = contents.emit.bind(contents)
+        contents.emit = (...args) => { console.log(args); return originalEmit(...args) }
         contents.once(e.name as any, () => (contents as any).destroy())
         const destroyed = emittedOnce(contents, 'destroyed')
         contents.loadURL(serverUrl + e.url)

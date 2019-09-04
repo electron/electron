@@ -107,15 +107,15 @@ class EventEmitter : public Wrappable<T> {
                      v8::Local<v8::Object> event,
                      Args&&... args) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    v8::Locker locker(isolate());
-    v8::HandleScope handle_scope(isolate());
-    EmitEvent(isolate(), GetWrapper(), name, event,
-              std::forward<Args>(args)...);
-    auto context = isolate()->GetCurrentContext();
+    auto* isolate = this->isolate();
+    v8::Locker locker(isolate);
+    v8::HandleScope handle_scope(isolate);
+    auto context = isolate->GetCurrentContext();
+    EmitEvent(isolate, GetWrapper(), name, event, std::forward<Args>(args)...);
     v8::Local<v8::Value> defaultPrevented;
-    if (event->Get(context, StringToV8(isolate(), "defaultPrevented"))
+    if (event->Get(context, StringToV8(isolate, "defaultPrevented"))
             .ToLocal(&defaultPrevented)) {
-      return defaultPrevented->BooleanValue(isolate());
+      return defaultPrevented->BooleanValue(isolate);
     }
     return false;
   }
