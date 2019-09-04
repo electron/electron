@@ -42,7 +42,7 @@
 #include "shell/browser/relauncher.h"
 #include "shell/common/application_info.h"
 #include "shell/common/atom_command_line.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/image_converter.h"

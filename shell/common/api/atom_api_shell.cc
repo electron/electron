@@ -5,7 +5,7 @@
 #include <string>
 
 #include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/string16_converter.h"

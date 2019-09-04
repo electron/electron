@@ -7,7 +7,7 @@
 #include "base/callback.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 
 namespace electron {
 

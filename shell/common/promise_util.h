@@ -15,7 +15,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/converter.h"
 #include "shell/common/api/locker.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/once_callback.h"
 
 namespace electron {

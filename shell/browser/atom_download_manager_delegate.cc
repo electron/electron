@@ -23,7 +23,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/web_contents_preferences.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/options_switches.h"
 
 namespace electron {

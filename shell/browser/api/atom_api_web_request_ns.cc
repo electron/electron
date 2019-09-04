@@ -16,7 +16,7 @@
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/atom_browser_context.h"
-#include "shell/common/gin_converters/callback_converter_gin_adapter.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"

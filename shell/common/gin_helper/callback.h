@@ -1,24 +1,31 @@
-// Copyright (c) 2015 GitHub, Inc. All rights reserved.
+// Copyright (c) 2019 GitHub, Inc. All rights reserved.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
-#define SHELL_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
+#ifndef SHELL_COMMON_GIN_HELPER_CALLBACK_H_
+#define SHELL_COMMON_GIN_HELPER_CALLBACK_H_
 
 #include <utility>
 #include <vector>
 
 #include "base/bind.h"
-#include "base/callback.h"
-#include "base/memory/weak_ptr.h"
-#include "base/message_loop/message_loop.h"
-#include "native_mate/function_template.h"
-#include "native_mate/scoped_persistent.h"
 #include "shell/common/api/locker.h"
+#include "shell/common/gin_helper/function_template.h"
 
-namespace mate {
+// Implements safe convertions between JS functions and base::Callback.
 
-namespace internal {
+namespace gin {
+
+// Make it possible to convert move-only types.
+template <typename T>
+v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
+  return Converter<typename std::remove_reference<T>::type>::ToV8(
+      isolate, std::move(input));
+}
+
+}  // namespace gin
+
+namespace gin_helper {
 
 template <typename T>
 class RefCountedGlobal;
@@ -46,7 +53,7 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
   static v8::Local<v8::Value> Go(v8::Isolate* isolate,
                                  const SafeV8Function& function,
                                  ArgTypes... raw) {
-    Locker locker(isolate);
+    mate::Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return v8::Null(isolate);
@@ -56,7 +63,7 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
     std::vector<v8::Local<v8::Value>> args{
-        ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
+        gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
     v8::MaybeLocal<v8::Value> ret = holder->Call(
         context, holder, args.size(), args.empty() ? nullptr : &args.front());
     if (ret.IsEmpty())
@@ -71,7 +78,7 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
   static void Go(v8::Isolate* isolate,
                  const SafeV8Function& function,
                  ArgTypes... raw) {
-    Locker locker(isolate);
+    mate::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return;
@@ -81,7 +88,7 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
     std::vector<v8::Local<v8::Value>> args{
-        ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
+        gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
     holder
         ->Call(context, holder, args.size(),
                args.empty() ? nullptr : &args.front())
@@ -94,7 +101,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
   static ReturnType Go(v8::Isolate* isolate,
                        const SafeV8Function& function,
                        ArgTypes... raw) {
-    Locker locker(isolate);
+    mate::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
     ReturnType ret = ReturnType();
     if (!function.IsAlive())
@@ -105,18 +112,18 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
     std::vector<v8::Local<v8::Value>> args{
-        ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
+        gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
     v8::Local<v8::Value> result;
     auto maybe_result = holder->Call(context, holder, args.size(),
                                      args.empty() ? nullptr : &args.front());
     if (maybe_result.ToLocal(&result))
-      Converter<ReturnType>::FromV8(isolate, result, &ret);
+      gin::Converter<ReturnType>::FromV8(isolate, result, &ret);
     return ret;
   }
 };
 
 // Helper to pass a C++ funtion to JavaScript.
-using Translater = base::Callback<void(Arguments* args)>;
+using Translater = base::Callback<void(gin::Arguments* args)>;
 v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
                                                   const Translater& translater,
                                                   bool one_time);
@@ -132,7 +139,8 @@ struct NativeFunctionInvoker {};
 
 template <typename ReturnType, typename... ArgTypes>
 struct NativeFunctionInvoker<ReturnType(ArgTypes...)> {
-  static void Go(base::Callback<ReturnType(ArgTypes...)> val, Arguments* args) {
+  static void Go(base::Callback<ReturnType(ArgTypes...)> val,
+                 gin::Arguments* args) {
     using Indices = typename IndicesGenerator<sizeof...(ArgTypes)>::type;
     Invoker<Indices, ArgTypes...> invoker(args, 0);
     if (invoker.IsOK())
@@ -140,42 +148,16 @@ struct NativeFunctionInvoker<ReturnType(ArgTypes...)> {
   }
 };
 
-}  // namespace internal
-
-template <typename Sig>
-struct Converter<base::RepeatingCallback<Sig>> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const base::RepeatingCallback<Sig>& val) {
-    // We don't use CreateFunctionTemplate here because it creates a new
-    // FunctionTemplate everytime, which is cached by V8 and causes leaks.
-    internal::Translater translater =
-        base::Bind(&internal::NativeFunctionInvoker<Sig>::Go, val);
-    // To avoid memory leak, we ensure that the callback can only be called
-    // for once.
-    return internal::CreateFunctionFromTranslater(isolate, translater, true);
-  }
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     base::RepeatingCallback<Sig>* out) {
-    if (!val->IsFunction())
-      return false;
-
-    *out = base::BindRepeating(&internal::V8FunctionInvoker<Sig>::Go, isolate,
-                               internal::SafeV8Function(isolate, val));
-    return true;
-  }
-};
-
 // Convert a callback to V8 without the call number limitation, this can easily
 // cause memory leaks so use it with caution.
 template <typename Sig>
-v8::Local<v8::Value> CallbackToV8(v8::Isolate* isolate,
-                                  const base::Callback<Sig>& val) {
-  internal::Translater translater =
-      base::Bind(&internal::NativeFunctionInvoker<Sig>::Go, val);
-  return internal::CreateFunctionFromTranslater(isolate, translater, false);
+v8::Local<v8::Value> CallbackToV8Leaked(
+    v8::Isolate* isolate,
+    const base::RepeatingCallback<Sig>& val) {
+  Translater translater = base::Bind(&NativeFunctionInvoker<Sig>::Go, val);
+  return CreateFunctionFromTranslater(isolate, translater, false);
 }
 
-}  // namespace mate
+}  // namespace gin_helper
 
-#endif  // SHELL_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
+#endif  // SHELL_COMMON_GIN_HELPER_CALLBACK_H_

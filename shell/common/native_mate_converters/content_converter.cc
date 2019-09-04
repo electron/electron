@@ -13,7 +13,7 @@
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/native_mate_converters/ui_base_types_converter.h"

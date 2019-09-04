@@ -28,7 +28,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/common/error_util.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/promise_util.h"
 
 #if defined(USE_NSS_CERTS)

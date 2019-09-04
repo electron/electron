@@ -12,7 +12,7 @@
 #include "base/threading/thread_restrictions.h"
 #include "content/public/browser/tracing_controller.h"
 #include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"

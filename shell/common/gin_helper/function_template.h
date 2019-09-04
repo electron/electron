@@ -1,29 +1,26 @@
-// Copyright 2013 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
-#define NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
+#ifndef SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
+#define SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
-#include "../shell/common/error_util.h"
-#include "../shell/common/gin_helper/destroyable.h"
 #include "base/callback.h"
-#include "base/logging.h"
-#include "native_mate/arguments.h"
-#include "native_mate/wrappable_base.h"
-#include "v8/include/v8.h"
+#include "gin/arguments.h"
+#include "shell/common/error_util.h"
+#include "shell/common/gin_helper/destroyable.h"
 
-// =============================== NOTICE ===============================
-// Do not add code here, native_mate is being removed. Any new code
-// should use gin instead.
+// This file is forked from gin/function_template.h with 2 differences:
+// 1. Support for additional types of arguments.
+// 2. Support for warning using destroyed objects.
+//
+// TODO(zcbenz): We should seek to remove this file after removing native_mate.
 
-namespace mate {
+namespace gin_helper {
 
 enum CreateFunctionTemplateFlags {
   HolderIsFirstArgument = 1 << 0,
 };
-
-namespace internal {
 
 template <typename T>
 struct CallbackParamTraits {
@@ -80,7 +77,7 @@ class CallbackHolder : public CallbackHolderBase {
 };
 
 template <typename T>
-bool GetNextArgument(Arguments* args,
+bool GetNextArgument(gin::Arguments* args,
                      int create_flags,
                      bool is_first,
                      T* result) {
@@ -93,23 +90,16 @@ bool GetNextArgument(Arguments* args,
 
 // For advanced use cases, we allow callers to request the unparsed Arguments
 // object and poke around in it directly.
-inline bool GetNextArgument(Arguments* args,
+inline bool GetNextArgument(gin::Arguments* args,
                             int create_flags,
                             bool is_first,
-                            Arguments* result) {
-  *result = *args;
-  return true;
-}
-inline bool GetNextArgument(Arguments* args,
-                            int create_flags,
-                            bool is_first,
-                            Arguments** result) {
+                            gin::Arguments** result) {
   *result = args;
   return true;
 }
 
 // It's common for clients to just need the isolate, so we make that easy.
-inline bool GetNextArgument(Arguments* args,
+inline bool GetNextArgument(gin::Arguments* args,
                             int create_flags,
                             bool is_first,
                             v8::Isolate** result) {
@@ -118,8 +108,8 @@ inline bool GetNextArgument(Arguments* args,
 }
 
 // Allow clients to pass a util::Error to throw errors if they
-// don't need the full mate::Arguments
-inline bool GetNextArgument(Arguments* args,
+// don't need the full gin::Arguments
+inline bool GetNextArgument(gin::Arguments* args,
                             int create_flags,
                             bool is_first,
                             electron::util::ErrorThrower* result) {
@@ -152,10 +142,12 @@ struct ArgumentHolder {
   ArgLocalType value;
   bool ok = false;
 
-  ArgumentHolder(Arguments* args, int create_flags) {
+  ArgumentHolder(gin::Arguments* args, int create_flags) {
+    v8::Local<v8::Object> holder;
     if (index == 0 && (create_flags & HolderIsFirstArgument) &&
-        gin_helper::Destroyable::IsDestroyed(args->GetHolder())) {
-      args->ThrowError("Object has been destroyed");
+        args->GetHolder(&holder) &&
+        gin_helper::Destroyable::IsDestroyed(holder)) {
+      args->ThrowTypeError("Object has been destroyed");
       return;
     }
     ok = GetNextArgument(args, create_flags, index == 0, &value);
@@ -181,7 +173,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   // C++ has always been strict about the class initialization order,
   // so it is guaranteed ArgumentHolders will be initialized (and thus, will
   // extract arguments from Arguments) in the right order.
-  Invoker(Arguments* args, int create_flags)
+  Invoker(gin::Arguments* args, int create_flags)
       : ArgumentHolder<indices, ArgTypes>(args, create_flags)..., args_(args) {
     // GCC thinks that create_flags is going unused, even though the
     // expansion above clearly makes use of it. Per jyasskin@, casting
@@ -215,7 +207,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
     return arg1 && And(args...);
   }
 
-  Arguments* args_;
+  gin::Arguments* args_;
 };
 
 // DispatchToCallback converts all the JavaScript arguments to C++ types and
@@ -227,7 +219,7 @@ template <typename ReturnType, typename... ArgTypes>
 struct Dispatcher<ReturnType(ArgTypes...)> {
   static void DispatchToCallback(
       const v8::FunctionCallbackInfo<v8::Value>& info) {
-    Arguments args(info);
+    gin::Arguments args(info);
     v8::Local<v8::External> v8_holder;
     args.GetData(&v8_holder);
     CallbackHolderBase* holder_base =
@@ -243,8 +235,6 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
   }
 };
 
-}  // namespace internal
-
 // CreateFunctionTemplate creates a v8::FunctionTemplate that will create
 // JavaScript functions that execute a provided C++ function or base::Callback.
 // JavaScript arguments are automatically converted via gin::Converter, as is
@@ -259,29 +249,15 @@ v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
     v8::Isolate* isolate,
     const base::Callback<Sig> callback,
     int callback_flags = 0) {
-  typedef internal::CallbackHolder<Sig> HolderT;
+  typedef CallbackHolder<Sig> HolderT;
   HolderT* holder = new HolderT(isolate, callback, callback_flags);
 
-  return v8::FunctionTemplate::New(
-      isolate, &internal::Dispatcher<Sig>::DispatchToCallback,
-      ConvertToV8<v8::Local<v8::External>>(isolate,
-                                           holder->GetHandle(isolate)));
+  return v8::FunctionTemplate::New(isolate,
+                                   &Dispatcher<Sig>::DispatchToCallback,
+                                   gin::ConvertToV8<v8::Local<v8::External>>(
+                                       isolate, holder->GetHandle(isolate)));
 }
 
-// CreateFunctionHandler installs a CallAsFunction handler on the given
-// object template that forwards to a provided C++ function or base::Callback.
-template <typename Sig>
-void CreateFunctionHandler(v8::Isolate* isolate,
-                           v8::Local<v8::ObjectTemplate> tmpl,
-                           const base::Callback<Sig> callback,
-                           int callback_flags = 0) {
-  typedef internal::CallbackHolder<Sig> HolderT;
-  HolderT* holder = new HolderT(isolate, callback, callback_flags);
-  tmpl->SetCallAsFunctionHandler(&internal::Dispatcher<Sig>::DispatchToCallback,
-                                 ConvertToV8<v8::Local<v8::External>>(
-                                     isolate, holder->GetHandle(isolate)));
-}
+}  // namespace gin_helper
 
-}  // namespace mate
-
-#endif  // NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
+#endif  // SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_

@@ -53,7 +53,7 @@
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/session_preferences.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/content_converter.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"

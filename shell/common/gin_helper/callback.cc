@@ -1,18 +1,13 @@
-// Copyright (c) 2015 GitHub, Inc. All rights reserved.
+// Copyright (c) 2019 GitHub, Inc. All rights reserved.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/native_mate_converters/callback.h"
-#include "base/stl_util.h"
+#include "shell/common/gin_helper/callback.h"
+
 #include "content/public/browser/browser_thread.h"
+#include "gin/dictionary.h"
 
-#include "native_mate/dictionary.h"
-
-using content::BrowserThread;
-
-namespace mate {
-
-namespace internal {
+namespace gin_helper {
 
 namespace {
 
@@ -41,7 +36,7 @@ v8::Persistent<v8::FunctionTemplate> g_call_translater;
 
 void CallTranslater(v8::Local<v8::External> external,
                     v8::Local<v8::Object> state,
-                    mate::Arguments* args) {
+                    gin::Arguments* args) {
   // Whether the callback should only be called for once.
   v8::Isolate* isolate = args->isolate();
   auto context = isolate->GetCurrentContext();
@@ -52,7 +47,7 @@ void CallTranslater(v8::Local<v8::External> external,
   if (one_time) {
     auto called_symbol = mate::StringToSymbol(isolate, "called");
     if (state->Has(context, called_symbol).ToChecked()) {
-      args->ThrowError("callback can only be called for once");
+      args->ThrowTypeError("callback can only be called for once");
       return;
     } else {
       state->Set(context, called_symbol, v8::Boolean::New(isolate, true))
@@ -74,9 +69,10 @@ void CallTranslater(v8::Local<v8::External> external,
 struct DeleteOnUIThread {
   template <typename T>
   static void Destruct(const T* x) {
-    if (Locker::IsBrowserProcess() &&
-        !BrowserThread::CurrentlyOn(BrowserThread::UI)) {
-      BrowserThread::DeleteSoon(BrowserThread::UI, FROM_HERE, x);
+    if (mate::Locker::IsBrowserProcess() &&
+        !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
+                                         x);
     } else {
       delete x;
     }
@@ -124,21 +120,21 @@ v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
                                                   bool one_time) {
   // The FunctionTemplate is cached.
   if (g_call_translater.IsEmpty())
-    g_call_translater.Reset(isolate,
-                            mate::CreateFunctionTemplate(
-                                isolate, base::BindRepeating(&CallTranslater)));
+    g_call_translater.Reset(
+        isolate,
+        CreateFunctionTemplate(isolate, base::BindRepeating(&CallTranslater)));
 
   v8::Local<v8::FunctionTemplate> call_translater =
       v8::Local<v8::FunctionTemplate>::New(isolate, g_call_translater);
   auto* holder = new TranslaterHolder(isolate);
   holder->translater = translater;
-  Dictionary state = mate::Dictionary::CreateEmpty(isolate);
+  gin::Dictionary state = gin::Dictionary::CreateEmpty(isolate);
   if (one_time)
     state.Set("oneTime", true);
   auto context = isolate->GetCurrentContext();
   return BindFunctionWith(
       isolate, context, call_translater->GetFunction(context).ToLocalChecked(),
-      holder->handle.Get(isolate), state.GetHandle());
+      holder->handle.Get(isolate), gin::ConvertToV8(isolate, state));
 }
 
 // func.bind(func, arg1).
@@ -158,6 +154,4 @@ v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
       .ToLocalChecked();
 }
 
-}  // namespace internal
-
-}  // namespace mate
+}  // namespace gin_helper
