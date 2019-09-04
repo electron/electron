@@ -375,7 +375,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 - (void)menuDidClose:(NSMenu*)menu {
   if (isMenuOpen_) {
     isMenuOpen_ = NO;
-    model_->MenuWillClose();
+    if (model_)
+      model_->MenuWillClose();
     // Post async task so that itemSelected runs before the close callback
     // deletes the controller from the map which deallocates it
     if (!closeCallback.is_null()) {
