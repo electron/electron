@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "base/strings/string_piece.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -77,14 +78,15 @@ class Promise {
     }
   }
 
-  static void RejectPromise(Promise<RT> promise, std::string errmsg) {
+  static void RejectPromise(Promise<RT> promise, base::StringPiece errmsg) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
-                               base::BindOnce(
-                                   [](Promise<RT> promise, std::string errmsg) {
-                                     promise.RejectWithErrorMessage(errmsg);
-                                   },
-                                   std::move(promise), std::move(errmsg)));
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce(
+              [](Promise<RT> promise, base::StringPiece err) {
+                promise.RejectWithErrorMessage(err);
+              },
+              std::move(promise), std::move(errmsg)));
     } else {
       promise.RejectWithErrorMessage(errmsg);
     }
@@ -176,19 +178,15 @@ class Promise {
                                gin::ConvertToV8(isolate(), value));
   }
 
-  v8::Maybe<bool> RejectWithErrorMessage(const std::string& string) {
+  v8::Maybe<bool> RejectWithErrorMessage(base::StringPiece string) {
     v8::HandleScope handle_scope(isolate());
     v8::MicrotasksScope script_scope(isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
-    v8::Local<v8::String> error_message =
-        v8::String::NewFromUtf8(isolate(), string.c_str(),
-                                v8::NewStringType::kNormal,
-                                static_cast<int>(string.size()))
-            .ToLocalChecked();
-    v8::Local<v8::Value> error = v8::Exception::Error(error_message);
+    v8::Local<v8::Value> error =
+        v8::Exception::Error(gin::StringToV8(isolate(), string));
     return GetInner()->Reject(GetContext(), (error));
   }
 
