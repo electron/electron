@@ -13,7 +13,7 @@ index 2370d15332c8c6c7dc7e3403b38891c885704d9f..45511a9319b0e02b9b2c115f7d87d82d
  NativeTheme::~NativeTheme() = default;
  
  bool NativeTheme::ShouldUseDarkColors() const {
-+  HANDLE_OVERRIDDEN_SHOULD_USE_DARK_COLORS
++  RETURN_IF_FORCED_THEME
    return should_use_dark_colors_;
  }
  
@@ -25,9 +25,9 @@ index 70389e0245993faa2c17e9deefeb000280ef2368..4d56998a391c1c7508bb911eea0c16cd
  #include "ui/native_theme/native_theme_export.h"
  #include "ui/native_theme/native_theme_observer.h"
  
-+#define HANDLE_OVERRIDDEN_SHOULD_USE_DARK_COLORS \
++#define RETURN_IF_FORCED_THEME do { \
 +  if (theme_source() == ThemeSource::kForcedLight) return false; \
-+  if (theme_source() == ThemeSource::kForcedDark) return true;
++  if (theme_source() == ThemeSource::kForcedDark) return true; } while (0)
 +
 +
  namespace gfx {
@@ -73,7 +73,7 @@ index a8fbfee3b13672902aac05fd5a65fa8ee81f9f7e..58ee87151f40229776ea356eaa6adc30
  }
  
  bool NativeThemeDarkAura::ShouldUseDarkColors() const {
-+  HANDLE_OVERRIDDEN_SHOULD_USE_DARK_COLORS
++  RETURN_IF_FORCED_THEME
    return true;
  }
  
@@ -85,7 +85,7 @@ index 3003643bfb78cec2f5e84fc9e1471e1ef54aae41..f305ad3c809129a4b583e3bba04a8734
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (UsesHighContrastColors() && !IsForcedDarkMode())
      return false;
-+  HANDLE_OVERRIDDEN_SHOULD_USE_DARK_COLORS
++  RETURN_IF_FORCED_THEME
    return NativeTheme::ShouldUseDarkColors();
  }
  

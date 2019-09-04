@@ -1,5 +1,7 @@
 import { expect } from 'chai'
 import { nativeTheme, systemPreferences } from 'electron'
+import * as os from 'os'
+import * as semver from 'semver'
 
 describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {
@@ -44,9 +46,11 @@ describe('nativeTheme module', () => {
       expect(called).to.equal(false)
     })
 
-    describe('on macOS', () => {
+    describe('on macOS 10.14', () => {
       before(function () {
-        if (process.platform !== 'darwin') this.skip()
+        if (process.platform !== 'darwin') return this.skip()
+        // Darwin 18.0.0 === Mojave 10.14
+        if (semver.lt(os.release(), '18.0.0')) return this.skip()
       })
 
       it('should update appLevelAppearance when set', () => {
