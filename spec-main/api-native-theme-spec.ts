@@ -46,7 +46,7 @@ describe('nativeTheme module', () => {
       expect(called).to.equal(false)
     })
 
-    describe('on macOS 10.14', () => {
+    ifdescribe(process.platform === 'darwin' && semver.ge(os.release(), '18.0.0'))('on macOS 10.14', () => {
       before(function () {
         if (process.platform !== 'darwin') return this.skip()
         // Darwin 18.0.0 === Mojave 10.14
