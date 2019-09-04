@@ -343,21 +343,7 @@ describe('node feature', () => {
       }).to.not.throw()
     })
 
-    it('should have isTTY defined on Mac and Linux', function () {
-      if (process.platform === 'win32') {
-        this.skip()
-        return
-      }
-
-      expect(process.stdout.isTTY).to.be.a('boolean')
-    })
-
-    it('should have isTTY undefined on Windows', function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-        return
-      }
-
+    it('isTTY should be undefined in the renderer process', function () {
       expect(process.stdout.isTTY).to.be.undefined()
     })
   })
