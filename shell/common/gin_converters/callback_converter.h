@@ -5,6 +5,8 @@
 #ifndef SHELL_COMMON_GIN_CONVERTERS_CALLBACK_CONVERTER_H_
 #define SHELL_COMMON_GIN_CONVERTERS_CALLBACK_CONVERTER_H_
 
+#include <utility>
+
 #include "base/callback_helpers.h"
 #include "shell/common/gin_helper/callback.h"
 
