@@ -168,7 +168,6 @@ ipcMain.on('handle-next-ipc-message-sync', function (event, returnValue) {
 })
 
 for (const eventName of [
-  'desktop-capturer-get-sources',
   'remote-get-guest-web-contents'
 ]) {
   ipcMain.on(`handle-next-${eventName}`, function (event, returnValue) {

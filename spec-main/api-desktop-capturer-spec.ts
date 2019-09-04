@@ -1,7 +1,7 @@
 import { expect } from 'chai'
-import { desktopCapturer, ipcRenderer, screen, BrowserWindow, SourcesOptions } from 'electron'
+import { desktopCapturer, screen, BrowserWindow, SourcesOptions } from 'electron'
 import { emittedOnce } from './events-helpers'
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe, ifit } from './spec-helpers';
 import { closeAllWindows } from './window-helpers';
 
 const features = process.electronBinding('features')
@@ -46,10 +46,8 @@ ifdescribe(features.isDesktopCapturerEnabled() && !process.arch.includes('arm') 
     expect(promise2).to.not.eventually.be.rejected()
   })
 
-  it('returns an empty display_id for window sources on Windows and Mac', async () => {
-    // Linux doesn't return any window sources.
-    if (process.platform !== 'win32' && process.platform !== 'darwin') return
-
+  // Linux doesn't return any window sources.
+  ifit(process.platform !== 'linux')('returns an empty display_id for window sources on Windows and Mac', async () => {
     const w = new BrowserWindow({ width: 200, height: 200 })
 
     const sources = await getSources({ types: ['window'] })
@@ -60,9 +58,7 @@ ifdescribe(features.isDesktopCapturerEnabled() && !process.arch.includes('arm') 
     }
   })
 
-  it('returns display_ids matching the Screen API on Windows and Mac', async () => {
-    if (process.platform !== 'win32' && process.platform !== 'darwin') return
-
+  ifit(process.platform !== 'linux')('returns display_ids matching the Screen API on Windows and Mac', async () => {
     const displays = screen.getAllDisplays()
     const sources = await getSources({ types: ['screen'] })
     expect(sources).to.be.an('array').of.length(displays.length)
@@ -70,12 +66,14 @@ ifdescribe(features.isDesktopCapturerEnabled() && !process.arch.includes('arm') 
     for (let i = 0; i < sources.length; i++) {
       expect(sources[i].display_id).to.equal(displays[i].id.toString())
     }
+  })
 
-    it('returns empty sources when blocked', async () => {
-      ipcRenderer.send('handle-next-desktop-capturer-get-sources')
-      const sources = await getSources({ types: ['screen'] })
-      expect(sources).to.be.empty()
+  ifit(process.platform !== 'linux')('returns an empty source list if blocked by the main process', async () => {
+    w.webContents.once('desktop-capturer-get-sources', (event) => {
+      event.preventDefault()
     })
+    const sources = await getSources({ types: ['screen'] })
+    expect(sources).to.be.empty()
   })
 
   it('disabling thumbnail should return empty images', async () => {
