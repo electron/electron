@@ -1065,7 +1065,7 @@ describe('webContents module', () => {
 
   describe('create()', () => {
     it('does not crash on exit', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-webcontents.js')
+      const appPath = path.join(fixturesPath, 'api', 'leak-exit-webcontents.js')
       const electronPath = process.execPath
       const appProcess = ChildProcess.spawn(electronPath, [appPath])
       const [code] = await emittedOnce(appProcess, 'close')
