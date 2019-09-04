@@ -516,20 +516,19 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.moveTop()', () => {
     it('should not steal focus', async () => {
-      console.log('should not steal focus 1')
       const posDelta = 50
       const wShownInactive = emittedOnce(w, 'show')
       w.showInactive()
       await wShownInactive
       assert(!w.isFocused())
-      console.log('should not steal focus 2')
+
       const otherWindow = new BrowserWindow({ show: false, title: 'otherWindow' })
       const otherWindowShown = emittedOnce(otherWindow, 'show')
       otherWindow.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
       otherWindow.show()
       await otherWindowShown
       assert(otherWindow.isFocused())
-      console.log('should not steal focus 3') 
+
       w.moveTop()
       const wPos = w.getPosition()
       const wMoving = emittedOnce(w, 'move')
@@ -537,12 +536,12 @@ describe('BrowserWindow module', () => {
       await wMoving
       assert(!w.isFocused())
       assert(otherWindow.isFocused())
-      console.log('should not steal focus 4') 
+
       const wFocused = emittedOnce(w, 'focus')
       w.focus()
       await wFocused
       assert(w.isFocused())
-      console.log('should not steal focus 5') 
+
       otherWindow.moveTop()
       const otherWindowPos = otherWindow.getPosition()
       const otherWindowMoving = emittedOnce(otherWindow, 'move')
@@ -550,12 +549,10 @@ describe('BrowserWindow module', () => {
       await otherWindowMoving
       assert(!otherWindow.isFocused())
       assert(w.isFocused())
-      console.log('should not steal focus 6') 
+
       await closeWindow(otherWindow, { assertSingleWindow: false }).then(() => {
-        console.log('should not steal focus 7') 
         assert.strictEqual(BrowserWindow.getAllWindows().length, 2) // Test window + w
       })
-      console.log('should not steal focus 8') 
     })
   })
 
