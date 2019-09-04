@@ -207,7 +207,8 @@ class App : public AtomBrowserClient::Delegate,
   bool CanBrowserClientUseCustomSiteInstance();
 
 #if defined(OS_MACOSX)
-  bool MoveToApplicationsFolder(mate::Arguments* args);
+  bool MoveToApplicationsFolder(gin_helper::ErrorThrower,
+                                mate::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
   v8::Global<v8::Value> dock_;

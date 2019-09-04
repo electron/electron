@@ -26,6 +26,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
+#include "gin/arguments.h"
 #include "media/audio/audio_manager.h"
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/client_cert_identity.h"
@@ -1343,12 +1344,14 @@ bool App::CanBrowserClientUseCustomSiteInstance() {
 }
 
 #if defined(OS_MACOSX)
-bool App::MoveToApplicationsFolder(mate::Arguments* args) {
-  return ui::cocoa::AtomBundleMover::Move(args);
+bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
+                                   mate::Arguments* args) {
+  gin::Arguments gin_args(args->info());
+  return AtomBundleMover::Move(thrower, &gin_args);
 }
 
 bool App::IsInApplicationsFolder() {
-  return ui::cocoa::AtomBundleMover::IsCurrentAppInApplicationsFolder();
+  return AtomBundleMover::IsCurrentAppInApplicationsFolder();
 }
 
 int DockBounce(mate::Arguments* args) {

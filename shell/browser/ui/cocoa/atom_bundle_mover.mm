@@ -4,19 +4,17 @@
 
 #import "shell/browser/ui/cocoa/atom_bundle_mover.h"
 
-#include <string>
-
 #import <AppKit/AppKit.h>
-#import <Foundation/Foundation.h>
 #import <Security/Security.h>
 #import <dlfcn.h>
 #import <sys/mount.h>
 #import <sys/param.h>
 
-#import "shell/browser/browser.h"
-#include "shell/common/native_mate_converters/once_callback.h"
+#include "gin/dictionary.h"
+#include "shell/browser/browser.h"
+#include "shell/common/gin_converters/callback_converter.h"
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<electron::BundlerMoverConflictType> {
@@ -24,26 +22,23 @@ struct Converter<electron::BundlerMoverConflictType> {
                                    electron::BundlerMoverConflictType value) {
     switch (value) {
       case electron::BundlerMoverConflictType::EXISTS:
-        return mate::StringToV8(isolate, "exists");
+        return gin::StringToV8(isolate, "exists");
       case electron::BundlerMoverConflictType::EXISTS_AND_RUNNING:
-        return mate::StringToV8(isolate, "existsAndRunning");
+        return gin::StringToV8(isolate, "existsAndRunning");
       default:
-        return mate::StringToV8(isolate, "");
+        return gin::StringToV8(isolate, "");
     }
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
-namespace ui {
-
-namespace cocoa {
-
-bool AtomBundleMover::ShouldContinueMove(BundlerMoverConflictType type,
-                                         mate::Arguments* args) {
-  mate::Dictionary options;
+bool AtomBundleMover::ShouldContinueMove(gin_helper::ErrorThrower thrower,
+                                         BundlerMoverConflictType type,
+                                         gin::Arguments* args) {
+  gin::Dictionary options;
   bool hasOptions = args->GetNext(&options);
   base::OnceCallback<v8::Local<v8::Value>(BundlerMoverConflictType)>
       conflict_cb;
@@ -57,13 +52,14 @@ bool AtomBundleMover::ShouldContinueMove(BundlerMoverConflictType type,
       // we only want to throw an error if a user has returned a non-boolean
       // value; this allows for client-side error handling should something in
       // the handler throw
-      args->ThrowError("Invalid conflict handler return type.");
+      thrower.ThrowError("Invalid conflict handler return type.");
     }
   }
   return true;
 }
 
-bool AtomBundleMover::Move(mate::Arguments* args) {
+bool AtomBundleMover::Move(gin_helper::ErrorThrower thrower,
+                           gin::Arguments* args) {
   // Path of the current bundle
   NSString* bundlePath = [[NSBundle mainBundle] bundlePath];
 
@@ -103,10 +99,10 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
                            &authorizationCanceled)) {
       if (authorizationCanceled) {
         // User rejected the authorization request
-        args->ThrowError("User rejected the authorization request");
+        thrower.ThrowError("User rejected the authorization request");
         return false;
       } else {
-        args->ThrowError(
+        thrower.ThrowError(
             "Failed to copy to applications directory even with authorization");
         return false;
       }
@@ -117,8 +113,8 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
       // But first, make sure that it's not running
       if (IsApplicationAtPathRunning(destinationPath)) {
         // Check for callback handler and get user choice for open/quit
-        if (!ShouldContinueMove(BundlerMoverConflictType::EXISTS_AND_RUNNING,
-                                args))
+        if (!ShouldContinueMove(
+                thrower, BundlerMoverConflictType::EXISTS_AND_RUNNING, args))
           return false;
 
         // Unless explicitly denied, give running app focus and terminate self
@@ -131,20 +127,21 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
         return true;
       } else {
         // Check callback handler and get user choice for app trashing
-        if (!ShouldContinueMove(BundlerMoverConflictType::EXISTS, args))
+        if (!ShouldContinueMove(thrower, BundlerMoverConflictType::EXISTS,
+                                args))
           return false;
 
         // Unless explicitly denied, attempt to trash old app
         if (!Trash([applicationsDirectory
                 stringByAppendingPathComponent:bundleName])) {
-          args->ThrowError("Failed to delete existing application");
+          thrower.ThrowError("Failed to delete existing application");
           return false;
         }
       }
     }
 
     if (!CopyBundle(bundlePath, destinationPath)) {
-      args->ThrowError(
+      thrower.ThrowError(
           "Failed to copy current bundle to the applications folder");
       return false;
     }
@@ -465,9 +462,5 @@ bool AtomBundleMover::DeleteOrTrash(NSString* path) {
     return Trash(path);
   }
 }
-
-}  // namespace cocoa
-
-}  // namespace ui
 
 }  // namespace electron
