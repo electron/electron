@@ -846,7 +846,7 @@ void App::SetAppPath(const base::FilePath& app_path) {
 }
 
 #if !defined(OS_MACOSX)
-void App::SetAppLogsPath(util::ErrorThrower thrower,
+void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          base::Optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
@@ -865,7 +865,7 @@ void App::SetAppLogsPath(util::ErrorThrower thrower,
 }
 #endif
 
-base::FilePath App::GetPath(util::ErrorThrower thrower,
+base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
   bool succeed = false;
   base::FilePath path;
@@ -888,7 +888,7 @@ base::FilePath App::GetPath(util::ErrorThrower thrower,
   return path;
 }
 
-void App::SetPath(util::ErrorThrower thrower,
+void App::SetPath(gin_helper::ErrorThrower thrower,
                   const std::string& name,
                   const base::FilePath& path) {
   if (!path.IsAbsolute()) {
@@ -1031,7 +1031,7 @@ bool App::Relaunch(mate::Arguments* js_args) {
   return relauncher::RelaunchApp(argv);
 }
 
-void App::DisableHardwareAcceleration(util::ErrorThrower thrower) {
+void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
     thrower.ThrowError(
         "app.disableHardwareAcceleration() can only be called "
@@ -1041,7 +1041,7 @@ void App::DisableHardwareAcceleration(util::ErrorThrower thrower) {
   content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
 }
 
-void App::DisableDomainBlockingFor3DAPIs(util::ErrorThrower thrower) {
+void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
     thrower.ThrowError(
         "app.disableDomainBlockingFor3DAPIs() can only be called "
@@ -1057,7 +1057,7 @@ bool App::IsAccessibilitySupportEnabled() {
   return ax_state->IsAccessibleBrowser();
 }
 
-void App::SetAccessibilitySupportEnabled(util::ErrorThrower thrower,
+void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
                                          bool enabled) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError(
@@ -1314,7 +1314,7 @@ static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {
   }
 }
 
-void App::EnableSandbox(util::ErrorThrower thrower) {
+void App::EnableSandbox(gin_helper::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
     thrower.ThrowError(
         "app.enableSandbox() can only be called "
