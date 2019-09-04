@@ -157,7 +157,7 @@ describe('crashReporter module', () => {
           return
         }
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
+        if (process.platform === 'win32') return done()
         this.timeout(specTimeout)
         stopServer = startServer({
           callback (port) {

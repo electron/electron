@@ -4,10 +4,12 @@ const dirtyChai = require('dirty-chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const http = require('http')
 const { shell, remote } = require('electron')
 const { BrowserWindow } = remote
 
 const { closeWindow } = require('./window-helpers')
+const { emittedOnce } = require('./events-helpers')
 
 const { expect } = chai
 chai.use(dirtyChai)
@@ -47,32 +49,34 @@ describe('shell module', () => {
       }
     })
 
-    it('opens an external link', done => {
-      const url = 'http://www.example.com'
+    it('opens an external link', async () => {
+      let url = 'http://127.0.0.1'
+      let requestReceived
       if (process.platform === 'linux') {
         process.env.BROWSER = '/bin/true'
         process.env.DE = 'generic'
         process.env.DISPLAY = ''
+        requestReceived = Promise.resolve()
+      } else if (process.platform === 'darwin') {
+        // On the Mac CI machines, Safari tries to ask for a password to the
+        // code signing keychain we set up to test code signing (see
+        // https://github.com/electron/electron/pull/19969#issuecomment-526278890),
+        // so use a blur event as a crude proxy.
+        w = new BrowserWindow({ show: true })
+        requestReceived = emittedOnce(w, 'blur')
+      } else {
+        const server = http.createServer((req, res) => {
+          res.end()
+        })
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+        requestReceived = new Promise(resolve => server.on('connection', () => resolve()))
+        url = `http://127.0.0.1:${server.address().port}`
       }
 
-      // Ensure an external window is activated via a new window's blur event
-      w = new BrowserWindow()
-      let promiseResolved = false
-      let blurEventEmitted = false
-
-      w.on('blur', () => {
-        blurEventEmitted = true
-        if (promiseResolved) {
-          done()
-        }
-      })
-
-      shell.openExternal(url).then(() => {
-        promiseResolved = true
-        if (blurEventEmitted || process.platform === 'linux') {
-          done()
-        }
-      })
+      await Promise.all([
+        shell.openExternal(url),
+        requestReceived
+      ])
     })
   })
 
