@@ -48,7 +48,7 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
   void OnDownloadSaveDialogDone(
       uint32_t download_id,
       const content::DownloadTargetCallback& download_callback,
-      mate::Dictionary result);
+      gin::Dictionary result);
 
   content::DownloadManager* download_manager_;
   base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;

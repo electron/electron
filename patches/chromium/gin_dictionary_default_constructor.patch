@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: gin_dictionary_default_constructor.patch
+
+Add default constructor for gin::Dictionary.
+
+This is required for automatically converting arguments for functions that
+take gin::Dictionary as parameter.
+
+diff --git a/gin/dictionary.cc b/gin/dictionary.cc
+index 95e00072700c..7643347890a5 100644
+--- a/gin/dictionary.cc
++++ b/gin/dictionary.cc
+@@ -6,6 +6,10 @@
+ 
+ namespace gin {
+ 
++Dictionary::Dictionary()
++    : isolate_(nullptr) {
++}
++
+ Dictionary::Dictionary(v8::Isolate* isolate)
+     : isolate_(isolate) {
+ }
+diff --git a/gin/dictionary.h b/gin/dictionary.h
+index 2645d328b4c1..43b227dd7e48 100644
+--- a/gin/dictionary.h
++++ b/gin/dictionary.h
+@@ -24,6 +24,7 @@ namespace gin {
+ //
+ class GIN_EXPORT Dictionary {
+  public:
++  Dictionary();
+   explicit Dictionary(v8::Isolate* isolate);
+   Dictionary(v8::Isolate* isolate, v8::Local<v8::Object> object);
+   Dictionary(const Dictionary& other);

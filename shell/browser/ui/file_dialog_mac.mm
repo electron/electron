@@ -17,6 +17,7 @@
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/browser/native_window.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 
 @interface PopUpButtonHandler : NSObject
 
@@ -300,15 +301,15 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 void OpenDialogCompletion(int chosen,
                           NSOpenPanel* dialog,
                           bool security_scoped_bookmarks,
-                          electron::util::Promise<mate::Dictionary> promise) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+                          electron::util::Promise<gin::Dictionary> promise) {
+  gin::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSFileHandlingPanelCancelButton) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
 #if defined(MAS_BUILD)
     dict.Set("bookmarks", std::vector<std::string>());
 #endif
-    promise.Resolve(dict);
+    promise.ResolveWithGin(dict);
   } else {
     std::vector<base::FilePath> paths;
     dict.Set("canceled", false);
@@ -324,12 +325,12 @@ void OpenDialogCompletion(int chosen,
     ReadDialogPaths(dialog, &paths);
     dict.Set("filePaths", paths);
 #endif
-    promise.Resolve(dict);
+    promise.ResolveWithGin(dict);
   }
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise<mate::Dictionary> promise) {
+                    electron::util::Promise<gin::Dictionary> promise) {
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
   SetupDialog(dialog, settings);
@@ -339,7 +340,7 @@ void ShowOpenDialog(const DialogSettings& settings,
   // and pass it to the completion handler.
   bool security_scoped_bookmarks = settings.security_scoped_bookmarks;
 
-  __block electron::util::Promise<mate::Dictionary> p = std::move(promise);
+  __block electron::util::Promise<gin::Dictionary> p = std::move(promise);
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {
@@ -377,8 +378,8 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 void SaveDialogCompletion(int chosen,
                           NSSavePanel* dialog,
                           bool security_scoped_bookmarks,
-                          electron::util::Promise<mate::Dictionary> promise) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+                          electron::util::Promise<gin::Dictionary> promise) {
+  gin::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSFileHandlingPanelCancelButton) {
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
@@ -397,11 +398,11 @@ void SaveDialogCompletion(int chosen,
     }
 #endif
   }
-  promise.Resolve(dict);
+  promise.ResolveWithGin(dict);
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise<mate::Dictionary> promise) {
+                    electron::util::Promise<gin::Dictionary> promise) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
@@ -412,7 +413,7 @@ void ShowSaveDialog(const DialogSettings& settings,
   // and pass it to the completion handler.
   bool security_scoped_bookmarks = settings.security_scoped_bookmarks;
 
-  __block electron::util::Promise<mate::Dictionary> p = std::move(promise);
+  __block electron::util::Promise<gin::Dictionary> p = std::move(promise);
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {

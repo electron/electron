@@ -14,6 +14,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/converter.h"
+#include "shell/common/gin_converters/std_converter.h"
 
 namespace electron {
 
@@ -139,7 +140,7 @@ class Promise {
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
-    v8::Local<v8::Value> value = mate::ConvertToV8(isolate(), cb);
+    v8::Local<v8::Value> value = gin::ConvertToV8(isolate(), std::move(cb));
     v8::Local<v8::Function> handler = v8::Local<v8::Function>::Cast(value);
 
     return GetHandle()->Then(GetContext(), handler);
