@@ -7,9 +7,9 @@
 
 #include "base/bind.h"
 #include "gin/data_object_builder.h"
-#include "gin/dictionary.h"
 #include "shell/common/crash_reporter/crash_reporter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/map_converter.h"
 
@@ -42,20 +42,25 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   auto reporter = base::Unretained(CrashReporter::GetInstance());
-  gin::Dictionary dict(context->GetIsolate(), exports);
-  dict.Set("start", base::BindRepeating(&CrashReporter::Start, reporter));
-  dict.Set("addExtraParameter",
-           base::BindRepeating(&CrashReporter::AddExtraParameter, reporter));
-  dict.Set("removeExtraParameter",
-           base::BindRepeating(&CrashReporter::RemoveExtraParameter, reporter));
-  dict.Set("getParameters",
-           base::BindRepeating(&CrashReporter::GetParameters, reporter));
-  dict.Set("getUploadedReports",
-           base::BindRepeating(&CrashReporter::GetUploadedReports, reporter));
-  dict.Set("setUploadToServer",
-           base::BindRepeating(&CrashReporter::SetUploadToServer, reporter));
-  dict.Set("getUploadToServer",
-           base::BindRepeating(&CrashReporter::GetUploadToServer, reporter));
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  dict.SetMethod("start", base::BindRepeating(&CrashReporter::Start, reporter));
+  dict.SetMethod(
+      "addExtraParameter",
+      base::BindRepeating(&CrashReporter::AddExtraParameter, reporter));
+  dict.SetMethod(
+      "removeExtraParameter",
+      base::BindRepeating(&CrashReporter::RemoveExtraParameter, reporter));
+  dict.SetMethod("getParameters",
+                 base::BindRepeating(&CrashReporter::GetParameters, reporter));
+  dict.SetMethod(
+      "getUploadedReports",
+      base::BindRepeating(&CrashReporter::GetUploadedReports, reporter));
+  dict.SetMethod(
+      "setUploadToServer",
+      base::BindRepeating(&CrashReporter::SetUploadToServer, reporter));
+  dict.SetMethod(
+      "getUploadToServer",
+      base::BindRepeating(&CrashReporter::GetUploadToServer, reporter));
 }
 
 }  // namespace

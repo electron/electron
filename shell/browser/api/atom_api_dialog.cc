@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "gin/dictionary.h"
 #include "shell/browser/ui/certificate_trust.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/message_box.h"
@@ -15,6 +14,7 @@
 #include "shell/common/gin_converters/message_box_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 
@@ -87,17 +87,17 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
-  dict.Set("showMessageBoxSync", base::BindRepeating(&ShowMessageBoxSync));
-  dict.Set("showMessageBox", base::BindRepeating(&ShowMessageBox));
-  dict.Set("showErrorBox", base::BindRepeating(&electron::ShowErrorBox));
-  dict.Set("showOpenDialogSync", base::BindRepeating(&ShowOpenDialogSync));
-  dict.Set("showOpenDialog", base::BindRepeating(&ShowOpenDialog));
-  dict.Set("showSaveDialogSync", base::BindRepeating(&ShowSaveDialogSync));
-  dict.Set("showSaveDialog", base::BindRepeating(&ShowSaveDialog));
+  gin_helper::Dictionary dict(isolate, exports);
+  dict.SetMethod("showMessageBoxSync", &ShowMessageBoxSync);
+  dict.SetMethod("showMessageBox", &ShowMessageBox);
+  dict.SetMethod("showErrorBox", &electron::ShowErrorBox);
+  dict.SetMethod("showOpenDialogSync", &ShowOpenDialogSync);
+  dict.SetMethod("showOpenDialog", &ShowOpenDialog);
+  dict.SetMethod("showSaveDialogSync", &ShowSaveDialogSync);
+  dict.SetMethod("showSaveDialog", &ShowSaveDialog);
 #if defined(OS_MACOSX) || defined(OS_WIN)
-  dict.Set("showCertificateTrustDialog",
-           base::BindRepeating(&certificate_trust::ShowCertificateTrust));
+  dict.SetMethod("showCertificateTrustDialog",
+                 &certificate_trust::ShowCertificateTrust);
 #endif
 }
 

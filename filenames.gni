@@ -492,6 +492,7 @@ filenames = {
     "shell/common/gin_helper/callback.h",
     "shell/common/gin_helper/destroyable.cc",
     "shell/common/gin_helper/destroyable.h",
+    "shell/common/gin_helper/dictionary.h",
     "shell/common/gin_helper/function_template.cc",
     "shell/common/gin_helper/function_template.h",
     "shell/common/heap_snapshot.cc",
