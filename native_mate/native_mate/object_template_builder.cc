@@ -28,12 +28,6 @@ ObjectTemplateBuilder& ObjectTemplateBuilder::SetPropertyImpl(
   return *this;
 }
 
-ObjectTemplateBuilder& ObjectTemplateBuilder::MakeDestroyable() {
-  SetMethod("destroy", base::Bind(internal::Destroyable::Destroy));
-  SetMethod("isDestroyed", base::Bind(internal::Destroyable::IsDestroyed));
-  return *this;
-}
-
 v8::Local<v8::ObjectTemplate> ObjectTemplateBuilder::Build() {
   v8::Local<v8::ObjectTemplate> result = template_;
   template_.Clear();

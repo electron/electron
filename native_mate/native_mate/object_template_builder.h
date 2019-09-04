@@ -99,9 +99,6 @@ class ObjectTemplateBuilder {
                            CallbackTraits<U>::CreateTemplate(isolate_, setter));
   }
 
-  // Add "destroy" and "isDestroyed" methods.
-  ObjectTemplateBuilder& MakeDestroyable();
-
   v8::Local<v8::ObjectTemplate> Build();
 
  private:

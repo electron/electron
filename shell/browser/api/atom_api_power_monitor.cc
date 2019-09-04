@@ -115,9 +115,8 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
 void PowerMonitor::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "PowerMonitor"));
-
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
 #if defined(OS_LINUX)
       .SetMethod("blockShutdown", &PowerMonitor::BlockShutdown)
       .SetMethod("unblockShutdown", &PowerMonitor::UnblockShutdown)
