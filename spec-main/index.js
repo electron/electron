@@ -66,14 +66,17 @@ app.whenReady().then(() => {
     ? new RegExp(process.env.npm_config_match, 'g')
     : null
 
+  const testFiles = []
   walker.on('file', (file) => {
     if (/-spec\.[tj]s$/.test(file) &&
         (!moduleMatch || moduleMatch.test(file))) {
-      mocha.addFile(file)
+      testFiles.push(file)
     }
   })
 
   walker.on('end', () => {
+    testFiles.sort()
+    testFiles.forEach((file) => mocha.addFile(file))
     const cb = () => {
       // Ensure the callback is called after runner is defined
       process.nextTick(() => {
