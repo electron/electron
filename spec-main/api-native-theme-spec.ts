@@ -3,6 +3,8 @@ import { nativeTheme, systemPreferences } from 'electron'
 import * as os from 'os'
 import * as semver from 'semver'
 
+import { ifdescribe } from './spec-helpers'
+
 describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {
     it('returns a boolean', () => {
