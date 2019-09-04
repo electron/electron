@@ -8,7 +8,7 @@
 
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "shell/common/api/event_emitter_caller.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 
 #include "shell/common/node_includes.h"
 

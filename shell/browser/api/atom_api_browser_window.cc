@@ -19,7 +19,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/api/constructor.h"
 #include "shell/common/color_util.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"

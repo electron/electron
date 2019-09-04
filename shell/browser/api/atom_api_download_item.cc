@@ -11,7 +11,7 @@
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 #include "shell/browser/atom_browser_main_parts.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_dialog_converter.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"

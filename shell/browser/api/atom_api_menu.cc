@@ -11,7 +11,7 @@
 #include "native_mate/object_template_builder.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/native_mate_converters/accelerator_converter.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/image_converter.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/node_includes.h"

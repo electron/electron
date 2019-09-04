@@ -8,7 +8,7 @@
 #include "base/power_monitor/power_monitor_device_source.h"
 #include "native_mate/dictionary.h"
 #include "shell/browser/browser.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/node_includes.h"
 
 namespace mate {

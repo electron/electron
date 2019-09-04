@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
-#define SHELL_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
+#ifndef SHELL_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_CONVERTER_DEPRECATED_H_
+#define SHELL_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_CONVERTER_DEPRECATED_H_
 
 #include <utility>
 #include <vector>
@@ -182,4 +182,4 @@ v8::Local<v8::Value> CallbackToV8(v8::Isolate* isolate,
 
 }  // namespace mate
 
-#endif  // SHELL_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
+#endif  // SHELL_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_CONVERTER_DEPRECATED_H_

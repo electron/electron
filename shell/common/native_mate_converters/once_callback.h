@@ -7,7 +7,7 @@
 
 #include <utility>
 
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 
 namespace mate {
 

@@ -11,7 +11,7 @@
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
 #include "shell/common/asar/archive.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
 #include "third_party/electron_node/src/node_native_module_env.h"

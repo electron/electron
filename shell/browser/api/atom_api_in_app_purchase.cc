@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/node_includes.h"
 
 namespace mate {
