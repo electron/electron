@@ -6,8 +6,6 @@
 
 namespace gin_helper {
 
-namespace internal {
-
 CallbackHolderBase::CallbackHolderBase(v8::Isolate* isolate)
     : v8_ref_(isolate, v8::External::New(isolate, this)) {
   v8_ref_.SetWeak(this, &CallbackHolderBase::FirstWeakCallback,
@@ -34,7 +32,5 @@ void CallbackHolderBase::SecondWeakCallback(
     const v8::WeakCallbackInfo<CallbackHolderBase>& data) {
   delete data.GetParameter();
 }
-
-}  // namespace internal
 
 }  // namespace gin_helper
