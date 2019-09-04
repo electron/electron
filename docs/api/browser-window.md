@@ -1746,7 +1746,7 @@ this window.
 #### `win.getBrowserView()` _Experimental_
 
 Returns `BrowserView | null` - The `BrowserView` attached to `win`. Returns `null`
-if none is attached. Throws an error if multiple `BrowserView`s are attached.
+if one is not attached. Throws an error if multiple `BrowserView`s are attached.
 
 #### `win.addBrowserView(browserView)` _Experimental_
 
