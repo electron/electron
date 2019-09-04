@@ -508,4 +508,11 @@ describe('remote module', () => {
       w.loadURL('about:blank')
     })
   })
+
+  describe('constructing a Uint8Array', () => {
+    it('does not crash', () => {
+      const RUint8Array = remote.getGlobal('Uint8Array')
+      const arr = new RUint8Array()
+    })
+  })
 })
