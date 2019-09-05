@@ -4,6 +4,8 @@
 
 #include "shell/common/api/atom_api_native_theme.h"
 
+#include <string>
+
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -26,6 +28,20 @@ NativeTheme::~NativeTheme() {
 
 void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
   Emit("updated");
+}
+
+void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
+  theme_->set_theme_source(override);
+#if defined(OS_MACOSX)
+  // Update the macOS appearance setting for this new override value
+  UpdateMacOSAppearanceForOverrideValue(override);
+#endif
+  // TODO(MarshallOfSound): Update all existing browsers windows to use GTK dark
+  // theme
+}
+
+ui::NativeTheme::ThemeSource NativeTheme::GetThemeSource() const {
+  return theme_->theme_source();
 }
 
 bool NativeTheme::ShouldUseDarkColors() {
@@ -68,6 +84,8 @@ void NativeTheme::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "NativeTheme"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetProperty("shouldUseDarkColors", &NativeTheme::ShouldUseDarkColors)
+      .SetProperty("themeSource", &NativeTheme::GetThemeSource,
+                   &NativeTheme::SetThemeSource)
       .SetProperty("shouldUseHighContrastColors",
                    &NativeTheme::ShouldUseHighContrastColors)
       .SetProperty("shouldUseInvertedColorScheme",
@@ -93,5 +111,43 @@ void Initialize(v8::Local<v8::Object> exports,
 }
 
 }  // namespace
+
+namespace mate {
+
+v8::Local<v8::Value> Converter<ui::NativeTheme::ThemeSource>::ToV8(
+    v8::Isolate* isolate,
+    const ui::NativeTheme::ThemeSource& val) {
+  switch (val) {
+    case ui::NativeTheme::ThemeSource::kForcedDark:
+      return mate::ConvertToV8(isolate, "dark");
+    case ui::NativeTheme::ThemeSource::kForcedLight:
+      return mate::ConvertToV8(isolate, "light");
+    case ui::NativeTheme::ThemeSource::kSystem:
+    default:
+      return mate::ConvertToV8(isolate, "system");
+  }
+}
+
+bool Converter<ui::NativeTheme::ThemeSource>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    ui::NativeTheme::ThemeSource* out) {
+  std::string theme_source;
+  if (mate::ConvertFromV8(isolate, val, &theme_source)) {
+    if (theme_source == "dark") {
+      *out = ui::NativeTheme::ThemeSource::kForcedDark;
+    } else if (theme_source == "light") {
+      *out = ui::NativeTheme::ThemeSource::kForcedLight;
+    } else if (theme_source == "system") {
+      *out = ui::NativeTheme::ThemeSource::kSystem;
+    } else {
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+}  // namespace mate
 
 NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_native_theme, Initialize)
