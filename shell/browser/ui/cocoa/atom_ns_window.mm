@@ -24,6 +24,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 @synthesize disableAutoHideCursor;
 @synthesize disableKeyOrMainWindow;
 @synthesize vibrantView;
+@synthesize _cornerMask;
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask {
@@ -135,6 +136,12 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (NSView*)frameView {
   return [[self contentView] superview];
+}
+
+// By overriding this built-in method the corners of the vibrant view (if set)
+// will be smooth.
+- (NSImage*)_cornerMask {
+  return [self cornerMask];
 }
 
 // Quicklook methods
