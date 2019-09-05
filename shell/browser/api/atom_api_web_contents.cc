@@ -366,6 +366,9 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
+  bool initially_shown = true;
+  options.Get(options::kShow, &initially_shown);
+
   // Obtain the session.
   std::string partition;
   mate::Handle<api::Session> session;
@@ -420,6 +423,7 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
 #endif
   } else {
     content::WebContents::CreateParams params(session->browser_context());
+    params.initially_hidden = !initially_shown;
     web_contents = content::WebContents::Create(params);
   }
 
