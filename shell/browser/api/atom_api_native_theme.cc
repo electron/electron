@@ -26,8 +26,14 @@ NativeTheme::~NativeTheme() {
   theme_->RemoveObserver(this);
 }
 
-void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
+void NativeTheme::OnNativeThemeUpdatedOnUI() {
   Emit("updated");
+}
+
+void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
+      base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI));
 }
 
 void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
