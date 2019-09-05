@@ -23,6 +23,8 @@ class ErrorThrower {
   void ThrowReferenceError(base::StringPiece err_msg);
   void ThrowSyntaxError(base::StringPiece err_msg);
 
+  v8::Isolate* isolate() const { return isolate_; }
+
  private:
   using ErrorGenerator =
       v8::Local<v8::Value> (*)(v8::Local<v8::String> err_msg);

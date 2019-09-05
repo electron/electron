@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "electron/buildflags/buildflags.h"
-#include "gin/converter.h"
+#include "gin/dictionary.h"
 #include "native_mate/handle.h"
 #include "native_mate/persistent_dictionary.h"
 #include "shell/browser/api/atom_api_browser_view.h"
@@ -16,6 +16,8 @@
 #include "shell/browser/api/atom_api_view.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/color_util.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gfx_converter.h"
 #include "shell/common/native_mate_converters/image_converter.h"
@@ -34,6 +36,9 @@
 #include "ui/base/win/shell.h"
 #endif
 
+// TODO(zcbenz): Remove this after removing mate::ObjectTemplateBuilder.
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
+
 #if defined(OS_WIN)
 namespace mate {
 
@@ -42,8 +47,8 @@ struct Converter<electron::TaskbarHost::ThumbarButton> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      electron::TaskbarHost::ThumbarButton* out) {
-    mate::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
+    gin::Dictionary dict;
+    if (!gin::ConvertFromV8(isolate, val, &dict))
       return false;
     dict.Get("click", &(out->clicked_callback));
     dict.Get("tooltip", &(out->tooltip));

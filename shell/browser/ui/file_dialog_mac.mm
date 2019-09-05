@@ -384,7 +384,7 @@ void SaveDialogCompletion(int chosen,
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
 #if defined(MAS_BUILD)
-    dict.Set("bookmark", "");
+    dict.Set("bookmark", base::StringPiece());
 #endif
   } else {
     std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
