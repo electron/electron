@@ -74,9 +74,12 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 
 }  // namespace
 
+std::vector<TopLevelWindow*> TopLevelWindow::all_windows;
+
 TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
                                const gin_helper::Dictionary& options)
     : weak_factory_(this) {
+  all_windows.push_back(this);
   // The parent window.
   gin::Handle<TopLevelWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
@@ -114,6 +117,8 @@ TopLevelWindow::TopLevelWindow(gin_helper::Arguments* args,
 }
 
 TopLevelWindow::~TopLevelWindow() {
+  all_windows.erase(std::remove(all_windows.begin(), all_windows.end(), this),
+                    all_windows.end());
   if (!window_->IsClosed())
     window_->CloseImmediately();
 

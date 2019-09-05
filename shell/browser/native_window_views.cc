@@ -34,6 +34,7 @@
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
+#include "ui/native_theme/native_theme.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
@@ -212,7 +213,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   window_state_watcher_ = std::make_unique<WindowStateWatcher>(this);
 
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
-  bool use_dark_theme = false;
+  bool use_dark_theme =
+      ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
   if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
     SetGTKDarkThemeEnabled(use_dark_theme);
   }

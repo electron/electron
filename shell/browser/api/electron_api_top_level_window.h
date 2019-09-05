@@ -32,12 +32,15 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
+  static std::vector<TopLevelWindow*> GetAllWindows() { return all_windows; }
 
   base::WeakPtr<TopLevelWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
 
   NativeWindow* window() const { return window_.get(); }
+
+  void SetGTKDarkThemeEnabled(bool use_dark_theme);
 
  protected:
   // Common constructor.
@@ -208,7 +211,6 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
   void SetAspectRatio(double aspect_ratio, gin_helper::Arguments* args);
   void PreviewFile(const std::string& path, gin_helper::Arguments* args);
   void CloseFilePreview();
-  void SetGTKDarkThemeEnabled(bool use_dark_theme);
 
   // Public getters of NativeWindow.
   v8::Local<v8::Value> GetContentView() const;
@@ -267,6 +269,8 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
 
   // Reference to JS wrapper to prevent garbage collection.
   v8::Global<v8::Value> self_ref_;
+
+  static std::vector<TopLevelWindow*> all_windows;
 
   base::WeakPtrFactory<TopLevelWindow> weak_factory_;
 };
