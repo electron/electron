@@ -14,6 +14,7 @@
     "@types/fs-extra": "^5.0.5",
     "@types/mocha": "^5.2.6",
     "@types/node": "^12.0.10",
+    "@types/semver": "^6.0.1",
     "@types/split": "^1.0.0",
     "@types/webpack": "^4.4.32",
     "@types/webpack-env": "^1.13.9",
