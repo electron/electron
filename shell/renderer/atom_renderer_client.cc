@@ -12,7 +12,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/api/event_emitter_caller_deprecated.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"

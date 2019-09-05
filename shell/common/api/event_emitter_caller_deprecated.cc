@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/api/event_emitter_caller_deprecated.h"
 
 #include "shell/common/api/locker.h"
 #include "shell/common/node_includes.h"

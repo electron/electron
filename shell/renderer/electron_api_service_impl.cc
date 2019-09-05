@@ -11,7 +11,7 @@
 #include "base/environment.h"
 #include "base/macros.h"
 #include "base/threading/thread_restrictions.h"
-#include "electron/shell/common/api/event_emitter_caller.h"
+#include "electron/shell/common/api/event_emitter_caller_deprecated.h"
 #include "electron/shell/common/node_includes.h"
 #include "electron/shell/common/options_switches.h"
 #include "electron/shell/renderer/atom_render_frame_observer.h"

@@ -2,8 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_EVENT_EMITTER_CALLER_H_
-#define SHELL_COMMON_API_EVENT_EMITTER_CALLER_H_
+#ifndef SHELL_COMMON_API_EVENT_EMITTER_CALLER_DEPRECATED_H_
+#define SHELL_COMMON_API_EVENT_EMITTER_CALLER_DEPRECATED_H_
+
+// =============================== NOTICE ===============================
+// Do not add code here, native_mate is being removed. Any new code
+// should use gin_helper version instead.
 
 #include <utility>
 #include <vector>
@@ -66,4 +70,4 @@ v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
 
 }  // namespace mate
 
-#endif  // SHELL_COMMON_API_EVENT_EMITTER_CALLER_H_
+#endif  // SHELL_COMMON_API_EVENT_EMITTER_CALLER_DEPRECATED_H_

@@ -20,7 +20,7 @@
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
-#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/api/event_emitter_caller_deprecated.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
