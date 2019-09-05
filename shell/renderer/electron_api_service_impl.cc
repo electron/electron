@@ -31,9 +31,7 @@ const char kIpcKey[] = "ipcNative";
 // Gets the private object under kIpcKey
 v8::Local<v8::Object> GetIpcObject(v8::Local<v8::Context> context) {
   auto* isolate = context->GetIsolate();
-  auto binding_key = gin::ConvertToV8(isolate, base::StringPiece(kIpcKey))
-                         ->ToString(context)
-                         .ToLocalChecked();
+  auto binding_key = gin::StringToV8(isolate, kIpcKey);
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();
   auto value =
