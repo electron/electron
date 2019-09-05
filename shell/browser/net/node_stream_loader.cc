@@ -7,9 +7,7 @@
 #include <utility>
 
 #include "mojo/public/cpp/system/string_data_source.h"
-#include "shell/common/api/event_emitter_caller_deprecated.h"
 #include "shell/common/gin_converters/callback_converter.h"
-
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -41,7 +39,7 @@ NodeStreamLoader::~NodeStreamLoader() {
 
   // Unsubscribe all handlers.
   for (const auto& it : handlers_) {
-    v8::Local<v8::Value> args[] = {mate::StringToV8(isolate_, it.first),
+    v8::Local<v8::Value> args[] = {gin::StringToV8(isolate_, it.first),
                                    it.second.Get(isolate_)};
     node::MakeCallback(isolate_, emitter_.Get(isolate_), "removeListener",
                        node::arraysize(args), args, {0, 0});

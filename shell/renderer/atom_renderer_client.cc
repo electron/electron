@@ -10,10 +10,10 @@
 #include "base/command_line.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
-#include "native_mate/dictionary.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/api/event_emitter_caller_deprecated.h"
 #include "shell/common/asar/asar_util.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -56,7 +56,8 @@ void AtomRendererClient::RunScriptsAtDocumentStart(
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
   if (env)
-    mate::EmitEvent(env->isolate(), env->process_object(), "document-start");
+    gin_helper::EmitEvent(env->isolate(), env->process_object(),
+                          "document-start");
 }
 
 void AtomRendererClient::RunScriptsAtDocumentEnd(
@@ -66,7 +67,8 @@ void AtomRendererClient::RunScriptsAtDocumentEnd(
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
   if (env)
-    mate::EmitEvent(env->isolate(), env->process_object(), "document-end");
+    gin_helper::EmitEvent(env->isolate(), env->process_object(),
+                          "document-end");
 }
 
 void AtomRendererClient::DidCreateScriptContext(
@@ -135,7 +137,7 @@ void AtomRendererClient::DidCreateScriptContext(
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());
   AddRenderBindings(env->isolate(), env->process_object());
-  mate::Dictionary process_dict(env->isolate(), env->process_object());
+  gin_helper::Dictionary process_dict(env->isolate(), env->process_object());
   process_dict.SetReadOnly("isMainFrame", render_frame->IsMainFrame());
 
   // Load everything.
@@ -160,7 +162,7 @@ void AtomRendererClient::WillReleaseScriptContext(
   if (environments_.erase(env) == 0)
     return;
 
-  mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+  gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
 
   // The main frame may be replaced.
   if (env == node_bindings_->uv_env())
