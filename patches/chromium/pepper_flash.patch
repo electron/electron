@@ -168,7 +168,7 @@ index f2f40b636a41649199a38c663f03e6182df82520..41d11d1f1f9921d4b4deaaf4b2d8ab4b
  
    // Requests a wake lock to prevent going to sleep, and a timer to cancel it
 @@ -65,8 +71,10 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
-   device::mojom::WakeLockPtr wake_lock_;
+   mojo::Remote<device::mojom::WakeLock> wake_lock_;
    base::DelayTimer delay_timer_;
  
 +#if 0
