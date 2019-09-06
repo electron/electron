@@ -38,7 +38,7 @@ namespace electron {
 bool AtomBundleMover::ShouldContinueMove(gin_helper::ErrorThrower thrower,
                                          BundlerMoverConflictType type,
                                          gin::Arguments* args) {
-  gin::Dictionary options;
+  gin::Dictionary options(args->isolate());
   bool hasOptions = args->GetNext(&options);
   base::OnceCallback<v8::Local<v8::Value>(BundlerMoverConflictType)>
       conflict_cb;

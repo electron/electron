@@ -56,8 +56,14 @@ struct CallbackTraits<
 // convert between 2 types, we must not add any member.
 class Dictionary : public gin::Dictionary {
  public:
+  Dictionary() : gin::Dictionary(nullptr) {}
   Dictionary(v8::Isolate* isolate, v8::Local<v8::Object> object)
       : gin::Dictionary(isolate, object) {}
+
+  // Allow implicitly converting from gin::Dictionary, as it is absolutely
+  // safe in this case.
+  Dictionary(const gin::Dictionary& dict)  // NOLINT(runtime/explicit)
+      : gin::Dictionary(dict) {}
 
   template <typename T>
   bool SetMethod(base::StringPiece key, const T& callback) {
@@ -97,5 +103,26 @@ class Dictionary : public gin::Dictionary {
 };
 
 }  // namespace gin_helper
+
+namespace gin {
+
+template <>
+struct Converter<gin_helper::Dictionary> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   gin_helper::Dictionary val) {
+    return val.GetHandle();
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     gin_helper::Dictionary* out) {
+    gin::Dictionary gdict(isolate);
+    if (!ConvertFromV8(isolate, val, &gdict))
+      return false;
+    *out = gin_helper::Dictionary(gdict);
+    return true;
+  }
+};
+
+}  // namespace gin
 
 #endif  // SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
