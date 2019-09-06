@@ -68,6 +68,7 @@ Notification::Notification(v8::Isolate* isolate,
     }
     opts.Get("silent", &silent_);
     opts.Get("replyPlaceholder", &reply_placeholder_);
+    opts.Get("urgency", &urgency_);
     opts.Get("hasReply", &has_reply_);
     opts.Get("actions", &actions_);
     opts.Get("sound", &sound_);
@@ -118,6 +119,10 @@ base::string16 Notification::GetSound() const {
   return sound_;
 }
 
+base::string16 Notification::GetUrgency() const {
+  return urgency_;
+}
+
 std::vector<electron::NotificationAction> Notification::GetActions() const {
   return actions_;
 }
@@ -153,6 +158,10 @@ void Notification::SetReplyPlaceholder(const base::string16& new_placeholder) {
 
 void Notification::SetSound(const base::string16& new_sound) {
   sound_ = new_sound;
+}
+
+void Notification::SetUrgency(const base::string16& new_urgency) {
+  urgency_ = new_urgency;
 }
 
 void Notification::SetActions(
@@ -211,6 +220,7 @@ void Notification::Show() {
       options.actions = actions_;
       options.sound = sound_;
       options.close_button_text = close_button_text_;
+      options.urgency = urgency_;
       notification_->Show(options);
     }
   }
@@ -238,6 +248,8 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
                    &Notification::SetHasReply)
       .SetProperty("replyPlaceholder", &Notification::GetReplyPlaceholder,
                    &Notification::SetReplyPlaceholder)
+      .SetProperty("urgency", &Notification::GetUrgency,
+                   &Notification::SetUrgency)
       .SetProperty("sound", &Notification::GetSound, &Notification::SetSound)
       .SetProperty("actions", &Notification::GetActions,
                    &Notification::SetActions)
