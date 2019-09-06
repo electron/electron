@@ -21,7 +21,7 @@ template <typename T, typename Enable = void>
 struct CallbackTraits {
   static v8::Local<v8::FunctionTemplate> CreateTemplate(v8::Isolate* isolate,
                                                         T callback) {
-    return CreateFunctionTemplate(isolate, base::Bind(callback));
+    return mate::CreateFunctionTemplate(isolate, base::Bind(callback));
   }
 };
 
@@ -31,7 +31,7 @@ struct CallbackTraits<base::Callback<T>> {
   static v8::Local<v8::FunctionTemplate> CreateTemplate(
       v8::Isolate* isolate,
       const base::Callback<T>& callback) {
-    return CreateFunctionTemplate(isolate, callback);
+    return mate::CreateFunctionTemplate(isolate, callback);
   }
 };
 
@@ -46,7 +46,7 @@ struct CallbackTraits<
   static v8::Local<v8::FunctionTemplate> CreateTemplate(v8::Isolate* isolate,
                                                         T callback) {
     int flags = HolderIsFirstArgument;
-    return CreateFunctionTemplate(isolate, base::Bind(callback), flags);
+    return mate::CreateFunctionTemplate(isolate, base::Bind(callback), flags);
   }
 };
 

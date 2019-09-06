@@ -31,6 +31,23 @@ struct Converter<unsigned long> {  // NOLINT(runtime/int)
 #endif
 
 template <>
+struct Converter<const char*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val) {
+    return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal)
+        .ToLocalChecked();
+  }
+};
+
+template <size_t n>
+struct Converter<const char[n]> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val) {
+    return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal,
+                                   n - 1)
+        .ToLocalChecked();
+  }
+};
+
+template <>
 struct Converter<v8::Local<v8::Array>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    v8::Local<v8::Array> val) {

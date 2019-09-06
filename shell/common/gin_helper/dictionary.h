@@ -66,6 +66,32 @@ class Dictionary : public gin::Dictionary {
       : gin::Dictionary(dict) {}
 
   template <typename T>
+  bool GetHidden(base::StringPiece key, T* out) const {
+    v8::Local<v8::Context> context = isolate()->GetCurrentContext();
+    v8::Local<v8::Private> privateKey =
+        v8::Private::ForApi(isolate(), gin::StringToV8(isolate(), key));
+    v8::Local<v8::Value> value;
+    v8::Maybe<bool> result = GetHandle()->HasPrivate(context, privateKey);
+    if (result.IsJust() && result.FromJust() &&
+        GetHandle()->GetPrivate(context, privateKey).ToLocal(&value))
+      return gin::ConvertFromV8(isolate(), value, out);
+    return false;
+  }
+
+  template <typename T>
+  bool SetHidden(base::StringPiece key, T val) {
+    v8::Local<v8::Value> v8_value;
+    if (!gin::TryConvertToV8(isolate(), val, &v8_value))
+      return false;
+    v8::Local<v8::Context> context = isolate()->GetCurrentContext();
+    v8::Local<v8::Private> privateKey =
+        v8::Private::ForApi(isolate(), gin::StringToV8(isolate(), key));
+    v8::Maybe<bool> result =
+        GetHandle()->SetPrivate(context, privateKey, v8_value);
+    return !result.IsNothing() && result.FromJust();
+  }
+
+  template <typename T>
   bool SetMethod(base::StringPiece key, const T& callback) {
     auto context = isolate()->GetCurrentContext();
     auto templ = CallbackTraits<T>::CreateTemplate(isolate(), callback);
