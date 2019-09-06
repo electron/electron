@@ -149,7 +149,7 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   base::FilePath log_filename;
   base::PathService::Get(base::DIR_EXE, &log_filename);
   log_filename = log_filename.AppendASCII("debug.log");
-  settings.log_file = log_filename.value().c_str();
+  settings.log_file_path = log_filename.value().c_str();
   settings.lock_log = logging::LOCK_LOG_FILE;
   settings.delete_old = logging::DELETE_OLD_LOG_FILE;
 #else
