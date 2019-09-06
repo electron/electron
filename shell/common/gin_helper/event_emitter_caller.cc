@@ -1,13 +1,13 @@
-// Copyright (c) 2015 GitHub, Inc.
+// Copyright (c) 2019 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
 
 #include "shell/common/api/locker.h"
 #include "shell/common/node_includes.h"
 
-namespace mate {
+namespace gin_helper {
 
 namespace internal {
 
@@ -35,4 +35,4 @@ v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
 
 }  // namespace internal
 
-}  // namespace mate
+}  // namespace gin_helper

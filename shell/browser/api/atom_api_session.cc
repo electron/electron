@@ -58,6 +58,7 @@
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/once_callback.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"

@@ -17,13 +17,15 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager.h"
+#include "gin/dictionary.h"
 #include "net/base/filename_util.h"
 #include "shell/browser/api/atom_api_download_item.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/web_contents_preferences.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/options_switches.h"
 
 namespace electron {
@@ -122,7 +124,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     settings.force_detached = offscreen;
 
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    electron::util::Promise<mate::Dictionary> dialog_promise(isolate);
+    electron::util::Promise<gin::Dictionary> dialog_promise(isolate);
     auto dialog_callback =
         base::BindOnce(&AtomDownloadManagerDelegate::OnDownloadSaveDialogDone,
                        base::Unretained(this), download_id, callback);
@@ -139,7 +141,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
 void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
     uint32_t download_id,
     const content::DownloadTargetCallback& download_callback,
-    mate::Dictionary result) {
+    gin::Dictionary result) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   auto* item = download_manager_->GetDownload(download_id);

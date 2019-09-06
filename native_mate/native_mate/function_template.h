@@ -5,13 +5,11 @@
 #ifndef NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 #define NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 
-#include "../shell/common/error_util.h"
 #include "../shell/common/gin_helper/destroyable.h"
+#include "../shell/common/gin_helper/error_thrower.h"
 #include "base/callback.h"
-#include "base/logging.h"
 #include "native_mate/arguments.h"
 #include "native_mate/wrappable_base.h"
-#include "v8/include/v8.h"
 
 // =============================== NOTICE ===============================
 // Do not add code here, native_mate is being removed. Any new code
@@ -122,8 +120,8 @@ inline bool GetNextArgument(Arguments* args,
 inline bool GetNextArgument(Arguments* args,
                             int create_flags,
                             bool is_first,
-                            electron::util::ErrorThrower* result) {
-  *result = electron::util::ErrorThrower(args->isolate());
+                            gin_helper::ErrorThrower* result) {
+  *result = gin_helper::ErrorThrower(args->isolate());
   return true;
 }
 

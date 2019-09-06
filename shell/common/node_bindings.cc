@@ -22,12 +22,12 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/api/event_emitter_caller.h"
 #include "shell/common/api/locker.h"
 #include "shell/common/atom_command_line.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/mac/main_application_bundle.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
 
 #define ELECTRON_BUILTIN_MODULES(V)  \
@@ -314,7 +314,7 @@ node::Environment* NodeBindings::CreateEnvironment(
       break;
   }
 
-  mate::Dictionary global(context->GetIsolate(), context->Global());
+  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
   // Do not set DOM globals for renderer process.
   // We must set this before the node bootstrapper which is run inside
   // CreateEnvironment
@@ -351,7 +351,7 @@ node::Environment* NodeBindings::CreateEnvironment(
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
   }
 
-  mate::Dictionary process(context->GetIsolate(), env->process_object());
+  gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
   process.Set("resourcesPath", resources_path);
   // The path to helper app.
@@ -364,7 +364,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
   node::LoadEnvironment(env);
-  mate::EmitEvent(env->isolate(), env->process_object(), "loaded");
+  gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
 void NodeBindings::PrepareMessageLoop() {

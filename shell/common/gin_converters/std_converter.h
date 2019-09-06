@@ -6,10 +6,29 @@
 #define SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
 
 #include <set>
+#include <utility>
 
 #include "gin/converter.h"
 
 namespace gin {
+
+// Make it possible to convert move-only types.
+template <typename T>
+v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
+  return Converter<typename std::remove_reference<T>::type>::ToV8(
+      isolate, std::move(input));
+}
+
+#if !defined(OS_LINUX) && !defined(OS_FREEBSD)
+template <>
+struct Converter<unsigned long> {  // NOLINT(runtime/int)
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   unsigned long val);  // NOLINT(runtime/int)
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     unsigned long* out);  // NOLINT(runtime/int)
+};
+#endif
 
 template <>
 struct Converter<v8::Local<v8::Array>> {

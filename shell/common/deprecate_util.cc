@@ -4,17 +4,15 @@
 
 #include "shell/common/deprecate_util.h"
 
-#include "base/callback.h"
-#include "native_mate/converter.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
+#include "gin/dictionary.h"
+#include "shell/common/gin_converters/callback_converter.h"
 
 namespace electron {
 
 void EmitDeprecationWarning(node::Environment* env,
                             const std::string& warning_msg,
                             const std::string& warning_type) {
-  mate::Dictionary process(env->isolate(), env->process_object());
+  gin::Dictionary process(env->isolate(), env->process_object());
 
   base::RepeatingCallback<void(base::StringPiece, base::StringPiece,
                                base::StringPiece)>

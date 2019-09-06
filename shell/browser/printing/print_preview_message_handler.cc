@@ -23,6 +23,8 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
+#include "shell/common/api/locker.h"
+
 #include "shell/common/node_includes.h"
 
 using content::BrowserThread;

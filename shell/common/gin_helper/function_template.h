@@ -7,8 +7,8 @@
 
 #include "base/callback.h"
 #include "gin/arguments.h"
-#include "shell/common/error_util.h"
 #include "shell/common/gin_helper/destroyable.h"
+#include "shell/common/gin_helper/error_thrower.h"
 
 // This file is forked from gin/function_template.h with 2 differences:
 // 1. Support for additional types of arguments.
@@ -112,8 +112,8 @@ inline bool GetNextArgument(gin::Arguments* args,
 inline bool GetNextArgument(gin::Arguments* args,
                             int create_flags,
                             bool is_first,
-                            electron::util::ErrorThrower* result) {
-  *result = electron::util::ErrorThrower(args->isolate());
+                            ErrorThrower* result) {
+  *result = ErrorThrower(args->isolate());
   return true;
 }
 

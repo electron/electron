@@ -11,6 +11,7 @@
 #include "shell/browser/ui/message_box.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_dialog_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/message_box_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -59,7 +60,7 @@ void ShowOpenDialogSync(const file_dialog::DialogSettings& settings,
 v8::Local<v8::Promise> ShowOpenDialog(
     const file_dialog::DialogSettings& settings,
     gin::Arguments* args) {
-  electron::util::Promise<mate::Dictionary> promise(args->isolate());
+  electron::util::Promise<gin::Dictionary> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   file_dialog::ShowOpenDialog(settings, std::move(promise));
   return handle;
@@ -75,7 +76,7 @@ void ShowSaveDialogSync(const file_dialog::DialogSettings& settings,
 v8::Local<v8::Promise> ShowSaveDialog(
     const file_dialog::DialogSettings& settings,
     gin::Arguments* args) {
-  electron::util::Promise<mate::Dictionary> promise(args->isolate());
+  electron::util::Promise<gin::Dictionary> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   file_dialog::ShowSaveDialog(settings, std::move(promise));

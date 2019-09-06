@@ -16,7 +16,6 @@
 #include "native_mate/handle.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
 

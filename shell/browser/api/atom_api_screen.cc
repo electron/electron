@@ -8,9 +8,10 @@
 #include <string>
 
 #include "base/bind.h"
-#include "native_mate/dictionary.h"
+#include "gin/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "shell/browser/browser.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/native_mate_converters/gfx_converter.h"
 #include "shell/common/native_mate_converters/native_window_converter.h"
 #include "shell/common/node_includes.h"
@@ -182,8 +183,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("createScreen", base::BindRepeating(&Screen::Create, isolate));
+  gin::Dictionary dict(isolate, exports);
+  dict.Set("createScreen", base::BindRepeating(&Screen::Create));
   dict.Set(
       "Screen",
       Screen::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());

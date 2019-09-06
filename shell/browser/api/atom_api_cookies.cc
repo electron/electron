@@ -20,7 +20,6 @@
 #include "net/cookies/cookie_util.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/cookie_change_notifier.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 

@@ -69,6 +69,23 @@ class Dictionary : public gin::Dictionary {
         .ToChecked();
   }
 
+  template <typename T>
+  bool SetReadOnly(base::StringPiece key, const T& val) {
+    v8::Local<v8::Value> v8_value;
+    if (!gin::TryConvertToV8(isolate(), val, &v8_value))
+      return false;
+    v8::Maybe<bool> result = GetHandle()->DefineOwnProperty(
+        isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key),
+        v8_value, v8::ReadOnly);
+    return !result.IsNothing() && result.FromJust();
+  }
+
+  bool Delete(base::StringPiece key) {
+    v8::Maybe<bool> result = GetHandle()->Delete(
+        isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key));
+    return !result.IsNothing() && result.FromJust();
+  }
+
   v8::Local<v8::Object> GetHandle() const {
     return gin::ConvertToV8(isolate(),
                             *static_cast<const gin::Dictionary*>(this))

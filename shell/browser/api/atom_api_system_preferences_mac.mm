@@ -405,7 +405,7 @@ std::string SystemPreferences::GetAccentColor() {
   return base::SysNSStringToUTF8([sysColor RGBAValue]);
 }
 
-std::string SystemPreferences::GetSystemColor(util::ErrorThrower thrower,
+std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
                                               const std::string& color) {
   NSColor* sysColor = nil;
   if (color == "blue") {
