@@ -118,7 +118,7 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   }
 
   // Set the timeout duration for the notification
-  bool neverTimeout = options.timeoutType == base::ASCIIToUTF16("never");
+  bool neverTimeout = options.timeout_type == base::ASCIIToUTF16("never");
   int timeout = (neverTimeout) ? NOTIFY_EXPIRES_NEVER : NOTIFY_EXPIRES_DEFAULT;
   libnotify_loader_.notify_notification_set_timeout(notification_, timeout);
 

@@ -157,7 +157,7 @@ void Notification::SetHasReply(bool new_has_reply) {
   has_reply_ = new_has_reply;
 }
 
-void Notification::SetTimeoutType(bool new_timeout_type) {
+void Notification::SetTimeoutType(const base::string16& new_timeout_type) {
   timeout_type_ = new_timeout_type;
 }
 
