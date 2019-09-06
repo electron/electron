@@ -91,35 +91,47 @@ $ gclient sync -f
 
 ## Building
 
+There are three different build configurations you can potentially set up - `Debug`, `Testing`, and `Release`.
+
+In your setup, you should replace `OUT_DIR` with your desired build configuration of either `Debug`, `Testing`, and `Release`, and `build_type.gn` correspondingly with `debug.gn`, `testing.gn` or `release.gn`.
+
+On Unix-based machines:
 ```sh
 $ cd src
 $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
 # this next line is needed only if building with sccache
 $ export GN_EXTRA_ARGS="${GN_EXTRA_ARGS} cc_wrapper=\"${PWD}/electron/external_binaries/sccache\""
-$ gn gen out/Debug --args="import(\"//electron/build/args/debug.gn\") $GN_EXTRA_ARGS"
+$ gn gen out/OUT_DIR --args="import(\"//electron/build/args/build_type.gn\") $GN_EXTRA_ARGS"
 ```
 
-Or on Windows (without the optional argument):
+On Windows (without the optional argument):
 ```sh
 $ cd src
 $ set CHROMIUM_BUILDTOOLS_PATH=%cd%\buildtools
-$ gn gen out/Debug --args="import(\"//electron/build/args/debug.gn\")"
+$ gn gen out/OUT_DIR --args="import(\"//electron/build/args/out_dir.gn\")"
 ```
 
-This will generate a build directory `out/Debug` under `src/` with
-debug build configuration. You can replace `Debug` with another name,
+This will generate a build directory `out/OUT_DIR` under `src/` with
+debug build configuration. You can replace `OUT_DIR` with another name,
 but it should be a subdirectory of `out`.
-Also you shouldn't have to run `gn gen` again—if you want to change the
-build arguments, you can run `gn args out/Debug` to bring up an editor.
+
+You shouldn't have to run `gn gen` again — if you want to change the
+build arguments, you can run `gn args out/OUT_DIR` to bring up an editor.
 
 To see the list of available build configuration options, run `gn args
-out/Debug --list`.
+out/OUT_DIR` --list`.
 
 **For generating Debug (aka "component" or "shared") build config of
 Electron:**
 
 ```sh
 $ gn gen out/Debug --args="import(\"//electron/build/args/debug.gn\") $GN_EXTRA_ARGS"
+```
+
+**For generating Testing build config of Electron:**
+
+```sh
+$ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS"
 ```
 
 **For generating Release (aka "non-component" or "static") build config of
@@ -137,29 +149,35 @@ For the debug configuration:
 $ ninja -C out/Debug electron
 ```
 
+For the testing configuration:
+```sh
+$ ninja -C out/Testing electron
+```
+
 For the release configuration:
 ```sh
 $ ninja -C out/Release electron
 ```
 
-This will build all of what was previously 'libchromiumcontent' (i.e. the
-`content/` directory of `chromium` and its dependencies, incl. WebKit and V8),
-so it will take a while.
+This will take a while - you're building the `content/` directory of Chromium as well as all of
+its dependencies, including WebKit and V8.
 
 To speed up subsequent builds, you can use [sccache][sccache]. Add the GN arg
-`cc_wrapper = "sccache"` by running `gn args out/Debug` to bring up an
-editor and adding a line to the end of the file.
+`cc_wrapper = "sccache"` by running `gn args out/OUT_DIR`(where `OUT_DIR` is one of Debug,
+Testing, or Release) to bring up an editor and adding a line to the end of the file.
 
 [sccache]: https://github.com/mozilla/sccache
 
-The built executable will be under `./out/Debug`:
+The built executable will be under `./out/OUT_DIR` (where `OUT_DIR` is one of Debug, Testing,
+or Release):
 
 ```sh
-$ ./out/Debug/Electron.app/Contents/MacOS/Electron
-# or, on Windows
-$ ./out/Debug/electron.exe
-# or, on Linux
-$ ./out/Debug/electron
+# on Mac:
+$ ./out/OUT_DIR/Electron.app/Contents/MacOS/Electron
+# on Windows
+$ ./out/OUT_DIR/electron.exe
+# on Linux
+$ ./out/OUT_DIR/electron
 ```
 
 ### Packaging
@@ -217,7 +235,6 @@ gclient sync -f --with_branch_heads --with_tags
 
 Next, run `gn gen` as above with `target_cpu="arm64"`.
 
-
 ## Tests
 
 To run the tests, you'll first need to build the test modules against the
@@ -225,19 +242,38 @@ same version of Node.js that was built as part of the build process. To
 generate build headers for the modules to compile against, run the following
 under `src/` directory.
 
+Note you need to replace `OUT_DIR` with either `Debug`, `Testing`, or `Release`.
+
 ```sh
-$ ninja -C out/Debug third_party/electron_node:headers
+$ ninja -C out/OUT_DIR third_party/electron_node:headers
+# Install the test modules with the generated headers
+$ (cd electron/spec && npm i --nodedir=../../out/OUT_DIR/gen/node_headers)
 ```
 
-You can now [run the tests](testing.md#unit-tests).
+Then, run Electron with `electron/spec` as the argument:
+
+```sh
+# on Mac:
+$ ./out/OUT_DIR/Electron.app/Contents/MacOS/Electron electron/spec
+# on Windows:
+$ ./out/OUT_DIR/electron.exe electron/spec
+# on Linux:
+$ ./out/OUT_DIR/electron electron/spec
+```
 
 If you're debugging something, it can be helpful to pass some extra flags to
 the Electron binary:
 
 ```sh
-$ ./out/Debug/Electron.app/Contents/MacOS/Electron electron/spec \
+$ ./out/OUT_DIR/Electron.app/Contents/MacOS/Electron electron/spec \
   --ci --enable-logging -g 'BrowserWindow module'
 ```
+
+Some Useful CLI flags:
+* `--ci` - Runs CI locally in the same format as Electron's Continuous Integration setup.
+* `--runners=remote` - This will only run tests for modules in Electron's renderer process.
+* `--runners=main` - This will run only tests for modules in Electron's main process.
+* `--enable-logging` - Adds extra logging to CI output.
 
 ## Sharing the git cache between multiple machines
 
@@ -264,11 +300,13 @@ New-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\Lanmanworkstatio
 ## Troubleshooting
 
 ### Stale locks in the git cache
+
 If `gclient sync` is interrupted while using the git cache, it will leave
 the cache locked. To remove the lock, pass the `--break_repo_locks` argument to
 `gclient sync`.
 
 ### I'm being asked for a username/password for chromium-internal.googlesource.com
+
 If you see a prompt for `Username for 'https://chrome-internal.googlesource.com':` when running `gclient sync` on Windows, it's probably because the `DEPOT_TOOLS_WIN_TOOLCHAIN` environment variable is not set to 0. Open `Control Panel` → `System and Security` → `System` → `Advanced system settings` and add a system variable
 `DEPOT_TOOLS_WIN_TOOLCHAIN` with value `0`.  This tells `depot_tools` to use
 your locally installed version of Visual Studio (by default, `depot_tools` will
