@@ -694,7 +694,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // Intercept file:// protocol to support asar archives.
   if (request.url.SchemeIsFile()) {
     asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
-                              nullptr);
+                              new net::HttpResponseHeaders(""));
     return;
   }
 
