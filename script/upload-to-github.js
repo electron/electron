@@ -53,7 +53,7 @@ function uploadToGitHub () {
         owner: 'electron',
         repo: targetRepo,
         release_id: releaseId,
-        per_page: 100,
+        per_page: 100
       }).then(assets => {
         console.log('Got list of assets for existing release:')
         console.log(JSON.stringify(assets.data, null, '  '))
