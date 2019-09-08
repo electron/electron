@@ -66,6 +66,7 @@ v8::Local<v8::Value> MenuToV8(v8::Isolate* isolate,
                               const content::CustomContextMenuContext& context,
                               const std::vector<content::MenuItem>& menu) {
   std::vector<v8::Local<v8::Value>> v8_menu;
+  v8_menu.reserve(menu.size());
   for (const auto& menu_item : menu)
     v8_menu.push_back(MenuItemToV8(isolate, web_contents, context, menu_item));
   return mate::ConvertToV8(isolate, v8_menu);
