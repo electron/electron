@@ -48,16 +48,14 @@ void ConvertFilters(const Filters& filters,
   }
 
   buffer->reserve(filters.size() * 2);
-  for (size_t i = 0; i < filters.size(); ++i) {
-    const Filter& filter = filters[i];
-
+  for (const Filter& filter : filters) {
     COMDLG_FILTERSPEC spec;
     buffer->push_back(base::UTF8ToWide(filter.first));
     spec.pszName = buffer->back().c_str();
 
     std::vector<std::string> extensions(filter.second);
-    for (size_t j = 0; j < extensions.size(); ++j)
-      extensions[j].insert(0, "*.");
+    for (std::string& extension : extensions)
+      extension.insert(0, "*.");
     buffer->push_back(base::UTF8ToWide(base::JoinString(extensions, ";")));
     spec.pszSpec = buffer->back().c_str();
 

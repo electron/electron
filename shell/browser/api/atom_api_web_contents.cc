@@ -1719,9 +1719,9 @@ void WebContents::Print(mate::Arguments* args) {
   std::vector<mate::Dictionary> page_ranges;
   if (options.Get("pageRanges", &page_ranges)) {
     std::unique_ptr<base::ListValue> page_range_list(new base::ListValue());
-    for (size_t i = 0; i < page_ranges.size(); ++i) {
+    for (auto& range : page_ranges) {
       int from, to;
-      if (page_ranges[i].Get("from", &from) && page_ranges[i].Get("to", &to)) {
+      if (range.Get("from", &from) && range.Get("to", &to)) {
         std::unique_ptr<base::DictionaryValue> range(
             new base::DictionaryValue());
         range->SetInteger(printing::kSettingPageRangeFrom, from);

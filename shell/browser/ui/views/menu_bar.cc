@@ -159,9 +159,8 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
           views::FocusManager::FocusChangeReason::kFocusTraversal);
       return true;
     default: {
-      auto children = GetChildrenInZOrder();
-      for (int i = 0, n = children.size(); i < n; ++i) {
-        auto* button = static_cast<SubmenuButton*>(children[i]);
+      for (auto* child : GetChildrenInZOrder()) {
+        auto* button = static_cast<SubmenuButton*>(child);
         bool shifted = false;
         auto keycode =
             electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
@@ -204,10 +203,9 @@ bool MenuBar::SetPaneFocus(views::View* initial_focus) {
   bool result = views::AccessiblePaneView::SetPaneFocus(initial_focus);
 
   if (result) {
-    auto children = GetChildrenInZOrder();
     std::set<ui::KeyboardCode> reg;
-    for (int i = 0, n = children.size(); i < n; ++i) {
-      auto* button = static_cast<SubmenuButton*>(children[i]);
+    for (auto* child : GetChildrenInZOrder()) {
+      auto* button = static_cast<SubmenuButton*>(child);
       bool shifted = false;
       auto keycode =
           electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
@@ -235,10 +233,9 @@ void MenuBar::RemovePaneFocus() {
   views::AccessiblePaneView::RemovePaneFocus();
   SetAcceleratorVisibility(false);
 
-  auto children = GetChildrenInZOrder();
   std::set<ui::KeyboardCode> unreg;
-  for (int i = 0, n = children.size(); i < n; ++i) {
-    auto* button = static_cast<SubmenuButton*>(children[i]);
+  for (auto* child : GetChildrenInZOrder()) {
+    auto* button = static_cast<SubmenuButton*>(child);
     bool shifted = false;
     auto keycode =
         electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
