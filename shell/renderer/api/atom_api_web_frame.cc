@@ -96,7 +96,7 @@ content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
   return content::RenderFrame::FromWebFrame(frame);
 }
 
-class RenderFrameStatus : public content::RenderFrameObserver {
+class RenderFrameStatus final : public content::RenderFrameObserver {
  public:
   explicit RenderFrameStatus(content::RenderFrame* render_frame)
       : content::RenderFrameObserver(render_frame) {}
@@ -165,7 +165,7 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
   DISALLOW_COPY_AND_ASSIGN(FrameSetSpellChecker);
 };
 
-class SpellCheckerHolder : public content::RenderFrameObserver {
+class SpellCheckerHolder final : public content::RenderFrameObserver {
  public:
   // Find existing holder for the |render_frame|.
   static SpellCheckerHolder* FromRenderFrame(

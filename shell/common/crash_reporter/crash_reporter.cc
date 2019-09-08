@@ -93,8 +93,7 @@ CrashReporter::GetUploadedReports(const base::FilePath& crashes_dir) {
       int report_time = 0;
       if (report_item.size() >= 2 &&
           base::StringToInt(report_item[0], &report_time)) {
-        result.push_back(
-            CrashReporter::UploadReportResult(report_time, report_item[1]));
+        result.emplace_back(report_time, report_item[1]);
       }
     }
   }

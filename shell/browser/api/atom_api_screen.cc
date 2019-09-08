@@ -42,13 +42,13 @@ typename T::iterator FindById(T* container, int id) {
 std::vector<std::string> MetricsToArray(uint32_t metrics) {
   std::vector<std::string> array;
   if (metrics & display::DisplayObserver::DISPLAY_METRIC_BOUNDS)
-    array.push_back("bounds");
+    array.emplace_back("bounds");
   if (metrics & display::DisplayObserver::DISPLAY_METRIC_WORK_AREA)
-    array.push_back("workArea");
+    array.emplace_back("workArea");
   if (metrics & display::DisplayObserver::DISPLAY_METRIC_DEVICE_SCALE_FACTOR)
-    array.push_back("scaleFactor");
+    array.emplace_back("scaleFactor");
   if (metrics & display::DisplayObserver::DISPLAY_METRIC_ROTATION)
-    array.push_back("rotation");
+    array.emplace_back("rotation");
   return array;
 }
 
