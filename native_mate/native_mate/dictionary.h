@@ -56,38 +56,12 @@ class Dictionary {
   }
 
   template <typename T>
-  bool GetHidden(base::StringPiece key, T* out) const {
-    v8::Local<v8::Context> context = isolate_->GetCurrentContext();
-    v8::Local<v8::Private> privateKey =
-        v8::Private::ForApi(isolate_, StringToV8(isolate_, key));
-    v8::Local<v8::Value> value;
-    v8::Maybe<bool> result = GetHandle()->HasPrivate(context, privateKey);
-    if (internal::IsTrue(result) &&
-        GetHandle()->GetPrivate(context, privateKey).ToLocal(&value))
-      return ConvertFromV8(isolate_, value, out);
-    return false;
-  }
-
-  template <typename T>
   bool Set(base::StringPiece key, const T& val) {
     v8::Local<v8::Value> v8_value;
     if (!TryConvertToV8(isolate_, val, &v8_value))
       return false;
     v8::Maybe<bool> result = GetHandle()->Set(
         isolate_->GetCurrentContext(), StringToV8(isolate_, key), v8_value);
-    return !result.IsNothing() && result.FromJust();
-  }
-
-  template <typename T>
-  bool SetHidden(base::StringPiece key, T val) {
-    v8::Local<v8::Value> v8_value;
-    if (!TryConvertToV8(isolate_, val, &v8_value))
-      return false;
-    v8::Local<v8::Context> context = isolate_->GetCurrentContext();
-    v8::Local<v8::Private> privateKey =
-        v8::Private::ForApi(isolate_, StringToV8(isolate_, key));
-    v8::Maybe<bool> result =
-        GetHandle()->SetPrivate(context, privateKey, v8_value);
     return !result.IsNothing() && result.FromJust();
   }
 

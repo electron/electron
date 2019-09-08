@@ -298,11 +298,12 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
   return true;
 }
 
-void OpenDialogCompletion(int chosen,
-                          NSOpenPanel* dialog,
-                          bool security_scoped_bookmarks,
-                          electron::util::Promise<gin::Dictionary> promise) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
+void OpenDialogCompletion(
+    int chosen,
+    NSOpenPanel* dialog,
+    bool security_scoped_bookmarks,
+    electron::util::Promise<gin_helper::Dictionary> promise) {
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSFileHandlingPanelCancelButton) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
@@ -330,7 +331,7 @@ void OpenDialogCompletion(int chosen,
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise<gin::Dictionary> promise) {
+                    electron::util::Promise<gin_helper::Dictionary> promise) {
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
   SetupDialog(dialog, settings);
@@ -340,7 +341,8 @@ void ShowOpenDialog(const DialogSettings& settings,
   // and pass it to the completion handler.
   bool security_scoped_bookmarks = settings.security_scoped_bookmarks;
 
-  __block electron::util::Promise<gin::Dictionary> p = std::move(promise);
+  __block electron::util::Promise<gin_helper::Dictionary> p =
+      std::move(promise);
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {
@@ -375,11 +377,12 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   return true;
 }
 
-void SaveDialogCompletion(int chosen,
-                          NSSavePanel* dialog,
-                          bool security_scoped_bookmarks,
-                          electron::util::Promise<gin::Dictionary> promise) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
+void SaveDialogCompletion(
+    int chosen,
+    NSSavePanel* dialog,
+    bool security_scoped_bookmarks,
+    electron::util::Promise<gin_helper::Dictionary> promise) {
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSFileHandlingPanelCancelButton) {
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
@@ -402,7 +405,7 @@ void SaveDialogCompletion(int chosen,
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise<gin::Dictionary> promise) {
+                    electron::util::Promise<gin_helper::Dictionary> promise) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
@@ -413,7 +416,8 @@ void ShowSaveDialog(const DialogSettings& settings,
   // and pass it to the completion handler.
   bool security_scoped_bookmarks = settings.security_scoped_bookmarks;
 
-  __block electron::util::Promise<gin::Dictionary> p = std::move(promise);
+  __block electron::util::Promise<gin_helper::Dictionary> p =
+      std::move(promise);
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {

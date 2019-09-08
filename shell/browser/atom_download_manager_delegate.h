@@ -10,6 +10,7 @@
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "shell/browser/ui/file_dialog.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace content {
 class DownloadManager;
@@ -48,7 +49,7 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
   void OnDownloadSaveDialogDone(
       uint32_t download_id,
       const content::DownloadTargetCallback& download_callback,
-      gin::Dictionary result);
+      gin_helper::Dictionary result);
 
   content::DownloadManager* download_manager_;
   base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;

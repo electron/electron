@@ -138,15 +138,17 @@ class FileChooserDialog {
     gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
   }
 
-  void RunSaveAsynchronous(electron::util::Promise<gin::Dictionary> promise) {
-    save_promise_.reset(
-        new electron::util::Promise<gin::Dictionary>(std::move(promise)));
+  void RunSaveAsynchronous(
+      electron::util::Promise<gin_helper::Dictionary> promise) {
+    save_promise_.reset(new electron::util::Promise<gin_helper::Dictionary>(
+        std::move(promise)));
     RunAsynchronous();
   }
 
-  void RunOpenAsynchronous(electron::util::Promise<gin::Dictionary> promise) {
-    open_promise_.reset(
-        new electron::util::Promise<gin::Dictionary>(std::move(promise)));
+  void RunOpenAsynchronous(
+      electron::util::Promise<gin_helper::Dictionary> promise) {
+    open_promise_.reset(new electron::util::Promise<gin_helper::Dictionary>(
+        std::move(promise)));
     RunAsynchronous();
   }
 
@@ -187,8 +189,10 @@ class FileChooserDialog {
   GtkWidget* preview_;
 
   Filters filters_;
-  std::unique_ptr<electron::util::Promise<gin::Dictionary>> save_promise_;
-  std::unique_ptr<electron::util::Promise<gin::Dictionary>> open_promise_;
+  std::unique_ptr<electron::util::Promise<gin_helper::Dictionary>>
+      save_promise_;
+  std::unique_ptr<electron::util::Promise<gin_helper::Dictionary>>
+      open_promise_;
 
   // Callback for when we update the preview for the selection.
   CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkWidget*);
@@ -199,7 +203,7 @@ class FileChooserDialog {
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
   gtk_widget_hide(dialog_);
   if (save_promise_) {
-    gin::Dictionary dict =
+    gin_helper::Dictionary dict =
         gin::Dictionary::CreateEmpty(save_promise_->isolate());
     if (response == GTK_RESPONSE_ACCEPT) {
       dict.Set("canceled", false);
@@ -210,7 +214,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
     }
     save_promise_->ResolveWithGin(dict);
   } else if (open_promise_) {
-    gin::Dictionary dict =
+    gin_helper::Dictionary dict =
         gin::Dictionary::CreateEmpty(open_promise_->isolate());
     if (response == GTK_RESPONSE_ACCEPT) {
       dict.Set("canceled", false);
@@ -295,7 +299,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise<gin::Dictionary> promise) {
+                    electron::util::Promise<gin_helper::Dictionary> promise) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   if (settings.properties & OPEN_DIALOG_OPEN_DIRECTORY)
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
@@ -318,7 +322,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise<gin::Dictionary> promise) {
+                    electron::util::Promise<gin_helper::Dictionary> promise) {
   FileChooserDialog* save_dialog =
       new FileChooserDialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
   save_dialog->RunSaveAsynchronous(std::move(promise));

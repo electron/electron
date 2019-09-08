@@ -43,6 +43,7 @@
 #include "shell/browser/relauncher.h"
 #include "shell/common/application_info.h"
 #include "shell/common/atom_command_line.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
@@ -1207,8 +1208,11 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     mate::Dictionary pid_dict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary cpu_dict = mate::Dictionary::CreateEmpty(isolate);
 
-    pid_dict.SetHidden("simple", true);
-    cpu_dict.SetHidden("simple", true);
+    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
+    gin_helper::Dictionary(isolate, pid_dict.GetHandle())
+        .SetHidden("simple", true);
+    gin_helper::Dictionary(isolate, cpu_dict.GetHandle())
+        .SetHidden("simple", true);
 
     cpu_dict.Set(
         "percentCPUUsage",
@@ -1236,7 +1240,9 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     auto memory_info = process_metric.second->GetMemoryInfo();
 
     mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
-    memory_dict.SetHidden("simple", true);
+    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
+    gin_helper::Dictionary(isolate, memory_dict.GetHandle())
+        .SetHidden("simple", true);
     memory_dict.Set("workingSetSize",
                     static_cast<double>(memory_info.working_set_size >> 10));
     memory_dict.Set(
