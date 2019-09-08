@@ -248,7 +248,7 @@ struct Converter<electron::api::WebContents::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::api::WebContents::Type val) {
     using Type = electron::api::WebContents::Type;
-    std::string type = "";
+    std::string type;
     switch (val) {
       case Type::BACKGROUND_PAGE:
         type = "backgroundPage";
