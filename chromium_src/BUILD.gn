@@ -135,10 +135,6 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/speech/tts_controller_delegate_impl.cc",
       "//chrome/browser/speech/tts_controller_delegate_impl.h",
-      "//chrome/browser/speech/tts_message_filter.cc",
-      "//chrome/browser/speech/tts_message_filter.h",
-      "//chrome/renderer/tts_dispatcher.cc",
-      "//chrome/renderer/tts_dispatcher.h",
     ]
   }
 
