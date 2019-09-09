@@ -73,7 +73,7 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
 void CertificateManagerModel::Create(content::BrowserContext* browser_context,
                                      const CreationCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&CertificateManagerModel::GetCertDBOnIOThread,
                      browser_context->GetResourceContext(), callback));
@@ -146,7 +146,7 @@ void CertificateManagerModel::DidGetCertDBOnIOThread(
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   bool is_user_db_available = !!cert_db->GetPublicSlot();
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(&CertificateManagerModel::DidGetCertDBOnUIThread, cert_db,
                      is_user_db_available, callback));

@@ -130,10 +130,9 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     button_to_open_ = button;
     // Switching menu asyncnously to avoid crash.
     if (!switch_in_progress) {
-      base::PostTaskWithTraits(
-          FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(&views::MenuRunner::Cancel,
-                         base::Unretained(menu_runner_.get())));
+      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                     base::BindOnce(&views::MenuRunner::Cancel,
+                                    base::Unretained(menu_runner_.get())));
     }
   }
 

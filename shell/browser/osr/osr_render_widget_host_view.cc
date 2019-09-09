@@ -846,7 +846,7 @@ void OffScreenRenderWidgetHostView::ReleaseResize() {
   hold_resize_ = false;
   if (pending_resize_) {
     pending_resize_ = false;
-    base::PostTaskWithTraits(
+    base::PostTask(
         FROM_HERE, {content::BrowserThread::UI},
         base::BindOnce(
             &OffScreenRenderWidgetHostView::SynchronizeVisualProperties,
@@ -951,7 +951,7 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
         // Scrolling outside of the popup widget so destroy it.
         // Execute asynchronously to avoid deleting the widget from inside some
         // other callback.
-        base::PostTaskWithTraits(
+        base::PostTask(
             FROM_HERE, {content::BrowserThread::UI},
             base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));

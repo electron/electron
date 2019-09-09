@@ -639,7 +639,7 @@ void Session::Preconnect(const mate::Dictionary& options,
   }
 
   DCHECK_GT(num_sockets_to_preconnect, 0);
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&StartPreconnectOnUI, base::RetainedRef(browser_context_),
                      url, num_sockets_to_preconnect));

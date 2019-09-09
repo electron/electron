@@ -174,7 +174,7 @@ AtomBrowserClient* AtomBrowserClient::Get() {
 // static
 void AtomBrowserClient::SetApplicationLocale(const std::string& locale) {
   if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
-      !base::PostTaskWithTraits(
+      !base::PostTask(
           FROM_HERE, {BrowserThread::IO},
           base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
     g_io_thread_application_locale.Get() = locale;
@@ -856,10 +856,9 @@ bool AtomBrowserClient::HandleExternalProtocol(
     ui::PageTransition page_transition,
     bool has_user_gesture,
     network::mojom::URLLoaderFactoryPtr* out_factory) {
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::UI},
-      base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,
-                     has_user_gesture));
+  base::PostTask(FROM_HERE, {BrowserThread::UI},
+                 base::BindOnce(&HandleExternalProtocolInUI, url,
+                                web_contents_getter, has_user_gesture));
   return true;
 }
 
