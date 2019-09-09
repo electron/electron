@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 67d9773c8e98e28b637f11322f06c6725f057683..d51273d4bd07b1ca51383d7e5244d43463f802ae 100644
+index 21e7f3bf0c6eb2ae005111709ff432505c41fc1f..c59bde04d9cc7e4c974efd244bc4e3718ed1de29 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3955,6 +3955,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3977,6 +3977,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -17,10 +17,10 @@ index 67d9773c8e98e28b637f11322f06c6725f057683..d51273d4bd07b1ca51383d7e5244d434
            &no_javascript_access);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index e227f780d720a80a13699f475757142571094cd1..6984f69e6f9a0d3058b0054df8a3aa9d46f14dbd 100644
+index a99a8f3d7aa9b1fabc6463768b4646b1612cfc72..99e377b69634660db6600b8032601f294142be18 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -299,6 +299,10 @@ struct CreateNewWindowParams {
+@@ -307,6 +307,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
@@ -66,7 +66,7 @@ index dcb77c78114699a0017a305f140f4322d271ff83..aeb22701d036c54cb495540847e333b3
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index cc63d162b378f328e1799d69c6762363f3227457..2e8eea0451b16125a75b2b3dc14be807e4413070 100644
+index 36012ef78a9ef8747087848e69a853df02243659..21ef572e00cdbf89e0439dbd5f6409cf1251ea0c 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -73,6 +73,7 @@

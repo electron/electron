@@ -5,7 +5,7 @@ Subject: web_contents.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f504a515efe294355de2c436f8dce4a677525346..773139f63090ee0ccc7578040093e5cc5c0e2551 100644
+index 6ab34208d43761a3048bd4a0825707d904195a54..36b36c37bc8e2c5c8669848f3ba171203b4cfc0a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2137,6 +2137,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
@@ -92,10 +92,10 @@ index ecaf30bcb7b916a92a69641dd7b96a3633d407c0..0af625928ca6227a21cd4263a14a42b7
  
  RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForChildWidget(
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index a8b79ba4e6604d829939fc960fae3b20210b70cc..118728ee9144bbf67695ec780be11611ab5723c5 100644
+index b5ff1cc5d6f60d22839b9bc06ab4e2c55d9cc6c7..d22f0dcefa2a8ccb13d4d993bc37241beb664757 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -77,9 +77,12 @@ class BrowserPluginGuestDelegate;
+@@ -78,9 +78,12 @@ class BrowserPluginGuestDelegate;
  class InterstitialPage;
  class RenderFrameHost;
  class RenderViewHost;
@@ -108,7 +108,7 @@ index a8b79ba4e6604d829939fc960fae3b20210b70cc..118728ee9144bbf67695ec780be11611
  struct CustomContextMenuContext;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -215,6 +218,10 @@ class WebContents : public PageNavigator,
+@@ -216,6 +219,10 @@ class WebContents : public PageNavigator,
        kInitializeAndWarmupRendererProcess,
      } desired_renderer_state;
  

@@ -42,7 +42,7 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index ba10b76c4cdec0137aeb39c7edbfed723ed7426f..eadf6a06d22a345776fd832827ba9b3d44738ce4 100644
+index eecfdbd9aa067f912c0d1c6feb6217b5fb6efa8a..d7fed5faea2a1096efc299bd222738d453dec3a7 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2228,6 +2228,21 @@ bool RenderFrameHostManager::InitRenderView(
@@ -67,7 +67,7 @@ index ba10b76c4cdec0137aeb39c7edbfed723ed7426f..eadf6a06d22a345776fd832827ba9b3d
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2265,6 +2280,59 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2272,6 +2287,59 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
@@ -127,7 +127,7 @@ index ba10b76c4cdec0137aeb39c7edbfed723ed7426f..eadf6a06d22a345776fd832827ba9b3d
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2276,23 +2344,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2283,23 +2351,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
