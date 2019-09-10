@@ -54,7 +54,7 @@ def upload_node(bucket, access_key, secret_key, version):
       iojs_lib = os.path.join(DIST_DIR, 'win-x86', 'iojs.lib')
       v4_node_lib = os.path.join(DIST_DIR, 'win-x86', 'node.lib')
     elif get_target_arch() == 'arm64':
-      node_lib = os.path.join(DIST_DIR, 'node.lib')
+      node_lib = os.path.join(DIST_DIR, 'arm64', 'node.lib')
       iojs_lib = os.path.join(DIST_DIR, 'win-arm64', 'iojs.lib')
       v4_node_lib = os.path.join(DIST_DIR, 'win-arm64', 'node.lib')   
     else:
