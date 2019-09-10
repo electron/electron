@@ -20,6 +20,7 @@
 #include "net/base/mime_util.h"
 #include "net/http/http_byte_range.h"
 #include "net/http/http_util.h"
+#include "services/network/public/cpp/resource_response.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
 
