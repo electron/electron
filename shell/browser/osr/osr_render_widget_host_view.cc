@@ -248,11 +248,11 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   ui::ContextFactoryPrivate* context_factory_private =
       factory->GetContextFactoryPrivate();
-  compositor_.reset(
-      new ui::Compositor(context_factory_private->AllocateFrameSinkId(),
-                         content::GetContextFactory(), context_factory_private,
-                         base::ThreadTaskRunnerHandle::Get(),
-                         false /* enable_pixel_canvas */, this));
+  compositor_.reset(new ui::Compositor(
+      context_factory_private->AllocateFrameSinkId(),
+      content::GetContextFactory(), context_factory_private,
+      base::ThreadTaskRunnerHandle::Get(), false /* enable_pixel_canvas */,
+      false /* use_external_begin_frame_control */));
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetRootLayer(root_layer_.get());
 
@@ -317,16 +317,8 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(
   begin_frame_number_++;
 
   compositor_->context_factory_private()->IssueExternalBeginFrame(
-      compositor_.get(), begin_frame_args);
-}
-
-void OffScreenRenderWidgetHostView::OnDisplayDidFinishFrame(
-    const viz::BeginFrameAck& ack) {}
-
-void OffScreenRenderWidgetHostView::OnNeedsExternalBeginFrames(
-    bool needs_begin_frames) {
-  SetupFrameRate(true);
-  begin_frame_timer_->SetActive(needs_begin_frames);
+      compositor_.get(), begin_frame_args, /* force */ true,
+      base::NullCallback());
 }
 
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
