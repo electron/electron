@@ -96,7 +96,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetBackgroundColor(SkColor color) override;
   base::Optional<SkColor> GetBackgroundColor() override;
   void UpdateBackgroundColor() override;
-  bool LockMouse(void) override;
+  bool LockMouse(bool request_unadjusted_movement) override;
   void UnlockMouse(void) override;
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
   void SetNeedsBeginFrames(bool needs_begin_frames) override;

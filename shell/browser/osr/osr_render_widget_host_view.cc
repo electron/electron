@@ -438,7 +438,8 @@ gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() {
 
 void OffScreenRenderWidgetHostView::SetInsets(const gfx::Insets& insets) {}
 
-bool OffScreenRenderWidgetHostView::LockMouse() {
+bool OffScreenRenderWidgetHostView::LockMouse(
+    bool request_unadjusted_movement) {
   return false;
 }
 
