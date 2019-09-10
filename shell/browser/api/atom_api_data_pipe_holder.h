@@ -9,6 +9,7 @@
 
 #include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/cpp/data_element.h"
 #include "services/network/public/mojom/data_pipe_getter.mojom.h"
 
@@ -41,7 +42,7 @@ class DataPipeHolder : public gin::Wrappable<DataPipeHolder> {
   ~DataPipeHolder() override;
 
   std::string id_;
-  network::mojom::DataPipeGetterPtr data_pipe_;
+  mojo::Remote<network::mojom::DataPipeGetter> data_pipe_;
 
   DISALLOW_COPY_AND_ASSIGN(DataPipeHolder);
 };

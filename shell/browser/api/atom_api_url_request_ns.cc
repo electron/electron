@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -112,9 +113,10 @@ class MultipartDataPipeGetter : public UploadDataPipeGetter,
   ~MultipartDataPipeGetter() override = default;
 
   void AttachToRequestBody(network::ResourceRequestBody* body) override {
-    network::mojom::DataPipeGetterPtr data_pipe_getter;
-    binding_set_.AddBinding(this, mojo::MakeRequest(&data_pipe_getter));
-    body->AppendDataPipe(std::move(data_pipe_getter));
+    mojo::PendingRemote<network::mojom::DataPipeGetter> data_pipe_getter_remote;
+    receivers_.Add(this,
+                   data_pipe_getter_remote.InitWithNewPipeAndPassReceiver());
+    body->AppendDataPipe(std::move(data_pipe_getter_remote));
   }
 
  private:
@@ -125,11 +127,12 @@ class MultipartDataPipeGetter : public UploadDataPipeGetter,
     SetPipe(std::move(pipe));
   }
 
-  void Clone(network::mojom::DataPipeGetterRequest request) override {
-    binding_set_.AddBinding(this, std::move(request));
+  void Clone(
+      mojo::PendingReceiver<network::mojom::DataPipeGetter> receiver) override {
+    receivers_.Add(this, std::move(receiver));
   }
 
-  mojo::BindingSet<network::mojom::DataPipeGetter> binding_set_;
+  mojo::ReceiverSet<network::mojom::DataPipeGetter> receivers_;
 };
 
 // Streaming chunked data to NetworkService.
