@@ -187,7 +187,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::ResumeReadingBodyFromNet() {
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
-    const network::ResourceResponseHead& head) {
+    network::mojom::URLResponseHeadPtr head) {
   if (current_request_uses_header_client_) {
     // Use the headers we got from OnHeadersReceived as that'll contain
     // Set-Cookie if it existed.
@@ -205,7 +205,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveRedirect(
     const net::RedirectInfo& redirect_info,
-    const network::ResourceResponseHead& head) {
+    network::mojom::URLResponseHeadPtr head) {
   // Note: In Electron we don't check IsRedirectSafe.
 
   if (current_request_uses_header_client_) {
