@@ -10,13 +10,18 @@
 
 namespace CustomMediaStream {
 
+// TODO: Make nested to VideoFrame
 enum class Plane { Y, U, V };
 
+// TODO: Make nested to VideoFrame
 struct Format {
   unsigned width;
   unsigned height;
 };
 
+// Frame interface for non-GC frames
+// (When accessing the API from C++)
+// TODO: Refactor to a class
 struct VideoFrame {
   virtual Format format() = 0;
   virtual unsigned stride(Plane) = 0;
@@ -28,6 +33,9 @@ struct Timestamp {
   double milliseconds;
 };
 
+// Control object interface for non-GC frames
+// (When accessing the API from C++)
+// TODO: Rename to VideoFrameControl ???
 struct VideoFrameCallback {
   virtual VideoFrame* allocateFrame(Timestamp ts,
                                     Format const* format = nullptr) = 0;
@@ -35,6 +43,8 @@ struct VideoFrameCallback {
   virtual void releaseFrame(VideoFrame* frame) = 0;
 };
 
+// Retrieves VideoFrameCallback pointer from an internal field of an object
+// TODO: Why inline? move implementation to .cc
 inline VideoFrameCallback* unwrapCallback(v8::Local<v8::Value> value) {
   if (!value->IsObject())
     return nullptr;
@@ -51,6 +61,9 @@ namespace detail {
 
 using VideoFrameCallbackHolderPtr = std::shared_ptr<VideoFrameCallbackHolder>;
 
+// Custom deleter for VideoFrame
+// TODO: Refactor to a class, groom, rename to VideoFrameDeleter
+// TODO: Rename callback_ to holder_
 struct VideoFrameReleaser {
   void operator()(VideoFrame* frame) const;
   // private:
@@ -62,6 +75,7 @@ struct VideoFrameReleaser {
   VideoFrameCallbackHolderPtr callback_;
 };
 
+// TODO: Why inline? move implementation to .cc
 inline VideoFrameReleaser::VideoFrameReleaser(VideoFrameCallbackHolderPtr cb)
     : callback_(cb) {}
 inline VideoFrameReleaser::VideoFrameReleaser(VideoFrameReleaser const&) =
@@ -70,6 +84,11 @@ inline VideoFrameReleaser::~VideoFrameReleaser() = default;
 
 }  // namespace detail
 
+// Helper object that wraps VideoFrameCallback functionality
+// Simplifies allocation and deletion of non-GC frames
+// in a safe manner.
+// Holds a reference to the VideoFrameCallback
+// TODO: Refactor to a class, groom, make non-copyable
 struct VideoFrameCallbackHolder
     : std::enable_shared_from_this<VideoFrameCallbackHolder> {
   using FramePtr = std::unique_ptr<VideoFrame, detail::VideoFrameReleaser>;
@@ -79,6 +98,7 @@ struct VideoFrameCallbackHolder
             detail::VideoFrameReleaser(shared_from_this())};
   }
 
+  // TODO: Move implementations to .cc
   FramePtr allocate(Timestamp ts, Format const& f) { return allocate(ts, &f); }
   FramePtr allocate(Timestamp ts) { return allocate(ts, nullptr); }
 
@@ -86,6 +106,7 @@ struct VideoFrameCallbackHolder
     callback_->queueFrame(ts, ptr.release());
   }
 
+  // Creates the holder based on VideoFrameCallback object
   static std::shared_ptr<VideoFrameCallbackHolder> unwrap(
       v8::Isolate* isolate,
       v8::Local<v8::Value> value) {
@@ -108,6 +129,7 @@ struct VideoFrameCallbackHolder
   VideoFrameCallback* callback_;
 };
 
+// TODO: Why are these inline? groom, move to .cc
 inline VideoFrameCallbackHolder::VideoFrameCallbackHolder(
     v8::Isolate* isolate,
     v8::Local<v8::Object> wrapper,
@@ -117,6 +139,7 @@ inline VideoFrameCallbackHolder::VideoFrameCallbackHolder(
 inline VideoFrameCallbackHolder::~VideoFrameCallbackHolder() = default;
 
 namespace detail {
+// TODO: WHy inline? move to .cc
 inline void VideoFrameReleaser::operator()(VideoFrame* frame) const {
   callback_->callback_->releaseFrame(frame);
 }
