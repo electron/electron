@@ -1,4 +1,4 @@
-import { Readable, PassThrough, Duplex, Transform } from 'stream';
+import { Readable, PassThrough, Duplex, Transform } from 'stream'
 
 type ReadableStreamLike = Readable | Duplex | Transform | PassThrough
 type Base64String = string
@@ -8,10 +8,11 @@ export function isReadableStream (value: ReadableStreamLike): boolean {
 }
 
 export function readableStreamToMeta (value: ReadableStreamLike): Base64String {
-  let buffer = Buffer.from('');
-  let chunk;
-  while (chunk = value.read()) {
+  let buffer = Buffer.from('')
+  let chunk = value.read()
+  while (chunk) {
     buffer = Buffer.concat([buffer, chunk])
+    chunk = value.read()
   }
   return buffer.toString('base64')
 }
