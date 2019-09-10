@@ -77,7 +77,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
   info_.emplace(extensions::WebRequestInfoInitParams(
       request_id_, factory_->render_process_id_, request_.render_frame_id,
       nullptr, routing_id_, request_for_info, false,
-      !(options_ & network::mojom::kURLLoadOptionSynchronous)));
+      !(options_ & network::mojom::kURLLoadOptionSynchronous),
+      factory_->IsForServiceWorkerScript()));
 
   current_request_uses_header_client_ =
       factory_->url_loader_header_client_receiver_.is_bound() &&
@@ -654,10 +655,12 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     network::mojom::URLLoaderFactoryRequest loader_request,
     network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
-        header_client_receiver)
+        header_client_receiver,
+    content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
     : web_request_api_(web_request_api),
       intercepted_handlers_(intercepted_handlers),
-      render_process_id_(render_process_id) {
+      render_process_id_(render_process_id),
+      loader_factory_type_(loader_factory_type) {
   target_factory_.Bind(std::move(target_factory_info));
   target_factory_.set_connection_error_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::OnTargetFactoryError, base::Unretained(this)));
@@ -738,6 +741,11 @@ void ProxyingURLLoaderFactory::OnLoaderCreated(
   auto request_it = requests_.find(it->second);
   DCHECK(request_it != requests_.end());
   request_it->second->OnLoaderCreated(std::move(receiver));
+}
+
+bool ProxyingURLLoaderFactory::IsForServiceWorkerScript() const {
+  return loader_factory_type_ == content::ContentBrowserClient::
+                                     URLLoaderFactoryType::kServiceWorkerScript;
 }
 
 void ProxyingURLLoaderFactory::OnTargetFactoryError() {

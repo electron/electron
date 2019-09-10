@@ -1000,7 +1000,7 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   new ProxyingURLLoaderFactory(
       web_request.get(), protocol->intercept_handlers(), render_process_id,
       std::move(proxied_receiver), std::move(target_factory_info),
-      std::move(header_client_receiver));
+      std::move(header_client_receiver), type);
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
