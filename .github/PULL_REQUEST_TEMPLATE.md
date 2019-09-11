@@ -18,4 +18,4 @@ Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTIN
 
 #### Release Notes
 
-Notes: <!-- Please add a one-line description for app developers to read in the release notes, or `no-notes` if no notes relevant to app developers. Examples and help on special cases: https://github.com/electron/clerk/blob/master/README.md#examples -->
+Notes: <!-- Please add a one-line description for app developers to read in the release notes, or `Notes: none` if no notes relevant to app developers. Examples and help on special cases: https://github.com/electron/clerk/blob/master/README.md#examples -->
