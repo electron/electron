@@ -743,13 +743,12 @@ AtomBrowserClient::OverrideSystemLocationProvider() {
 #endif
 }
 
-network::mojom::NetworkContextPtr AtomBrowserClient::CreateNetworkContext(
+mojo::Remote<network::mojom::NetworkContext>
+AtomBrowserClient::CreateNetworkContext(
     content::BrowserContext* browser_context,
     bool /*in_memory*/,
     const base::FilePath& /*relative_partition_path*/) {
-  if (!browser_context)
-    return nullptr;
-
+  DCHECK(browser_context);
   return NetworkContextServiceFactory::GetForContext(browser_context)
       ->CreateNetworkContext();
 }

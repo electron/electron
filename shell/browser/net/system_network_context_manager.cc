@@ -111,7 +111,7 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
 };
 
 network::mojom::NetworkContext* SystemNetworkContextManager::GetContext() {
-  if (!network_context_ || network_context_.encountered_error()) {
+  if (!network_context_ || !network_context_.is_connected()) {
     // This should call into OnNetworkServiceCreated(), which will re-create
     // the network service, if needed. There's a chance that it won't be
     // invoked, if the NetworkContext has encountered an error but the
@@ -201,8 +201,10 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
 
   // The system NetworkContext must be created first, since it sets
   // |primary_network_context| to true.
-  network_service->CreateNetworkContext(MakeRequest(&network_context_),
-                                        CreateNetworkContextParams());
+  network_context_.reset();
+  network_service->CreateNetworkContext(
+      network_context_.BindNewPipeAndPassReceiver(),
+      CreateNetworkContextParams());
 }
 
 network::mojom::NetworkContextParamsPtr
