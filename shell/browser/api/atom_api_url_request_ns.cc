@@ -144,9 +144,11 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
   ~ChunkedDataPipeGetter() override = default;
 
   void AttachToRequestBody(network::ResourceRequestBody* body) override {
-    network::mojom::ChunkedDataPipeGetterPtr data_pipe_getter;
-    binding_set_.AddBinding(this, mojo::MakeRequest(&data_pipe_getter));
-    body->SetToChunkedDataPipe(std::move(data_pipe_getter));
+    mojo::PendingRemote<network::mojom::ChunkedDataPipeGetter>
+        data_pipe_getter_remote;
+    receiver_set_.Add(this,
+                      data_pipe_getter_remote.InitWithNewPipeAndPassReceiver());
+    body->SetToChunkedDataPipe(std::move(data_pipe_getter_remote));
   }
 
  private:
@@ -159,7 +161,7 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
     SetPipe(std::move(pipe));
   }
 
-  mojo::BindingSet<network::mojom::ChunkedDataPipeGetter> binding_set_;
+  mojo::ReceiverSet<network::mojom::ChunkedDataPipeGetter> receiver_set_;
 };
 
 URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
