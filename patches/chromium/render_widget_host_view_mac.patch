@@ -5,10 +5,10 @@ Subject: render_widget_host_view_mac.patch
 
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index e692286b9c15cbbde03f7dff3f98f54c3f0e9365..9113fb00d144d6cee789f608f8b3761b93ca7ae8 100644
+index d8de080eb6a30f16282661941b9a95da4fa41d70..326c5a13f6924643c699ca3cc2f98262a21fd907 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -152,6 +152,11 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -153,6 +153,11 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -20,7 +20,7 @@ index e692286b9c15cbbde03f7dff3f98f54c3f0e9365..9113fb00d144d6cee789f608f8b3761b
  // These are not documented, so use only after checking -respondsToSelector:.
  @interface NSApplication (UndocumentedSpeechMethods)
  - (void)speakString:(NSString*)string;
-@@ -571,6 +576,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
+@@ -572,6 +577,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -66,7 +66,7 @@ index e692286b9c15cbbde03f7dff3f98f54c3f0e9365..9113fb00d144d6cee789f608f8b3761b
    return validAttributesForMarkedText_.get();
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 7a3503fc687bc1877d8940cf6a3ec1bbeca83716..9f36053c15a9895677c791e1578d16bc867c4265 100644
+index ed9ea51809ec7f06b246b933281dc22b9b0055f7..32f3f2cceb742065db8b52a9f6aa814cfc30f955 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -63,6 +63,7 @@

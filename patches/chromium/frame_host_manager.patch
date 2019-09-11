@@ -186,7 +186,7 @@ index 1edb9fd6b0c383f291735dd1a952fcb7b17cc87f..23967f040eb346be265faa2a92562e1f
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index d51d21fbd09cfa2c017f85ab96c1156a6a4f74f9..5459d566e37866f247452a7f88d884760ec5e608 100644
+index df6f9848ba8ae1e8e7c6e5415b3a4c2efaf6f055..d032d13c4395fc00ccc548d6241b298965b23d20 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -44,6 +44,21 @@
@@ -212,10 +212,10 @@ index d51d21fbd09cfa2c017f85ab96c1156a6a4f74f9..5459d566e37866f247452a7f88d88476
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index aeb22701d036c54cb495540847e333b380350e8a..189cfd7b916e26e7a3f72e867f22471a87d0bcab 100644
+index 7578110f13b23e9585a181bba3e73a3996f60faf..cbb1eed3af4e8b56c07786a5f35525e5dee629f4 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -205,8 +205,45 @@ struct WebPreferences;
+@@ -206,8 +206,45 @@ struct WebPreferences;
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:

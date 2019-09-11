@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index ea0dfd54283746e84f2a14108d50b5203bc6f6d8..b1d82cb13c78b1a9e0049ba73fc36aa1bfdd874b 100644
+index 18d99c39b5ec1ba5f8fdd808139f0b5a2de53f60..f03a6f00b9dcc044ef151466f6e16c983f73ce69 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -95,6 +95,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -203,10 +203,10 @@ index 8c67161c4a4b970fb9393a9a73a239b5aecb95cf..99ea5a9832aca67030e92e4761209872
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 8ecb551119ccdbe8e8582c7005824073187cb600..f31208b13bf2e30656bf5696f507e3ac2cb25229 100644
+index d38084e36ab82c3c91f7ab5504557707eedbb2fc..ede28387d3fa868c61e291202ab9e8f95f7aa870 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -193,6 +193,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -194,6 +194,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -215,7 +215,7 @@ index 8ecb551119ccdbe8e8582c7005824073187cb600..f31208b13bf2e30656bf5696f507e3ac
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index b1ac0d40ea13fe34e2d78cc311c274dee5fc1117..81de889f27faa1df5b265bb4ebee7eb850da72dd 100644
+index 409b6af78a603d2d2a432988cfb0f466dbef77eb..66b9d9e1a7f37a1b30b623adddd4144df96a74bb 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -218,6 +218,7 @@
@@ -226,7 +226,7 @@ index b1ac0d40ea13fe34e2d78cc311c274dee5fc1117..81de889f27faa1df5b265bb4ebee7eb8
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/url_constants.h"
-@@ -2898,6 +2899,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2901,6 +2902,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -235,10 +235,10 @@ index b1ac0d40ea13fe34e2d78cc311c274dee5fc1117..81de889f27faa1df5b265bb4ebee7eb8
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 746a567f4352885ef5ec59d996c30104d190f696..cd289c1b40a01f60c13700b968254a36a999570c 100644
+index aa42dac7f07b9cf725c80bb24385b52170818404..e7e777af9a2bdd1fb9ff31e568a7e5df693c4d60 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2838,6 +2838,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2837,6 +2837,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
