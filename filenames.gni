@@ -494,6 +494,8 @@ filenames = {
     "shell/common/gin_helper/event_emitter_caller.h",
     "shell/common/gin_helper/function_template.cc",
     "shell/common/gin_helper/function_template.h",
+    "shell/common/gin_helper/object_template_builder.cc",
+    "shell/common/gin_helper/object_template_builder.h",
     "shell/common/heap_snapshot.cc",
     "shell/common/heap_snapshot.h",
     "shell/common/key_weak_map.h",
