@@ -997,7 +997,7 @@ void WebContents::OnElectronBrowserConnectionError() {
 
 void WebContents::Message(bool internal,
                           const std::string& channel,
-                          base::Value arguments) {
+                          blink::CloneableMessage arguments) {
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
@@ -1006,7 +1006,7 @@ void WebContents::Message(bool internal,
 
 void WebContents::Invoke(bool internal,
                          const std::string& channel,
-                         base::Value arguments,
+                         blink::CloneableMessage arguments,
                          InvokeCallback callback) {
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
   EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
@@ -1015,7 +1015,7 @@ void WebContents::Invoke(bool internal,
 
 void WebContents::MessageSync(bool internal,
                               const std::string& channel,
-                              base::Value arguments,
+                              blink::CloneableMessage arguments,
                               MessageSyncCallback callback) {
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);

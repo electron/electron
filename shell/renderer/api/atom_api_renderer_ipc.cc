@@ -14,6 +14,7 @@
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/common/native_mate_converters/blink_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -68,22 +69,24 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
 
   void Send(bool internal,
             const std::string& channel,
-            const base::ListValue& arguments) {
-    electron_browser_ptr_->get()->Message(internal, channel, arguments.Clone());
+            const blink::CloneableMessage& arguments) {
+    electron_browser_ptr_->get()->Message(internal, channel,
+                                          arguments.ShallowClone());
   }
 
   v8::Local<v8::Promise> Invoke(mate::Arguments* args,
                                 bool internal,
                                 const std::string& channel,
-                                const base::Value& arguments) {
-    electron::util::Promise<base::Value> p(args->isolate());
+                                const blink::CloneableMessage& arguments) {
+    electron::util::Promise<blink::CloneableMessage> p(args->isolate());
     auto handle = p.GetHandle();
 
     electron_browser_ptr_->get()->Invoke(
-        internal, channel, arguments.Clone(),
-        base::BindOnce([](electron::util::Promise<base::Value> p,
-                          base::Value result) { p.Resolve(result); },
-                       std::move(p)));
+        internal, channel, arguments.ShallowClone(),
+        base::BindOnce(
+            [](electron::util::Promise<blink::CloneableMessage> p,
+               blink::CloneableMessage result) { p.Resolve(result); },
+            std::move(p)));
 
     return handle;
   }
@@ -102,9 +105,9 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     electron_browser_ptr_->get()->MessageHost(channel, arguments.Clone());
   }
 
-  base::Value SendSync(bool internal,
-                       const std::string& channel,
-                       const base::ListValue& arguments) {
+  blink::CloneableMessage SendSync(bool internal,
+                                   const std::string& channel,
+                                   const blink::CloneableMessage& arguments) {
     // We aren't using a true synchronous mojo call here. We're calling an
     // asynchronous method and blocking on the result. The reason we're doing
     // this is a little complicated, so buckle up.
@@ -151,7 +154,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     //
     // Phew. If you got this far, here's a gold star: ⭐️
 
-    base::Value result;
+    blink::CloneableMessage result;
 
     // A task is posted to a worker thread to execute the request so that
     // this thread may block on a waitable event. It is safe to pass raw
@@ -164,25 +167,25 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
                                   base::Unretained(this),
                                   base::Unretained(&response_received_event),
                                   base::Unretained(&result), internal, channel,
-                                  arguments.Clone()));
+                                  arguments.ShallowClone()));
     response_received_event.Wait();
     return result;
   }
 
  private:
   void SendMessageSyncOnWorkerThread(base::WaitableEvent* event,
-                                     base::Value* result,
+                                     blink::CloneableMessage* result,
                                      bool internal,
                                      const std::string& channel,
-                                     base::Value arguments) {
+                                     blink::CloneableMessage arguments) {
     electron_browser_ptr_->get()->MessageSync(
         internal, channel, std::move(arguments),
         base::BindOnce(&IPCRenderer::ReturnSyncResponseToMainThread,
                        base::Unretained(event), base::Unretained(result)));
   }
   static void ReturnSyncResponseToMainThread(base::WaitableEvent* event,
-                                             base::Value* result,
-                                             base::Value response) {
+                                             blink::CloneableMessage* result,
+                                             blink::CloneableMessage response) {
     *result = std::move(response);
     event->Signal();
   }

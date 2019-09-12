@@ -36,6 +36,7 @@ class RemoteObjectFreer : public ObjectLifeMonitor {
   std::string context_id_;
   int object_id_;
   int routing_id_;
+  v8::Isolate* isolate_;
 
   DISALLOW_COPY_AND_ASSIGN(RemoteObjectFreer);
 };

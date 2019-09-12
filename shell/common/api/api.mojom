@@ -3,6 +3,7 @@ module electron.mojom;
 import "mojo/public/mojom/base/values.mojom";
 import "mojo/public/mojom/base/string16.mojom";
 import "ui/gfx/geometry/mojom/geometry.mojom";
+import "third_party/blink/public/mojom/messaging/cloneable_message.mojom";
 
 interface ElectronRenderer {
   Message(
@@ -37,14 +38,14 @@ interface ElectronBrowser {
   Message(
       bool internal,
       string channel,
-      mojo_base.mojom.ListValue arguments);
+      blink.mojom.CloneableMessage arguments);
 
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process, and returns the response.
   Invoke(
       bool internal,
       string channel,
-      mojo_base.mojom.ListValue arguments) => (mojo_base.mojom.Value result);
+      blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
 
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process, and waits synchronously for a response.
@@ -55,7 +56,7 @@ interface ElectronBrowser {
   MessageSync(
     bool internal,
     string channel,
-    mojo_base.mojom.ListValue arguments) => (mojo_base.mojom.Value result);
+    blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
 
   // Emits an event from the |ipcRenderer| JavaScript object in the target
   // WebContents's main frame, specified by |web_contents_id|.

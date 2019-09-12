@@ -8,6 +8,8 @@
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "electron/shell/common/native_mate_converters/blink_converter.h"
+#include "electron/shell/common/native_mate_converters/value_converter.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
@@ -50,7 +52,8 @@ RemoteObjectFreer::RemoteObjectFreer(v8::Isolate* isolate,
     : ObjectLifeMonitor(isolate, target),
       context_id_(context_id),
       object_id_(object_id),
-      routing_id_(MSG_ROUTING_NONE) {
+      routing_id_(MSG_ROUTING_NONE),
+      isolate_(isolate) {
   content::RenderFrame* render_frame = GetCurrentRenderFrame();
   if (render_frame) {
     routing_id_ = render_frame->GetRoutingID();
@@ -86,11 +89,14 @@ void RemoteObjectFreer::RunDestructor() {
   args.AppendString(context_id_);
   args.AppendInteger(object_id_);
   args.AppendInteger(ref_count);
+  v8::Local<v8::Value> value = mate::ConvertToV8(isolate_, args);
+  blink::CloneableMessage message;
+  CHECK(mate::ConvertFromV8(isolate_, value, &message));
 
   mojom::ElectronBrowserAssociatedPtr electron_ptr;
   render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(true, channel, args.Clone());
+  electron_ptr->Message(true, channel, std::move(message));
 }
 
 }  // namespace electron

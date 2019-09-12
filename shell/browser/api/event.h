@@ -18,22 +18,21 @@ namespace mate {
 
 class Event : public Wrappable<Event> {
  public:
-  using MessageSyncCallback =
-      electron::mojom::ElectronBrowser::MessageSyncCallback;
+  using InvokeCallback = electron::mojom::ElectronBrowser::InvokeCallback;
   static Handle<Event> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Pass the callback to be invoked.
-  void SetCallback(base::Optional<MessageSyncCallback> callback);
+  void SetCallback(base::Optional<InvokeCallback> callback);
 
   // event.PreventDefault().
   void PreventDefault(v8::Isolate* isolate);
 
   // event.sendReply(value), used for replying to synchronous messages and
   // `invoke` calls.
-  bool SendReply(const base::Value& result);
+  bool SendReply(const blink::CloneableMessage& result);
 
  protected:
   explicit Event(v8::Isolate* isolate);
@@ -41,7 +40,7 @@ class Event : public Wrappable<Event> {
 
  private:
   // Replyer for the synchronous messages.
-  base::Optional<MessageSyncCallback> callback_;
+  base::Optional<InvokeCallback> callback_;
 
   DISALLOW_COPY_AND_ASSIGN(Event);
 };

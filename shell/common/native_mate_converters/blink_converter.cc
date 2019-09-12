@@ -527,4 +527,51 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
   return true;
 }
 
+v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(
+    v8::Isolate* isolate,
+    const blink::CloneableMessage& in) {
+  auto message_data = in.encoded_message;
+  v8::ValueDeserializer deserializer(isolate, message_data.data(),
+                                     message_data.size());
+  auto result = deserializer.ReadValue(isolate->GetCurrentContext());
+  return result.ToLocalChecked();
+}
+
+/*
+namespace {
+class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
+ public:
+  ~V8SerializerDelegate() override = default;
+  void ThrowDataCloneError(Local<String> message) override {
+    LOG(INFO) << gin::V8ToString(isolate, message);
+  }
+  Maybe<bool> WriteHostObject(Isolate* isolate, Local<Object> object) override {
+    if (obj->InternalFieldCount() != 1)
+      return nullptr;
+    return obj->GetAlignedPointerFromInternalField(0);
+  }
+};
+}
+*/
+
+bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
+                                                v8::Handle<v8::Value> val,
+                                                blink::CloneableMessage* out) {
+  // TODO: don't swallow exceptions
+  v8::ValueSerializer serializer(isolate);
+  v8::TryCatch try_catch(isolate);
+  try_catch.SetVerbose(true);
+  bool wrote_value;
+  if (!serializer.WriteValue(isolate->GetCurrentContext(), val)
+           .To(&wrote_value)) {
+    DCHECK(try_catch.HasCaught());
+    LOG(INFO) << gin::V8ToString(isolate, try_catch.Message()->Get());
+    return false;
+  }
+  CHECK(wrote_value);
+  std::pair<uint8_t*, size_t> buffer = serializer.Release();
+  out->encoded_message = {buffer.first, buffer.second};
+  return true;
+}
+
 }  // namespace mate
