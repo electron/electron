@@ -30,7 +30,7 @@
 #include "content/public/common/content_switches.h"
 #include "gin/arguments.h"
 #include "media/audio/audio_manager.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "services/service_manager/sandbox/switches.h"

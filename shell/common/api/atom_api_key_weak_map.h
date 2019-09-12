@@ -6,7 +6,7 @@
 #define SHELL_COMMON_API_ATOM_API_KEY_WEAK_MAP_H_
 
 #include "native_mate/handle.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "native_mate/wrappable.h"
 #include "shell/common/key_weak_map.h"
 

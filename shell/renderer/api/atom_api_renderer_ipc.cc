@@ -11,7 +11,7 @@
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "native_mate/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/native_mate_converters/value_converter.h"

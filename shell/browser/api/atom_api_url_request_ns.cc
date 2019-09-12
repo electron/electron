@@ -9,7 +9,7 @@
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/http/http_util.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "shell/browser/api/atom_api_session.h"

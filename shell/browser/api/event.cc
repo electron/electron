@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 
 namespace mate {

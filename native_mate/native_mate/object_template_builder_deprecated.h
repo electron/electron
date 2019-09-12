@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_H_
-#define NATIVE_MATE_NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_DEPRECATED_H_
+#define NATIVE_MATE_NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_DEPRECATED_H_
 
 #include "base/bind.h"
 #include "base/callback.h"
@@ -117,4 +117,4 @@ class ObjectTemplateBuilder {
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_DEPRECATED_H_

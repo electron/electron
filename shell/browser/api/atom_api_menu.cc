@@ -8,7 +8,7 @@
 
 #include "gin/dictionary.h"
 #include "native_mate/constructor.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/native_mate_converters/accelerator_converter.h"

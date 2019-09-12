@@ -33,7 +33,7 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_auth_handler_factory.h"

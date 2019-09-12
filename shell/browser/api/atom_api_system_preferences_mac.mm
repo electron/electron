@@ -21,7 +21,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/atom_application.h"
 #include "shell/browser/mac/dict_util.h"

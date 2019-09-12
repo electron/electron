@@ -6,7 +6,7 @@
 
 #include "base/time/time.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
