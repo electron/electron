@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Pedro Pontes <pepontes@microsoft.com>
+Date: Thu, 12 Sep 2019 16:28:47 +0200
+Subject: fix: Add more checks in MojoCdmService.
+
+Applies https://chromium.googlesource.com/chromium/src.git/+/b7b305f3389017cc42e2cfac6e7a319f42d5bde3%5E%21/
+
+diff --git a/media/mojo/services/mojo_cdm_service.cc b/media/mojo/services/mojo_cdm_service.cc
+index 3334ac0f6d3a03b0df879b5b015e95de307c1cda..a49ac813b0f8540fadf2c3cccdcc36a6a504d4cd 100644
+--- a/media/mojo/services/mojo_cdm_service.cc
++++ b/media/mojo/services/mojo_cdm_service.cc
+@@ -60,7 +60,9 @@ void MojoCdmService::Initialize(const std::string& key_system,
+                                 const CdmConfig& cdm_config,
+                                 InitializeCallback callback) {
+   DVLOG(1) << __func__ << ": " << key_system;
+-  DCHECK(!cdm_);
++
++  CHECK(!has_initialize_been_called_) << "Initialize should only happen once";
++  has_initialize_been_called_ = true;
+ 
+   auto weak_this = weak_factory_.GetWeakPtr();
+   cdm_factory_->Create(
+@@ -154,6 +156,7 @@ void MojoCdmService::OnCdmCreated(
+     return;
+   }
+ 
++  CHECK(!cdm_) << "CDM should only be created once.";
+   cdm_ = cdm;
+ 
+   if (context_) {
+diff --git a/media/mojo/services/mojo_cdm_service.h b/media/mojo/services/mojo_cdm_service.h
+index c8de5534202ac8de99be3bc52766f48c3e10b95a..bfe7baf10bb8642e7c6ce79c8a4e86942909a56a 100644
+--- a/media/mojo/services/mojo_cdm_service.h
++++ b/media/mojo/services/mojo_cdm_service.h
+@@ -101,6 +101,8 @@ class MEDIA_MOJO_EXPORT MojoCdmService : public mojom::ContentDecryptionModule {
+   // Callback for when |decryptor_| loses connectivity.
+   void OnDecryptorConnectionError();
+ 
++  bool has_initialize_been_called_ = false;
++
+   CdmFactory* cdm_factory_;
+   MojoCdmServiceContext* const context_ = nullptr;
+   scoped_refptr<::media::ContentDecryptionModule> cdm_;
