@@ -849,7 +849,7 @@ Both Chromium and Node.js are impressive feats of engineering built by
 thousands of talented developers. Given their popularity, their security is
 carefully tested and analyzed by equally skilled security researchers. Many of
 those researchers [disclose vulnerabilities responsibly][responsible-disclosure],
-which generally means that researches will give Chromium and Node.js some time
+which generally means that researchers will give Chromium and Node.js some time
 to fix issues before publishing them. Your application will be more secure if
 it is running a recent version of Electron (and thus, Chromium and Node.js) for
 which potential security issues are not as widely known.
