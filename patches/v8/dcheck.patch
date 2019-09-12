@@ -18,7 +18,7 @@ index 11ca1064085568986b8d21250dd8617f0d03f652..39dc796b72553259b167721a4fd51f3f
    isolate->default_microtask_queue()->RunMicrotasks(isolate);
  }
 diff --git a/src/heap/heap.cc b/src/heap/heap.cc
-index 0fd9e898c4d18c6b247425d7ef78d46339b3cd65..6cbe62cd67811888a564b9e3ce6e9e7f75ae598d 100644
+index 92265dd7665887cea46be407180e42de4985f8fd..4268f289c22953c386e28ed3968bedf80e595914 100644
 --- a/src/heap/heap.cc
 +++ b/src/heap/heap.cc
 @@ -5312,9 +5312,9 @@ void Heap::TearDown() {
