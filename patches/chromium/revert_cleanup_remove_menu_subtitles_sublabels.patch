@@ -280,10 +280,10 @@ index 3cc9d686da8f64ddc8bdc66df40b1866bdd20607..dfacbdd4a55b5f5aa4d8c67136c607f7
      const gfx::VectorIcon* minor_icon = nullptr;
      gfx::Image icon;
 diff --git a/ui/views/controls/menu/menu_item_view.cc b/ui/views/controls/menu/menu_item_view.cc
-index cafd2160c7209e81e9f18e3ba022626fe41500bd..d6890b16ae9d3b02f06da75ad5177959f6392a9b 100644
+index 729e5ec0b3df05ac96460498612d3fa6742de61a..cfcb44804073da550b77878b0ca216cd3d46da95 100644
 --- a/ui/views/controls/menu/menu_item_view.cc
 +++ b/ui/views/controls/menu/menu_item_view.cc
-@@ -276,6 +276,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
+@@ -277,6 +277,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
      int index,
      int item_id,
      const base::string16& label,
@@ -291,7 +291,7 @@ index cafd2160c7209e81e9f18e3ba022626fe41500bd..d6890b16ae9d3b02f06da75ad5177959
      const base::string16& minor_text,
      const gfx::VectorIcon* minor_icon,
      const gfx::ImageSkia& icon,
-@@ -296,6 +297,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
+@@ -297,6 +298,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
      item->SetTitle(GetDelegate()->GetLabel(item_id));
    else
      item->SetTitle(label);
@@ -299,7 +299,7 @@ index cafd2160c7209e81e9f18e3ba022626fe41500bd..d6890b16ae9d3b02f06da75ad5177959
    item->SetMinorText(minor_text);
    item->SetMinorIcon(minor_icon);
    if (vector_icon) {
-@@ -337,21 +339,23 @@ void MenuItemView::RemoveAllMenuItems() {
+@@ -338,21 +340,23 @@ void MenuItemView::RemoveAllMenuItems() {
  MenuItemView* MenuItemView::AppendMenuItem(int item_id,
                                             const base::string16& label,
                                             Type type) {
@@ -329,7 +329,7 @@ index cafd2160c7209e81e9f18e3ba022626fe41500bd..d6890b16ae9d3b02f06da75ad5177959
  }
  
  MenuItemView* MenuItemView::AppendMenuItemWithLabel(
-@@ -365,12 +369,14 @@ MenuItemView* MenuItemView::AppendDelegateMenuItem(int item_id) {
+@@ -366,12 +370,14 @@ MenuItemView* MenuItemView::AppendDelegateMenuItem(int item_id) {
  }
  
  void MenuItemView::AppendSeparator() {
@@ -346,7 +346,7 @@ index cafd2160c7209e81e9f18e3ba022626fe41500bd..d6890b16ae9d3b02f06da75ad5177959
                  /*minor_text=*/base::string16(), /*minor_icon=*/nullptr,
                  /*icon=*/gfx::ImageSkia(), /*vector_icon=*/nullptr,
                  /*type=*/SEPARATOR,
-@@ -380,21 +386,22 @@ void MenuItemView::AddSeparatorAt(int index) {
+@@ -381,21 +387,22 @@ void MenuItemView::AddSeparatorAt(int index) {
  MenuItemView* MenuItemView::AppendMenuItemWithIcon(int item_id,
                                                     const base::string16& label,
                                                     const gfx::ImageSkia& icon) {
@@ -373,7 +373,7 @@ index cafd2160c7209e81e9f18e3ba022626fe41500bd..d6890b16ae9d3b02f06da75ad5177959
  }
  
  SubmenuView* MenuItemView::CreateSubmenu() {
-@@ -426,6 +433,11 @@ void MenuItemView::SetTitle(const base::string16& title) {
+@@ -427,6 +434,11 @@ void MenuItemView::SetTitle(const base::string16& title) {
    invalidate_dimensions();  // Triggers preferred size recalculation.
  }
  
@@ -385,7 +385,7 @@ index cafd2160c7209e81e9f18e3ba022626fe41500bd..d6890b16ae9d3b02f06da75ad5177959
  void MenuItemView::SetMinorText(const base::string16& minor_text) {
    minor_text_ = minor_text;
    invalidate_dimensions();  // Triggers preferred size recalculation.
-@@ -1015,13 +1027,23 @@ void MenuItemView::PaintButton(gfx::Canvas* canvas, PaintButtonMode mode) {
+@@ -1016,13 +1028,23 @@ void MenuItemView::PaintButton(gfx::Canvas* canvas, PaintButtonMode mode) {
        (!delegate ||
         delegate->ShouldReserveSpaceForSubmenuIndicator() ?
             item_right_margin_ : config.arrow_to_edge_padding);
@@ -410,7 +410,7 @@ index cafd2160c7209e81e9f18e3ba022626fe41500bd..d6890b16ae9d3b02f06da75ad5177959
    PaintMinorIconAndText(canvas, style);
  
    // Set the submenu indicator (arrow) image and color.
-@@ -1273,6 +1295,11 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
+@@ -1274,6 +1296,11 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
  
    // Determine the length of the label text.
    int string_width = gfx::GetStringWidth(title_, style.font_list);
@@ -422,7 +422,7 @@ index cafd2160c7209e81e9f18e3ba022626fe41500bd..d6890b16ae9d3b02f06da75ad5177959
    dimensions.standard_width = string_width + label_start +
        item_right_margin_;
    // Determine the length of the right-side text.
-@@ -1280,9 +1307,10 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
+@@ -1281,9 +1308,10 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
        minor_text.empty() ? 0 : gfx::GetStringWidth(minor_text, style.font_list);
  
    // Determine the height to use.

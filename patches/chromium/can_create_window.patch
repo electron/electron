@@ -5,7 +5,7 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index fd56086efa3e4f0d3c2a6000fac2c4150b1648c7..a803e7d15a451cbcfb9418ebf766a289a9780127 100644
+index e26fe6c50d7ade60f5dd56c1e8b5148e7ac6090b..76abb146e710cb312e90ff545002c1006c80c693 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -3981,6 +3981,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -66,7 +66,7 @@ index a9131e72beefd3fd706640d5eeb82646a7ffe65d..7578110f13b23e9585a181bba3e73a39
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index d76b5b9de07a94754ec47ca097e4037981bb2c01..cb95bc50c07bbe6a1ae507a026c9fccbf24cf1d7 100644
+index 312ae588d75e30d91dff875953b794a04d70d9bc..184ed8c68dceab3f4737059ed0735c36eb046347 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -73,6 +73,7 @@

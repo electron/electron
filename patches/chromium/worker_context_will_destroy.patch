@@ -62,10 +62,10 @@ index 1a08bbadf03d03a0e90b5e3037ed42b6dde54c48..0d3f3476d5c4ba09e993849561337cfa
        const WebSecurityOrigin& script_origin) {
      return false;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index b4785ee3f50f3e4f6f9335e405ff6be4ac916c62..40f829e18212ec5bffdc52f9f953f8e74e25a53d 100644
+index d16b0ea72e4d0c0371bbb145c4f4c26b4d5c19e2..bd4af3ae2df62968aaf9001db8eda006a96d307b 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -663,6 +663,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+@@ -680,6 +680,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
      nested_runner_->QuitNow();
    }
  
