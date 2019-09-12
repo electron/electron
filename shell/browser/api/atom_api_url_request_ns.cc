@@ -9,11 +9,12 @@
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder_deprecated.h"
 #include "net/http/http_util.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/atom_browser_context.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
 
@@ -312,8 +313,8 @@ void URLRequestNS::SetChunkedUpload(bool is_chunked_upload) {
     is_chunked_upload_ = is_chunked_upload;
 }
 
-mate::Dictionary URLRequestNS::GetUploadProgress() {
-  mate::Dictionary progress = mate::Dictionary::CreateEmpty(isolate());
+gin::Dictionary URLRequestNS::GetUploadProgress() {
+  gin::Dictionary progress = gin::Dictionary::CreateEmpty(isolate());
   if (loader_) {
     if (request_)
       progress.Set("started", false);
@@ -504,7 +505,7 @@ void URLRequestNS::EmitError(EventType type, base::StringPiece message) {
   else
     response_state_ |= STATE_FAILED;
   v8::HandleScope handle_scope(isolate());
-  auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
+  auto error = v8::Exception::Error(gin::StringToV8(isolate(), message));
   EmitEvent(type, false, "error", error);
 }
 
@@ -513,7 +514,7 @@ void URLRequestNS::EmitEvent(EventType type, Args... args) {
   const char* method =
       type == EventType::kRequest ? "_emitRequestEvent" : "_emitResponseEvent";
   v8::HandleScope handle_scope(isolate());
-  mate::CustomEmit(isolate(), GetWrapper(), method, args...);
+  gin_helper::CustomEmit(isolate(), GetWrapper(), method, args...);
 }
 
 // static
@@ -524,9 +525,9 @@ mate::WrappableBase* URLRequestNS::New(mate::Arguments* args) {
 // static
 void URLRequestNS::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "URLRequest"));
+  prototype->SetClassName(gin::StringToV8(isolate, "URLRequest"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("write", &URLRequestNS::Write)
       .SetMethod("cancel", &URLRequestNS::Cancel)
       .SetMethod("setExtraHeader", &URLRequestNS::SetExtraHeader)

@@ -266,7 +266,8 @@ template <typename T, typename Enable = void>
 struct CallbackTraits {
   static v8::Local<v8::FunctionTemplate> CreateTemplate(v8::Isolate* isolate,
                                                         T callback) {
-    return CreateFunctionTemplate(isolate, base::BindRepeating(callback));
+    return gin_helper::CreateFunctionTemplate(isolate,
+                                              base::BindRepeating(callback));
   }
 };
 
@@ -276,7 +277,7 @@ struct CallbackTraits<base::Callback<T>> {
   static v8::Local<v8::FunctionTemplate> CreateTemplate(
       v8::Isolate* isolate,
       const base::RepeatingCallback<T>& callback) {
-    return CreateFunctionTemplate(isolate, callback);
+    return gin_helper::CreateFunctionTemplate(isolate, callback);
   }
 };
 
@@ -291,8 +292,8 @@ struct CallbackTraits<
   static v8::Local<v8::FunctionTemplate> CreateTemplate(v8::Isolate* isolate,
                                                         T callback) {
     int flags = HolderIsFirstArgument;
-    return CreateFunctionTemplate(isolate, base::BindRepeating(callback),
-                                  flags);
+    return gin_helper::CreateFunctionTemplate(
+        isolate, base::BindRepeating(callback), flags);
   }
 };
 
