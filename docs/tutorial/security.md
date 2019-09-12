@@ -852,7 +852,7 @@ those researchers [disclose vulnerabilities responsibly][responsible-disclosure]
 which generally means that researches will give Chromium and Node.js some time
 to fix issues before publishing them. Your application will be more secure if
 it is running a recent version of Electron (and thus, Chromium and Node.js) for
-which security issues are not as widely known.
+which potential security issues are not as widely known.
 
 
 [browser-window]: ../api/browser-window.md
