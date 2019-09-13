@@ -248,7 +248,7 @@ struct Converter<electron::api::WebContents::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::api::WebContents::Type val) {
     using Type = electron::api::WebContents::Type;
-    std::string type = "";
+    std::string type;
     switch (val) {
       case Type::BACKGROUND_PAGE:
         type = "backgroundPage";
@@ -1719,9 +1719,9 @@ void WebContents::Print(mate::Arguments* args) {
   std::vector<mate::Dictionary> page_ranges;
   if (options.Get("pageRanges", &page_ranges)) {
     std::unique_ptr<base::ListValue> page_range_list(new base::ListValue());
-    for (size_t i = 0; i < page_ranges.size(); ++i) {
+    for (auto& range : page_ranges) {
       int from, to;
-      if (page_ranges[i].Get("from", &from) && page_ranges[i].Get("to", &to)) {
+      if (range.Get("from", &from) && range.Get("to", &to)) {
         std::unique_ptr<base::DictionaryValue> range(
             new base::DictionaryValue());
         range->SetInteger(printing::kSettingPageRangeFrom, from);

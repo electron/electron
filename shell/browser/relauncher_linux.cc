@@ -61,8 +61,8 @@ int LaunchProgram(const StringVector& relauncher_args,
   base::LaunchOptions options;
   options.allow_new_privs = true;
   options.new_process_group = true;  // detach
-  options.fds_to_remap.push_back(std::make_pair(devnull.get(), STDERR_FILENO));
-  options.fds_to_remap.push_back(std::make_pair(devnull.get(), STDOUT_FILENO));
+  options.fds_to_remap.emplace_back(devnull.get(), STDERR_FILENO);
+  options.fds_to_remap.emplace_back(devnull.get(), STDOUT_FILENO);
 
   base::Process process = base::LaunchProcess(argv, options);
   return process.IsValid() ? 0 : 1;

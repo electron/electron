@@ -751,7 +751,7 @@ base::OnceClosure App::SelectClientCertificate(
   // to avoid changes in the API.
   auto client_certs = net::CertificateList();
   for (const std::unique_ptr<net::ClientCertIdentity>& identity : identities)
-    client_certs.push_back(identity->certificate());
+    client_certs.emplace_back(identity->certificate());
 
   auto shared_identities =
       std::make_shared<net::ClientCertIdentityList>(std::move(identities));

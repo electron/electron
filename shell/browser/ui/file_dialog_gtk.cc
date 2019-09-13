@@ -229,13 +229,11 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
 }
 
 void FileChooserDialog::AddFilters(const Filters& filters) {
-  for (size_t i = 0; i < filters.size(); ++i) {
-    const Filter& filter = filters[i];
+  for (const auto& filter : filters) {
     GtkFileFilter* gtk_filter = gtk_file_filter_new();
 
-    for (size_t j = 0; j < filter.second.size(); ++j) {
-      auto file_extension =
-          std::make_unique<std::string>("." + filter.second[j]);
+    for (const auto& extension : filter.second) {
+      auto file_extension = std::make_unique<std::string>("." + extension);
       gtk_file_filter_add_custom(
           gtk_filter, GTK_FILE_FILTER_FILENAME,
           reinterpret_cast<GtkFileFilterFunc>(FileFilterCaseInsensitive),

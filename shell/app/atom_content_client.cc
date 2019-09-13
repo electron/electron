@@ -101,29 +101,27 @@ content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
   std::vector<std::string> flash_version_numbers = base::SplitString(
       version, ".", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
   if (flash_version_numbers.empty())
-    flash_version_numbers.push_back("11");
+    flash_version_numbers.emplace_back("11");
   // |SplitString()| puts in an empty string given an empty string. :(
   else if (flash_version_numbers[0].empty())
     flash_version_numbers[0] = "11";
   if (flash_version_numbers.size() < 2)
-    flash_version_numbers.push_back("2");
+    flash_version_numbers.emplace_back("2");
   if (flash_version_numbers.size() < 3)
-    flash_version_numbers.push_back("999");
+    flash_version_numbers.emplace_back("999");
   if (flash_version_numbers.size() < 4)
-    flash_version_numbers.push_back("999");
+    flash_version_numbers.emplace_back("999");
   // E.g., "Shockwave Flash 10.2 r154":
   plugin.description = plugin.name + " " + flash_version_numbers[0] + "." +
                        flash_version_numbers[1] + " r" +
                        flash_version_numbers[2];
   plugin.version = base::JoinString(flash_version_numbers, ".");
-  content::WebPluginMimeType swf_mime_type(content::kFlashPluginSwfMimeType,
-                                           content::kFlashPluginSwfExtension,
-                                           content::kFlashPluginSwfDescription);
-  plugin.mime_types.push_back(swf_mime_type);
-  content::WebPluginMimeType spl_mime_type(content::kFlashPluginSplMimeType,
-                                           content::kFlashPluginSplExtension,
-                                           content::kFlashPluginSplDescription);
-  plugin.mime_types.push_back(spl_mime_type);
+  plugin.mime_types.emplace_back(content::kFlashPluginSwfMimeType,
+                                 content::kFlashPluginSwfExtension,
+                                 content::kFlashPluginSwfDescription);
+  plugin.mime_types.emplace_back(content::kFlashPluginSplMimeType,
+                                 content::kFlashPluginSplExtension,
+                                 content::kFlashPluginSplDescription);
 
   return plugin;
 }
@@ -219,8 +217,8 @@ void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
   AppendDelimitedSwitchToVector(switches::kCORSSchemes,
                                 &schemes->cors_enabled_schemes);
 
-  schemes->service_worker_schemes.push_back(url::kFileScheme);
-  schemes->standard_schemes.push_back("chrome-extension");
+  schemes->service_worker_schemes.emplace_back(url::kFileScheme);
+  schemes->standard_schemes.emplace_back("chrome-extension");
 }
 
 void AtomContentClient::AddPepperPlugins(
