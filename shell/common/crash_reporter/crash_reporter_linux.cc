@@ -38,7 +38,7 @@ static const off_t kMaxMinidumpFileSize = 1258291;
 CrashReporterLinux::CrashReporterLinux() : pid_(getpid()) {
   // Set the base process start time value.
   struct timeval tv;
-  if (!gettimeofday(&tv, NULL)) {
+  if (!gettimeofday(&tv, nullptr)) {
     uint64_t ret = tv.tv_sec;
     ret *= 1000;
     ret += tv.tv_usec / 1000;
@@ -91,7 +91,7 @@ void CrashReporterLinux::EnableCrashDumping(const base::FilePath& crashes_dir) {
   MinidumpDescriptor minidump_descriptor(crashes_dir.value());
   minidump_descriptor.set_size_limit(kMaxMinidumpFileSize);
 
-  breakpad_.reset(new ExceptionHandler(minidump_descriptor, NULL, CrashDone,
+  breakpad_.reset(new ExceptionHandler(minidump_descriptor, nullptr, CrashDone,
                                        this,
                                        true,  // Install handlers.
                                        -1));

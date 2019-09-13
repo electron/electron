@@ -70,13 +70,13 @@ bool ViewsDelegate::IsWindowInMetro(gfx::NativeWindow window) const {
 
 #elif defined(OS_LINUX) && !defined(OS_CHROMEOS)
 gfx::ImageSkia* ViewsDelegate::GetDefaultWindowIcon() const {
-  return NULL;
+  return nullptr;
 }
 #endif
 
 views::NonClientFrameView* ViewsDelegate::CreateDefaultNonClientFrameView(
     views::Widget* widget) {
-  return NULL;
+  return nullptr;
 }
 
 void ViewsDelegate::AddRef() {}

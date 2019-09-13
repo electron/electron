@@ -57,7 +57,7 @@ class FileChooserDialog {
       confirm_text = gtk_util::kSaveLabel;
 
     dialog_ = gtk_file_chooser_dialog_new(
-        settings.title.c_str(), NULL, action, gtk_util::kCancelLabel,
+        settings.title.c_str(), nullptr, action, gtk_util::kCancelLabel,
         GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, NULL);
     if (parent_) {
       parent_->SetEnabled(false);
@@ -162,7 +162,7 @@ class FileChooserDialog {
   std::vector<base::FilePath> GetFileNames() const {
     std::vector<base::FilePath> paths;
     auto* filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog_));
-    for (auto* iter = filenames; iter != NULL; iter = iter->next) {
+    for (auto* iter = filenames; iter != nullptr; iter = iter->next) {
       auto* filename = static_cast<char*>(iter->data);
       paths.emplace_back(filename);
       g_free(filename);

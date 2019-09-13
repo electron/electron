@@ -941,9 +941,9 @@ std::string App::GetLocaleCountryCode() {
                      kCFStringEncodingUTF8);
   region = temporaryCString;
 #else
-  const char* locale_ptr = setlocale(LC_TIME, NULL);
+  const char* locale_ptr = setlocale(LC_TIME, nullptr);
   if (!locale_ptr)
-    locale_ptr = setlocale(LC_NUMERIC, NULL);
+    locale_ptr = setlocale(LC_NUMERIC, nullptr);
   if (locale_ptr) {
     std::string locale = locale_ptr;
     std::string::size_type rpos = locale.find('.');

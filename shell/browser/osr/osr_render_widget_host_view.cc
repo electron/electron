@@ -280,9 +280,9 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
         content::DelegatedFrameHost::HiddenCause::kOther);
   delegated_frame_host_->DetachFromCompositor();
 
-  delegated_frame_host_.reset(NULL);
-  compositor_.reset(NULL);
-  root_layer_.reset(NULL);
+  delegated_frame_host_.reset(nullptr);
+  compositor_.reset(nullptr);
+  root_layer_.reset(nullptr);
 }
 
 content::BrowserAccessibilityManager*
@@ -539,7 +539,7 @@ void OffScreenRenderWidgetHostView::Destroy() {
   if (!is_destroyed_) {
     is_destroyed_ = true;
 
-    if (parent_host_view_ != NULL) {
+    if (parent_host_view_ != nullptr) {
       CancelWidget();
     } else {
       if (popup_host_view_)
@@ -674,14 +674,14 @@ void OffScreenRenderWidgetHostView::CancelWidget() {
 
   if (parent_host_view_) {
     if (parent_host_view_->popup_host_view_ == this) {
-      parent_host_view_->set_popup_host_view(NULL);
+      parent_host_view_->set_popup_host_view(nullptr);
     } else if (parent_host_view_->child_host_view_ == this) {
-      parent_host_view_->set_child_host_view(NULL);
+      parent_host_view_->set_child_host_view(nullptr);
       parent_host_view_->Show();
     } else {
       parent_host_view_->RemoveGuestHostView(this);
     }
-    parent_host_view_ = NULL;
+    parent_host_view_ = nullptr;
   }
 
   if (render_widget_host_ && !is_destroyed_) {

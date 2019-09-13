@@ -154,7 +154,7 @@ void InspectableWebContentsViewViews::CloseDevTools() {
     devtools_window_delegate_ = nullptr;
   } else {
     devtools_web_view_->SetVisible(false);
-    devtools_web_view_->SetWebContents(NULL);
+    devtools_web_view_->SetWebContents(nullptr);
     Layout();
   }
 }
@@ -177,7 +177,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked, bool activate) {
 
   if (!docked) {
     devtools_window_.reset(new views::Widget);
-    devtools_window_web_view_ = new views::WebView(NULL);
+    devtools_window_web_view_ = new views::WebView(nullptr);
     devtools_window_delegate_ = new DevToolsWindowDelegate(
         this, devtools_window_web_view_, devtools_window_.get());
 

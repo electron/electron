@@ -22,8 +22,9 @@ namespace electron {
 SubmenuButton::SubmenuButton(const base::string16& title,
                              views::MenuButtonListener* menu_button_listener,
                              const SkColor& background_color)
-    : views::MenuButton(gfx::RemoveAcceleratorChar(title, '&', NULL, NULL),
-                        menu_button_listener),
+    : views::MenuButton(
+          gfx::RemoveAcceleratorChar(title, '&', nullptr, nullptr),
+          menu_button_listener),
       background_color_(background_color) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
