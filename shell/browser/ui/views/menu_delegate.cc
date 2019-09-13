@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/views/menu_delegate.h"
 
+#include <memory>
+
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -35,14 +37,13 @@ void MenuDelegate::RunMenu(AtomMenuModel* model,
   }
 
   id_ = button->tag();
-  adapter_.reset(new MenuModelAdapter(model));
+  adapter_ = std::make_unique<MenuModelAdapter>(model);
 
   views::MenuItemView* item = new views::MenuItemView(this);
   static_cast<MenuModelAdapter*>(adapter_.get())->BuildMenu(item);
 
-  menu_runner_.reset(new views::MenuRunner(
-      item,
-      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS));
+  menu_runner_ = std::make_unique<views::MenuRunner>(
+      item, views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
   menu_runner_->RunMenuAt(
       button->GetWidget()->GetTopLevelWidget(),
       static_cast<views::MenuButton*>(button)->button_controller(), bounds,

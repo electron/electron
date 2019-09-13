@@ -200,8 +200,8 @@ void RendererClientBase::RenderThreadStarted() {
   blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
 
-  prescient_networking_dispatcher_.reset(
-      new network_hints::PrescientNetworkingDispatcher());
+  prescient_networking_dispatcher_ =
+      std::make_unique<network_hints::PrescientNetworkingDispatcher>();
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.

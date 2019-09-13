@@ -126,10 +126,10 @@ class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
   AtomBeginFrameTimer(int frame_rate_threshold_us,
                       const base::Closure& callback)
       : callback_(callback) {
-    time_source_.reset(new viz::DelayBasedTimeSource(
+    time_source_ = std::make_unique<viz::DelayBasedTimeSource>(
         base::CreateSingleThreadTaskRunnerWithTraits(
             {content::BrowserThread::UI})
-            .get()));
+            .get());
     time_source_->SetTimebaseAndInterval(
         base::TimeTicks(),
         base::TimeDelta::FromMicroseconds(frame_rate_threshold_us));
@@ -232,13 +232,14 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_allocation_ =
       compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
 
-  delegated_frame_host_client_.reset(new AtomDelegatedFrameHostClient(this));
+  delegated_frame_host_client_ =
+      std::make_unique<AtomDelegatedFrameHostClient>(this);
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack),
       delegated_frame_host_client_.get(),
       true /* should_register_frame_sink_id */);
 
-  root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
+  root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
 
   bool opaque = SkColorGetA(background_color_) == SK_AlphaOPAQUE;
   GetRootLayer()->SetFillsBoundsOpaquely(opaque);
@@ -249,11 +250,11 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   ui::ContextFactoryPrivate* context_factory_private =
       factory->GetContextFactoryPrivate();
-  compositor_.reset(
-      new ui::Compositor(context_factory_private->AllocateFrameSinkId(),
-                         content::GetContextFactory(), context_factory_private,
-                         base::ThreadTaskRunnerHandle::Get(),
-                         false /* enable_pixel_canvas */, this));
+  compositor_ = std::make_unique<ui::Compositor>(
+      context_factory_private->AllocateFrameSinkId(),
+      content::GetContextFactory(), context_factory_private,
+      base::ThreadTaskRunnerHandle::Get(), false /* enable_pixel_canvas */,
+      this);
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetRootLayer(root_layer_.get());
 
@@ -264,9 +265,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   InstallTransparency();
 
   if (content::GpuDataManager::GetInstance()->HardwareAccelerationEnabled()) {
-    video_consumer_.reset(new OffScreenVideoConsumer(
+    video_consumer_ = std::make_unique<OffScreenVideoConsumer>(
         this, base::BindRepeating(&OffScreenRenderWidgetHostView::OnPaint,
-                                  weak_ptr_factory_.GetWeakPtr())));
+                                  weak_ptr_factory_.GetWeakPtr()));
     video_consumer_->SetActive(IsPainting());
     video_consumer_->SetFrameRate(GetFrameRate());
   }
@@ -759,7 +760,7 @@ bool OffScreenRenderWidgetHostView::UpdateNSViewAndDisplay() {
 
 void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
                                             const SkBitmap& bitmap) {
-  backing_.reset(new SkBitmap());
+  backing_ = std::make_unique<SkBitmap>();
   backing_->allocN32Pixels(bitmap.width(), bitmap.height(), !transparent_);
   bitmap.readPixels(backing_->pixmap());
 
@@ -1063,11 +1064,11 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
   if (begin_frame_timer_.get()) {
     begin_frame_timer_->SetFrameRateThresholdUs(frame_rate_threshold_us_);
   } else {
-    begin_frame_timer_.reset(new AtomBeginFrameTimer(
+    begin_frame_timer_ = std::make_unique<AtomBeginFrameTimer>(
         frame_rate_threshold_us_,
         base::BindRepeating(
             &OffScreenRenderWidgetHostView::OnBeginFrameTimerTick,
-            weak_ptr_factory_.GetWeakPtr())));
+            weak_ptr_factory_.GetWeakPtr()));
   }
 }
 

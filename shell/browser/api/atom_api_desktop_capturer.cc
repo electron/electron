@@ -90,18 +90,18 @@ void DesktopCapturer::StartHandling(bool capture_window,
     // Initialize the source list.
     // Apply the new thumbnail size and restart capture.
     if (capture_window) {
-      window_capturer_.reset(new NativeDesktopMediaList(
+      window_capturer_ = std::make_unique<NativeDesktopMediaList>(
           content::DesktopMediaID::TYPE_WINDOW,
-          content::desktop_capture::CreateWindowCapturer()));
+          content::desktop_capture::CreateWindowCapturer());
       window_capturer_->SetThumbnailSize(thumbnail_size);
       window_capturer_->AddObserver(this);
       window_capturer_->StartUpdating();
     }
 
     if (capture_screen) {
-      screen_capturer_.reset(new NativeDesktopMediaList(
+      screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
           content::DesktopMediaID::TYPE_SCREEN,
-          content::desktop_capture::CreateScreenCapturer()));
+          content::desktop_capture::CreateScreenCapturer());
       screen_capturer_->SetThumbnailSize(thumbnail_size);
       screen_capturer_->AddObserver(this);
       screen_capturer_->StartUpdating();

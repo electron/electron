@@ -283,12 +283,12 @@ void AtomMainDelegate::PreCreateMainMessageLoop() {
 }
 
 content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
-  browser_client_.reset(new AtomBrowserClient);
+  browser_client_ = std::make_unique<AtomBrowserClient>();
   return browser_client_.get();
 }
 
 content::ContentGpuClient* AtomMainDelegate::CreateContentGpuClient() {
-  gpu_client_.reset(new AtomGpuClient);
+  gpu_client_ = std::make_unique<AtomGpuClient>();
   return gpu_client_.get();
 }
 
@@ -297,16 +297,16 @@ AtomMainDelegate::CreateContentRendererClient() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   if (IsSandboxEnabled(command_line)) {
-    renderer_client_.reset(new AtomSandboxedRendererClient);
+    renderer_client_ = std::make_unique<AtomSandboxedRendererClient>();
   } else {
-    renderer_client_.reset(new AtomRendererClient);
+    renderer_client_ = std::make_unique<AtomRendererClient>();
   }
 
   return renderer_client_.get();
 }
 
 content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
-  utility_client_.reset(new AtomContentUtilityClient);
+  utility_client_ = std::make_unique<AtomContentUtilityClient>();
   return utility_client_.get();
 }
 

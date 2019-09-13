@@ -387,8 +387,8 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
                                             GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params(session->browser_context(),
                                               site_instance);
-    guest_delegate_.reset(
-        new WebViewGuestDelegate(embedder_->web_contents(), this));
+    guest_delegate_ =
+        std::make_unique<WebViewGuestDelegate>(embedder_->web_contents(), this);
     params.guest_delegate = guest_delegate_.get();
 
 #if BUILDFLAG(ENABLE_OSR)
@@ -828,7 +828,7 @@ std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
     content::WebContents* source) {
   if (!dialog_manager_)
-    dialog_manager_.reset(new AtomJavaScriptDialogManager(this));
+    dialog_manager_ = std::make_unique<AtomJavaScriptDialogManager>(this);
 
   return dialog_manager_.get();
 }
@@ -2038,8 +2038,8 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
     return;
   }
 
-  frame_subscriber_.reset(
-      new FrameSubscriber(web_contents(), callback, only_dirty));
+  frame_subscriber_ =
+      std::make_unique<FrameSubscriber>(web_contents(), callback, only_dirty);
 }
 
 void WebContents::EndFrameSubscription() {

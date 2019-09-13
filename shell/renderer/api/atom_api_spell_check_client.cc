@@ -5,6 +5,8 @@
 #include "shell/renderer/api/atom_api_spell_check_client.h"
 
 #include <map>
+#include <memory>
+
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -105,8 +107,8 @@ void SpellCheckClient::RequestCheckingOfText(
     pending_request_param_->completion()->DidCancelCheckingText();
   }
 
-  pending_request_param_.reset(
-      new SpellcheckRequest(text, std::move(completionCallback)));
+  pending_request_param_ =
+      std::make_unique<SpellcheckRequest>(text, std::move(completionCallback));
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,

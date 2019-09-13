@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 
+#include <memory>
+
 #include <utility>
 
 #include "base/strings/utf_string_conversions.h"
@@ -176,7 +178,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked, bool activate) {
   CloseDevTools();
 
   if (!docked) {
-    devtools_window_.reset(new views::Widget);
+    devtools_window_ = std::make_unique<views::Widget>();
     devtools_window_web_view_ = new views::WebView(nullptr);
     devtools_window_delegate_ = new DevToolsWindowDelegate(
         this, devtools_window_web_view_, devtools_window_.get());

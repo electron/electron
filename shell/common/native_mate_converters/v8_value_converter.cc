@@ -386,7 +386,7 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Array(
   // that context, but change back after val is converted.
   if (!val->CreationContext().IsEmpty() &&
       val->CreationContext() != isolate->GetCurrentContext())
-    scope.reset(new v8::Context::Scope(val->CreationContext()));
+    scope = std::make_unique<v8::Context::Scope>(val->CreationContext());
 
   std::unique_ptr<base::ListValue> result(new base::ListValue());
 
@@ -442,7 +442,7 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Object(
   // that context, but change back after val is converted.
   if (!val->CreationContext().IsEmpty() &&
       val->CreationContext() != isolate->GetCurrentContext())
-    scope.reset(new v8::Context::Scope(val->CreationContext()));
+    scope = std::make_unique<v8::Context::Scope>(val->CreationContext());
 
   auto result = std::make_unique<base::DictionaryValue>();
   v8::Local<v8::Array> property_names;

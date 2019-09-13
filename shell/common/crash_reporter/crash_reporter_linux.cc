@@ -8,6 +8,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <memory>
+
 #include <string>
 
 #include "base/debug/crash_logging.h"
@@ -62,7 +64,7 @@ void CrashReporterLinux::Init(const std::string& product_name,
   upload_url_ = submit_url;
   upload_to_server_ = upload_to_server;
 
-  crash_keys_.reset(new CrashKeyStorage());
+  crash_keys_ = std::make_unique<CrashKeyStorage>();
   for (StringMap::const_iterator iter = upload_parameters_.begin();
        iter != upload_parameters_.end(); ++iter)
     crash_keys_->SetKeyValue(iter->first.c_str(), iter->second.c_str());
@@ -91,10 +93,10 @@ void CrashReporterLinux::EnableCrashDumping(const base::FilePath& crashes_dir) {
   MinidumpDescriptor minidump_descriptor(crashes_dir.value());
   minidump_descriptor.set_size_limit(kMaxMinidumpFileSize);
 
-  breakpad_.reset(new ExceptionHandler(minidump_descriptor, nullptr, CrashDone,
-                                       this,
-                                       true,  // Install handlers.
-                                       -1));
+  breakpad_ = std::make_unique<ExceptionHandler>(minidump_descriptor, nullptr,
+                                                 CrashDone, this,
+                                                 true,  // Install handlers.
+                                                 -1);
 }
 
 bool CrashReporterLinux::CrashDone(const MinidumpDescriptor& minidump,

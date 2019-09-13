@@ -4,6 +4,8 @@
 
 #include "shell/browser/web_dialog_helper.h"
 
+#include <memory>
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -106,8 +108,8 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     DCHECK(!lister_base_dir_.empty());
     DCHECK(lister_paths_.empty());
 
-    lister_.reset(new net::DirectoryLister(
-        lister_base_dir_, net::DirectoryLister::NO_SORT_RECURSIVE, this));
+    lister_ = std::make_unique<net::DirectoryLister>(
+        lister_base_dir_, net::DirectoryLister::NO_SORT_RECURSIVE, this);
     lister_->Start();
     // It is difficult for callers to know how long to keep a reference to
     // this instance.  We AddRef() here to keep the instance alive after we

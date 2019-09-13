@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <memory>
+
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/util_gtk.h"
 
@@ -140,15 +142,17 @@ class FileChooserDialog {
 
   void RunSaveAsynchronous(
       electron::util::Promise<gin_helper::Dictionary> promise) {
-    save_promise_.reset(new electron::util::Promise<gin_helper::Dictionary>(
-        std::move(promise)));
+    save_promise_ =
+        std::make_unique<electron::util::Promise<gin_helper::Dictionary>>(
+            std::move(promise));
     RunAsynchronous();
   }
 
   void RunOpenAsynchronous(
       electron::util::Promise<gin_helper::Dictionary> promise) {
-    open_promise_.reset(new electron::util::Promise<gin_helper::Dictionary>(
-        std::move(promise)));
+    open_promise_ =
+        std::make_unique<electron::util::Promise<gin_helper::Dictionary>>(
+            std::move(promise));
     RunAsynchronous();
   }
 
