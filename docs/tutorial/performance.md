@@ -164,11 +164,11 @@ const fs = require('fs')
 const fooParser = require('foo-parser')
 
 class Parser {
-  constructor() {
+  constructor () {
     this.files = fs.readdirSync('.')
   }
 
-  getParsedFiles() {
+  getParsedFiles () {
     return fooParser.parse(this.files)
   }
 }
@@ -187,14 +187,16 @@ do this work a little later, when `getParsedFiles()` is actually called?
 const fs = require('fs')
 
 class Parser {
-  async getFiles() {
+  async getFiles () {
     // Touch the disk as soon as `getFiles` is called, not sooner.
     // Also, ensure that we're not blocking other operations by using
     // the asynchronous version.
-    return this.files = this.files || await fs.readdir('.')
+    this.files = this.files || await fs.readdir('.')
+
+    return this.files
   }
 
-  async getParsedFiles() {
+  async getParsedFiles () {
     // Our fictitious foo-parser is a big and expensive module to load, so
     // defer that work until we actually need to parse files.
     // Since `require()` comes with a module cache, the `require()` call
