@@ -7,7 +7,7 @@ from lib.util import execute, get_out_dir
 
 LINUX_BINARIES_TO_STRIP = [
   'electron',
-  'chrome_sandbox',
+  'chrome-sandbox',
   'libffmpeg.so',
   'libGLESv2.so',
   'libEGL.so',
