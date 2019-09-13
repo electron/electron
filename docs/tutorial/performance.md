@@ -43,12 +43,23 @@ To learn more about how to profile your app's code, familiarize yourself with
 the Chrome Developer Tools. For advanced analysis looking at multiple processes
 at once, consider the [Chrome Tracing] tool.
 
+### Recommended Reading
+
+ * [Get Started With Analyzing Runtime Performance][chrome-devtools-tutorial]
+ * []
+
 ## Checklist
 
 Chances are that your app could be a little leaner, faster, and generally less
 resource-hungry if you attempt these steps.
 
-## 1) Carelessly including Node.js modules
+1) [Carelessly including modules](#1-carelessly-including-modules)
+2) [Loading and running code too soon](#2-loading-and-running-code-to-soon)
+3) [Blocking the main process](#3-blocking-the-main-process)
+4) [Blocking the renderer process](#4-blocking-the-renderer-process)
+5) [Unnecessary polyfills](#5-unnecessary-polyfills)
+
+## 1) Carelessly including modules
 
 Before adding a Node.js module to your application, examine said module. How
 many dependencies does that module include? What kind of resources does said
@@ -133,7 +144,7 @@ currently not necessary.
 
 This might seem obvious, but many applications tend to do a large amount of
 work immediately after the app has launched - like checking for updates,
-downloading content used in a later flow, or performing heavy disk i/o
+downloading content used in a later flow, or performing heavy disk I/O
 operations.
 
 Let's consider Visual Studio Code as an example. When you open a file, it will
@@ -207,13 +218,128 @@ when your app starts.
 
 ## 3) Blocking the main process
 
+Electron's main process (sometimes called "browser process") is special: It is
+the parent process to all your app's other processes and the primary process
+the operating system interacts with. It handles windows, interactions, and the
+communication between various components inside your app. It also houses the
+UI thread.
+
+Under no circumstances should you block this process and the UI thread with
+long-running operations. Blocking the UI thread means that your entire app
+will freeze until the main process is ready to continue processing.
+
+### Why?
+
+The main process and its UI thread are essentially the control tower for major
+operations inside your app. When the operating system tells your app about a
+mouse click, it'll go through the main process before it reaches your window.
+If your window is rendering a buttery-smooth animation, it'll need to talk to
+the GPU process about that – once again going through the main process.
+
+Electron and Chromium are careful to put heavy disk I/O and CPU-bound operations
+onto new threads to avoid blocking the UI thread. You should do the same.
+
+### How?
+
+Electron's powerful multi-process architecture stands ready to assist you with
+your long-running tasks, but also includes a small number of performance traps.
+
+1) For long running CPU-heavy tasks, make use of
+[worker threads][worker-threads], consider moving them to the BrowserWindow, or
+(as a last resort) spawn a dedicated process.
+
+2) Avoid using the synchronous IPC and the `remote` module as much as possible.
+While there are legitimate use cases, it is far too easy to unknowingly block
+the UI thread using the `remote` module.
+
+3) Avoid using blocking I/O operations in the main process. In short, whenever
+core Node.js modules (like `fs` or `child_process`) offer a synchronous or an
+asynchronous version, you should prefer the asynchronous and non-blocking
+variant.
+
+
 ## 4) Blocking the renderer process
+
+Since Electron ships with a current version of Chrome, you can make use of the
+latest and greatest features the Web Platform offers to defer or offload heavy
+operations in a way that keeps your app smooth and responsive.
+
+### Why?
+
+Your app probably has a lot of JavaScript to run in the renderer process. The
+trick is to execute operations as quickly as possible without taking away
+resources needed to keep scrolling smooth, respond to user input, or animations
+at 60fps.
+
+Investing into orchestrating the flow of operations in your renderer's code is
+particularly useful if users complain about your app sometimes "stuttering".
+
+### How?
+
+Generally speaking, all advice for building performant web apps for modern
+browsers apply to Electron's renderers, too. The two primary tools at your
+disposal  are currently `requestIdleCallback()` for small operations and
+`Web Workers` for long-running operations.
+
+*`requestIdleCallback()`* allows developers to queue up a function to be
+executed as soon as the process is entering an idle period. It enables you to
+perform low-priority or background work without impacting the user experience.
+For more information about how to use it,
+[check out its documentation on MDN][request-idle-callback].
+
+*Web Workers* are a powerful tool to run code on a separate thread. There are
+some caveats to consider – consult Electron's
+[multithreading documentation][multithreading] and the
+[MDN documentation for Web Workers][web-workers]. They're an ideal solution
+for any operation that requires a lot of CPU power for an extended period of
+time.
 
 ## 5) Unnecessary polyfills
 
-## 6)
+One of Electron's great benefits is that you know exactly which engine will
+parse your JavaScript, HTML, and CSS. If you're re-purposing code that was
+written for the web at large, make sure to not polyfill features included in
+Electron with polyfills.
 
+### Why?
+
+When building a web application for today's Internet, the oldest environments
+dictate what features you can and cannot use. Even though Electron supports
+well-performing CSS filters and animations, an older browser might not. Where
+you could use WebGL, your developers may have chosen a more resource-hungry
+solution to support older phones.
+
+When it comes to JavaScript, you may have included toolkit libraries like
+jQuery for DOM selectors or polyfills like the `regenerator-runtime` to support
+`async/await`.
+
+It is rare for a JavaScript-based polyfill to be faster than the equivalent
+native feature in Electron. Do not slow down your Electron app by shipping your
+own version of standard web platform features.
+
+### How?
+
+Operate under the assumption that polyfills in current versions of Electron
+are unnecessary. If you have doubts, check [caniuse.com][https://caniuse.com/]
+and check if the version of Chromium used in your Electron version supports
+the feature you desire.
+
+In addition, carefully examine the libraries you use. Are they really necessary?
+`jQuery`, for example, was such a success that many of its features are now part
+of the [standard JavaScript feature set available][jquery-need].
+
+If you're using a transpiler/compiler like TypeScript, examine its configuration
+and ensure that you're targeting the latest ECMAScript version supported by
+Electron.
 
 [security]: ./security.md
 [performance-cpu-prof]: ../images/performance-cpu-prof.png
 [performance-heap-prof]: ../images/performance-heap-prof.png
+[chrome-devtools-tutorial]: https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/
+[chrome-tracing-tutorial]:
+[worker-threads]: https://nodejs.org/api/worker_threads.html
+[web-workers]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
+[request-idle-callback]: https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback
+[multithreading]: ./multithreading.md
+[caniuse]: https://caniuse.com/
+[jquery-need]: http://youmightnotneedjquery.com/
