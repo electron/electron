@@ -68,7 +68,7 @@ namespace {
 const char kRootName[] = "<root>";
 
 struct FileSystem {
-  FileSystem() {}
+  FileSystem() = default;
   FileSystem(const std::string& type,
              const std::string& file_system_name,
              const std::string& root_url,
@@ -182,7 +182,7 @@ CommonWebContentsDelegate::CommonWebContentsDelegate()
           base::CreateSequencedTaskRunnerWithTraits({base::MayBlock()})),
       weak_factory_(this) {}
 
-CommonWebContentsDelegate::~CommonWebContentsDelegate() {}
+CommonWebContentsDelegate::~CommonWebContentsDelegate() = default;
 
 void CommonWebContentsDelegate::InitWithWebContents(
     content::WebContents* web_contents,

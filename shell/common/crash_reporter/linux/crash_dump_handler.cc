@@ -166,7 +166,7 @@ class MimeWriter {
 MimeWriter::MimeWriter(int fd, const char* const mime_boundary)
     : fd_(fd), mime_boundary_(mime_boundary) {}
 
-MimeWriter::~MimeWriter() {}
+MimeWriter::~MimeWriter() = default;
 
 void MimeWriter::AddBoundary() {
   AddString(mime_boundary_);

@@ -32,7 +32,7 @@ RemoteCallbackFreer::RemoteCallbackFreer(v8::Isolate* isolate,
       context_id_(context_id),
       object_id_(object_id) {}
 
-RemoteCallbackFreer::~RemoteCallbackFreer() {}
+RemoteCallbackFreer::~RemoteCallbackFreer() = default;
 
 void RemoteCallbackFreer::RunDestructor() {
   auto* channel = "ELECTRON_RENDERER_RELEASE_CALLBACK";

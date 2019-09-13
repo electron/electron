@@ -49,7 +49,7 @@ CrashReporterLinux::CrashReporterLinux() : pid_(getpid()) {
   base::SetLinuxDistro(base::GetLinuxDistro());
 }
 
-CrashReporterLinux::~CrashReporterLinux() {}
+CrashReporterLinux::~CrashReporterLinux() = default;
 
 void CrashReporterLinux::Init(const std::string& product_name,
                               const std::string& company_name,

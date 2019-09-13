@@ -77,7 +77,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
  private:
   friend class base::RefCounted<FileSelectHelper>;
 
-  ~FileSelectHelper() override {}
+  ~FileSelectHelper() override = default;
 
   // net::DirectoryLister::DirectoryListerDelegate
   void OnListFile(
@@ -294,7 +294,7 @@ namespace electron {
 WebDialogHelper::WebDialogHelper(NativeWindow* window, bool offscreen)
     : window_(window), offscreen_(offscreen), weak_factory_(this) {}
 
-WebDialogHelper::~WebDialogHelper() {}
+WebDialogHelper::~WebDialogHelper() = default;
 
 void WebDialogHelper::RunFileChooser(
     content::RenderFrameHost* render_frame_host,

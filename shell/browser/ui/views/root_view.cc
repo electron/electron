@@ -41,7 +41,7 @@ RootView::RootView(NativeWindow* window)
   set_owned_by_client();
 }
 
-RootView::~RootView() {}
+RootView::~RootView() = default;
 
 void RootView::SetMenu(AtomMenuModel* menu_model) {
   if (menu_model == nullptr) {

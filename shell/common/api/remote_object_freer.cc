@@ -57,7 +57,7 @@ RemoteObjectFreer::RemoteObjectFreer(v8::Isolate* isolate,
   }
 }
 
-RemoteObjectFreer::~RemoteObjectFreer() {}
+RemoteObjectFreer::~RemoteObjectFreer() = default;
 
 void RemoteObjectFreer::RunDestructor() {
   content::RenderFrame* render_frame =

@@ -55,7 +55,7 @@ class SpellCheckClient::SpellcheckRequest {
       const base::string16& text,
       std::unique_ptr<blink::WebTextCheckingCompletion> completion)
       : text_(text), completion_(std::move(completion)) {}
-  ~SpellcheckRequest() {}
+  ~SpellcheckRequest() = default;
 
   const base::string16& text() const { return text_; }
   blink::WebTextCheckingCompletion* completion() { return completion_.get(); }

@@ -122,7 +122,7 @@ class V8ValueConverter::ScopedUniquenessGuard {
   DISALLOW_COPY_AND_ASSIGN(ScopedUniquenessGuard);
 };
 
-V8ValueConverter::V8ValueConverter() {}
+V8ValueConverter::V8ValueConverter() = default;
 
 void V8ValueConverter::SetRegExpAllowed(bool val) {
   reg_exp_allowed_ = val;

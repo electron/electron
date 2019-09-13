@@ -100,7 +100,7 @@ class RenderFrameStatus final : public content::RenderFrameObserver {
  public:
   explicit RenderFrameStatus(content::RenderFrame* render_frame)
       : content::RenderFrameObserver(render_frame) {}
-  ~RenderFrameStatus() final {}
+  ~RenderFrameStatus() final = default;
 
   bool is_ok() { return render_frame() != nullptr; }
 
@@ -113,7 +113,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
   explicit ScriptExecutionCallback(
       electron::util::Promise<v8::Local<v8::Value>> promise)
       : promise_(std::move(promise)) {}
-  ~ScriptExecutionCallback() override {}
+  ~ScriptExecutionCallback() override = default;
 
   void Completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {

@@ -126,9 +126,9 @@ void LoadResourceBundle(const std::string& locale) {
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
-AtomMainDelegate::AtomMainDelegate() {}
+AtomMainDelegate::AtomMainDelegate() = default;
 
-AtomMainDelegate::~AtomMainDelegate() {}
+AtomMainDelegate::~AtomMainDelegate() = default;
 
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   auto* command_line = base::CommandLine::ForCurrentProcess();

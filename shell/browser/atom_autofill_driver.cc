@@ -20,7 +20,7 @@ AutofillDriver::AutofillDriver(
   binding_.Bind(std::move(request));
 }
 
-AutofillDriver::~AutofillDriver() {}
+AutofillDriver::~AutofillDriver() = default;
 
 void AutofillDriver::ShowAutofillPopup(
     const gfx::RectF& bounds,

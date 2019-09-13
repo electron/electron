@@ -62,7 +62,7 @@ DesktopCapturer::DesktopCapturer(v8::Isolate* isolate) {
   Init(isolate);
 }
 
-DesktopCapturer::~DesktopCapturer() {}
+DesktopCapturer::~DesktopCapturer() = default;
 
 void DesktopCapturer::StartHandling(bool capture_window,
                                     bool capture_screen,

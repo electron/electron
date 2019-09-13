@@ -39,7 +39,7 @@ const char MenuBar::kViewClassName[] = "ElectronMenuBar";
 MenuBarColorUpdater::MenuBarColorUpdater(MenuBar* menu_bar)
     : menu_bar_(menu_bar) {}
 
-MenuBarColorUpdater::~MenuBarColorUpdater() {}
+MenuBarColorUpdater::~MenuBarColorUpdater() = default;
 
 void MenuBarColorUpdater::OnDidChangeFocus(views::View* focused_before,
                                            views::View* focused_now) {

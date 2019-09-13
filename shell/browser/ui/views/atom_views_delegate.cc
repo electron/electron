@@ -30,9 +30,9 @@ bool IsDesktopEnvironmentUnity() {
 
 namespace electron {
 
-ViewsDelegate::ViewsDelegate() {}
+ViewsDelegate::ViewsDelegate() = default;
 
-ViewsDelegate::~ViewsDelegate() {}
+ViewsDelegate::~ViewsDelegate() = default;
 
 void ViewsDelegate::SaveWindowPlacement(const views::Widget* window,
                                         const std::string& window_name,

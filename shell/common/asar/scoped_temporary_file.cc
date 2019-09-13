@@ -11,7 +11,7 @@
 
 namespace asar {
 
-ScopedTemporaryFile::ScopedTemporaryFile() {}
+ScopedTemporaryFile::ScopedTemporaryFile() = default;
 
 ScopedTemporaryFile::~ScopedTemporaryFile() {
   if (!path_.empty()) {

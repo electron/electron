@@ -183,7 +183,7 @@ URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
   InitWith(args->isolate(), args->GetThis());
 }
 
-URLRequestNS::~URLRequestNS() {}
+URLRequestNS::~URLRequestNS() = default;
 
 bool URLRequestNS::NotStarted() const {
   return request_state_ == 0;

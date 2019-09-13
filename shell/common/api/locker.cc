@@ -11,6 +11,6 @@ Locker::Locker(v8::Isolate* isolate) {
     locker_.reset(new v8::Locker(isolate));
 }
 
-Locker::~Locker() {}
+Locker::~Locker() = default;
 
 }  // namespace mate

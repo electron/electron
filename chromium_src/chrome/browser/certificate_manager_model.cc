@@ -86,7 +86,7 @@ CertificateManagerModel::CertificateManagerModel(
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 }
 
-CertificateManagerModel::~CertificateManagerModel() {}
+CertificateManagerModel::~CertificateManagerModel() = default;
 
 int CertificateManagerModel::ImportFromPKCS12(
     PK11SlotInfo* slot_info,

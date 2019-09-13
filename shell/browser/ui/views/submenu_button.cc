@@ -41,7 +41,7 @@ SubmenuButton::SubmenuButton(const base::string16& title,
       color_utils::BlendTowardMaxContrast(background_color_, 0x81));
 }
 
-SubmenuButton::~SubmenuButton() {}
+SubmenuButton::~SubmenuButton() = default;
 
 std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
     const {

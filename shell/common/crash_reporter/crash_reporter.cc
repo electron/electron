@@ -40,7 +40,7 @@ CrashReporter::CrashReporter() {
   // process_type_ will be empty for browser process
 }
 
-CrashReporter::~CrashReporter() {}
+CrashReporter::~CrashReporter() = default;
 
 bool CrashReporter::IsInitialized() {
   return is_initialized_;

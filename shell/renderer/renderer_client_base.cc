@@ -106,7 +106,7 @@ RendererClientBase::RendererClientBase() {
       command_line->GetSwitchValueASCII(::switches::kRendererClientId);
 }
 
-RendererClientBase::~RendererClientBase() {}
+RendererClientBase::~RendererClientBase() = default;
 
 void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
