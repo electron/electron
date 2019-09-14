@@ -45,7 +45,7 @@ void AutofillDriver::ShowAutofillPopup(
     auto* view = web_contents->web_contents()->GetMainFrame()->GetView();
     auto offset = view->GetViewBounds().origin() -
                   embedder_view->GetViewBounds().origin();
-    popup_bounds.Offset(offset.x(), offset.y());
+    popup_bounds.Offset(offset);
     embedder_frame_host = embedder->web_contents()->GetMainFrame();
   }
 
