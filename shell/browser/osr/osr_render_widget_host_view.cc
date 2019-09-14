@@ -281,9 +281,9 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
         content::DelegatedFrameHost::HiddenCause::kOther);
   delegated_frame_host_->DetachFromCompositor();
 
-  delegated_frame_host_.reset(nullptr);
-  compositor_.reset(nullptr);
-  root_layer_.reset(nullptr);
+  delegated_frame_host_.reset();
+  compositor_.reset();
+  root_layer_.reset();
 }
 
 content::BrowserAccessibilityManager*
