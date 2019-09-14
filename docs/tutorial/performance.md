@@ -54,7 +54,7 @@ Chances are that your app could be a little leaner, faster, and generally less
 resource-hungry if you attempt these steps.
 
 1) [Carelessly including modules](#1-carelessly-including-modules)
-2) [Loading and running code too soon](#2-loading-and-running-code-to-soon)
+2) [Loading and running code too soon](#2-loading-and-running-code-too-soon)
 3) [Blocking the main process](#3-blocking-the-main-process)
 4) [Blocking the renderer process](#4-blocking-the-renderer-process)
 5) [Unnecessary polyfills](#5-unnecessary-polyfills)
