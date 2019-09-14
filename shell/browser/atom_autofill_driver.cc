@@ -51,7 +51,7 @@ void AutofillDriver::ShowAutofillPopup(
 
   autofill_popup_->CreateView(render_frame_host_, embedder_frame_host, osr,
                               web_contents->owner_window()->content_view(),
-                              bounds);
+                              popup_bounds);
   autofill_popup_->SetItems(values, labels);
 }
 
