@@ -5,8 +5,9 @@ Follow the guidelines below for building Electron on Windows.
 ## Prerequisites
 
 * Windows 10 / Server 2012 R2 or higher
-* Visual Studio 2017 15.7.2 or higher - [download VS 2017 Community Edition for
+* Visual Studio 2017 15.7.2 or higher - [download VS 2019 Community Edition for
   free](https://www.visualstudio.com/vs/)
+  * Ensure that the "Desktop development with C++" workload is included in your installation, as it contains the required build toolchains.
 * [Python 2.7.10 or higher](http://www.python.org/download/releases/2.7/)
   * Contrary to the `depot_tools` setup instructions linked below, you will need
   to use your locally installed Python with at least version 2.7.10 (with
