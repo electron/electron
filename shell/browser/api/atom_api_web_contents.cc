@@ -844,9 +844,8 @@ void WebContents::BeforeUnloadFired(bool proceed,
 }
 
 void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  auto* const impl = content::RenderWidgetHostImpl::FromID(
-      render_view_host->GetProcess()->GetID(),
-      render_view_host->GetRoutingID());
+  auto* impl = static_cast<content::RenderWidgetHostImpl*>(
+      render_view_host->GetWidget());
   if (impl)
     impl->disable_hidden_ = !background_throttling_;
 }
