@@ -4,6 +4,7 @@ import("//build/config/win/manifest.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//pdf/features.gni")
 import("//printing/buildflags/buildflags.gni")
+import("//testing/test.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -58,6 +59,10 @@ config("branding") {
     "ELECTRON_PRODUCT_NAME=\"$electron_product_name\"",
     "ELECTRON_PROJECT_NAME=\"$electron_project_name\"",
   ]
+}
+
+config("electron_lib_config") {
+  include_dirs = [ "." ]
 }
 
 # We geneate the definitions twice here, once in //electron/electron.d.ts
@@ -333,7 +338,10 @@ source_set("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
 
-  public_configs = [ ":branding" ]
+  public_configs = [
+    ":branding",
+    ":electron_lib_config",
+  ]
 
   deps = [
     ":atom_js2c",
@@ -774,6 +782,7 @@ if (is_mac) {
       "Libraries",
     ]
     public_deps = [
+      ":electron_framework_libraries",
       ":electron_lib",
     ]
     deps = [
@@ -1186,6 +1195,43 @@ if (is_mac) {
         ":swiftshader_gles_symbols",
       ]
     }
+  }
+}
+
+test("shell_browser_ui_unittests") {
+  sources = [
+    "//electron/shell/browser/ui/accelerator_util_unittests.cc",
+    "//electron/shell/browser/ui/run_all_unittests.cc",
+  ]
+
+  configs += [ ":electron_lib_config" ]
+
+  deps = [
+    ":electron_lib",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+    "//ui/base",
+    "//ui/strings",
+  ]
+
+  if (is_mac) {
+    # TODO(codebytere): Why do we only need to load these two??
+    libs = [
+      "StoreKit.framework",
+      "SecurityInterface.framework",
+    ]
+
+    # Resolve paths owing to different test executable locations
+    ldflags = [
+      "-F",
+      rebase_path("external_binaries", root_build_dir),
+      "-rpath",
+      "@loader_path",
+      "-rpath",
+      "@executable_path/Electron.app/Contents/Frameworks",
+    ]
   }
 }
 
