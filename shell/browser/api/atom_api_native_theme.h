@@ -38,6 +38,7 @@ class NativeTheme : public mate::EventEmitter<NativeTheme>,
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* theme) override;
+  void OnNativeThemeUpdatedOnUI();
 
  private:
   ui::NativeTheme* theme_;
