@@ -117,7 +117,7 @@ dialog.showOpenDialogSync(mainWindow, {
 
 Returns `Promise<Object>` - Resolve wih an object containing the following:
 
-* `canceled` - Boolean - whether or not the dialog was canceled.
+* `canceled` Boolean - whether or not the dialog was canceled.
 * `filePaths` String[] (optional) - An array of file paths chosen by the user. If the dialog is cancelled this will be an empty array.
 * `bookmarks` String[] (optional) _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated.
 
