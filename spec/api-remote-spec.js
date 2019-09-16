@@ -238,14 +238,14 @@ describe('remote module', () => {
     const print = path.join(fixtures, 'module', 'print_name.js')
     const printName = remote.require(print)
 
-    it('converts NaN to undefined', () => {
-      expect(printName.getNaN()).to.be.undefined()
-      expect(printName.echo(NaN)).to.be.undefined()
+    it('preserves NaN', () => {
+      expect(printName.getNaN()).to.be.NaN()
+      expect(printName.echo(NaN)).to.be.NaN()
     })
 
-    it('converts Infinity to undefined', () => {
-      expect(printName.getInfinity()).to.be.undefined()
-      expect(printName.echo(Infinity)).to.be.undefined()
+    it('preserves Infinity', () => {
+      expect(printName.getInfinity()).to.equal(Infinity)
+      expect(printName.echo(Infinity)).to.equal(Infinity)
     })
 
     it('keeps its constructor name for objects', () => {
