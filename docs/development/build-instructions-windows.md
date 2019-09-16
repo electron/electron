@@ -7,7 +7,12 @@ Follow the guidelines below for building Electron on Windows.
 * Windows 10 / Server 2012 R2 or higher
 * Visual Studio 2017 15.7.2 or higher - [download VS 2019 Community Edition for
   free](https://www.visualstudio.com/vs/)
-  * Ensure that the "Desktop development with C++" workload is included in your installation, as it contains the required build toolchains.
+  * Ensure that the "Desktop development with C++" workload is included in your installation,
+  as it contains the required build toolchains.
+  * If your Visual Studio is installed in a directory other than the default, you'll need to
+  set a few environment variables to point the toolchains to your installation path.
+    * `vs2019_install = DRIVE:\path\to\Microsoft Visual Studio\2019\Community` (replace `2019` and `Community` with your installed versions)
+    * `WINDOWSSDKDIR = DRIVE:\path\to\Windows Kits\10`
 * [Python 2.7.10 or higher](http://www.python.org/download/releases/2.7/)
   * Contrary to the `depot_tools` setup instructions linked below, you will need
   to use your locally installed Python with at least version 2.7.10 (with
@@ -49,7 +54,7 @@ building with Visual Studio will come in the future.
 
 See [Build Instructions: GN](build-instructions-gn.md)
 
-## 32bit Build
+## 32bit Build 
 
 To build for the 32bit target, you need to pass `target_cpu = "x86"` as a GN
 arg. You can build the 32bit target alongside the 64bit target by using a
