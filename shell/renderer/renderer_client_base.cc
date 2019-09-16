@@ -106,7 +106,7 @@ RendererClientBase::RendererClientBase() {
       command_line->GetSwitchValueASCII(::switches::kRendererClientId);
 }
 
-RendererClientBase::~RendererClientBase() {}
+RendererClientBase::~RendererClientBase() = default;
 
 void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
@@ -200,8 +200,8 @@ void RendererClientBase::RenderThreadStarted() {
   blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
 
-  prescient_networking_dispatcher_.reset(
-      new network_hints::PrescientNetworkingDispatcher());
+  prescient_networking_dispatcher_ =
+      std::make_unique<network_hints::PrescientNetworkingDispatcher>();
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.

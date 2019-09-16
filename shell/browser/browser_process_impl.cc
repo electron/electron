@@ -4,6 +4,8 @@
 
 #include "shell/browser/browser_process_impl.h"
 
+#include <memory>
+
 #include <utility>
 
 #include "chrome/common/chrome_switches.h"
@@ -282,7 +284,7 @@ const std::string& BrowserProcessImpl::GetApplicationLocale() {
 printing::PrintJobManager* BrowserProcessImpl::print_job_manager() {
 #if BUILDFLAG(ENABLE_PRINTING)
   if (!print_job_manager_)
-    print_job_manager_.reset(new printing::PrintJobManager());
+    print_job_manager_ = std::make_unique<printing::PrintJobManager>();
   return print_job_manager_.get();
 #else
   return nullptr;

@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/views/root_view.h"
 
+#include <memory>
+
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/menu_bar.h"
@@ -41,7 +43,7 @@ RootView::RootView(NativeWindow* window)
   set_owned_by_client();
 }
 
-RootView::~RootView() {}
+RootView::~RootView() = default;
 
 void RootView::SetMenu(AtomMenuModel* menu_model) {
   if (menu_model == nullptr) {
@@ -60,7 +62,7 @@ void RootView::SetMenu(AtomMenuModel* menu_model) {
     return;
 
   if (!menu_bar_) {
-    menu_bar_.reset(new MenuBar(this));
+    menu_bar_ = std::make_unique<MenuBar>(this);
     menu_bar_->set_owned_by_client();
     if (!menu_bar_autohide_)
       SetMenuBarVisibility(true);

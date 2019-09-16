@@ -896,7 +896,7 @@ content::PlatformNotificationService*
 AtomBrowserClient::GetPlatformNotificationService(
     content::BrowserContext* browser_context) {
   if (!notification_service_) {
-    notification_service_.reset(new PlatformNotificationService(this));
+    notification_service_ = std::make_unique<PlatformNotificationService>(this);
   }
   return notification_service_.get();
 }

@@ -67,7 +67,7 @@ AtomContentUtilityClient::AtomContentUtilityClient() : elevated_(false) {
 #endif
 }
 
-AtomContentUtilityClient::~AtomContentUtilityClient() {}
+AtomContentUtilityClient::~AtomContentUtilityClient() = default;
 
 // The guts of this came from the chromium implementation
 // https://cs.chromium.org/chromium/src/chrome/utility/

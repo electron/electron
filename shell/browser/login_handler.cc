@@ -46,7 +46,7 @@ LoginHandler::LoginHandler(net::URLRequest* request,
                      base::RetainedRef(this), std::move(request_details)));
 }
 
-LoginHandler::~LoginHandler() {}
+LoginHandler::~LoginHandler() = default;
 
 void LoginHandler::Login(const base::string16& username,
                          const base::string16& password) {

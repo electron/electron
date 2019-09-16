@@ -17,7 +17,7 @@ NodeBindingsLinux::NodeBindingsLinux(BrowserEnvironment browser_env)
   epoll_ctl(epoll_, EPOLL_CTL_ADD, backend_fd, &ev);
 }
 
-NodeBindingsLinux::~NodeBindingsLinux() {}
+NodeBindingsLinux::~NodeBindingsLinux() = default;
 
 void NodeBindingsLinux::RunMessageLoop() {
   // Get notified when libuv's watcher queue changes.

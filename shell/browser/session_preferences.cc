@@ -13,7 +13,7 @@ SessionPreferences::SessionPreferences(content::BrowserContext* context) {
   context->SetUserData(&kLocatorKey, base::WrapUnique(this));
 }
 
-SessionPreferences::~SessionPreferences() {}
+SessionPreferences::~SessionPreferences() = default;
 
 // static
 SessionPreferences* SessionPreferences::FromBrowserContext(

@@ -27,7 +27,7 @@ Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
   Init(isolate);
 }
 
-Debugger::~Debugger() {}
+Debugger::~Debugger() = default;
 
 void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host) {
   DCHECK(agent_host == agent_host_);

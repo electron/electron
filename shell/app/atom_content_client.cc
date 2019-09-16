@@ -179,9 +179,9 @@ void AppendDelimitedSwitchToVector(const base::StringPiece cmd_switch,
 
 }  // namespace
 
-AtomContentClient::AtomContentClient() {}
+AtomContentClient::AtomContentClient() = default;
 
-AtomContentClient::~AtomContentClient() {}
+AtomContentClient::~AtomContentClient() = default;
 
 base::string16 AtomContentClient::GetLocalizedString(int message_id) {
   return l10n_util::GetStringUTF16(message_id);

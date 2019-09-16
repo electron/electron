@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 #include <algorithm>
+#include <memory>
+
 #include <utility>
 #include <vector>
 
@@ -79,7 +81,7 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
     }
 
     auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(rwhv);
-    view_->view_proxy_.reset(new OffscreenViewProxy(view_));
+    view_->view_proxy_ = std::make_unique<OffscreenViewProxy>(view_);
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
   }
 #endif

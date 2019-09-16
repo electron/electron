@@ -15,7 +15,7 @@ Event::Event(v8::Isolate* isolate) {
   Init(isolate);
 }
 
-Event::~Event() {}
+Event::~Event() = default;
 
 void Event::SetCallback(base::Optional<MessageSyncCallback> callback) {
   DCHECK(!callback_);

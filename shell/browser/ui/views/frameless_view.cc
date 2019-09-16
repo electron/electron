@@ -22,9 +22,9 @@ const int kResizeAreaCornerSize = 16;
 // static
 const char FramelessView::kViewClassName[] = "FramelessView";
 
-FramelessView::FramelessView() {}
+FramelessView::FramelessView() = default;
 
-FramelessView::~FramelessView() {}
+FramelessView::~FramelessView() = default;
 
 void FramelessView::Init(NativeWindowViews* window, views::Widget* frame) {
   window_ = window;
