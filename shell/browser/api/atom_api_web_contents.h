@@ -503,6 +503,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
                  const std::string& channel,
                  base::Value arguments) override;
   void MessageHost(const std::string& channel, base::Value arguments) override;
+  void DereferenceRemoteJSObject(const std::string& context_id,
+                                 int object_id,
+                                 int ref_count) override;
   void UpdateDraggableRegions(
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;

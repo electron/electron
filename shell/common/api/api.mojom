@@ -71,6 +71,13 @@ interface ElectronBrowser {
     string channel,
     mojo_base.mojom.ListValue arguments);
 
+  // This is an API specific to the "remote" module, and will ultimately be
+  // replaced by generic IPC once WeakRef is generally available.
+  DereferenceRemoteJSObject(
+    string context_id,
+    int32 object_id,
+    int32 ref_count);
+
   UpdateDraggableRegions(
     array<DraggableRegion> regions);
 

@@ -52,8 +52,7 @@ RemoteObjectFreer::RemoteObjectFreer(v8::Isolate* isolate,
     : ObjectLifeMonitor(isolate, target),
       context_id_(context_id),
       object_id_(object_id),
-      routing_id_(MSG_ROUTING_NONE),
-      isolate_(isolate) {
+      routing_id_(MSG_ROUTING_NONE) {
   content::RenderFrame* render_frame = GetCurrentRenderFrame();
   if (render_frame) {
     routing_id_ = render_frame->GetRoutingID();
@@ -83,20 +82,10 @@ void RemoteObjectFreer::RunDestructor() {
       ref_mapper_.erase(objects_it);
   }
 
-  auto* channel = "ELECTRON_BROWSER_DEREFERENCE";
-
-  base::ListValue args;
-  args.AppendString(context_id_);
-  args.AppendInteger(object_id_);
-  args.AppendInteger(ref_count);
-  v8::Local<v8::Value> value = mate::ConvertToV8(isolate_, args);
-  blink::CloneableMessage message;
-  CHECK(mate::ConvertFromV8(isolate_, value, &message));
-
   mojom::ElectronBrowserAssociatedPtr electron_ptr;
   render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(true, channel, std::move(message));
+  electron_ptr->DereferenceRemoteJSObject(context_id_, object_id_, ref_count);
 }
 
 }  // namespace electron
