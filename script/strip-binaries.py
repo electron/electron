@@ -17,7 +17,10 @@ LINUX_BINARIES_TO_STRIP = [
   'swiftshader/libEGL.so',
   'swiftshader/libvk_swiftshader.so',
   'mksnapshot',
-  'v8_context_snapshot_generator',
+  'v8_context_snapshot_generator'
+]
+
+LINUX_ARCH_INDEPENDENT_BINARIES_TO_STRIP = [
   'clang_x86_v8_arm/mksnapshot',
   'clang_x86_v8_arm/v8_context_snapshot_generator',
   'clang_x64_v8_arm64/mksnapshot'
@@ -29,6 +32,11 @@ def strip_binaries(directory, target_cpu):
     binary_path = os.path.join(directory, binary)
     if os.path.isfile(binary_path):
       strip_binary(binary_path, target_cpu)
+  for binary in LINUX_ARCH_INDEPENDENT_BINARIES_TO_STRIP:
+    binary_path = os.path.join(directory, binary)
+    if os.path.isfile(binary_path):
+      # Pretend to be x64 to force "strip" usage
+      strip_binary(binary_path, 'x64')
 
 def strip_binary(binary_path, target_cpu):
   if target_cpu == 'arm':
