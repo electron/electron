@@ -10,6 +10,7 @@
 #include <third_party/blink/public/platform/web_media_stream_track.h>
 #undef INSIDE_BLINK
 
+// TODO: Check that all includes are required
 #include <base/base64.h>
 #include <base/rand_util.h>
 #include <base/strings/utf_string_conversions.h>
@@ -44,6 +45,8 @@ struct ControlObject;
 }
 
 namespace mate {
+
+// blink::WebMediaStreamTrack to v8::Value mate converter
 template <>
 struct Converter<blink::WebMediaStreamTrack> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
@@ -55,6 +58,8 @@ struct Converter<blink::WebMediaStreamTrack> {
   }
 };
 
+// v8::ArrayBuffer to v8::Value mate converter
+// TODO: Why is this explicit? check if everyting compiles without it
 template <>
 struct Converter<v8::Local<v8::ArrayBuffer>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
@@ -63,6 +68,7 @@ struct Converter<v8::Local<v8::ArrayBuffer>> {
   }
 };
 
+// base::TimeDelta to/from v8::Value mate converter
 template <>
 struct Converter<base::TimeDelta> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, base::TimeDelta v) {
@@ -82,6 +88,7 @@ struct Converter<base::TimeDelta> {
   }
 };
 
+// base::TimeTicks to/from v8::Value mate converter
 template <>
 struct Converter<base::TimeTicks> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, base::TimeTicks v) {
@@ -101,8 +108,13 @@ struct Converter<base::TimeTicks> {
   }
 };
 
+// ControlObject ptr to/from v8::Value mate converter
+// Note that ToV8 creates a new Local that has internal fields
+// while FromV8 just extracts ControlObject ptr from an
+// internal field
 template <>
 struct Converter<ControlObject*> {
+  // TODO: Why impl is not here?
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, ControlObject* v);
 
   static bool FromV8(v8::Isolate* isolate,
@@ -126,10 +138,14 @@ struct Converter<ControlObject*> {
 
 namespace {
 
+// TODO: Remove
 void test(mate::Arguments* args) {
   std::cout << "test" << std::endl;
 }
 
+// GC wrapper for a non-GC frame
+// (When accessing the API from JS)
+// TODO: groom
 struct Frame : mate::Wrappable<Frame> {
   Frame(v8::Isolate* isolate, scoped_refptr<media::VideoFrame> frame)
       : frame_(std::move(frame)) {
@@ -169,6 +185,8 @@ struct Frame : mate::Wrappable<Frame> {
     return frame_->timestamp();
   }
 
+  // Creates an ArrayBuffer over an existing memory
+  // of the frame_, memory is freed only when frame_ is deleted
   v8::Local<v8::ArrayBuffer> data(int plane) {
     if (!frame_)
       return {};

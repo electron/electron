@@ -87,7 +87,7 @@ inline VideoFrameReleaser::~VideoFrameReleaser() = default;
 // Helper object that wraps VideoFrameCallback functionality
 // Simplifies allocation and deletion of non-GC frames
 // in a safe manner.
-// Holds a reference to the VideoFrameCallback
+// Holds a strong reference to the VideoFrameCallback
 // TODO: Refactor to a class, groom, make non-copyable
 struct VideoFrameCallbackHolder
     : std::enable_shared_from_this<VideoFrameCallbackHolder> {
