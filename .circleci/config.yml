@@ -335,8 +335,6 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
     name: Build chromedriver.zip
     command: |
       cd src
-      ninja -C out/Default chrome/test/chromedriver -j $NUMBER_OF_NINJA_PROCESSES
-      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/Default/chromedriver
       ninja -C out/Default electron:electron_chromedriver_zip
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
@@ -456,15 +454,6 @@ step-mksnapshot-build: &step-mksnapshot-build
     name: mksnapshot build
     command: |
       cd src
-      if [ "`uname`" != "Darwin" ]; then
-        if [ "$TARGET_ARCH" == "arm" ]; then
-          electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
-        elif [ "$TARGET_ARCH" == "arm64" ]; then
-          electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
-        else
-          electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
-        fi
-      fi
       ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
 
 step-mksnapshot-store: &step-mksnapshot-store

@@ -1183,6 +1183,8 @@ template("dist_zip") {
       "$root_out_dir/gen.runtime/" + get_label_info(target_name, "dir") + "/" +
       get_label_info(target_name, "name") + ".runtime_deps"
 
+  _strip_binaries_target = "${target_name}__strip"
+
   group(_runtime_deps_target) {
     forward_variables_from(invoker,
                            [
@@ -1194,10 +1196,27 @@ template("dist_zip") {
     write_runtime_deps = _runtime_deps_file
   }
 
+  action(_strip_binaries_target) {
+    forward_variables_from(invoker, [ "testonly" ])
+    script = "//electron/script/strip-binaries.py"
+    deps = [
+      ":$_runtime_deps_target",
+    ]
+    args = [
+      "--directory",
+      rebase_path(root_out_dir),
+      "--target-cpu",
+      target_cpu,
+    ]
+    outputs = [
+      "$target_gen_dir/$_strip_binaries_target/.strip",
+    ]
+  }
+
   action(target_name) {
     script = "//electron/build/zip.py"
     deps = [
-      ":$_runtime_deps_target",
+      ":$_strip_binaries_target",
     ]
     forward_variables_from(invoker,
                            [
