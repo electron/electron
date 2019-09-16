@@ -817,6 +817,76 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
 
     - *step-maybe-notify-slack-failure
 
+steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-inline-checkout-for-tests
+  steps:
+    # Checkout - Copied ffrom steps-checkout
+    - *step-checkout-electron
+    - *step-depot-tools-get
+    - *step-depot-tools-add-to-path
+    - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
+    - *step-install-gnutar-on-mac
+    - *step-generate-deps-hash
+    - *step-touch-sync-done
+    - *step-maybe-restore-src-cache
+    - *step-maybe-restore-git-cache
+    - *step-set-git-cache-path
+    # This sync call only runs if .circle-sync-done is an EMPTY file
+    - *step-gclient-sync
+    # These next few steps reset Electron to the correct commit regardless of which cache was restored
+    - run:
+        name: Wipe Electron
+        command: rm -rf src/electron
+    - *step-checkout-electron
+    - *step-run-electron-only-hooks
+    - *step-generate-deps-hash-cleanly
+    - *step-mark-sync-done
+    - *step-minimize-workspace-size-from-checkout
+    
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
+    - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
+    - *step-install-npm-deps-on-mac
+    - *step-fix-sync-on-mac
+    - *step-gn-gen-default
+    - *step-delete-git-directories
+
+    # Electron app
+    - *step-electron-build
+    - *step-maybe-electron-dist-strip
+    - *step-electron-dist-build
+    - *step-electron-dist-store
+    - *step-ninja-summary
+
+    # Node.js headers
+    - *step-nodejs-headers-build
+    - *step-nodejs-headers-store
+
+    - *step-show-sccache-stats
+
+    # mksnapshot
+    - *step-mksnapshot-build
+    - *step-mksnapshot-store
+    - *step-maybe-cross-arch-snapshot
+    - *step-maybe-cross-arch-snapshot-store
+
+    # ffmpeg
+    - *step-ffmpeg-gn-gen
+    - *step-ffmpeg-build
+    - *step-ffmpeg-store
+
+    # Save all data needed for a further tests run.
+    - *step-persist-data-for-tests
+
+    - *step-maybe-generate-breakpad-symbols
+    - *step-maybe-zip-symbols
+
+    # Trigger tests on arm hardware if needed
+    - *step-maybe-trigger-arm-test
+
+    - *step-maybe-notify-slack-failure
+
 steps-electron-build-for-publish: &steps-electron-build-for-publish
   steps:
     - *step-checkout-electron
@@ -1084,7 +1154,8 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-x64-testing-no-run-as-node:
     <<: *machine-linux-2xlarge
@@ -1094,7 +1165,8 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-ninja-status
       <<: *env-disable-run-as-node
-    <<: *steps-electron-build-for-tests
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-x64-testing-gn-check:
     <<: *machine-linux-medium
@@ -1148,7 +1220,8 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-ia32-chromedriver:
     <<: *machine-linux-medium
@@ -1199,7 +1272,8 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
-    <<: *steps-electron-build-for-tests
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-arm-chromedriver:
     <<: *machine-linux-medium
@@ -1258,7 +1332,8 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
-    <<: *steps-electron-build-for-tests
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-arm64-testing-gn-check:
     <<: *machine-linux-medium
@@ -1688,12 +1763,8 @@ workflows:
       - linux-x64-debug-gn-check:
           requires:
             - linux-checkout-fast
-      - linux-x64-testing:
-          requires:
-            - linux-checkout-fast
-      - linux-x64-testing-no-run-as-node:
-          requires:
-            - linux-checkout-fast
+      - linux-x64-testing
+      - linux-x64-testing-no-run-as-node
       - linux-x64-testing-gn-check:
           requires:
             - linux-checkout-fast
@@ -1710,9 +1781,7 @@ workflows:
       - linux-ia32-debug:
           requires:
             - linux-checkout-fast
-      - linux-ia32-testing:
-          requires:
-            - linux-checkout-fast
+      - linux-ia32-testing
       - linux-ia32-testing-tests:
           requires:
             - linux-ia32-testing
