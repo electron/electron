@@ -6,7 +6,7 @@ import * as semver from 'semver'
 import { delay, ifdescribe } from './spec-helpers'
 import { emittedOnce } from './events-helpers';
 
-describe.only('nativeTheme module', () => {
+describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {
     it('returns a boolean', () => {
       expect(nativeTheme.shouldUseDarkColors).to.be.a('boolean')
