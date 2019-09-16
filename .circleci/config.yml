@@ -378,6 +378,9 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/out/Default/mksnapshot.zip
       - src/out/Default/gen/node_headers
       - src/out/ffmpeg/ffmpeg.zip
+      - src/electron
+      - src/third_party/electron_node
+      - src/third_party/nan
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
@@ -1138,7 +1141,8 @@ jobs:
       <<: *env-debug-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-x64-debug-gn-check:
     <<: *machine-linux-medium
@@ -1210,7 +1214,8 @@ jobs:
       <<: *env-debug-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-ia32-testing:
     <<: *machine-linux-2xlarge
@@ -1261,7 +1266,8 @@ jobs:
       <<: *env-debug-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-arm-testing:
     <<: *machine-linux-2xlarge
@@ -1313,7 +1319,8 @@ jobs:
       <<: *env-debug-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-arm64-debug-gn-check:
     <<: *machine-linux-medium
@@ -1757,9 +1764,7 @@ workflows:
       - linux-checkout-fast
       - linux-checkout-and-save-cache
 
-      - linux-x64-debug:
-          requires:
-            - linux-checkout-fast
+      - linux-x64-debug
       - linux-x64-debug-gn-check:
           requires:
             - linux-checkout-fast
@@ -1778,9 +1783,7 @@ workflows:
           requires:
             - linux-x64-testing
 
-      - linux-ia32-debug:
-          requires:
-            - linux-checkout-fast
+      - linux-ia32-debug
       - linux-ia32-testing
       - linux-ia32-testing-tests:
           requires:
@@ -1792,22 +1795,14 @@ workflows:
           requires:
             - linux-ia32-testing
 
-      - linux-arm-debug:
-          requires:
-            - linux-checkout-fast
-      - linux-arm-testing:
-          requires:
-            - linux-checkout-fast
+      - linux-arm-debug
+      - linux-arm-testing
 
-      - linux-arm64-debug:
-          requires:
-            - linux-checkout-fast
+      - linux-arm64-debug
       - linux-arm64-debug-gn-check:
           requires:
             - linux-checkout-fast
-      - linux-arm64-testing:
-          requires:
-            - linux-checkout-fast
+      - linux-arm64-testing
       - linux-arm64-testing-gn-check:
           requires:
             - linux-checkout-fast
