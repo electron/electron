@@ -338,7 +338,7 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
     name: Build chromedriver.zip
     command: |
       cd src
-      ninja -C out/Default electron:electron_chromedriver_zip
+      ninja -C out/Default electron:electron_chromedriver_zip -j $NUMBER_OF_NINJA_PROCESSES
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
