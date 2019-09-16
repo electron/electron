@@ -527,38 +527,116 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
   return true;
 }
 
-v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(
-    v8::Isolate* isolate,
-    const blink::CloneableMessage& in) {
-  auto message_data = in.encoded_message;
-  v8::ValueDeserializer deserializer(isolate, message_data.data(),
-                                     message_data.size());
-  auto result = deserializer.ReadValue(isolate->GetCurrentContext());
-  return result.ToLocalChecked();
-}
-
-/*
 namespace {
 class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
  public:
+  V8SerializerDelegate(v8::Isolate* isolate) : isolate_(isolate) {}
   ~V8SerializerDelegate() override = default;
-  void ThrowDataCloneError(Local<String> message) override {
-    LOG(INFO) << gin::V8ToString(isolate, message);
+  void ThrowDataCloneError(v8::Local<v8::String> message) override {
+    isolate_->ThrowException(v8::Exception::Error(message));
+    // LOG(INFO) << gin::V8ToString(isolate, message);
   }
-  Maybe<bool> WriteHostObject(Isolate* isolate, Local<Object> object) override {
-    if (obj->InternalFieldCount() != 1)
-      return nullptr;
-    return obj->GetAlignedPointerFromInternalField(0);
+  v8::Maybe<bool> WriteHostObject(v8::Isolate* isolate,
+                                  v8::Local<v8::Object> object) override {
+    auto context = isolate->GetCurrentContext();
+    auto properties = object->GetOwnPropertyNames(context);
+    WriteTag(0);
+    if (!properties.IsEmpty()) {
+      auto props = properties.ToLocalChecked();
+      serializer_->WriteUint32(props->Length());
+      for (size_t i = 0; i < props->Length(); i++) {
+        auto key = props->Get(context, i).ToLocalChecked();
+        auto value = object->Get(context, key).ToLocalChecked();
+        bool wrote_key, wrote_value;
+        if (!serializer_->WriteValue(context, key).To(&wrote_key)) {
+          return v8::Nothing<bool>();
+        }
+        if (!serializer_->WriteValue(context, value).To(&wrote_value)) {
+          return v8::Nothing<bool>();
+        }
+      }
+    } else {
+      serializer_->WriteUint32(0);
+    }
+    return v8::Just(true);
   }
+  void WriteTag(uint8_t tag) { serializer_->WriteRawBytes(&tag, 1); }
+  v8::ValueSerializer* serializer_;
+
+ private:
+  v8::Isolate* isolate_;
 };
+
+class V8DeserializerDelegate : public v8::ValueDeserializer::Delegate {
+ public:
+  ~V8DeserializerDelegate() override = default;
+  v8::MaybeLocal<v8::Object> ReadHostObject(v8::Isolate* isolate) override {
+    uint8_t tag;
+    if (!ReadTag(&tag)) {
+      return v8::MaybeLocal<v8::Object>();
+    }
+    if (tag != 0) {
+      return v8::MaybeLocal<v8::Object>();
+    }
+    uint32_t length;
+    if (!deserializer_->ReadUint32(&length)) {
+      return v8::MaybeLocal<v8::Object>();
+    }
+    auto context = isolate->GetCurrentContext();
+    auto ret = v8::Object::New(isolate);
+    for (size_t i = 0; i < length; i++) {
+      auto maybe_key = deserializer_->ReadValue(context);
+      if (maybe_key.IsEmpty())
+        return v8::MaybeLocal<v8::Object>();
+      auto key = maybe_key.ToLocalChecked();
+      auto maybe_value = deserializer_->ReadValue(context);
+      if (maybe_value.IsEmpty())
+        return v8::MaybeLocal<v8::Object>();
+      auto value = maybe_value.ToLocalChecked();
+      ret->Set(context, key, value).Check();
+    }
+    return v8::MaybeLocal<v8::Object>(ret);
+  }
+
+  bool ReadTag(uint8_t* tag) {
+    const void* tag_bytes = nullptr;
+    if (!deserializer_->ReadRawBytes(1, &tag_bytes))
+      return false;
+    *tag = static_cast<uint8_t>(*reinterpret_cast<const uint8_t*>(tag_bytes));
+    return true;
+  }
+  v8::ValueDeserializer* deserializer_;
+};
+}  // namespace
+
+v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(
+    v8::Isolate* isolate,
+    const blink::CloneableMessage& in) {
+  v8::EscapableHandleScope scope(isolate);
+  auto message_data = in.encoded_message;
+  V8DeserializerDelegate delegate;
+  v8::ValueDeserializer deserializer(isolate, message_data.data(),
+                                     message_data.size(), &delegate);
+  delegate.deserializer_ = &deserializer;
+  auto context = isolate->GetCurrentContext();
+  bool read_header;
+  if (!deserializer.ReadHeader(context).To(&read_header))
+    return v8::Null(isolate);
+  DCHECK(read_header);
+  v8::Local<v8::Value> value;
+  if (!deserializer.ReadValue(context).ToLocal(&value))
+    return v8::Null(isolate);
+  return scope.Escape(value);
 }
-*/
 
 bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
                                                 v8::Handle<v8::Value> val,
                                                 blink::CloneableMessage* out) {
   // TODO: don't swallow exceptions
-  v8::ValueSerializer serializer(isolate);
+  V8SerializerDelegate delegate(isolate);
+  v8::ValueSerializer serializer(isolate, &delegate);
+  delegate.serializer_ = &serializer;
+  serializer.WriteHeader();
   v8::TryCatch try_catch(isolate);
   try_catch.SetVerbose(true);
   bool wrote_value;
