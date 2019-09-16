@@ -32,6 +32,7 @@ machine-mac-large: &machine-mac-large
 # Build configurations options.
 env-debug-build: &env-debug-build
   GN_CONFIG: //electron/build/args/debug.gn
+  SKIP_DIST_ZIP: '1'
 
 env-testing-build: &env-testing-build
   GN_CONFIG: //electron/build/args/testing.gn
@@ -301,28 +302,30 @@ step-electron-dist-build: &step-electron-dist-build
     name: Build dist.zip
     command: |
       cd src
-      ninja -C out/Default electron:electron_dist_zip
-      if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
-        if [ "`uname`" == "Darwin" ]; then
-          target_os=mac
-          target_cpu=x64
-          if [ x"$MAS_BUILD" == x"true" ]; then
-            target_os=mac_mas
-          fi
-        elif [ "`uname`" == "Linux" ]; then
-          target_os=linux
-          if [ x"$TARGET_ARCH" == x ]; then
+      if [ "$SKIP_DIST_ZIP" != "1" ]; then
+        ninja -C out/Default electron:electron_dist_zip
+        if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+          if [ "`uname`" == "Darwin" ]; then
+            target_os=mac
             target_cpu=x64
-          elif [ "$TARGET_ARCH" == "ia32" ]; then
-            target_cpu=x86
+            if [ x"$MAS_BUILD" == x"true" ]; then
+              target_os=mac_mas
+            fi
+          elif [ "`uname`" == "Linux" ]; then
+            target_os=linux
+            if [ x"$TARGET_ARCH" == x ]; then
+              target_cpu=x64
+            elif [ "$TARGET_ARCH" == "ia32" ]; then
+              target_cpu=x86
+            else
+              target_cpu="$TARGET_ARCH"
+            fi
           else
-            target_cpu="$TARGET_ARCH"
+            echo "Unknown system: `uname`"
+            exit 1
           fi
-        else
-          echo "Unknown system: `uname`"
-          exit 1
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
         fi
-        electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
       fi
 
 step-electron-dist-store: &step-electron-dist-store
@@ -468,7 +471,9 @@ step-mksnapshot-build: &step-mksnapshot-build
           electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
         fi
       fi
-      ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+      if [ "$SKIP_DIST_ZIP" != "1" ]; then
+        ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+      fi
 
 step-mksnapshot-store: &step-mksnapshot-store
   store_artifacts:
@@ -753,26 +758,6 @@ steps-electron-gn-check: &steps-electron-gn-check
     - *step-gn-check
 
 steps-electron-build: &steps-electron-build
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-setup-env-for-build
-    - *step-gn-gen-default
-
-    # Electron app
-    - *step-electron-build
-    - *step-electron-dist-build
-    - *step-electron-dist-store
-    - *step-ninja-summary
-
-    # Node.js headers
-    - *step-nodejs-headers-build
-    - *step-nodejs-headers-store
-
-    - *step-show-sccache-stats
-
-steps-electron-build-for-tests: &steps-electron-build-for-tests
   steps:
     - attach_workspace:
         at: .
@@ -1196,7 +1181,7 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   linux-x64-publish:
     <<: *machine-linux-2xlarge
@@ -1247,7 +1232,7 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   linux-ia32-publish:
     <<: *machine-linux-2xlarge
@@ -1300,7 +1285,7 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   linux-arm-publish:
     <<: *machine-linux-2xlarge
@@ -1369,7 +1354,7 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   linux-arm64-publish:
     <<: *machine-linux-2xlarge
@@ -1387,7 +1372,7 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   osx-debug:
     <<: *machine-mac-large
@@ -1396,7 +1381,7 @@ jobs:
       <<: *env-debug-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests    
+    <<: *steps-electron-build
 
   osx-debug-gn-check:
     <<: *machine-mac
@@ -1428,7 +1413,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   osx-publish:
     <<: *machine-mac-large
@@ -1446,7 +1431,7 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   mas-debug:
     <<: *machine-mac-large
@@ -1456,7 +1441,7 @@ jobs:
       <<: *env-debug-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   mas-debug-gn-check:
     <<: *machine-mac
@@ -1491,7 +1476,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-ninja-status      
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   mas-publish:
     <<: *machine-mac-large
