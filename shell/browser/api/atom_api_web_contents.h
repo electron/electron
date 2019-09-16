@@ -350,11 +350,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
                               const base::string16& message,
                               int32_t line_no,
                               const base::string16& source_id) override;
-  void WebContentsCreated(content::WebContents* source_contents,
-                          int opener_render_process_id,
-                          int opener_render_frame_id,
-                          const content::mojom::CreateNewWindowParams& params,
-                          content::WebContents* new_contents) override;
+  void WebContentsCreatedWithFullParams(
+      content::WebContents* source_contents,
+      int opener_render_process_id,
+      int opener_render_frame_id,
+      const content::mojom::CreateNewWindowParams& params,
+      content::WebContents* new_contents) override;
   void AddNewContents(content::WebContents* source,
                       std::unique_ptr<content::WebContents> new_contents,
                       WindowOpenDisposition disposition,

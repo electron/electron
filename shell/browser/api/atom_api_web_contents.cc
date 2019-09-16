@@ -599,7 +599,7 @@ void WebContents::OnCreateWindow(
        body);
 }
 
-void WebContents::WebContentsCreated(
+void WebContents::WebContentsCreatedWithFullParams(
     content::WebContents* source_contents,
     int opener_render_process_id,
     int opener_render_frame_id,
