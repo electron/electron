@@ -86,8 +86,8 @@ Windows 7 and later are supported, older operating systems are not supported
 (and do not work).
 
 Both `ia32` (`x86`) and `x64` (`amd64`) binaries are provided for Windows.
-Running Electron apps on Windows for ARM devices is possible by using the
-ia32 binary.
+[Electron 6.0.8 and later add native support for Windows on Arm (`arm64`) devices](windows-arm).
+Running apps packaged with previous versions is possible using the ia32 binary.
 
 ### Linux
 
