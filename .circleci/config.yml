@@ -495,6 +495,8 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
     command: |
       cd src
       export BUILD_PATH="$PWD/out/Default"
+      ninja -C out/Default electron:licenses
+      ninja -C out/Default electron:electron_version
       electron/script/zip-symbols.py -b $BUILD_PATH
 
 step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
