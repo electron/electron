@@ -5,7 +5,7 @@ Subject: web_contents.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f9213890bbc41d056df26f94a2d395f460b7f310..0d2f0780e9995042d4b8ad06d0ec03052d468ab8 100644
+index f194fb62a05aafdc617f6ce56bc2f447fd8b5d15..6f18e4888a345de3941b0a19ef91239f435671f3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2137,6 +2137,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
@@ -30,7 +30,7 @@ index f9213890bbc41d056df26f94a2d395f460b7f310..0d2f0780e9995042d4b8ad06d0ec0305
    CHECK(view_.get());
  
 diff --git a/content/browser/web_contents/web_contents_view_guest.cc b/content/browser/web_contents/web_contents_view_guest.cc
-index ecaf30bcb7b916a92a69641dd7b96a3633d407c0..0af625928ca6227a21cd4263a14a42b72095399c 100644
+index c45581fd22b7ba28b76bdebfffdc872b820798c8..f22ac0e611cc79aa1bc7f85836d69e3a8e326a6e 100644
 --- a/content/browser/web_contents/web_contents_view_guest.cc
 +++ b/content/browser/web_contents/web_contents_view_guest.cc
 @@ -68,19 +68,27 @@ gfx::NativeWindow WebContentsViewGuest::GetTopLevelNativeWindow() const {
@@ -64,7 +64,7 @@ index ecaf30bcb7b916a92a69641dd7b96a3633d407c0..0af625928ca6227a21cd4263a14a42b7
  #endif  // defined(USE_AURA)
  }
  
-@@ -132,11 +140,22 @@ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForWidget(
+@@ -130,11 +138,22 @@ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForWidget(
          render_widget_host->GetView());
    }
  
@@ -92,10 +92,10 @@ index ecaf30bcb7b916a92a69641dd7b96a3633d407c0..0af625928ca6227a21cd4263a14a42b7
  
  RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForChildWidget(
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index b5ff1cc5d6f60d22839b9bc06ab4e2c55d9cc6c7..d22f0dcefa2a8ccb13d4d993bc37241beb664757 100644
+index 9dd92030f9a4a0405c9d7724817a5fc3bf497da1..9bef76029aa3e71cf9ac3d2ac5a5e3a66e60c165 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -78,9 +78,12 @@ class BrowserPluginGuestDelegate;
+@@ -79,9 +79,12 @@ class BrowserPluginGuestDelegate;
  class InterstitialPage;
  class RenderFrameHost;
  class RenderViewHost;
@@ -108,7 +108,7 @@ index b5ff1cc5d6f60d22839b9bc06ab4e2c55d9cc6c7..d22f0dcefa2a8ccb13d4d993bc37241b
  struct CustomContextMenuContext;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -216,6 +219,10 @@ class WebContents : public PageNavigator,
+@@ -214,6 +217,10 @@ class WebContents : public PageNavigator,
        kInitializeAndWarmupRendererProcess,
      } desired_renderer_state;
  

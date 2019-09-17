@@ -31,7 +31,7 @@ index e9b64a823ae7e25361f37190d247af0fa6a6f68a..43fdb0ad50d2b11a1bc28aa0f358c6dd
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 39d6339bd2b954b55ed8a4b16657c00a860e79a6..8c82fbe734be172fa124ba0348a46a3c7dfef3dc 100644
+index 027fb9dddff339e67600b83c79c209656d210a90..e9dfd515aadfb4442da7a7b574a3891fe2a8d8bb 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -19,7 +19,7 @@
@@ -57,7 +57,7 @@ index d9e5174ed622fb030bc37d32fbb40b132d7c4c23..1bf19c344721e74bb29c11a4c5c762a7
  #include "third_party/skia/include/core/SkColor.h"
  #include "ui/base/l10n/l10n_util.h"
 diff --git a/chrome/browser/ui/views/overlay/resize_handle_button.cc b/chrome/browser/ui/views/overlay/resize_handle_button.cc
-index ee6b3612d7bdda591e05e5af338a80167ce6cd53..af093f14f1ef49c6de7228b296c32532203ca568 100644
+index aeba6fba215677c2c54a40791986c464fa112486..ebcef6ab0b651c274aa530b1e8d25d3eebcf4f3f 100644
 --- a/chrome/browser/ui/views/overlay/resize_handle_button.cc
 +++ b/chrome/browser/ui/views/overlay/resize_handle_button.cc
 @@ -5,7 +5,7 @@

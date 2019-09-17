@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index e26fe6c50d7ade60f5dd56c1e8b5148e7ac6090b..76abb146e710cb312e90ff545002c1006c80c693 100644
+index bfcb977fbf2400e4ae8c7ea0b69d2b733ed410dc..be064ded7bfa3f96b5230e5bf00f68a0a8f618c2 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3981,6 +3981,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3985,6 +3985,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -17,7 +17,7 @@ index e26fe6c50d7ade60f5dd56c1e8b5148e7ac6090b..76abb146e710cb312e90ff545002c100
            &no_javascript_access);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index a99a8f3d7aa9b1fabc6463768b4646b1612cfc72..99e377b69634660db6600b8032601f294142be18 100644
+index 94b48f4a88df48f51adff20bc7954b0989e5ae05..a8eb7ba81afd2c8fb87544fb70a8ef862811a014 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -307,6 +307,10 @@ struct CreateNewWindowParams {
@@ -66,7 +66,7 @@ index a9131e72beefd3fd706640d5eeb82646a7ffe65d..7578110f13b23e9585a181bba3e73a39
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 312ae588d75e30d91dff875953b794a04d70d9bc..184ed8c68dceab3f4737059ed0735c36eb046347 100644
+index f14d1f7fe20e81b9e488f787db00cd114cce16a7..94bfcf7ae25f6f5c2d1fdf93b96350bd229045e3 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -73,6 +73,7 @@
@@ -77,7 +77,7 @@ index 312ae588d75e30d91dff875953b794a04d70d9bc..184ed8c68dceab3f4737059ed0735c36
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/media/webrtc/peer_connection_dependency_factory.h"
  #include "content/renderer/media/webrtc/rtc_peer_connection_handler.h"
-@@ -1324,6 +1325,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1325,6 +1326,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  

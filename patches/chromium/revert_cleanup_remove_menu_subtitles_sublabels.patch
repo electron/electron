@@ -486,10 +486,10 @@ index 0e97c35a8a452e8c602f08e2f2b72fc71becfa4b..332b11faae5eb05291dfd268f1b951a1
    base::string16 minor_text_;
  
 diff --git a/ui/views/controls/menu/menu_item_view_unittest.cc b/ui/views/controls/menu/menu_item_view_unittest.cc
-index 6b6cadd38483078191920d161193aa19e09635ba..4704af36102e8620b0e5f1788a8e7ae050dc7aa1 100644
+index f51bd9d85dad7771f18fc535b55b30a855eac48f..63aa8eddf51cb4821517902564e94813f6a42c02 100644
 --- a/ui/views/controls/menu/menu_item_view_unittest.cc
 +++ b/ui/views/controls/menu/menu_item_view_unittest.cc
-@@ -322,10 +322,10 @@ class MenuItemViewPaintUnitTest : public ViewsTestBase {
+@@ -324,10 +324,10 @@ class MenuItemViewPaintUnitTest : public ViewsTestBase {
  // Provides assertion coverage for painting minor text and icons.
  TEST_F(MenuItemViewPaintUnitTest, MinorTextAndIconAssertionCoverage) {
    auto AddItem = [this](auto label, auto minor_label, auto minor_icon) {
