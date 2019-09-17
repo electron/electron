@@ -149,7 +149,7 @@ A `Boolean` property representing whether the notification has a reply action.
 
 A `String` property representing the urgency level of the notification. Can be 'normal', 'critical', or 'low'.
 
-Default is 'low' - see [NotifyUrgency](https://developer.gnome.org/libnotify/unstable/NotifyNotification.html#notify-notification-set-urgency) for more information.
+Default is 'low' - see [NotifyUrgency](https://developer.gnome.org/notification-spec/#urgency-levels) for more information.
 
 #### `notification.actions`
 
