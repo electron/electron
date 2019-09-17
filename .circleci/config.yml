@@ -1791,6 +1791,12 @@ jobs:
 workflows:
   version: 2
 
+  # The publish workflows below each contain one job so that they are 
+  # compatible with how sudowoodo works today.  If these workflows are
+  # changed to have multiple jobs, then scripts/release/ci-release-build.js
+  # will need to be updated and there will most likely need to be changes to
+  # sudowoodo
+
   publish-x64-linux:
     when: << pipeline.parameters.run-linux-x64-publish >>
     jobs:
