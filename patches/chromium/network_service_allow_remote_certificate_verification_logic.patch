@@ -5,7 +5,7 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 3a0e058eaefbff034e279d85007a91e874bd716c..53f84c4f52c0a96bba3ef6d1d5fea2bb8c9d9586 100644
+index 3a0e058eaefbff034e279d85007a91e874bd716c..96f99d73d7043a6fe98569aa7b8deddeb2ac9b6c 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -91,6 +91,11 @@
@@ -20,7 +20,7 @@ index 3a0e058eaefbff034e279d85007a91e874bd716c..53f84c4f52c0a96bba3ef6d1d5fea2bb
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -319,6 +324,75 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
+@@ -319,6 +324,79 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
  
  }  // namespace
  
@@ -30,8 +30,12 @@ index 3a0e058eaefbff034e279d85007a91e874bd716c..53f84c4f52c0a96bba3ef6d1d5fea2bb
 +  }
 +  ~RemoteCertVerifier() override = default;
 +
-+  void Bind(mojom::CertVerifierClientPtr client_info) {
-+    client_ = std::move(client_info);
++  void Bind(
++      mojo::PendingRemote<mojom::CertVerifierClient> client_info) {
++    client_.reset();
++    if (client_info.is_valid()) {
++      client_.Bind(std::move(client_info));
++    }
 +  }
 +
 +  // CertVerifier implementation
@@ -60,7 +64,7 @@ index 3a0e058eaefbff034e279d85007a91e874bd716c..53f84c4f52c0a96bba3ef6d1d5fea2bb
 +  }
 +
 +  void OnRequestFinished(const RequestParams& params, net::CompletionOnceCallback callback, net::CertVerifyResult* verify_result, int error) {
-+    if (client_) {
++    if (client_.is_bound()) {
 +      client_->Verify(error, *verify_result, params.certificate(),
 +          params.hostname(), params.flags(), params.ocsp_response(),
 +          base::BindOnce(&RemoteCertVerifier::OnRemoteResponse,
@@ -90,17 +94,18 @@ index 3a0e058eaefbff034e279d85007a91e874bd716c..53f84c4f52c0a96bba3ef6d1d5fea2bb
 +  }
 + private:
 +  std::unique_ptr<net::CertVerifier> upstream_;
-+  mojom::CertVerifierClientPtr client_;
++  mojo::Remote<mojom::CertVerifierClient> client_;
 +};
 +
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  constexpr bool NetworkContext::enable_resource_scheduler_;
  
-@@ -652,6 +726,12 @@ void NetworkContext::SetClient(
+@@ -652,6 +730,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
-+void NetworkContext::SetCertVerifierClient(mojo::PendingRemote<mojom::CertVerifierClient> client) {
++void NetworkContext::SetCertVerifierClient(
++    mojo::PendingRemote<mojom::CertVerifierClient> client) {
 +  if (remote_cert_verifier_) {
 +    remote_cert_verifier_->Bind(std::move(client));
 +  }
@@ -109,7 +114,7 @@ index 3a0e058eaefbff034e279d85007a91e874bd716c..53f84c4f52c0a96bba3ef6d1d5fea2bb
  void NetworkContext::CreateURLLoaderFactory(
      mojom::URLLoaderFactoryRequest request,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1726,12 +1806,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1726,12 +1811,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                    cert_net_fetcher_, /*system_trust_store_provider=*/nullptr)));
      }
  #endif
@@ -164,7 +169,7 @@ index 608553fccbc393ab819517b16c124c062d3c9597..8e140617acc891ad51bf98c80d49a125
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index bc748d27288fd5df283cc01ecf688e62dfaee78a..9210bcebabf39e8bb9f4bc863f6917b5179b3853 100644
+index bc748d27288fd5df283cc01ecf688e62dfaee78a..99ad77ca1b97b9e618bb2ad4b108bb892ed5e9d7 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -165,6 +165,17 @@ interface TrustedURLLoaderHeaderClient {
@@ -190,7 +195,7 @@ index bc748d27288fd5df283cc01ecf688e62dfaee78a..9210bcebabf39e8bb9f4bc863f6917b5
    SetClient(pending_remote<NetworkContextClient> client);
  
 +  // Sets a certificate verifier client for this network context.
-+  SetCertVerifierClient(pending_remote<CertVerifierClient> client);
++  SetCertVerifierClient(pending_remote<CertVerifierClient>? client);
 +
    // Creates a new URLLoaderFactory with the given |params|.
    CreateURLLoaderFactory(URLLoaderFactory& url_loader_factory,
