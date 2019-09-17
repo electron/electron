@@ -73,6 +73,10 @@ async function circleCIcall (targetBranch, job, options) {
   }
   buildRequest.parameters[`run-${job}`] = true
   jobRequestedCount++
+  // The logic below expects that the CircleCI workflows for releases each
+  // contain only one job in order to maintain compatibility with sudowoodo.
+  // If the workflows are changed in the CircleCI config.yml, this logic will
+  // also need to be changed as well as possibly changing sudowoodo.
   try {
     const circleResponse = await circleCIRequest(circleCIPipelineURL, 'POST', buildRequest)
     console.log(`CircleCI release build pipeline ${circleResponse.id} for ${job} triggered.`)
@@ -99,17 +103,20 @@ async function getCircleCIWorkflowId (pipelineId) {
   const pipelineInfoUrl = `https://circleci.com/api/v2/pipeline/${pipelineId}`
   for (let i = 0; i < 5; i++) {
     const pipelineInfo = await circleCIRequest(pipelineInfoUrl, 'GET')
-    if (pipelineInfo.workflows.length !== 1) {
-      if (pipelineInfo.workflows.length > 1) {
+    switch (pipelineInfo.state) {
+      case 'created': {
+        if (pipelineInfo.workflows.length === 1) {
+          return pipelineInfo.workflows[0].id
+        }
+        console.log('Unxpected number of workflows, response was:', pipelineInfo)
+        return -1
+      }
+      case 'error': {
         console.log('Error retrieving workflows, response was:', pipelineInfo)
         return -1
-      } else {
-        // Workflows not available yet; wait 5 seconds before checking for workflows
-        await new Promise(resolve => setTimeout(resolve, 5000))
       }
-    } else {
-      return pipelineInfo.workflows[0].id
     }
+    await new Promise(resolve => setTimeout(resolve, 5000))
   }
   return -1
 }
