@@ -248,7 +248,7 @@ struct Converter<electron::api::WebContents::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::api::WebContents::Type val) {
     using Type = electron::api::WebContents::Type;
-    std::string type = "";
+    std::string type;
     switch (val) {
       case Type::BACKGROUND_PAGE:
         type = "backgroundPage";
@@ -387,8 +387,8 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
                                             GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params(session->browser_context(),
                                               site_instance);
-    guest_delegate_.reset(
-        new WebViewGuestDelegate(embedder_->web_contents(), this));
+    guest_delegate_ =
+        std::make_unique<WebViewGuestDelegate>(embedder_->web_contents(), this);
     params.guest_delegate = guest_delegate_.get();
 
 #if BUILDFLAG(ENABLE_OSR)
@@ -828,7 +828,7 @@ std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
     content::WebContents* source) {
   if (!dialog_manager_)
-    dialog_manager_.reset(new AtomJavaScriptDialogManager(this));
+    dialog_manager_ = std::make_unique<AtomJavaScriptDialogManager>(this);
 
   return dialog_manager_.get();
 }
@@ -1719,9 +1719,9 @@ void WebContents::Print(mate::Arguments* args) {
   std::vector<mate::Dictionary> page_ranges;
   if (options.Get("pageRanges", &page_ranges)) {
     std::unique_ptr<base::ListValue> page_range_list(new base::ListValue());
-    for (size_t i = 0; i < page_ranges.size(); ++i) {
+    for (auto& range : page_ranges) {
       int from, to;
-      if (page_ranges[i].Get("from", &from) && page_ranges[i].Get("to", &to)) {
+      if (range.Get("from", &from) && range.Get("to", &to)) {
         std::unique_ptr<base::DictionaryValue> range(
             new base::DictionaryValue());
         range->SetInteger(printing::kSettingPageRangeFrom, from);
@@ -2038,8 +2038,8 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
     return;
   }
 
-  frame_subscriber_.reset(
-      new FrameSubscriber(web_contents(), callback, only_dirty));
+  frame_subscriber_ =
+      std::make_unique<FrameSubscriber>(web_contents(), callback, only_dirty);
 }
 
 void WebContents::EndFrameSubscription() {

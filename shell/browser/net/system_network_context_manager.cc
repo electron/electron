@@ -102,7 +102,7 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
 
  private:
   friend class base::RefCounted<URLLoaderFactoryForSystem>;
-  ~URLLoaderFactoryForSystem() override {}
+  ~URLLoaderFactoryForSystem() override = default;
 
   SEQUENCE_CHECKER(sequence_checker_);
   SystemNetworkContextManager* manager_;

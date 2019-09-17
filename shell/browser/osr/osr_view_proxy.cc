@@ -4,10 +4,12 @@
 
 #include "shell/browser/osr/osr_view_proxy.h"
 
+#include <memory>
+
 namespace electron {
 
 OffscreenViewProxy::OffscreenViewProxy(views::View* view) : view_(view) {
-  view_bitmap_.reset(new SkBitmap);
+  view_bitmap_ = std::make_unique<SkBitmap>();
 }
 
 OffscreenViewProxy::~OffscreenViewProxy() {
@@ -34,7 +36,7 @@ const SkBitmap* OffscreenViewProxy::GetBitmap() const {
 void OffscreenViewProxy::SetBitmap(const SkBitmap& bitmap) {
   if (view_bounds_.width() == bitmap.width() &&
       view_bounds_.height() == bitmap.height() && observer_) {
-    view_bitmap_.reset(new SkBitmap(bitmap));
+    view_bitmap_ = std::make_unique<SkBitmap>(bitmap);
     observer_->OnProxyViewPaint(view_bounds_);
   }
 }

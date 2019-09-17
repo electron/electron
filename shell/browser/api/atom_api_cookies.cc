@@ -167,7 +167,7 @@ Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
                               base::Unretained(this)));
 }
 
-Cookies::~Cookies() {}
+Cookies::~Cookies() = default;
 
 v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
   util::Promise<net::CookieList> promise(isolate());

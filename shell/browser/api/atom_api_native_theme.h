@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_ATOM_API_NATIVE_THEME_H_
-#define SHELL_COMMON_API_ATOM_API_NATIVE_THEME_H_
+#ifndef SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
+#define SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
 
 #include "native_mate/handle.h"
 #include "shell/browser/api/event_emitter.h"
@@ -38,6 +38,7 @@ class NativeTheme : public mate::EventEmitter<NativeTheme>,
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* theme) override;
+  void OnNativeThemeUpdatedOnUI();
 
  private:
   ui::NativeTheme* theme_;
@@ -62,4 +63,4 @@ struct Converter<ui::NativeTheme::ThemeSource> {
 
 }  // namespace mate
 
-#endif  // SHELL_COMMON_API_ATOM_API_NATIVE_THEME_H_
+#endif  // SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_

@@ -106,10 +106,9 @@ class RefCountedGlobal
 SafeV8Function::SafeV8Function(v8::Isolate* isolate, v8::Local<v8::Value> value)
     : v8_function_(new RefCountedGlobal<v8::Function>(isolate, value)) {}
 
-SafeV8Function::SafeV8Function(const SafeV8Function& other)
-    : v8_function_(other.v8_function_) {}
+SafeV8Function::SafeV8Function(const SafeV8Function& other) = default;
 
-SafeV8Function::~SafeV8Function() {}
+SafeV8Function::~SafeV8Function() = default;
 
 bool SafeV8Function::IsAlive() const {
   return v8_function_.get() && v8_function_->IsAlive();

@@ -4,6 +4,8 @@
 
 #include "shell/browser/web_dialog_helper.h"
 
+#include <memory>
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -77,7 +79,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
  private:
   friend class base::RefCounted<FileSelectHelper>;
 
-  ~FileSelectHelper() override {}
+  ~FileSelectHelper() override = default;
 
   // net::DirectoryLister::DirectoryListerDelegate
   void OnListFile(
@@ -106,8 +108,8 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     DCHECK(!lister_base_dir_.empty());
     DCHECK(lister_paths_.empty());
 
-    lister_.reset(new net::DirectoryLister(
-        lister_base_dir_, net::DirectoryLister::NO_SORT_RECURSIVE, this));
+    lister_ = std::make_unique<net::DirectoryLister>(
+        lister_base_dir_, net::DirectoryLister::NO_SORT_RECURSIVE, this);
     lister_->Start();
     // It is difficult for callers to know how long to keep a reference to
     // this instance.  We AddRef() here to keep the instance alive after we
@@ -282,7 +284,7 @@ file_dialog::Filters GetFileTypesFromAcceptType(
   // Allow all files when extension is specified.
   filters.push_back(file_dialog::Filter());
   filters.back().first = "All Files";
-  filters.back().second.push_back("*");
+  filters.back().second.emplace_back("*");
 
   return filters;
 }
@@ -294,7 +296,7 @@ namespace electron {
 WebDialogHelper::WebDialogHelper(NativeWindow* window, bool offscreen)
     : window_(window), offscreen_(offscreen), weak_factory_(this) {}
 
-WebDialogHelper::~WebDialogHelper() {}
+WebDialogHelper::~WebDialogHelper() = default;
 
 void WebDialogHelper::RunFileChooser(
     content::RenderFrameHost* render_frame_host,

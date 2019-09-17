@@ -11,9 +11,9 @@
 
 namespace electron {
 
-WebViewManager::WebViewManager() {}
+WebViewManager::WebViewManager() = default;
 
-WebViewManager::~WebViewManager() {}
+WebViewManager::~WebViewManager() = default;
 
 void WebViewManager::AddGuest(int guest_instance_id,
                               int element_instance_id,

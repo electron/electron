@@ -4,6 +4,8 @@
 
 #include "shell/browser/atom_browser_context.h"
 
+#include <memory>
+
 #include <utility>
 
 #include "base/command_line.h"
@@ -205,13 +207,13 @@ int AtomBrowserContext::GetMaxCacheSize() const {
 
 content::ResourceContext* AtomBrowserContext::GetResourceContext() {
   if (!resource_context_)
-    resource_context_.reset(new content::ResourceContext);
+    resource_context_ = std::make_unique<content::ResourceContext>();
   return resource_context_.get();
 }
 
 std::string AtomBrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
-    media_device_id_salt_.reset(new MediaDeviceIDSalt(prefs_.get()));
+    media_device_id_salt_ = std::make_unique<MediaDeviceIDSalt>(prefs_.get());
   return media_device_id_salt_->GetSalt();
 }
 
@@ -228,22 +230,22 @@ content::DownloadManagerDelegate*
 AtomBrowserContext::GetDownloadManagerDelegate() {
   if (!download_manager_delegate_.get()) {
     auto* download_manager = content::BrowserContext::GetDownloadManager(this);
-    download_manager_delegate_.reset(
-        new AtomDownloadManagerDelegate(download_manager));
+    download_manager_delegate_ =
+        std::make_unique<AtomDownloadManagerDelegate>(download_manager);
   }
   return download_manager_delegate_.get();
 }
 
 content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   if (!guest_manager_)
-    guest_manager_.reset(new WebViewManager);
+    guest_manager_ = std::make_unique<WebViewManager>();
   return guest_manager_.get();
 }
 
 content::PermissionControllerDelegate*
 AtomBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
-    permission_manager_.reset(new AtomPermissionManager);
+    permission_manager_ = std::make_unique<AtomPermissionManager>();
   return permission_manager_.get();
 }
 
@@ -257,7 +259,8 @@ std::string AtomBrowserContext::GetUserAgent() const {
 
 predictors::PreconnectManager* AtomBrowserContext::GetPreconnectManager() {
   if (!preconnect_manager_.get()) {
-    preconnect_manager_.reset(new predictors::PreconnectManager(nullptr, this));
+    preconnect_manager_ =
+        std::make_unique<predictors::PreconnectManager>(nullptr, this);
   }
   return preconnect_manager_.get();
 }

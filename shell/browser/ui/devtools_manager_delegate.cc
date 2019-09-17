@@ -92,9 +92,9 @@ void DevToolsManagerDelegate::StartHttpHandler() {
       CreateSocketFactory(), user_dir, base::FilePath());
 }
 
-DevToolsManagerDelegate::DevToolsManagerDelegate() {}
+DevToolsManagerDelegate::DevToolsManagerDelegate() = default;
 
-DevToolsManagerDelegate::~DevToolsManagerDelegate() {}
+DevToolsManagerDelegate::~DevToolsManagerDelegate() = default;
 
 void DevToolsManagerDelegate::Inspect(content::DevToolsAgentHost* agent_host) {}
 

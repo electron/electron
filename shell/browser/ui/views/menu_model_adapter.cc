@@ -9,7 +9,7 @@ namespace electron {
 MenuModelAdapter::MenuModelAdapter(AtomMenuModel* menu_model)
     : views::MenuModelAdapter(menu_model), menu_model_(menu_model) {}
 
-MenuModelAdapter::~MenuModelAdapter() {}
+MenuModelAdapter::~MenuModelAdapter() = default;
 
 bool MenuModelAdapter::GetAccelerator(int id,
                                       ui::Accelerator* accelerator) const {

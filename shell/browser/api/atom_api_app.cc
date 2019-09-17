@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/atom_api_app.h"
 
+#include <memory>
+
 #include <string>
 #include <vector>
 
@@ -751,7 +753,7 @@ base::OnceClosure App::SelectClientCertificate(
   // to avoid changes in the API.
   auto client_certs = net::CertificateList();
   for (const std::unique_ptr<net::ClientCertIdentity>& identity : identities)
-    client_certs.push_back(identity->certificate());
+    client_certs.emplace_back(identity->certificate());
 
   auto shared_identities =
       std::make_shared<net::ClientCertIdentityList>(std::move(identities));
@@ -941,9 +943,9 @@ std::string App::GetLocaleCountryCode() {
                      kCFStringEncodingUTF8);
   region = temporaryCString;
 #else
-  const char* locale_ptr = setlocale(LC_TIME, NULL);
+  const char* locale_ptr = setlocale(LC_TIME, nullptr);
   if (!locale_ptr)
-    locale_ptr = setlocale(LC_NUMERIC, NULL);
+    locale_ptr = setlocale(LC_NUMERIC, nullptr);
   if (locale_ptr) {
     std::string locale = locale_ptr;
     std::string::size_type rpos = locale.find('.');
@@ -977,8 +979,8 @@ bool App::RequestSingleInstanceLock() {
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
-  process_singleton_.reset(new ProcessSingleton(
-      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb)));
+  process_singleton_ = std::make_unique<ProcessSingleton>(
+      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb));
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:

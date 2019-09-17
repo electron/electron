@@ -16,6 +16,7 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'inAppPurchase', loader: () => require('./in-app-purchase') },
   { name: 'Menu', loader: () => require('./menu') },
   { name: 'MenuItem', loader: () => require('./menu-item') },
+  { name: 'nativeTheme', loader: () => require('./native-theme') },
   { name: 'net', loader: () => require('./net') },
   { name: 'netLog', loader: () => require('./net-log') },
   { name: 'Notification', loader: () => require('./notification') },

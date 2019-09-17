@@ -96,11 +96,11 @@ content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
   return content::RenderFrame::FromWebFrame(frame);
 }
 
-class RenderFrameStatus : public content::RenderFrameObserver {
+class RenderFrameStatus final : public content::RenderFrameObserver {
  public:
   explicit RenderFrameStatus(content::RenderFrame* render_frame)
       : content::RenderFrameObserver(render_frame) {}
-  ~RenderFrameStatus() final {}
+  ~RenderFrameStatus() final = default;
 
   bool is_ok() { return render_frame() != nullptr; }
 
@@ -113,7 +113,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
   explicit ScriptExecutionCallback(
       electron::util::Promise<v8::Local<v8::Value>> promise)
       : promise_(std::move(promise)) {}
-  ~ScriptExecutionCallback() override {}
+  ~ScriptExecutionCallback() override = default;
 
   void Completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
@@ -165,7 +165,7 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
   DISALLOW_COPY_AND_ASSIGN(FrameSetSpellChecker);
 };
 
-class SpellCheckerHolder : public content::RenderFrameObserver {
+class SpellCheckerHolder final : public content::RenderFrameObserver {
  public:
   // Find existing holder for the |render_frame|.
   static SpellCheckerHolder* FromRenderFrame(
