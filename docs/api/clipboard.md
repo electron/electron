@@ -22,7 +22,7 @@ The `clipboard` module has the following methods:
 
 ### `clipboard.readText([type])`
 
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Returns `String` - The content in the clipboard as plain text.
 
@@ -36,12 +36,10 @@ console.log(text)
 // hello i am a bit of text!'
 ```
 
-**Note:** `selection` is only available on Linux.
-
 ### `clipboard.writeText(text[, type])`
 
 * `text` String
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Writes the `text` into the clipboard as plain text.
 
@@ -52,15 +50,11 @@ const text = 'hello i am a bit of text!'
 clipboard.writeText(text)
 ```
 
-**Note:** `selection` is only available on Linux.
-
 ### `clipboard.readHTML([type])`
 
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Returns `String` - The content in the clipboard as markup.
-
-**Note:** `selection` is only available on Linux.
 
 ```js
 const { clipboard } = require('electron')
@@ -75,11 +69,9 @@ console.log(html)
 ### `clipboard.writeHTML(markup[, type])`
 
 * `markup` String
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Writes `markup` to the clipboard.
-
-**Note:** `selection` is only available on Linux.
 
 ```js
 const { clipboard } = require('electron')
@@ -89,28 +81,22 @@ clipboard.writeHTML('<b>Hi</b')
 
 ### `clipboard.readImage([type])`
 
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Returns [`NativeImage`](native-image.md) - The image content in the clipboard.
-
-**Note:** `selection` is only available on Linux.
 
 ### `clipboard.writeImage(image[, type])`
 
 * `image` [NativeImage](native-image.md)
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Writes `image` to the clipboard.
 
-**Note:** `selection` is only available on Linux.
-
 ### `clipboard.readRTF([type])`
 
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Returns `String` - The content in the clipboard as RTF.
-
-**Note:** `selection` is only available on Linux.
 
 ```js
 const { clipboard } = require('electron')
@@ -125,11 +111,9 @@ console.log(rtf)
 ### `clipboard.writeRTF(text[, type])`
 
 * `text` String
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Writes the `text` into the clipboard in RTF.
-
-**Note:** `selection` is only available on Linux.
 
 ```js
 const { clipboard } = require('electron')
@@ -153,15 +137,13 @@ bookmark is unavailable.
 
 * `title` String
 * `url` String
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Writes the `title` and `url` into the clipboard as a bookmark.
 
 **Note:** Most apps on Windows don't support pasting bookmarks into them so
 you can use `clipboard.write` to write both a bookmark and fallback text to the
 clipboard.
-
-**Note:** `selection` is only available on Linux.
 
 ```js
 const { clipboard } = require('electron')
@@ -187,19 +169,15 @@ Writes the `text` into the find pasteboard (the pasteboard that holds informatio
 
 ### `clipboard.clear([type])`
 
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Clears the clipboard content.
 
-**Note:** `selection` is only available on Linux.
-
 ### `clipboard.availableFormats([type])`
 
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Returns `String[]` - An array of supported formats for the clipboard `type`.
-
-**Note:** `selection` is only available on Linux.
 
 ```js
 const { clipboard } = require('electron')
@@ -212,11 +190,9 @@ console.log(formats)
 ### `clipboard.has(format[, type])` _Experimental_
 
 * `format` String
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Returns `Boolean` - Whether the clipboard supports the specified `format`.
-
-**Note:** `selection` is only available on Linux.
 
 ```js
 const { clipboard } = require('electron')
@@ -244,29 +220,25 @@ const { clipboard } = require('electron')
 const buffer = Buffer.from('this is binary', 'utf8')
 clipboard.writeBuffer('public.utf8-plain-text', buffer)
 
-const ret =
+const ret = clipboard.readBuffer('public.utf8-plain-text')
+
+console.log(buffer.equals(out))
+// true
 ```
 
 ### `clipboard.writeBuffer(format, buffer[, type])` _Experimental_
 
 * `format` String
 * `buffer` Buffer
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Writes the `buffer` into the clipboard as `format`.
-
-**Note:** `selection` is only available on Linux.
 
 ```js
 const { clipboard } = require('electron')
 
 const buffer = Buffer.from('writeBuffer', 'utf8')
 clipboard.writeBuffer('public.utf8-plain-text', buffer)
-
-const out = clipboard.readBuffer('public.utf8-plain-text')
-
-console.log(buffer.equals(out))
-// true
 ```
 
 ### `clipboard.write(data[, type])`
@@ -277,11 +249,9 @@ console.log(buffer.equals(out))
   * `image` [NativeImage](native-image.md) (optional)
   * `rtf` String (optional)
   * `bookmark` String (optional) - The title of the URL at `text`.
-* `type` String (optional) - Can be `selection` or `clipboard`. Default is 'clipboard'.
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Writes `data` to the clipboard.
-
-**Note:** `selection` is only available on Linux.
 
 ```js
 const { clipboard } = require('electron')
@@ -290,7 +260,7 @@ clipboard.write({
   text: 'test',
   html: '<b>Hi</b>',
   rtf: '{\\rtf1\\utf8 text}',
-  bookmark: 'a title',
+  bookmark: 'a title'
 })
 
 console.log(clipboard.readText())
