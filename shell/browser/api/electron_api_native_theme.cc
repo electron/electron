@@ -48,8 +48,9 @@ void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
   // Update the macOS appearance setting for this new override value
   UpdateMacOSAppearanceForOverrideValue(override);
 #endif
+  const bool dark_enabled = ShouldUseDarkColors();
   for (auto* window : electron::api::TopLevelWindow::GetAllWindows()) {
-    window->SetGTKDarkThemeEnabled(ShouldUseDarkColors());
+    window->SetGTKDarkThemeEnabled(dark_enabled);
   }
   // TODO(MarshallOfSound): Update all existing browsers windows to use GTK dark
   // theme

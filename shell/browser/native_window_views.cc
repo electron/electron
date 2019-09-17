@@ -215,9 +215,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
   bool use_dark_theme =
       ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
-  if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
-    SetGTKDarkThemeEnabled(use_dark_theme);
-  }
+  options.Get(options::kDarkTheme, &use_dark_theme);
+  SetGTKDarkThemeEnabled(use_dark_theme);
 
   // Before the window is mapped the SetWMSpecState can not work, so we have
   // to manually set the _NET_WM_STATE.

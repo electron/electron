@@ -32,7 +32,7 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
-  static std::vector<TopLevelWindow*> GetAllWindows() { return all_windows; }
+  static std::vector<TopLevelWindow*> GetAllWindows() { return all_windows_; }
 
   base::WeakPtr<TopLevelWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -270,7 +270,7 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
   // Reference to JS wrapper to prevent garbage collection.
   v8::Global<v8::Value> self_ref_;
 
-  static std::vector<TopLevelWindow*> all_windows;
+  static std::vector<TopLevelWindow*> all_windows_;
 
   base::WeakPtrFactory<TopLevelWindow> weak_factory_;
 };
