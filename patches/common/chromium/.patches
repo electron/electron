@@ -80,3 +80,4 @@ autofill_size_calculation.patch
 disable_detach_webview_frame.patch
 chore_add_debounce_on_the_updatewebcontentsvisibility_method_to.patch
 fix_use_weakptr_to_detect_deletion.patch
+fix_add_more_checks_in_mojocdmservice.patch
