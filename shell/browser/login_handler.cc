@@ -22,11 +22,11 @@ namespace electron {
 
 LoginHandler::LoginHandler(net::URLRequest* request,
                            const net::AuthChallengeInfo& auth_info,
-                           net::NetworkDelegate::AuthCallback callback,
+                           // net::NetworkDelegate::AuthCallback callback,
                            net::AuthCredentials* credentials)
     : credentials_(credentials),
       auth_info_(std::make_unique<net::AuthChallengeInfo>(auth_info)),
-      auth_callback_(std::move(callback)),
+      // auth_callback_(std::move(callback)),
       weak_factory_(this) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
@@ -67,7 +67,7 @@ void LoginHandler::CancelAuth() {
 }
 
 void LoginHandler::NotifyRequestDestroyed() {
-  auth_callback_.Reset();
+  // auth_callback_.Reset();
   credentials_ = nullptr;
   weak_factory_.InvalidateWeakPtrs();
 }
@@ -82,19 +82,23 @@ content::WebContents* LoginHandler::GetWebContents() const {
 
 void LoginHandler::DoCancelAuth() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  /*
   if (!auth_callback_.is_null())
     std::move(auth_callback_)
         .Run(net::NetworkDelegate::AUTH_REQUIRED_RESPONSE_CANCEL_AUTH);
+        */
 }
 
 void LoginHandler::DoLogin(const base::string16& username,
                            const base::string16& password) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  /*
   if (!auth_callback_.is_null()) {
     credentials_->Set(username, password);
     std::move(auth_callback_)
         .Run(net::NetworkDelegate::AUTH_REQUIRED_RESPONSE_SET_AUTH);
   }
+  */
 }
 
 }  // namespace electron
