@@ -1,5 +1,4 @@
 is_electron_build = true
-use_jumbo_build = true
 root_extra_deps = [ "//electron" ]
 
 # Registry of NMVs --> https://github.com/nodejs/node/blob/master/doc/abi_version_registry.json
