@@ -93,7 +93,7 @@ $ gclient sync -f
 
 There are three different build configurations you can potentially set up - `Debug`, `Testing`, and `Release`.
 
-In your setup, you should replace `OUT_DIR` with your desired build configuration of either `Debug`, `Testing`, and `Release`, and `build_type.gn` correspondingly with `debug.gn`, `testing.gn` or `release.gn`.
+This example uses the `Debug` configuration, but note that you would replace `Debug` with your desired build configuration of either `Testing` or `Release`, and `debug.gn` with `testing.gn` or `release.gn`.
 
 On Unix-based machines:
 ```sh
@@ -101,25 +101,25 @@ $ cd src
 $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
 # this next line is needed only if building with sccache
 $ export GN_EXTRA_ARGS="${GN_EXTRA_ARGS} cc_wrapper=\"${PWD}/electron/external_binaries/sccache\""
-$ gn gen out/OUT_DIR --args="import(\"//electron/build/args/build_type.gn\") $GN_EXTRA_ARGS"
+$ gn gen out/Debug --args="import(\"//electron/build/args/debug.gn\") $GN_EXTRA_ARGS"
 ```
 
 On Windows (without the optional argument):
 ```sh
 $ cd src
 $ set CHROMIUM_BUILDTOOLS_PATH=%cd%\buildtools
-$ gn gen out/OUT_DIR --args="import(\"//electron/build/args/out_dir.gn\")"
+$ gn gen out/Debug --args="import(\"//electron/build/args/debug.gn\")"
 ```
 
-This will generate a build directory `out/OUT_DIR` under `src/` with
-debug build configuration. You can replace `OUT_DIR` with another name,
+This will generate a build directory `out/Debug` under `src/` with
+debug build configuration. You can replace `Debug` with another name,
 but it should be a subdirectory of `out`.
 
 You shouldn't have to run `gn gen` again — if you want to change the
-build arguments, you can run `gn args out/OUT_DIR` to bring up an editor.
+build arguments, you can run `gn args out/Debug` to bring up an editor.
 
 To see the list of available build configuration options, run `gn args
-out/OUT_DIR` --list`.
+out/Debug --list`.
 
 **For generating Debug (aka "component" or "shared") build config of
 Electron:**
@@ -160,24 +160,23 @@ $ ninja -C out/Release electron
 ```
 
 This will take a while - you're building the `content/` directory of Chromium as well as all of
-its dependencies, including WebKit and V8.
+its dependencies, including Blink and V8.
 
 To speed up subsequent builds, you can use [sccache][sccache]. Add the GN arg
-`cc_wrapper = "sccache"` by running `gn args out/OUT_DIR`(where `OUT_DIR` is one of Debug,
-Testing, or Release) to bring up an editor and adding a line to the end of the file.
+`cc_wrapper = "sccache"` by running `gn args out/Debug` (or `out/Testing`, or `out/Release`, depending on what configuration you're using) to bring up an editor and adding a line to the end of the file.
 
 [sccache]: https://github.com/mozilla/sccache
 
-The built executable will be under `./out/OUT_DIR` (where `OUT_DIR` is one of Debug, Testing,
-or Release):
+The built executable will be under `./out/Debug` (where `Debug` could also be `Testing`
+or `Release`).
 
 ```sh
-# on Mac:
-$ ./out/OUT_DIR/Electron.app/Contents/MacOS/Electron
+# on Mac
+$ ./out/Debug/Electron.app/Contents/MacOS/Electron
 # on Windows
-$ ./out/OUT_DIR/electron.exe
+$ ./out/Debug/electron.exe
 # on Linux
-$ ./out/OUT_DIR/electron
+$ ./out/Debug/electron
 ```
 
 ### Packaging
@@ -242,30 +241,30 @@ same version of Node.js that was built as part of the build process. To
 generate build headers for the modules to compile against, run the following
 under `src/` directory.
 
-Note you need to replace `OUT_DIR` with either `Debug`, `Testing`, or `Release`.
+Note you would replace `Debug` with `Testing`, or `Release` should you be using those build configurations.
 
 ```sh
-$ ninja -C out/OUT_DIR third_party/electron_node:headers
+$ ninja -C out/Debug third_party/electron_node:headers
 # Install the test modules with the generated headers
-$ (cd electron/spec && npm i --nodedir=../../out/OUT_DIR/gen/node_headers)
+$ (cd electron/spec && npm i --nodedir=../../out/Debug/gen/node_headers)
 ```
 
 Then, run Electron with `electron/spec` as the argument:
 
 ```sh
-# on Mac:
-$ ./out/OUT_DIR/Electron.app/Contents/MacOS/Electron electron/spec
-# on Windows:
-$ ./out/OUT_DIR/electron.exe electron/spec
-# on Linux:
-$ ./out/OUT_DIR/electron electron/spec
+# on Mac
+$ ./out/Debug/Electron.app/Contents/MacOS/Electron electron/spec
+# on Windows
+$ ./out/Debug/electron.exe electron/spec
+# on Linux
+$ ./out/Debug/electron electron/spec
 ```
 
 If you're debugging something, it can be helpful to pass some extra flags to
 the Electron binary:
 
 ```sh
-$ ./out/OUT_DIR/Electron.app/Contents/MacOS/Electron electron/spec \
+$ ./out/Debug/Electron.app/Contents/MacOS/Electron electron/spec \
   --ci --enable-logging -g 'BrowserWindow module'
 ```
 
