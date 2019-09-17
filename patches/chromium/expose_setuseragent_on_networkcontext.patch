@@ -33,7 +33,7 @@ index 0ccfe130f00ec3b6c75cd8ee04d5a2777e1fd00c..653829457d58bf92057cc36aa8a28970
    DISALLOW_COPY_AND_ASSIGN(StaticHttpUserAgentSettings);
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 2215947425423d94bf761834d65fc70344b1eab5..8a226831b535780aa3cec73f0abc6cb9b91f8a2b 100644
+index 53f84c4f52c0a96bba3ef6d1d5fea2bb8c9d9586..f84eacabecc5fdaa241b5b68841836a458f788a5 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -1098,6 +1098,13 @@ void NetworkContext::SetNetworkConditions(
@@ -51,7 +51,7 @@ index 2215947425423d94bf761834d65fc70344b1eab5..8a226831b535780aa3cec73f0abc6cb9
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 1fc2da267b19658e85546a339c879b788cc62275..297f9ceb9b86b204bb68804861a46d314767f329 100644
+index 8e140617acc891ad51bf98c80d49a1255cb08af6..a662dfc7104df48cdb71d91a9227ddeb8cf81590 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -218,6 +218,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
@@ -63,10 +63,10 @@ index 1fc2da267b19658e85546a339c879b788cc62275..297f9ceb9b86b204bb68804861a46d31
    void SetEnableReferrers(bool enable_referrers) override;
  #if defined(OS_CHROMEOS)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index b9064344c62603c93fea2af0bcd6496c395c6810..3cd86caa33a455e6399110fa8d119d785019277a 100644
+index 9210bcebabf39e8bb9f4bc863f6917b5179b3853..ac46492f073d5e6955428e80d64069d79ea0f523 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -882,6 +882,9 @@ interface NetworkContext {
+@@ -886,6 +886,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  

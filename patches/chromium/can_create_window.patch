@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index a801fae804516ca31a17fcce1809a1eedec9ac1f..fdd78dfb1ddcd033b03cc8ca8e51e0ab005c79e3 100644
+index 54be9df87a81f517ed9d324d261caffed36f0a36..88f8ced32c79ca7a6b173636002f3e2d1b1e491f 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3958,6 +3958,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3963,6 +3963,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,7 +66,7 @@ index dcb77c78114699a0017a305f140f4322d271ff83..aeb22701d036c54cb495540847e333b3
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index f780c653d6e5419eddcde71c348903715e3d2ffc..afd60c66ac1136cc948fb3b14b2ddebc89b2bb88 100644
+index b48225c1a805fcdcdea656a638407b154fa29b37..98e60cd94ce13130b81d1553c8ee4f9bbfea76ed 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -73,6 +73,7 @@

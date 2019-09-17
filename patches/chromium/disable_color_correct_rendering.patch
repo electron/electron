@@ -215,7 +215,7 @@ index 8ecb551119ccdbe8e8582c7005824073187cb600..f31208b13bf2e30656bf5696f507e3ac
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index b240d66820e4923fca52bcc0af85739cd652e499..c3f900630c717e4380ff0cdc606fc7cd30830e24 100644
+index 2336db9feacf5d96107155659611f64297040eac..7f89c9e3141dfa5fe88410b138d138108b8ec6ff 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -218,6 +218,7 @@
@@ -235,10 +235,10 @@ index b240d66820e4923fca52bcc0af85739cd652e499..c3f900630c717e4380ff0cdc606fc7cd
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 3adc1947469d827d044748382a44fce3ead31b43..cc410c12317eba4e8be38c48e5d21da2ddeec76c 100644
+index 1598494eb013868e2ad8b6ce8aa32742e5819ae3..0fcd5dd582ffaea0b4c3867809529c4ab900f1be 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2882,6 +2882,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2846,6 +2846,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

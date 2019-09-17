@@ -5,7 +5,7 @@ Subject: build_gn.patch
 
 
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 59ab7810e71916e8f0f2d69f06e3c2c3ebc99030..b144e800c94956429ca85fc0aefe6539a6246e4b 100644
+index f89e7e831b79f82bd11a5dd8cee6ab49d8de724e..f8a611bf0676ce323cdbb5d639333df9875dd0ca 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -123,6 +123,9 @@ if (current_os == "") {
@@ -18,8 +18,8 @@ index 59ab7810e71916e8f0f2d69f06e3c2c3ebc99030..b144e800c94956429ca85fc0aefe6539
    # Set to enable the official build level of optimization. This has nothing
    # to do with branding, but enables an additional level of optimization above
    # release (!is_debug). This might be better expressed as a tri-state
-@@ -437,6 +440,7 @@ default_compiler_configs = [
-   "//build/config/compiler:thin_archive",
+@@ -438,6 +441,7 @@ default_compiler_configs = [
+   "//build/config/compiler:default_init_stack_vars",
    "//build/config/coverage:default_coverage",
    "//build/config/sanitizers:default_sanitizer_flags",
 +  "//electron/build/config:mas_build",
