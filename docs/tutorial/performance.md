@@ -119,7 +119,7 @@ respectively.
 
 ![performance-heap-prof]
 
-In this example, on the authors machine, we saw that loading `request` took
+In this example, on the author's machine, we saw that loading `request` took
 almost half a second, whereas `node-fetch` took dramatically less memory
 and less than 50ms.
 
