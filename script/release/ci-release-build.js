@@ -61,9 +61,9 @@ async function circleCIcall (targetBranch, job, options) {
   const buildRequest = {
     'branch': targetBranch,
     'parameters': {
-      'run-lint': false,
-      'run-build-linux': false,
-      'run-build-mac': false
+      'run-lint': '',
+      'run-build-linux': '',
+      'run-build-mac': ''
     }
   }
   if (options.ghRelease) {
@@ -71,7 +71,7 @@ async function circleCIcall (targetBranch, job, options) {
   } else {
     buildRequest.parameters['upload-to-s3'] = '1'
   }
-  buildRequest.parameters[`run-${job}`] = true
+  buildRequest.parameters[`run-${job}`] = 'true'
   jobRequestedCount++
   // The logic below expects that the CircleCI workflows for releases each
   // contain only one job in order to maintain compatibility with sudowoodo.

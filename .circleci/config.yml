@@ -6,40 +6,40 @@ parameters:
     default: '1'
   
   run-lint:
-    type: boolean
-    default: true
+    type: string
+    default: 'true'
 
   run-build-linux:
-    type: boolean
-    default: true
+    type: string
+    default: 'true'
 
   run-build-mac:
-    type: boolean
-    default: true
+    type: string
+    default: 'true'
 
   run-linux-x64-publish:
-    type: boolean
-    default: false
+    type: string
+    default: ''
 
   run-linux-ia32-publish:
-    type: boolean
-    default: false
+    type: string
+    default: ''
 
   run-linux-arm-publish:
-    type: boolean
-    default: false
+    type: string
+    default: ''
   
   run-linux-arm64-publish:
-    type: boolean
-    default: false
+    type: string
+    default: ''
   
   run-osx-publish:
-    type: boolean
-    default: false
+    type: string
+    default: ''
 
   run-mas-publish:
-    type: boolean
-    default: false
+    type: string
+    default: ''
 
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
