@@ -34,10 +34,11 @@ objects take up the most memory?
 
 Time and time again, we have seen that the most successful strategy for building
 a performant Electron app is to profile the running code, find the most
-resource-hungry piece of it, and to optimize it. Repeating this seemingly laborous
-process over and over again will dramatically increase your app's performance. 
-Experience from working with major apps like Visual Studio Code or Slack has shown
-that this practice is by far the most reliable strategy to improve performance.
+resource-hungry piece of it, and to optimize it. Repeating this seemingly
+laborious process over and over again will dramatically increase your app's
+performance. Experience from working with major apps like Visual Studio Code or
+Slack has shown that this practice is by far the most reliable strategy to
+improve performance.
 
 To learn more about how to profile your app's code, familiarize yourself with
 the Chrome Developer Tools. For advanced analysis looking at multiple processes
@@ -345,14 +346,14 @@ be bundled with your application.
 
 ### Why?
 
-Many users of Electron start with an entirely web-based app that they're 
+Many users of Electron start with an entirely web-based app that they're
 turning into a desktop application. As web developers, we are used to loading
 resources from a variety of content delivery networks. Now that you are
 shipping a proper desktop application, attempt to "cut the cord" where possible
  - and avoid letting your users wait for resources that never change and could
 easily be included  in your app.
 
-A typical example is Google Fonts. Many developers make use of Google's 
+A typical example is Google Fonts. Many developers make use of Google's
 impressive collection of free fonts, which comes with a content delivery
 network. The pitch is straightforward: Include a few lines of CSS and Google
 will take care of the rest.
@@ -384,12 +385,12 @@ despite not actually needing the involved resource.
 
 As a tip, loading resources from the Internet that you might want to change
 without shipping an application update is a powerful strategy. For advanced
-control over how resources are being loaded, consider investing in 
+control over how resources are being loaded, consider investing in
 [Service Workers][service-workers].
 
 ## 7) Bundle your code
 
-As already pointed out in 
+As already pointed out in
 "[Loading and running code too soon](#2-loading-and-running-code-too-soon)",
 calling `require()` is an expensive operation. If you are able to do so,
 bundle your application's code into a single file.
@@ -409,7 +410,7 @@ recommend that you use a bundler that is able to handle Electron's unique
 environment that needs to handle both Node.js and browser environments.
 
 As of writing this article, the popular choices include [Webpack][webpack],
-[Parcel][parcel], and [rollup.js][rollup]. 
+[Parcel][parcel], and [rollup.js][rollup].
 
 [security]: ./security.md
 [performance-cpu-prof]: ../images/performance-cpu-prof.png
