@@ -46,7 +46,7 @@ at once, consider the [Chrome Tracing] tool.
 ### Recommended Reading
 
  * [Get Started With Analyzing Runtime Performance][chrome-devtools-tutorial]
- * []
+ * [Talk: "Visual Studio Code - The First Second"][vscode-first-second]
 
 ## Checklist
 
@@ -426,3 +426,4 @@ As of writing this article, the popular choices include [Webpack][webpack],
 [webpack]: https://webpack.js.org/
 [parcel]: https://parceljs.org/
 [rollup]: https://rollupjs.org/
+[vscode-first-second]: https://www.youtube.com/watch?v=r0OeHRUCCb4
