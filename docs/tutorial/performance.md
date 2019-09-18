@@ -24,7 +24,7 @@ your responsibility.
 
 ## Measure, Measure, Measure
 
-The list below contains a number of steps that are fairly straight-forward and
+The list below contains a number of steps that are fairly straightforward and
 easy to implement. However, building the most performant version of your app
 will require you to go beyond a number of steps. Instead, you will have to
 closely examine all the code running in your app by carefully profiling and
