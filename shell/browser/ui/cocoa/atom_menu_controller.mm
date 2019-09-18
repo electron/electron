@@ -151,7 +151,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     isMenuOpen_ = NO;
     model_->MenuWillClose();
     if (!closeCallback.is_null()) {
-      base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, closeCallback);
+      base::PostTask(FROM_HERE, {BrowserThread::UI}, closeCallback);
     }
   }
 }
@@ -380,7 +380,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     // Post async task so that itemSelected runs before the close callback
     // deletes the controller from the map which deallocates it
     if (!closeCallback.is_null()) {
-      base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, closeCallback);
+      base::PostTask(FROM_HERE, {BrowserThread::UI}, closeCallback);
     }
   }
 }

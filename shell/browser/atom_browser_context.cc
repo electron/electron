@@ -275,7 +275,8 @@ AtomBrowserContext::GetURLLoaderFactory() {
       mojo::MakeRequest(&network_factory);
 
   // Consult the embedder.
-  network::mojom::TrustedURLLoaderHeaderClientPtrInfo header_client;
+  mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
+      header_client;
   static_cast<content::ContentBrowserClient*>(AtomBrowserClient::Get())
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,

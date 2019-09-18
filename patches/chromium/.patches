@@ -36,7 +36,6 @@ mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
 mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
 ignore_rc_check.patch
-enable_widevine.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
@@ -62,7 +61,6 @@ unsandboxed_ppapi_processes_skip_zygote.patch
 patch_the_ensure_gn_version_py_script_to_work_on_mac_ci.patch
 build_add_electron_tracing_category.patch
 disable_custom_libcxx_on_windows.patch
-feat_offscreen_rendering_with_viz_compositor.patch
 worker_context_will_destroy.patch
 fix_breakpad_symbol_generation_on_linux_arm.patch
 frame_host_manager.patch
@@ -78,3 +76,5 @@ disable_compositor_recycling.patch
 allow_new_privileges_in_unsandboxed_child_processes.patch
 expose_setuseragent_on_networkcontext.patch
 feat_add_set_theme_source_to_allow_apps_to.patch
+revert_cleanup_remove_menu_subtitles_sublabels.patch
+ui_views_fix_jumbo_build.patch

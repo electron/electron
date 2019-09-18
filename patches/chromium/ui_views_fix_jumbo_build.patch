@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Deepak Mohan <hop2deep@gmail.com>
+Date: Wed, 11 Sep 2019 16:09:34 -0700
+Subject: ui/views: fix namespace qualification with jumbo_build
+
+In file included from gen/ui/views/views_jumbo_4.cc:45:
+.\../../ui/views/widget/widget_hwnd_utils.cc(112,11): error: no member named 'IsFormControlsRefreshEnabled'
+in namespace 'views::features'; did you mean '::features::IsFormControlsRefreshEnabled'?
+      if (features::IsFormControlsRefreshEnabled() &&
+          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          ::features::IsFormControlsRefreshEnabled
+../..\ui/base/ui_base_features.h(72,41): note: '::features::IsFormControlsRefreshEnabled' declared here
+COMPONENT_EXPORT(UI_BASE_FEATURES) bool IsFormControlsRefreshEnabled();
+                                        ^
+1 error generated.
+ninja: build stopped: subcommand failed.
+
+diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
+index b12b2137e8cd24c28d9c9e6845161ac1756f6425..a6df1985f24b023355b0643c12d5685463dd187e 100644
+--- a/ui/views/BUILD.gn
++++ b/ui/views/BUILD.gn
+@@ -580,6 +580,7 @@ jumbo_component("views") {
+       "win/pen_event_processor.cc",
+       "win/scoped_fullscreen_visibility.cc",
+     ]
++    jumbo_excluded_sources = [ "widget/widget_hwnd_utils.cc" ]
+     libs = [
+       "dwmapi.lib",
+       "imm32.lib",

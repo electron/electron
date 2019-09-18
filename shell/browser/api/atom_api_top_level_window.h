@@ -240,7 +240,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 
   template <typename... Args>
   void EmitEventSoon(base::StringPiece eventName) {
-    base::PostTaskWithTraits(
+    base::PostTask(
         FROM_HERE, {content::BrowserThread::UI},
         base::BindOnce(base::IgnoreResult(&TopLevelWindow::Emit<Args...>),
                        weak_factory_.GetWeakPtr(), eventName));

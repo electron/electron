@@ -127,9 +127,7 @@ class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
                       const base::Closure& callback)
       : callback_(callback) {
     time_source_ = std::make_unique<viz::DelayBasedTimeSource>(
-        base::CreateSingleThreadTaskRunnerWithTraits(
-            {content::BrowserThread::UI})
-            .get());
+        base::CreateSingleThreadTaskRunner({content::BrowserThread::UI}).get());
     time_source_->SetTimebaseAndInterval(
         base::TimeTicks(),
         base::TimeDelta::FromMicroseconds(frame_rate_threshold_us));
@@ -254,7 +252,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       context_factory_private->AllocateFrameSinkId(),
       content::GetContextFactory(), context_factory_private,
       base::ThreadTaskRunnerHandle::Get(), false /* enable_pixel_canvas */,
-      this);
+      false /* use_external_begin_frame_control */);
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetRootLayer(root_layer_.get());
 
@@ -319,16 +317,8 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(
   begin_frame_number_++;
 
   compositor_->context_factory_private()->IssueExternalBeginFrame(
-      compositor_.get(), begin_frame_args);
-}
-
-void OffScreenRenderWidgetHostView::OnDisplayDidFinishFrame(
-    const viz::BeginFrameAck& ack) {}
-
-void OffScreenRenderWidgetHostView::OnNeedsExternalBeginFrames(
-    bool needs_begin_frames) {
-  SetupFrameRate(true);
-  begin_frame_timer_->SetActive(needs_begin_frames);
+      compositor_.get(), begin_frame_args, /* force */ true,
+      base::NullCallback());
 }
 
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
@@ -448,7 +438,8 @@ gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() {
 
 void OffScreenRenderWidgetHostView::SetInsets(const gfx::Insets& insets) {}
 
-bool OffScreenRenderWidgetHostView::LockMouse() {
+bool OffScreenRenderWidgetHostView::LockMouse(
+    bool request_unadjusted_movement) {
   return false;
 }
 
@@ -848,7 +839,7 @@ void OffScreenRenderWidgetHostView::ReleaseResize() {
   hold_resize_ = false;
   if (pending_resize_) {
     pending_resize_ = false;
-    base::PostTaskWithTraits(
+    base::PostTask(
         FROM_HERE, {content::BrowserThread::UI},
         base::BindOnce(
             &OffScreenRenderWidgetHostView::SynchronizeVisualProperties,
@@ -953,7 +944,7 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
         // Scrolling outside of the popup widget so destroy it.
         // Execute asynchronously to avoid deleting the widget from inside some
         // other callback.
-        base::PostTaskWithTraits(
+        base::PostTask(
             FROM_HERE, {content::BrowserThread::UI},
             base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));

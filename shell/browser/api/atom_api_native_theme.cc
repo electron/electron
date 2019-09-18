@@ -34,10 +34,9 @@ void NativeTheme::OnNativeThemeUpdatedOnUI() {
 }
 
 void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
-  base::PostTaskWithTraits(
-      FROM_HERE, {content::BrowserThread::UI},
-      base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
-                     base::Unretained(this)));
+  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                 base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
+                                base::Unretained(this)));
 }
 
 void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {

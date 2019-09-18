@@ -47,7 +47,7 @@ std::vector<gfx::Rect> CalculateNonDraggableRegions(
     int height) {
   std::vector<gfx::Rect> result;
   SkRegion non_draggable;
-  non_draggable.op(0, 0, width, height, SkRegion::kUnion_Op);
+  non_draggable.op({0, 0, width, height}, SkRegion::kUnion_Op);
   non_draggable.op(*draggable, SkRegion::kDifference_Op);
   for (SkRegion::Iterator it(non_draggable); !it.done(); it.next()) {
     result.push_back(gfx::SkIRectToRect(it.rect()));

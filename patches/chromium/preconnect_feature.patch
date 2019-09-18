@@ -8,10 +8,10 @@ this patch removes that dependency so we can reuse it.
 Ideally we would change this class in upstream to not depend on Profile.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index cdee4d11f2d2..7312fb4e4ea5 100644
+index c3c7d4220f7ea612e5b86645854e4f426066e18c..969dd6659bfdc0fa3cf3edf494f1623ba10134a5 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
-@@ -71,7 +71,7 @@ PreresolveJob::PreresolveJob(PreresolveJob&& other) = default;
+@@ -70,7 +70,7 @@ PreresolveJob::PreresolveJob(PreresolveJob&& other) = default;
  PreresolveJob::~PreresolveJob() = default;
  
  PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
@@ -20,7 +20,7 @@ index cdee4d11f2d2..7312fb4e4ea5 100644
      : delegate_(std::move(delegate)),
        profile_(profile),
        inflight_preresolves_count_(0) {
-@@ -327,11 +327,13 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
+@@ -317,11 +317,13 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
    if (network_context_)
      return network_context_;
  
@@ -35,7 +35,7 @@ index cdee4d11f2d2..7312fb4e4ea5 100644
    return content::BrowserContext::GetDefaultStoragePartition(profile_)
        ->GetNetworkContext();
 diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
-index 51a842d2e44f..097316e0cfb6 100644
+index e35163576b55d772098ae2a2138c4c1cf8438eac..70cad725f9476175b31859867c640ca8c66816a8 100644
 --- a/chrome/browser/predictors/preconnect_manager.h
 +++ b/chrome/browser/predictors/preconnect_manager.h
 @@ -22,6 +22,10 @@
@@ -58,7 +58,7 @@ index 51a842d2e44f..097316e0cfb6 100644
    virtual ~PreconnectManager();
  
    // Starts preconnect and preresolve jobs keyed by |url|.
-@@ -202,7 +206,7 @@ class PreconnectManager {
+@@ -196,7 +200,7 @@ class PreconnectManager {
    network::mojom::NetworkContext* GetNetworkContext() const;
  
    base::WeakPtr<Delegate> delegate_;

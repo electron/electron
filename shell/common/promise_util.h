@@ -55,11 +55,10 @@ class Promise {
 
   static void ResolvePromise(Promise<RT> promise, RT result) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTaskWithTraits(
-          FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(
-              [](Promise<RT> promise, RT result) { promise.Resolve(result); },
-              std::move(promise), std::move(result)));
+      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                     base::BindOnce([](Promise<RT> promise,
+                                       RT result) { promise.Resolve(result); },
+                                    std::move(promise), std::move(result)));
     } else {
       promise.Resolve(result);
     }
@@ -67,7 +66,7 @@ class Promise {
 
   static void ResolveEmptyPromise(Promise<RT> promise) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTaskWithTraits(
+      base::PostTask(
           FROM_HERE, {content::BrowserThread::UI},
           base::BindOnce([](Promise<RT> promise) { promise.Resolve(); },
                          std::move(promise)));
@@ -78,13 +77,12 @@ class Promise {
 
   static void RejectPromise(Promise<RT> promise, base::StringPiece errmsg) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTaskWithTraits(
-          FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(
-              [](Promise<RT> promise, base::StringPiece err) {
-                promise.RejectWithErrorMessage(err);
-              },
-              std::move(promise), std::move(errmsg)));
+      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                     base::BindOnce(
+                         [](Promise<RT> promise, base::StringPiece err) {
+                           promise.RejectWithErrorMessage(err);
+                         },
+                         std::move(promise), std::move(errmsg)));
     } else {
       promise.RejectWithErrorMessage(errmsg);
     }
