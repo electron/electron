@@ -48,6 +48,7 @@ notification_provenance.patch
 content_browser_main_loop.patch
 dump_syms.patch
 command-ismediakey.patch
+tts.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
 support_mixed_sandbox_with_zygote.patch
