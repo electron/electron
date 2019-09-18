@@ -301,7 +301,7 @@ time.
 One of Electron's great benefits is that you know exactly which engine will
 parse your JavaScript, HTML, and CSS. If you're re-purposing code that was
 written for the web at large, make sure to not polyfill features included in
-Electron with polyfills.
+Electron.
 
 ### Why?
 
