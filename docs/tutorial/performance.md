@@ -24,7 +24,7 @@ your responsibility.
 
 ## Measure, Measure, Measure
 
-The list below contains a number of steps that are fairly straight-forward and
+The list below contains a number of steps that are fairly straightforward and
 easy to implement. However, building the most performant version of your app
 will require you to go beyond a number of steps. Instead, you will have to
 closely examine all the code running in your app by carefully profiling and
@@ -121,7 +121,7 @@ respectively.
 
 ![performance-heap-prof]
 
-In this example, on the authors machine, we saw that loading `request` took
+In this example, on the author's machine, we saw that loading `request` took
 almost half a second, whereas `node-fetch` took dramatically less memory
 and less than 50ms.
 
@@ -275,7 +275,7 @@ trick is to execute operations as quickly as possible without taking away
 resources needed to keep scrolling smooth, respond to user input, or animations
 at 60fps.
 
-Investing into orchestrating the flow of operations in your renderer's code is
+Orchestrating the flow of operations in your renderer's code is
 particularly useful if users complain about your app sometimes "stuttering".
 
 ### How?
@@ -304,7 +304,7 @@ time.
 One of Electron's great benefits is that you know exactly which engine will
 parse your JavaScript, HTML, and CSS. If you're re-purposing code that was
 written for the web at large, make sure to not polyfill features included in
-Electron with polyfills.
+Electron.
 
 ### Why?
 
