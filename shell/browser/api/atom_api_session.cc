@@ -29,7 +29,8 @@
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/storage_partition.h"
-#include "mojo/public/cpp/bindings/strong_binding.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/completion_repeating_callback.h"
@@ -397,14 +398,16 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
     return;
   }
 
-  network::mojom::CertVerifierClientPtr cert_verifier_client;
+  mojo::PendingRemote<network::mojom::CertVerifierClient>
+      cert_verifier_client_remote;
   if (proc) {
-    mojo::MakeStrongBinding(std::make_unique<CertVerifierClient>(proc),
-                            mojo::MakeRequest(&cert_verifier_client));
+    mojo::MakeSelfOwnedReceiver(
+        std::make_unique<CertVerifierClient>(proc),
+        cert_verifier_client_remote.InitWithNewPipeAndPassReceiver());
   }
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
-      ->SetCertVerifierClient(std::move(cert_verifier_client));
+      ->SetCertVerifierClient(std::move(cert_verifier_client_remote));
 
   // This causes the cert verifier cache to be cleared.
   content::GetNetworkService()->OnCertDBChanged();

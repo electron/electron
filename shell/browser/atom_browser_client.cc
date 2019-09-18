@@ -109,7 +109,6 @@
 
 #if BUILDFLAG(ENABLE_TTS)
 #include "chrome/browser/speech/tts_controller_delegate_impl.h"
-#include "chrome/browser/speech/tts_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_TTS)
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -348,10 +347,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 #if BUILDFLAG(ENABLE_PRINTING)
   host->AddFilter(new printing::PrintingMessageFilter(
       process_id, host->GetBrowserContext()));
-#endif
-
-#if BUILDFLAG(ENABLE_TTS)
-  host->AddFilter(new TtsMessageFilter(host->GetBrowserContext()));
 #endif
 
   ProcessPreferences prefs;
@@ -1006,7 +1001,7 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   new ProxyingURLLoaderFactory(
       web_request.get(), protocol->intercept_handlers(), render_process_id,
       std::move(proxied_receiver), std::move(target_factory_info),
-      std::move(header_client_receiver));
+      std::move(header_client_receiver), type);
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;

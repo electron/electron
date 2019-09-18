@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/optional.h"
+#include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "services/network/public/cpp/resource_request.h"
@@ -102,9 +103,9 @@ class ProxyingURLLoaderFactory
     void ResumeReadingBodyFromNet() override;
 
     // network::mojom::URLLoaderClient:
-    void OnReceiveResponse(const network::ResourceResponseHead& head) override;
+    void OnReceiveResponse(network::mojom::URLResponseHeadPtr head) override;
     void OnReceiveRedirect(const net::RedirectInfo& redirect_info,
-                           const network::ResourceResponseHead& head) override;
+                           network::mojom::URLResponseHeadPtr head) override;
     void OnUploadProgress(int64_t current_position,
                           int64_t total_size,
                           OnUploadProgressCallback callback) override;
@@ -204,7 +205,8 @@ class ProxyingURLLoaderFactory
       network::mojom::URLLoaderFactoryRequest loader_request,
       network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
       mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
-          header_client_receiver);
+          header_client_receiver,
+      content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type);
   ~ProxyingURLLoaderFactory() override;
 
   // network::mojom::URLLoaderFactory:
@@ -225,6 +227,8 @@ class ProxyingURLLoaderFactory
       override;
 
   WebRequestAPI* web_request_api() { return web_request_api_; }
+
+  bool IsForServiceWorkerScript() const;
 
  private:
   void OnTargetFactoryError();
@@ -249,6 +253,8 @@ class ProxyingURLLoaderFactory
   network::mojom::URLLoaderFactoryPtr target_factory_;
   mojo::Receiver<network::mojom::TrustedURLLoaderHeaderClient>
       url_loader_header_client_receiver_{this};
+  const content::ContentBrowserClient::URLLoaderFactoryType
+      loader_factory_type_;
 
   // Mapping from our own internally generated request ID to an
   // InProgressRequest instance.

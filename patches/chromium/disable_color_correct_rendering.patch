@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 8fdcc4194291910c42c103b77cf4e8267b81f566..1ad01316f2e5aca2bdd3c2ce752bd5a478a920ee 100644
+index ea0dfd54283746e84f2a14108d50b5203bc6f6d8..b1d82cb13c78b1a9e0049ba73fc36aa1bfdd874b 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -95,6 +95,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -203,7 +203,7 @@ index 8c67161c4a4b970fb9393a9a73a239b5aecb95cf..99ea5a9832aca67030e92e4761209872
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 350e8aa2ed6cb7b5725b23795a25edc710b3c6be..4c6e78f9dba1e607bee61842a884201ad085cfbe 100644
+index 8ecb551119ccdbe8e8582c7005824073187cb600..f31208b13bf2e30656bf5696f507e3ac2cb25229 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -193,6 +193,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -215,7 +215,7 @@ index 350e8aa2ed6cb7b5725b23795a25edc710b3c6be..4c6e78f9dba1e607bee61842a884201a
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 299acbb8973f8b603575b006cfd1d296869f7c2a..32e4c105256e5d1a8930766433f8c1b28d88166d 100644
+index 2336db9feacf5d96107155659611f64297040eac..7f89c9e3141dfa5fe88410b138d138108b8ec6ff 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -218,6 +218,7 @@
@@ -235,10 +235,10 @@ index 299acbb8973f8b603575b006cfd1d296869f7c2a..32e4c105256e5d1a8930766433f8c1b2
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index f15823dd27ae8f91257afd8ae81a9c3915c50059..c8d239ff9a5a66f02248ef6b9e202e7c347c356c 100644
+index 1598494eb013868e2ad8b6ce8aa32742e5819ae3..0fcd5dd582ffaea0b4c3867809529c4ab900f1be 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2861,6 +2861,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2846,6 +2846,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

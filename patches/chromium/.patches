@@ -36,7 +36,6 @@ mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
 mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
 ignore_rc_check.patch
-enable_widevine.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
@@ -78,3 +77,4 @@ allow_new_privileges_in_unsandboxed_child_processes.patch
 ssl_security_state_tab_helper.patch
 revert_cleanup_remove_menu_subtitles_sublabels.patch
 expose_setuseragent_on_networkcontext.patch
+net_avoid_vector_const_elements.patch
