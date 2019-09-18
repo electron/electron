@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/api/remote_object_freer.h"
+#include "shell/common/api/remote/remote_object_freer.h"
 
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"

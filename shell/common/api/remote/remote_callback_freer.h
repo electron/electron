@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_REMOTE_CALLBACK_FREER_H_
-#define SHELL_COMMON_API_REMOTE_CALLBACK_FREER_H_
+#ifndef SHELL_COMMON_API_REMOTE_REMOTE_CALLBACK_FREER_H_
+#define SHELL_COMMON_API_REMOTE_REMOTE_CALLBACK_FREER_H_
 
 #include <string>
 
 #include "content/public/browser/web_contents_observer.h"
-#include "shell/common/api/object_life_monitor.h"
+#include "shell/common/api/remote/object_life_monitor.h"
 
 namespace electron {
 
@@ -43,4 +43,4 @@ class RemoteCallbackFreer : public ObjectLifeMonitor,
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_API_REMOTE_CALLBACK_FREER_H_
+#endif  // SHELL_COMMON_API_REMOTE_REMOTE_CALLBACK_FREER_H_

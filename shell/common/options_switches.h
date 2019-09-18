@@ -5,6 +5,8 @@
 #ifndef SHELL_COMMON_OPTIONS_SWITCHES_H_
 #define SHELL_COMMON_OPTIONS_SWITCHES_H_
 
+#include "electron/buildflags/buildflags.h"
+
 namespace electron {
 
 namespace options {
@@ -58,7 +60,6 @@ extern const char kZoomFactor[];
 extern const char kPreloadScript[];
 extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
-extern const char kEnableRemoteModule[];
 extern const char kContextIsolation[];
 extern const char kGuestInstanceID[];
 extern const char kExperimentalFeatures[];
@@ -82,6 +83,10 @@ extern const char kImages[];
 extern const char kTextAreasAreResizable[];
 extern const char kWebGL[];
 extern const char kNavigateOnDragDrop[];
+
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+extern const char kEnableRemoteModule[];
+#endif
 
 }  // namespace options
 
@@ -107,7 +112,6 @@ extern const char kBackgroundColor[];
 extern const char kPreloadScript[];
 extern const char kPreloadScripts[];
 extern const char kNodeIntegration[];
-extern const char kEnableRemoteModule[];
 extern const char kContextIsolation[];
 extern const char kGuestInstanceID[];
 extern const char kOpenerID[];
@@ -128,6 +132,10 @@ extern const char kIgnoreConnectionsLimit[];
 extern const char kAuthServerWhitelist[];
 extern const char kAuthNegotiateDelegateWhitelist[];
 extern const char kEnableAuthNegotiatePort[];
+
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+extern const char kEnableRemoteModule[];
+#endif
 
 }  // namespace switches
 
