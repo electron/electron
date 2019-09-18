@@ -1789,6 +1789,7 @@ jobs:
       - *step-maybe-notify-slack-success
 
 workflows:
+  version: 2.1
 
   # The publish workflows below each contain one job so that they are 
   # compatible with how sudowoodo works today.  If these workflows are
