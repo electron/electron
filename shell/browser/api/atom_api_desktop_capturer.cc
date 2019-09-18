@@ -144,7 +144,6 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     }
     std::move(window_sources.begin(), window_sources.end(),
               std::back_inserter(captured_sources_));
-    window_capturer_.reset();
   }
 
   if (capture_screen_ &&
@@ -195,7 +194,6 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     // individual screen support is added.
     std::move(screen_sources.begin(), screen_sources.end(),
               std::back_inserter(captured_sources_));
-    screen_capturer_.reset();
   }
 
   if (!capture_window_ && !capture_screen_)
