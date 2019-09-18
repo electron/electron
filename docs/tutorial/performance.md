@@ -34,10 +34,10 @@ objects take up the most memory?
 
 Time and time again, we have seen that the most successful strategy for building
 a performant Electron app is to profile the running code, find the most
-resource-hungry piece of it, and to optimize it. Repeating this seemingly process
-over and over again will dramatically reduce your app's performance. Experience
-from working with major apps like Visual Studio Code or Slack has shown that
-this practice is by far the most reliable strategy to improve performance.
+resource-hungry piece of it, and to optimize it. Repeating this seemingly laborous
+process over and over again will dramatically increase your app's performance. 
+Experience from working with major apps like Visual Studio Code or Slack has shown
+that this practice is by far the most reliable strategy to improve performance.
 
 To learn more about how to profile your app's code, familiarize yourself with
 the Chrome Developer Tools. For advanced analysis looking at multiple processes
@@ -58,6 +58,8 @@ resource-hungry if you attempt these steps.
 3) [Blocking the main process](#3-blocking-the-main-process)
 4) [Blocking the renderer process](#4-blocking-the-renderer-process)
 5) [Unnecessary polyfills](#5-unnecessary-polyfills)
+6) [Unnecessary or blocking network requests](#6-unnecessary-or-blocking-network-requests)
+7) [Bundle your code](#7-bundle-your-code)
 
 ## 1) Carelessly including modules
 
@@ -296,6 +298,7 @@ some caveats to consider – consult Electron's
 for any operation that requires a lot of CPU power for an extended period of
 time.
 
+
 ## 5) Unnecessary polyfills
 
 One of Electron's great benefits is that you know exactly which engine will
@@ -334,6 +337,80 @@ If you're using a transpiler/compiler like TypeScript, examine its configuration
 and ensure that you're targeting the latest ECMAScript version supported by
 Electron.
 
+
+## 6) Unnecessary or blocking network requests
+
+Avoid fetching rarely changing resources from the internet if they could easily
+be bundled with your application.
+
+### Why?
+
+Many users of Electron start with an entirely web-based app that they're 
+turning into a desktop application. As web developers, we are used to loading
+resources from a variety of content delivery networks. Now that you are
+shipping a proper desktop application, attempt to "cut the cord" where possible
+ - and avoid letting your users wait for resources that never change and could
+easily be included  in your app.
+
+A typical example is Google Fonts. Many developers make use of Google's 
+impressive collection of free fonts, which comes with a content delivery
+network. The pitch is straightforward: Include a few lines of CSS and Google
+will take care of the rest.
+
+When building an Electron app, your users are better served if you download
+the fonts and include them in your app's bundle.
+
+### How?
+
+In an ideal world, your application wouldn't need the network to operate at
+all. To get there, you must understand what resources your app is downloading
+- and how large those resources are.
+
+To do so, open up the developer tools. Navigate to the `Network` tab and check
+the `Disable cache` option. Then, reload your renderer. Unless your app
+prohibits such reloads, you can usually trigger a reload by hitting `Cmd + R`
+or `Ctrl + R` with the developer tools in focus.
+
+The tools will now meticulously record all network requests. In a first pass,
+take stock of all the resources being downloaded, focusing on the larger files
+first. Are any of them images, fonts, or media files that don't change and
+could be included with your bundle? If so, include them.
+
+As a next step, enable `Network Throttling`. Find the drop-down that currently
+reads `Online` and select a slower speed such as `Fast 3G`. Reload your
+renderer and see if there are any resources that your app is unnecessarily
+waiting for. In many cases, an app will wait for a network request to complete
+despite not actually needing the involved resource.
+
+As a tip, loading resources from the Internet that you might want to change
+without shipping an application update is a powerful strategy. For advanced
+control over how resources are being loaded, consider investing in 
+[Service Workers][service-workers].
+
+## 7) Bundle your code
+
+As already pointed out in 
+"[Loading and running code too soon](#2-loading-and-running-code-too-soon)",
+calling `require()` is an expensive operation. If you are able to do so,
+bundle your application's code into a single file.
+
+### Why?
+
+Modern JavaScript development usually involves many files and modules. While
+that's perfectly fine for developing with Electron, we heavily recommend that
+you bundle all your code into one single file to ensure that the overhead
+included in calling `require()` is only paid once when your application loads.
+
+### How?
+
+There are numerous JavaScript bundlers out there and we know better than to
+anger the community by recommending one tool over another. We do however
+recommend that you use a bundler that is able to handle Electron's unique
+environment that needs to handle both Node.js and browser environments.
+
+As of writing this article, the popular choices include [Webpack][webpack],
+[Parcel][parcel], and [rollup.js][rollup]. 
+
 [security]: ./security.md
 [performance-cpu-prof]: ../images/performance-cpu-prof.png
 [performance-heap-prof]: ../images/performance-heap-prof.png
@@ -345,3 +422,7 @@ Electron.
 [multithreading]: ./multithreading.md
 [caniuse]: https://caniuse.com/
 [jquery-need]: http://youmightnotneedjquery.com/
+[service-workers]: https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API
+[webpack]: https://webpack.js.org/
+[parcel]: https://parceljs.org/
+[rollup]: https://rollupjs.org/
