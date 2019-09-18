@@ -273,7 +273,7 @@ trick is to execute operations as quickly as possible without taking away
 resources needed to keep scrolling smooth, respond to user input, or animations
 at 60fps.
 
-Investing into orchestrating the flow of operations in your renderer's code is
+Orchestrating the flow of operations in your renderer's code is
 particularly useful if users complain about your app sometimes "stuttering".
 
 ### How?
