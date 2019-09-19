@@ -4,8 +4,10 @@ import { closeAllWindows } from './window-helpers'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 import * as path from 'path'
+import * as fs from 'fs'
 import { ifdescribe } from './spec-helpers'
 import { emittedOnce } from './events-helpers'
+import { closeWindow } from './window-helpers';
 
 const fixtures = path.join(__dirname, 'fixtures')
 
@@ -86,5 +88,73 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
         w.destroy()
       }
     })
+  })
+})
+
+ifdescribe(!process.electronBinding('features').isExtensionsEnabled())('chrome extensions', () => {
+  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
+  let w: BrowserWindow
+
+  before(() => {
+    BrowserWindow.addExtension(path.join(fixtures, 'extensions/chrome-api'))
+  })
+
+  after(() => {
+    BrowserWindow.removeExtension('chrome-api')
+  })
+
+  beforeEach(() => {
+    w = new BrowserWindow({ show: false })
+  })
+
+  afterEach(() => closeWindow(w).then(() => { w = null as unknown as BrowserWindow }))
+
+  it('runtime.getManifest returns extension manifest', async () => {
+    const actualManifest = (() => {
+      const data = fs.readFileSync(path.join(fixtures, 'extensions/chrome-api/manifest.json'), 'utf-8')
+      return JSON.parse(data)
+    })()
+
+    await w.loadURL('about:blank')
+
+    const promise = emittedOnce(w.webContents, 'console-message')
+
+    const message = { method: 'getManifest' }
+    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
+
+    const [,, manifestString] = await promise
+    const manifest = JSON.parse(manifestString)
+
+    expect(manifest.name).to.equal(actualManifest.name)
+    expect(manifest.content_scripts).to.have.lengthOf(actualManifest.content_scripts.length)
+  })
+
+  it('chrome.tabs.sendMessage receives the response', async function () {
+    await w.loadURL('about:blank')
+
+    const promise = emittedOnce(w.webContents, 'console-message')
+
+    const message = { method: 'sendMessage', args: ['Hello World!'] }
+    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
+
+    const [,, responseString] = await promise
+    const response = JSON.parse(responseString)
+
+    expect(response.message).to.equal('Hello World!')
+    expect(response.tabId).to.equal(w.webContents.id)
+  })
+
+  it('chrome.tabs.executeScript receives the response', async function () {
+    await w.loadURL('about:blank')
+
+    const promise = emittedOnce(w.webContents, 'console-message')
+
+    const message = { method: 'executeScript', args: ['1 + 2'] }
+    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
+
+    const [,, responseString] = await promise
+    const response = JSON.parse(responseString)
+
+    expect(response).to.equal(3)
   })
 })

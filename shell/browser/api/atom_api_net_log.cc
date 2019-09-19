@@ -16,7 +16,6 @@
 #include "native_mate/handle.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
-#include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
 
@@ -54,8 +53,8 @@ scoped_refptr<base::SequencedTaskRunner> CreateFileTaskRunner() {
   //
   // These operations can be skipped on shutdown since FileNetLogObserver's API
   // doesn't require things to have completed until notified of completion.
-  return base::CreateSequencedTaskRunnerWithTraits(
-      {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+  return base::CreateSequencedTaskRunner(
+      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_VISIBLE,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
 }
 

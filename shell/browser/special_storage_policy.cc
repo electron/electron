@@ -9,9 +9,9 @@
 
 namespace electron {
 
-SpecialStoragePolicy::SpecialStoragePolicy() {}
+SpecialStoragePolicy::SpecialStoragePolicy() = default;
 
-SpecialStoragePolicy::~SpecialStoragePolicy() {}
+SpecialStoragePolicy::~SpecialStoragePolicy() = default;
 
 bool SpecialStoragePolicy::IsStorageProtected(const GURL& origin) {
   return true;

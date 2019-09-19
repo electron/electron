@@ -155,7 +155,6 @@ app.on('ready', function () {
 })
 
 for (const eventName of [
-  'desktop-capturer-get-sources',
   'remote-get-guest-web-contents'
 ]) {
   ipcMain.on(`handle-next-${eventName}`, function (event, returnValue) {

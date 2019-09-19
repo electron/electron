@@ -83,12 +83,12 @@ declare namespace ElectronInternal {
   type DeprecationHandler = (message: string) => void;
   interface DeprecationUtil {
     warnOnce(oldName: string, newName?: string): () => void;
-    setHandler(handler: DeprecationHandler): void;
+    setHandler(handler: DeprecationHandler | null): void;
     getHandler(): DeprecationHandler | null;
     warn(oldName: string, newName: string): void;
     log(message: string): void;
     removeFunction(fn: Function, removedName: string): Function;
-    renameFunction(fn: Function, newName: string): Function;
+    renameFunction(fn: Function, newName: string | Function): Function;
     event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
     fnToProperty(module: any, prop: string, getter: string, setter?: string): void;
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K): T;

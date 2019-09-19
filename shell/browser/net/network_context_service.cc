@@ -19,12 +19,12 @@ NetworkContextService::NetworkContextService(content::BrowserContext* context)
 
 NetworkContextService::~NetworkContextService() = default;
 
-network::mojom::NetworkContextPtr
+mojo::Remote<network::mojom::NetworkContext>
 NetworkContextService::CreateNetworkContext() {
-  network::mojom::NetworkContextPtr network_context;
+  mojo::Remote<network::mojom::NetworkContext> network_context;
 
   content::GetNetworkService()->CreateNetworkContext(
-      MakeRequest(&network_context),
+      network_context.BindNewPipeAndPassReceiver(),
       CreateNetworkContextParams(browser_context_->IsOffTheRecord(),
                                  browser_context_->GetPath()));
 

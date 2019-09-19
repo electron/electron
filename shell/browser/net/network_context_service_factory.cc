@@ -24,7 +24,7 @@ NetworkContextServiceFactory::NetworkContextServiceFactory()
           "ElectronNetworkContextService",
           BrowserContextDependencyManager::GetInstance()) {}
 
-NetworkContextServiceFactory::~NetworkContextServiceFactory() {}
+NetworkContextServiceFactory::~NetworkContextServiceFactory() = default;
 
 KeyedService* NetworkContextServiceFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {

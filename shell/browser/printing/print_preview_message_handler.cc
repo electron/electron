@@ -23,6 +23,8 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
+#include "shell/common/api/locker.h"
+
 #include "shell/common/node_includes.h"
 
 using content::BrowserThread;
@@ -39,9 +41,9 @@ void StopWorker(int document_cookie) {
   std::unique_ptr<printing::PrinterQuery> printer_query =
       queue->PopPrinterQuery(document_cookie);
   if (printer_query.get()) {
-    base::PostTaskWithTraits(FROM_HERE, {BrowserThread::IO},
-                             base::BindOnce(&printing::PrinterQuery::StopWorker,
-                                            std::move(printer_query)));
+    base::PostTask(FROM_HERE, {BrowserThread::IO},
+                   base::BindOnce(&printing::PrinterQuery::StopWorker,
+                                  std::move(printer_query)));
   }
 }
 

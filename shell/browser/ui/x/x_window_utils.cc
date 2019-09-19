@@ -70,7 +70,7 @@ bool ShouldUseGlobalMenuBar() {
   }
 
   dbus::MessageReader reader(response.get());
-  dbus::MessageReader array_reader(NULL);
+  dbus::MessageReader array_reader(nullptr);
   if (!reader.PopArray(&array_reader)) {
     bus->ShutdownAndBlock();
     return false;

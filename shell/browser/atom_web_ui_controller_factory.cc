@@ -32,9 +32,9 @@ AtomWebUIControllerFactory* AtomWebUIControllerFactory::GetInstance() {
   return base::Singleton<AtomWebUIControllerFactory>::get();
 }
 
-AtomWebUIControllerFactory::AtomWebUIControllerFactory() {}
+AtomWebUIControllerFactory::AtomWebUIControllerFactory() = default;
 
-AtomWebUIControllerFactory::~AtomWebUIControllerFactory() {}
+AtomWebUIControllerFactory::~AtomWebUIControllerFactory() = default;
 
 content::WebUI::TypeID AtomWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,

@@ -73,7 +73,8 @@ async function main () {
 function generateTypeDefinitions () {
   const { status } = childProcess.spawnSync('npm', ['run', 'create-typescript-definitions'], {
     cwd: path.resolve(__dirname, '..'),
-    stdio: 'inherit'
+    stdio: 'inherit',
+    shell: true
   })
   if (status !== 0) {
     throw new Error(`Electron typescript definition generation failed with exit code: ${status}.`)

@@ -30,9 +30,10 @@
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/storage_partition.h"
-#include "mojo/public/cpp/bindings/strong_binding.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_auth_handler_factory.h"
@@ -41,6 +42,7 @@
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/atom_api_cookies.h"
+#include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/browser/api/atom_api_download_item.h"
 #include "shell/browser/api/atom_api_net_log.h"
 #include "shell/browser/api/atom_api_protocol_ns.h"
@@ -52,11 +54,12 @@
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/session_preferences.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/content_converter.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/once_callback.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -399,14 +402,16 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
     return;
   }
 
-  network::mojom::CertVerifierClientPtr cert_verifier_client;
+  mojo::PendingRemote<network::mojom::CertVerifierClient>
+      cert_verifier_client_remote;
   if (proc) {
-    mojo::MakeStrongBinding(std::make_unique<CertVerifierClient>(proc),
-                            mojo::MakeRequest(&cert_verifier_client));
+    mojo::MakeSelfOwnedReceiver(
+        std::make_unique<CertVerifierClient>(proc),
+        cert_verifier_client_remote.InitWithNewPipeAndPassReceiver());
   }
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
-      ->SetCertVerifierClient(std::move(cert_verifier_client));
+      ->SetCertVerifierClient(std::move(cert_verifier_client_remote));
 
   // This causes the cert verifier cache to be cleared.
   content::GetNetworkService()->OnCertDBChanged();
@@ -502,15 +507,14 @@ std::string Session::GetUserAgent() {
 
 v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
                                             const std::string& uuid) {
-  util::Promise<v8::Local<v8::Value>> promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
+  gin::Handle<DataPipeHolder> holder = DataPipeHolder::From(isolate, uuid);
+  if (holder.IsEmpty()) {
+    util::Promise<v8::Local<v8::Value>> promise(isolate);
+    promise.RejectWithErrorMessage("Could not get blob data handle");
+    return promise.GetHandle();
+  }
 
-  AtomBlobReader* blob_reader = browser_context()->GetBlobReader();
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&AtomBlobReader::StartReading,
-                     base::Unretained(blob_reader), uuid, std::move(promise)));
-  return handle;
+  return holder->ReadAll(isolate);
 }
 
 void Session::DownloadURL(const GURL& url) {
@@ -636,7 +640,7 @@ void Session::Preconnect(const mate::Dictionary& options,
   }
 
   DCHECK_GT(num_sockets_to_preconnect, 0);
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&StartPreconnectOnUI, base::RetainedRef(browser_context_),
                      url, num_sockets_to_preconnect));
@@ -682,8 +686,8 @@ mate::Handle<Session> Session::FromPartition(
 void Session::BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Session"));
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
       .SetMethod("clearCache", &Session::ClearCache)

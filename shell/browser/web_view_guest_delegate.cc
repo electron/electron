@@ -105,8 +105,6 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
   // Code below mirrors what content::WebContentsImpl::CreateNewWindow
   // does for non-guest sources
   content::WebContents::CreateParams guest_params(create_params);
-  guest_params.initial_size =
-      embedder_web_contents_->GetContainerBounds().size();
   guest_params.context = embedder_web_contents_->GetNativeView();
   std::unique_ptr<content::WebContents> guest_contents =
       content::WebContents::Create(guest_params);

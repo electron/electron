@@ -125,6 +125,8 @@ class NativeWindowViews : public NativeWindow,
 
   bool IsVisibleOnAllWorkspaces() override;
 
+  void SetGTKDarkThemeEnabled(bool use_dark_theme) override;
+
   content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
   NativeWindowHandle GetNativeWindowHandle() const override;

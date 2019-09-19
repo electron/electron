@@ -11,9 +11,11 @@
 
 namespace electron {
 
-AtomSpeechRecognitionManagerDelegate::AtomSpeechRecognitionManagerDelegate() {}
+AtomSpeechRecognitionManagerDelegate::AtomSpeechRecognitionManagerDelegate() =
+    default;
 
-AtomSpeechRecognitionManagerDelegate::~AtomSpeechRecognitionManagerDelegate() {}
+AtomSpeechRecognitionManagerDelegate::~AtomSpeechRecognitionManagerDelegate() =
+    default;
 
 void AtomSpeechRecognitionManagerDelegate::OnRecognitionStart(int session_id) {}
 

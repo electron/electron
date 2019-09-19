@@ -137,7 +137,7 @@ void ShutdownDetector::ThreadMain() {
   } while (bytes_read < sizeof(signal));
   VLOG(1) << "Handling shutdown for signal " << signal << ".";
 
-  if (!base::PostTaskWithTraits(
+  if (!base::PostTask(
           FROM_HERE, {BrowserThread::UI},
           base::BindOnce(&Browser::Quit, base::Unretained(Browser::Get())))) {
     // Without a UI thread to post the exit task to, there aren't many

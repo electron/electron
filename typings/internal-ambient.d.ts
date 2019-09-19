@@ -4,6 +4,7 @@ declare namespace NodeJS {
   interface FeaturesBinding {
     isDesktopCapturerEnabled(): boolean;
     isOffscreenRenderingEnabled(): boolean;
+    isRemoteModuleEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
     isRunAsNodeEnabled(): boolean;
     isFakeLocationProviderEnabled(): boolean;

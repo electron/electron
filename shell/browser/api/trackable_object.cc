@@ -35,7 +35,7 @@ TrackableObjectBase::TrackableObjectBase() : weak_factory_(this) {
       GetDestroyClosure());
 }
 
-TrackableObjectBase::~TrackableObjectBase() {}
+TrackableObjectBase::~TrackableObjectBase() = default;
 
 base::OnceClosure TrackableObjectBase::GetDestroyClosure() {
   return base::BindOnce(&TrackableObjectBase::Destroy,

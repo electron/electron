@@ -4,6 +4,8 @@
 
 #include "shell/browser/atom_browser_context.h"
 
+#include <memory>
+
 #include <utility>
 
 #include "base/command_line.h"
@@ -29,7 +31,6 @@
 #include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
-#include "shell/browser/atom_blob_reader.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_download_manager_delegate.h"
@@ -206,13 +207,13 @@ int AtomBrowserContext::GetMaxCacheSize() const {
 
 content::ResourceContext* AtomBrowserContext::GetResourceContext() {
   if (!resource_context_)
-    resource_context_.reset(new content::ResourceContext);
+    resource_context_ = std::make_unique<content::ResourceContext>();
   return resource_context_.get();
 }
 
 std::string AtomBrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
-    media_device_id_salt_.reset(new MediaDeviceIDSalt(prefs_.get()));
+    media_device_id_salt_ = std::make_unique<MediaDeviceIDSalt>(prefs_.get());
   return media_device_id_salt_->GetSalt();
 }
 
@@ -229,22 +230,22 @@ content::DownloadManagerDelegate*
 AtomBrowserContext::GetDownloadManagerDelegate() {
   if (!download_manager_delegate_.get()) {
     auto* download_manager = content::BrowserContext::GetDownloadManager(this);
-    download_manager_delegate_.reset(
-        new AtomDownloadManagerDelegate(download_manager));
+    download_manager_delegate_ =
+        std::make_unique<AtomDownloadManagerDelegate>(download_manager);
   }
   return download_manager_delegate_.get();
 }
 
 content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   if (!guest_manager_)
-    guest_manager_.reset(new WebViewManager);
+    guest_manager_ = std::make_unique<WebViewManager>();
   return guest_manager_.get();
 }
 
 content::PermissionControllerDelegate*
 AtomBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
-    permission_manager_.reset(new AtomPermissionManager);
+    permission_manager_ = std::make_unique<AtomPermissionManager>();
   return permission_manager_.get();
 }
 
@@ -256,18 +257,10 @@ std::string AtomBrowserContext::GetUserAgent() const {
   return user_agent_;
 }
 
-AtomBlobReader* AtomBrowserContext::GetBlobReader() {
-  if (!blob_reader_.get()) {
-    content::ChromeBlobStorageContext* blob_context =
-        content::ChromeBlobStorageContext::GetFor(this);
-    blob_reader_.reset(new AtomBlobReader(blob_context));
-  }
-  return blob_reader_.get();
-}
-
 predictors::PreconnectManager* AtomBrowserContext::GetPreconnectManager() {
   if (!preconnect_manager_.get()) {
-    preconnect_manager_.reset(new predictors::PreconnectManager(nullptr, this));
+    preconnect_manager_ =
+        std::make_unique<predictors::PreconnectManager>(nullptr, this);
   }
   return preconnect_manager_.get();
 }
@@ -282,7 +275,8 @@ AtomBrowserContext::GetURLLoaderFactory() {
       mojo::MakeRequest(&network_factory);
 
   // Consult the embedder.
-  network::mojom::TrustedURLLoaderHeaderClientPtrInfo header_client;
+  mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
+      header_client;
   static_cast<content::ContentBrowserClient*>(AtomBrowserClient::Get())
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,

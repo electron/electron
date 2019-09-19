@@ -5,7 +5,7 @@ Subject: webview_cross_drag.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index dda92e4006db1d9a1b68459644d252a3e1dfa4a2..3ed0b3ec3badc9f558f78adbdb31c680ff2631f4 100644
+index ac096c72a956ecb7e6bacb72452b44f6b00ed251..741f6d44d06bb3abe547184403d0e8cccb00d0ce 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
 @@ -777,6 +777,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {

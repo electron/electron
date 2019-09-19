@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "8.0.0-nightly.20190903",
+  "version": "8.0.0-nightly.20190919",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -16,6 +16,7 @@
     "@types/fs-extra": "^5.0.5",
     "@types/mocha": "^5.2.6",
     "@types/node": "^12.0.10",
+    "@types/semver": "^6.0.1",
     "@types/send": "^0.14.5",
     "@types/split": "^1.0.0",
     "@types/webpack": "^4.4.32",

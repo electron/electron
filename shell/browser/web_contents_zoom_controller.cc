@@ -24,7 +24,7 @@ WebContentsZoomController::WebContentsZoomController(
   host_zoom_map_ = content::HostZoomMap::GetForWebContents(web_contents);
 }
 
-WebContentsZoomController::~WebContentsZoomController() {}
+WebContentsZoomController::~WebContentsZoomController() = default;
 
 void WebContentsZoomController::AddObserver(
     WebContentsZoomController::Observer* observer) {

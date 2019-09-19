@@ -109,8 +109,7 @@ gfx::Rect OffScreenWebContentsView::GetViewBounds() const {
   return GetView() ? GetView()->GetViewBounds() : gfx::Rect();
 }
 
-void OffScreenWebContentsView::CreateView(const gfx::Size& initial_size,
-                                          gfx::NativeView context) {}
+void OffScreenWebContentsView::CreateView(gfx::NativeView context) {}
 
 content::RenderWidgetHostViewBase*
 OffScreenWebContentsView::CreateViewForWidget(

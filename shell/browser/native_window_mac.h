@@ -137,6 +137,7 @@ class NativeWindowMac : public NativeWindow {
       const std::vector<mate::PersistentDictionary>& items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
   void SetEscapeTouchBarItem(const mate::PersistentDictionary& item) override;
+  void SetGTKDarkThemeEnabled(bool use_dark_theme) override {}
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
@@ -160,7 +161,7 @@ class NativeWindowMac : public NativeWindow {
   AtomTouchBar* touch_bar() const { return touch_bar_.get(); }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
-  bool simple_fullscreen() const { return always_simple_fullscreen_; }
+  bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
 
  protected:
   // views::WidgetDelegate:

@@ -75,7 +75,7 @@ PlatformNotificationService::PlatformNotificationService(
     AtomBrowserClient* browser_client)
     : browser_client_(browser_client) {}
 
-PlatformNotificationService::~PlatformNotificationService() {}
+PlatformNotificationService::~PlatformNotificationService() = default;
 
 void PlatformNotificationService::DisplayNotification(
     content::RenderProcessHost* render_process_host,

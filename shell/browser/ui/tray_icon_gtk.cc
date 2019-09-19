@@ -13,9 +13,9 @@
 
 namespace electron {
 
-TrayIconGtk::TrayIconGtk() {}
+TrayIconGtk::TrayIconGtk() = default;
 
-TrayIconGtk::~TrayIconGtk() {}
+TrayIconGtk::~TrayIconGtk() = default;
 
 void TrayIconGtk::SetImage(const gfx::Image& image) {
   if (icon_) {

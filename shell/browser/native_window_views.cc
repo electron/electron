@@ -209,17 +209,12 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
 
 #if defined(USE_X11)
   // Start monitoring window states.
-  window_state_watcher_.reset(new WindowStateWatcher(this));
+  window_state_watcher_ = std::make_unique<WindowStateWatcher>(this);
 
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
   bool use_dark_theme = false;
   if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
-    XDisplay* xdisplay = gfx::GetXDisplay();
-    XChangeProperty(xdisplay, GetAcceleratedWidget(),
-                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
-                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
-                    PropModeReplace,
-                    reinterpret_cast<const unsigned char*>("dark"), 4);
+    SetGTKDarkThemeEnabled(use_dark_theme);
   }
 
   // Before the window is mapped the SetWMSpecState can not work, so we have
@@ -279,7 +274,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (has_frame()) {
     // TODO(zcbenz): This was used to force using native frame on Windows 2003,
     // we should check whether setting it in InitParams can work.
-    widget()->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
+    widget()->set_frame_type(views::Widget::FrameType::kForceNative);
     widget()->FrameTypeChanged();
 #if defined(OS_WIN)
     // thickFrame also works for normal window.
@@ -327,6 +322,25 @@ NativeWindowViews::~NativeWindowViews() {
   aura::Window* window = GetNativeWindow();
   if (window)
     window->RemovePreTargetHandler(this);
+#endif
+}
+
+void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
+#if defined(USE_X11)
+  XDisplay* xdisplay = gfx::GetXDisplay();
+  if (use_dark_theme) {
+    XChangeProperty(xdisplay, GetAcceleratedWidget(),
+                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
+                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
+                    PropModeReplace,
+                    reinterpret_cast<const unsigned char*>("dark"), 4);
+  } else {
+    XChangeProperty(xdisplay, GetAcceleratedWidget(),
+                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
+                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
+                    PropModeReplace,
+                    reinterpret_cast<const unsigned char*>("light"), 5);
+  }
 #endif
 }
 
@@ -463,7 +477,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
     tree_host->RemoveEventRewriter(event_disabler_.get());
     event_disabler_.reset();
   } else {
-    event_disabler_.reset(new EventDisabler);
+    event_disabler_ = std::make_unique<EventDisabler>();
     tree_host->AddEventRewriter(event_disabler_.get());
   }
 #endif
@@ -983,7 +997,7 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   }
 
   if (!global_menu_bar_ && ShouldUseGlobalMenuBar())
-    global_menu_bar_.reset(new GlobalMenuBarX11(this));
+    global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
 
   // Use global application menu bar when possible.
   if (global_menu_bar_ && global_menu_bar_->IsServerStarted()) {

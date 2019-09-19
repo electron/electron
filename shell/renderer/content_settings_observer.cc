@@ -17,7 +17,7 @@ ContentSettingsObserver::ContentSettingsObserver(
   render_frame->GetWebFrame()->SetContentSettingsClient(this);
 }
 
-ContentSettingsObserver::~ContentSettingsObserver() {}
+ContentSettingsObserver::~ContentSettingsObserver() = default;
 
 bool ContentSettingsObserver::AllowDatabase() {
   blink::WebFrame* frame = render_frame()->GetWebFrame();

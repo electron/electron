@@ -55,7 +55,7 @@ index 5253f6be778cc78571b3df0a33d364a9b1e6ef52..dc5307e6500b0bfb5da83e8d8ff8886b
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index f64eb733ede38501c34b2af89f42255189abd982..3c2dfad7ac9ba64b0b49ebef41a303edd1470cb1 100644
+index ce997528ce2973b54dbbf965220cc30bcb19a094..e84b0b62d853b044e590a0c764f1b21ad3210886 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
 @@ -138,7 +138,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
@@ -108,10 +108,10 @@ index 4bf25bf1fa69f7d3869369172d375e2e489e62a1..f80ef2cecc8b111dc54e109646573a59
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
 diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index 63e8a6a260c0a63d4eee365330352b3112878384..2d20c32e631bc7edf51f02d7d10e8fbbf1516f90 100644
+index cf4be3849726b3beb1dd47b8c44f7524e7ee2014..14e7551d62688dc59a24eb67a29f7ab05eb44527 100644
 --- a/content/browser/renderer_interface_binders.cc
 +++ b/content/browser/renderer_interface_binders.cc
-@@ -200,7 +200,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
+@@ -231,7 +231,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
           RenderProcessHost* host, const url::Origin& origin) {
          static_cast<StoragePartitionImpl*>(host->GetStoragePartition())
              ->GetPlatformNotificationContext()
@@ -142,10 +142,10 @@ index ca61088079c4150fcf389504ddcf26bcf6bf69cd..d9c034c39890eef1fe3d95c6d7c0ae68
        const GURL& origin,
        const blink::PlatformNotificationData& notification_data,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index ba5982883a3821b42c47c80187af2e4d1b3f0ffb..720965aa1df6b415e12a85dd2b2e4475facab019 100644
+index 73a1af201b12bf818af2eafadad478b8c422826c..fc7e74c0bf900d475fc134a7b606c5f9e404f934 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
-@@ -29,6 +29,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(
+@@ -31,6 +31,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(
  MockPlatformNotificationService::~MockPlatformNotificationService() = default;
  
  void MockPlatformNotificationService::DisplayNotification(

@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/atom_api_app.h"
 
+#include <memory>
+
 #include <string>
 #include <vector>
 
@@ -26,8 +28,9 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
+#include "gin/arguments.h"
 #include "media/audio/audio_manager.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "services/service_manager/sandbox/switches.h"
@@ -42,7 +45,8 @@
 #include "shell/browser/relauncher.h"
 #include "shell/common/application_info.h"
 #include "shell/common/atom_command_line.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/image_converter.h"
@@ -749,7 +753,7 @@ base::OnceClosure App::SelectClientCertificate(
   // to avoid changes in the API.
   auto client_certs = net::CertificateList();
   for (const std::unique_ptr<net::ClientCertIdentity>& identity : identities)
-    client_certs.push_back(identity->certificate());
+    client_certs.emplace_back(identity->certificate());
 
   auto shared_identities =
       std::make_shared<net::ClientCertIdentityList>(std::move(identities));
@@ -846,7 +850,7 @@ void App::SetAppPath(const base::FilePath& app_path) {
 }
 
 #if !defined(OS_MACOSX)
-void App::SetAppLogsPath(util::ErrorThrower thrower,
+void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          base::Optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
@@ -865,7 +869,7 @@ void App::SetAppLogsPath(util::ErrorThrower thrower,
 }
 #endif
 
-base::FilePath App::GetPath(util::ErrorThrower thrower,
+base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
   bool succeed = false;
   base::FilePath path;
@@ -888,7 +892,7 @@ base::FilePath App::GetPath(util::ErrorThrower thrower,
   return path;
 }
 
-void App::SetPath(util::ErrorThrower thrower,
+void App::SetPath(gin_helper::ErrorThrower thrower,
                   const std::string& name,
                   const base::FilePath& path) {
   if (!path.IsAbsolute()) {
@@ -939,9 +943,9 @@ std::string App::GetLocaleCountryCode() {
                      kCFStringEncodingUTF8);
   region = temporaryCString;
 #else
-  const char* locale_ptr = setlocale(LC_TIME, NULL);
+  const char* locale_ptr = setlocale(LC_TIME, nullptr);
   if (!locale_ptr)
-    locale_ptr = setlocale(LC_NUMERIC, NULL);
+    locale_ptr = setlocale(LC_NUMERIC, nullptr);
   if (locale_ptr) {
     std::string locale = locale_ptr;
     std::string::size_type rpos = locale.find('.');
@@ -975,8 +979,8 @@ bool App::RequestSingleInstanceLock() {
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
-  process_singleton_.reset(new ProcessSingleton(
-      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb)));
+  process_singleton_ = std::make_unique<ProcessSingleton>(
+      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb));
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
@@ -1031,7 +1035,7 @@ bool App::Relaunch(mate::Arguments* js_args) {
   return relauncher::RelaunchApp(argv);
 }
 
-void App::DisableHardwareAcceleration(util::ErrorThrower thrower) {
+void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
     thrower.ThrowError(
         "app.disableHardwareAcceleration() can only be called "
@@ -1041,7 +1045,7 @@ void App::DisableHardwareAcceleration(util::ErrorThrower thrower) {
   content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
 }
 
-void App::DisableDomainBlockingFor3DAPIs(util::ErrorThrower thrower) {
+void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
     thrower.ThrowError(
         "app.disableDomainBlockingFor3DAPIs() can only be called "
@@ -1057,7 +1061,7 @@ bool App::IsAccessibilitySupportEnabled() {
   return ax_state->IsAccessibleBrowser();
 }
 
-void App::SetAccessibilitySupportEnabled(util::ErrorThrower thrower,
+void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
                                          bool enabled) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError(
@@ -1206,8 +1210,11 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     mate::Dictionary pid_dict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary cpu_dict = mate::Dictionary::CreateEmpty(isolate);
 
-    pid_dict.SetHidden("simple", true);
-    cpu_dict.SetHidden("simple", true);
+    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
+    gin_helper::Dictionary(isolate, pid_dict.GetHandle())
+        .SetHidden("simple", true);
+    gin_helper::Dictionary(isolate, cpu_dict.GetHandle())
+        .SetHidden("simple", true);
 
     cpu_dict.Set(
         "percentCPUUsage",
@@ -1235,7 +1242,9 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     auto memory_info = process_metric.second->GetMemoryInfo();
 
     mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
-    memory_dict.SetHidden("simple", true);
+    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
+    gin_helper::Dictionary(isolate, memory_dict.GetHandle())
+        .SetHidden("simple", true);
     memory_dict.Set("workingSetSize",
                     static_cast<double>(memory_info.working_set_size >> 10));
     memory_dict.Set(
@@ -1314,7 +1323,7 @@ static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {
   }
 }
 
-void App::EnableSandbox(util::ErrorThrower thrower) {
+void App::EnableSandbox(gin_helper::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
     thrower.ThrowError(
         "app.enableSandbox() can only be called "
@@ -1343,12 +1352,14 @@ bool App::CanBrowserClientUseCustomSiteInstance() {
 }
 
 #if defined(OS_MACOSX)
-bool App::MoveToApplicationsFolder(mate::Arguments* args) {
-  return ui::cocoa::AtomBundleMover::Move(args);
+bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
+                                   mate::Arguments* args) {
+  gin::Arguments gin_args(args->info());
+  return AtomBundleMover::Move(thrower, &gin_args);
 }
 
 bool App::IsInApplicationsFolder() {
-  return ui::cocoa::AtomBundleMover::IsCurrentAppInApplicationsFolder();
+  return AtomBundleMover::IsCurrentAppInApplicationsFolder();
 }
 
 int DockBounce(mate::Arguments* args) {

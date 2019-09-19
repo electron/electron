@@ -52,8 +52,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void FocusThroughTabTraversal(bool reverse) override;
   content::DropData* GetDropData() const override;
   gfx::Rect GetViewBounds() const override;
-  void CreateView(const gfx::Size& initial_size,
-                  gfx::NativeView context) override;
+  void CreateView(gfx::NativeView context) override;
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost* render_widget_host,
       bool is_guest_view_hack) override;

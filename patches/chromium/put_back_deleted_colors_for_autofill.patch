@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/chrome/browser/ui/libgtkui/native_theme_gtk.cc b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-index b77b8a53b0246b05e3c45e74eaf2b5c44c6dad88..7af171f6cd5d76e87e2fca32f5dbcc34d7e0a974 100644
+index 80542c2cab345f991079453b66f58439d0f214eb..d460eb8d2432df1209412a28cecc22f2db9af99b 100644
 --- a/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 +++ b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 @@ -279,6 +279,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
@@ -40,7 +40,7 @@ index b77b8a53b0246b05e3c45e74eaf2b5c44c6dad88..7af171f6cd5d76e87e2fca32f5dbcc34
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index af391345a4c893e3fbde4f750af429a0567188d2..febfb06f18b6f51e6ebcc0c59e2a81b259e97997 100644
+index 7fd49a2e26968daaa16ed3322b516f53ff60fb56..f902910ecc8e5b4945187e836655362ebba49204 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -56,6 +56,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
@@ -58,7 +58,7 @@ index af391345a4c893e3fbde4f750af429a0567188d2..febfb06f18b6f51e6ebcc0c59e2a81b2
        // FocusableBorder
        case NativeTheme::kColorId_FocusedBorderColor:
          return SkColorSetA(gfx::kGoogleBlue300, 0x66);
-@@ -357,6 +365,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -359,6 +367,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return SkColorSetA(SK_ColorBLACK, 0x66);
  
@@ -94,10 +94,10 @@ index 3604105e43ee1866a8517c52ed05205b3ed10b56..70389e0245993faa2c17e9deefeb0002
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 257206023976b889590bc225f6542881e8a5d463..3003643bfb78cec2f5e84fc9e1471e1ef54aae41 100644
+index 5b1804538c2e78af23c797004f250369580b4178..97e72bc38a7231ce295ad943e977c69586cc6e07 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -559,6 +559,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
+@@ -673,6 +673,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
      case kColorId_TableGroupingIndicatorColor:
        return system_colors_[SystemThemeColor::kGrayText];
  

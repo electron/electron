@@ -32,7 +32,7 @@ if (features.isDesktopCapturerEnabled()) {
   })
 }
 
-if (process.isRemoteModuleEnabled) {
+if (features.isRemoteModuleEnabled() && process.isRemoteModuleEnabled) {
   moduleList.push({
     name: 'remote',
     loader: () => require('@electron/internal/renderer/api/remote')

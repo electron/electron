@@ -83,8 +83,8 @@
   }
 
   // Send the callback to the browser thread.
-  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
-                           base::BindOnce(std::move(callback_), converted));
+  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                 base::BindOnce(std::move(callback_), converted));
 
   [self release];
 }

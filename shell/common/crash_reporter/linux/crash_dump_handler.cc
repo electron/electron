@@ -166,7 +166,7 @@ class MimeWriter {
 MimeWriter::MimeWriter(int fd, const char* const mime_boundary)
     : fd_(fd), mime_boundary_(mime_boundary) {}
 
-MimeWriter::~MimeWriter() {}
+MimeWriter::~MimeWriter() = default;
 
 void MimeWriter::AddBoundary() {
   AddString(mime_boundary_);
@@ -349,12 +349,12 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
 
   static const char kWgetBinary[] = "/usr/bin/wget";
   const char* args[] = {
-      kWgetBinary,    header, post_file, info.upload_url,
+      kWgetBinary,    header,  post_file, info.upload_url,
       "--timeout=60",  // Set a timeout so we don't hang forever.
       "--tries=1",     // Don't retry if the upload fails.
       "--quiet",       // Be silent.
       "-O",            // output reply to /dev/null.
-      "/dev/fd/3",    NULL,
+      "/dev/fd/3",    nullptr,
   };
   static const char msg[] =
       "Cannot upload crash dump: cannot exec "
@@ -437,7 +437,7 @@ void HandleCrashReportId(const char* buf,
 
   // Write crash dump id to crash log as: seconds_since_epoch,crash_id
   struct kernel_timeval tv;
-  if (!sys_gettimeofday(&tv, NULL)) {
+  if (!sys_gettimeofday(&tv, nullptr)) {
     uint64_t time = kernel_timeval_to_ms(&tv) / 1000;
     char time_str[kUint64StringSize];
     const unsigned time_len = my_uint64_len(time);
@@ -465,7 +465,7 @@ void HandleCrashDump(const BreakpadInfo& info) {
   size_t dump_size;
   uint8_t* dump_data;
   google_breakpad::PageAllocator allocator;
-  const char* exe_buf = NULL;
+  const char* exe_buf = nullptr;
 
   if (info.fd != -1) {
     // Dump is provided with an open FD.
@@ -614,7 +614,7 @@ void HandleCrashDump(const BreakpadInfo& info) {
 
   if (info.process_start_time > 0) {
     struct kernel_timeval tv;
-    if (!sys_gettimeofday(&tv, NULL)) {
+    if (!sys_gettimeofday(&tv, nullptr)) {
       uint64_t time = kernel_timeval_to_ms(&tv);
       if (time > info.process_start_time) {
         time -= info.process_start_time;
@@ -723,7 +723,7 @@ void HandleCrashDump(const BreakpadInfo& info) {
             WaitForCrashReportUploadProcess(fds[0], kCrashIdLength, id_buf);
         HandleCrashReportId(id_buf, bytes_read, kCrashIdLength);
 
-        if (sys_waitpid(upload_child, NULL, WNOHANG) == 0) {
+        if (sys_waitpid(upload_child, nullptr, WNOHANG) == 0) {
           // Upload process is still around, kill it.
           sys_kill(upload_child, SIGKILL);
         }
@@ -739,7 +739,7 @@ void HandleCrashDump(const BreakpadInfo& info) {
   // Main browser process.
   if (child <= 0)
     return;
-  (void)HANDLE_EINTR(sys_waitpid(child, NULL, 0));
+  (void)HANDLE_EINTR(sys_waitpid(child, nullptr, 0));
 }
 
 size_t WriteLog(const char* buf, size_t nbytes) {
