@@ -157,7 +157,7 @@ class NativeWindowMac : public NativeWindow {
   AtomTouchBar* touch_bar() const { return touch_bar_.get(); }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
-  bool simple_fullscreen() const { return always_simple_fullscreen_; }
+  bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
 
  protected:
   // views::WidgetDelegate:

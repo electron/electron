@@ -174,8 +174,14 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)toggleFullScreenMode:(id)sender {
-  if (shell_->simple_fullscreen())
-    shell_->SetSimpleFullScreen(!shell_->IsSimpleFullScreen());
+  bool is_simple_fs = shell_->IsSimpleFullScreen();
+  bool always_simple_fs = shell_->always_simple_fullscreen();
+
+  // If we're in simple fullscreen mode and trying to exit it
+  // we need to ensure we exit it properly to prevent a crash
+  // with NSWindowStyleMaskTitled mode
+  if (is_simple_fs || always_simple_fs)
+    shell_->SetSimpleFullScreen(!is_simple_fs);
   else
     [super toggleFullScreen:sender];
 }
