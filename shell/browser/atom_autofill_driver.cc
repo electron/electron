@@ -47,13 +47,13 @@ void AutofillDriver::ShowAutofillPopup(
     auto* view = web_contents->web_contents()->GetMainFrame()->GetView();
     auto offset = view->GetViewBounds().origin() -
                   embedder_view->GetViewBounds().origin();
-    popup_bounds.Offset(offset.x(), offset.y());
+    popup_bounds.Offset(offset);
     embedder_frame_host = embedder->web_contents()->GetMainFrame();
   }
 
   autofill_popup_->CreateView(render_frame_host_, embedder_frame_host, osr,
                               web_contents->owner_window()->content_view(),
-                              bounds);
+                              popup_bounds);
   autofill_popup_->SetItems(values, labels);
 }
 
