@@ -9,6 +9,7 @@ const { ipcRenderer } = require('electron')
 const features = process.electronBinding('features')
 
 const { emittedOnce } = require('./events-helpers')
+const { ifit } = require('./spec-helpers')
 
 chai.use(dirtyChai)
 
@@ -344,7 +345,7 @@ describe('node feature', () => {
     })
 
     // TODO: figure out why process.stdout.isTTY is true on Darwin but not Linux/Win.
-    ifit(process.platform !== 'darwin)('isTTY should be undefined in the renderer process', function () {
+    ifit(process.platform !== 'darwin')('isTTY should be undefined in the renderer process', function () {
       expect(process.stdout.isTTY).to.be.undefined()
     })
   })
