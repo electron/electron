@@ -42,7 +42,7 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 3ef41fcb469446bc2eda3a81fad0bfadb41d9ec1..2e05aa0f3faa7c3d57f077f952faac9eb0a0230e 100644
+index 3ef41fcb469446bc2eda3a81fad0bfadb41d9ec1..ed5d89ea7ff6ecd238094f9313f7f6c1a81dce6c 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2219,6 +2219,21 @@ bool RenderFrameHostManager::InitRenderView(
@@ -73,10 +73,10 @@ index 3ef41fcb469446bc2eda3a81fad0bfadb41d9ec1..2e05aa0f3faa7c3d57f077f952faac9e
          request->from_begin_navigation() && !can_renderer_initiate_transfer;
 +
 +    if (!GetContentClient()->browser()->CanUseCustomSiteInstance()) {
-+      bool has_navigation_started = request.state() != NavigationRequest::NOT_STARTED;
++      bool has_navigation_started = request->state() != NavigationRequest::NOT_STARTED;
 +      bool has_response_started =
-+          (request.state() == NavigationRequest::RESPONSE_STARTED ||
-+          request.state() == NavigationRequest::FAILED) &&
++          (request->state() == NavigationRequest::RESPONSE_STARTED ||
++          request->state() == NavigationRequest::FAILED) &&
 +          !speculative_render_frame_host_;
 +      // Gives user a chance to choose a custom site instance.
 +      SiteInstance* affinity_site_instance = nullptr;
@@ -85,7 +85,7 @@ index 3ef41fcb469446bc2eda3a81fad0bfadb41d9ec1..2e05aa0f3faa7c3d57f077f952faac9e
 +      ContentBrowserClient::SiteInstanceForNavigationType siteInstanceType =
 +          GetContentClient()->browser()->ShouldOverrideSiteInstanceForNavigation(
 +              current_frame_host(), speculative_frame_host(), browser_context,
-+              request.common_params().url, has_navigation_started,
++              request->common_params().url, has_navigation_started,
 +              has_response_started, &affinity_site_instance);
 +      switch (siteInstanceType) {
 +        case ContentBrowserClient::SiteInstanceForNavigationType::
@@ -94,12 +94,12 @@ index 3ef41fcb469446bc2eda3a81fad0bfadb41d9ec1..2e05aa0f3faa7c3d57f077f952faac9e
 +              candidate_site_instance
 +                  ? candidate_site_instance
 +                  : current_site_instance->CreateRelatedSiteInstance(
-+                                              request.common_params().url);
++                                              request->common_params().url);
 +          should_register_site_instance = true;
 +          break;
 +        case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_NEW:
 +          overriden_site_instance = current_site_instance->CreateRelatedSiteInstance(
-+              request.common_params().url);
++              request->common_params().url);
 +          should_register_site_instance = true;
 +          break;
 +        case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_CURRENT:
