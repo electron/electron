@@ -34,6 +34,7 @@ struct NotificationOptions {
   bool has_reply;
   base::string16 reply_placeholder;
   base::string16 sound;
+  base::string16 urgency;  // Linux
   std::vector<NotificationAction> actions;
   base::string16 close_button_text;
 

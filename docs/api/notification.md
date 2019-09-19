@@ -37,6 +37,7 @@ Returns `Boolean` - Whether or not desktop notifications are supported on the cu
   * `hasReply` Boolean (optional) _macOS_ - Whether or not to add an inline reply option to the notification.
   * `replyPlaceholder` String (optional) _macOS_ - The placeholder to write in the inline reply input field.
   * `sound` String (optional) _macOS_ - The name of the sound file to play when the notification is shown.
+  * `urgency` String (optional) _Linux_ - The urgency level of the notification. Can be 'normal', 'critical', or 'low'.
   * `actions` [NotificationAction[]](structures/notification-action.md) (optional) _macOS_ - Actions to add to the notification. Please read the available actions and limitations in the `NotificationAction` documentation.
   * `closeButtonText` String (optional) _macOS_ - A custom title for the close button of an alert. An empty string will cause the default localized text to be used.
 
@@ -143,6 +144,12 @@ A `Boolean` property representing whether the notification is silent.
 #### `notification.hasReply`
 
 A `Boolean` property representing whether the notification has a reply action.
+
+#### `notification.urgency` _Linux_
+
+A `String` property representing the urgency level of the notification. Can be 'normal', 'critical', or 'low'.
+
+Default is 'low' - see [NotifyUrgency](https://developer.gnome.org/notification-spec/#urgency-levels) for more information.
 
 #### `notification.actions`
 
