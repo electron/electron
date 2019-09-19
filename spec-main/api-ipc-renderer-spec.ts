@@ -1,5 +1,4 @@
 import { expect } from 'chai'
-//import * as http from 'http'
 import * as path from 'path'
 import { ipcMain, /*webContents,*/ BrowserWindow, WebContents, WebPreferences, webContents } from 'electron'
 import { emittedOnce } from './events-helpers'
