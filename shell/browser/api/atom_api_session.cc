@@ -30,9 +30,10 @@
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/storage_partition.h"
-#include "mojo/public/cpp/bindings/strong_binding.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_auth_handler_factory.h"
@@ -53,11 +54,12 @@
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/session_preferences.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/content_converter.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/once_callback.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -400,14 +402,16 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
     return;
   }
 
-  network::mojom::CertVerifierClientPtr cert_verifier_client;
+  mojo::PendingRemote<network::mojom::CertVerifierClient>
+      cert_verifier_client_remote;
   if (proc) {
-    mojo::MakeStrongBinding(std::make_unique<CertVerifierClient>(proc),
-                            mojo::MakeRequest(&cert_verifier_client));
+    mojo::MakeSelfOwnedReceiver(
+        std::make_unique<CertVerifierClient>(proc),
+        cert_verifier_client_remote.InitWithNewPipeAndPassReceiver());
   }
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
-      ->SetCertVerifierClient(std::move(cert_verifier_client));
+      ->SetCertVerifierClient(std::move(cert_verifier_client_remote));
 
   // This causes the cert verifier cache to be cleared.
   content::GetNetworkService()->OnCertDBChanged();
@@ -636,7 +640,7 @@ void Session::Preconnect(const mate::Dictionary& options,
   }
 
   DCHECK_GT(num_sockets_to_preconnect, 0);
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&StartPreconnectOnUI, base::RetainedRef(browser_context_),
                      url, num_sockets_to_preconnect));
@@ -682,8 +686,8 @@ mate::Handle<Session> Session::FromPartition(
 void Session::BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Session"));
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
       .SetMethod("clearCache", &Session::ClearCache)

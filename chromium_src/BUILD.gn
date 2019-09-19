@@ -135,10 +135,6 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/speech/tts_controller_delegate_impl.cc",
       "//chrome/browser/speech/tts_controller_delegate_impl.h",
-      "//chrome/browser/speech/tts_message_filter.cc",
-      "//chrome/browser/speech/tts_message_filter.h",
-      "//chrome/renderer/tts_dispatcher.cc",
-      "//chrome/renderer/tts_dispatcher.h",
     ]
   }
 
@@ -202,8 +198,6 @@ static_library("chrome") {
       "//chrome/browser/ui/views/overlay/back_to_tab_image_button.h",
       "//chrome/browser/ui/views/overlay/close_image_button.cc",
       "//chrome/browser/ui/views/overlay/close_image_button.h",
-      "//chrome/browser/ui/views/overlay/mute_image_button.cc",
-      "//chrome/browser/ui/views/overlay/mute_image_button.h",
       "//chrome/browser/ui/views/overlay/overlay_window_views.cc",
       "//chrome/browser/ui/views/overlay/overlay_window_views.h",
       "//chrome/browser/ui/views/overlay/playback_image_button.cc",

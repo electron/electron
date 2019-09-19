@@ -4,6 +4,8 @@
 
 #include "shell/browser/session_preferences.h"
 
+#include "base/memory/ptr_util.h"
+
 namespace electron {
 
 // static
@@ -13,7 +15,7 @@ SessionPreferences::SessionPreferences(content::BrowserContext* context) {
   context->SetUserData(&kLocatorKey, base::WrapUnique(this));
 }
 
-SessionPreferences::~SessionPreferences() {}
+SessionPreferences::~SessionPreferences() = default;
 
 // static
 SessionPreferences* SessionPreferences::FromBrowserContext(

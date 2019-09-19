@@ -33,7 +33,7 @@ KeyWeakMap<std::string> g_weak_map;
 class DataPipeReader {
  public:
   DataPipeReader(util::Promise<v8::Local<v8::Value>> promise,
-                 network::mojom::DataPipeGetterPtr data_pipe_getter)
+                 mojo::Remote<network::mojom::DataPipeGetter> data_pipe_getter)
       : promise_(std::move(promise)),
         data_pipe_getter_(std::move(data_pipe_getter)),
         handle_watcher_(FROM_HERE,
@@ -109,7 +109,7 @@ class DataPipeReader {
     // Destroy data pipe.
     handle_watcher_.Cancel();
     data_pipe_.reset();
-    data_pipe_getter_ = nullptr;
+    data_pipe_getter_.reset();
   }
 
   static void FreeBuffer(char* data, void* self) {
@@ -118,7 +118,7 @@ class DataPipeReader {
 
   util::Promise<v8::Local<v8::Value>> promise_;
 
-  network::mojom::DataPipeGetterPtr data_pipe_getter_;
+  mojo::Remote<network::mojom::DataPipeGetter> data_pipe_getter_;
   mojo::ScopedDataPipeConsumerHandle data_pipe_;
   mojo::SimpleWatcher handle_watcher_;
 
@@ -141,8 +141,9 @@ class DataPipeReader {
 gin::WrapperInfo DataPipeHolder::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 DataPipeHolder::DataPipeHolder(const network::DataElement& element)
-    : id_(base::NumberToString(++g_next_id)),
-      data_pipe_(element.CloneDataPipeGetter()) {}
+    : id_(base::NumberToString(++g_next_id)) {
+  data_pipe_.Bind(element.CloneDataPipeGetter());
+}
 
 DataPipeHolder::~DataPipeHolder() = default;
 

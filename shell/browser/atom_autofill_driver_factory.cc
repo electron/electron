@@ -28,7 +28,7 @@ std::unique_ptr<AutofillDriver> CreateDriver(
 
 }  // namespace
 
-AutofillDriverFactory::~AutofillDriverFactory() {}
+AutofillDriverFactory::~AutofillDriverFactory() = default;
 
 // static
 void AutofillDriverFactory::BindAutofillDriver(

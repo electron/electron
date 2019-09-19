@@ -12,7 +12,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "native_mate/wrappable.h"
-#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/api/event_emitter_caller_deprecated.h"
 
 namespace content {
 class RenderFrameHost;

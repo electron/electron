@@ -43,7 +43,8 @@ When releasing your product, you’re also shipping a bundle composed of Electro
 Chromium shared library and Node.js. Vulnerabilities affecting these components
 may impact the security of your application. By updating Electron to the latest
 version, you ensure that critical vulnerabilities (such as *nodeIntegration bypasses*)
-are already patched and cannot be exploited in your application.
+are already patched and cannot be exploited in your application. For more information,
+see "[Use a current version of Electron](#17-use-a-current-version-of-electron)".
 
 * **Evaluate your dependencies.** While NPM provides half a million reusable packages,
 it is your responsibility to choose trusted 3rd-party libraries. If you use outdated
@@ -101,6 +102,7 @@ You should at least follow these steps to improve the security of your applicati
 14. [Do not use `openExternal` with untrusted content](#14-do-not-use-openexternal-with-untrusted-content)
 15. [Disable the `remote` module](#15-disable-the-remote-module)
 16. [Filter the `remote` module](#16-filter-the-remote-module)
+17. [Use a current version of Electron](#17-use-a-current-version-of-electron)
 
 To automate the detection of misconfigurations and insecure patterns, it is
 possible to use
@@ -830,6 +832,29 @@ app.on('remote-get-guest-web-contents', (event, webContents, guestWebContents) =
 })
 ```
 
+## 17) Use a current version of Electron
+
+You should strive for always using the latest available version of Electron.
+Whenever a new major version is released, you should attempt to update your
+app as quickly as possible.
+
+### Why?
+
+An application built with an older version of Electron, Chromium, and Node.js
+is an easier target than an application that is using more recent versions of
+those components. Generally speaking, security issues and exploits for older
+versions of Chromium and Node.js are more widely available.
+
+Both Chromium and Node.js are impressive feats of engineering built by
+thousands of talented developers. Given their popularity, their security is
+carefully tested and analyzed by equally skilled security researchers. Many of
+those researchers [disclose vulnerabilities responsibly][responsible-disclosure],
+which generally means that researchers will give Chromium and Node.js some time
+to fix issues before publishing them. Your application will be more secure if
+it is running a recent version of Electron (and thus, Chromium and Node.js) for
+which potential security issues are not as widely known.
+
+
 [browser-window]: ../api/browser-window.md
 [browser-view]: ../api/browser-view.md
 [webview-tag]: ../api/webview-tag.md
@@ -838,3 +863,4 @@ app.on('remote-get-guest-web-contents', (event, webContents, guestWebContents) =
 [will-navigate]: ../api/web-contents.md#event-will-navigate
 [open-external]: ../api/shell.md#shellopenexternalurl-options-callback
 [sandbox]: ../api/sandbox-option.md
+[responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure

@@ -111,7 +111,6 @@
 
 #if BUILDFLAG(ENABLE_TTS)
 #include "chrome/browser/speech/tts_controller_delegate_impl.h"
-#include "chrome/browser/speech/tts_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_TTS)
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -175,7 +174,7 @@ AtomBrowserClient* AtomBrowserClient::Get() {
 // static
 void AtomBrowserClient::SetApplicationLocale(const std::string& locale) {
   if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
-      !base::PostTaskWithTraits(
+      !base::PostTask(
           FROM_HERE, {BrowserThread::IO},
           base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
     g_io_thread_application_locale.Get() = locale;
@@ -351,10 +350,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 #if BUILDFLAG(ENABLE_PRINTING)
   host->AddFilter(new printing::PrintingMessageFilter(
       process_id, host->GetBrowserContext()));
-#endif
-
-#if BUILDFLAG(ENABLE_TTS)
-  host->AddFilter(new TtsMessageFilter(host->GetBrowserContext()));
 #endif
 
   ProcessPreferences prefs;
@@ -748,13 +743,12 @@ AtomBrowserClient::OverrideSystemLocationProvider() {
 #endif
 }
 
-network::mojom::NetworkContextPtr AtomBrowserClient::CreateNetworkContext(
+mojo::Remote<network::mojom::NetworkContext>
+AtomBrowserClient::CreateNetworkContext(
     content::BrowserContext* browser_context,
     bool /*in_memory*/,
     const base::FilePath& /*relative_partition_path*/) {
-  if (!browser_context)
-    return nullptr;
-
+  DCHECK(browser_context);
   return NetworkContextServiceFactory::GetForContext(browser_context)
       ->CreateNetworkContext();
 }
@@ -861,10 +855,9 @@ bool AtomBrowserClient::HandleExternalProtocol(
     ui::PageTransition page_transition,
     bool has_user_gesture,
     network::mojom::URLLoaderFactoryPtr* out_factory) {
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::UI},
-      base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,
-                     has_user_gesture));
+  base::PostTask(FROM_HERE, {BrowserThread::UI},
+                 base::BindOnce(&HandleExternalProtocolInUI, url,
+                                web_contents_getter, has_user_gesture));
   return true;
 }
 
@@ -896,7 +889,7 @@ content::PlatformNotificationService*
 AtomBrowserClient::GetPlatformNotificationService(
     content::BrowserContext* browser_context) {
   if (!notification_service_) {
-    notification_service_.reset(new PlatformNotificationService(this));
+    notification_service_ = std::make_unique<PlatformNotificationService>(this);
   }
   return notification_service_.get();
 }
@@ -984,7 +977,8 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     URLLoaderFactoryType type,
     const url::Origin& request_initiator,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
-    network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+    mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
+        header_client,
     bool* bypass_redirect_checks) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   api::ProtocolNS* protocol =
@@ -997,14 +991,15 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
   *factory_receiver = mojo::MakeRequest(&target_factory_info);
 
-  network::mojom::TrustedURLLoaderHeaderClientRequest header_client_request;
+  mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
+      header_client_receiver;
   if (header_client)
-    header_client_request = mojo::MakeRequest(header_client);
+    header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
 
   new ProxyingURLLoaderFactory(
       web_request.get(), protocol->intercept_handlers(), render_process_id,
       std::move(proxied_receiver), std::move(target_factory_info),
-      std::move(header_client_request));
+      std::move(header_client_receiver), type);
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
@@ -1015,7 +1010,8 @@ network::mojom::URLLoaderFactoryPtrInfo
 AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
     content::RenderProcessHost* process,
     network::mojom::NetworkContext* network_context,
-    network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+    mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
+        header_client,
     const url::Origin& request_initiator) {
   auto render_process_id = process->GetID();
   auto it = process_preferences_.find(render_process_id);
@@ -1039,7 +1035,8 @@ AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
 }
 
 #if defined(OS_WIN)
-bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy) {
+bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy,
+                                         RendererSpawnFlags flags) {
   // Allow crashpad to communicate via named pipe.
   sandbox::ResultCode result = policy->AddRule(
       sandbox::TargetPolicy::SUBSYS_FILES,

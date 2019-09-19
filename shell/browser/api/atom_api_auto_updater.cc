@@ -6,13 +6,15 @@
 
 #include "base/time/time.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
-#include "shell/common/api/event_emitter_caller.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_includes.h"
+
+// TODO(zcbenz): Remove this after removing mate::ObjectTemplateBuilder.
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 
 namespace mate {
 
@@ -48,7 +50,7 @@ void AutoUpdater::OnError(const std::string& message) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
-  mate::EmitEvent(
+  gin_helper::EmitEvent(
       isolate(), GetWrapper(), "error",
       error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked(),
       // Message is also emitted to keep compatibility with old code.
@@ -76,7 +78,7 @@ void AutoUpdater::OnError(const std::string& message,
             mate::StringToV8(isolate(), domain))
       .Check();
 
-  mate::EmitEvent(isolate(), GetWrapper(), "error", errorObject, message);
+  gin_helper::EmitEvent(isolate(), GetWrapper(), "error", errorObject, message);
 }
 
 void AutoUpdater::OnCheckingForUpdate() {

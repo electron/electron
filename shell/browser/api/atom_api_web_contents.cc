@@ -46,7 +46,7 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "shell/browser/api/atom_api_browser_window.h"
 #include "shell/browser/api/atom_api_debugger.h"
 #include "shell/browser/api/atom_api_session.h"
@@ -69,7 +69,6 @@
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_view_guest_delegate.h"
 #include "shell/common/api/atom_api_native_image.h"
-#include "shell/common/api/event_emitter_caller.h"
 #include "shell/common/color_util.h"
 #include "shell/common/mouse_util.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
@@ -249,7 +248,7 @@ struct Converter<electron::api::WebContents::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::api::WebContents::Type val) {
     using Type = electron::api::WebContents::Type;
-    std::string type = "";
+    std::string type;
     switch (val) {
       case Type::BACKGROUND_PAGE:
         type = "backgroundPage";
@@ -314,6 +313,25 @@ void OnCapturePageDone(util::Promise<gfx::Image> promise,
   promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
+base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
+#if defined(OS_MACOSX)
+  base::TimeDelta interval;
+  if (ui::TextInsertionCaretBlinkPeriod(&interval))
+    return interval;
+#elif defined(OS_LINUX)
+  if (auto* linux_ui = views::LinuxUI::instance())
+    return linux_ui->GetCursorBlinkInterval();
+#elif defined(OS_WIN)
+  const auto system_msec = ::GetCaretBlinkTime();
+  if (system_msec != 0) {
+    return (system_msec == INFINITE)
+               ? base::TimeDelta()
+               : base::TimeDelta::FromMilliseconds(system_msec);
+  }
+#endif
+  return base::nullopt;
+}
+
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -366,6 +384,9 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
+  bool initially_shown = true;
+  options.Get(options::kShow, &initially_shown);
+
   // Obtain the session.
   std::string partition;
   mate::Handle<api::Session> session;
@@ -385,8 +406,8 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
                                             GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params(session->browser_context(),
                                               site_instance);
-    guest_delegate_.reset(
-        new WebViewGuestDelegate(embedder_->web_contents(), this));
+    guest_delegate_ =
+        std::make_unique<WebViewGuestDelegate>(embedder_->web_contents(), this);
     params.guest_delegate = guest_delegate_.get();
 
 #if BUILDFLAG(ENABLE_OSR)
@@ -420,6 +441,7 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
 #endif
   } else {
     content::WebContents::CreateParams params(session->browser_context());
+    params.initially_hidden = !initially_shown;
     web_contents = content::WebContents::Create(params);
   }
 
@@ -464,24 +486,9 @@ void WebContents::InitWithSessionAndOptions(
   prefs->subpixel_rendering = params->subpixel_rendering;
 #endif
 
-// Honor the system's cursor blink rate settings
-#if defined(OS_MACOSX)
-  base::TimeDelta interval;
-  if (ui::TextInsertionCaretBlinkPeriod(&interval))
-    prefs->caret_blink_interval = interval;
-#elif defined(OS_LINUX)
-  views::LinuxUI* linux_ui = views::LinuxUI::instance();
-  if (linux_ui)
-    prefs->caret_blink_interval = linux_ui->GetCursorBlinkInterval();
-#elif defined(OS_WIN)
-  const auto system_msec = ::GetCaretBlinkTime();
-  if (system_msec != 0) {
-    prefs->caret_blink_interval =
-        (system_msec == INFINITE)
-            ? base::TimeDelta()
-            : base::TimeDelta::FromMilliseconds(system_msec);
-  }
-#endif
+  // Honor the system's cursor blink rate settings
+  if (auto interval = GetCursorBlinkInterval())
+    prefs->caret_blink_interval = *interval;
 
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents(), options);
@@ -825,7 +832,7 @@ std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
     content::WebContents* source) {
   if (!dialog_manager_)
-    dialog_manager_.reset(new AtomJavaScriptDialogManager(this));
+    dialog_manager_ = std::make_unique<AtomJavaScriptDialogManager>(this);
 
   return dialog_manager_.get();
 }
@@ -841,9 +848,8 @@ void WebContents::BeforeUnloadFired(bool proceed,
 }
 
 void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  auto* const impl = content::RenderWidgetHostImpl::FromID(
-      render_view_host->GetProcess()->GetID(),
-      render_view_host->GetRoutingID());
+  auto* impl = static_cast<content::RenderWidgetHostImpl*>(
+      render_view_host->GetWidget());
   if (impl)
     impl->disable_hidden_ = !background_throttling_;
 }
@@ -1716,9 +1722,9 @@ void WebContents::Print(mate::Arguments* args) {
   std::vector<mate::Dictionary> page_ranges;
   if (options.Get("pageRanges", &page_ranges)) {
     std::unique_ptr<base::ListValue> page_range_list(new base::ListValue());
-    for (size_t i = 0; i < page_ranges.size(); ++i) {
+    for (auto& range : page_ranges) {
       int from, to;
-      if (page_ranges[i].Get("from", &from) && page_ranges[i].Get("to", &to)) {
+      if (range.Get("from", &from) && range.Get("to", &to)) {
         std::unique_ptr<base::DictionaryValue> range(
             new base::DictionaryValue());
         range->SetInteger(printing::kSettingPageRangeFrom, from);
@@ -2035,8 +2041,8 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
     return;
   }
 
-  frame_subscriber_.reset(
-      new FrameSubscriber(web_contents(), callback, only_dirty));
+  frame_subscriber_ =
+      std::make_unique<FrameSubscriber>(web_contents(), callback, only_dirty);
 }
 
 void WebContents::EndFrameSubscription() {
@@ -2381,8 +2387,8 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
 void WebContents::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "WebContents"));
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
       .SetMethod("setBackgroundThrottling",
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)

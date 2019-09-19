@@ -19,9 +19,9 @@
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
-#include "native_mate/dictionary.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/color_util.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/atom_autofill_agent.h"
@@ -53,10 +53,6 @@
 #if BUILDFLAG(ENABLE_PEPPER_FLASH)
 #include "chrome/renderer/pepper/pepper_helper.h"
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
-
-#if BUILDFLAG(ENABLE_TTS)
-#include "chrome/renderer/tts_dispatcher.h"
-#endif  // BUILDFLAG(ENABLE_TTS)
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/renderer/print_render_frame_helper.h"
@@ -106,7 +102,7 @@ RendererClientBase::RendererClientBase() {
       command_line->GetSwitchValueASCII(::switches::kRendererClientId);
 }
 
-RendererClientBase::~RendererClientBase() {}
+RendererClientBase::~RendererClientBase() = default;
 
 void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
@@ -114,20 +110,20 @@ void RendererClientBase::DidCreateScriptContext(
   // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
   auto context_id = base::StringPrintf(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
-  mate::Dictionary global(context->GetIsolate(), context->Global());
+  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
   global.SetHidden("contextId", context_id);
 
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
   auto* command_line = base::CommandLine::ForCurrentProcess();
   bool enableRemoteModule =
       command_line->HasSwitch(switches::kEnableRemoteModule);
   global.SetHidden("enableRemoteModule", enableRemoteModule);
+#endif
 }
 
 void RendererClientBase::AddRenderBindings(
     v8::Isolate* isolate,
-    v8::Local<v8::Object> binding_object) {
-  mate::Dictionary dict(isolate, binding_object);
-}
+    v8::Local<v8::Object> binding_object) {}
 
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -202,8 +198,8 @@ void RendererClientBase::RenderThreadStarted() {
   blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
 
-  prescient_networking_dispatcher_.reset(
-      new network_hints::PrescientNetworkingDispatcher());
+  prescient_networking_dispatcher_ =
+      std::make_unique<network_hints::PrescientNetworkingDispatcher>();
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.
@@ -273,16 +269,6 @@ void RendererClientBase::DidClearWindowObject(
     content::RenderFrame* render_frame) {
   // Make sure every page will get a script context created.
   render_frame->GetWebFrame()->ExecuteScript(blink::WebScriptSource("void 0"));
-}
-
-std::unique_ptr<blink::WebSpeechSynthesizer>
-RendererClientBase::OverrideSpeechSynthesizer(
-    blink::WebSpeechSynthesizerClient* client) {
-#if BUILDFLAG(ENABLE_TTS)
-  return std::make_unique<TtsDispatcher>(client);
-#else
-  return nullptr;
-#endif
 }
 
 bool RendererClientBase::OverrideCreatePlugin(
@@ -380,14 +366,14 @@ bool RendererClientBase::IsWebViewFrame(
   if (render_frame->IsMainFrame())
     return false;
 
-  mate::Dictionary window_dict(
+  gin::Dictionary window_dict(
       isolate, GetContext(render_frame->GetWebFrame(), isolate)->Global());
 
   v8::Local<v8::Object> frame_element;
   if (!window_dict.Get("frameElement", &frame_element))
     return false;
 
-  mate::Dictionary frame_element_dict(isolate, frame_element);
+  gin_helper::Dictionary frame_element_dict(isolate, frame_element);
 
   v8::Local<v8::Object> internal;
   if (!frame_element_dict.GetHidden("internal", &internal))

@@ -5,11 +5,11 @@
 #ifndef NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_
 #define NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_
 
-namespace mate {
-
-namespace internal {
+namespace gin {
 struct Destroyable;
 }
+
+namespace mate {
 
 // Wrappable is a base class for C++ objects that have corresponding v8 wrapper
 // objects. To retain a Wrappable object on the stack, use a gin::Handle.
@@ -48,7 +48,7 @@ class WrappableBase {
   virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
  private:
-  friend struct internal::Destroyable;
+  friend struct gin::Destroyable;
 
   static void FirstWeakCallback(
       const v8::WeakCallbackInfo<WrappableBase>& data);

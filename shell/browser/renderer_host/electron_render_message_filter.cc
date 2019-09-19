@@ -48,7 +48,7 @@ ElectronRenderMessageFilter::ElectronRenderMessageFilter(
                            base::size(kRenderFilteredMessageClasses)),
       browser_context_(browser_context) {}
 
-ElectronRenderMessageFilter::~ElectronRenderMessageFilter() {}
+ElectronRenderMessageFilter::~ElectronRenderMessageFilter() = default;
 
 bool ElectronRenderMessageFilter::OnMessageReceived(
     const IPC::Message& message) {

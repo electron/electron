@@ -13,7 +13,7 @@
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/native_mate_converters/ui_base_types_converter.h"
@@ -66,6 +66,7 @@ v8::Local<v8::Value> MenuToV8(v8::Isolate* isolate,
                               const content::CustomContextMenuContext& context,
                               const std::vector<content::MenuItem>& menu) {
   std::vector<v8::Local<v8::Value>> v8_menu;
+  v8_menu.reserve(menu.size());
   for (const auto& menu_item : menu)
     v8_menu.push_back(MenuItemToV8(isolate, web_contents, context, menu_item));
   return mate::ConvertToV8(isolate, v8_menu);

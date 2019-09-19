@@ -24,3 +24,6 @@ is_cfi = false
 # TODO: Remove this and update CI to contain 10.14 SDK once
 # crbug.com/986701 is fixed.
 mac_sdk_min = "10.13"
+
+# TODO: disabled due to crashes. re-enable.
+enable_osr = false

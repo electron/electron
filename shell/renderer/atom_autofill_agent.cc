@@ -43,9 +43,9 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
     strings->resize(kMaxListSize);
 
   // Limit the size of the strings in the vector.
-  for (size_t i = 0; i < strings->size(); ++i) {
-    if ((*strings)[i].length() > kMaxDataLength)
-      (*strings)[i].resize(kMaxDataLength);
+  for (auto& str : *strings) {
+    if (str.length() > kMaxDataLength)
+      str.resize(kMaxDataLength);
   }
 }
 }  // namespace

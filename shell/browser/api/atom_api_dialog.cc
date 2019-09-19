@@ -6,15 +6,16 @@
 #include <utility>
 #include <vector>
 
-#include "gin/dictionary.h"
 #include "shell/browser/ui/certificate_trust.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/message_box.h"
-#include "shell/common/api/gin_utils.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_dialog_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/message_box_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 
@@ -24,11 +25,12 @@ int ShowMessageBoxSync(const electron::MessageBoxSettings& settings) {
   return electron::ShowMessageBoxSync(settings);
 }
 
-void ResolvePromiseObject(electron::util::Promise<gin::Dictionary> promise,
-                          int result,
-                          bool checkbox_checked) {
+void ResolvePromiseObject(
+    electron::util::Promise<gin_helper::Dictionary> promise,
+    int result,
+    bool checkbox_checked) {
   v8::Isolate* isolate = promise.isolate();
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
 
   dict.Set("response", result);
   dict.Set("checkboxChecked", checkbox_checked);
@@ -40,7 +42,7 @@ v8::Local<v8::Promise> ShowMessageBox(
     const electron::MessageBoxSettings& settings,
     gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  electron::util::Promise<gin::Dictionary> promise(isolate);
+  electron::util::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   electron::ShowMessageBox(
@@ -59,7 +61,7 @@ void ShowOpenDialogSync(const file_dialog::DialogSettings& settings,
 v8::Local<v8::Promise> ShowOpenDialog(
     const file_dialog::DialogSettings& settings,
     gin::Arguments* args) {
-  electron::util::Promise<mate::Dictionary> promise(args->isolate());
+  electron::util::Promise<gin_helper::Dictionary> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   file_dialog::ShowOpenDialog(settings, std::move(promise));
   return handle;
@@ -75,7 +77,7 @@ void ShowSaveDialogSync(const file_dialog::DialogSettings& settings,
 v8::Local<v8::Promise> ShowSaveDialog(
     const file_dialog::DialogSettings& settings,
     gin::Arguments* args) {
-  electron::util::Promise<mate::Dictionary> promise(args->isolate());
+  electron::util::Promise<gin_helper::Dictionary> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   file_dialog::ShowSaveDialog(settings, std::move(promise));
@@ -87,33 +89,17 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
-  dict.Set("showMessageBoxSync",
-           gin::ConvertCallbackToV8Leaked(
-               isolate, base::BindRepeating(&ShowMessageBoxSync)));
-  dict.Set("showMessageBox",
-           gin::ConvertCallbackToV8Leaked(
-               isolate, base::BindRepeating(&ShowMessageBox)));
-  dict.Set("showErrorBox",
-           gin::ConvertCallbackToV8Leaked(
-               isolate, base::BindRepeating(&electron::ShowErrorBox)));
-  dict.Set("showOpenDialogSync",
-           gin::ConvertCallbackToV8Leaked(
-               isolate, base::BindRepeating(&ShowOpenDialogSync)));
-  dict.Set("showOpenDialog",
-           gin::ConvertCallbackToV8Leaked(
-               isolate, base::BindRepeating(&ShowOpenDialog)));
-  dict.Set("showSaveDialogSync",
-           gin::ConvertCallbackToV8Leaked(
-               isolate, base::BindRepeating(&ShowSaveDialogSync)));
-  dict.Set("showSaveDialog",
-           gin::ConvertCallbackToV8Leaked(
-               isolate, base::BindRepeating(&ShowSaveDialog)));
+  gin_helper::Dictionary dict(isolate, exports);
+  dict.SetMethod("showMessageBoxSync", &ShowMessageBoxSync);
+  dict.SetMethod("showMessageBox", &ShowMessageBox);
+  dict.SetMethod("showErrorBox", &electron::ShowErrorBox);
+  dict.SetMethod("showOpenDialogSync", &ShowOpenDialogSync);
+  dict.SetMethod("showOpenDialog", &ShowOpenDialog);
+  dict.SetMethod("showSaveDialogSync", &ShowSaveDialogSync);
+  dict.SetMethod("showSaveDialog", &ShowSaveDialog);
 #if defined(OS_MACOSX) || defined(OS_WIN)
-  dict.Set("showCertificateTrustDialog",
-           gin::ConvertCallbackToV8Leaked(
-               isolate,
-               base::BindRepeating(&certificate_trust::ShowCertificateTrust)));
+  dict.SetMethod("showCertificateTrustDialog",
+                 &certificate_trust::ShowCertificateTrust);
 #endif
 }
 

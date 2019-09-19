@@ -15,7 +15,7 @@ NativeBrowserViewViews::NativeBrowserViewViews(
     InspectableWebContents* inspectable_web_contents)
     : NativeBrowserView(inspectable_web_contents) {}
 
-NativeBrowserViewViews::~NativeBrowserViewViews() {}
+NativeBrowserViewViews::~NativeBrowserViewViews() = default;
 
 void NativeBrowserViewViews::SetAutoResizeFlags(uint8_t flags) {
   auto_resize_flags_ = flags;

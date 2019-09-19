@@ -7,11 +7,11 @@
 #include <vector>
 
 #include "native_mate/arguments.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "native_mate/wrappable.h"
 #include "shell/common/asar/archive.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
 #include "third_party/electron_node/src/node_native_module_env.h"
@@ -56,7 +56,7 @@ class Archive : public mate::Wrappable<Archive> {
     asar::Archive::FileInfo info;
     if (!archive_ || !archive_->GetFileInfo(path, &info))
       return v8::False(isolate);
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("size", info.size);
     dict.Set("unpacked", info.unpacked);
     dict.Set("offset", info.offset);
@@ -68,7 +68,7 @@ class Archive : public mate::Wrappable<Archive> {
     asar::Archive::Stats stats;
     if (!archive_ || !archive_->Stat(path, &stats))
       return v8::False(isolate);
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("size", stats.size);
     dict.Set("offset", stats.offset);
     dict.Set("isFile", stats.is_file);
@@ -131,7 +131,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createArchive", &Archive::Create);
   dict.SetMethod("initAsarSupport", &InitAsarSupport);
 }

@@ -18,6 +18,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/web_preferences.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 #include "services/service_manager/sandbox/switches.h"
@@ -170,7 +171,9 @@ WebContentsPreferences::~WebContentsPreferences() {
 }
 
 void WebContentsPreferences::SetDefaults() {
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
   SetDefaultBoolIfUndefined(options::kEnableRemoteModule, true);
+#endif
 
   if (IsEnabled(options::kSandbox)) {
     SetBool(options::kNativeWindowOpen, true);
@@ -323,9 +326,11 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
   // Whether to enable the remote module
   if (IsEnabled(options::kEnableRemoteModule))
     command_line->AppendSwitch(switches::kEnableRemoteModule);
+#endif
 
   // Run Electron APIs and preload script in isolated world
   if (IsEnabled(options::kContextIsolation))

@@ -4,6 +4,8 @@
 
 #include "shell/browser/web_dialog_helper.h"
 
+#include <memory>
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -20,13 +22,15 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "native_mate/dictionary.h"
+#include "gin/dictionary.h"
 #include "net/base/directory_lister.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
-#include "shell/common/native_mate_converters/once_callback.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
 using blink::mojom::FileChooserFileInfo;
@@ -54,7 +58,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    electron::util::Promise<mate::Dictionary> promise(isolate);
+    electron::util::Promise<gin_helper::Dictionary> promise(isolate);
 
     auto callback = base::BindOnce(&FileSelectHelper::OnOpenDialogDone, this);
     ignore_result(promise.Then(std::move(callback)));
@@ -64,7 +68,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   void ShowSaveDialog(const file_dialog::DialogSettings& settings) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    electron::util::Promise<mate::Dictionary> promise(isolate);
+    electron::util::Promise<gin_helper::Dictionary> promise(isolate);
 
     auto callback = base::BindOnce(&FileSelectHelper::OnSaveDialogDone, this);
     ignore_result(promise.Then(std::move(callback)));
@@ -75,7 +79,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
  private:
   friend class base::RefCounted<FileSelectHelper>;
 
-  ~FileSelectHelper() override {}
+  ~FileSelectHelper() override = default;
 
   // net::DirectoryLister::DirectoryListerDelegate
   void OnListFile(
@@ -104,8 +108,8 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     DCHECK(!lister_base_dir_.empty());
     DCHECK(lister_paths_.empty());
 
-    lister_.reset(new net::DirectoryLister(
-        lister_base_dir_, net::DirectoryLister::NO_SORT_RECURSIVE, this));
+    lister_ = std::make_unique<net::DirectoryLister>(
+        lister_base_dir_, net::DirectoryLister::NO_SORT_RECURSIVE, this);
     lister_->Start();
     // It is difficult for callers to know how long to keep a reference to
     // this instance.  We AddRef() here to keep the instance alive after we
@@ -115,7 +119,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     AddRef();
   }
 
-  void OnOpenDialogDone(mate::Dictionary result) {
+  void OnOpenDialogDone(gin_helper::Dictionary result) {
     std::vector<FileChooserFileInfoPtr> file_info;
     bool canceled = true;
     result.Get("canceled", &canceled);
@@ -157,7 +161,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     }
   }
 
-  void OnSaveDialogDone(mate::Dictionary result) {
+  void OnSaveDialogDone(gin_helper::Dictionary result) {
     std::vector<FileChooserFileInfoPtr> file_info;
     bool canceled = true;
     result.Get("canceled", &canceled);
@@ -280,7 +284,7 @@ file_dialog::Filters GetFileTypesFromAcceptType(
   // Allow all files when extension is specified.
   filters.push_back(file_dialog::Filter());
   filters.back().first = "All Files";
-  filters.back().second.push_back("*");
+  filters.back().second.emplace_back("*");
 
   return filters;
 }
@@ -292,7 +296,7 @@ namespace electron {
 WebDialogHelper::WebDialogHelper(NativeWindow* window, bool offscreen)
     : window_(window), offscreen_(offscreen), weak_factory_(this) {}
 
-WebDialogHelper::~WebDialogHelper() {}
+WebDialogHelper::~WebDialogHelper() = default;
 
 void WebDialogHelper::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
