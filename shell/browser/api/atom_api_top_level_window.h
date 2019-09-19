@@ -266,4 +266,22 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 
 }  // namespace electron
 
+namespace gin {
+
+// TODO(zcbenz): Remove this after converting TopLevelWindow to gin::Wrapper.
+template <>
+struct Converter<electron::api::TopLevelWindow*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::TopLevelWindow** out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::TopLevelWindow* in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+}  // namespace gin
+
 #endif  // SHELL_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_

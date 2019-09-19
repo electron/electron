@@ -6,7 +6,7 @@
 #define NATIVE_MATE_NATIVE_MATE_DICTIONARY_H_
 
 #include "native_mate/converter.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 
 namespace mate {
 

@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "native_mate/arguments.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "native_mate/wrappable.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/gin_converters/callback_converter.h"

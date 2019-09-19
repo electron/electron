@@ -8,7 +8,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "shell/browser/api/atom_api_menu.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/browser.h"

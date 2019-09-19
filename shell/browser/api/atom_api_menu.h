@@ -155,6 +155,20 @@ struct Converter<electron::AtomMenuModel*> {
   }
 };
 
+// TODO(zcbenz): Remove this after converting Menu to gin::Wrapper.
+template <>
+struct Converter<electron::api::Menu*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::Menu** out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::Menu* in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
 }  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_MENU_H_

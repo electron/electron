@@ -9,9 +9,9 @@
 
 #include "base/bind.h"
 #include "gin/dictionary.h"
-#include "native_mate/object_template_builder.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/native_mate_converters/gfx_converter.h"
 #include "shell/common/native_mate_converters/native_window_converter.h"
 #include "shell/common/node_includes.h"
@@ -134,22 +134,22 @@ void Screen::OnDisplayMetricsChanged(const display::Display& display,
 }
 
 // static
-v8::Local<v8::Value> Screen::Create(v8::Isolate* isolate) {
+v8::Local<v8::Value> Screen::Create(gin_helper::ErrorThrower error_thrower) {
   if (!Browser::Get()->is_ready()) {
-    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate,
-        "The 'screen' module can't be used before the app 'ready' event")));
-    return v8::Null(isolate);
+    error_thrower.ThrowError(
+        "The 'screen' module can't be used before the app 'ready' event");
+    return v8::Null(error_thrower.isolate());
   }
 
   display::Screen* screen = display::Screen::GetScreen();
   if (!screen) {
-    isolate->ThrowException(v8::Exception::Error(
-        mate::StringToV8(isolate, "Failed to get screen information")));
-    return v8::Null(isolate);
+    error_thrower.ThrowError("Failed to get screen information");
+    return v8::Null(error_thrower.isolate());
   }
 
-  return mate::CreateHandle(isolate, new Screen(isolate, screen)).ToV8();
+  return mate::CreateHandle(error_thrower.isolate(),
+                            new Screen(error_thrower.isolate(), screen))
+      .ToV8();
 }
 
 // static
