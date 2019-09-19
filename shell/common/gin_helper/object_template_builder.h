@@ -14,6 +14,9 @@ namespace gin_helper {
 //
 // It also uses gin_helper::CreateFunctionTemplate for function templates to
 // support gin_helper types.
+//
+// TODO(zcbenz): We should patch gin::ObjectTemplateBuilder to provide the same
+// functionality after removing gin_helper/function_template.h.
 class ObjectTemplateBuilder {
  public:
   ObjectTemplateBuilder(v8::Isolate* isolate,
