@@ -3,7 +3,8 @@ import { nativeTheme, systemPreferences } from 'electron'
 import * as os from 'os'
 import * as semver from 'semver'
 
-import { ifdescribe } from './spec-helpers'
+import { delay, ifdescribe } from './spec-helpers'
+import { emittedOnce } from './events-helpers';
 
 describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {
@@ -13,8 +14,10 @@ describe('nativeTheme module', () => {
   })
 
   describe('nativeTheme.themeSource', () => {
-    afterEach(() => {
+    afterEach(async () => {
       nativeTheme.themeSource = 'system'
+      // Wait for any pending events to emit
+      await delay(20)
     })
 
     it('is system by default', () => {
@@ -28,23 +31,26 @@ describe('nativeTheme module', () => {
       expect(nativeTheme.shouldUseDarkColors).to.equal(false)
     })
 
-    it('should emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value changes', () => {
+    it('should emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value changes', async () => {
+      let updatedEmitted = emittedOnce(nativeTheme, 'updated')
       nativeTheme.themeSource = 'dark'
-      let called = false
-      nativeTheme.once('updated', () => {
-        called = true
-      })
+      await updatedEmitted
+      updatedEmitted = emittedOnce(nativeTheme, 'updated')
       nativeTheme.themeSource = 'light'
-      expect(called).to.equal(true)
+      await updatedEmitted
     })
 
-    it('should not emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value is the same', () => {
+    it('should not emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value is the same', async () => {
       nativeTheme.themeSource = 'dark'
+      // Wait a few ticks to allow an async events to flush
+      await delay(20)
       let called = false
       nativeTheme.once('updated', () => {
         called = true
       })
       nativeTheme.themeSource = 'dark'
+      // Wait a few ticks to allow an async events to flush
+      await delay(20)
       expect(called).to.equal(false)
     })
 

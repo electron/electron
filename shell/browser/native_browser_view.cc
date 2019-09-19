@@ -15,7 +15,7 @@ NativeBrowserView::NativeBrowserView(
     InspectableWebContents* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents) {}
 
-NativeBrowserView::~NativeBrowserView() {}
+NativeBrowserView::~NativeBrowserView() = default;
 
 InspectableWebContentsView* NativeBrowserView::GetInspectableWebContentsView() {
   return inspectable_web_contents_->GetView();

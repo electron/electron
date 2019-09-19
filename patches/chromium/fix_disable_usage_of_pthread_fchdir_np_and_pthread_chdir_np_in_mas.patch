@@ -7,7 +7,7 @@ Subject:
 Disable usage of pthread_fchdir_np and pthread_chdir_np in MAS builds.
 
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index 1119fb3f97b1..b0efe96063b9 100644
+index 1119fb3f97b116028d78fdf42c1d336440a1681f..264178186f3f780b2b33de7649b1321b23964515 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -26,8 +26,10 @@ extern "C" {
@@ -21,7 +21,7 @@ index 1119fb3f97b1..b0efe96063b9 100644
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
      API_AVAILABLE(macosx(10.14));
-@@ -95,21 +97,29 @@ class PosixSpawnFileActions {
+@@ -98,21 +100,29 @@ class PosixSpawnFileActions {
  };
  
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -51,7 +51,7 @@ index 1119fb3f97b1..b0efe96063b9 100644
  }
  
  struct GetAppOutputOptions {
-@@ -238,11 +238,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -228,11 +238,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  

@@ -280,6 +280,7 @@ if (is_linux) {
       "notify_notification_add_action",
       "notify_notification_set_image_from_pixbuf",
       "notify_notification_set_timeout",
+      "notify_notification_set_urgency",
       "notify_notification_set_hint_string",
       "notify_notification_show",
       "notify_notification_close",
@@ -576,6 +577,17 @@ source_set("electron_lib") {
       "//components/viz/service",
       "//services/viz/public/mojom",
       "//ui/compositor",
+    ]
+  }
+
+  if (enable_remote_module) {
+    sources += [
+      "shell/common/api/remote/object_life_monitor.cc",
+      "shell/common/api/remote/object_life_monitor.h",
+      "shell/common/api/remote/remote_callback_freer.cc",
+      "shell/common/api/remote/remote_callback_freer.h",
+      "shell/common/api/remote/remote_object_freer.cc",
+      "shell/common/api/remote/remote_object_freer.h",
     ]
   }
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/api/remote_callback_freer.h"
+#include "shell/common/api/remote/remote_callback_freer.h"
 
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
@@ -32,7 +32,7 @@ RemoteCallbackFreer::RemoteCallbackFreer(v8::Isolate* isolate,
       context_id_(context_id),
       object_id_(object_id) {}
 
-RemoteCallbackFreer::~RemoteCallbackFreer() {}
+RemoteCallbackFreer::~RemoteCallbackFreer() = default;
 
 void RemoteCallbackFreer::RunDestructor() {
   auto* channel = "ELECTRON_RENDERER_RELEASE_CALLBACK";

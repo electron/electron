@@ -8,9 +8,9 @@
 
 namespace electron {
 
-EventDisabler::EventDisabler() {}
+EventDisabler::EventDisabler() = default;
 
-EventDisabler::~EventDisabler() {}
+EventDisabler::~EventDisabler() = default;
 
 ui::EventRewriteStatus EventDisabler::RewriteEvent(
     const ui::Event& event,

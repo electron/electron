@@ -121,4 +121,22 @@ class Session : public mate::TrackableObject<Session>,
 
 }  // namespace electron
 
+namespace gin {
+
+// TODO(zcbenz): Remove this after converting Session to gin::Wrapper.
+template <>
+struct Converter<electron::api::Session*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::Session** out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::Session* in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+}  // namespace gin
+
 #endif  // SHELL_BROWSER_API_ATOM_API_SESSION_H_

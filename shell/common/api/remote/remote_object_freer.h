@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_REMOTE_OBJECT_FREER_H_
-#define SHELL_COMMON_API_REMOTE_OBJECT_FREER_H_
+#ifndef SHELL_COMMON_API_REMOTE_REMOTE_OBJECT_FREER_H_
+#define SHELL_COMMON_API_REMOTE_REMOTE_OBJECT_FREER_H_
 
 #include <map>
 #include <string>
 
-#include "shell/common/api/object_life_monitor.h"
+#include "shell/common/api/remote/object_life_monitor.h"
 
 namespace electron {
 
@@ -42,4 +42,4 @@ class RemoteObjectFreer : public ObjectLifeMonitor {
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_API_REMOTE_OBJECT_FREER_H_
+#endif  // SHELL_COMMON_API_REMOTE_REMOTE_OBJECT_FREER_H_

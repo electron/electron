@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/atom_api_app.h"
 
+#include <memory>
+
 #include <string>
 #include <vector>
 
@@ -28,7 +30,7 @@
 #include "content/public/common/content_switches.h"
 #include "gin/arguments.h"
 #include "media/audio/audio_manager.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "services/service_manager/sandbox/switches.h"
@@ -941,9 +943,9 @@ std::string App::GetLocaleCountryCode() {
                      kCFStringEncodingUTF8);
   region = temporaryCString;
 #else
-  const char* locale_ptr = setlocale(LC_TIME, NULL);
+  const char* locale_ptr = setlocale(LC_TIME, nullptr);
   if (!locale_ptr)
-    locale_ptr = setlocale(LC_NUMERIC, NULL);
+    locale_ptr = setlocale(LC_NUMERIC, nullptr);
   if (locale_ptr) {
     std::string locale = locale_ptr;
     std::string::size_type rpos = locale.find('.');
@@ -977,8 +979,8 @@ bool App::RequestSingleInstanceLock() {
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
-  process_singleton_.reset(new ProcessSingleton(
-      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb)));
+  process_singleton_ = std::make_unique<ProcessSingleton>(
+      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb));
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:

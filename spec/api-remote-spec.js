@@ -5,10 +5,13 @@ const dirtyChai = require('dirty-chai')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
 const { resolveGetters } = require('./expect-helpers')
+const { ifdescribe } = require('./spec-helpers')
 
 const { remote, ipcRenderer } = require('electron')
 const { ipcMain, BrowserWindow } = remote
 const { expect } = chai
+
+const features = process.electronBinding('features')
 
 chai.use(dirtyChai)
 
@@ -20,7 +23,7 @@ const comparePaths = (path1, path2) => {
   expect(path1).to.equal(path2)
 }
 
-describe('remote module', () => {
+ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
   describe('remote.require', () => {

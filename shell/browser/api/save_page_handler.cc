@@ -20,7 +20,7 @@ SavePageHandler::SavePageHandler(content::WebContents* web_contents,
                                  util::Promise<void*> promise)
     : web_contents_(web_contents), promise_(std::move(promise)) {}
 
-SavePageHandler::~SavePageHandler() {}
+SavePageHandler::~SavePageHandler() = default;
 
 void SavePageHandler::OnDownloadCreated(content::DownloadManager* manager,
                                         download::DownloadItem* item) {

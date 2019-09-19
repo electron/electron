@@ -1,9 +1,12 @@
 import { expect } from 'chai'
 import { closeWindow } from './window-helpers'
+import { ifdescribe } from './spec-helpers';
 
 import { BrowserWindow } from 'electron'
 
-describe('remote module', () => {
+const features = process.electronBinding('features')
+
+ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   let w = null as unknown as BrowserWindow
   before(async () => {
     w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})

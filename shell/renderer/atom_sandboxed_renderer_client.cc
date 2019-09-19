@@ -125,7 +125,7 @@ AtomSandboxedRendererClient::AtomSandboxedRendererClient() {
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
-AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {}
+AtomSandboxedRendererClient::~AtomSandboxedRendererClient() = default;
 
 void AtomSandboxedRendererClient::InitializeBindings(
     v8::Local<v8::Object> binding,

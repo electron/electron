@@ -39,7 +39,6 @@
 #include "ui/gfx/geometry/point.h"
 
 #include "components/viz/host/host_display_client.h"
-#include "ui/compositor/external_begin_frame_client.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/win/window_impl.h"
@@ -60,7 +59,6 @@ typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
 typedef base::Callback<void(const gfx::Rect&)> OnPopupPaintCallback;
 
 class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
-                                      public ui::ExternalBeginFrameClient,
                                       public ui::CompositorDelegate,
                                       public OffscreenViewProxyObserver {
  public:
@@ -76,9 +74,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   content::BrowserAccessibilityManager* CreateBrowserAccessibilityManager(
       content::BrowserAccessibilityDelegate*,
       bool) override;
-
-  void OnDisplayDidFinishFrame(const viz::BeginFrameAck& ack) override;
-  void OnNeedsExternalBeginFrames(bool needs_begin_frames) override;
 
   // content::RenderWidgetHostView:
   void InitAsChild(gfx::NativeView) override;
@@ -101,7 +96,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetBackgroundColor(SkColor color) override;
   base::Optional<SkColor> GetBackgroundColor() override;
   void UpdateBackgroundColor() override;
-  bool LockMouse(void) override;
+  bool LockMouse(bool request_unadjusted_movement) override;
   void UnlockMouse(void) override;
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
   void SetNeedsBeginFrames(bool needs_begin_frames) override;

@@ -75,8 +75,8 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
   }
 
   // Send the callback to the browser thread.
-  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
-                           base::BindOnce(callback_, converted));
+  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                 base::BindOnce(callback_, converted));
 }
 
 /**

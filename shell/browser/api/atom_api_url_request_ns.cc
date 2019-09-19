@@ -6,13 +6,15 @@
 
 #include <utility>
 
+#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
 #include "net/http/http_util.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/atom_browser_context.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
 
@@ -112,9 +114,10 @@ class MultipartDataPipeGetter : public UploadDataPipeGetter,
   ~MultipartDataPipeGetter() override = default;
 
   void AttachToRequestBody(network::ResourceRequestBody* body) override {
-    network::mojom::DataPipeGetterPtr data_pipe_getter;
-    binding_set_.AddBinding(this, mojo::MakeRequest(&data_pipe_getter));
-    body->AppendDataPipe(std::move(data_pipe_getter));
+    mojo::PendingRemote<network::mojom::DataPipeGetter> data_pipe_getter_remote;
+    receivers_.Add(this,
+                   data_pipe_getter_remote.InitWithNewPipeAndPassReceiver());
+    body->AppendDataPipe(std::move(data_pipe_getter_remote));
   }
 
  private:
@@ -125,11 +128,12 @@ class MultipartDataPipeGetter : public UploadDataPipeGetter,
     SetPipe(std::move(pipe));
   }
 
-  void Clone(network::mojom::DataPipeGetterRequest request) override {
-    binding_set_.AddBinding(this, std::move(request));
+  void Clone(
+      mojo::PendingReceiver<network::mojom::DataPipeGetter> receiver) override {
+    receivers_.Add(this, std::move(receiver));
   }
 
-  mojo::BindingSet<network::mojom::DataPipeGetter> binding_set_;
+  mojo::ReceiverSet<network::mojom::DataPipeGetter> receivers_;
 };
 
 // Streaming chunked data to NetworkService.
@@ -141,9 +145,11 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
   ~ChunkedDataPipeGetter() override = default;
 
   void AttachToRequestBody(network::ResourceRequestBody* body) override {
-    network::mojom::ChunkedDataPipeGetterPtr data_pipe_getter;
-    binding_set_.AddBinding(this, mojo::MakeRequest(&data_pipe_getter));
-    body->SetToChunkedDataPipe(std::move(data_pipe_getter));
+    mojo::PendingRemote<network::mojom::ChunkedDataPipeGetter>
+        data_pipe_getter_remote;
+    receiver_set_.Add(this,
+                      data_pipe_getter_remote.InitWithNewPipeAndPassReceiver());
+    body->SetToChunkedDataPipe(std::move(data_pipe_getter_remote));
   }
 
  private:
@@ -156,7 +162,7 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
     SetPipe(std::move(pipe));
   }
 
-  mojo::BindingSet<network::mojom::ChunkedDataPipeGetter> binding_set_;
+  mojo::ReceiverSet<network::mojom::ChunkedDataPipeGetter> receiver_set_;
 };
 
 URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
@@ -183,7 +189,7 @@ URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
   InitWith(args->isolate(), args->GetThis());
 }
 
-URLRequestNS::~URLRequestNS() {}
+URLRequestNS::~URLRequestNS() = default;
 
 bool URLRequestNS::NotStarted() const {
   return request_state_ == 0;
@@ -307,8 +313,8 @@ void URLRequestNS::SetChunkedUpload(bool is_chunked_upload) {
     is_chunked_upload_ = is_chunked_upload;
 }
 
-mate::Dictionary URLRequestNS::GetUploadProgress() {
-  mate::Dictionary progress = mate::Dictionary::CreateEmpty(isolate());
+gin::Dictionary URLRequestNS::GetUploadProgress() {
+  gin::Dictionary progress = gin::Dictionary::CreateEmpty(isolate());
   if (loader_) {
     if (request_)
       progress.Set("started", false);
@@ -499,7 +505,7 @@ void URLRequestNS::EmitError(EventType type, base::StringPiece message) {
   else
     response_state_ |= STATE_FAILED;
   v8::HandleScope handle_scope(isolate());
-  auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
+  auto error = v8::Exception::Error(gin::StringToV8(isolate(), message));
   EmitEvent(type, false, "error", error);
 }
 
@@ -508,7 +514,7 @@ void URLRequestNS::EmitEvent(EventType type, Args... args) {
   const char* method =
       type == EventType::kRequest ? "_emitRequestEvent" : "_emitResponseEvent";
   v8::HandleScope handle_scope(isolate());
-  mate::CustomEmit(isolate(), GetWrapper(), method, args...);
+  gin_helper::CustomEmit(isolate(), GetWrapper(), method, args...);
 }
 
 // static
@@ -519,9 +525,9 @@ mate::WrappableBase* URLRequestNS::New(mate::Arguments* args) {
 // static
 void URLRequestNS::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "URLRequest"));
+  prototype->SetClassName(gin::StringToV8(isolate, "URLRequest"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("write", &URLRequestNS::Write)
       .SetMethod("cancel", &URLRequestNS::Cancel)
       .SetMethod("setExtraHeader", &URLRequestNS::SetExtraHeader)

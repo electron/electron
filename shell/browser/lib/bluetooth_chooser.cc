@@ -44,7 +44,7 @@ BluetoothChooser::BluetoothChooser(api::WebContents* contents,
                                    const EventHandler& event_handler)
     : api_web_contents_(contents), event_handler_(event_handler) {}
 
-BluetoothChooser::~BluetoothChooser() {}
+BluetoothChooser::~BluetoothChooser() = default;
 
 void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
   switch (presence) {

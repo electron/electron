@@ -6,8 +6,11 @@
 
 #include <string>
 
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "shell/common/node_includes.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/native_theme/native_theme.h"
@@ -26,8 +29,14 @@ NativeTheme::~NativeTheme() {
   theme_->RemoveObserver(this);
 }
 
-void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
+void NativeTheme::OnNativeThemeUpdatedOnUI() {
   Emit("updated");
+}
+
+void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
+  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                 base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
+                                base::Unretained(this)));
 }
 
 void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {

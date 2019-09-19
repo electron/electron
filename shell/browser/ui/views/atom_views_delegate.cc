@@ -30,9 +30,9 @@ bool IsDesktopEnvironmentUnity() {
 
 namespace electron {
 
-ViewsDelegate::ViewsDelegate() {}
+ViewsDelegate::ViewsDelegate() = default;
 
-ViewsDelegate::~ViewsDelegate() {}
+ViewsDelegate::~ViewsDelegate() = default;
 
 void ViewsDelegate::SaveWindowPlacement(const views::Widget* window,
                                         const std::string& window_name,
@@ -70,13 +70,13 @@ bool ViewsDelegate::IsWindowInMetro(gfx::NativeWindow window) const {
 
 #elif defined(OS_LINUX) && !defined(OS_CHROMEOS)
 gfx::ImageSkia* ViewsDelegate::GetDefaultWindowIcon() const {
-  return NULL;
+  return nullptr;
 }
 #endif
 
 views::NonClientFrameView* ViewsDelegate::CreateDefaultNonClientFrameView(
     views::Widget* widget) {
-  return NULL;
+  return nullptr;
 }
 
 void ViewsDelegate::AddRef() {}

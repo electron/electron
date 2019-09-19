@@ -17,7 +17,7 @@ bool AtomMenuModel::Delegate::GetAcceleratorForCommandId(
 AtomMenuModel::AtomMenuModel(Delegate* delegate)
     : ui::SimpleMenuModel(delegate), delegate_(delegate) {}
 
-AtomMenuModel::~AtomMenuModel() {}
+AtomMenuModel::~AtomMenuModel() = default;
 
 void AtomMenuModel::SetToolTip(int index, const base::string16& toolTip) {
   int command_id = GetCommandIdAt(index);

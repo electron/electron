@@ -7,15 +7,14 @@
 #include "base/task/post_task.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
-#include "electron/shell/common/api/api.mojom.h"
-#include "native_mate/arguments.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/handle.h"
-#include "native_mate/object_template_builder.h"
-#include "native_mate/wrappable.h"
+#include "gin/dictionary.h"
+#include "gin/handle.h"
+#include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/common/api/api.mojom.h"
+#include "shell/common/gin_converters/value_converter_gin_adapter.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
@@ -34,11 +33,16 @@ RenderFrame* GetCurrentRenderFrame() {
   return RenderFrame::FromWebFrame(frame);
 }
 
-class IPCRenderer : public mate::Wrappable<IPCRenderer> {
+class IPCRenderer : public gin::Wrappable<IPCRenderer> {
  public:
+  static gin::WrapperInfo kWrapperInfo;
+
+  static gin::Handle<IPCRenderer> Create(v8::Isolate* isolate) {
+    return gin::CreateHandle(isolate, new IPCRenderer(isolate));
+  }
+
   explicit IPCRenderer(v8::Isolate* isolate)
-      : task_runner_(base::CreateSingleThreadTaskRunnerWithTraits({})) {
-    Init(isolate);
+      : task_runner_(base::CreateSingleThreadTaskRunner({base::ThreadPool()})) {
     RenderFrame* render_frame = GetCurrentRenderFrame();
     DCHECK(render_frame);
 
@@ -52,10 +56,10 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
                                                               task_runner_);
   }
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype) {
-    prototype->SetClassName(mate::StringToV8(isolate, "IPCRenderer"));
-    mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  // gin::Wrappable:
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override {
+    return gin::Wrappable<IPCRenderer>::GetObjectTemplateBuilder(isolate)
         .SetMethod("send", &IPCRenderer::Send)
         .SetMethod("sendSync", &IPCRenderer::SendSync)
         .SetMethod("sendTo", &IPCRenderer::SendTo)
@@ -63,10 +67,9 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
         .SetMethod("invoke", &IPCRenderer::Invoke);
   }
 
-  static mate::Handle<IPCRenderer> Create(v8::Isolate* isolate) {
-    return mate::CreateHandle(isolate, new IPCRenderer(isolate));
-  }
+  const char* GetTypeName() override { return "IPCRenderer"; }
 
+ private:
   void Send(bool internal,
             const std::string& channel,
             const blink::CloneableMessage& arguments) {
@@ -74,18 +77,18 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
                                           arguments.ShallowClone());
   }
 
-  v8::Local<v8::Promise> Invoke(mate::Arguments* args,
+  v8::Local<v8::Promise> Invoke(v8::Isolate* isolate,
                                 bool internal,
                                 const std::string& channel,
                                 const blink::CloneableMessage& arguments) {
-    electron::util::Promise<blink::CloneableMessage> p(args->isolate());
     auto handle = p.GetHandle();
+    electron::util::Promise<base::CloneableMessage> p(isolate);
 
     electron_browser_ptr_->get()->Invoke(
         internal, channel, arguments.ShallowClone(),
         base::BindOnce(
             [](electron::util::Promise<blink::CloneableMessage> p,
-               blink::CloneableMessage result) { p.Resolve(result); },
+               blink::CloneableMessage result) { p.ResolveWithGin(result); },
             std::move(p)));
 
     return handle;
@@ -172,7 +175,6 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     return result;
   }
 
- private:
   void SendMessageSyncOnWorkerThread(base::WaitableEvent* event,
                                      blink::CloneableMessage* result,
                                      bool internal,
@@ -183,6 +185,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
         base::BindOnce(&IPCRenderer::ReturnSyncResponseToMainThread,
                        base::Unretained(event), base::Unretained(result)));
   }
+
   static void ReturnSyncResponseToMainThread(base::WaitableEvent* event,
                                              blink::CloneableMessage* result,
                                              blink::CloneableMessage response) {
@@ -195,11 +198,13 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
       electron_browser_ptr_;
 };
 
+gin::WrapperInfo IPCRenderer::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
+  gin::Dictionary dict(context->GetIsolate(), exports);
   dict.Set("ipc", IPCRenderer::Create(context->GetIsolate()));
 }
 

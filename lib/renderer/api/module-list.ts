@@ -14,6 +14,6 @@ if (features.isDesktopCapturerEnabled()) {
   rendererModuleList.push({ name: 'desktopCapturer', loader: () => require('./desktop-capturer') })
 }
 
-if (enableRemoteModule) {
+if (features.isRemoteModuleEnabled() && enableRemoteModule) {
   rendererModuleList.push({ name: 'remote', loader: () => require('./remote') })
 }

@@ -63,6 +63,22 @@ struct Converter<v8::Local<v8::Array>> {
   }
 };
 
+template <>
+struct Converter<v8::Local<v8::String>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   v8::Local<v8::String> val) {
+    return val;
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     v8::Local<v8::String>* out) {
+    if (!val->IsString())
+      return false;
+    *out = v8::Local<v8::String>::Cast(val);
+    return true;
+  }
+};
+
 template <typename T>
 struct Converter<std::set<T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,

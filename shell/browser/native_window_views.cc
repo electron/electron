@@ -209,7 +209,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
 
 #if defined(USE_X11)
   // Start monitoring window states.
-  window_state_watcher_.reset(new WindowStateWatcher(this));
+  window_state_watcher_ = std::make_unique<WindowStateWatcher>(this);
 
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
   bool use_dark_theme = false;
@@ -274,7 +274,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (has_frame()) {
     // TODO(zcbenz): This was used to force using native frame on Windows 2003,
     // we should check whether setting it in InitParams can work.
-    widget()->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
+    widget()->set_frame_type(views::Widget::FrameType::kForceNative);
     widget()->FrameTypeChanged();
 #if defined(OS_WIN)
     // thickFrame also works for normal window.
@@ -477,7 +477,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
     tree_host->RemoveEventRewriter(event_disabler_.get());
     event_disabler_.reset();
   } else {
-    event_disabler_.reset(new EventDisabler);
+    event_disabler_ = std::make_unique<EventDisabler>();
     tree_host->AddEventRewriter(event_disabler_.get());
   }
 #endif
@@ -997,7 +997,7 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   }
 
   if (!global_menu_bar_ && ShouldUseGlobalMenuBar())
-    global_menu_bar_.reset(new GlobalMenuBarX11(this));
+    global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
 
   // Use global application menu bar when possible.
   if (global_menu_bar_ && global_menu_bar_->IsServerStarted()) {

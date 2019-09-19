@@ -5,6 +5,7 @@
 #ifndef SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 #define SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
+#include "base/bind.h"
 #include "base/callback.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
@@ -257,6 +258,44 @@ v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
                                    gin::ConvertToV8<v8::Local<v8::External>>(
                                        isolate, holder->GetHandle(isolate)));
 }
+
+// Base template - used only for non-member function pointers. Other types
+// either go to one of the below specializations, or go here and fail to compile
+// because of base::Bind().
+template <typename T, typename Enable = void>
+struct CallbackTraits {
+  static v8::Local<v8::FunctionTemplate> CreateTemplate(v8::Isolate* isolate,
+                                                        T callback) {
+    return gin_helper::CreateFunctionTemplate(isolate,
+                                              base::BindRepeating(callback));
+  }
+};
+
+// Specialization for base::Callback.
+template <typename T>
+struct CallbackTraits<base::Callback<T>> {
+  static v8::Local<v8::FunctionTemplate> CreateTemplate(
+      v8::Isolate* isolate,
+      const base::RepeatingCallback<T>& callback) {
+    return gin_helper::CreateFunctionTemplate(isolate, callback);
+  }
+};
+
+// Specialization for member function pointers. We need to handle this case
+// specially because the first parameter for callbacks to MFP should typically
+// come from the the JavaScript "this" object the function was called on, not
+// from the first normal parameter.
+template <typename T>
+struct CallbackTraits<
+    T,
+    typename std::enable_if<std::is_member_function_pointer<T>::value>::type> {
+  static v8::Local<v8::FunctionTemplate> CreateTemplate(v8::Isolate* isolate,
+                                                        T callback) {
+    int flags = HolderIsFirstArgument;
+    return gin_helper::CreateFunctionTemplate(
+        isolate, base::BindRepeating(callback), flags);
+  }
+};
 
 }  // namespace gin_helper
 

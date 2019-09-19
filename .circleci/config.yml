@@ -1,3 +1,46 @@
+version: 2.1
+
+parameters:
+  upload-to-s3:
+    type: string
+    default: '1'
+  
+  run-lint:
+    type: boolean
+    default: true
+
+  run-build-linux:
+    type: boolean
+    default: true
+
+  run-build-mac:
+    type: boolean
+    default: true
+
+  run-linux-x64-publish:
+    type: boolean
+    default: false
+
+  run-linux-ia32-publish:
+    type: boolean
+    default: false
+
+  run-linux-arm-publish:
+    type: boolean
+    default: false
+  
+  run-linux-arm64-publish:
+    type: boolean
+    default: false
+  
+  run-osx-publish:
+    type: boolean
+    default: false
+
+  run-mas-publish:
+    type: boolean
+    default: false
+
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
 #
@@ -661,7 +704,7 @@ steps-lint: &steps-lint
           chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
           gn_version="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep gn_version | head -n1 | cut -d\' -f4)"
 
-          cipd ensure -ensure-file - -root . <<-CIPD
+          cipd ensure -ensure-file - -root . \<<-CIPD
           \$ServiceURL https://chrome-infra-packages.appspot.com/
           @Subdir src/buildtools/linux64
           gn/gn/linux-amd64 $gn_version
@@ -1068,7 +1111,6 @@ chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
 
 # List of all jobs.
-version: 2
 jobs:
   # Layer 0: Lint. Standalone.
   lint:
@@ -1178,7 +1220,7 @@ jobs:
   linux-x64-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
@@ -1191,6 +1233,7 @@ jobs:
       <<: *env-linux-2xlarge-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-release-build
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
   linux-ia32-debug:
@@ -1228,7 +1271,7 @@ jobs:
   linux-ia32-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1243,6 +1286,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
   linux-arm-debug:
@@ -1281,7 +1325,7 @@ jobs:
   linux-arm-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-arm
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1296,6 +1340,7 @@ jobs:
       <<: *env-arm
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
   linux-arm64-debug:
@@ -1350,7 +1395,7 @@ jobs:
   linux-arm64-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1365,6 +1410,7 @@ jobs:
       <<: *env-arm64
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
   osx-testing:
@@ -1423,6 +1469,7 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
   mas-testing:
@@ -1487,6 +1534,7 @@ jobs:
       <<: *env-mas
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
   # Layer 3: Tests.
@@ -1741,12 +1789,51 @@ jobs:
       - *step-maybe-notify-slack-success
 
 workflows:
-  version: 2
+  version: 2.1
+
+  # The publish workflows below each contain one job so that they are 
+  # compatible with how sudowoodo works today.  If these workflows are
+  # changed to have multiple jobs, then scripts/release/ci-release-build.js
+  # will need to be updated and there will most likely need to be changes to
+  # sudowoodo
+
+  publish-x64-linux:
+    when: << pipeline.parameters.run-linux-x64-publish >>
+    jobs:
+    - linux-x64-publish
+
+  publish-ia32-linux:
+    when: << pipeline.parameters.run-linux-ia32-publish >>
+    jobs:
+    - linux-ia32-publish
+
+  publish-arm-linux:
+    when: << pipeline.parameters.run-linux-arm-publish >>
+    jobs:
+    - linux-arm-publish
+  
+  publish-arm64-linux:
+    when: << pipeline.parameters.run-linux-arm64-publish >>
+    jobs:
+    - linux-arm64-publish
+  
+  publish-osx:
+    when: << pipeline.parameters.run-osx-publish >>
+    jobs:
+    - osx-publish
+
+  publish-mas:
+    when: << pipeline.parameters.run-mas-publish >>
+    jobs:
+    - mas-publish
+
   lint:
+    when: << pipeline.parameters.run-lint >>
     jobs:
       - lint
 
   build-linux:
+    when: << pipeline.parameters.run-build-linux >>
     jobs:
       - linux-checkout-fast
       - linux-checkout-and-save-cache
@@ -1795,6 +1882,7 @@ workflows:
             - linux-checkout-fast
 
   build-mac:
+    when: << pipeline.parameters.run-build-mac >>
     jobs:
       - mac-checkout-fast
       - mac-checkout-and-save-cache
@@ -1849,11 +1937,11 @@ workflows:
                 - master
                 - *chromium-upgrade-branches
     jobs:
-      - linux-checkout
+      - linux-checkout-fast
 
       - linux-x64-release:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-x64-release-tests:
           requires:
             - linux-x64-release
@@ -1865,7 +1953,7 @@ workflows:
             - linux-x64-release
       - linux-x64-chromedriver:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-x64-release-summary:
           requires:
             - linux-x64-release
@@ -1875,7 +1963,7 @@ workflows:
 
       - linux-ia32-release:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-ia32-release-tests:
           requires:
             - linux-ia32-release
@@ -1887,7 +1975,7 @@ workflows:
             - linux-ia32-release
       - linux-ia32-chromedriver:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-ia32-release-summary:
           requires:
             - linux-ia32-release
@@ -1897,10 +1985,10 @@ workflows:
 
       - linux-arm-release:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm-chromedriver:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm-release-summary:
           requires:
             - linux-arm-release
@@ -1909,10 +1997,10 @@ workflows:
 
       - linux-arm64-release:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm64-chromedriver:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm64-release-summary:
           requires:
             - linux-arm64-release
@@ -1928,11 +2016,11 @@ workflows:
                 - master
                 - *chromium-upgrade-branches
     jobs:
-      - mac-checkout
+      - mac-checkout-fast
 
       - osx-release:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
       - osx-release-tests:
           requires:
             - osx-release
@@ -1944,7 +2032,7 @@ workflows:
             - osx-release
       - osx-chromedriver:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
       - osx-release-summary:
           requires:
           - osx-release
@@ -1954,7 +2042,7 @@ workflows:
 
       - mas-release:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
       - mas-release-tests:
           requires:
             - mas-release
@@ -1966,7 +2054,7 @@ workflows:
             - mas-release
       - mas-chromedriver:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
       - mas-release-summary:
           requires:
           - mas-release

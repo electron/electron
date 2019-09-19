@@ -4,6 +4,8 @@
 
 #include "shell/browser/atom_browser_main_parts.h"
 
+#include <memory>
+
 #include <utility>
 
 #if defined(OS_LINUX)
@@ -289,13 +291,13 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
-  js_env_.reset(new JavascriptEnvironment(node_bindings_->uv_loop()));
+  js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
   node_bindings_->Initialize();
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
       js_env_->context(), js_env_->platform(), false);
-  node_env_.reset(new NodeEnvironment(env));
+  node_env_ = std::make_unique<NodeEnvironment>(env);
 
   /**
    * 🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨
@@ -316,7 +318,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
    */
 
   // Enable support for v8 inspector
-  node_debugger_.reset(new NodeDebugger(env));
+  node_debugger_ = std::make_unique<NodeDebugger>(env);
   node_debugger_->Start();
 
   // Only run the node bootstrapper after we have initialized the inspector
@@ -362,7 +364,7 @@ int AtomBrowserMainParts::PreCreateThreads() {
 #endif
 
   if (!views::LayoutProvider::Get())
-    layout_provider_.reset(new views::LayoutProvider());
+    layout_provider_ = std::make_unique<views::LayoutProvider>();
 
   // Initialize the app locale.
   fake_browser_process_->SetApplicationLocale(
@@ -403,7 +405,7 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 #endif
 
 #if defined(USE_AURA)
-  wm_state_.reset(new wm::WMState);
+  wm_state_ = std::make_unique<wm::WMState>();
 #endif
 
 #if defined(OS_WIN)
@@ -418,7 +420,7 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 #if defined(OS_MACOSX)
   views_delegate_.reset(new ViewsDelegateMac);
 #else
-  views_delegate_.reset(new ViewsDelegate);
+  views_delegate_ = std::make_unique<ViewsDelegate>();
 #endif
 }
 
@@ -557,7 +559,7 @@ AtomBrowserMainParts::GetGeolocationControl() {
 IconManager* AtomBrowserMainParts::GetIconManager() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (!icon_manager_.get())
-    icon_manager_.reset(new IconManager);
+    icon_manager_ = std::make_unique<IconManager>();
   return icon_manager_.get();
 }
 

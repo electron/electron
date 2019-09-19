@@ -301,7 +301,7 @@ void TrayIconCocoa::PopUpOnUI(AtomMenuModel* menu_model) {
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
                                      AtomMenuModel* menu_model) {
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
                      base::Unretained(menu_model)));
