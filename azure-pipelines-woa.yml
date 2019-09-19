@@ -78,7 +78,7 @@ steps:
   displayName: 'Verify ffmpeg'
 
 - powershell: |
-    Get-Process | Where Name –Like "electron.exe*" | Stop-Process
-    Get-Process | Where Name –Like "MicrosoftEdge.exe*" | Stop-Process
+    Get-Process | Where Name –Like "electron*" | Stop-Process
+    Get-Process | Where Name –Like "MicrosoftEdge*" | Stop-Process
   displayName: 'Kill processes left running from last test run'
   condition: always()
