@@ -1220,7 +1220,7 @@ jobs:
   linux-x64-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
@@ -1271,7 +1271,7 @@ jobs:
   linux-ia32-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1325,7 +1325,7 @@ jobs:
   linux-arm-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-arm
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1395,7 +1395,7 @@ jobs:
   linux-arm64-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
