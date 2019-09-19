@@ -107,6 +107,8 @@ class EventEmitter : public Wrappable<T> {
                      v8::Local<v8::Object> event,
                      Args&&... args) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    // It's possible that |this| will be deleted by EmitEvent, so save anything we need
+    // from |this| before calling EmitEvent.
     auto* isolate = this->isolate();
     v8::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
