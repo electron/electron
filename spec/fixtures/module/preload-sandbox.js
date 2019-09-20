@@ -28,7 +28,7 @@
         creationTime: invoke(() => process.getCreationTime()),
         heapStatistics: invoke(() => process.getHeapStatistics()),
         blinkMemoryInfo: invoke(() => process.getBlinkMemoryInfo()),
-        processMemoryInfo: invoke(() => process.getProcessMemoryInfo()),
+        processMemoryInfo: invoke(() => process.getProcessMemoryInfo() ? {} : null),
         systemMemoryInfo: invoke(() => process.getSystemMemoryInfo()),
         systemVersion: invoke(() => process.getSystemVersion()),
         cpuUsage: invoke(() => process.getCPUUsage()),
