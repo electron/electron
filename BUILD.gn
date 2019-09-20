@@ -1219,6 +1219,7 @@ test("shell_browser_ui_unittests") {
   if (is_mac) {
     # TODO(codebytere): Why do we only need to load these two??
     libs = [
+      "Carbon.framework",
       "StoreKit.framework",
       "SecurityInterface.framework",
     ]

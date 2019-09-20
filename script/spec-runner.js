@@ -13,6 +13,7 @@ const fail = '✗'.red
 
 const args = require('minimist')(process.argv, {
   string: ['runners', 'target'],
+  boolean: ['buildNativeTests'],
   unknown: arg => unknownFlags.push(arg)
 })
 
@@ -152,34 +153,8 @@ async function runNativeElectronTests () {
     process.exit(1)
   }
 
-  // If a specific target was passed, only build and run that target
-  if (args.target) {
-    console.info('\nRunning native test for target:', args.target)
-
-    // Build single test target
-    const build = childProcess.spawnSync('ninja', ['-C', outDir, args.target], {
-      cwd: path.resolve(__dirname, '../..'),
-      stdio: 'inherit'
-    })
-
-    // Exit if test target failed to build
-    if (build.status !== 0) {
-      console.log(`${fail} ${args.target} failed to build.`)
-      process.exit(1)
-    }
-
-    // Run single test target
-    const run = childProcess.spawnSync(`./${outDir}/${args.target}`, {
-      cwd: path.resolve(__dirname, '../..'),
-      stdio: 'inherit'
-    })
-
-    if (run.status !== 0) {
-      console.log(`${fail} ${args.target} test failed.`)
-      process.exit(1)
-    }
-  } else {
-    // Build all test targets
+  // Optionally build all native test targets
+  if (args.buildNativeTests) {
     for (const target of TEST_TARGETS) {
       const build = childProcess.spawnSync('ninja', ['-C', outDir, target], {
         cwd: path.resolve(__dirname, '../..'),
@@ -192,7 +167,23 @@ async function runNativeElectronTests () {
         process.exit(1)
       }
     }
+  }
 
+  // If a specific target was passed, only build and run that target
+  if (args.target) {
+    console.info('\nRunning native test for target:', args.target)
+
+    // Run single test target
+    const run = childProcess.spawnSync(`./${outDir}/${args.target}`, {
+      cwd: path.resolve(__dirname, '../..'),
+      stdio: 'inherit'
+    })
+
+    if (run.status !== 0) {
+      console.log(`${fail} ${args.target} test failed.`)
+      process.exit(1)
+    }
+  } else {
     // Run test targets
     const failures = []
     for (const target of TEST_TARGETS) {
