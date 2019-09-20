@@ -82,7 +82,7 @@ contextBridge.bindAPIInMainWorld(
       evenDeeper: {
         youCanDoThisAsMuchAsYouWant: {
           fn: () => ({
-            returnData: 123,
+            returnData: 123
           })
         }
       }
