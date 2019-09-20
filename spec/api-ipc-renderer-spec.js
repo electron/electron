@@ -5,6 +5,7 @@ const dirtyChai = require('dirty-chai')
 const http = require('http')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
+const { emittedOnce } = require('./events-helpers')
 
 const { expect } = chai
 chai.use(dirtyChai)
@@ -20,6 +21,9 @@ describe('ipc renderer module', () => {
   afterEach(() => closeWindow(w).then(() => { w = null }))
 
   describe('ipc.sender.send', () => {
+    afterEach(() => {
+      ipcRenderer.removeAllListeners('message')
+    })
     it('should work when sending an object containing id property', done => {
       const obj = {
         id: 1,
@@ -59,27 +63,21 @@ describe('ipc renderer module', () => {
       ipcRenderer.send('message', document.location)
     })
 
-    it('can send Electron API objects', done => {
-      const webContents = remote.getCurrentWebContents()
-      ipcRenderer.once('message', (event, value) => {
-        expect(value.browserWindowOptions).to.deep.equal(webContents.browserWindowOptions)
-        done()
-      })
-      ipcRenderer.send('message', webContents)
+    it('throws when sending a function', () => {
+      expect(() => ipcRenderer.send('message', () => {})).to.throw(/Error processing argument/)
+    })
+    it('throws when sending an object with functions', () => {
+      expect(() => ipcRenderer.send('message', { foo: () => {} })).to.throw(/Error processing argument/)
     })
 
-    it('does not crash on external objects (regression)', done => {
+    it('does not crash on external objects (regression)', async () => {
       const request = http.request({ port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/' })
       const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream
       request.on('error', () => {})
-      ipcRenderer.once('message', (event, requestValue, externalStreamValue) => {
-        expect(requestValue.method).to.equal('GET')
-        expect(requestValue.path).to.equal('/')
-        expect(externalStreamValue).to.be.null()
-        done()
-      })
-
-      ipcRenderer.send('message', request, stream)
+      expect(() => ipcRenderer.send('message', request)).to.throw(/Error processing argument/)
+      ipcRenderer.send('message', stream)
+      const [, value] = await emittedOnce(ipcRenderer, 'message')
+      expect(value).to.eql({})
     })
 
     it('can send objects that both reference the same object', done => {
