@@ -357,7 +357,6 @@ describe('webContents module', () => {
 
       // For some reason we have to wait for two focused events...?
       await emittedOnce(w.webContents, 'devtools-focused')
-      await emittedOnce(w.webContents, 'devtools-focused')
 
       expect(() => { webContents.getFocusedWebContents() }).to.not.throw()
 
@@ -442,9 +441,10 @@ describe('webContents module', () => {
       await focused
       expect(w.isFocused()).to.be.true()
       w.webContents.openDevTools({ mode: 'detach', activate: true })
-      await emittedOnce(w.webContents, 'devtools-focused')
-      await emittedOnce(w.webContents, 'devtools-focused')
-      await emittedOnce(w.webContents, 'devtools-opened')
+      await Promise.all([
+        emittedOnce(w.webContents, 'devtools-opened'),
+        emittedOnce(w.webContents, 'devtools-focused'),
+      ])
       await new Promise(resolve => setTimeout(resolve, 0))
       expect(w.isFocused()).to.be.false()
     })
