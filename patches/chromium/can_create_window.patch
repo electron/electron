@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 411639913665cf47d5d5b4cee29c2cbadc45700a..be5e0598a7d9f008d3a2d10b88cdb8040de5548e 100644
+index d5845d0263477b01ddf1e8bf5075e1a813751360..3d0bb0760b222eb3dd916ec032179fec62b3e6cc 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4007,6 +4007,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4023,6 +4023,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,7 +66,7 @@ index 84a8e2fcf0e55bb9582a277f4ff2f76739a6a7ad..109d3166e85a28978bc0bf1f8f698537
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 4b7df6e3c952ba2c05c364ed054e3a564c2a5037..7568bf2bcd42a4e46ea76f205d2935bbdeae8aa6 100644
+index 4da7798e01aca97295042ce21fb8bffb602cf528..afd19c939fe8ee369afa1a85bd0ccefc9e084177 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -73,6 +73,7 @@
@@ -75,9 +75,9 @@ index 4b7df6e3c952ba2c05c364ed054e3a564c2a5037..7568bf2bcd42a4e46ea76f205d2935bb
  #include "content/renderer/loader/request_extra_data.h"
 +#include "content/renderer/loader/web_url_request_util.h"
  #include "content/renderer/media/audio/audio_device_factory.h"
+ #include "content/renderer/media/webrtc/peer_connection_dependency_factory.h"
  #include "content/renderer/media/webrtc/rtc_peer_connection_handler.h"
- #include "content/renderer/render_frame_impl.h"
-@@ -1323,6 +1324,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1324,6 +1325,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
