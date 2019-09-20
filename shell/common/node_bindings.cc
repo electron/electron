@@ -66,6 +66,7 @@
   V(atom_common_screen)              \
   V(atom_common_shell)               \
   V(atom_common_v8_util)             \
+  V(atom_renderer_context_bridge)    \
   V(atom_renderer_ipc)               \
   V(atom_renderer_web_frame)
 

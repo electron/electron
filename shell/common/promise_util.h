@@ -126,6 +126,16 @@ class Promise {
     return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
   }
 
+  v8::Maybe<bool> Reject(v8::Local<v8::Value> exception) {
+    v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
+    v8::Context::Scope context_scope(
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
+
+    return GetInner()->Reject(GetContext(), exception);
+  }
+
   template <typename... ResolveType>
   v8::MaybeLocal<v8::Promise> Then(
       base::OnceCallback<void(ResolveType...)> cb) {

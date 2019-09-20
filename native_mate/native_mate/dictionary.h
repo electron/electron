@@ -77,6 +77,17 @@ class Dictionary {
   }
 
   template <typename T>
+  bool SetReadOnlyNonConfigurable(base::StringPiece key, T val) {
+    v8::Local<v8::Value> v8_value;
+    if (!TryConvertToV8(isolate_, val, &v8_value))
+      return false;
+    v8::Maybe<bool> result = GetHandle()->DefineOwnProperty(
+        isolate_->GetCurrentContext(), StringToV8(isolate_, key), v8_value,
+        static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete));
+    return !result.IsNothing() && result.FromJust();
+  }
+
+  template <typename T>
   bool SetMethod(base::StringPiece key, const T& callback) {
     return GetHandle()
         ->Set(isolate_->GetCurrentContext(), StringToV8(isolate_, key),
