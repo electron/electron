@@ -51,7 +51,7 @@ The `contextBridge` module has the following instance methods:
 
 * `apiKey` String - The key for the API that you bound into the main world that corresponds to the reverse binding you wish to fetch.
 
-Returns `Record<String, any>` the reverse bound API provided by the main world.
+Returns `Record<String, any> | null` the reverse bound API provided by the main world.
 
 ## Usage
 
