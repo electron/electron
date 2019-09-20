@@ -213,13 +213,11 @@ describe('webContents module', () => {
         w.loadURL(serverUrl)
       })
 
-      it('works with result objects that have DOM class prototypes', (done) => {
-        w.webContents.executeJavaScript('document.location').then(result => {
-          expect(result.origin).to.equal(serverUrl)
-          expect(result.protocol).to.equal('http:')
-          done()
-        })
+      it('works with result objects that have DOM class prototypes', async () => {
         w.loadURL(serverUrl)
+        const result = await w.webContents.executeJavaScript('document.location')
+        expect(result.origin).to.equal(serverUrl)
+        expect(result.protocol).to.equal('http:')
       })
     })
   })

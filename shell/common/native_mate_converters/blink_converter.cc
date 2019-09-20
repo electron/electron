@@ -553,7 +553,12 @@ class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
           return v8::Nothing<bool>();
         }
         if (!serializer_->WriteValue(context, value).To(&wrote_value)) {
-          return v8::Nothing<bool>();
+          // If we couldn't write the value (e.g. if it's a function), just
+          // write undefined instead.
+          if (!serializer_->WriteValue(context, v8::Undefined(isolate))
+                   .To(&wrote_value)) {
+            return v8::Nothing<bool>();
+          }
         }
       }
     } else {
