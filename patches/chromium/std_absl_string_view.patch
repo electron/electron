@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Fri, 20 Sep 2019 22:03:03 +0000
+Subject: {std => absl}::string_view
+
+Introduced in https://chromium-review.googlesource.com/c/chromium/src/+/1786449, doesn't exist in MSSTL
+
+diff --git a/content/browser/frame_host/back_forward_cache_impl.cc b/content/browser/frame_host/back_forward_cache_impl.cc
+index cbd6bc1bf77519dd155b911e2a23d599814c37a4..f3516021938332aba3c2ce56ce3dcc625536344d 100644
+--- a/content/browser/frame_host/back_forward_cache_impl.cc
++++ b/content/browser/frame_host/back_forward_cache_impl.cc
+@@ -254,7 +254,7 @@ void BackForwardCacheImpl::PostTaskToDestroyEvictedFrames() {
+ }
+ 
+ void BackForwardCacheImpl::DisableForRenderFrameHost(GlobalFrameRoutingId id,
+-                                                     std::string_view reason) {
++                                                     absl::string_view reason) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   auto* rfh = RenderFrameHostImpl::FromID(id);
+   if (rfh)
+diff --git a/content/browser/frame_host/back_forward_cache_impl.h b/content/browser/frame_host/back_forward_cache_impl.h
+index e81ffc453710ee117bbc7080c3930ad6e1e5ff95..4f650d6e833d758f04d66ea0debff97e57c9d89b 100644
+--- a/content/browser/frame_host/back_forward_cache_impl.h
++++ b/content/browser/frame_host/back_forward_cache_impl.h
+@@ -149,7 +149,7 @@ class CONTENT_EXPORT BackForwardCacheImpl : public BackForwardCache {
+ 
+   // BackForwardCache:
+   void DisableForRenderFrameHost(GlobalFrameRoutingId id,
+-                                 std::string_view reason) override;
++                                 absl::string_view reason) override;
+ 
+  private:
+   // Destroys all evicted frames in the BackForwardCache.
+diff --git a/content/public/browser/back_forward_cache.h b/content/public/browser/back_forward_cache.h
+index f7abe8bec74130587b09d66b37f04a7d28ab3705..e373c7bdac530dbf8f1b4bef3108ca1ca8fbd87f 100644
+--- a/content/public/browser/back_forward_cache.h
++++ b/content/public/browser/back_forward_cache.h
+@@ -43,7 +43,7 @@ class CONTENT_EXPORT BackForwardCache {
+   // |id|: If no RenderFrameHost can be found for the given id nothing happens.
+   // |reason|: Free form string to be used in logging and metrics.
+   virtual void DisableForRenderFrameHost(GlobalFrameRoutingId id,
+-                                         std::string_view reason) = 0;
++                                         absl::string_view reason) = 0;
+ 
+  protected:
+   BackForwardCache() = default;
