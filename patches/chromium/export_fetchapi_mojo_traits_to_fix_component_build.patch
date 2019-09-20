@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Fri, 20 Sep 2019 16:44:18 -0400
+Subject: export FetchAPI mojo traits to fix component build
+
+Without these, we get link errors in the component build when using the
+blink::CloneableMessage mojo traits.
+
+diff --git a/third_party/blink/public/common/fetch/fetch_api_request_body_mojom_traits.h b/third_party/blink/public/common/fetch/fetch_api_request_body_mojom_traits.h
+index ecd5fce034459037546b3a71d59ec6586d242040..fb1d6b305dd5976cfcc55c8b91193a09cac2926d 100644
+--- a/third_party/blink/public/common/fetch/fetch_api_request_body_mojom_traits.h
++++ b/third_party/blink/public/common/fetch/fetch_api_request_body_mojom_traits.h
+@@ -11,12 +11,13 @@
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "services/network/public/cpp/resource_request_body.h"
+ #include "services/network/public/mojom/url_loader.mojom.h"
++#include "third_party/blink/public/common/common_export.h"
+ #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom.h"
+ 
+ namespace mojo {
+ 
+ template <>
+-struct StructTraits<blink::mojom::FetchAPIRequestBodyDataView,
++struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::FetchAPIRequestBodyDataView,
+                     scoped_refptr<network::ResourceRequestBody>> {
+   static bool IsNull(const scoped_refptr<network::ResourceRequestBody>& r) {
+     return !r;
+@@ -46,7 +47,7 @@ struct StructTraits<blink::mojom::FetchAPIRequestBodyDataView,
+ };
+ 
+ template <>
+-struct StructTraits<blink::mojom::FetchAPIDataElementDataView,
++struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::FetchAPIDataElementDataView,
+                     network::DataElement> {
+   static const network::mojom::DataElementType& type(
+       const network::DataElement& element) {
