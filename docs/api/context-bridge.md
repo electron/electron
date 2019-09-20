@@ -109,7 +109,7 @@ has been included below for completeness.
 | `Boolean` | ✅ | ✅ | N/A |
 | `Object` | ✅ | ✅ | Keys and values must be supported in this table.  Prototype modifications are dropped.  Sending custom classes will copy values but not the prototype. |
 | `Error` | ✅ | ✅ | Errors that are thrown are also copied, this can result in the message and stack trace of the error changing slightly due to being thrown in a different context |
-| `Promise` | ❌ | ✅ | Promises are proxied through the bridge **only** if it is the return value, promises as function parameters are dropped |
+| `Promise` | ✅ | ✅ | Promises are proxied through the bridge **only** if it is the return value, promises as function parameters are dropped |
 | `Function` | ❌ | ❌ | N/A |
 | `Symbol` | ❌ | ❌ | Symbols cannot be copied across contexts so they are dropped |
 
