@@ -13,8 +13,8 @@
 #include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
+#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
 #include "shell/common/gin_converters/value_converter_gin_adapter.h"
-#include "shell/common/native_mate_converters/blink_converter.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
@@ -81,8 +81,8 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
                                 bool internal,
                                 const std::string& channel,
                                 const blink::CloneableMessage& arguments) {
+    electron::util::Promise<blink::CloneableMessage> p(isolate);
     auto handle = p.GetHandle();
-    electron::util::Promise<base::CloneableMessage> p(isolate);
 
     electron_browser_ptr_->get()->Invoke(
         internal, channel, arguments.ShallowClone(),

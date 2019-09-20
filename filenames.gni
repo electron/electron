@@ -483,6 +483,7 @@ filenames = {
     "shell/common/gin_converters/net_converter.cc",
     "shell/common/gin_converters/net_converter.h",
     "shell/common/gin_converters/std_converter.h",
+    "shell/common/gin_converters/blink_converter_gin_adapter.h",
     "shell/common/gin_converters/value_converter_gin_adapter.h",
     "shell/common/gin_helper/callback.cc",
     "shell/common/gin_helper/callback.h",
