@@ -570,8 +570,6 @@ describe('webContents module', () => {
 
         const [, zoomDirection] = await emittedOnce(w.webContents, 'zoom-changed')
         expect(zoomDirection).to.equal(zoomingIn ? 'in' : 'out')
-        // Apparently we get two zoom-changed events??
-        await emittedOnce(w.webContents, 'zoom-changed')
       }
 
       await testZoomChanged({ zoomingIn: true })
