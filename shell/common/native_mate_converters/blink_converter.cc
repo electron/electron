@@ -531,7 +531,7 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
 namespace {
 class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
  public:
-  V8SerializerDelegate(v8::Isolate* isolate) : isolate_(isolate) {}
+  explicit V8SerializerDelegate(v8::Isolate* isolate) : isolate_(isolate) {}
   ~V8SerializerDelegate() override = default;
   void ThrowDataCloneError(v8::Local<v8::String> message) override {
     isolate_->ThrowException(v8::Exception::Error(message));
@@ -638,7 +638,7 @@ v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(
 bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
                                                 v8::Handle<v8::Value> val,
                                                 blink::CloneableMessage* out) {
-  // TODO: don't swallow exceptions
+  // TODO(nornagon): don't swallow exceptions
   V8SerializerDelegate delegate(isolate);
   v8::ValueSerializer serializer(isolate, &delegate);
   delegate.serializer_ = &serializer;
