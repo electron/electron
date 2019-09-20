@@ -63,6 +63,10 @@ For instance, to use the China mirror:
 
 ```plaintext
 ELECTRON_MIRROR="https://npm.taobao.org/mirrors/electron/"
+
+// windows: 
+set ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/
+npm install
 ```
 
 #### Cache
