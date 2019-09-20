@@ -77,8 +77,8 @@ steps:
     python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
   displayName: 'Verify ffmpeg'
 
-- script: |
-    taskkill /F /IM electron.exe
-    taskkill /F /IM MicrosoftEdge.exe
+- powershell: |
+    Get-Process | Where Name –Like "electron*" | Stop-Process
+    Get-Process | Where Name –Like "MicrosoftEdge*" | Stop-Process
   displayName: 'Kill processes left running from last test run'
   condition: always()
