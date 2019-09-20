@@ -1588,7 +1588,7 @@ describe('BrowserWindow module', () => {
         })
         w.loadFile(path.join(fixtures, 'api', 'preload.html'))
         const [, test] = await emittedOnce(ipcMain, 'answer')
-        expect(test.toString()).to.eql('buffer')
+        expect(test).to.eql(Buffer.from('buffer'))
       })
       it('has synchronous access to all eventual window APIs', async () => {
         const preload = path.join(fixtures, 'module', 'access-blink-apis.js')
