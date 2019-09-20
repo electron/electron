@@ -143,9 +143,9 @@ void test(mate::Arguments* args) {
   std::cout << "test" << std::endl;
 }
 
-// GC wrapper for a non-GC frame
+// GC wrapper for a media::VideoFrame object
 // (When accessing the API from JS)
-// TODO: groom
+// TODO: groom, turn into a class
 struct Frame : mate::Wrappable<Frame> {
   Frame(v8::Isolate* isolate, scoped_refptr<media::VideoFrame> frame)
       : frame_(std::move(frame)) {
@@ -227,6 +227,9 @@ struct Frame : mate::Wrappable<Frame> {
   scoped_refptr<media::VideoFrame> frame_;
 };
 
+// Non-GC wrapper for a media::VideoFrame object
+// (When accessing the API from C++)
+// TODO: Create helpers that convert plane enums
 struct NonGCFrame final : CustomMediaStream::VideoFrame {
   explicit NonGCFrame(scoped_refptr<media::VideoFrame> frame) : frame_(frame) {}
 
@@ -276,10 +279,17 @@ struct NonGCFrame final : CustomMediaStream::VideoFrame {
   scoped_refptr<media::VideoFrame> frame_;
 };
 
-struct ControlObject final
-    : CustomMediaStream::VideoFrameCallback {  // not dereving from
-                                               // mate::wrappable because we
-                                               // need 2 internal fields
+// Controller wrapper object, holds media::VideoFramePool
+// and allows to allocate, enqueue and deallocate frames
+// NOTE: Not deriving from mate::wrappable because
+// we need 2 internal fields
+// TODO: improve naming, may be name all wrappers as ***Wrapper?
+// TODO: turn into a class, groom
+// TODO: incapsulate private members, add accessors
+struct ControlObject final : CustomMediaStream::VideoFrameCallback {
+  // Ctor sets only the weak reference to the wrapper
+  // so you need to call wrapper() function after ctor
+  // otherwise it will be garbage collected
   ControlObject(v8::Isolate* isolate, gfx::Size resolution)
       : isolate_(isolate), resolution_(resolution) {
     auto templ = GetConstructor(isolate);
@@ -314,6 +324,8 @@ struct ControlObject final
     wrapper_.Reset();
   }
 
+  // Creates or retrieves an existing function template of this object
+  // and sets up instance and prototype templates
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate) {
     auto* data = gin::PerIsolateData::From(isolate);
     auto templ = data->GetFunctionTemplate(&kWrapperInfo);
@@ -348,6 +360,7 @@ struct ControlObject final
         .SetMethod("queueFrame", &ControlObject::queue);
   }
 
+  // Creates the object and sets a strong local ref to it
   static std::pair<v8::Local<v8::Object>, ControlObject*> create(
       v8::Isolate* isolate,
       gfx::Size resolution) {
@@ -355,18 +368,21 @@ struct ControlObject final
     return std::make_pair(p->wrapper(), p);
   }
 
+  // Allocates a GC wrapper for a media::VideoFrame
   Frame* allocate(gfx::Size size, base::TimeDelta timestamp) {
     auto f = framePool_.CreateFrame(media::PIXEL_FORMAT_I420, size,
                                     gfx::Rect(size), size, timestamp);
     return new Frame(isolate(), f);
   }
 
+  // Enqueues a GC wrapper of a media::VideoFrame
   void queue(Frame* frame, base::TimeTicks timestamp) {
     io_task_runner_->PostTask(FROM_HERE,
                               base::Bind(deliver_, frame->frame_, timestamp));
     frame->frame_ = nullptr;
   }
 
+  // Allocates a Non-GC wrapper for a media::VideoFrame
   CustomMediaStream::VideoFrame* allocateFrame(
       CustomMediaStream::Timestamp ts,
       CustomMediaStream::Format const* format) override {
@@ -378,6 +394,7 @@ struct ControlObject final
     return new NonGCFrame(f);
   }
 
+  // Enqueues a Non-GC wrapper of a media::VideoFrame
   void queueFrame(CustomMediaStream::Timestamp ts,
                   CustomMediaStream::VideoFrame* frame) override {
     NonGCFrame* f = static_cast<NonGCFrame*>(frame);
@@ -389,6 +406,7 @@ struct ControlObject final
     delete f;
   }
 
+  // Releases a Non-GC wrapper of a media::VideoFrame
   void releaseFrame(CustomMediaStream::VideoFrame* frame) override {
     NonGCFrame* f = static_cast<NonGCFrame*>(frame);
     delete f;
@@ -406,6 +424,7 @@ struct ControlObject final
   static gin::WrapperInfo kWrapperInfo;
 };
 
+// TODO: Mark virtual functions as virtual for better readibility
 struct CustomCapturerSource : media::VideoCapturerSource {
   CustomCapturerSource(
       v8::Isolate* isolate,
