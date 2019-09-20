@@ -7,6 +7,7 @@
 
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "extensions/renderer/v8_schema_registry.h"
 #include "native_mate/dictionary.h"
 #include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/once_callback.h"
@@ -81,6 +82,22 @@ RenderFramePersistenceStore* GetOrCreateStore(
   return store_map_[render_frame];
 }
 
+// Sourced from "extensions/renderer/v8_schema_registry.cc"
+// Recursively freezes every v8 object on |object|.
+void DeepFreeze(const v8::Local<v8::Object>& object,
+                const v8::Local<v8::Context>& context) {
+  v8::Local<v8::Array> property_names =
+      object->GetOwnPropertyNames(context).ToLocalChecked();
+  for (uint32_t i = 0; i < property_names->Length(); ++i) {
+    v8::Local<v8::Value> child =
+        object->Get(context, property_names->Get(context, i).ToLocalChecked())
+            .ToLocalChecked();
+    if (child->IsObject())
+      DeepFreeze(v8::Local<v8::Object>::Cast(child), context);
+  }
+  object->SetIntegrityLevel(context, v8::IntegrityLevel::kFrozen);
+}
+
 }  // namespace
 
 v8::Local<v8::Value> PassValueToOtherContext(v8::Local<v8::Context> source,
@@ -122,12 +139,21 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
   v8::Local<v8::Function> func =
       (std::get<0>(store->functions()[func_index])).Get(args->isolate());
 
+  std::vector<v8::Local<v8::Value>> original_args;
+  std::vector<v8::Local<v8::Value>> proxied_args;
+  args->GetRemaining(&original_args);
+  for (auto value : original_args) {
+    proxied_args.push_back(
+        PassValueToOtherContext(calling_context, func_owning_context, value));
+  }
+
   v8::MaybeLocal<v8::Value> maybe_return_value;
   bool did_error = false;
   std::string error_message;
   {
     v8::TryCatch try_catch(args->isolate());
-    maybe_return_value = func->Call(func_owning_context, func, 0, {});
+    maybe_return_value = func->Call(func_owning_context, func,
+                                    proxied_args.size(), proxied_args.data());
     if (try_catch.HasCaught()) {
       did_error = true;
       auto message = try_catch.Message();
@@ -229,7 +255,8 @@ mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
         proxy.SetMethod(key_str, base::BindRepeating(&ProxyFunctionWrapper,
                                                      store, func_id));
       }
-    } else if (value->IsObject() && !value->IsNullOrUndefined()) {
+    } else if (value->IsObject() && !value->IsNullOrUndefined() &&
+               !value->IsArray()) {
       mate::Dictionary sub_api(
           api.isolate(),
           value->ToObject(api.isolate()->GetCurrentContext()).ToLocalChecked());
@@ -263,10 +290,11 @@ void ExposeReverseBindingInIsolatedWorld(const std::string& key,
 
   {
     v8::Context::Scope isolated_context_scope(isolated_context);
+    mate::Dictionary proxy =
+        CreateProxyForAPI(reverse_api, main_context, isolated_context, store);
+    DeepFreeze(proxy.GetHandle(), isolated_context);
     store->GetReverseBindingsStore(reverse_api.isolate())
-        .SetReadOnlyNonConfigurable(
-            key, CreateProxyForAPI(reverse_api, main_context, isolated_context,
-                                   store));
+        .SetReadOnlyNonConfigurable(key, proxy);
   }
 }
 
@@ -281,7 +309,8 @@ void ExposeAPIInMainWorld(const std::string& key,
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
   mate::Dictionary global(main_context->GetIsolate(), main_context->Global());
 
-  v8::Local<v8::Context> isolated_context = api.isolate()->GetCurrentContext();
+  v8::Local<v8::Context> isolated_context =
+      frame->WorldScriptContext(api.isolate(), World::ISOLATED_WORLD);
 
   bool allow_reverse_binding = false;
   if (options.has_value())
@@ -295,6 +324,7 @@ void ExposeAPIInMainWorld(const std::string& key,
       proxy.SetMethod("bind", base::BindRepeating(
                                   &ExposeReverseBindingInIsolatedWorld, key));
     }
+    DeepFreeze(proxy.GetHandle(), main_context);
     global.SetReadOnlyNonConfigurable(key, proxy);
   }
 }
