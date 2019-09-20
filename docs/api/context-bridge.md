@@ -45,7 +45,7 @@ The `contextBridge` module has the following instance methods:
 * `apiKey` String - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
 * `api` Record<String, any> - Your API object, more information on what this API can be and how it works is available below.
 * `options` Object (optional)
-  * `allowReverseBinding` Boolean - Allows the renderer to bind a [Reverse Binding]() back into the isolated context to allow bidirection communication.
+  * `allowReverseBinding` Boolean - Allows the renderer to bind a [Reverse Binding](#reverse-bindings) back into the isolated context to allow bidirection communication.
 
 ### `contextBridge.getReverseBinding(apiKey)`
 
@@ -57,7 +57,7 @@ Returns `Record<String, any> | null` the reverse bound API provided by the main 
 
 ### API Objects
 
-The `api` object provided to both [`bindAPIInMainWorld`]() and [Reverse Bindings (`window[apiKey].bind`)]() must be an object
+The `api` object provided to both [`bindAPIInMainWorld`](#contextbridgebindapiinmainworldapikey-api-options) and [Reverse Bindings (`window[apiKey].bind`)](#reverse-bindings) must be an object
 whose keys are strings and values are a `Function`, `String`, `Number`, `Array` or another nested object that meets the same conditions.
 
 `Function` values are proxied to the other context and all other values are **copied** and **frozen**.  I.e. Any data / primtives sent in
