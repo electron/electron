@@ -3008,6 +3008,17 @@ describe('BrowserWindow module', () => {
         w.setFullScreen(true)
       })
 
+      it('does not crash when exiting simpleFullScreen', (done) => {
+        w.destroy()
+        w = new BrowserWindow()
+        w.setSimpleFullScreen(true)
+
+        setTimeout(() => {
+          w.setFullScreen(!w.isFullScreen())
+          done()
+        }, 1000)
+      })
+
       it('should not be changed by setKiosk method', (done) => {
         w.destroy()
         w = new BrowserWindow()
