@@ -424,7 +424,10 @@ struct ControlObject final : CustomMediaStream::VideoFrameCallback {
   static gin::WrapperInfo kWrapperInfo;
 };
 
+// Capture source object, holds the controller
+// and manages emission of frames
 // TODO: Mark virtual functions as virtual for better readibility
+// TODO: remove unnecessary move calls
 struct CustomCapturerSource : media::VideoCapturerSource {
   CustomCapturerSource(
       v8::Isolate* isolate,
@@ -462,19 +465,32 @@ struct CustomCapturerSource : media::VideoCapturerSource {
   void Resume() override { onStartCapture_.Run(control_); }
 
   void MaybeSuspend() override {
-    if (!blink::ScriptForbiddenScope::
-            IsScriptForbidden())  // in some circumstances this can be called
-                                  // from Document::Shutdown
+    // In some circumstances this can be called
+    // from Document::Shutdown
+    if (!blink::ScriptForbiddenScope::IsScriptForbidden())
       onStopCapture_.Run();
   }
 
+  // Controller wrapper
   v8::Global<v8::Value> control_wrapper_;
+
+  // Controller
   ControlObject* control_;
+
+  // Video format specification
   media::VideoCaptureFormat format_;
+
+  // User-defined startCapture callback
   base::RepeatingCallback<void(ControlObject*)> onStartCapture_;
+
+  // User-defined stopCapture callback
   base::RepeatingCallback<void()> onStopCapture_;
 };
 
+// Creates a WebKit media stream track based on the
+// CustomCapturerSource which allows a user to
+// provide his frames
+// TODO: Groom
 blink::WebMediaStreamTrack createTrack(
     v8::Isolate* isolate,
     gfx::Size resolution,
@@ -509,6 +525,7 @@ blink::WebMediaStreamTrack createTrack(
   return track;
 }
 
+// Registers module functions
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -521,11 +538,12 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-// template<>
+// TODO: Why impl is here?
 v8::Local<v8::Value> mate::Converter<ControlObject*>::ToV8(v8::Isolate* isolate,
                                                            ControlObject* v) {
   return v->wrapper();
 }
+
 gin::WrapperInfo ControlObject::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 NODE_LINKED_MODULE_CONTEXT_AWARE(atom_renderer_custom_media_stream, Initialize)
