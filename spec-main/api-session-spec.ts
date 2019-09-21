@@ -736,7 +736,7 @@ describe('session module', () => {
 
   describe('ses.createInterruptedDownload(options)', () => {
     afterEach(closeAllWindows)
-    it('can create an interrupted download item', (done) => {
+    it('can create an interrupted download item', async () => {
       const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
       const options = {
         path: downloadFilePath,
@@ -746,17 +746,16 @@ describe('session module', () => {
         length: 5242880
       }
       const w = new BrowserWindow({ show: false })
-      w.webContents.session.once('will-download', function (e, item) {
-        expect(item.getState()).to.equal('interrupted')
-        item.cancel()
-        expect(item.getURLChain()).to.deep.equal(options.urlChain)
-        expect(item.getMimeType()).to.equal(options.mimeType)
-        expect(item.getReceivedBytes()).to.equal(options.offset)
-        expect(item.getTotalBytes()).to.equal(options.length)
-        expect(item.savePath).to.equal(downloadFilePath)
-        done()
-      })
+      const p = emittedOnce(w.webContents.session, 'will-download')
       w.webContents.session.createInterruptedDownload(options)
+      const [, item] = await p
+      expect(item.getState()).to.equal('interrupted')
+      item.cancel()
+      expect(item.getURLChain()).to.deep.equal(options.urlChain)
+      expect(item.getMimeType()).to.equal(options.mimeType)
+      expect(item.getReceivedBytes()).to.equal(options.offset)
+      expect(item.getTotalBytes()).to.equal(options.length)
+      expect(item.savePath).to.equal(downloadFilePath)
     })
 
     it('can be resumed', async () => {

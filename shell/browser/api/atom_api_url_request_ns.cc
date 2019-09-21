@@ -401,7 +401,7 @@ void URLRequestNS::OnComplete(bool success) {
 
 void URLRequestNS::OnResponseStarted(
     const GURL& final_url,
-    const network::ResourceResponseHead& response_head) {
+    const network::mojom::URLResponseHead& response_head) {
   // Don't emit any event after request cancel.
   if (request_state_ & STATE_ERROR)
     return;
@@ -413,7 +413,7 @@ void URLRequestNS::OnResponseStarted(
 
 void URLRequestNS::OnRedirect(
     const net::RedirectInfo& redirect_info,
-    const network::ResourceResponseHead& response_head,
+    const network::mojom::URLResponseHead& response_head,
     std::vector<std::string>* to_be_removed_headers) {
   if (!loader_)
     return;
