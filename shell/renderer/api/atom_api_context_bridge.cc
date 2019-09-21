@@ -342,7 +342,7 @@ void ExposeAPIInMainWorld(const std::string& key,
   v8::Local<v8::Context> isolated_context =
       frame->WorldScriptContext(api.isolate(), World::ISOLATED_WORLD);
 
-  bool allow_reverse_binding = false;
+  bool allow_reverse_binding = true;
   if (options.has_value())
     options->Get("allowReverseBinding", &allow_reverse_binding);
 
