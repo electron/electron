@@ -105,7 +105,8 @@ void DeepFreeze(const v8::Local<v8::Object>& object,
 // destroyed afterwards.
 class UnsafePromiseHandle {
  public:
-  UnsafePromiseHandle(electron::util::Promise<v8::Local<v8::Value>> promise)
+  explicit UnsafePromiseHandle(
+      electron::util::Promise<v8::Local<v8::Value>> promise)
       : promise_(std::move(promise)), has_handle_(true) {}
 
   electron::util::Promise<v8::Local<v8::Value>> TakePromise() {
