@@ -1,15 +1,18 @@
 'use strict'
 
+import { WebContents } from 'electron'
+
 const v8Util = process.electronBinding('v8_util')
 
-const getOwnerKey = (webContents, contextId) => {
+const getOwnerKey = (webContents: WebContents, contextId: string) => {
   return `${webContents.id}-${contextId}`
 }
 
 class ObjectsRegistry {
+  nextId: number = 0
+  storage: Record<number, { count: number, object: any }>
+  owners: Record<string, Map<number, number>>
   constructor () {
-    this.nextId = 0
-
     // Stores all objects by ref-counting.
     // (id) => {object, count}
     this.storage = {}
@@ -21,7 +24,7 @@ class ObjectsRegistry {
 
   // Register a new object and return its assigned ID. If the object is already
   // registered then the already assigned ID would be returned.
-  add (webContents, contextId, obj) {
+  add (webContents: WebContents, contextId: string, obj: any) {
     // Get or assign an ID to the object.
     const id = this.saveToStorage(obj)
 
@@ -38,12 +41,12 @@ class ObjectsRegistry {
       this.storage[id].count++
     }
 
-    owner.set(id, owner.get(id) + 1)
+    owner.set(id, owner.get(id)! + 1)
     return id
   }
 
   // Get an object according to its ID.
-  get (id) {
+  get (id: number) {
     const pointer = this.storage[id]
     if (pointer != null) return pointer.object
   }
@@ -59,11 +62,11 @@ class ObjectsRegistry {
   // object
   // For more details on why we do renderer side ref counting see
   // https://github.com/electron/electron/pull/17464
-  remove (webContents, contextId, id, rendererSideRefCount) {
+  remove (webContents: WebContents, contextId: string, id: number, rendererSideRefCount: number) {
     const ownerKey = getOwnerKey(webContents, contextId)
     const owner = this.owners[ownerKey]
     if (owner && owner.has(id)) {
-      const newRefCount = owner.get(id) - rendererSideRefCount
+      const newRefCount = owner.get(id)! - rendererSideRefCount
 
       // Only completely remove if the number of references GCed in the
       // renderer is the same as the number of references we sent them
@@ -79,7 +82,7 @@ class ObjectsRegistry {
   }
 
   // Clear all references to objects refrenced by the WebContents.
-  clear (webContents, contextId) {
+  clear (webContents: WebContents, contextId: string) {
     const ownerKey = getOwnerKey(webContents, contextId)
     const owner = this.owners[ownerKey]
     if (!owner) return
@@ -90,8 +93,8 @@ class ObjectsRegistry {
   }
 
   // Private: Saves the object into storage and assigns an ID for it.
-  saveToStorage (object) {
-    let id = v8Util.getHiddenValue(object, 'atomId')
+  saveToStorage (object: any) {
+    let id: number = v8Util.getHiddenValue(object, 'atomId')
     if (!id) {
       id = ++this.nextId
       this.storage[id] = {
@@ -104,7 +107,7 @@ class ObjectsRegistry {
   }
 
   // Private: Dereference the object from store.
-  dereference (id) {
+  dereference (id: number) {
     const pointer = this.storage[id]
     if (pointer == null) {
       return
@@ -117,17 +120,17 @@ class ObjectsRegistry {
   }
 
   // Private: Clear the storage when renderer process is destroyed.
-  registerDeleteListener (webContents, contextId) {
+  registerDeleteListener (webContents: WebContents, contextId: string) {
     // contextId => ${processHostId}-${contextCount}
     const processHostId = contextId.split('-')[0]
-    const listener = (event, deletedProcessHostId) => {
+    const listener = (event: any, deletedProcessHostId: string) => {
       if (deletedProcessHostId &&
           deletedProcessHostId.toString() === processHostId) {
-        webContents.removeListener('render-view-deleted', listener)
+        webContents.removeListener('render-view-deleted' as any, listener)
         this.clear(webContents, contextId)
       }
     }
-    webContents.on('render-view-deleted', listener)
+    webContents.on('render-view-deleted' as any, listener)
   }
 }
 

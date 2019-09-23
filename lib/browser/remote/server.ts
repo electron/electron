@@ -1,7 +1,9 @@
 'use strict'
 
-const electron = require('electron')
-const { EventEmitter } = require('events')
+import * as electron from 'electron'
+import { EventEmitter } from 'events'
+import { isBuffer, bufferToMeta, BufferMeta, metaToBuffer } from '@electron/internal/common/remote/buffer-utils'
+import { ipcMainInternal } from '../ipc-main-internal'
 
 const v8Util = process.electronBinding('v8_util')
 const eventBinding = process.electronBinding('event')
@@ -11,10 +13,9 @@ if (!features.isRemoteModuleEnabled()) {
   throw new Error('remote module is disabled')
 }
 
-const { ipcMainInternal } = require('@electron/internal/browser/ipc-main-internal')
+// const { ipcMainInternal } = require('@electron/internal/browser/ipc-main-internal')
 const objectsRegistry = require('@electron/internal/browser/remote/objects-registry')
 const guestViewManager = require('@electron/internal/browser/guest-view-manager')
-const bufferUtils = require('@electron/internal/common/remote/buffer-utils')
 const errorUtils = require('@electron/internal/common/error-utils')
 const { isPromise } = require('@electron/internal/common/remote/is-promise')
 
@@ -29,8 +30,16 @@ const FUNCTION_PROPERTIES = [
 // id => Function
 const rendererFunctions = v8Util.createDoubleIDWeakMap()
 
+type ObjectMember = {
+  name: string,
+  value?: any,
+  enumerable?: boolean,
+  writable?: boolean,
+  type?: 'method' | 'get'
+}
+
 // Return the description of object's members:
-const getObjectMembers = function (object) {
+const getObjectMembers = function (object: any): ObjectMember[] {
   let names = Object.getOwnPropertyNames(object)
   // For Function, we should not override following properties even though they
   // are "own" properties.
@@ -41,20 +50,26 @@ const getObjectMembers = function (object) {
   }
   // Map properties to descriptors.
   return names.map((name) => {
-    const descriptor = Object.getOwnPropertyDescriptor(object, name)
-    const member = { name, enumerable: descriptor.enumerable, writable: false }
+    const descriptor = Object.getOwnPropertyDescriptor(object, name)!
+    let type: ObjectMember['type']
+    let writable = false
     if (descriptor.get === undefined && typeof object[name] === 'function') {
-      member.type = 'method'
+      type = 'method'
     } else {
-      if (descriptor.set || descriptor.writable) member.writable = true
-      member.type = 'get'
+      if (descriptor.set || descriptor.writable) writable = true
+      type = 'get'
     }
-    return member
+    return { name, enumerable: descriptor.enumerable, writable, type }
   })
 }
 
+type ObjProtoDescriptor = {
+  members: ObjectMember[],
+  proto: ObjProtoDescriptor
+} | null
+
 // Return the description of object's prototype.
-const getObjectPrototype = function (object) {
+const getObjectPrototype = function (object: any): ObjProtoDescriptor {
   const proto = Object.getPrototypeOf(object)
   if (proto === null || proto === Object.prototype) return null
   return {
@@ -63,74 +78,128 @@ const getObjectPrototype = function (object) {
   }
 }
 
+type MetaType = {
+  type: 'number',
+  value: number
+} | {
+  type: 'boolean',
+  value: boolean
+} | {
+  type: 'string',
+  value: string
+} | {
+  type: 'bigint',
+  value: bigint
+} | {
+  type: 'symbol',
+  value: symbol
+} | {
+  type: 'undefined',
+  value: undefined
+} | {
+  type: 'object' | 'function',
+  name: string,
+  members: ObjectMember[],
+  proto: ObjProtoDescriptor,
+  id: number,
+} | {
+  type: 'value',
+  value: any,
+} | {
+  type: 'buffer',
+  value: BufferMeta,
+} | {
+  type: 'array',
+  members: MetaType[]
+} | {
+  type: 'error',
+  members: ObjectMember[]
+} | {
+  type: 'date',
+  value: number
+} | {
+  type: 'promise',
+  then: MetaType
+}
+
 // Convert a real value into meta data.
-const valueToMeta = function (sender, contextId, value, optimizeSimpleObject = false) {
+const valueToMeta = function (sender: electron.WebContents, contextId: string, value: any, optimizeSimpleObject = false): MetaType {
   // Determine the type of value.
-  const meta = { type: typeof value }
-  if (meta.type === 'object') {
+  let type: MetaType['type'] = typeof value
+  if (type === 'object') {
     // Recognize certain types of objects.
     if (value === null) {
-      meta.type = 'value'
-    } else if (bufferUtils.isBuffer(value)) {
-      meta.type = 'buffer'
+      type = 'value'
+    } else if (isBuffer(value)) {
+      type = 'buffer'
     } else if (Array.isArray(value)) {
-      meta.type = 'array'
+      type = 'array'
     } else if (value instanceof Error) {
-      meta.type = 'error'
+      type = 'error'
     } else if (value instanceof Date) {
-      meta.type = 'date'
+      type = 'date'
     } else if (isPromise(value)) {
-      meta.type = 'promise'
+      type = 'promise'
     } else if (hasProp.call(value, 'callee') && value.length != null) {
       // Treat the arguments object as array.
-      meta.type = 'array'
+      type = 'array'
     } else if (optimizeSimpleObject && v8Util.getHiddenValue(value, 'simple')) {
       // Treat simple objects as value.
-      meta.type = 'value'
+      type = 'value'
     }
   }
 
   // Fill the meta object according to value's type.
-  if (meta.type === 'array') {
-    meta.members = value.map((el) => valueToMeta(sender, contextId, el, optimizeSimpleObject))
-  } else if (meta.type === 'object' || meta.type === 'function') {
-    meta.name = value.constructor ? value.constructor.name : ''
-
-    // Reference the original value if it's an object, because when it's
-    // passed to renderer we would assume the renderer keeps a reference of
-    // it.
-    meta.id = objectsRegistry.add(sender, contextId, value)
-    meta.members = getObjectMembers(value)
-    meta.proto = getObjectPrototype(value)
-  } else if (meta.type === 'buffer') {
-    meta.value = bufferUtils.bufferToMeta(value)
-  } else if (meta.type === 'promise') {
+  if (type === 'array') {
+    return {
+      type,
+      members: value.map((el: any) => valueToMeta(sender, contextId, el, optimizeSimpleObject))
+    }
+  } else if (type === 'object' || type === 'function') {
+    return {
+      type,
+      name: value.constructor ? value.constructor.name : '',
+      // Reference the original value if it's an object, because when it's
+      // passed to renderer we would assume the renderer keeps a reference of
+      // it.
+      id: objectsRegistry.add(sender, contextId, value),
+      members: getObjectMembers(value),
+      proto: getObjectPrototype(value)
+    }
+  } else if (type === 'buffer') {
+    return { type, value: bufferToMeta(value) }
+  } else if (type === 'promise') {
     // Add default handler to prevent unhandled rejections in main process
     // Instead they should appear in the renderer process
     value.then(function () {}, function () {})
 
-    meta.then = valueToMeta(sender, contextId, function (onFulfilled, onRejected) {
-      value.then(onFulfilled, onRejected)
-    })
-  } else if (meta.type === 'error') {
-    meta.members = plainObjectToMeta(value)
+    return {
+      type,
+      then: valueToMeta(sender, contextId, function (onFulfilled: Function, onRejected: Function) {
+        value.then(onFulfilled, onRejected)
+      })
+    }
+  } else if (type === 'error') {
+    const members = plainObjectToMeta(value)
 
     // Error.name is not part of own properties.
-    meta.members.push({
+    members.push({
       name: 'name',
       value: value.name
     })
-  } else if (meta.type === 'date') {
-    meta.value = value.getTime()
+    return { type, members }
+  } else if (type === 'date') {
+    return { type, value: value.getTime() }
   } else {
-    meta.type = 'value'
-    meta.value = value
+    return {
+      type: 'value',
+      value
+    }
   }
-  return meta
 }
 
 // Convert object to meta by value.
-const plainObjectToMeta = function (obj) {
+const plainObjectToMeta = function (obj: any): ObjectMember[] {
   return Object.getOwnPropertyNames(obj).map(function (name) {
     return {
       name: name,
@@ -140,21 +209,21 @@ const plainObjectToMeta = function (obj) {
 }
 
 // Convert Error into meta data.
-const exceptionToMeta = function (error) {
+const exceptionToMeta = function (error: Error) {
   return {
     type: 'exception',
     value: errorUtils.serialize(error)
   }
 }
 
-const throwRPCError = function (message) {
-  const error = new Error(message)
+const throwRPCError = function (message: string) {
+  const error = new Error(message) as Error & {code: string, errno: number}
   error.code = 'EBADRPC'
   error.errno = -72
   throw error
 }
 
-const removeRemoteListenersAndLogWarning = (sender, callIntoRenderer) => {
+const removeRemoteListenersAndLogWarning = (sender: any, callIntoRenderer: (...args: any[]) => void) => {
   const location = v8Util.getHiddenValue(callIntoRenderer, 'location')
   let message = `Attempting to call a function in a renderer window that has been closed or released.` +
     `\nFunction provided here: ${location}`
@@ -167,7 +236,7 @@ const removeRemoteListenersAndLogWarning = (sender, callIntoRenderer) => {
     if (remoteEvents.length > 0) {
       message += `\nRemote event names: ${remoteEvents.join(', ')}`
       remoteEvents.forEach((eventName) => {
-        sender.removeListener(eventName, callIntoRenderer)
+        sender.removeListener(eventName as any, callIntoRenderer)
       })
     }
   }
@@ -175,9 +244,41 @@ const removeRemoteListenersAndLogWarning = (sender, callIntoRenderer) => {
   console.warn(message)
 }
 
+type MetaTypeFromRenderer = {
+  type: 'value',
+  value: any
+} | {
+  type: 'remote-object',
+  id: number
+} | {
+  type: 'array',
+  value: MetaTypeFromRenderer[]
+} | {
+  type: 'buffer',
+  value: BufferMeta
+} | {
+  type: 'date',
+  value: number
+} | {
+  type: 'promise',
+  then: MetaTypeFromRenderer
+} | {
+  type: 'object',
+  name: string,
+  members: { name: string, value: MetaTypeFromRenderer }[]
+} | {
+  type: 'function-with-return-value',
+  value: MetaTypeFromRenderer
+} | {
+  type: 'function',
+  id: number,
+  location: string,
+  length: number
+}
+
 // Convert array of meta data from renderer into array of real values.
-const unwrapArgs = function (sender, frameId, contextId, args) {
-  const metaToValue = function (meta) {
+const unwrapArgs = function (sender: electron.WebContents, frameId: number, contextId: string, args: any[]) {
+  const metaToValue = function (meta: MetaTypeFromRenderer): any {
     switch (meta.type) {
       case 'value':
         return meta.value
@@ -186,7 +287,7 @@ const unwrapArgs = function (sender, frameId, contextId, args) {
       case 'array':
         return unwrapArgs(sender, frameId, contextId, meta.value)
       case 'buffer':
-        return bufferUtils.metaToBuffer(meta.value)
+        return metaToBuffer(meta.value)
       case 'date':
         return new Date(meta.value)
       case 'promise':
@@ -194,7 +295,7 @@ const unwrapArgs = function (sender, frameId, contextId, args) {
           then: metaToValue(meta.then)
         })
       case 'object': {
-        const ret = {}
+        const ret: any = {}
         Object.defineProperty(ret.constructor, 'name', { value: meta.name })
 
         for (const { name, value } of meta.members) {
@@ -217,10 +318,10 @@ const unwrapArgs = function (sender, frameId, contextId, args) {
           return rendererFunctions.get(objectId)
         }
 
-        const callIntoRenderer = function (...args) {
+        const callIntoRenderer = function (this: any, ...args: any[]) {
           let succeed = false
           if (!sender.isDestroyed()) {
-            succeed = sender._sendToFrameInternal(frameId, 'ELECTRON_RENDERER_CALLBACK', contextId, meta.id, valueToMeta(sender, contextId, args))
+            succeed = (sender as any)._sendToFrameInternal(frameId, 'ELECTRON_RENDERER_CALLBACK', contextId, meta.id, valueToMeta(sender, contextId, args))
           }
           if (!succeed) {
             removeRemoteListenersAndLogWarning(this, callIntoRenderer)
@@ -234,20 +335,20 @@ const unwrapArgs = function (sender, frameId, contextId, args) {
         return callIntoRenderer
       }
       default:
-        throw new TypeError(`Unknown type: ${meta.type}`)
+        throw new TypeError(`Unknown type: ${(meta as any).type}`)
     }
   }
   return args.map(metaToValue)
 }
 
-const isRemoteModuleEnabledImpl = function (contents) {
-  const webPreferences = contents.getLastWebPreferences() || {}
+const isRemoteModuleEnabledImpl = function (contents: electron.WebContents) {
+  const webPreferences = (contents as any).getLastWebPreferences() || {}
   return !!webPreferences.enableRemoteModule
 }
 
 const isRemoteModuleEnabledCache = new WeakMap()
 
-const isRemoteModuleEnabled = function (contents) {
+const isRemoteModuleEnabled = function (contents: electron.WebContents) {
   if (!isRemoteModuleEnabledCache.has(contents)) {
     isRemoteModuleEnabledCache.set(contents, isRemoteModuleEnabledImpl(contents))
   }
@@ -255,8 +356,8 @@ const isRemoteModuleEnabled = function (contents) {
   return isRemoteModuleEnabledCache.get(contents)
 }
 
-const handleRemoteCommand = function (channel, handler) {
-  ipcMainInternal.on(channel, (event, contextId, ...args) => {
+const handleRemoteCommand = function (channel: string, handler: (event: ElectronInternal.IpcMainInternalEvent, contextId: string, ...args: any[]) => void) {
+  ipcMainInternal.on(channel, (event, contextId: string, ...args: any[]) => {
     let returnValue
     if (!isRemoteModuleEnabled(event.sender)) {
       event.returnValue = null
@@ -275,7 +376,7 @@ const handleRemoteCommand = function (channel, handler) {
   })
 }
 
-const emitCustomEvent = function (contents, eventName, ...args) {
+const emitCustomEvent = function (contents: electron.WebContents, eventName: string, ...args: any[]) {
   const event = eventBinding.createWithSender(contents)
 
   electron.app.emit(eventName, event, contents, ...args)
@@ -300,7 +401,7 @@ handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, modu
     if (customEvent.defaultPrevented) {
       throw new Error(`Blocked remote.require('${moduleName}')`)
     } else {
-      customEvent.returnValue = process.mainModule.require(moduleName)
+      customEvent.returnValue = process.mainModule!.require(moduleName)
     }
   }
 
@@ -314,7 +415,7 @@ handleRemoteCommand('ELECTRON_BROWSER_GET_BUILTIN', function (event, contextId, 
     if (customEvent.defaultPrevented) {
       throw new Error(`Blocked remote.getBuiltin('${moduleName}')`)
     } else {
-      customEvent.returnValue = electron[moduleName]
+      customEvent.returnValue = (electron as any)[moduleName]
     }
   }
 
@@ -328,7 +429,7 @@ handleRemoteCommand('ELECTRON_BROWSER_GLOBAL', function (event, contextId, globa
     if (customEvent.defaultPrevented) {
       throw new Error(`Blocked remote.getGlobal('${globalName}')`)
     } else {
-      customEvent.returnValue = global[globalName]
+      customEvent.returnValue = (global as any)[globalName]
     }
   }
 
@@ -385,8 +486,8 @@ handleRemoteCommand('ELECTRON_BROWSER_FUNCTION_CALL', function (event, contextId
   try {
     return valueToMeta(event.sender, contextId, func(...args), true)
   } catch (error) {
-    const err = new Error(`Could not call remote function '${func.name || 'anonymous'}'. Check that the function signature is correct. Underlying error: ${error.message}\nUnderlying stack: ${error.stack}\n`)
-    err.cause = error
+    const err = new Error(`Could not call remote function '${func.name || 'anonymous'}'. Check that the function signature is correct. Underlying error: ${error.message}\nUnderlying stack: ${error.stack}\n`);
+    (err as any).cause = error
     throw err
   }
 })
@@ -413,8 +514,8 @@ handleRemoteCommand('ELECTRON_BROWSER_MEMBER_CALL', function (event, contextId, 
   try {
     return valueToMeta(event.sender, contextId, object[method](...args), true)
   } catch (error) {
-    const err = new Error(`Could not call remote method '${method}'. Check that the method signature is correct. Underlying error: ${error.message}\nUnderlying stack: ${error.stack}\n`)
-    err.cause = error
+    const err = new Error(`Could not call remote method '${method}'. Check that the method signature is correct. Underlying error: ${error.message}\nUnderlying stack: ${error.stack}\n`);
+    (err as any).cause = error
     throw err
   }
 })

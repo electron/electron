@@ -39,7 +39,7 @@ export function isBuffer (value: BufferLike) {
   return ArrayBuffer.isView(value) || value instanceof ArrayBuffer
 }
 
-interface BufferMeta {
+export interface BufferMeta {
   type: keyof typeof typedArrays;
   data: Buffer;
   length: number | undefined;
