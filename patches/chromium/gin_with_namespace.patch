@@ -12,7 +12,7 @@ native_mate, and we should remove this patch once native_mate is erased
 from Electron.
 
 diff --git a/gin/arguments.h b/gin/arguments.h
-index eaded13e2991..03e1495566d1 100644
+index eaded13e29919793494dfe2f7f85fad7dcb125cf..03e1495566d1ab561dcd67517053173911288cea 100644
 --- a/gin/arguments.h
 +++ b/gin/arguments.h
 @@ -28,14 +28,14 @@ class GIN_EXPORT Arguments {
@@ -60,7 +60,7 @@ index eaded13e2991..03e1495566d1 100644
      (is_for_property_ ? info_for_property_->GetReturnValue()
                        : info_for_function_->GetReturnValue())
 diff --git a/gin/converter.h b/gin/converter.h
-index 27b4d0acd016..b19209a8534a 100644
+index 27b4d0acd016df378e4cb44ccda1a433244fe2c6..b19209a8534a497373c5a2f861b26502e96144c9 100644
 --- a/gin/converter.h
 +++ b/gin/converter.h
 @@ -250,7 +250,7 @@ std::enable_if_t<ToV8ReturnsMaybe<T>::value, bool> TryConvertToV8(

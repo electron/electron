@@ -2229,6 +2229,15 @@ double WebContents::GetZoomFactor() const {
   return content::ZoomLevelToZoomFactor(level);
 }
 
+void WebContents::SetZoomLimits(double min_zoom, double max_zoom) {
+  // Round the double to avoid returning incorrect minimum/maximum zoom
+  // percentages.
+  int minimum_percent = round(content::ZoomLevelToZoomFactor(min_zoom) * 100);
+  int maximum_percent = round(content::ZoomLevelToZoomFactor(max_zoom) * 100);
+  web_contents()->SetMinimumZoomPercent(minimum_percent);
+  web_contents()->SetMaximumZoomPercent(maximum_percent);
+}
+
 void WebContents::SetTemporaryZoomLevel(double level) {
   zoom_controller_->SetTemporaryZoomLevel(level);
 }
