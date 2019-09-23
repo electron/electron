@@ -542,6 +542,8 @@ class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
     v8::TryCatch try_catch(isolate);
     try_catch.SetVerbose(true);
     auto context = isolate->GetCurrentContext();
+
+#if 0  // JSON-y
     v8::Local<v8::String> stringified;
     if (!v8::JSON::Stringify(context, object).ToLocal(&stringified)) {
       WriteTag(1);
@@ -562,8 +564,8 @@ class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
     }
     CHECK(wrote_json);
     return v8::Just(true);
-
-    /*
+#else
+    WriteTag(0);
     auto properties = object->GetOwnPropertyNames(context);
     if (!properties.IsEmpty()) {
       auto props = properties.ToLocalChecked();
@@ -577,6 +579,15 @@ class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
         }
         CHECK(wrote_key);
         if (!serializer_->WriteValue(context, value).To(&wrote_value)) {
+          if (try_catch.HasCaught())
+            try_catch.ReThrow();
+          else
+            isolate->ThrowException(v8::Exception::Error(
+                gin::StringToV8(isolate, "Couldn't write value")));
+          return v8::Nothing<bool>();
+          /*
+          LOG(INFO) << gin::V8ToString(isolate, key);
+          LOG(INFO) << gin::V8ToString(isolate, try_catch.Message()->Get());
           // If we couldn't write the value (e.g. if it's a function), just
           // write undefined instead.
           if (!serializer_->WriteValue(context, v8::Undefined(isolate))
@@ -584,6 +595,7 @@ class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
             DCHECK(false);
             return v8::Nothing<bool>();
           }
+          */
         }
         CHECK(wrote_value);
       }
@@ -591,7 +603,7 @@ class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
       serializer_->WriteUint32(0);
     }
     return v8::Just(true);
-    */
+#endif
   }
   void WriteTag(uint8_t tag) { serializer_->WriteRawBytes(&tag, 1); }
   v8::ValueSerializer* serializer_;
@@ -609,6 +621,7 @@ class V8DeserializerDelegate : public v8::ValueDeserializer::Delegate {
     if (!ReadTag(&tag)) {
       return v8::MaybeLocal<v8::Object>();
     }
+#if 0  // JSON-y
     if (tag == 1) {
       return v8::MaybeLocal<v8::Object>(v8::Object::New(isolate));
     }
@@ -632,7 +645,10 @@ class V8DeserializerDelegate : public v8::ValueDeserializer::Delegate {
       return v8::MaybeLocal<v8::Object>();
     }
     return obj;
-    /*
+#else
+    if (tag != 0) {
+      return v8::MaybeLocal<v8::Object>();
+    }
     uint32_t length;
     if (!deserializer_->ReadUint32(&length)) {
       return v8::MaybeLocal<v8::Object>();
@@ -648,7 +664,7 @@ class V8DeserializerDelegate : public v8::ValueDeserializer::Delegate {
       ret->Set(context, key, value).Check();
     }
     return v8::MaybeLocal<v8::Object>(ret);
-    */
+#endif
   }
 
   bool ReadTag(uint8_t* tag) {
@@ -696,7 +712,7 @@ bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
   if (!serializer.WriteValue(isolate->GetCurrentContext(), val)
            .To(&wrote_value)) {
     DCHECK(try_catch.HasCaught());
-    LOG(INFO) << gin::V8ToString(isolate, try_catch.Message()->Get());
+    try_catch.ReThrow();
     return false;
   }
   CHECK(wrote_value);
