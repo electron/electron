@@ -337,7 +337,7 @@ void FillRequestDetails(base::DictionaryValue* details,
 
 void GetUploadData(base::ListValue* upload_data_list,
                    const net::URLRequest* request) {
-  const net::UploadDataStream* upload_data = request->get_upload();
+  const net::UploadDataStream* upload_data = request->get_upload_for_testing();
   if (!upload_data)
     return;
   const std::vector<std::unique_ptr<net::UploadElementReader>>* readers =
