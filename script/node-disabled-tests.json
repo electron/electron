@@ -295,6 +295,7 @@
   "parallel/test-vm-module-basic",
   "parallel/test-repl-sigint-nested-eval",
   "parallel/test-repl-sigint",
+  "parallel/test-util-inspect",
   "sequential/test-vm-timeout-rethrow",
   "parallel/test-vm-sigint",
   "parallel/test-vm-timeout",
