@@ -196,6 +196,7 @@ describe('webContents module', () => {
             var iframe = document.createElement('iframe')
             iframe.src = '${serverUrl}/slow'
             document.body.appendChild(iframe)
+            null // don't return the iframe
           `).then(() => {
             w.webContents.executeJavaScript('console.log(\'hello\')').then(() => {
               done()
@@ -211,13 +212,6 @@ describe('webContents module', () => {
           done()
         })
         w.loadURL(serverUrl)
-      })
-
-      it('works with result objects that have DOM class prototypes', async () => {
-        w.loadURL(serverUrl)
-        const result = await w.webContents.executeJavaScript('document.location')
-        expect(result.origin).to.equal(serverUrl)
-        expect(result.protocol).to.equal('http:')
       })
     })
   })

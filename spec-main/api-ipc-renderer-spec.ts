@@ -52,30 +52,22 @@ describe('ipcRenderer module', () => {
       expect(Buffer.from(data).equals(received)).to.be.true()
     })
 
-    it('can send objects with DOM class prototypes', async () => {
-      w.webContents.executeJavaScript(`{
+    it('throws an execption when sending objects with DOM class prototypes', async () => {
+      await expect(w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('message', document.location)
-      }`)
-      const [, value] = await emittedOnce(ipcMain, 'message')
-      expect(value.protocol).to.equal('about:')
-      expect(value.hostname).to.equal('')
+      }`)).to.eventually.be.rejected()
     })
 
-    it('does not crash on external objects (regression)', async () => {
-      w.webContents.executeJavaScript(`{
+    it('throws an exception when sending external objects', async () => {
+      await expect(w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
         const http = require('http')
 
-        const request = http.request({ port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/' })
         const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream
-        request.on('error', () => {})
 
         ipcRenderer.send('message', stream)
-      }`)
-      const [, externalStreamValue] = await emittedOnce(ipcMain, 'message')
-
-      expect(externalStreamValue).to.eql({})
+      }`)).to.eventually.be.rejected()
     })
 
     it('can send objects that both reference the same object', async () => {
@@ -180,9 +172,6 @@ describe('ipcRenderer module', () => {
     generateSpecs('with contextIsolation', { contextIsolation: true })
     generateSpecs('with contextIsolation + sandbox', { contextIsolation: true, sandbox: true })
   })
-  /*
-
-  */
 
   describe('ipcRenderer.on', () => {
     it('is not used for internals', async () => {

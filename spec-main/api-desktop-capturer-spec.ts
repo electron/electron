@@ -16,7 +16,7 @@ ifdescribe(features.isDesktopCapturerEnabled() && !process.arch.includes('arm') 
 
   const getSources: typeof desktopCapturer.getSources = (options: SourcesOptions) => {
     return w.webContents.executeJavaScript(`
-      require('electron').desktopCapturer.getSources(${JSON.stringify(options)})
+      require('electron').desktopCapturer.getSources(${JSON.stringify(options)}).then(m => JSON.parse(JSON.stringify(m)))
     `)
   }
 

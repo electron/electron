@@ -528,165 +528,13 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
   return true;
 }
 
-namespace {
-class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
- public:
-  explicit V8SerializerDelegate(v8::Isolate* isolate) : isolate_(isolate) {}
-  ~V8SerializerDelegate() override = default;
-  void ThrowDataCloneError(v8::Local<v8::String> message) override {
-    isolate_->ThrowException(v8::Exception::Error(message));
-    // LOG(INFO) << gin::V8ToString(isolate, message);
-  }
-  v8::Maybe<bool> WriteHostObject(v8::Isolate* isolate,
-                                  v8::Local<v8::Object> object) override {
-    v8::TryCatch try_catch(isolate);
-    try_catch.SetVerbose(true);
-    auto context = isolate->GetCurrentContext();
-
-#if 0  // JSON-y
-    v8::Local<v8::String> stringified;
-    if (!v8::JSON::Stringify(context, object).ToLocal(&stringified)) {
-      WriteTag(1);
-      LOG(INFO) << "stringify failed";
-      LOG(INFO) << gin::V8ToString(isolate, try_catch.Message()->Get());
-      return v8::Just(true);
-      /*
-      // TODO: throw exception
-      return v8::Nothing<bool>();
-      */
-    }
-    WriteTag(0);
-    bool wrote_json;
-    if (!serializer_->WriteValue(context, stringified).To(&wrote_json)) {
-      LOG(INFO) << "write failed";
-      // TODO: throw exception
-      return v8::Nothing<bool>();
-    }
-    CHECK(wrote_json);
-    return v8::Just(true);
-#else
-    WriteTag(0);
-    auto properties = object->GetOwnPropertyNames(context);
-    if (!properties.IsEmpty()) {
-      auto props = properties.ToLocalChecked();
-      serializer_->WriteUint32(props->Length());
-      for (size_t i = 0; i < props->Length(); i++) {
-        auto key = props->Get(context, i).ToLocalChecked();
-        auto value = object->Get(context, key).ToLocalChecked();
-        bool wrote_key, wrote_value;
-        if (!serializer_->WriteValue(context, key).To(&wrote_key)) {
-          return v8::Nothing<bool>();
-        }
-        CHECK(wrote_key);
-        if (!serializer_->WriteValue(context, value).To(&wrote_value)) {
-          if (try_catch.HasCaught())
-            try_catch.ReThrow();
-          else
-            isolate->ThrowException(v8::Exception::Error(
-                gin::StringToV8(isolate, "Couldn't write value")));
-          return v8::Nothing<bool>();
-          /*
-          LOG(INFO) << gin::V8ToString(isolate, key);
-          LOG(INFO) << gin::V8ToString(isolate, try_catch.Message()->Get());
-          // If we couldn't write the value (e.g. if it's a function), just
-          // write undefined instead.
-          if (!serializer_->WriteValue(context, v8::Undefined(isolate))
-                   .To(&wrote_value)) {
-            DCHECK(false);
-            return v8::Nothing<bool>();
-          }
-          */
-        }
-        CHECK(wrote_value);
-      }
-    } else {
-      serializer_->WriteUint32(0);
-    }
-    return v8::Just(true);
-#endif
-  }
-  void WriteTag(uint8_t tag) { serializer_->WriteRawBytes(&tag, 1); }
-  v8::ValueSerializer* serializer_;
-
- private:
-  v8::Isolate* isolate_;
-};
-
-class V8DeserializerDelegate : public v8::ValueDeserializer::Delegate {
- public:
-  ~V8DeserializerDelegate() override = default;
-  v8::MaybeLocal<v8::Object> ReadHostObject(v8::Isolate* isolate) override {
-    auto context = isolate->GetCurrentContext();
-    uint8_t tag;
-    if (!ReadTag(&tag)) {
-      return v8::MaybeLocal<v8::Object>();
-    }
-#if 0  // JSON-y
-    if (tag == 1) {
-      return v8::MaybeLocal<v8::Object>(v8::Object::New(isolate));
-    }
-    if (tag != 0) {
-      return v8::MaybeLocal<v8::Object>();
-    }
-    v8::Local<v8::Value> json_str_val;
-    if (!deserializer_->ReadValue(context).ToLocal(&json_str_val)) {
-      return v8::MaybeLocal<v8::Object>();
-    }
-    v8::Local<v8::String> json_str;
-    if (!json_str_val->ToString(context).ToLocal(&json_str)) {
-      return v8::MaybeLocal<v8::Object>();
-    }
-    v8::Local<v8::Value> obj_val;
-    if (!v8::JSON::Parse(context, json_str).ToLocal(&obj_val)) {
-      return v8::MaybeLocal<v8::Object>();
-    }
-    v8::Local<v8::Object> obj;
-    if (!obj_val->ToObject(context).ToLocal(&obj)) {
-      return v8::MaybeLocal<v8::Object>();
-    }
-    return obj;
-#else
-    if (tag != 0) {
-      return v8::MaybeLocal<v8::Object>();
-    }
-    uint32_t length;
-    if (!deserializer_->ReadUint32(&length)) {
-      return v8::MaybeLocal<v8::Object>();
-    }
-    auto ret = v8::Object::New(isolate);
-    for (size_t i = 0; i < length; i++) {
-      auto maybe_key = deserializer_->ReadValue(context);
-      auto maybe_value = deserializer_->ReadValue(context);
-      if (maybe_key.IsEmpty() || maybe_value.IsEmpty())
-        continue;
-      auto key = maybe_key.ToLocalChecked();
-      auto value = maybe_value.ToLocalChecked();
-      ret->Set(context, key, value).Check();
-    }
-    return v8::MaybeLocal<v8::Object>(ret);
-#endif
-  }
-
-  bool ReadTag(uint8_t* tag) {
-    const void* tag_bytes = nullptr;
-    if (!deserializer_->ReadRawBytes(1, &tag_bytes))
-      return false;
-    *tag = static_cast<uint8_t>(*reinterpret_cast<const uint8_t*>(tag_bytes));
-    return true;
-  }
-  v8::ValueDeserializer* deserializer_;
-};
-}  // namespace
-
 v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(
     v8::Isolate* isolate,
     const blink::CloneableMessage& in) {
   v8::EscapableHandleScope scope(isolate);
   auto message_data = in.encoded_message;
-  V8DeserializerDelegate delegate;
   v8::ValueDeserializer deserializer(isolate, message_data.data(),
-                                     message_data.size(), &delegate);
-  delegate.deserializer_ = &deserializer;
+                                     message_data.size());
   auto context = isolate->GetCurrentContext();
   bool read_header;
   if (!deserializer.ReadHeader(context).To(&read_header))
@@ -701,10 +549,7 @@ v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(
 bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
                                                 v8::Handle<v8::Value> val,
                                                 blink::CloneableMessage* out) {
-  // TODO(nornagon): don't swallow exceptions
-  V8SerializerDelegate delegate(isolate);
-  v8::ValueSerializer serializer(isolate, &delegate);
-  delegate.serializer_ = &serializer;
+  v8::ValueSerializer serializer(isolate);
   serializer.WriteHeader();
   v8::TryCatch try_catch(isolate);
   try_catch.SetVerbose(true);
