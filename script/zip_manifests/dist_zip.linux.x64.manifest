@@ -8,6 +8,7 @@ icudtl.dat
 libEGL.so
 libGLESv2.so
 libffmpeg.so
+libvk_swiftshader.so
 locales/am.pak
 locales/ar.pak
 locales/bg.pak
@@ -67,6 +68,5 @@ resources/default_app.asar
 snapshot_blob.bin
 swiftshader/libEGL.so
 swiftshader/libGLESv2.so
-swiftshader/libvk_swiftshader.so
 v8_context_snapshot.bin
 version

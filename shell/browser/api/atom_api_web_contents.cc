@@ -1030,19 +1030,18 @@ void WebContents::MessageTo(bool internal,
                             bool send_to_all,
                             int32_t web_contents_id,
                             const std::string& channel,
-                            base::Value arguments) {
+                            blink::CloneableMessage arguments) {
   auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
       isolate(), web_contents_id);
 
   if (web_contents) {
     web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
-                                           base::ListValue(arguments.GetList()),
-                                           ID());
+                                           arguments.ShallowClone(), ID());
   }
 }
 
 void WebContents::MessageHost(const std::string& channel,
-                              base::Value arguments) {
+                              blink::CloneableMessage arguments) {
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
                  base::nullopt, channel, std::move(arguments));
@@ -1931,14 +1930,21 @@ void WebContents::TabTraverse(bool reverse) {
 bool WebContents::SendIPCMessage(bool internal,
                                  bool send_to_all,
                                  const std::string& channel,
-                                 const base::ListValue& args) {
-  return SendIPCMessageWithSender(internal, send_to_all, channel, args);
+                                 v8::Local<v8::Value> args) {
+  blink::CloneableMessage message;
+  if (!mate::ConvertFromV8(isolate(), args, &message)) {
+    isolate()->ThrowException(v8::Exception::Error(
+        mate::StringToV8(isolate(), "Failed to serialize arguments")));
+    return false;
+  }
+  return SendIPCMessageWithSender(internal, send_to_all, channel,
+                                  std::move(message));
 }
 
 bool WebContents::SendIPCMessageWithSender(bool internal,
                                            bool send_to_all,
                                            const std::string& channel,
-                                           const base::ListValue& args,
+                                           blink::CloneableMessage args,
                                            int32_t sender_id) {
   std::vector<content::RenderFrameHost*> target_hosts;
   if (!send_to_all) {
@@ -1954,7 +1960,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(internal, false, channel, args.Clone(), sender_id);
+    electron_ptr->Message(internal, false, channel, std::move(args), sender_id);
   }
   return true;
 }
@@ -1963,7 +1969,13 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
                                         bool send_to_all,
                                         int32_t frame_id,
                                         const std::string& channel,
-                                        const base::ListValue& args) {
+                                        v8::Local<v8::Value> args) {
+  blink::CloneableMessage message;
+  if (!mate::ConvertFromV8(isolate(), args, &message)) {
+    isolate()->ThrowException(v8::Exception::Error(
+        mate::StringToV8(isolate(), "Failed to serialize arguments")));
+    return false;
+  }
   auto frames = web_contents()->GetAllFrames();
   auto iter = std::find_if(frames.begin(), frames.end(), [frame_id](auto* f) {
     return f->GetRoutingID() == frame_id;
@@ -1976,7 +1988,7 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   mojom::ElectronRendererAssociatedPtr electron_ptr;
   (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(internal, send_to_all, channel, args.Clone(),
+  electron_ptr->Message(internal, send_to_all, channel, std::move(message),
                         0 /* sender_id */);
   return true;
 }

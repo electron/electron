@@ -1,6 +1,7 @@
 import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
+import { emittedOnce } from './events-helpers'
 
 const { expect } = chai
 
@@ -184,6 +185,40 @@ describe('ipc module', () => {
       }
       expect(received).to.have.lengthOf(1000)
       expect(received).to.deep.equal([...received].sort((a, b) => a - b))
+    })
+  })
+
+  describe('host objects', () => {
+    let w = (null as unknown as BrowserWindow);
+
+    before(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      await w.loadURL('about:blank')
+    })
+    after(async () => {
+      w.destroy()
+    })
+
+    it('sends process.env renderer->main as a POJO', async () => {
+      w.webContents.executeJavaScript(`require('electron').ipcRenderer.send('foo', process.env)`)
+      const [, env] = await emittedOnce(ipcMain, 'foo')
+      expect(env).to.be.an('object')
+      expect(Object.keys(env).length).to.be.gt(0)
+      expect(env.PATH).to.be.a('string').that.is.not.empty()
+    })
+
+    it('sends process.env main->renderer as a POJO', async () => {
+      w.webContents.executeJavaScript(`{
+        const { ipcRenderer } = require('electron')
+        ipcRenderer.once('foo', (e, env) => {
+          ipcRenderer.send('foo', typeof env, Object.keys(env), env.PATH)
+        })
+      }`)
+      w.webContents.send('foo', process.env)
+      const [, typeofEnv, keys, path] = await emittedOnce(ipcMain, 'foo')
+      expect(typeofEnv).to.equal('object')
+      expect(keys.length).to.be.gt(0)
+      expect(path).to.be.a('string').that.is.not.empty()
     })
   })
 })

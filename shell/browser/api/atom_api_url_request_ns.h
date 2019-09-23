@@ -65,9 +65,9 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   friend class UploadDataPipeGetter;
 
   void OnResponseStarted(const GURL& final_url,
-                         const network::ResourceResponseHead& response_head);
+                         const network::mojom::URLResponseHead& response_head);
   void OnRedirect(const net::RedirectInfo& redirect_info,
-                  const network::ResourceResponseHead& response_head,
+                  const network::mojom::URLResponseHead& response_head,
                   std::vector<std::string>* to_be_removed_headers);
   void OnUploadProgress(uint64_t position, uint64_t total);
   void OnWrite(MojoResult result);

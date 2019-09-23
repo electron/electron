@@ -527,7 +527,7 @@ void Session::DownloadURL(const GURL& url) {
 
 void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
   int64_t offset = 0, length = 0;
-  double start_time = 0.0;
+  double start_time = base::Time::Now().ToDoubleT();
   std::string mime_type, last_modified, etag;
   base::FilePath path;
   std::vector<GURL> url_chain;

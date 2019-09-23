@@ -28,8 +28,10 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   void Message(bool internal,
                bool send_to_all,
                const std::string& channel,
-               base::Value arguments,
+               blink::CloneableMessage arguments,
                int32_t sender_id) override;
+  void DereferenceRemoteJSCallback(const std::string& context_id,
+                                   int32_t object_id) override;
   void UpdateCrashpadPipeName(const std::string& pipe_name) override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,
                         TakeHeapSnapshotCallback callback) override;

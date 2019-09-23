@@ -5,10 +5,10 @@ Subject: disable_hidden.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 3f9d2f2a42106e3f4ab7539256021a0446e17a2a..ebe6315a98f9654d2cbc54c09f79a17f18e267a7 100644
+index a8f29674dd39a7df74af53cccd630b87ab6de1ef..bb537f4114f17a2a01b97d667ee1ab41ac9bbb7f 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -675,6 +675,9 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -683,6 +683,9 @@ void RenderWidgetHostImpl::WasHidden() {
    if (is_hidden_)
      return;
  
@@ -19,10 +19,10 @@ index 3f9d2f2a42106e3f4ab7539256021a0446e17a2a..ebe6315a98f9654d2cbc54c09f79a17f
  
    TRACE_EVENT0("renderer_host", "RenderWidgetHostImpl::WasHidden");
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 58df8dfdd530a760fa8e9ecc9ef3901f444b255f..9ed9ebbbd01ff9d23b6cf0bd5cff1b19b9856077 100644
+index 9fdfbce61531bb213007a0aabaa9ed84acb079bb..c07e8949f90953b39719d1d545a40b8df8dcb024 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -185,6 +185,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -200,6 +200,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    // RenderWidgetHostImpl.
    static RenderWidgetHostImpl* From(RenderWidgetHost* rwh);
  

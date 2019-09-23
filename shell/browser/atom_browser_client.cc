@@ -1047,7 +1047,7 @@ bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy,
 }
 #endif  // defined(OS_WIN)
 
-bool AtomBrowserClient::BindAssociatedInterfaceRequestFromFrame(
+bool AtomBrowserClient::BindAssociatedReceiverFromFrame(
     content::RenderFrameHost* render_frame_host,
     const std::string& interface_name,
     mojo::ScopedInterfaceEndpointHandle* handle) {

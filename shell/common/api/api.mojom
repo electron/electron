@@ -1,6 +1,5 @@
 module electron.mojom;
 
-import "mojo/public/mojom/base/values.mojom";
 import "mojo/public/mojom/base/string16.mojom";
 import "ui/gfx/geometry/mojom/geometry.mojom";
 import "third_party/blink/public/mojom/messaging/cloneable_message.mojom";
@@ -10,10 +9,16 @@ interface ElectronRenderer {
       bool internal,
       bool send_to_all,
       string channel,
-      mojo_base.mojom.ListValue arguments,
+      blink.mojom.CloneableMessage arguments,
       int32 sender_id);
 
   UpdateCrashpadPipeName(string pipe_name);
+
+  // This is an API specific to the "remote" module, and will ultimately be
+  // replaced by generic IPC once WeakRef is generally available.
+  DereferenceRemoteJSCallback(
+    string context_id,
+    int32 object_id);
 
   TakeHeapSnapshot(handle file) => (bool success);
 };
@@ -65,11 +70,11 @@ interface ElectronBrowser {
     bool send_to_all,
     int32 web_contents_id,
     string channel,
-    mojo_base.mojom.ListValue arguments);
+    blink.mojom.CloneableMessage arguments);
 
   MessageHost(
     string channel,
-    mojo_base.mojom.ListValue arguments);
+    blink.mojom.CloneableMessage arguments);
 
   // This is an API specific to the "remote" module, and will ultimately be
   // replaced by generic IPC once WeakRef is generally available.

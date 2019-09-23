@@ -539,9 +539,32 @@ class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
   }
   v8::Maybe<bool> WriteHostObject(v8::Isolate* isolate,
                                   v8::Local<v8::Object> object) override {
+    v8::TryCatch try_catch(isolate);
+    try_catch.SetVerbose(true);
     auto context = isolate->GetCurrentContext();
-    auto properties = object->GetOwnPropertyNames(context);
+    v8::Local<v8::String> stringified;
+    if (!v8::JSON::Stringify(context, object).ToLocal(&stringified)) {
+      WriteTag(1);
+      LOG(INFO) << "stringify failed";
+      LOG(INFO) << gin::V8ToString(isolate, try_catch.Message()->Get());
+      return v8::Just(true);
+      /*
+      // TODO: throw exception
+      return v8::Nothing<bool>();
+      */
+    }
     WriteTag(0);
+    bool wrote_json;
+    if (!serializer_->WriteValue(context, stringified).To(&wrote_json)) {
+      LOG(INFO) << "write failed";
+      // TODO: throw exception
+      return v8::Nothing<bool>();
+    }
+    CHECK(wrote_json);
+    return v8::Just(true);
+
+    /*
+    auto properties = object->GetOwnPropertyNames(context);
     if (!properties.IsEmpty()) {
       auto props = properties.ToLocalChecked();
       serializer_->WriteUint32(props->Length());
@@ -552,19 +575,23 @@ class V8SerializerDelegate : public v8::ValueSerializer::Delegate {
         if (!serializer_->WriteValue(context, key).To(&wrote_key)) {
           return v8::Nothing<bool>();
         }
+        CHECK(wrote_key);
         if (!serializer_->WriteValue(context, value).To(&wrote_value)) {
           // If we couldn't write the value (e.g. if it's a function), just
           // write undefined instead.
           if (!serializer_->WriteValue(context, v8::Undefined(isolate))
                    .To(&wrote_value)) {
+            DCHECK(false);
             return v8::Nothing<bool>();
           }
         }
+        CHECK(wrote_value);
       }
     } else {
       serializer_->WriteUint32(0);
     }
     return v8::Just(true);
+    */
   }
   void WriteTag(uint8_t tag) { serializer_->WriteRawBytes(&tag, 1); }
   v8::ValueSerializer* serializer_;
@@ -577,31 +604,51 @@ class V8DeserializerDelegate : public v8::ValueDeserializer::Delegate {
  public:
   ~V8DeserializerDelegate() override = default;
   v8::MaybeLocal<v8::Object> ReadHostObject(v8::Isolate* isolate) override {
+    auto context = isolate->GetCurrentContext();
     uint8_t tag;
     if (!ReadTag(&tag)) {
       return v8::MaybeLocal<v8::Object>();
     }
+    if (tag == 1) {
+      return v8::MaybeLocal<v8::Object>(v8::Object::New(isolate));
+    }
     if (tag != 0) {
       return v8::MaybeLocal<v8::Object>();
     }
+    v8::Local<v8::Value> json_str_val;
+    if (!deserializer_->ReadValue(context).ToLocal(&json_str_val)) {
+      return v8::MaybeLocal<v8::Object>();
+    }
+    v8::Local<v8::String> json_str;
+    if (!json_str_val->ToString(context).ToLocal(&json_str)) {
+      return v8::MaybeLocal<v8::Object>();
+    }
+    v8::Local<v8::Value> obj_val;
+    if (!v8::JSON::Parse(context, json_str).ToLocal(&obj_val)) {
+      return v8::MaybeLocal<v8::Object>();
+    }
+    v8::Local<v8::Object> obj;
+    if (!obj_val->ToObject(context).ToLocal(&obj)) {
+      return v8::MaybeLocal<v8::Object>();
+    }
+    return obj;
+    /*
     uint32_t length;
     if (!deserializer_->ReadUint32(&length)) {
       return v8::MaybeLocal<v8::Object>();
     }
-    auto context = isolate->GetCurrentContext();
     auto ret = v8::Object::New(isolate);
     for (size_t i = 0; i < length; i++) {
       auto maybe_key = deserializer_->ReadValue(context);
-      if (maybe_key.IsEmpty())
-        return v8::MaybeLocal<v8::Object>();
-      auto key = maybe_key.ToLocalChecked();
       auto maybe_value = deserializer_->ReadValue(context);
-      if (maybe_value.IsEmpty())
-        return v8::MaybeLocal<v8::Object>();
+      if (maybe_key.IsEmpty() || maybe_value.IsEmpty())
+        continue;
+      auto key = maybe_key.ToLocalChecked();
       auto value = maybe_value.ToLocalChecked();
       ret->Set(context, key, value).Check();
     }
     return v8::MaybeLocal<v8::Object>(ret);
+    */
   }
 
   bool ReadTag(uint8_t* tag) {

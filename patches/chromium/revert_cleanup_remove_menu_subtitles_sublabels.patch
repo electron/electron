@@ -180,10 +180,10 @@ index 73f0ab6d84d2cab6732866a6dc4b781faf630c0e..3319d058e8303066e0159d02d27ee2e8
    return base::string16();
  }
 diff --git a/ui/base/models/menu_model.h b/ui/base/models/menu_model.h
-index e0324ff11fb8c6b578ea7e902488235c33ec5485..690aa082b6be0bd576770d03ac94075183c1f9d6 100644
+index b0ae539ba1dc5a4c11390267c3053058e92e7f34..1e28cd2b1bc66d512ea4e0b8ae62bc8ec03d7a1b 100644
 --- a/ui/base/models/menu_model.h
 +++ b/ui/base/models/menu_model.h
-@@ -64,6 +64,10 @@ class UI_BASE_EXPORT MenuModel {
+@@ -65,6 +65,10 @@ class UI_BASE_EXPORT MenuModel : public base::SupportsWeakPtr<MenuModel> {
    // Returns the label of the item at the specified index.
    virtual base::string16 GetLabelAt(int index) const = 0;
  

@@ -70,22 +70,31 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
   const char* GetTypeName() override { return "IPCRenderer"; }
 
  private:
-  void Send(bool internal,
+  void Send(v8::Isolate* isolate,
+            bool internal,
             const std::string& channel,
-            const blink::CloneableMessage& arguments) {
+            v8::Local<v8::Value> arguments) {
+    blink::CloneableMessage message;
+    if (!mate::ConvertFromV8(isolate, arguments, &message)) {
+      return;
+    }
     electron_browser_ptr_->get()->Message(internal, channel,
-                                          arguments.ShallowClone());
+                                          std::move(message));
   }
 
   v8::Local<v8::Promise> Invoke(v8::Isolate* isolate,
                                 bool internal,
                                 const std::string& channel,
-                                const blink::CloneableMessage& arguments) {
+                                v8::Local<v8::Value> arguments) {
+    blink::CloneableMessage message;
+    if (!mate::ConvertFromV8(isolate, arguments, &message)) {
+      return v8::Local<v8::Promise>();
+    }
     electron::util::Promise<blink::CloneableMessage> p(isolate);
     auto handle = p.GetHandle();
 
     electron_browser_ptr_->get()->Invoke(
-        internal, channel, arguments.ShallowClone(),
+        internal, channel, std::move(message),
         base::BindOnce(
             [](electron::util::Promise<blink::CloneableMessage> p,
                blink::CloneableMessage result) { p.ResolveWithGin(result); },
@@ -94,23 +103,38 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     return handle;
   }
 
-  void SendTo(bool internal,
+  void SendTo(v8::Isolate* isolate,
+              bool internal,
               bool send_to_all,
               int32_t web_contents_id,
               const std::string& channel,
-              const base::ListValue& arguments) {
+              v8::Local<v8::Value> arguments) {
+    blink::CloneableMessage message;
+    if (!mate::ConvertFromV8(isolate, arguments, &message)) {
+      return;
+    }
     electron_browser_ptr_->get()->MessageTo(
-        internal, send_to_all, web_contents_id, channel, arguments.Clone());
+        internal, send_to_all, web_contents_id, channel, std::move(message));
   }
 
-  void SendToHost(const std::string& channel,
-                  const base::ListValue& arguments) {
-    electron_browser_ptr_->get()->MessageHost(channel, arguments.Clone());
+  void SendToHost(v8::Isolate* isolate,
+                  const std::string& channel,
+                  v8::Local<v8::Value> arguments) {
+    blink::CloneableMessage message;
+    if (!mate::ConvertFromV8(isolate, arguments, &message)) {
+      return;
+    }
+    electron_browser_ptr_->get()->MessageHost(channel, std::move(message));
   }
 
-  blink::CloneableMessage SendSync(bool internal,
+  blink::CloneableMessage SendSync(v8::Isolate* isolate,
+                                   bool internal,
                                    const std::string& channel,
-                                   const blink::CloneableMessage& arguments) {
+                                   v8::Local<v8::Value> arguments) {
+    blink::CloneableMessage message;
+    if (!mate::ConvertFromV8(isolate, arguments, &message)) {
+      return blink::CloneableMessage();
+    }
     // We aren't using a true synchronous mojo call here. We're calling an
     // asynchronous method and blocking on the result. The reason we're doing
     // this is a little complicated, so buckle up.
@@ -170,7 +194,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
                                   base::Unretained(this),
                                   base::Unretained(&response_received_event),
                                   base::Unretained(&result), internal, channel,
-                                  arguments.ShallowClone()));
+                                  std::move(message)));
     response_received_event.Wait();
     return result;
   }
