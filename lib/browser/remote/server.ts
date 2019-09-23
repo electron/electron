@@ -3,7 +3,11 @@
 import * as electron from 'electron'
 import { EventEmitter } from 'events'
 import { isBuffer, bufferToMeta, BufferMeta, metaToBuffer } from '@electron/internal/common/remote/buffer-utils'
+import objectsRegistry from './objects-registry'
 import { ipcMainInternal } from '../ipc-main-internal'
+import * as guestViewManager from '@electron/internal/browser/guest-view-manager'
+import * as errorUtils from '@electron/internal/common/error-utils'
+import { isPromise } from '@electron/internal/common/remote/is-promise'
 
 const v8Util = process.electronBinding('v8_util')
 const eventBinding = process.electronBinding('event')
@@ -12,12 +16,6 @@ const features = process.electronBinding('features')
 if (!features.isRemoteModuleEnabled()) {
   throw new Error('remote module is disabled')
 }
-
-// const { ipcMainInternal } = require('@electron/internal/browser/ipc-main-internal')
-const objectsRegistry = require('@electron/internal/browser/remote/objects-registry')
-const guestViewManager = require('@electron/internal/browser/guest-view-manager')
-const errorUtils = require('@electron/internal/common/error-utils')
-const { isPromise } = require('@electron/internal/common/remote/is-promise')
 
 const hasProp = {}.hasOwnProperty
 

@@ -134,4 +134,4 @@ class ObjectsRegistry {
   }
 }
 
-module.exports = new ObjectsRegistry()
+export default new ObjectsRegistry()
