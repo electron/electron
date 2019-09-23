@@ -7,15 +7,15 @@ Without these, we get link errors in the component build when using the
 blink::CloneableMessage mojo traits.
 
 diff --git a/third_party/blink/public/common/fetch/fetch_api_request_body_mojom_traits.h b/third_party/blink/public/common/fetch/fetch_api_request_body_mojom_traits.h
-index ecd5fce034459037546b3a71d59ec6586d242040..fb1d6b305dd5976cfcc55c8b91193a09cac2926d 100644
+index 1ddfc2108f9a0104247ea2559b597552cd20a342..f9a10b5b428e29a8824b87616f19292b38e38024 100644
 --- a/third_party/blink/public/common/fetch/fetch_api_request_body_mojom_traits.h
 +++ b/third_party/blink/public/common/fetch/fetch_api_request_body_mojom_traits.h
 @@ -11,12 +11,13 @@
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "services/network/public/cpp/resource_request_body.h"
- #include "services/network/public/mojom/url_loader.mojom.h"
+ #include "services/network/public/mojom/url_loader.mojom-forward.h"
 +#include "third_party/blink/public/common/common_export.h"
- #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom.h"
+ #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom-forward.h"
  
  namespace mojo {
  
