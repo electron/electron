@@ -267,8 +267,9 @@ void SetVisualZoomLevelLimits(v8::Local<v8::Value> window,
 void SetLayoutZoomLevelLimits(v8::Local<v8::Value> window,
                               double min_level,
                               double max_level) {
-  blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
-  web_frame->View()->ZoomLimitsChanged(min_level, max_level);
+  // TODO(jkleinsc): refactor this
+  // blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
+  // web_frame->View()->ZoomLimitsChanged(min_level, max_level);
 }
 
 void AllowGuestViewElementDefinition(v8::Isolate* isolate,
