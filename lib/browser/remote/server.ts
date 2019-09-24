@@ -383,6 +383,12 @@ const emitCustomEvent = function (contents: electron.WebContents, eventName: str
   return event
 }
 
+const logStack = function (contents: electron.WebContents, code: string, stack: string | undefined) {
+  if (stack) {
+    console.warn(`WebContents (${contents.id}): ${code}`, stack)
+  }
+}
+
 handleRemoteCommand('ELECTRON_BROWSER_WRONG_CONTEXT_ERROR', function (event, contextId, passedContextId, id) {
   const objectId = [passedContextId, id]
   if (!rendererFunctions.has(objectId)) {
@@ -392,7 +398,8 @@ handleRemoteCommand('ELECTRON_BROWSER_WRONG_CONTEXT_ERROR', function (event, con
   removeRemoteListenersAndLogWarning(event.sender, rendererFunctions.get(objectId))
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, moduleName) {
+handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, moduleName, stack) {
+  logStack(event.sender, `remote.require('${moduleName}')`, stack)
   const customEvent = emitCustomEvent(event.sender, 'remote-require', moduleName)
 
   if (customEvent.returnValue === undefined) {
@@ -406,7 +413,8 @@ handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, modu
   return valueToMeta(event.sender, contextId, customEvent.returnValue)
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_GET_BUILTIN', function (event, contextId, moduleName) {
+handleRemoteCommand('ELECTRON_BROWSER_GET_BUILTIN', function (event, contextId, moduleName, stack) {
+  logStack(event.sender, `remote.getBuiltin('${moduleName}')`, stack)
   const customEvent = emitCustomEvent(event.sender, 'remote-get-builtin', moduleName)
 
   if (customEvent.returnValue === undefined) {
@@ -420,7 +428,8 @@ handleRemoteCommand('ELECTRON_BROWSER_GET_BUILTIN', function (event, contextId, 
   return valueToMeta(event.sender, contextId, customEvent.returnValue)
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_GLOBAL', function (event, contextId, globalName) {
+handleRemoteCommand('ELECTRON_BROWSER_GLOBAL', function (event, contextId, globalName, stack) {
+  logStack(event.sender, `remote.getGlobal('${globalName}')`, stack)
   const customEvent = emitCustomEvent(event.sender, 'remote-get-global', globalName)
 
   if (customEvent.returnValue === undefined) {
@@ -434,7 +443,8 @@ handleRemoteCommand('ELECTRON_BROWSER_GLOBAL', function (event, contextId, globa
   return valueToMeta(event.sender, contextId, customEvent.returnValue)
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_CURRENT_WINDOW', function (event, contextId) {
+handleRemoteCommand('ELECTRON_BROWSER_CURRENT_WINDOW', function (event, contextId, stack) {
+  logStack(event.sender, 'remote.getCurrentWindow()', stack)
   const customEvent = emitCustomEvent(event.sender, 'remote-get-current-window')
 
   if (customEvent.returnValue === undefined) {
@@ -448,7 +458,8 @@ handleRemoteCommand('ELECTRON_BROWSER_CURRENT_WINDOW', function (event, contextI
   return valueToMeta(event.sender, contextId, customEvent.returnValue)
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_CURRENT_WEB_CONTENTS', function (event, contextId) {
+handleRemoteCommand('ELECTRON_BROWSER_CURRENT_WEB_CONTENTS', function (event, contextId, stack) {
+  logStack(event.sender, 'remote.getCurrentWebContents()', stack)
   const customEvent = emitCustomEvent(event.sender, 'remote-get-current-web-contents')
 
   if (customEvent.returnValue === undefined) {
@@ -549,14 +560,15 @@ handleRemoteCommand('ELECTRON_BROWSER_CONTEXT_RELEASE', (event, contextId) => {
   return null
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_GUEST_WEB_CONTENTS', function (event, contextId, guestInstanceId) {
+handleRemoteCommand('ELECTRON_BROWSER_GUEST_WEB_CONTENTS', function (event, contextId, guestInstanceId, stack) {
+  logStack(event.sender, 'remote.getGuestWebContents()', stack)
   const guest = guestViewManager.getGuestForWebContents(guestInstanceId, event.sender)
 
   const customEvent = emitCustomEvent(event.sender, 'remote-get-guest-web-contents', guest)
 
   if (customEvent.returnValue === undefined) {
     if (customEvent.defaultPrevented) {
-      throw new Error(`Blocked remote.getGuestForWebContents()`)
+      throw new Error(`Blocked remote.getGuestWebContents()`)
     } else {
       customEvent.returnValue = guest
     }
