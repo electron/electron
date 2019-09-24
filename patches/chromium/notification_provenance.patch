@@ -68,7 +68,7 @@ index ce997528ce2973b54dbbf965220cc30bcb19a094..e84b0b62d853b044e590a0c764f1b21a
          notification_service_remote_.BindNewPipeAndPassReceiver());
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 93ae69a720d4d24b5fd11508a9f6ec3c17f559d5..93768924cf442ef4cb36addfe279852b9c0dd444 100644
+index 2a447b73d763b7c91359f1b4550a002ff9e5e715..bd434393cf35605a8cc05d6fb96215cf76b5417a 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -207,12 +207,13 @@ void PlatformNotificationContextImpl::Shutdown() {

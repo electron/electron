@@ -4,14 +4,14 @@ Date: Mon, 23 Sep 2019 17:07:53 -0400
 Subject: add zoom limit setters to webcontents
 
 Allows minimum_zoom_percent_ and maximum_zoom_percent_ to be set on WebContents.
-This is needed by Electron to allow apps to limit how much an app can zoom in 
+This is needed by Electron to allow apps to limit how much an app can zoom in
 or out.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d796be7839b8e042673c53352e42d51c0ad90f1c..98a646560f0531717d182d14e625a9f417d8c9f7 100644
+index 5ca8aec44ebc66e58009fe3816c2e8fef54986b7..1b48048a3be436bc6b7c3e60babca943e29c6573 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4130,10 +4130,18 @@ bool WebContentsImpl::GetClosedByUserGesture() {
+@@ -4124,10 +4124,18 @@ bool WebContentsImpl::GetClosedByUserGesture() {
    return closed_by_user_gesture_;
  }
  
@@ -31,10 +31,10 @@ index d796be7839b8e042673c53352e42d51c0ad90f1c..98a646560f0531717d182d14e625a9f4
    return maximum_zoom_percent_;
  }
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 094ed9584854b6a8ae56c7e8411cdcb3cc7a1012..5d666d3130932341951a7556caa8c8f30f03519e 100644
+index 5d08a418c7ba6662d97fde85988e32627b484167..8f442a072e8f9cd55f4f4e35abfd8e2996f3e6f2 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -451,7 +451,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -450,7 +450,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SystemDragEnded(RenderWidgetHost* source_rwh) override;
    void SetClosedByUserGesture(bool value) override;
    bool GetClosedByUserGesture() override;
@@ -44,7 +44,7 @@ index 094ed9584854b6a8ae56c7e8411cdcb3cc7a1012..5d666d3130932341951a7556caa8c8f3
    int GetMaximumZoomPercent() override;
    void SetPageScale(float page_scale_factor) override;
    gfx::Size GetPreferredSize() override;
-@@ -1715,8 +1717,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1714,8 +1716,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    bool closed_by_user_gesture_;
  
    // Minimum/maximum zoom percent.
@@ -56,10 +56,10 @@ index 094ed9584854b6a8ae56c7e8411cdcb3cc7a1012..5d666d3130932341951a7556caa8c8f3
    // Used to correctly handle integer zooming through a smooth scroll device.
    float zoom_scroll_remainder_;
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 9bef76029aa3e71cf9ac3d2ac5a5e3a66e60c165..6dc902908bc0d60757bd804f33023f9218a18c62 100644
+index 8824198706757a2a55bae977a91ef57feb18c17a..5dd2ec79d3a40ec9330bc2d3a63e06295622ffbf 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -806,8 +806,10 @@ class WebContents : public PageNavigator,
+@@ -802,8 +802,10 @@ class WebContents : public PageNavigator,
    virtual void SetClosedByUserGesture(bool value) = 0;
    virtual bool GetClosedByUserGesture() = 0;
  

@@ -5,7 +5,7 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index dad53e4c3cc4d1537664c4423810f69a9e4dd591..03d916c2355409557b1f754fc31eaea945409d13 100644
+index 68d45c41f23395fab0f1fc293ab91c8b6ec68cd5..bc42b2edd9e9276381810d942b324e99e458ad16 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -90,6 +90,11 @@
@@ -20,7 +20,7 @@ index dad53e4c3cc4d1537664c4423810f69a9e4dd591..03d916c2355409557b1f754fc31eaea9
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -318,6 +323,79 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
+@@ -319,6 +324,79 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
  
  }  // namespace
  
@@ -100,7 +100,7 @@ index dad53e4c3cc4d1537664c4423810f69a9e4dd591..03d916c2355409557b1f754fc31eaea9
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -473,6 +551,13 @@ void NetworkContext::SetClient(
+@@ -474,6 +552,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -114,7 +114,7 @@ index dad53e4c3cc4d1537664c4423810f69a9e4dd591..03d916c2355409557b1f754fc31eaea9
  void NetworkContext::CreateURLLoaderFactory(
      mojom::URLLoaderFactoryRequest request,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1548,12 +1633,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1549,12 +1634,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                    net::SystemTrustStoreProvider::CreateDefaultForSSL())));
      }
  #endif
@@ -169,10 +169,10 @@ index 21dd391b7330c362e3795fddc2943ed6832d0383..581196b6d4a0054bc213e4eada1a97a8
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 83a32d8b533d64b5ff65626d434e5ff731992642..d5986452c813579d96a90817b468922db5b5a91e 100644
+index 21b48f50b214357aebe94f8440b44952d0319664..7484f0ad058432bc577fce11cc9c902da8e245d7 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -165,6 +165,17 @@ interface TrustedURLLoaderHeaderClient {
+@@ -168,6 +168,17 @@ interface TrustedURLLoaderHeaderClient {
                    pending_receiver<TrustedHeaderClient> header_client);
  };
  
@@ -190,7 +190,7 @@ index 83a32d8b533d64b5ff65626d434e5ff731992642..d5986452c813579d96a90817b468922d
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -724,6 +735,9 @@ interface NetworkContext {
+@@ -740,6 +751,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

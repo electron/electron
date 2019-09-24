@@ -79,5 +79,4 @@ expose_setuseragent_on_networkcontext.patch
 feat_add_set_theme_source_to_allow_apps_to.patch
 revert_cleanup_remove_menu_subtitles_sublabels.patch
 ui_views_fix_jumbo_build.patch
-fix_windows_build.patch
 add_zoom_limit_setters_to_webcontents.patch

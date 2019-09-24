@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 929e339487b7d2b4407cff069944f7a2cc1266a4..4abf0933df57651f36dbb6a1652b2de534a82639 100644
+index 5fd3bb3b60bda4449cc4743922758d62ee6decac..860b92c47f42d7517adb5e3370cc02d7e1c67b62 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
 @@ -40,6 +40,8 @@ NativeTheme::NativeTheme()
@@ -26,7 +26,7 @@ index 929e339487b7d2b4407cff069944f7a2cc1266a4..4abf0933df57651f36dbb6a1652b2de5
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 70389e0245993faa2c17e9deefeb000280ef2368..cef1c0d4706e7e720a4004ca54765a39fc29c5e8 100644
+index ef45da79366c2e3ab242ec140989b407ac70dbb8..98ca8881b0b9f68a464e62f76589b29157126a86 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -429,6 +429,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -52,7 +52,7 @@ index 70389e0245993faa2c17e9deefeb000280ef2368..cef1c0d4706e7e720a4004ca54765a39
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -547,6 +563,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -550,6 +566,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredColorScheme preferred_color_scheme_ =
        PreferredColorScheme::kNoPreference;
  

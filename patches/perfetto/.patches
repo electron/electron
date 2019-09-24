@@ -1,2 +1,0 @@
-revert_fix_chrome_roll_update_protoc_host_toolchain_rules.patch
-revert_make_trace_processor_a_host-only_target.patch
