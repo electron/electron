@@ -54,6 +54,15 @@ steps:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
 - bash: |
+   export NATIVE_UNITTESTS=$PWD/src/out/Default/shell_browser_ui_unittests
+   mkdir -p $NATIVE_UNITTESTS
+   cd src/electron
+   node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=shell_browser_ui_unittests --dest=$NATIVE_UNITTESTS
+  displayName: 'Download native unittest executables'
+  env:
+    CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
+
+- bash: |
     sh -e /etc/init.d/xvfb start
   displayName: Setup for headless testing
   env:
