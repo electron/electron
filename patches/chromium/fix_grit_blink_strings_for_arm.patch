@@ -1,20 +1,23 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: John Kleinschmidt <kleinschmidtorama@gmail.com>
-Date: Tue, 24 Sep 2019 13:32:18 -0400
-Subject: fix: GRIT blink strings for arm/arm64/win_clang_x64
+Date: Tue, 24 Sep 2019 14:42:19 -0400
+Subject: fix: GRIT blink strings for arm
 
-Ensures that GRIT blink strings are generated for arm/arm64/win_clang_x64
+Ensures that GRIT blink strings are generated for arm/arm64/woa
 toolchains.
 
 diff --git a/third_party/blink/public/strings/BUILD.gn b/third_party/blink/public/strings/BUILD.gn
-index 83cfe650b7c13c81b87be1a2d3a5622e4bb1c9c9..7686e40af282d02e171c6cc128facd90276768c2 100644
+index 83cfe650b7c13c81b87be1a2d3a5622e4bb1c9c9..bcbff5de44680ef2d23142148d16d28c382dda4d 100644
 --- a/third_party/blink/public/strings/BUILD.gn
 +++ b/third_party/blink/public/strings/BUILD.gn
-@@ -5,6 +5,7 @@
- import("//tools/grit/grit_rule.gni")
+@@ -3,8 +3,9 @@
+ # found in the LICENSE file.
  
+ import("//tools/grit/grit_rule.gni")
+-
++strings_out_dir = "$root_gen_dir/third_party/blink/public/strings"
  grit("strings") {
-+  output_dir = resources_out_dir
++  output_dir = strings_out_dir
    source = "blink_strings.grd"
    outputs = [
      "grit/blink_strings.h",
