@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <kleinschmidtorama@gmail.com>
+Date: Tue, 24 Sep 2019 13:32:18 -0400
+Subject: fix: GRIT blink strings for arm/arm64/win_clang_x64
+
+Ensures that GRIT blink strings are generated for arm/arm64/win_clang_x64
+toolchains.
+
+diff --git a/third_party/blink/public/strings/BUILD.gn b/third_party/blink/public/strings/BUILD.gn
+index 83cfe650b7c13c81b87be1a2d3a5622e4bb1c9c9..7686e40af282d02e171c6cc128facd90276768c2 100644
+--- a/third_party/blink/public/strings/BUILD.gn
++++ b/third_party/blink/public/strings/BUILD.gn
+@@ -5,6 +5,7 @@
+ import("//tools/grit/grit_rule.gni")
+ 
+ grit("strings") {
++  output_dir = resources_out_dir
+   source = "blink_strings.grd"
+   outputs = [
+     "grit/blink_strings.h",
