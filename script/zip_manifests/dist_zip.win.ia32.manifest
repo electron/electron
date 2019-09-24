@@ -67,5 +67,7 @@ resources/default_app.asar
 snapshot_blob.bin
 swiftshader/libEGL.dll
 swiftshader/libGLESv2.dll
+swiftshader/libvk_swiftshader_icd.json
+vk_swiftshader.dll
 v8_context_snapshot.bin
 version
