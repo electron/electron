@@ -1,6 +1,6 @@
 # Windows 10 on Arm
 
-If your app runs with Electron 6.0.8 or later, you can now build it for Windows on Arm. This considerably improves performance, but requires recompilation of any native modules used in your app. It may also require small fixups to your build and packaging scripts.
+If your app runs with Electron 6.0.8 or later, you can now build it for Windows 10 on Arm. This considerably improves performance, but requires recompilation of any native modules used in your app. It may also require small fixups to your build and packaging scripts.
 
 ## Running a basic app
 If your app doesn't use any native modules, then it's really easy to create an Arm version of your app.
@@ -37,10 +37,10 @@ To test your app, use a Windows on Arm device running Windows 10 (version 1903 o
 [Node.js v12.9.0 or later is recommended.](https://nodejs.org/en/) If updating to a new version of Node is  undesirable, you can instead [update npm's copy of node-gyp manually](https://github.com/nodejs/node-gyp/wiki/Updating-npm's-bundled-node-gyp) to version 5.0.2 or later, which contains the required changes to compile native modules for Arm.
 
 ### Visual Studio 2017
-Visual Studio 2017 (any edition) is required for cross-compiling native modules. You can download Visual Studio Community 2017 via Microsoft's [Visual Studio Dev Essentials program](https://visualstudio.microsoft.com/dev-essentials/). After installation, you can add the Arm-specific components by running the following from a _Command Prompt_.
+Visual Studio 2017 (any edition) is required for cross-compiling native modules. You can download Visual Studio Community 2017 via Microsoft's [Visual Studio Dev Essentials program](https://visualstudio.microsoft.com/dev-essentials/). After installation, you can add the Arm-specific components by running the following from a _Command Prompt_:
 
 ```powershell
-vs2017installer.exe ^
+vs_installer.exe ^
 --add Microsoft.VisualStudio.Workload.NativeDesktop ^
 --add Microsoft.VisualStudio.Component.VC.ATLMFC ^
 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 ^
@@ -51,7 +51,7 @@ vs2017installer.exe ^
 #### Creating a cross-compilation command prompt
 Setting `npm_config_arch=arm64` in the environment creates the correct arm64 `.obj` files, but the standard _Developer Command Prompt for VS 2017_ will use the x64 linker. To fix this:
 
-1. Duplicate the _x64_x86 Cross Tools Command Prompt for VS 2017_ shortcut (e.g. by locating it in the start menu, right clicking, and selecting _Open File Location_) to somewhere convenient.
+1. Duplicate the _x64_x86 Cross Tools Command Prompt for VS 2017_ shortcut (e.g. by locating it in the start menu, right clicking, selecting _Open File Location_, copying and pasting) to somewhere convenient.
 2. Right click the new shortcut and choose _Properties_.
 3. Change the _Target_ field to read `vcvarsamd64_arm64.bat` at the end instead of `vcvarsamd64_x86.bat`.
 
@@ -78,13 +78,13 @@ Ssubstitute `6.0.9` for the version you're using.
 
 
 ## Cross-compiling native modules
-After completing all of the above, open your cross-compilation command prompt and run `set npm_config_arch=arm64`. Then use `npm install`  to build your project as normal. As with cross-compiling 32-bit modules, you may need to remove `node_modules` to force recompilation of native modules if they were previously compiled for another architecture.
+After completing all of the above, open your cross-compilation command prompt and run `set npm_config_arch=arm64`. Then use `npm install` to build your project as normal. As with cross-compiling x86 modules, you may need to remove `node_modules` to force recompilation of native modules if they were previously compiled for another architecture.
 
 ## Debugging native modules
 
 Debugging native modules can be done with Visual Studio 2017 (running on your development machine) and corresponding [Visual Studio Remote Debugger](https://docs.microsoft.com/en-us/visualstudio/debugger/remote-debugging-cpp?view=vs-2019) running on the target device. To debug:
 
-1. Start your app on the target device (passing `--inspect-brk` to pause it before any native modules are loaded).
+1. Lanch your app `.exe` on the target device via the _Command Prompt_ (passing `--inspect-brk` to pause it before any native modules are loaded).
 2. Launch Visual Studio 2017 on your development machine.
 3. Connect to the target device by selecting _Debug > Attach to Process..._ and enter the device's IP address and the port number displayed by the Visual Studio Remote Debugger tool.
 4. Click _Refresh_ and select the [appropriate Electron process to attach](../development/debug-instructions-windows.md).
