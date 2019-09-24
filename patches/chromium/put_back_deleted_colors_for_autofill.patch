@@ -78,7 +78,7 @@ index 7fd49a2e26968daaa16ed3322b516f53ff60fb56..f902910ecc8e5b4945187e836655362e
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 3604105e43ee1866a8517c52ed05205b3ed10b56..70389e0245993faa2c17e9deefeb000280ef2368 100644
+index c1d4ad9a27d895af32fd0311a640e2f62a30635a..ef45da79366c2e3ab242ec140989b407ac70dbb8 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -389,6 +389,11 @@ class NATIVE_THEME_EXPORT NativeTheme {

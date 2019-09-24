@@ -5,7 +5,7 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index d5845d0263477b01ddf1e8bf5075e1a813751360..3d0bb0760b222eb3dd916ec032179fec62b3e6cc 100644
+index d8c9d8c838d0d24f9e6dd57991406b252fa3b1c2..2f4298fe80600abc3d233e3999a8a145d75c46b4 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -4023,6 +4023,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -66,10 +66,10 @@ index 84a8e2fcf0e55bb9582a277f4ff2f76739a6a7ad..109d3166e85a28978bc0bf1f8f698537
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 4da7798e01aca97295042ce21fb8bffb602cf528..afd19c939fe8ee369afa1a85bd0ccefc9e084177 100644
+index a8785784f081d60e94b02737ebaada4a451b83d4..6f18327ba2dbb91dea44fd65a9048351c5aeec6a 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -73,6 +73,7 @@
+@@ -71,6 +71,7 @@
  #include "content/renderer/ime_event_guard.h"
  #include "content/renderer/internal_document_state_data.h"
  #include "content/renderer/loader/request_extra_data.h"
@@ -77,7 +77,7 @@ index 4da7798e01aca97295042ce21fb8bffb602cf528..afd19c939fe8ee369afa1a85bd0ccefc
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/media/webrtc/peer_connection_dependency_factory.h"
  #include "content/renderer/media/webrtc/rtc_peer_connection_handler.h"
-@@ -1324,6 +1325,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1341,6 +1342,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
