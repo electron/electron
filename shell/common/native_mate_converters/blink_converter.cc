@@ -551,16 +551,12 @@ bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
                                                 blink::CloneableMessage* out) {
   v8::ValueSerializer serializer(isolate);
   serializer.WriteHeader();
-  v8::TryCatch try_catch(isolate);
-  try_catch.SetVerbose(true);
   bool wrote_value;
   if (!serializer.WriteValue(isolate->GetCurrentContext(), val)
            .To(&wrote_value)) {
-    DCHECK(try_catch.HasCaught());
-    try_catch.ReThrow();
     return false;
   }
-  CHECK(wrote_value);
+  DCHECK(wrote_value);
   std::pair<uint8_t*, size_t> buffer = serializer.Release();
   out->encoded_message = {buffer.first, buffer.second};
   return true;
