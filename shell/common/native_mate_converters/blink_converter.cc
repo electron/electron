@@ -559,6 +559,15 @@ bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
   DCHECK(wrote_value);
   std::pair<uint8_t*, size_t> buffer = serializer.Release();
   out->encoded_message = {buffer.first, buffer.second};
+
+  // Copy the data into the CloneableMessage, so that it's guaranteed to live
+  // at least as long.
+  // TODO: Hack ValueSerializer::Delegate::ReallocateBufferMemory to let the
+  // serializer write directly into out->owned_encoded_value, to eliminate this
+  // final memcpy().
+  out->EnsureDataIsOwned();
+  free(buffer.first);
+
   return true;
 }
 
