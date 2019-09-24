@@ -562,9 +562,9 @@ bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
 
   // Copy the data into the CloneableMessage, so that it's guaranteed to live
   // at least as long.
-  // TODO: Hack ValueSerializer::Delegate::ReallocateBufferMemory to let the
-  // serializer write directly into out->owned_encoded_value, to eliminate this
-  // final memcpy().
+  // TODO(nornagon): Hack ValueSerializer::Delegate::ReallocateBufferMemory to
+  // let the serializer write directly into out->owned_encoded_value, to
+  // eliminate this final memcpy().
   out->EnsureDataIsOwned();
   free(buffer.first);
 
