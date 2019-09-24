@@ -328,9 +328,20 @@ void ExposeReverseBindingInIsolatedWorld(const std::string& key,
   }
 }
 
+bool IsReverseBindingBound(const std::string& key, mate::Arguments* args) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(args->isolate());
+
+  auto* render_frame = GetRenderFrame(dict.GetHandle());
+  RenderFramePersistenceStore* store = GetOrCreateStore(render_frame);
+  DCHECK(store->HasReverseBindingStore());
+
+  return store->GetReverseBindingsStore(dict.isolate()).Has(key);
+}
+
 void ExposeAPIInMainWorld(const std::string& key,
                           mate::Dictionary api,
-                          base::Optional<mate::Dictionary> options) {
+                          base::Optional<mate::Dictionary> options,
+                          mate::Arguments* args) {
   auto* render_frame = GetRenderFrame(api.GetHandle());
   RenderFramePersistenceStore* store = GetOrCreateStore(render_frame);
   DCHECK(store->HasReverseBindingStore());
@@ -339,6 +350,13 @@ void ExposeAPIInMainWorld(const std::string& key,
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
   mate::Dictionary global(main_context->GetIsolate(), main_context->Global());
 
+  if (global.Has(key)) {
+    args->ThrowError(
+        "Cannot bind an API on top of an existing property on the window "
+        "object");
+    return;
+  }
+
   v8::Local<v8::Context> isolated_context =
       frame->WorldScriptContext(api.isolate(), World::ISOLATED_WORLD);
 
@@ -346,13 +364,29 @@ void ExposeAPIInMainWorld(const std::string& key,
   if (options.has_value())
     options->Get("allowReverseBinding", &allow_reverse_binding);
 
+  if (allow_reverse_binding && api.Has("reverseBinding")) {
+    args->ThrowError(
+        "Cannot define property 'reverseBinding' when 'allowReverseBinding' is "
+        "enabled");
+    return;
+  }
+
   {
     v8::Context::Scope main_context_scope(main_context);
     mate::Dictionary proxy =
         CreateProxyForAPI(api, isolated_context, main_context, store);
     if (allow_reverse_binding) {
-      proxy.SetMethod("bind", base::BindRepeating(
-                                  &ExposeReverseBindingInIsolatedWorld, key));
+      mate::Dictionary reverse_bindings =
+          mate::Dictionary::CreateEmpty(api.isolate());
+
+      reverse_bindings.Set(
+          "bind",
+          mate::ConvertToV8(
+              api.isolate(),
+              base::BindOnce(&ExposeReverseBindingInIsolatedWorld, key)));
+      reverse_bindings.SetMethod(
+          "isBound", base::BindRepeating(&IsReverseBindingBound, key));
+      proxy.Set("reverseBinding", reverse_bindings);
     }
     DeepFreeze(proxy.GetHandle(), main_context);
     global.SetReadOnlyNonConfigurable(key, proxy);

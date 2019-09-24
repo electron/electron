@@ -63,7 +63,7 @@ whose keys are strings and values are a `Function`, `String`, `Number`, `Array` 
 `Function` values are proxied to the other context and all other values are **copied** and **frozen**.  I.e. Any data / primtives sent in
 the API object become immutable and updates on either side of the bridge do not result in an update on the other side.
 
-**NOTE:** Arrays containing Functions are currently not supported, Functions must not be a child of an array.
+**NOTE:** Arrays containing Functions or Promises are currently not supported, Functions and Promises must not be children of an array.
 
 An example complex API object is uncluded below.
 
@@ -102,16 +102,16 @@ Because parameters, errors and return values are **copied** when they are sent o
 At a high level if the type you want to use can be serialized and un-serialized into the same object it will work.  A table of type support
 has been included below for completeness.
 
-| Type | Parameter Support | Return Value Support | Limitations |
-| ---- | ----------------- | -------------------- | ----------- |
-| `String` | ✅ | ✅ | N/A |
-| `Number` | ✅ | ✅ | N/A |
-| `Boolean` | ✅ | ✅ | N/A |
-| `Object` | ✅ | ✅ | Keys and values must be supported in this table.  Prototype modifications are dropped.  Sending custom classes will copy values but not the prototype. |
-| `Error` | ✅ | ✅ | Errors that are thrown are also copied, this can result in the message and stack trace of the error changing slightly due to being thrown in a different context |
-| `Promise` | ✅ | ✅ | Promises are proxied through the bridge **only** if it is the return value, promises as function parameters are dropped |
-| `Function` | ❌ | ❌ | N/A |
-| `Symbol` | ❌ | ❌ | Symbols cannot be copied across contexts so they are dropped |
+| Type | Complexity | Parameter Support | Return Value Support | Limitations |
+| ---- | ---------- | ----------------- | -------------------- | ----------- |
+| `String` | Simple | ✅ | ✅ | N/A |
+| `Number` | Simple | ✅ | ✅ | N/A |
+| `Boolean` | Simple | ✅ | ✅ | N/A |
+| `Object` | Simple | ✅ | ✅ | Keys and values must be supported "Simple" types in this table.  Prototype modifications are dropped.  Sending custom classes will copy values but not the prototype. |
+| `Error` | Complex | ✅ | ✅ | Errors that are thrown are also copied, this can result in the message and stack trace of the error changing slightly due to being thrown in a different context |
+| `Promise` | Complex | ✅ | ✅ | Promises are only proxied if they are a the return value or exact parameter.  Promises nested in arrays or obejcts will be dropped. |
+| `Function` | N/A | ❌ | ❌ | N/A |
+| `Symbol` | N/A | ❌ | ❌ | Symbols cannot be copied across contexts so they are dropped |
 
 
 If the type you care about is not in the above table it is probably not supported.
@@ -120,14 +120,17 @@ If the type you care about is not in the above table it is probably not supporte
 
 The `contextBridge.bindAPIInMainWorld` allows you to expose APIs from the **Isolated World** the preload script runs in to the **Main World** the renderer runs in.  If you want
 to allow the main world to provide an API back to the isolated world you can set the `allowReverseBinding` option to `true`.  By setting that option the API exposed in the main
-world will have a new method injected on it on the `bind` key.  You can use this method by providing it a single `api` object in the same structure as the original `bindAPIInMainWorld`
+world will have a new method injected on it on the `bind` key.  You can use this method by providing it a single `api` object in the same limitations as the original `bindAPIInMainWorld`
 API.  An example is included below:
 
 ```javascript
 // Main World
-window[apiKey].bind({
-  doThingInMainWorld: () => doAThing()
-})
+const api = window[apiKey]
+if (!api.reverseBinding.isBound()) {
+  api.reverseBinding.bind({
+    doThingInMainWorld: () => doAThing()
+  })
+}
 ```
 
 Then from the isolated world you can use the `getReverseBinding` API to get a handle to that reverse binding.  Example is continued below.
@@ -136,3 +139,5 @@ Then from the isolated world you can use the `getReverseBinding` API to get a ha
 // Isolated World
 contextBridge.getReverseBinding(apiKey).doThingInMainWorld()
 ```
+
+Please note that you can only call the `reverseBinding.bind` method **once**, all further calls to that method will result in an error being thrown.
