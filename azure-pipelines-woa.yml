@@ -19,6 +19,14 @@ steps:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
 
 - powershell: |
+    $localArtifactPath = "$pwd\src\out\Default\shell_browser_ui_unittests.exe"
+    $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/shell_browser_ui_unittests.exe"
+    Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
+  displayName: 'Download and extract native test executables for test'
+  env:
+    APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
+
+- powershell: |
     $localArtifactPath = "$pwd\ffmpeg.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/ffmpeg.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }

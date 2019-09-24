@@ -187,13 +187,14 @@ async function runNativeElectronTests () {
     // Run test targets
     const failures = []
     for (const target of TEST_TARGETS) {
+      console.info(`Running ./${outDir}/${target}`)
       const testRun = childProcess.spawnSync(`./${outDir}/${target}`, {
         cwd: path.resolve(__dirname, '../..'),
         stdio: 'inherit'
       })
 
       // Collect failures and log at end
-      if (testRun.status !== 0) failures.push(target)
+      if (testRun.status !== 0) failures.push({ target })
     }
 
     // Exit if any failures
