@@ -9,9 +9,9 @@ const getOwnerKey = (webContents: WebContents, contextId: string) => {
 }
 
 class ObjectsRegistry {
-  nextId: number = 0
-  storage: Record<number, { count: number, object: any }>
-  owners: Record<string, Map<number, number>>
+  private nextId: number = 0
+  private storage: Record<number, { count: number, object: any }> = {}
+  private owners: Record<string, Map<number, number>> = {}
   constructor () {
     // Stores all objects by ref-counting.
     // (id) => {object, count}
@@ -123,7 +123,7 @@ class ObjectsRegistry {
   registerDeleteListener (webContents: WebContents, contextId: string) {
     // contextId => ${processHostId}-${contextCount}
     const processHostId = contextId.split('-')[0]
-    const listener = (event: any, deletedProcessHostId: string) => {
+    const listener = (_, deletedProcessHostId: string) => {
       if (deletedProcessHostId &&
           deletedProcessHostId.toString() === processHostId) {
         webContents.removeListener('render-view-deleted' as any, listener)
