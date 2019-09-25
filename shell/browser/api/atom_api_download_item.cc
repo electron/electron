@@ -11,7 +11,6 @@
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 #include "shell/browser/atom_browser_main_parts.h"
-#include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/file_dialog_converter.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
@@ -190,8 +189,8 @@ double DownloadItem::GetStartTime() const {
 void DownloadItem::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "DownloadItem"));
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
       .SetMethod("pause", &DownloadItem::Pause)
       .SetMethod("isPaused", &DownloadItem::IsPaused)
       .SetMethod("resume", &DownloadItem::Resume)

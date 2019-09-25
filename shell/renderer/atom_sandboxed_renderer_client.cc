@@ -15,6 +15,7 @@
 #include "native_mate/dictionary.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_bindings.h"
@@ -45,7 +46,7 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   auto context = isolate->GetCurrentContext();
-  mate::Dictionary global(isolate, context->Global());
+  gin_helper::Dictionary global(isolate, context->Global());
   v8::Local<v8::Value> cache;
 
   if (!global.GetHidden(kModuleCacheKey, &cache)) {
@@ -124,7 +125,7 @@ AtomSandboxedRendererClient::AtomSandboxedRendererClient() {
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
-AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {}
+AtomSandboxedRendererClient::~AtomSandboxedRendererClient() = default;
 
 void AtomSandboxedRendererClient::InitializeBindings(
     v8::Local<v8::Object> binding,

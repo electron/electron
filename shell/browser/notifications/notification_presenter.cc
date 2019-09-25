@@ -10,7 +10,7 @@
 
 namespace electron {
 
-NotificationPresenter::NotificationPresenter() {}
+NotificationPresenter::NotificationPresenter() = default;
 
 NotificationPresenter::~NotificationPresenter() {
   for (Notification* notification : notifications_)

@@ -72,8 +72,6 @@ class RendererClientBase : public content::ContentRendererClient {
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
   void RenderFrameCreated(content::RenderFrame*) override;
-  std::unique_ptr<blink::WebSpeechSynthesizer> OverrideSpeechSynthesizer(
-      blink::WebSpeechSynthesizerClient* client) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;

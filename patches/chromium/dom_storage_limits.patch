@@ -31,10 +31,10 @@ With that in mind, an acceptable alternative to disabling the limit at compile-t
 for a given `BrowserWindow` via a `webPreferences` option,
 similar to [`nodeIntegration`](https://electronjs.org/docs/tutorial/security#2-disable-nodejs-integration-for-remote-content).
 
-diff --git a/content/common/dom_storage/dom_storage_types.h b/content/common/dom_storage/dom_storage_types.h
-index e87afe5b8ee07f7038a7cc9c40832b6cd27884da..61c9a0dfff60f79c7b36ff5c7d741c06dca03ada 100644
---- a/content/common/dom_storage/dom_storage_types.h
-+++ b/content/common/dom_storage/dom_storage_types.h
+diff --git a/content/browser/dom_storage/dom_storage_types.h b/content/browser/dom_storage/dom_storage_types.h
+index 6c0b831ebaaa2c1749bbc7436ce1025656588310..b67767751cadc6072c133297c7a6cdcc6bfd0c98 100644
+--- a/content/browser/dom_storage/dom_storage_types.h
++++ b/content/browser/dom_storage/dom_storage_types.h
 @@ -21,6 +21,7 @@ typedef std::map<base::string16, base::NullableString16> DOMStorageValuesMap;
  
  // The quota for each storage area.

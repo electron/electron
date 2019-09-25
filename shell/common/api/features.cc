@@ -17,6 +17,10 @@ bool IsOffscreenRenderingEnabled() {
   return BUILDFLAG(ENABLE_OSR);
 }
 
+bool IsRemoteModuleEnabled() {
+  return BUILDFLAG(ENABLE_REMOTE_MODULE);
+}
+
 bool IsPDFViewerEnabled() {
   return BUILDFLAG(ENABLE_PDF_VIEWER);
 }
@@ -64,6 +68,7 @@ void Initialize(v8::Local<v8::Object> exports,
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("isDesktopCapturerEnabled", &IsDesktopCapturerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
+  dict.SetMethod("isRemoteModuleEnabled", &IsRemoteModuleEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
   dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);
   dict.SetMethod("isFakeLocationProviderEnabled",

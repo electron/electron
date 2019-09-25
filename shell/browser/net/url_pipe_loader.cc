@@ -59,7 +59,7 @@ void URLPipeLoader::NotifyComplete(int result) {
 
 void URLPipeLoader::OnResponseStarted(
     const GURL& final_url,
-    const network::ResourceResponseHead& response_head) {
+    const network::mojom::URLResponseHead& response_head) {
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
   MojoResult rv = mojo::CreateDataPipe(nullptr, &producer, &consumer);
@@ -70,7 +70,7 @@ void URLPipeLoader::OnResponseStarted(
 
   producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
 
-  client_->OnReceiveResponse(response_head);
+  client_->OnReceiveResponse(response_head.Clone());
   client_->OnStartLoadingResponseBody(std::move(consumer));
 }
 

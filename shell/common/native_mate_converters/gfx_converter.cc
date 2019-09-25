@@ -5,6 +5,7 @@
 #include "shell/common/native_mate_converters/gfx_converter.h"
 
 #include "native_mate/dictionary.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
@@ -15,7 +16,7 @@ namespace mate {
 
 v8::Local<v8::Value> Converter<gfx::Point>::ToV8(v8::Isolate* isolate,
                                                  const gfx::Point& val) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("x", val.x());
   dict.Set("y", val.y());
@@ -25,8 +26,8 @@ v8::Local<v8::Value> Converter<gfx::Point>::ToV8(v8::Isolate* isolate,
 bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
                                    v8::Local<v8::Value> val,
                                    gfx::Point* out) {
-  mate::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
+  gin::Dictionary dict(isolate);
+  if (!gin::ConvertFromV8(isolate, val, &dict))
     return false;
   double x, y;
   if (!dict.Get("x", &x) || !dict.Get("y", &y))
@@ -38,7 +39,7 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::PointF>::ToV8(v8::Isolate* isolate,
                                                   const gfx::PointF& val) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("x", val.x());
   dict.Set("y", val.y());
@@ -48,8 +49,8 @@ v8::Local<v8::Value> Converter<gfx::PointF>::ToV8(v8::Isolate* isolate,
 bool Converter<gfx::PointF>::FromV8(v8::Isolate* isolate,
                                     v8::Local<v8::Value> val,
                                     gfx::PointF* out) {
-  mate::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
+  gin::Dictionary dict(isolate);
+  if (!gin::ConvertFromV8(isolate, val, &dict))
     return false;
   float x, y;
   if (!dict.Get("x", &x) || !dict.Get("y", &y))
@@ -60,7 +61,7 @@ bool Converter<gfx::PointF>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
                                                 const gfx::Size& val) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("width", val.width());
   dict.Set("height", val.height());
@@ -70,8 +71,8 @@ v8::Local<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
 bool Converter<gfx::Size>::FromV8(v8::Isolate* isolate,
                                   v8::Local<v8::Value> val,
                                   gfx::Size* out) {
-  mate::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
+  gin::Dictionary dict(isolate);
+  if (!gin::ConvertFromV8(isolate, val, &dict))
     return false;
   int width, height;
   if (!dict.Get("width", &width) || !dict.Get("height", &height))
@@ -82,7 +83,7 @@ bool Converter<gfx::Size>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::Rect>::ToV8(v8::Isolate* isolate,
                                                 const gfx::Rect& val) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("x", val.x());
   dict.Set("y", val.y());
@@ -94,8 +95,8 @@ v8::Local<v8::Value> Converter<gfx::Rect>::ToV8(v8::Isolate* isolate,
 bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
                                   v8::Local<v8::Value> val,
                                   gfx::Rect* out) {
-  mate::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
+  gin::Dictionary dict(isolate);
+  if (!gin::ConvertFromV8(isolate, val, &dict))
     return false;
   int x, y, width, height;
   if (!dict.Get("x", &x) || !dict.Get("y", &y) || !dict.Get("width", &width) ||
@@ -140,7 +141,8 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
     v8::Isolate* isolate,
     const display::Display& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.SetHidden("simple", true);
+  // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
+  gin_helper::Dictionary(isolate, dict.GetHandle()).SetHidden("simple", true);
   dict.Set("id", val.id());
   dict.Set("bounds", val.bounds());
   dict.Set("workArea", val.work_area());

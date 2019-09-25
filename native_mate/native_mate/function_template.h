@@ -5,12 +5,15 @@
 #ifndef NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 #define NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 
-#include "../shell/common/error_util.h"
+#include "../shell/common/gin_helper/destroyable.h"
+#include "../shell/common/gin_helper/error_thrower.h"
 #include "base/callback.h"
-#include "base/logging.h"
 #include "native_mate/arguments.h"
 #include "native_mate/wrappable_base.h"
-#include "v8/include/v8.h"
+
+// =============================== NOTICE ===============================
+// Do not add code here, native_mate is being removed. Any new code
+// should use gin instead.
 
 namespace mate {
 
@@ -19,23 +22,6 @@ enum CreateFunctionTemplateFlags {
 };
 
 namespace internal {
-
-struct Destroyable {
-  static void Destroy(Arguments* args) {
-    if (IsDestroyed(args))
-      return;
-
-    v8::Local<v8::Object> holder = args->GetHolder();
-    delete static_cast<WrappableBase*>(
-        holder->GetAlignedPointerFromInternalField(0));
-    holder->SetAlignedPointerInInternalField(0, nullptr);
-  }
-  static bool IsDestroyed(Arguments* args) {
-    v8::Local<v8::Object> holder = args->GetHolder();
-    return holder->InternalFieldCount() == 0 ||
-           holder->GetAlignedPointerFromInternalField(0) == nullptr;
-  }
-};
 
 template <typename T>
 struct CallbackParamTraits {
@@ -134,8 +120,8 @@ inline bool GetNextArgument(Arguments* args,
 inline bool GetNextArgument(Arguments* args,
                             int create_flags,
                             bool is_first,
-                            electron::util::ErrorThrower* result) {
-  *result = electron::util::ErrorThrower(args->isolate());
+                            gin_helper::ErrorThrower* result) {
+  *result = gin_helper::ErrorThrower(args->isolate());
   return true;
 }
 
@@ -166,7 +152,7 @@ struct ArgumentHolder {
 
   ArgumentHolder(Arguments* args, int create_flags) {
     if (index == 0 && (create_flags & HolderIsFirstArgument) &&
-        Destroyable::IsDestroyed(args)) {
+        gin_helper::Destroyable::IsDestroyed(args->GetHolder())) {
       args->ThrowError("Object has been destroyed");
       return;
     }

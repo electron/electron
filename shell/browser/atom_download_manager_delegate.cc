@@ -23,7 +23,8 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/web_contents_preferences.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/options_switches.h"
 
 namespace electron {
@@ -89,6 +90,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     const content::DownloadTargetCallback& callback,
     const base::FilePath& default_path) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
 
   auto* item = download_manager_->GetDownload(download_id);
   if (!item)
@@ -122,7 +124,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     settings.force_detached = offscreen;
 
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    electron::util::Promise<mate::Dictionary> dialog_promise(isolate);
+    electron::util::Promise<gin_helper::Dictionary> dialog_promise(isolate);
     auto dialog_callback =
         base::BindOnce(&AtomDownloadManagerDelegate::OnDownloadSaveDialogDone,
                        base::Unretained(this), download_id, callback);
@@ -139,7 +141,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
 void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
     uint32_t download_id,
     const content::DownloadTargetCallback& download_callback,
-    mate::Dictionary result) {
+    gin_helper::Dictionary result) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   auto* item = download_manager_->GetDownload(download_id);
@@ -215,9 +217,9 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
   base::FilePath default_download_path =
       browser_context->prefs()->GetFilePath(prefs::kDownloadDefaultDirectory);
 
-  base::PostTaskWithTraitsAndReplyWithResult(
+  base::PostTaskAndReplyWithResult(
       FROM_HERE,
-      {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
+      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::BEST_EFFORT,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
       base::BindOnce(&CreateDownloadPath, download->GetURL(),
                      download->GetContentDisposition(),

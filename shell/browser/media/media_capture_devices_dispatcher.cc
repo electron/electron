@@ -40,7 +40,7 @@ MediaCaptureDevicesDispatcher::MediaCaptureDevicesDispatcher()
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 }
 
-MediaCaptureDevicesDispatcher::~MediaCaptureDevicesDispatcher() {}
+MediaCaptureDevicesDispatcher::~MediaCaptureDevicesDispatcher() = default;
 
 const blink::MediaStreamDevices&
 MediaCaptureDevicesDispatcher::GetAudioCaptureDevices() {

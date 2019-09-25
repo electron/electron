@@ -9,6 +9,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "gin/converter.h"
@@ -19,7 +20,6 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/api/constructor.h"
 #include "shell/common/color_util.h"
-#include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -44,9 +44,20 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   if (options.Get(options::kBackgroundColor, &value))
     web_preferences.Set(options::kBackgroundColor, value);
 
+  // Copy the transparent setting to webContents
   v8::Local<v8::Value> transparent;
   if (options.Get("transparent", &transparent))
     web_preferences.Set("transparent", transparent);
+
+  // Copy the show setting to webContents, but only if we don't want to paint
+  // when initially hidden
+  bool paint_when_initially_hidden = true;
+  options.Get("paintWhenInitiallyHidden", &paint_when_initially_hidden);
+  if (!paint_when_initially_hidden) {
+    bool show = true;
+    options.Get(options::kShow, &show);
+    web_preferences.Set(options::kShow, show);
+  }
 
   if (options.Get("webContents", &web_contents) && !web_contents.IsEmpty()) {
     // Set webPreferences from options if using an existing webContents.
@@ -385,8 +396,8 @@ std::unique_ptr<SkRegion> BrowserWindow::DraggableRegionsToSkRegion(
   auto sk_region = std::make_unique<SkRegion>();
   for (const auto& region : regions) {
     sk_region->op(
-        region->bounds.x(), region->bounds.y(), region->bounds.right(),
-        region->bounds.bottom(),
+        {region->bounds.x(), region->bounds.y(), region->bounds.right(),
+         region->bounds.bottom()},
         region->draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
   return sk_region;
@@ -420,6 +431,16 @@ void BrowserWindow::Cleanup() {
   // because destroy() might be called inside WebContents's event handler.
   api_web_contents_->DestroyWebContents(!Browser::Get()->is_shutting_down());
   Observe(nullptr);
+}
+
+void BrowserWindow::OnWindowShow() {
+  web_contents()->WasShown();
+  TopLevelWindow::OnWindowShow();
+}
+
+void BrowserWindow::OnWindowHide() {
+  web_contents()->WasHidden();
+  TopLevelWindow::OnWindowHide();
 }
 
 // static

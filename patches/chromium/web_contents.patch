@@ -5,10 +5,10 @@ Subject: web_contents.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 30c4165bdb6af4cbab48954570c55cbe60cb598d..337c2bade32055f813009e0dbd33621499a921bf 100644
+index ba990c79d5bf88077cef601d63d604b2e372bab3..709230e0ecf624c0014b3a2e61f90c25dc23ebe7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2136,6 +2136,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2142,6 +2142,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    std::string unique_name;
    frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
  
@@ -21,7 +21,7 @@ index 30c4165bdb6af4cbab48954570c55cbe60cb598d..337c2bade32055f813009e0dbd336214
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -2151,6 +2157,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2157,6 +2163,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
            &render_view_host_delegate_view_);
      }
    }
@@ -30,7 +30,7 @@ index 30c4165bdb6af4cbab48954570c55cbe60cb598d..337c2bade32055f813009e0dbd336214
    CHECK(view_.get());
  
 diff --git a/content/browser/web_contents/web_contents_view_guest.cc b/content/browser/web_contents/web_contents_view_guest.cc
-index ecaf30bcb7b916a92a69641dd7b96a3633d407c0..0af625928ca6227a21cd4263a14a42b72095399c 100644
+index c45581fd22b7ba28b76bdebfffdc872b820798c8..f22ac0e611cc79aa1bc7f85836d69e3a8e326a6e 100644
 --- a/content/browser/web_contents/web_contents_view_guest.cc
 +++ b/content/browser/web_contents/web_contents_view_guest.cc
 @@ -68,19 +68,27 @@ gfx::NativeWindow WebContentsViewGuest::GetTopLevelNativeWindow() const {
@@ -64,7 +64,7 @@ index ecaf30bcb7b916a92a69641dd7b96a3633d407c0..0af625928ca6227a21cd4263a14a42b7
  #endif  // defined(USE_AURA)
  }
  
-@@ -132,11 +140,22 @@ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForWidget(
+@@ -130,11 +138,22 @@ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForWidget(
          render_widget_host->GetView());
    }
  
@@ -92,10 +92,10 @@ index ecaf30bcb7b916a92a69641dd7b96a3633d407c0..0af625928ca6227a21cd4263a14a42b7
  
  RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForChildWidget(
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 4ff447d0615d0e14995581ca07bba5118750c29a..818e357453e9b14a62b1b461bb41f85fc74e033d 100644
+index 9dd92030f9a4a0405c9d7724817a5fc3bf497da1..9bef76029aa3e71cf9ac3d2ac5a5e3a66e60c165 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -76,9 +76,12 @@ class BrowserPluginGuestDelegate;
+@@ -79,9 +79,12 @@ class BrowserPluginGuestDelegate;
  class InterstitialPage;
  class RenderFrameHost;
  class RenderViewHost;

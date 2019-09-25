@@ -21,7 +21,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/atom_application.h"
 #include "shell/browser/mac/dict_util.h"
@@ -405,7 +405,7 @@ std::string SystemPreferences::GetAccentColor() {
   return base::SysNSStringToUTF8([sysColor RGBAValue]);
 }
 
-std::string SystemPreferences::GetSystemColor(util::ErrorThrower thrower,
+std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
                                               const std::string& color) {
   NSColor* sysColor = nil;
   if (color == "blue") {

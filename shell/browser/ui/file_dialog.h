@@ -10,8 +10,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/promise_util.h"
 
 namespace electron {
@@ -66,12 +65,12 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
                         std::vector<base::FilePath>* paths);
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise<mate::Dictionary> promise);
+                    electron::util::Promise<gin_helper::Dictionary> promise);
 
 bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path);
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise<mate::Dictionary> promise);
+                    electron::util::Promise<gin_helper::Dictionary> promise);
 
 }  // namespace file_dialog
 

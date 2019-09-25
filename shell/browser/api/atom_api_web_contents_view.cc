@@ -22,7 +22,7 @@ namespace {
 class WebContentsViewRelay
     : public content::WebContentsUserData<WebContentsViewRelay> {
  public:
-  ~WebContentsViewRelay() override {}
+  ~WebContentsViewRelay() override = default;
 
  private:
   explicit WebContentsViewRelay(content::WebContents* contents) {}

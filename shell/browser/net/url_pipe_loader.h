@@ -47,7 +47,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
              base::DictionaryValue upload_data);
   void NotifyComplete(int result);
   void OnResponseStarted(const GURL& final_url,
-                         const network::ResourceResponseHead& response_head);
+                         const network::mojom::URLResponseHead& response_head);
   void OnWrite(base::OnceClosure resume, MojoResult result);
 
   // SimpleURLLoaderStreamConsumer:

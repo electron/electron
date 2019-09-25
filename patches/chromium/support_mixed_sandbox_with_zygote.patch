@@ -22,21 +22,22 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 20d0b4a801bdbe0300f878f369fc9017fc8aea3f..6302948343ee810a9d35a70be0c91a1ffbfb7647 100644
+index 65b6d31f5438c1f97fccef4dd3c71ed125a15d5c..b14ed42882fb7feffdb1c481f8d02007d38f134c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -378,6 +378,10 @@ class RendererSandboxedProcessLauncherDelegate
-     : public SandboxedProcessLauncherDelegate {
-  public:
-   RendererSandboxedProcessLauncherDelegate() {}
+@@ -392,6 +392,11 @@ class RendererSandboxedProcessLauncherDelegate
+   {
+   }
+ 
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +  RendererSandboxedProcessLauncherDelegate(bool use_zygote):
 +    use_zygote_(use_zygote) {}
 +#endif
- 
++
    ~RendererSandboxedProcessLauncherDelegate() override {}
  
-@@ -397,6 +401,9 @@ class RendererSandboxedProcessLauncherDelegate
+ #if defined(OS_WIN)
+@@ -413,6 +418,9 @@ class RendererSandboxedProcessLauncherDelegate
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
    service_manager::ZygoteHandle GetZygote() override {
@@ -46,19 +47,22 @@ index 20d0b4a801bdbe0300f878f369fc9017fc8aea3f..6302948343ee810a9d35a70be0c91a1f
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -410,6 +417,11 @@ class RendererSandboxedProcessLauncherDelegate
-   service_manager::SandboxType GetSandboxType() override {
+@@ -427,10 +435,13 @@ class RendererSandboxedProcessLauncherDelegate
      return service_manager::SANDBOX_TYPE_RENDERER;
    }
-+
-+ private:
+ 
+-#if defined(OS_WIN)
+  private:
++#if defined(OS_WIN)
+   const bool renderer_code_integrity_enabled_;
+ #endif
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +  bool use_zygote_ = true;
 +#endif
  };
  
  const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1746,11 +1758,18 @@ bool RenderProcessHostImpl::Init() {
+@@ -1690,11 +1701,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  

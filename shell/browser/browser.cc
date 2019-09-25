@@ -167,7 +167,7 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
 
 const util::Promise<void*>& Browser::WhenReady(v8::Isolate* isolate) {
   if (!ready_promise_) {
-    ready_promise_.reset(new util::Promise<void*>(isolate));
+    ready_promise_ = std::make_unique<util::Promise<void*>>(isolate);
     if (is_ready()) {
       ready_promise_->Resolve();
     }

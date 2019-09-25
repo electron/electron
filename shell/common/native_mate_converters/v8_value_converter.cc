@@ -10,10 +10,8 @@
 #include <utility>
 #include <vector>
 
-#include "base/logging.h"
 #include "base/values.h"
-#include "native_mate/dictionary.h"
-
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 
@@ -124,7 +122,7 @@ class V8ValueConverter::ScopedUniquenessGuard {
   DISALLOW_COPY_AND_ASSIGN(ScopedUniquenessGuard);
 };
 
-V8ValueConverter::V8ValueConverter() {}
+V8ValueConverter::V8ValueConverter() = default;
 
 void V8ValueConverter::SetRegExpAllowed(bool val) {
   reg_exp_allowed_ = val;
@@ -224,7 +222,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
 v8::Local<v8::Value> V8ValueConverter::ToV8Object(
     v8::Isolate* isolate,
     const base::DictionaryValue* val) const {
-  mate::Dictionary result = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary result = gin::Dictionary::CreateEmpty(isolate);
   result.SetHidden("simple", true);
 
   for (base::DictionaryValue::Iterator iter(*val); !iter.IsAtEnd();
@@ -262,7 +260,7 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
   // From this point, if something goes wrong(can't find Buffer class for
   // example) we'll simply return a Uint8Array based on the created ArrayBuffer.
   // This can happen if no preload script was specified to the renderer.
-  mate::Dictionary global(isolate, context->Global());
+  gin_helper::Dictionary global(isolate, context->Global());
   v8::Local<v8::Value> buffer_value;
 
   // Get the Buffer class stored as a hidden value in the global object. We'll
@@ -272,7 +270,7 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
     return v8::Uint8Array::New(array_buffer, 0, length);
   }
 
-  mate::Dictionary buffer_class(
+  gin::Dictionary buffer_class(
       isolate,
       buffer_value->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
   v8::Local<v8::Value> from_value;
@@ -388,7 +386,7 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Array(
   // that context, but change back after val is converted.
   if (!val->CreationContext().IsEmpty() &&
       val->CreationContext() != isolate->GetCurrentContext())
-    scope.reset(new v8::Context::Scope(val->CreationContext()));
+    scope = std::make_unique<v8::Context::Scope>(val->CreationContext());
 
   std::unique_ptr<base::ListValue> result(new base::ListValue());
 
@@ -444,7 +442,7 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Object(
   // that context, but change back after val is converted.
   if (!val->CreationContext().IsEmpty() &&
       val->CreationContext() != isolate->GetCurrentContext())
-    scope.reset(new v8::Context::Scope(val->CreationContext()));
+    scope = std::make_unique<v8::Context::Scope>(val->CreationContext());
 
   auto result = std::make_unique<base::DictionaryValue>();
   v8::Local<v8::Array> property_names;

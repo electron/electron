@@ -324,7 +324,7 @@ describe('chromium features', () => {
   })
 
   // FIXME(robo/nornagon): re-enable these once service workers work
-  describe.skip('navigator.serviceWorker', () => {
+  describe('navigator.serviceWorker', () => {
     it('should register for file scheme', (done) => {
       const w = new BrowserWindow({
         show: false,
@@ -487,7 +487,7 @@ describe('chromium features', () => {
       }
       foo.baz2 = foo.baz
       const w = new BrowserWindow({ show: false, foo: foo } as any)
-      
+
       w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'))
       w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
         expect(options.show).to.be.false()

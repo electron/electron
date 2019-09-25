@@ -66,7 +66,8 @@ void GPUInfoManager::CompleteInfoFetcher(
   complete_info_promise_set_.emplace_back(std::move(promise));
 
   if (NeedsCompleteGpuInfoCollection()) {
-    gpu_data_manager_->RequestCompleteGpuInfoIfNeeded();
+    gpu_data_manager_->RequestCompleteGpuInfoIfNeeded(
+        content::kGpuInfoRequestAll, /* delayed */ false);
   } else {
     GPUInfoManager::OnGpuInfoUpdate();
   }

@@ -12,7 +12,7 @@
 #include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_system_preferences.h"
 #include "shell/common/native_mate_converters/accelerator_converter.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/node_includes.h"
 
 #if defined(OS_MACOSX)

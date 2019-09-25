@@ -876,7 +876,7 @@ describe('net module', () => {
       })
     })
 
-    it('should not follow redirect when mode is error', (done) => {
+    it.skip('should not follow redirect when mode is error', (done) => {
       respondOnce.toSingleURL((request, response) => {
         response.statusCode = 301
         response.setHeader('Location', '/200')

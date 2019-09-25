@@ -12,7 +12,7 @@
 #include "base/threading/thread_restrictions.h"
 #include "content/public/browser/tracing_controller.h"
 #include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
@@ -88,8 +88,10 @@ v8::Local<v8::Promise> StopRecording(mate::Arguments* args) {
     StopTracing(std::move(promise), base::make_optional(path));
   } else {
     // use a temporary file.
-    base::PostTaskWithTraitsAndReplyWithResult(
-        FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
+    base::PostTaskAndReplyWithResult(
+        FROM_HERE,
+        {base::ThreadPool(), base::MayBlock(),
+         base::TaskPriority::USER_VISIBLE},
         base::BindOnce(CreateTemporaryFileOnIO),
         base::BindOnce(StopTracing, std::move(promise)));
   }
