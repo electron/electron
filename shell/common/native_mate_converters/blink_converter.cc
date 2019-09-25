@@ -584,19 +584,6 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     isolate_->ThrowException(v8::Exception::Error(message));
   }
 
-  /*
-  v8::Maybe<bool> WriteHostObject(v8::Isolate* isolate,
-                                  v8::Local<v8::Object> object) override {
-    DCHECK_EQ(isolate, isolate_);
-    if (!WriteBaseValue(object)) {
-      isolate->ThrowException(
-          mate::StringToV8(isolate, "An object could not be cloned."));
-      return v8::Nothing<bool>();
-    }
-    return v8::Just(true);
-  }
-  */
-
   bool WriteBaseValue(v8::Local<v8::Value> object) {
     node::Environment* env = node::Environment::GetCurrent(isolate_);
     if (env) {
@@ -690,22 +677,6 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
     *value = ConvertToV8(isolate_, out);
     return true;
   }
-
-  /*
-  v8::MaybeLocal<v8::Object> ReadHostObject(v8::Isolate* isolate) override {
-    DCHECK_EQ(isolate, isolate_);
-    v8::Local<v8::Value> value;
-    if (!ReadBaseValue(&value)) {
-      isolate->ThrowException(
-          mate::StringToV8(isolate, "Unable to deserialize cloned data."));
-      return v8::MaybeLocal<v8::Object>();
-    }
-    if (!value->IsObject()) {
-      return v8::MaybeLocal<v8::Object>(v8::Object::New(isolate));
-    }
-    return value.As<v8::Object>();
-  }
-  */
 
  private:
   v8::Isolate* isolate_;
