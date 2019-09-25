@@ -25,7 +25,7 @@ app.once('ready', () => {
     app.exit(1)
   })
 
-  window.loadFile(path.resolve(__dirname, 'asar', 'video.asar', 'index.html'))
+  window.loadFile(path.resolve(__dirname, 'test.asar', 'video.asar', 'index.html'))
 
   ipcMain.on('asar-video', (event, message, error) => {
     if (message === 'ended') {
