@@ -21,6 +21,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 #include "shell/renderer/api/atom_api_spell_check_client.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/platform/web_cache.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/web_custom_element.h"
@@ -249,11 +250,11 @@ double GetZoomLevel(v8::Local<v8::Value> window) {
 }
 
 void SetZoomFactor(v8::Local<v8::Value> window, double factor) {
-  SetZoomLevel(window, blink::WebView::ZoomFactorToZoomLevel(factor));
+  SetZoomLevel(window, blink::PageZoomFactorToZoomLevel(factor));
 }
 
 double GetZoomFactor(v8::Local<v8::Value> window) {
-  return blink::WebView::ZoomLevelToZoomFactor(GetZoomLevel(window));
+  return blink::PageZoomLevelToZoomFactor(GetZoomLevel(window));
 }
 
 void SetVisualZoomLevelLimits(v8::Local<v8::Value> window,

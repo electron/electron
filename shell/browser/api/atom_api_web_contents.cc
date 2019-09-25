@@ -86,6 +86,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/platform/web_cursor_info.h"
 #include "third_party/blink/public/platform/web_input_event.h"
@@ -2220,20 +2221,20 @@ double WebContents::GetZoomLevel() const {
 }
 
 void WebContents::SetZoomFactor(double factor) {
-  auto level = content::ZoomFactorToZoomLevel(factor);
+  auto level = blink::PageZoomFactorToZoomLevel(factor);
   SetZoomLevel(level);
 }
 
 double WebContents::GetZoomFactor() const {
   auto level = GetZoomLevel();
-  return content::ZoomLevelToZoomFactor(level);
+  return blink::PageZoomLevelToZoomFactor(level);
 }
 
 void WebContents::SetZoomLimits(double min_zoom, double max_zoom) {
   // Round the double to avoid returning incorrect minimum/maximum zoom
   // percentages.
-  int minimum_percent = round(content::ZoomLevelToZoomFactor(min_zoom) * 100);
-  int maximum_percent = round(content::ZoomLevelToZoomFactor(max_zoom) * 100);
+  int minimum_percent = round(blink::PageZoomLevelToZoomFactor(min_zoom) * 100);
+  int maximum_percent = round(blink::PageZoomLevelToZoomFactor(max_zoom) * 100);
   web_contents()->SetMinimumZoomPercent(minimum_percent);
   web_contents()->SetMaximumZoomPercent(maximum_percent);
 }

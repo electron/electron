@@ -103,6 +103,8 @@ class WebContentsZoomController
   // kZoomFactor.
   double default_zoom_factor_ = 0;
 
+  const double kPageZoomEpsilon = 0.001;
+
   int old_process_id_ = -1;
   int old_view_id_ = -1;
 
