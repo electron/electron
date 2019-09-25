@@ -16,6 +16,7 @@
 #include "mojo/public/cpp/base/values_mojom_traits.h"
 #include "mojo/public/mojom/base/values.mojom.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/deprecate_util.h"
 #include "shell/common/keyboard_util.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "third_party/blink/public/platform/web_input_event.h"
@@ -534,16 +535,37 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
 namespace {
 class V8Serializer : public v8::ValueSerializer::Delegate {
  public:
-  explicit V8Serializer(v8::Isolate* isolate)
-      : isolate_(isolate), serializer_(isolate, this) {}
+  explicit V8Serializer(v8::Isolate* isolate,
+                        bool use_old_serialization = false)
+      : isolate_(isolate),
+        serializer_(isolate, this),
+        use_old_serialization_(use_old_serialization) {}
+
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
     serializer_.WriteHeader();
-    bool wrote_value;
-    if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
-             .To(&wrote_value)) {
-      return false;
+    if (use_old_serialization_) {
+      WriteTag(1);
+      if (!WriteBaseValue(value)) {
+        isolate_->ThrowException(
+            mate::StringToV8(isolate_, "An object could not be cloned."));
+        return false;
+      }
+    } else {
+      WriteTag(0);
+      bool wrote_value;
+      v8::TryCatch try_catch(isolate_);
+      if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
+               .To(&wrote_value)) {
+        try_catch.Reset();
+        if (!V8Serializer(isolate_, true).Serialize(value, out)) {
+          try_catch.ReThrow();
+          return false;
+        }
+        return true;
+      }
+      DCHECK(wrote_value);
     }
-    DCHECK(wrote_value);
+
     std::pair<uint8_t*, size_t> buffer = serializer_.Release();
     out->encoded_message = {buffer.first, buffer.second};
 
@@ -554,7 +576,6 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     // eliminate this final memcpy().
     out->EnsureDataIsOwned();
     free(buffer.first);
-
     return true;
   }
 
@@ -563,25 +584,46 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     isolate_->ThrowException(v8::Exception::Error(message));
   }
 
+  /*
   v8::Maybe<bool> WriteHostObject(v8::Isolate* isolate,
                                   v8::Local<v8::Object> object) override {
     DCHECK_EQ(isolate, isolate_);
-    base::Value value;
-    if (!ConvertFromV8(isolate, object, &value)) {
+    if (!WriteBaseValue(object)) {
       isolate->ThrowException(
           mate::StringToV8(isolate, "An object could not be cloned."));
       return v8::Nothing<bool>();
+    }
+    return v8::Just(true);
+  }
+  */
+
+  bool WriteBaseValue(v8::Local<v8::Value> object) {
+    node::Environment* env = node::Environment::GetCurrent(isolate_);
+    if (env) {
+      electron::EmitDeprecationWarning(
+          env,
+          "Passing functions, DOM objects and other non-cloneable JavaScript "
+          "objects to IPC methods is deprecated and will throw an exception "
+          "beginning with Electron 9.",
+          "DeprecationWarning");
+    }
+    base::Value value;
+    if (!ConvertFromV8(isolate_, object, &value)) {
+      return false;
     }
     mojo::Message message = mojo_base::mojom::Value::SerializeAsMessage(&value);
 
     serializer_.WriteUint32(message.data_num_bytes());
     serializer_.WriteRawBytes(message.data(), message.data_num_bytes());
-    return v8::Just(true);
+    return true;
   }
+
+  void WriteTag(uint8_t tag) { serializer_.WriteRawBytes(&tag, 1); }
 
  private:
   v8::Isolate* isolate_;
   v8::ValueSerializer serializer_;
+  bool use_old_serialization_;
 };
 
 class V8Deserializer : public v8::ValueDeserializer::Delegate {
@@ -600,36 +642,70 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
     if (!deserializer_.ReadHeader(context).To(&read_header))
       return v8::Null(isolate_);
     DCHECK(read_header);
-    v8::Local<v8::Value> value;
-    if (!deserializer_.ReadValue(context).ToLocal(&value))
+    uint8_t tag;
+    if (!ReadTag(&tag))
       return v8::Null(isolate_);
-    return scope.Escape(value);
+    switch (tag) {
+      case 0: {
+        v8::Local<v8::Value> value;
+        if (!deserializer_.ReadValue(context).ToLocal(&value)) {
+          return v8::Null(isolate_);
+        }
+        return scope.Escape(value);
+      }
+      case 1: {
+        v8::Local<v8::Value> value;
+        if (!ReadBaseValue(&value)) {
+          return v8::Null(isolate_);
+        }
+        return scope.Escape(value);
+      }
+      default:
+        NOTREACHED() << "Invalid tag";
+        return v8::Null(isolate_);
+    }
   }
 
-  v8::MaybeLocal<v8::Object> ReadHostObject(v8::Isolate* isolate) override {
-    DCHECK_EQ(isolate, isolate_);
+  bool ReadTag(uint8_t* tag) {
+    const void* tag_bytes;
+    if (!deserializer_.ReadRawBytes(1, &tag_bytes))
+      return false;
+    *tag = *reinterpret_cast<const uint8_t*>(tag_bytes);
+    return true;
+  }
+
+  bool ReadBaseValue(v8::Local<v8::Value>* value) {
     uint32_t length;
     const void* data;
     if (!deserializer_.ReadUint32(&length) ||
         !deserializer_.ReadRawBytes(length, &data)) {
-      isolate->ThrowException(
-          mate::StringToV8(isolate, "Unable to deserialize cloned data."));
-      return v8::MaybeLocal<v8::Object>();
+      return false;
     }
     mojo::Message message({reinterpret_cast<const uint8_t*>(data), length}, {});
     base::Value out;
     if (!mojo_base::mojom::Value::DeserializeFromMessage(std::move(message),
                                                          &out)) {
+      return false;
+    }
+    *value = ConvertToV8(isolate_, out);
+    return true;
+  }
+
+  /*
+  v8::MaybeLocal<v8::Object> ReadHostObject(v8::Isolate* isolate) override {
+    DCHECK_EQ(isolate, isolate_);
+    v8::Local<v8::Value> value;
+    if (!ReadBaseValue(&value)) {
       isolate->ThrowException(
           mate::StringToV8(isolate, "Unable to deserialize cloned data."));
       return v8::MaybeLocal<v8::Object>();
     }
-    v8::Local<v8::Value> value = ConvertToV8(isolate, out);
     if (!value->IsObject()) {
       return v8::MaybeLocal<v8::Object>(v8::Object::New(isolate));
     }
     return value.As<v8::Object>();
   }
+  */
 
  private:
   v8::Isolate* isolate_;

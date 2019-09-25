@@ -52,6 +52,8 @@ describe('ipcRenderer module', () => {
       expect(Buffer.from(data).equals(received)).to.be.true()
     })
 
+    // TODO(nornagon): Change this test to expect an exception to be thrown in
+    // Electron 9.
     it('can send objects with DOM class prototypes', async () => {
       w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
@@ -62,6 +64,8 @@ describe('ipcRenderer module', () => {
       expect(value.hostname).to.equal('')
     })
 
+    // TODO(nornagon): Change this test to expect an exception to be thrown in
+    // Electron 9.
     it('does not crash when sending external objects', async () => {
       w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
@@ -74,7 +78,7 @@ describe('ipcRenderer module', () => {
       }`)
       const [, externalStreamValue] = await emittedOnce(ipcMain, 'message')
 
-      expect(externalStreamValue).to.eql({})
+      expect(externalStreamValue).to.be.null()
     })
 
     it('can send objects that both reference the same object', async () => {
