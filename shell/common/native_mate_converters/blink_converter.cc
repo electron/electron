@@ -13,8 +13,11 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "gin/converter.h"
+#include "mojo/public/cpp/base/values_mojom_traits.h"
+#include "mojo/public/mojom/base/values.mojom.h"
 #include "native_mate/dictionary.h"
 #include "shell/common/keyboard_util.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/platform/web_mouse_event.h"
 #include "third_party/blink/public/platform/web_mouse_wheel_event.h"
@@ -528,47 +531,123 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
   return true;
 }
 
+namespace {
+class V8Serializer : public v8::ValueSerializer::Delegate {
+ public:
+  V8Serializer(v8::Isolate* isolate)
+      : isolate_(isolate), serializer_(isolate, this) {}
+  bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
+    serializer_.WriteHeader();
+    bool wrote_value;
+    if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
+             .To(&wrote_value)) {
+      return false;
+    }
+    DCHECK(wrote_value);
+    std::pair<uint8_t*, size_t> buffer = serializer_.Release();
+    out->encoded_message = {buffer.first, buffer.second};
+
+    // Copy the data into the CloneableMessage, so that it's guaranteed to live
+    // at least as long.
+    // TODO(nornagon): Hack ValueSerializer::Delegate::ReallocateBufferMemory to
+    // let the serializer write directly into out->owned_encoded_value, to
+    // eliminate this final memcpy().
+    out->EnsureDataIsOwned();
+    free(buffer.first);
+
+    return true;
+  }
+
+  // v8::ValueSerializer::Delegate
+  void ThrowDataCloneError(v8::Local<v8::String> message) override {
+    isolate_->ThrowException(v8::Exception::Error(message));
+  }
+
+  v8::Maybe<bool> WriteHostObject(v8::Isolate* isolate,
+                                  v8::Local<v8::Object> object) override {
+    DCHECK_EQ(isolate, isolate_);
+    base::Value value;
+    if (!ConvertFromV8(isolate, object, &value)) {
+      isolate->ThrowException(
+          mate::StringToV8(isolate, "An object could not be cloned."));
+      return v8::Nothing<bool>();
+    }
+    mojo::Message message = mojo_base::mojom::Value::SerializeAsMessage(&value);
+
+    serializer_.WriteUint32(message.data_num_bytes());
+    serializer_.WriteRawBytes(message.data(), message.data_num_bytes());
+    return v8::Just(true);
+  }
+
+ private:
+  v8::Isolate* isolate_;
+  v8::ValueSerializer serializer_;
+};
+
+class V8Deserializer : public v8::ValueDeserializer::Delegate {
+ public:
+  V8Deserializer(v8::Isolate* isolate, const blink::CloneableMessage& message)
+      : isolate_(isolate),
+        deserializer_(isolate,
+                      message.encoded_message.data(),
+                      message.encoded_message.size(),
+                      this) {}
+
+  v8::Local<v8::Value> Deserialize() {
+    v8::EscapableHandleScope scope(isolate_);
+    auto context = isolate_->GetCurrentContext();
+    bool read_header;
+    if (!deserializer_.ReadHeader(context).To(&read_header))
+      return v8::Null(isolate_);
+    DCHECK(read_header);
+    v8::Local<v8::Value> value;
+    if (!deserializer_.ReadValue(context).ToLocal(&value))
+      return v8::Null(isolate_);
+    return scope.Escape(value);
+  }
+
+  v8::MaybeLocal<v8::Object> ReadHostObject(v8::Isolate* isolate) override {
+    DCHECK_EQ(isolate, isolate_);
+    uint32_t length;
+    const void* data;
+    if (!deserializer_.ReadUint32(&length) ||
+        !deserializer_.ReadRawBytes(length, &data)) {
+      isolate->ThrowException(
+          mate::StringToV8(isolate, "Unable to deserialize cloned data."));
+      return v8::MaybeLocal<v8::Object>();
+    }
+    mojo::Message message({reinterpret_cast<const uint8_t*>(data), length}, {});
+    base::Value out;
+    if (!mojo_base::mojom::Value::DeserializeFromMessage(std::move(message),
+                                                         &out)) {
+      isolate->ThrowException(
+          mate::StringToV8(isolate, "Unable to deserialize cloned data."));
+      return v8::MaybeLocal<v8::Object>();
+    }
+    v8::Local<v8::Value> value = ConvertToV8(isolate, out);
+    if (!value->IsObject()) {
+      return v8::MaybeLocal<v8::Object>(v8::Object::New(isolate));
+    }
+    return value.As<v8::Object>();
+  }
+
+ private:
+  v8::Isolate* isolate_;
+  v8::ValueDeserializer deserializer_;
+};
+
+}  // namespace
+
 v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(
     v8::Isolate* isolate,
     const blink::CloneableMessage& in) {
-  v8::EscapableHandleScope scope(isolate);
-  auto message_data = in.encoded_message;
-  v8::ValueDeserializer deserializer(isolate, message_data.data(),
-                                     message_data.size());
-  auto context = isolate->GetCurrentContext();
-  bool read_header;
-  if (!deserializer.ReadHeader(context).To(&read_header))
-    return v8::Null(isolate);
-  DCHECK(read_header);
-  v8::Local<v8::Value> value;
-  if (!deserializer.ReadValue(context).ToLocal(&value))
-    return v8::Null(isolate);
-  return scope.Escape(value);
+  return V8Deserializer(isolate, in).Deserialize();
 }
 
 bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
                                                 v8::Handle<v8::Value> val,
                                                 blink::CloneableMessage* out) {
-  v8::ValueSerializer serializer(isolate);
-  serializer.WriteHeader();
-  bool wrote_value;
-  if (!serializer.WriteValue(isolate->GetCurrentContext(), val)
-           .To(&wrote_value)) {
-    return false;
-  }
-  DCHECK(wrote_value);
-  std::pair<uint8_t*, size_t> buffer = serializer.Release();
-  out->encoded_message = {buffer.first, buffer.second};
-
-  // Copy the data into the CloneableMessage, so that it's guaranteed to live
-  // at least as long.
-  // TODO(nornagon): Hack ValueSerializer::Delegate::ReallocateBufferMemory to
-  // let the serializer write directly into out->owned_encoded_value, to
-  // eliminate this final memcpy().
-  out->EnsureDataIsOwned();
-  free(buffer.first);
-
-  return true;
+  return V8Serializer(isolate).Serialize(val, out);
 }
 
 }  // namespace mate
