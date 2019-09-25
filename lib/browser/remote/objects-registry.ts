@@ -10,11 +10,11 @@ const getOwnerKey = (webContents: WebContents, contextId: string) => {
 
 class ObjectsRegistry {
   private nextId: number = 0
-  
+
   // Stores all objects by ref-counting.
   // (id) => {object, count}
   private storage: Record<number, { count: number, object: any }> = {}
-  
+
   // Stores the IDs + refCounts of objects referenced by WebContents.
   // (ownerKey) => { id: refCount }
   private owners: Record<string, Map<number, number>> = {}
