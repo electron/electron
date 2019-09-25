@@ -18,44 +18,27 @@ TrayIconGtk::TrayIconGtk() = default;
 TrayIconGtk::~TrayIconGtk() = default;
 
 void TrayIconGtk::SetImage(const gfx::Image& image) {
-  if (icon_) {
-    icon_->SetIcon(image.AsImageSkia());
+  if (icon_wrapper_) {
+    icon_wrapper_->SetImage(image.AsImageSkia());
     return;
   }
 
   const auto toolTip = base::UTF8ToUTF16(GetApplicationName());
-  icon_ = views::LinuxUI::instance()->CreateLinuxStatusIcon(
-      image.AsImageSkia(), toolTip, Browser::Get()->GetName().c_str());
-  icon_->SetDelegate(this);
+  icon_wrapper_ = views::CreateWrappedStatusIcon(image.AsImageSkia(), tool_tip);
 }
 
 void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
-  icon_->SetToolTip(base::UTF8ToUTF16(tool_tip));
+  icon_wrapper_->SetToolTip(base::UTF8ToUTF16(tool_tip));
 }
 
 void TrayIconGtk::SetContextMenu(AtomMenuModel* menu_model) {
-  icon_->UpdatePlatformContextMenu(menu_model);
-}
-
-const gfx::ImageSkia& TrayIconGtk::GetImage() const {
-  NOTREACHED();
-  return dummy_image_;
-}
-
-const base::string16& TrayIconGtk::GetToolTip() const {
-  NOTREACHED();
-  return dummy_string_;
-}
-
-ui::MenuModel* TrayIconGtk::GetMenuModel() const {
-  NOTREACHED();
-  return nullptr;
+  icon_wrapper_->UpdatePlatformContextMenu(menu_model);
 }
 
 void TrayIconGtk::OnImplInitializationFailed() {}
 
 void TrayIconGtk::OnClick() {
-  NotifyClicked();
+  icon_wrapper_->OnClick();
 }
 
 bool TrayIconGtk::HasClickAction() {

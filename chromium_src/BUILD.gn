@@ -49,6 +49,8 @@ static_library("chrome") {
     "//chrome/browser/ssl/security_state_tab_helper.h",
     "//chrome/browser/ui/autofill/popup_view_common.cc",
     "//chrome/browser/ui/autofill/popup_view_common.h",
+    "//chrome/browser/ui/views/status_icons/status_icon_linux_wrapper.cc",
+    "//chrome/browser/ui/views/status_icons/status_icon_linux_wrapper.h",
     "//chrome/browser/win/chrome_process_finder.cc",
     "//chrome/browser/win/chrome_process_finder.h",
     "//extensions/browser/app_window/size_constraints.cc",

@@ -8,16 +8,16 @@
 #include <memory>
 #include <string>
 
+#include "chrome/browser/ui/views/status_icons/status_icon_linux_wrapper.h"
 #include "shell/browser/ui/tray_icon.h"
-#include "ui/views/linux_ui/status_icon_linux.h"
 
 namespace views {
-class StatusIconLinux;
+class StatusIconLinuxWrapper;
 }
 
 namespace electron {
 
-class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
+class TrayIconGtk : public TrayIcon {
  public:
   TrayIconGtk();
   ~TrayIconGtk() override;
@@ -27,18 +27,8 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
   void SetToolTip(const std::string& tool_tip) override;
   void SetContextMenu(AtomMenuModel* menu_model) override;
 
-  // views::StatusIconLinux::Delegate
-  void OnClick() override;
-  bool HasClickAction() override;
-  // The following four methods are only used by StatusIconLinuxDbus, which we
-  // aren't yet using, so they are given stub implementations.
-  const gfx::ImageSkia& GetImage() const override;
-  const base::string16& GetToolTip() const override;
-  ui::MenuModel* GetMenuModel() const override;
-  void OnImplInitializationFailed() override;
-
  private:
-  std::unique_ptr<views::StatusIconLinux> icon_;
+  std::unique_ptr<views::StatusIconLinuxWrapper> icon_wrapper_;
 
   gfx::ImageSkia dummy_image_;
   base::string16 dummy_string_;
