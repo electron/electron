@@ -534,7 +534,7 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
 namespace {
 class V8Serializer : public v8::ValueSerializer::Delegate {
  public:
-  V8Serializer(v8::Isolate* isolate)
+  explicit V8Serializer(v8::Isolate* isolate)
       : isolate_(isolate), serializer_(isolate, this) {}
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
     serializer_.WriteHeader();
