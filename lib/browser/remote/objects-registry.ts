@@ -120,7 +120,7 @@ class ObjectsRegistry {
   registerDeleteListener (webContents: WebContents, contextId: string) {
     // contextId => ${processHostId}-${contextCount}
     const processHostId = contextId.split('-')[0]
-    const listener = (_, deletedProcessHostId: string) => {
+    const listener = (_: any, deletedProcessHostId: string) => {
       if (deletedProcessHostId &&
           deletedProcessHostId.toString() === processHostId) {
         webContents.removeListener('render-view-deleted' as any, listener)
