@@ -113,6 +113,10 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   return false;
 }
 
+base::string16 GetApplicationNameForProtocol(const GURL& url) {
+  return base::ASCIIToUTF16("xdg-open");
+}
+
 bool Browser::SetBadgeCount(int count) {
   if (IsUnityRunning()) {
     unity::SetDownloadCount(count);
