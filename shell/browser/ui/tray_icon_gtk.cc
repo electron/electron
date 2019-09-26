@@ -6,10 +6,10 @@
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h"
 #include "shell/browser/browser.h"
 #include "shell/common/application_info.h"
 #include "ui/gfx/image/image.h"
-#include "ui/views/linux_ui/linux_ui.h"
 
 namespace electron {
 
@@ -18,27 +18,46 @@ TrayIconGtk::TrayIconGtk() = default;
 TrayIconGtk::~TrayIconGtk() = default;
 
 void TrayIconGtk::SetImage(const gfx::Image& image) {
-  if (icon_wrapper_) {
-    icon_wrapper_->SetImage(image.AsImageSkia());
+  if (icon_) {
+    icon_->SetIcon(image.AsImageSkia());
     return;
   }
 
   const auto toolTip = base::UTF8ToUTF16(GetApplicationName());
-  icon_wrapper_ = views::CreateWrappedStatusIcon(image.AsImageSkia(), tool_tip);
+
+  icon_ = base::MakeRefCounted<StatusIconLinuxDbus>();
+  icon_->SetIcon(image.AsImageSkia());
+  icon_->SetToolTip(toolTip);
+  icon_->SetDelegate(this);
 }
 
 void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
-  icon_wrapper_->SetToolTip(base::UTF8ToUTF16(tool_tip));
+  icon_->SetToolTip(base::UTF8ToUTF16(tool_tip));
 }
 
 void TrayIconGtk::SetContextMenu(AtomMenuModel* menu_model) {
-  icon_wrapper_->UpdatePlatformContextMenu(menu_model);
+  icon_->UpdatePlatformContextMenu(menu_model);
+}
+
+const gfx::ImageSkia& TrayIconGtk::GetImage() const {
+  NOTREACHED();
+  return dummy_image_;
+}
+
+const base::string16& TrayIconGtk::GetToolTip() const {
+  NOTREACHED();
+  return dummy_string_;
+}
+
+ui::MenuModel* TrayIconGtk::GetMenuModel() const {
+  NOTREACHED();
+  return nullptr;
 }
 
 void TrayIconGtk::OnImplInitializationFailed() {}
 
 void TrayIconGtk::OnClick() {
-  icon_wrapper_->OnClick();
+  NotifyClicked();
 }
 
 bool TrayIconGtk::HasClickAction() {
