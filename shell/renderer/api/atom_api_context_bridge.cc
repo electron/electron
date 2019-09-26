@@ -329,7 +329,7 @@ mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
       proxy.SetMethod(
           key_str, base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
     } else if (value->IsObject() && !value->IsNullOrUndefined() &&
-               !value->IsArray()) {
+               !value->IsArray() && !value->IsPromise()) {
       mate::Dictionary sub_api(api.isolate(),
                                v8::Local<v8::Object>::Cast(value));
       proxy.Set(key_str, CreateProxyForAPI(sub_api, source_context,
