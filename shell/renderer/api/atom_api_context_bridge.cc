@@ -207,14 +207,14 @@ v8::Local<v8::Value> PassValueToOtherContext(
   // Serializable objects
   // TODO(MarshallOfSound): Use the V8 serializer so we can remove the special
   // null / undefiend handling
-  if (value->IsNull()) {
-    v8::Context::Scope destination_context_scope(destination);
-    return v8::Null(destination->GetIsolate());
-  }
-
   if (value->IsUndefined()) {
     v8::Context::Scope destination_context_scope(destination);
     return v8::Undefined(destination->GetIsolate());
+  }
+
+  if (value->IsNull()) {
+    v8::Context::Scope destination_context_scope(destination);
+    return v8::Null(destination->GetIsolate());
   }
 
   base::Value ret;

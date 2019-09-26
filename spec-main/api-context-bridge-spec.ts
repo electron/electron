@@ -231,6 +231,42 @@ describe('contextBridge', () => {
     expect(result).to.equal('my-proxied-value')
   })
 
+  it('it should proxy null and undefined correctly', async () => {
+    await makeBindingWindow(() => {
+      contextBridge.bindAPIInMainWorld('example', {
+        values: [null, undefined]
+      })
+    })
+    const result = await callWithBindings((root: any) => {
+      // Convert to strings as although the context bridge keeps the right value
+      // IPC does not
+      return root.example.values.map((val: any) => `${val}`)
+    })
+    expect(result).to.deep.equal(['null', 'undefined'])
+  })
+
+  it('it should not let you overwrite existing exposed things', async () => {
+    await makeBindingWindow(() => {
+      let threw = false
+      contextBridge.bindAPIInMainWorld('example', {
+        attempt: 1,
+        getThrew: () => threw
+      })
+      try {
+        contextBridge.bindAPIInMainWorld('example', {
+          attempt: 2,
+          getThrew: () => threw
+        })
+      } catch {
+        threw = true
+      }
+    })
+    const result = await callWithBindings((root: any) => {
+      return [root.example.attempt, root.example.getThrew()]
+    })
+    expect(result).to.deep.equal([1, true])
+  })
+
   it('should not leak prototypes', async () => {
     await makeBindingWindow(() => {
       contextBridge.bindAPIInMainWorld('example', {
