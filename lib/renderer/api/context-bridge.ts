@@ -1,10 +1,6 @@
 const { hasSwitch } = process.electronBinding('command_line')
 const binding = process.electronBinding('context_bridge')
 
-const reverseBindings: Record<string, any> = {}
-
-binding._setReverseBindingStore(reverseBindings)
-
 const contextIsolationEnabled = hasSwitch('context-isolation')
 
 const checkContextIsolationEnabled = () => {
@@ -12,14 +8,11 @@ const checkContextIsolationEnabled = () => {
 }
 
 const contextBridge = {
-  bindAPIInMainWorld: (key: string, api: Record<string, any>, options: { allowReverseBinding: boolean }) => {
+  bindAPIInMainWorld: (key: string, api: Record<string, any>) => {
     checkContextIsolationEnabled()
-    return binding.exposeAPIInMainWorld(key, api, options)
+    return binding.exposeAPIInMainWorld(key, api)
   },
-  getReverseBinding: (key: string) => {
-    checkContextIsolationEnabled()
-    return reverseBindings[key] || null
-  }
+  debugGC: () => binding._debugGCMaps({})
 }
 
 export default contextBridge

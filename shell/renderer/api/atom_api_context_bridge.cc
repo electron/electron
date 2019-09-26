@@ -2,17 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "shell/renderer/api/atom_api_context_bridge.h"
+
 #include <string>
 #include <vector>
 
-#include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_frame_observer.h"
-#include "extensions/renderer/v8_schema_registry.h"
-#include "native_mate/dictionary.h"
+#include "base/strings/string_number_conversions.h"
+#include "shell/common/api/remote/object_life_monitor.h"
 #include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/once_callback.h"
 #include "shell/common/native_mate_converters/value_converter.h"
-#include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 #include "shell/renderer/atom_render_frame_observer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -34,52 +33,18 @@ content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
   return content::RenderFrame::FromWebFrame(frame);
 }
 
-using FunctionContextPair =
-    std::tuple<v8::Global<v8::Function>, v8::Global<v8::Context>>;
-
-class RenderFramePersistenceStore final : public content::RenderFrameObserver {
- public:
-  explicit RenderFramePersistenceStore(content::RenderFrame* render_frame)
-      : content::RenderFrameObserver(render_frame) {}
-  ~RenderFramePersistenceStore() final = default;
-
-  bool HasReverseBindingStore() { return !reverse_binding_store_.IsEmpty(); }
-
-  void SetReverseBindingStore(v8::Isolate* isolate,
-                              v8::Local<v8::Object> store) {
-    reverse_binding_store_.Reset(isolate, store);
-  }
-
-  mate::Dictionary GetReverseBindingsStore(v8::Isolate* isolate) {
-    return mate::Dictionary(isolate, reverse_binding_store_.Get(isolate));
-  }
-
-  // RenderFrameObserver implementation.
-  void OnDestruct() final {
-    for (auto& tup : functions_) {
-      std::get<0>(tup).Reset();
-      std::get<1>(tup).Reset();
-    }
-    reverse_binding_store_.Reset();
-    delete this;
-  }
-
-  std::vector<FunctionContextPair>& functions() { return functions_; }
-
- private:
-  // { function, owning_context }[]
-  std::vector<FunctionContextPair> functions_;
-  v8::Global<v8::Object> reverse_binding_store_;
-};
-
 std::map<content::RenderFrame*, RenderFramePersistenceStore*> store_map_;
 
 RenderFramePersistenceStore* GetOrCreateStore(
     content::RenderFrame* render_frame) {
-  if (store_map_.find(render_frame) == store_map_.end()) {
-    store_map_[render_frame] = new RenderFramePersistenceStore(render_frame);
+  auto it = store_map_.find(render_frame);
+  if (it == store_map_.end()) {
+    auto* store = new RenderFramePersistenceStore(render_frame);
+    ;
+    store_map_[render_frame] = store;
+    return store;
   }
-  return store_map_[render_frame];
+  return it->second;
 }
 
 // Sourced from "extensions/renderer/v8_schema_registry.cc"
@@ -98,65 +63,101 @@ void DeepFreeze(const v8::Local<v8::Object>& object,
   object->SetIntegrityLevel(context, v8::IntegrityLevel::kFrozen);
 }
 
-// This is unsafe as it is a hack around move semantics and promises requiring
-// two callbacks We use this class to encapsulate the promise and retrieve it
-// from whichever handler is called It is guarunteed that only one handler is
-// called so the promise is moved to the correct handler once it is called and
-// destroyed afterwards.
-class UnsafePromiseHandle {
+class FunctionLifeMonitor final : public ObjectLifeMonitor {
  public:
-  explicit UnsafePromiseHandle(
-      electron::util::Promise<v8::Local<v8::Value>> promise)
-      : promise_(std::move(promise)), has_handle_(true) {}
-
-  electron::util::Promise<v8::Local<v8::Value>> TakePromise() {
-    DCHECK(has_handle_);
-    has_handle_ = false;
-    return std::move(promise_);
+  static void BindTo(v8::Isolate* isolate,
+                     v8::Local<v8::Object> target,
+                     RenderFramePersistenceStore* store,
+                     size_t func_id) {
+    new FunctionLifeMonitor(isolate, target, store, func_id);
   }
 
+ protected:
+  FunctionLifeMonitor(v8::Isolate* isolate,
+                      v8::Local<v8::Object> target,
+                      RenderFramePersistenceStore* store,
+                      size_t func_id)
+      : ObjectLifeMonitor(isolate, target), store_(store), func_id_(func_id) {}
+  ~FunctionLifeMonitor() override = default;
+
+  void RunDestructor() override { store_->functions().erase(func_id_); }
+
  private:
-  electron::util::Promise<v8::Local<v8::Value>> promise_;
-  bool has_handle_ = false;
+  RenderFramePersistenceStore* store_;
+  size_t func_id_;
 };
 
 }  // namespace
 
-v8::Local<v8::Value> PassValueToOtherContext(v8::Local<v8::Context> source,
-                                             v8::Local<v8::Context> destination,
-                                             v8::Local<v8::Value> value) {
+RenderFramePersistenceStore::RenderFramePersistenceStore(
+    content::RenderFrame* render_frame)
+    : content::RenderFrameObserver(render_frame) {}
+
+RenderFramePersistenceStore::~RenderFramePersistenceStore() = default;
+
+void RenderFramePersistenceStore::OnDestruct() {
+  delete this;
+}
+
+v8::Local<v8::Value> PassValueToOtherContext(
+    v8::Local<v8::Context> source,
+    v8::Local<v8::Context> destination,
+    v8::Local<v8::Value> value,
+    RenderFramePersistenceStore* store) {
+  // Proxy functions and monitor the lifetime in the new context to release
+  // the global handle at the right time.
+  if (value->IsFunction()) {
+    auto func = v8::Local<v8::Function>::Cast(value);
+    v8::Global<v8::Function> global_func(source->GetIsolate(), func);
+    v8::Global<v8::Context> global_source(source->GetIsolate(), source);
+
+    size_t func_id = store->take_id();
+    store->functions()[func_id] =
+        std::make_tuple(std::move(global_func), std::move(global_source));
+    {
+      v8::Context::Scope destination_scope(destination);
+      v8::Local<v8::Value> proxy_func = mate::ConvertToV8(
+          destination->GetIsolate(),
+          base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
+      FunctionLifeMonitor::BindTo(destination->GetIsolate(),
+                                  v8::Local<v8::Object>::Cast(proxy_func),
+                                  store, func_id);
+      return proxy_func;
+    }
+  }
+
   // Proxy promises as they have a safe and guarunteed memory lifecycle (unlike
   // functions)
   if (value->IsPromise()) {
     v8::Context::Scope destination_scope(destination);
 
     auto v8_promise = v8::Local<v8::Promise>::Cast(value);
-    util::Promise<v8::Local<v8::Value>> promise(destination->GetIsolate());
-    v8::Local<v8::Promise> handle = promise.GetHandle();
-    UnsafePromiseHandle* p_handle = new UnsafePromiseHandle(std::move(promise));
+    auto* promise =
+        new util::Promise<v8::Local<v8::Value>>(destination->GetIsolate());
+    v8::Local<v8::Promise> handle = promise->GetHandle();
 
     auto then_cb = base::BindOnce(
-        [](UnsafePromiseHandle* p_handle, v8::Isolate* isolate,
+        [](util::Promise<v8::Local<v8::Value>>* promise, v8::Isolate* isolate,
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
-           v8::Local<v8::Value> result) {
-          p_handle->TakePromise().Resolve(PassValueToOtherContext(
-              source.Get(isolate), destination.Get(isolate), result));
-          delete p_handle;
+           RenderFramePersistenceStore* store, v8::Local<v8::Value> result) {
+          promise->Resolve(PassValueToOtherContext(
+              source.Get(isolate), destination.Get(isolate), result, store));
+          delete promise;
         },
-        p_handle, destination->GetIsolate(),
+        promise, destination->GetIsolate(),
         v8::Global<v8::Context>(source->GetIsolate(), source),
-        v8::Global<v8::Context>(destination->GetIsolate(), destination));
+        v8::Global<v8::Context>(destination->GetIsolate(), destination), store);
     auto catch_cb = base::BindOnce(
-        [](UnsafePromiseHandle* p_handle, v8::Isolate* isolate,
+        [](util::Promise<v8::Local<v8::Value>>* promise, v8::Isolate* isolate,
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
-           v8::Local<v8::Value> result) {
-          p_handle->TakePromise().Reject(PassValueToOtherContext(
-              source.Get(isolate), destination.Get(isolate), result));
-          delete p_handle;
+           RenderFramePersistenceStore* store, v8::Local<v8::Value> result) {
+          promise->Reject(PassValueToOtherContext(
+              source.Get(isolate), destination.Get(isolate), result, store));
+          delete promise;
         },
-        p_handle, destination->GetIsolate(),
+        promise, destination->GetIsolate(),
         v8::Global<v8::Context>(source->GetIsolate(), source),
-        v8::Global<v8::Context>(destination->GetIsolate(), destination));
+        v8::Global<v8::Context>(destination->GetIsolate(), destination), store);
 
     ignore_result(v8_promise->Then(
         source,
@@ -176,8 +177,46 @@ v8::Local<v8::Value> PassValueToOtherContext(v8::Local<v8::Context> source,
         v8::Exception::CreateMessage(destination->GetIsolate(), value)->Get());
   }
 
+  // Manually go through the array and pass each value individually into a new
+  // array so that deep functions get proxied or arrays of promises.
+  if (value->IsArray()) {
+    v8::Context::Scope destination_context_scope(destination);
+    v8::Local<v8::Array> arr = v8::Local<v8::Array>::Cast(value);
+    size_t length = arr->Length();
+    v8::Local<v8::Array> cloned_arr =
+        v8::Array::New(destination->GetIsolate(), length);
+    for (size_t i = 0; i < length; i++) {
+      ignore_result(cloned_arr->Set(
+          destination, static_cast<int>(i),
+          PassValueToOtherContext(source, destination,
+                                  arr->Get(source, i).ToLocalChecked(),
+                                  store)));
+    }
+    return cloned_arr;
+  }
+
+  // Proxy all objects
+  if (value->IsObject() && !value->IsNullOrUndefined()) {
+    return CreateProxyForAPI(
+               mate::Dictionary(source->GetIsolate(),
+                                v8::Local<v8::Object>::Cast(value)),
+               source, destination, store)
+        .GetHandle();
+  }
+
   // Serializable objects
-  // TODO(MarshallOfSound): Use the V8 serializer
+  // TODO(MarshallOfSound): Use the V8 serializer so we can remove the special
+  // null / undefiend handling
+  if (value->IsNull()) {
+    v8::Context::Scope destination_context_scope(destination);
+    return v8::Null(destination->GetIsolate());
+  }
+
+  if (value->IsUndefined()) {
+    v8::Context::Scope destination_context_scope(destination);
+    return v8::Undefined(destination->GetIsolate());
+  }
+
   base::Value ret;
   {
     v8::Context::Scope source_context_scope(source);
@@ -192,24 +231,24 @@ v8::Local<v8::Value> PassValueToOtherContext(v8::Local<v8::Context> source,
 }
 
 v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
-                                          size_t func_index,
+                                          size_t func_id,
                                           mate::Arguments* args) {
   // Context the proxy function was called from
   v8::Local<v8::Context> calling_context = args->isolate()->GetCurrentContext();
   // Context the function was created in
   v8::Local<v8::Context> func_owning_context =
-      std::get<1>(store->functions()[func_index]).Get(args->isolate());
+      std::get<1>(store->functions()[func_id]).Get(args->isolate());
 
   v8::Context::Scope func_owning_context_scope(func_owning_context);
   v8::Local<v8::Function> func =
-      (std::get<0>(store->functions()[func_index])).Get(args->isolate());
+      (std::get<0>(store->functions()[func_id])).Get(args->isolate());
 
   std::vector<v8::Local<v8::Value>> original_args;
   std::vector<v8::Local<v8::Value>> proxied_args;
   args->GetRemaining(&original_args);
   for (auto value : original_args) {
-    proxied_args.push_back(
-        PassValueToOtherContext(calling_context, func_owning_context, value));
+    proxied_args.push_back(PassValueToOtherContext(
+        calling_context, func_owning_context, value, store));
   }
 
   v8::MaybeLocal<v8::Value> maybe_return_value;
@@ -245,7 +284,7 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
   auto return_value = maybe_return_value.ToLocalChecked();
 
   return PassValueToOtherContext(func_owning_context, calling_context,
-                                 return_value);
+                                 return_value, store);
 }
 
 mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
@@ -260,91 +299,63 @@ mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
     return proxy;
   auto keys = maybe_keys.ToLocalChecked();
 
+  v8::Context::Scope target_context_scope(target_context);
   uint32_t length = keys->Length();
   std::string key_str;
+  int key_int;
   for (uint32_t i = 0; i < length; i++) {
-    v8::Context::Scope source_context_scope(source_context);
-
     v8::Local<v8::Value> key = keys->Get(target_context, i).ToLocalChecked();
-    if (!mate::ConvertFromV8(api.isolate(), key, &key_str))
-      continue;
+    // Try get the key as a string
+    if (!mate::ConvertFromV8(api.isolate(), key, &key_str)) {
+      // Try get the key as an int
+      if (!mate::ConvertFromV8(api.isolate(), key, &key_int))
+        continue;
+      // Convert the int to a string as they are interoperable as object keys
+      key_str = base::NumberToString(key_int);
+    }
     v8::Local<v8::Value> value;
     if (!api.Get(key_str, &value))
       continue;
+
     if (value->IsFunction()) {
       auto func = v8::Local<v8::Function>::Cast(value);
       v8::Global<v8::Function> global_func(api.isolate(), func);
-      v8::Global<v8::Context> global_source_context(
-          source_context->GetIsolate(), source_context);
 
-      store->functions().push_back(std::make_tuple(
-          std::move(global_func), std::move(global_source_context)));
-      size_t func_id = store->functions().size() - 1;
-      {
-        v8::Context::Scope target_context_scope(target_context);
-        proxy.SetMethod(key_str, base::BindRepeating(&ProxyFunctionWrapper,
-                                                     store, func_id));
-      }
+      size_t func_id = store->take_id();
+      store->functions()[func_id] =
+          std::make_tuple(std::move(global_func),
+                          v8::Global<v8::Context>(source_context->GetIsolate(),
+                                                  source_context));
+      proxy.SetMethod(
+          key_str, base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
     } else if (value->IsObject() && !value->IsNullOrUndefined() &&
                !value->IsArray()) {
-      mate::Dictionary sub_api(
-          api.isolate(),
-          value->ToObject(api.isolate()->GetCurrentContext()).ToLocalChecked());
-      {
-        v8::Context::Scope target_context_scope(target_context);
-        proxy.Set(key_str, CreateProxyForAPI(sub_api, source_context,
-                                             target_context, store));
-      }
+      mate::Dictionary sub_api(api.isolate(),
+                               v8::Local<v8::Object>::Cast(value));
+      proxy.Set(key_str, CreateProxyForAPI(sub_api, source_context,
+                                           target_context, store));
     } else {
-      {
-        v8::Context::Scope target_context_scope(target_context);
-        proxy.Set(key_str, PassValueToOtherContext(source_context,
-                                                   target_context, value));
-      }
+      proxy.Set(key_str, PassValueToOtherContext(source_context, target_context,
+                                                 value, store));
     }
   }
 
   return proxy;
 }
 
-void ExposeReverseBindingInIsolatedWorld(const std::string& key,
-                                         mate::Dictionary reverse_api) {
-  auto* render_frame = GetRenderFrame(reverse_api.GetHandle());
+mate::Dictionary DebugGC(mate::Dictionary empty) {
+  auto* render_frame = GetRenderFrame(empty.GetHandle());
   RenderFramePersistenceStore* store = GetOrCreateStore(render_frame);
-  DCHECK(store->HasReverseBindingStore());
-  auto* frame = render_frame->GetWebFrame();
-  DCHECK(frame);
-  v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  v8::Local<v8::Context> isolated_context =
-      frame->WorldScriptContext(reverse_api.isolate(), World::ISOLATED_WORLD);
-
-  {
-    v8::Context::Scope isolated_context_scope(isolated_context);
-    mate::Dictionary proxy =
-        CreateProxyForAPI(reverse_api, main_context, isolated_context, store);
-    DeepFreeze(proxy.GetHandle(), isolated_context);
-    store->GetReverseBindingsStore(reverse_api.isolate())
-        .SetReadOnlyNonConfigurable(key, proxy);
-  }
-}
-
-bool IsReverseBindingBound(const std::string& key, mate::Arguments* args) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(args->isolate());
-
-  auto* render_frame = GetRenderFrame(dict.GetHandle());
-  RenderFramePersistenceStore* store = GetOrCreateStore(render_frame);
-  DCHECK(store->HasReverseBindingStore());
-
-  return store->GetReverseBindingsStore(dict.isolate()).Has(key);
+  mate::Dictionary ret = mate::Dictionary::CreateEmpty(empty.isolate());
+  ret.Set("functionCount", store->functions().size());
+  return ret;
 }
 
 void ExposeAPIInMainWorld(const std::string& key,
                           mate::Dictionary api,
-                          base::Optional<mate::Dictionary> options,
                           mate::Arguments* args) {
   auto* render_frame = GetRenderFrame(api.GetHandle());
   RenderFramePersistenceStore* store = GetOrCreateStore(render_frame);
-  DCHECK(store->HasReverseBindingStore());
   auto* frame = render_frame->GetWebFrame();
   DCHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
@@ -360,47 +371,13 @@ void ExposeAPIInMainWorld(const std::string& key,
   v8::Local<v8::Context> isolated_context =
       frame->WorldScriptContext(api.isolate(), World::ISOLATED_WORLD);
 
-  bool allow_reverse_binding = true;
-  if (options.has_value())
-    options->Get("allowReverseBinding", &allow_reverse_binding);
-
-  if (allow_reverse_binding && api.Has("reverseBinding")) {
-    args->ThrowError(
-        "Cannot define property 'reverseBinding' when 'allowReverseBinding' is "
-        "enabled");
-    return;
-  }
-
   {
     v8::Context::Scope main_context_scope(main_context);
     mate::Dictionary proxy =
         CreateProxyForAPI(api, isolated_context, main_context, store);
-    if (allow_reverse_binding) {
-      mate::Dictionary reverse_bindings =
-          mate::Dictionary::CreateEmpty(api.isolate());
-
-      reverse_bindings.Set(
-          "bind",
-          mate::ConvertToV8(
-              api.isolate(),
-              base::BindOnce(&ExposeReverseBindingInIsolatedWorld, key)));
-      reverse_bindings.SetMethod(
-          "isBound", base::BindRepeating(&IsReverseBindingBound, key));
-      proxy.Set("reverseBinding", reverse_bindings);
-    }
     DeepFreeze(proxy.GetHandle(), main_context);
     global.SetReadOnlyNonConfigurable(key, proxy);
   }
-}
-
-void SetReverseBindingStore(v8::Isolate* isolate,
-                            v8::Local<v8::Value> reverse_bindings_store) {
-  DCHECK(reverse_bindings_store->IsObject() &&
-         !reverse_bindings_store->IsNullOrUndefined());
-  RenderFramePersistenceStore* store =
-      GetOrCreateStore(GetRenderFrame(reverse_bindings_store));
-  store->SetReverseBindingStore(
-      isolate, v8::Local<v8::Object>::Cast(reverse_bindings_store));
 }
 
 }  // namespace api
@@ -418,7 +395,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("exposeAPIInMainWorld", &ExposeAPIInMainWorld);
-  dict.SetMethod("_setReverseBindingStore", &SetReverseBindingStore);
+  dict.SetMethod("_debugGCMaps", &DebugGC);
 }
 
 }  // namespace
