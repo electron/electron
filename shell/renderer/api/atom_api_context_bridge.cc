@@ -4,7 +4,9 @@
 
 #include "shell/renderer/api/atom_api_context_bridge.h"
 
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/strings/string_number_conversions.h"
@@ -40,7 +42,6 @@ RenderFramePersistenceStore* GetOrCreateStore(
   auto it = store_map_.find(render_frame);
   if (it == store_map_.end()) {
     auto* store = new RenderFramePersistenceStore(render_frame);
-    ;
     store_map_[render_frame] = store;
     return store;
   }

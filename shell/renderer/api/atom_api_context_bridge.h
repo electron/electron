@@ -5,7 +5,9 @@
 #ifndef SHELL_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
 #define SHELL_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
 
+#include <map>
 #include <string>
+#include <tuple>
 
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
