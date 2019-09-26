@@ -343,6 +343,7 @@ mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
   return proxy;
 }
 
+#ifdef DCHECK_IS_ON
 mate::Dictionary DebugGC(mate::Dictionary empty) {
   auto* render_frame = GetRenderFrame(empty.GetHandle());
   RenderFramePersistenceStore* store = GetOrCreateStore(render_frame);
@@ -350,6 +351,7 @@ mate::Dictionary DebugGC(mate::Dictionary empty) {
   ret.Set("functionCount", store->functions().size());
   return ret;
 }
+#endif
 
 void ExposeAPIInMainWorld(const std::string& key,
                           mate::Dictionary api,
@@ -395,7 +397,9 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("exposeAPIInMainWorld", &ExposeAPIInMainWorld);
+#ifdef DCHECK_IS_ON
   dict.SetMethod("_debugGCMaps", &DebugGC);
+#endif
 }
 
 }  // namespace

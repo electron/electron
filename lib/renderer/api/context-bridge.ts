@@ -15,4 +15,6 @@ const contextBridge = {
   debugGC: () => binding._debugGCMaps({})
 }
 
+if (!binding._debugGCMaps) delete contextBridge.debugGC
+
 export default contextBridge
