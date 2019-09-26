@@ -1012,7 +1012,8 @@ AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
     network::mojom::NetworkContext* network_context,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
         header_client,
-    const url::Origin& request_initiator) {
+    const url::Origin& request_initiator,
+    const base::Optional<net::NetworkIsolationKey>& network_isolation_key) {
   auto render_process_id = process->GetID();
   auto it = process_preferences_.find(render_process_id);
   if (it != process_preferences_.end() && !it->second.web_security) {
