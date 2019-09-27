@@ -50,7 +50,7 @@ if (args.runners) {
   }
   console.log('Only running:', runnersToRun)
 } else {
-  console.log(`Triggering ${[...runners.keys()].join(' and ')} runners`)
+  console.log(`Triggering runners: ${[...runners.keys()].join(', ')}`)
 }
 
 async function main () {
@@ -144,18 +144,18 @@ async function runRemoteBasedElectronTests () {
 }
 
 async function runNativeElectronTests () {
-  const TEST_TARGETS = require('./native-test-targets.json')
+  let testTargets = require('./native-test-targets.json')
   const outDir = `out/${utils.getOutDir(false)}`
 
   // If native tests are being run, only one arg would be relevant
-  if (args.target && !TEST_TARGETS.includes(args.target)) {
-    console.log(`${fail} ${args.target} must be a subset of [${[TEST_TARGETS].join(', ')}]`)
+  if (args.target && !testTargets.includes(args.target)) {
+    console.log(`${fail} ${args.target} must be a subset of [${[testTargets].join(', ')}]`)
     process.exit(1)
   }
 
   // Optionally build all native test targets
   if (args.buildNativeTests) {
-    for (const target of TEST_TARGETS) {
+    for (const target of testTargets) {
       const build = childProcess.spawnSync('ninja', ['-C', outDir, target], {
         cwd: path.resolve(__dirname, '../..'),
         stdio: 'inherit'
@@ -170,38 +170,25 @@ async function runNativeElectronTests () {
   }
 
   // If a specific target was passed, only build and run that target
-  if (args.target) {
-    console.info('\nRunning native test for target:', args.target)
+  if (args.target) testTargets = [args.target]
 
-    // Run single test target
-    const run = childProcess.spawnSync(`./${outDir}/${args.target}`, {
+  // Run test targets
+  const failures = []
+  for (const target of testTargets) {
+    console.info('\nRunning native test for target:', target)
+    const testRun = childProcess.spawnSync(`./${outDir}/${target}`, {
       cwd: path.resolve(__dirname, '../..'),
       stdio: 'inherit'
     })
 
-    if (run.status !== 0) {
-      console.log(`${fail} ${args.target} test failed.`)
-      process.exit(1)
-    }
-  } else {
-    // Run test targets
-    const failures = []
-    for (const target of TEST_TARGETS) {
-      console.info(`Running ./${outDir}/${target}`)
-      const testRun = childProcess.spawnSync(`./${outDir}/${target}`, {
-        cwd: path.resolve(__dirname, '../..'),
-        stdio: 'inherit'
-      })
+    // Collect failures and log at end
+    if (testRun.status !== 0) failures.push({ target })
+  }
 
-      // Collect failures and log at end
-      if (testRun.status !== 0) failures.push({ target })
-    }
-
-    // Exit if any failures
-    if (failures.length > 0) {
-      console.log(`${fail} Electron native tests failed for the following targets: `, failures)
-      process.exit(1)
-    }
+  // Exit if any failures
+  if (failures.length > 0) {
+    console.log(`${fail} Electron native tests failed for the following targets: `, failures)
+    process.exit(1)
   }
 
   console.log(`${pass} Electron native tests passed.`)
