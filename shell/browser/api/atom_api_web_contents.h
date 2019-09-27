@@ -424,8 +424,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
-  void DocumentLoadedInFrame(
-      content::RenderFrameHost* render_frame_host) override;
+  void DOMContentLoaded(content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
   void DidFailLoad(content::RenderFrameHost* render_frame_host,

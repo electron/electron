@@ -923,7 +923,7 @@ void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
   set_fullscreen_frame(rfh);
 }
 
-void WebContents::DocumentLoadedInFrame(
+void WebContents::DOMContentLoaded(
     content::RenderFrameHost* render_frame_host) {
   if (!render_frame_host->GetParent())
     Emit("dom-ready");
