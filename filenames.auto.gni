@@ -143,6 +143,7 @@ auto_filenames = {
     "lib/common/remote/buffer-utils.ts",
     "lib/common/remote/is-promise.ts",
     "lib/common/web-view-methods.ts",
+    "lib/renderer/api/context-bridge.ts",
     "lib/renderer/api/crash-reporter.js",
     "lib/renderer/api/desktop-capturer.ts",
     "lib/renderer/api/ipc-renderer.ts",
