@@ -8,7 +8,15 @@ import { BrowserWindow, WebPreferences } from 'electron'
 
 import { closeWindow } from './window-helpers'
 import { AddressInfo } from 'net';
-import { emittedOnce } from './events-helpers';
+import { emittedUntil } from './events-helpers';
+
+const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
+  return message.indexOf('Electron Security Warning') > -1
+}
+
+const isLoaded = (event: Event, level: number, message: string) => {
+  return (message === 'loaded')
+}
 
 describe('security warnings', () => {
   let server: http.Server
@@ -64,7 +72,7 @@ describe('security warnings', () => {
     w = null as unknown as any
   })
 
-  it('should warn about Node.js integration with remote content', (done) => {
+  it('should warn about Node.js integration with remote content', async () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -72,18 +80,12 @@ describe('security warnings', () => {
       }
     })
 
-    const checkMessage = (event: Event, level: number, message: string) => {
-      if (message.indexOf('Electron Security Warning') > -1) {        
-        expect(message).to.include('Node.js Integration with Remote Content')
-        w.webContents.removeListener('console-message', checkMessage)
-        done()
-      }
-    }
-    w.webContents.on('console-message', checkMessage)
     w.loadURL(`${serverUrl}/base-page-security.html`)
+    const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)
+    expect(message).to.include('Node.js Integration with Remote Content')
   })
 
-  it('should not warn about Node.js integration with remote content from localhost', (done) => {
+  it('should not warn about Node.js integration with remote content from localhost', async () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -91,15 +93,9 @@ describe('security warnings', () => {
       }
     })
 
-    const checkMessage =  (event: Event, level: number, message: string) => {
-      expect(message).to.not.include('Node.js Integration with Remote Content')
-      if (message === 'loaded') {       
-        w.webContents.removeListener('console-message', checkMessage)
-        done()        
-      }
-    }
-    w.webContents.on('console-message', checkMessage)
     w.loadURL(`${serverUrl}/base-page-security-onload-message.html`)
+    const [,, message] = await emittedUntil(w.webContents, 'console-message', isLoaded)
+    expect(message).to.not.include('Node.js Integration with Remote Content')
   })
 
   const generateSpecs = (description: string, webPreferences: WebPreferences) => {
@@ -114,7 +110,7 @@ describe('security warnings', () => {
         })
 
         w.loadURL(`${serverUrl}/base-page-security.html`)
-        const [,, message] = await emittedOnce(w.webContents, 'console-message')
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)
         expect(message).to.include('Disabled webSecurity')
       })
 
@@ -129,7 +125,7 @@ describe('security warnings', () => {
 
         useCsp = false
         w.loadURL(`${serverUrl}/base-page-security.html`)
-        const [,, message] = await emittedOnce(w.webContents, 'console-message')
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)
         expect(message).to.include('Insecure Content-Security-Policy')
       })
 
@@ -143,7 +139,7 @@ describe('security warnings', () => {
         })
 
         w.loadURL(`${serverUrl}/base-page-security.html`)
-        const [,, message] = await emittedOnce(w.webContents, 'console-message')
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)
         expect(message).to.include('allowRunningInsecureContent')
       })
 
@@ -157,7 +153,7 @@ describe('security warnings', () => {
         })
 
         w.loadURL(`${serverUrl}/base-page-security.html`)
-        const [,, message] = await emittedOnce(w.webContents, 'console-message')
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)
         expect(message).to.include('experimentalFeatures')
       })
 
@@ -171,7 +167,7 @@ describe('security warnings', () => {
         })
 
         w.loadURL(`${serverUrl}/base-page-security.html`)
-        const [,, message] = await emittedOnce(w.webContents, 'console-message')
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)
         expect(message).to.include('enableBlinkFeatures')
       })
 
@@ -182,7 +178,7 @@ describe('security warnings', () => {
         })
 
         w.loadURL(`${serverUrl}/webview-allowpopups.html`)
-        const [,, message] = await emittedOnce(w.webContents, 'console-message')
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)
         expect(message).to.include('allowpopups')
       })
 
@@ -193,7 +189,7 @@ describe('security warnings', () => {
         })
 
         w.loadURL(`${serverUrl}/insecure-resources.html`)
-        const [,, message] = await emittedOnce(w.webContents, 'console-message')
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)
         expect(message).to.include('Insecure Resources')
       })
 
@@ -204,7 +200,7 @@ describe('security warnings', () => {
         })
 
         w.loadURL(`${serverUrl}/insecure-resources.html`)
-        const [,, message] = await emittedOnce(w.webContents, 'console-message')
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)        
         expect(message).to.not.include('insecure-resources.html')
       })
 
@@ -215,24 +211,18 @@ describe('security warnings', () => {
         })
 
         w.loadURL(`${serverUrl}/base-page-security.html`)
-        const [,, message] = await emittedOnce(w.webContents, 'console-message')
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)
         expect(message).to.include('enableRemoteModule')
       })
 
-      it('should not warn about enabled remote module with remote content from localhost', (done) => {
+      it('should not warn about enabled remote module with remote content from localhost', async () => {
         w = new BrowserWindow({
           show: false,
           webPreferences
         })
-        w.webContents.once('console-message', (e, level, message) => {
-          expect(message).to.not.include('enableRemoteModule')
-
-          if (message === 'loaded') {
-            done()
-          }
-        })
-
         w.loadURL(`${serverUrl}/base-page-security-onload-message.html`)
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', isLoaded)
+        expect(message).to.not.include('enableRemoteModule')
       })
     })
   }
