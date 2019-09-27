@@ -4,7 +4,7 @@ console.info(contextBridge)
 
 let bound = false
 try {
-  contextBridge.bindAPIInMainWorld('test', {})
+  contextBridge.exposeInMainWorld('test', {})
   bound = true
 } catch {
   // Ignore

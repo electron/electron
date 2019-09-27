@@ -48,6 +48,6 @@ async function initialize () {
   }
 }
 
-contextBridge.bindAPIInMainWorld('electronDefaultApp', {
+contextBridge.exposeInMainWorld('electronDefaultApp', {
   initialize
 })

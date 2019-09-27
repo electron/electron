@@ -63,7 +63,7 @@ describe('contextBridge', () => {
 
   it('should proxy numbers', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         myNumber: 123,
       })
     })
@@ -75,7 +75,7 @@ describe('contextBridge', () => {
 
   it('should make properties unwriteable', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         myNumber: 123,
       })
     })
@@ -88,7 +88,7 @@ describe('contextBridge', () => {
 
   it('should proxy strings', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         myString: 'my-words',
       })
     })
@@ -100,7 +100,7 @@ describe('contextBridge', () => {
 
   it('should proxy arrays', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         myArr: [123, 'my-words'],
       })
     })
@@ -112,7 +112,7 @@ describe('contextBridge', () => {
 
   it('should make arrays immutable', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         myArr: [123, 'my-words'],
       })
     })
@@ -129,7 +129,7 @@ describe('contextBridge', () => {
 
   it('should proxy booleans', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         myBool: true,
       })
     })
@@ -141,7 +141,7 @@ describe('contextBridge', () => {
 
   it('should proxy promises and resolve with the correct value', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         myPromise: Promise.resolve('i-resolved'),
       })
     })
@@ -153,7 +153,7 @@ describe('contextBridge', () => {
 
   it('should proxy promises and reject with the correct value', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         myPromise: Promise.reject('i-rejected'),
       })
     })
@@ -170,7 +170,7 @@ describe('contextBridge', () => {
 
   it('should proxy promises and resolve with the correct value if it resolves later', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         myPromise: () => new Promise(r => setTimeout(() => r('delayed'), 20)),
       })
     })
@@ -182,7 +182,7 @@ describe('contextBridge', () => {
 
   it('should proxy nested promises correctly', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         myPromise: () => new Promise(r => setTimeout(() => r(Promise.resolve(123)), 20)),
       })
     })
@@ -194,7 +194,7 @@ describe('contextBridge', () => {
 
   it('should proxy methods', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         getNumber: () => 123,
         getString: () => 'help',
         getBoolean: () => false,
@@ -209,7 +209,7 @@ describe('contextBridge', () => {
 
   it('should proxy methods in the reverse direction', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         callWithNumber: (fn: any) => fn(123),
       })
     })
@@ -221,7 +221,7 @@ describe('contextBridge', () => {
 
   it('should proxy promises in the reverse direction', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         getPromiseValue: async (p: Promise<any>) => await p,
       })
     })
@@ -233,7 +233,7 @@ describe('contextBridge', () => {
 
   it('it should proxy null and undefined correctly', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         values: [null, undefined]
       })
     })
@@ -248,12 +248,12 @@ describe('contextBridge', () => {
   it('it should not let you overwrite existing exposed things', async () => {
     await makeBindingWindow(() => {
       let threw = false
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         attempt: 1,
         getThrew: () => threw
       })
       try {
-        contextBridge.bindAPIInMainWorld('example', {
+        contextBridge.exposeInMainWorld('example', {
           attempt: 2,
           getThrew: () => threw
         })
@@ -269,7 +269,7 @@ describe('contextBridge', () => {
 
   it('should work with complex nested methods and promises', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         first: (second: Function) => second(async (fourth: Function) => {
           return await fourth()
         })
@@ -285,7 +285,7 @@ describe('contextBridge', () => {
 
   it('should not leak prototypes', async () => {
     await makeBindingWindow(() => {
-      contextBridge.bindAPIInMainWorld('example', {
+      contextBridge.exposeInMainWorld('example', {
         number: 123,
         string: 'string',
         boolean: true,

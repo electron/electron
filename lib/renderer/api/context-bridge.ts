@@ -8,7 +8,7 @@ const checkContextIsolationEnabled = () => {
 }
 
 const contextBridge = {
-  bindAPIInMainWorld: (key: string, api: Record<string, any>) => {
+  exposeInMainWorld: (key: string, api: Record<string, any>) => {
     checkContextIsolationEnabled()
     return binding.exposeAPIInMainWorld(key, api)
   },
