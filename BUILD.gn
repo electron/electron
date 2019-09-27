@@ -483,6 +483,19 @@ source_set("electron_lib") {
       "//content/common:mac_helpers",
       "//ui/accelerated_widget_mac",
     ]
+
+    libs = [
+      "AVFoundation.framework",
+      "Carbon.framework",
+      "LocalAuthentication.framework",
+      "QuartzCore.framework",
+      "Quartz.framework",
+      "Security.framework",
+      "SecurityInterface.framework",
+      "ServiceManagement.framework",
+      "StoreKit.framework",
+    ]
+
     sources += [
       "shell/browser/ui/views/autofill_popup_view.cc",
       "shell/browser/ui/views/autofill_popup_view.h",
@@ -803,18 +816,6 @@ if (is_mac) {
 
     include_dirs = [ "." ]
     sources = filenames.framework_sources
-
-    libs = [
-      "AVFoundation.framework",
-      "Carbon.framework",
-      "LocalAuthentication.framework",
-      "QuartzCore.framework",
-      "Quartz.framework",
-      "Security.framework",
-      "SecurityInterface.framework",
-      "ServiceManagement.framework",
-      "StoreKit.framework",
-    ]
 
     if (enable_osr) {
       libs += [ "IOSurface.framework" ]
@@ -1217,18 +1218,6 @@ test("shell_browser_ui_unittests") {
   ]
 
   if (is_mac) {
-    libs = [
-      "AVFoundation.framework",
-      "Carbon.framework",
-      "LocalAuthentication.framework",
-      "QuartzCore.framework",
-      "Quartz.framework",
-      "Security.framework",
-      "SecurityInterface.framework",
-      "ServiceManagement.framework",
-      "StoreKit.framework",
-    ]
-
     # Resolve paths owing to different test executable locations
     ldflags = [
       "-F",
@@ -1236,7 +1225,7 @@ test("shell_browser_ui_unittests") {
       "-rpath",
       "@loader_path",
       "-rpath",
-      "@executable_path/Electron.app/Contents/Frameworks",
+      "@executable_path/" + rebase_path("external_binaries", root_build_dir),
     ]
   }
 }
