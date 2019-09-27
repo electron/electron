@@ -47,6 +47,7 @@
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder_deprecated.h"
+#include "ppapi/buildflags/buildflags.h"
 #include "shell/browser/api/atom_api_browser_window.h"
 #include "shell/browser/api/atom_api_debugger.h"
 #include "shell/browser/api/atom_api_session.h"
@@ -885,10 +886,12 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
 
 void WebContents::PluginCrashed(const base::FilePath& plugin_path,
                                 base::ProcessId plugin_pid) {
+#if BUILDFLAG(ENABLE_PLUGINS)
   content::WebPluginInfo info;
   auto* plugin_service = content::PluginService::GetInstance();
   plugin_service->GetPluginInfoByPath(plugin_path, &info);
   Emit("plugin-crashed", info.name, info.version);
+#endif  // BUILDFLAG(ENABLE_PLUIGNS)
 }
 
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
