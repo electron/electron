@@ -267,6 +267,22 @@ describe('contextBridge', () => {
     expect(result).to.deep.equal([1, true])
   })
 
+  it('should work with complex nested methods and promises', async () => {
+    await makeBindingWindow(() => {
+      contextBridge.bindAPIInMainWorld('example', {
+        first: (second: Function) => second(async (fourth: Function) => {
+          return await fourth()
+        })
+      })
+    })
+    const result = await callWithBindings((root: any) => {
+      return root.example.first((third: Function) => {
+        return third(() => Promise.resolve('final value'))
+      })
+    })
+    expect(result).to.equal('final value')
+  })
+
   it('should not leak prototypes', async () => {
     await makeBindingWindow(() => {
       contextBridge.bindAPIInMainWorld('example', {
