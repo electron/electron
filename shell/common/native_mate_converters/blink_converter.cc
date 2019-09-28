@@ -660,7 +660,7 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
         return scope.Escape(value);
       }
       default:
-        NOTREACHED() << "Invalid tag";
+        NOTREACHED() << "Invalid tag: " << tag;
         return v8::Null(isolate_);
     }
   }
