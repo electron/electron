@@ -32,7 +32,7 @@ class Event : public Wrappable<Event> {
 
   // event.sendReply(value), used for replying to synchronous messages and
   // `invoke` calls.
-  bool SendReply(const blink::CloneableMessage& result);
+  bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> result);
 
  protected:
   explicit Event(v8::Isolate* isolate);

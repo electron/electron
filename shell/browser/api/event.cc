@@ -29,11 +29,16 @@ void Event::PreventDefault(v8::Isolate* isolate) {
       .Check();
 }
 
-bool Event::SendReply(const blink::CloneableMessage& result) {
+bool Event::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> result) {
   if (!callback_)
     return false;
 
-  std::move(*callback_).Run(result.ShallowClone());
+  blink::CloneableMessage message;
+  if (!ConvertFromV8(isolate, result, &message)) {
+    return false;
+  }
+
+  std::move(*callback_).Run(std::move(message));
   callback_.reset();
   return true;
 }

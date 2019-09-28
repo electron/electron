@@ -1040,7 +1040,7 @@ void WebContents::MessageTo(bool internal,
 
   if (web_contents) {
     web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
-                                           arguments.ShallowClone(), ID());
+                                           std::move(arguments), ID());
   }
 }
 
