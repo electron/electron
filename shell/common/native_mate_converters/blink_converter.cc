@@ -533,6 +533,9 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
 }
 
 namespace {
+constexpr uint8_t kNewSerializationTag = 0;
+constexpr uint8_t kOldSerializationTag = 1;
+
 class V8Serializer : public v8::ValueSerializer::Delegate {
  public:
   explicit V8Serializer(v8::Isolate* isolate,
@@ -544,14 +547,14 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
     serializer_.WriteHeader();
     if (use_old_serialization_) {
-      WriteTag(1);
+      WriteTag(kNewSerializationTag);
       if (!WriteBaseValue(value)) {
         isolate_->ThrowException(
             mate::StringToV8(isolate_, "An object could not be cloned."));
         return false;
       }
     } else {
-      WriteTag(0);
+      WriteTag(kOldSerializationTag);
       bool wrote_value;
       v8::TryCatch try_catch(isolate_);
       if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
@@ -633,14 +636,14 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
     if (!ReadTag(&tag))
       return v8::Null(isolate_);
     switch (tag) {
-      case 0: {
+      case kNewSerializationTag: {
         v8::Local<v8::Value> value;
         if (!deserializer_.ReadValue(context).ToLocal(&value)) {
           return v8::Null(isolate_);
         }
         return scope.Escape(value);
       }
-      case 1: {
+      case kOldSerializationTag: {
         v8::Local<v8::Value> value;
         if (!ReadBaseValue(&value)) {
           return v8::Null(isolate_);
