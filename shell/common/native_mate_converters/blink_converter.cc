@@ -570,21 +570,11 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     }
 
     std::pair<uint8_t*, size_t> buffer = serializer_.Release();
+    DCHECK_EQ(buffer.first, data_.data());
     out->encoded_message = {buffer.first, buffer.second};
+    out->owned_encoded_message = std::move(data_);
 
-    // Copy the data into the CloneableMessage, so that it's guaranteed to live
-    // at least as long.
-    // TODO(nornagon): Hack ValueSerializer::Delegate::ReallocateBufferMemory to
-    // let the serializer write directly into out->owned_encoded_value, to
-    // eliminate this final memcpy().
-    out->EnsureDataIsOwned();
-    free(buffer.first);
     return true;
-  }
-
-  // v8::ValueSerializer::Delegate
-  void ThrowDataCloneError(v8::Local<v8::String> message) override {
-    isolate_->ThrowException(v8::Exception::Error(message));
   }
 
   bool WriteBaseValue(v8::Local<v8::Value> object) {
@@ -610,10 +600,29 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
 
   void WriteTag(uint8_t tag) { serializer_.WriteRawBytes(&tag, 1); }
 
+  // v8::ValueSerializer::Delegate
+  void* ReallocateBufferMemory(void* old_buffer,
+                               size_t size,
+                               size_t* actual_size) override {
+    data_.resize(size);
+    *actual_size = data_.capacity();
+    return data_.data();
+  }
+
+  void FreeBufferMemory(void* buffer) override {
+    DCHECK_EQ(buffer, data_.data());
+    // Do nothing; data_ will be freed when this delegate object is cleaned up.
+  }
+
+  void ThrowDataCloneError(v8::Local<v8::String> message) override {
+    isolate_->ThrowException(v8::Exception::Error(message));
+  }
+
  private:
   v8::Isolate* isolate_;
   v8::ValueSerializer serializer_;
   bool use_old_serialization_;
+  std::vector<uint8_t> data_;
 };
 
 class V8Deserializer : public v8::ValueDeserializer::Delegate {
