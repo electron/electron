@@ -34,3 +34,7 @@ exports.getNaN = function () {
 exports.getInfinity = function () {
   return Infinity
 }
+
+exports.getNegativeInfinity = function () {
+  return -Infinity
+}

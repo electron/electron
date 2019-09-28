@@ -6,6 +6,13 @@ Breaking changes will be documented here, and deprecation warnings added to JS c
 
 The `FIXME` string is used in code comments to denote things that should be fixed for future releases. See https://github.com/electron/electron/search?q=fixme
 
+## Planned Breaking API Changes (8.0)
+
+### Remote module handling of NaN and infinite numbers
+
+`NaN`, `Infinity` and `-Infinity` are now properly serialized by the `remote` module.
+Before the fix, these values were converted to `undefined`.
+
 ## Planned Breaking API Changes (7.0)
 
 ### Node Headers URL
