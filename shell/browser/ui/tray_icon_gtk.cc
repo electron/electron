@@ -18,40 +18,40 @@ TrayIconGtk::TrayIconGtk() = default;
 TrayIconGtk::~TrayIconGtk() = default;
 
 void TrayIconGtk::SetImage(const gfx::Image& image) {
+  image_ = image.AsImageSkia();
   if (icon_) {
-    icon_->SetIcon(image.AsImageSkia());
+    icon_->SetIcon(image_);
     return;
   }
 
-  const auto toolTip = base::UTF8ToUTF16(GetApplicationName());
+  tool_tip_ = base::UTF8ToUTF16(GetApplicationName());
 
   icon_ = base::MakeRefCounted<StatusIconLinuxDbus>();
-  icon_->SetIcon(image.AsImageSkia());
-  icon_->SetToolTip(toolTip);
+  icon_->SetIcon(image_);
+  icon_->SetToolTip(tool_tip_);
   icon_->SetDelegate(this);
 }
 
 void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
-  icon_->SetToolTip(base::UTF8ToUTF16(tool_tip));
+  tool_tip_ = base::UTF8ToUTF16(tool_tip);
+  icon_->SetToolTip(tool_tip_);
 }
 
 void TrayIconGtk::SetContextMenu(AtomMenuModel* menu_model) {
-  icon_->UpdatePlatformContextMenu(menu_model);
+  icon_->UpdatePlatformContextMenu(menu_model_);
+  menu_model_ = menu_model;
 }
 
 const gfx::ImageSkia& TrayIconGtk::GetImage() const {
-  NOTREACHED();
-  return dummy_image_;
+  return image_;
 }
 
 const base::string16& TrayIconGtk::GetToolTip() const {
-  NOTREACHED();
-  return dummy_string_;
+  return tool_tip_;
 }
 
 ui::MenuModel* TrayIconGtk::GetMenuModel() const {
-  NOTREACHED();
-  return nullptr;
+  return menu_model_;
 }
 
 void TrayIconGtk::OnImplInitializationFailed() {}
