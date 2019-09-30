@@ -40,8 +40,9 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
 
  private:
   scoped_refptr<StatusIconLinuxDbus> icon_;
-  gfx::ImageSkia dummy_image_;
-  base::string16 dummy_string_;
+  gfx::ImageSkia image_;
+  base::string16 tool_tip_;
+  ui::MenuModel* menu_model_;
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconGtk);
 };
