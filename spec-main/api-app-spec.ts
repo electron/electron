@@ -877,29 +877,29 @@ describe('app module', () => {
       })
     })
 
-    it('behaves such that getApplicationNameForProtocol returns Electron', (done) => {
-      app.setAsDefaultProtocolClient(protocol)
-      expect(app.getApplicationNameForProtocol(protocol)).to.equal('Electron')
+    it('sets the default client such that getApplicationNameForProtocol returns Electron', (done) => {
+      app.setAsDefaultProtocolClient(protocol);
+      expect(app.getApplicationNameForProtocol(`${protocol}://`)).to.equal('Electron')
       done()
     })
   })
 
-  // describe('getApplicationNameForProtocol(protocol)', () => {
-  //   it('does this even work', (done) => {
-  //     const protocols = [
-  //       'zoommtg://',
-  //       'sip://',
-  //       'https://google.com',
-  //       'http://google.com',
-  //       'mailto://'
-  //     ]
-  //     protocols.forEach((protocol) => {
-  //       const name = app.getApplicationNameForProtocol(protocol)
-  //       console.log(protocol, name)
-  //     })
-  //     done()
-  //   })
-  // })
+  describe('getApplicationNameForProtocol()', () => {
+    it('does this even work', (done) => {
+      const protocols = [
+        'zoommtg://',
+        'sip://',
+        'https://',
+        'http://',
+        'mailto://'
+      ]
+      protocols.forEach((protocol) => {
+        const name = app.getApplicationNameForProtocol(protocol)
+        console.log(protocol, name)
+      })
+      done()
+    })
+  })
 
   describe('app launch through uri', () => {
     before(function () {
