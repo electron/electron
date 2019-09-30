@@ -152,19 +152,6 @@ app.on('ready', function () {
     console.error('Renderer process crashed')
     process.exit(1)
   })
-
-  ipcMain.on('prevent-next-input-event', (event, key, id) => {
-    webContents.fromId(id).once('before-input-event', (event, input) => {
-      if (key === input.key) event.preventDefault()
-    })
-    event.returnValue = null
-  })
-})
-
-ipcMain.on('handle-next-ipc-message-sync', function (event, returnValue) {
-  event.sender.once('ipc-message-sync', (event, channel, args) => {
-    event.returnValue = returnValue
-  })
 })
 
 for (const eventName of [
