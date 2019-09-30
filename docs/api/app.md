@@ -770,6 +770,18 @@ macOS machine. Please refer to
 
 The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
 
+### app.getApplicationNameForProtocol(url)
+
+* `url` String - a URL with the protocol name to check. Unlike the other
+  methods in this family, this accepts an entire URL, including `://` at a
+  minimum (e.g. `https://`).
+
+Returns String - Name of the application handling the protocol. For instance,
+  if Electron is the default handler of the passed URL, this will be `Electron`.
+
+This method returns the application name of the default handler for the protocol
+(aka URI scheme) of a URL.
+
 ### `app.setUserTasks(tasks)` _Windows_
 
 * `tasks` [Task[]](structures/task.md) - Array of `Task` objects
