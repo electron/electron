@@ -27,14 +27,14 @@ ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 
 // From Electron 8:
 ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
-// => throws Error("")
+// => throws Error("() => {} could not be cloned.")
 ```
 - `NaN`, `Infinity` and `-Infinity` will now be correctly serialized, instead
   of being converted to `null`.
 - Objects containing cyclic references will now be correctly serialized,
   instead of being converted to `null`.
-- `Set`, `Map`, and `RegExp` values will be correctly serialized, instead of
-  being converted to `{}`.
+- `Set`, `Map`, `Error` and `RegExp` values will be correctly serialized,
+  instead of being converted to `{}`.
 - `BigInt` values will be correctly serialized, instead of being converted to
   `null`.
 - Sparse arrays will be serialized as such, instead of being converted to dense
