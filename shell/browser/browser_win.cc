@@ -71,6 +71,16 @@ bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
   return true;
 }
 
+// Windows treats a given scheme as an Internet scheme only if its registry
+// entry has a "URL Protocol" key. Check this, otherwise we allow ProgIDs to be
+// used as custom protocols which leads to security bugs.
+bool IsValidCustomProtocol(const base::string16& scheme) {
+  if (scheme.empty())
+    return false;
+  base::win::RegKey cmd_key(HKEY_CLASSES_ROOT, scheme.c_str(), KEY_QUERY_VALUE);
+  return cmd_key.Valid() && cmd_key.HasValue(L"URL Protocol");
+}
+
 // Windows 8 introduced a new protocol->executable binding system which cannot
 // be retrieved in the HKCR registry subkey method implemented below. We call
 // AssocQueryString with the new Win8-only flag ASSOCF_IS_PROTOCOL instead.
