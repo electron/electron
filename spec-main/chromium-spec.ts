@@ -594,4 +594,43 @@ describe('chromium features', () => {
       expect(opener).to.equal(null)
     })
   })
+
+  describe('navigator.mediaDevices', () => {
+    afterEach(closeAllWindows)
+    afterEach(() => {
+      session.defaultSession.setPermissionCheckHandler(null)
+    })
+
+    it('can return labels of enumerated devices', async () => {
+      const w = new BrowserWindow({show: false})
+      w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'))
+      const labels = await w.webContents.executeJavaScript(`navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))`)
+      expect(labels.some((l: any) => l)).to.be.true()
+    })
+
+    it('does not return labels of enumerated devices when permission denied', async () => {
+      session.defaultSession.setPermissionCheckHandler(() => false)
+      const w = new BrowserWindow({show: false})
+      w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'))
+      const labels = await w.webContents.executeJavaScript(`navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))`)
+      expect(labels.some((l: any) => l)).to.be.false()
+    })
+
+    it('can return new device id when cookie storage is cleared', async () => {
+      const ses = session.fromPartition('persist:media-device-id')
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          session: ses
+        }
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', 'media-id-reset.html'))
+      const [, firstDeviceIds] = await emittedOnce(ipcMain, 'deviceIds')
+      await ses.clearStorageData({ storages: ['cookies'] })
+      w.webContents.reload()
+      const [, secondDeviceIds] = await emittedOnce(ipcMain, 'deviceIds')
+      expect(firstDeviceIds).to.not.deep.equal(secondDeviceIds)
+    })
+  })
 })
