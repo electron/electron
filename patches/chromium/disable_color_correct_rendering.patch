@@ -19,6 +19,23 @@ This can be removed once web content (including WebGL) learn how
 to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
+diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
+index 3db48469e974bec78586fe841caf72cbe1dae7fd..db91ca57bf77f90a7b37d006bf5d46466e6b9ed8 100644
+--- a/cc/trees/layer_tree_host_impl.cc
++++ b/cc/trees/layer_tree_host_impl.cc
+@@ -1801,6 +1801,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
+ 
+ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpaceAndId(
+     int* id) const {
++  if (!settings_.enable_color_correct_rendering) {
++    static gfx::ColorSpace invalid_color_space;
++    *id = -1;
++    return invalid_color_space;
++  }
++
+   const gfx::ColorSpace* result = nullptr;
+   // The pending tree will have the most recently updated color space, so
+   // prefer that.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
 index ea0dfd54283746e84f2a14108d50b5203bc6f6d8..b1d82cb13c78b1a9e0049ba73fc36aa1bfdd874b 100644
 --- a/cc/trees/layer_tree_settings.h
@@ -248,6 +265,42 @@ index 1598494eb013868e2ad8b6ce8aa32742e5819ae3..0fcd5dd582ffaea0b4c3867809529c4a
    // Checkerimaging is not supported for synchronous single-threaded mode, which
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
+diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
+index 1aedba288aed698fd1b7ac6a4ef1a67fc892f84a..df2b5b120483225c2bd21a337e6085dbceca4ec4 100644
+--- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
++++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
+@@ -12,6 +12,7 @@
+ #include "third_party/khronos/GLES3/gl3.h"
+ #include "third_party/skia/include/core/SkSurfaceProps.h"
+ #include "ui/gfx/color_space.h"
++#include "ui/gfx/switches.h"
+ 
+ namespace blink {
+ 
+@@ -89,6 +90,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
+ }
+ 
+ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
++  auto* cmd_line = base::CommandLine::ForCurrentProcess();
++  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
++    return gfx::ColorSpace();
++  }
++
+   gfx::ColorSpace::PrimaryID primary_id = GetPrimaryID(color_space_);
+ 
+   // TODO(ccameron): This needs to take into account whether or not this texture
+@@ -102,6 +108,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
+ }
+ 
+ gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {
++  auto* cmd_line = base::CommandLine::ForCurrentProcess();
++  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
++    return gfx::ColorSpace();
++  }
++
+   gfx::ColorSpace::PrimaryID primary_id = GetPrimaryID(color_space_);
+ 
+   gfx::ColorSpace::TransferID transfer_id =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
 index 41f7fcbdd63af315f4b4e768bfef3b5004807a0b..398a4fdea3cc0ab4f5132deeb9365189f9c928c3 100644
 --- a/ui/gfx/mac/io_surface.cc
