@@ -240,17 +240,16 @@ describe('session module', () => {
       const port = (downloadServer.address() as AddressInfo).port
       const url = `http://127.0.0.1:${port}/`
 
-      const downloadPrevented: Promise<Electron.DownloadItem> = new Promise(resolve => {
+      const downloadPrevented: Promise<{itemUrl: string, itemFilename: string, item: Electron.DownloadItem}> = new Promise(resolve => {
         w.webContents.session.once('will-download', function (e, item) {
           e.preventDefault()
-          resolve(item)
+          resolve({itemUrl: item.getURL(), itemFilename: item.getFilename(), item})
         })
       })
       w.loadURL(url)
-      const item = await downloadPrevented
-      expect(item.getURL()).to.equal(url)
-      expect(item.getFilename()).to.equal('mockFile.txt')
-      await new Promise(setImmediate)
+      const {item, itemUrl, itemFilename} = await downloadPrevented
+      expect(itemUrl).to.equal(url)
+      expect(itemFilename).to.equal('mockFile.txt')
       expect(() => item.getURL()).to.throw('Object has been destroyed')
     })
   })

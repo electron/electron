@@ -132,7 +132,7 @@ require compilation of native code before they can be used) will need to be
 compiled to be used with Electron.
 
 The vast majority of Node.js modules are _not_ native. Only 400 out of the
-~650.000 modules are native. However, if you do need native modules, please
+~650,000 modules are native. However, if you do need native modules, please
 consult [this guide on how to recompile them for Electron][native-node].
 
 [node-docs]: https://nodejs.org/en/docs/
