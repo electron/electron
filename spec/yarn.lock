@@ -7,17 +7,9 @@
   resolved "https://registry.yarnpkg.com/@nornagon/put/-/put-0.0.8.tgz#9d497ec46c9364acc3f8b59aa3cf8ee4134ae337"
   integrity sha512-ugvXJjwF5ldtUpa7D95kruNJ41yFQDEKyF5CW4TgKJnh+W/zmlBzXXeKTyqIgwMFrkePN2JqOBqcF0M0oOunow==
 
-abstract-socket@^2.0.0:
+"abstract-socket@github:saghul/node-abstractsocket#35b1b1491fabc04899bde5be3428abf5cf9cd528":
   version "2.1.0"
-  resolved "https://registry.yarnpkg.com/abstract-socket/-/abstract-socket-2.1.0.tgz#a57193dbbf585991b0dc811d7b18e053ff846f8a"
-  integrity sha512-rZ3G6Eqkdi/9PzYu03Xt1QEZ9aHYTnUpxLyV5EtjM/06BCDzYORTAfmCRAL6jIj98YqVviKGgt1qXcFUsM4e0w==
-  dependencies:
-    bindings "^1.2.1"
-    nan "^2.12.1"
-
-"abstract-socket@github:nornagon/node-abstractsocket#v8-compat":
-  version "2.1.0"
-  resolved "https://codeload.github.com/nornagon/node-abstractsocket/tar.gz/10c40472a0132c14451d1d8e4fdf534b00dc3797"
+  resolved "https://codeload.github.com/saghul/node-abstractsocket/tar.gz/35b1b1491fabc04899bde5be3428abf5cf9cd528"
   dependencies:
     bindings "^1.2.1"
     nan "^2.12.1"
