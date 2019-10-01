@@ -1304,13 +1304,13 @@ describe('BrowserWindow module', () => {
     it('returns the window with the webContents', () => {
       const w = new BrowserWindow({show: false})
       const found = BrowserWindow.fromWebContents(w.webContents)
-      expect(found.id).to.equal(w.id)
+      expect(found!.id).to.equal(w.id)
     })
 
-    it('returns undefined for webContents without a BrowserWindow', () => {
+    it('returns null for webContents without a BrowserWindow', () => {
       const contents = (webContents as any).create({})
       try {
-        expect(BrowserWindow.fromWebContents(contents)).to.be.undefined('BrowserWindow.fromWebContents(contents)')
+        expect(BrowserWindow.fromWebContents(contents)).to.be.null('BrowserWindow.fromWebContents(contents)')
       } finally {
         contents.destroy()
       }

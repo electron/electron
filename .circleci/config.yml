@@ -1233,6 +1233,7 @@ jobs:
       <<: *env-linux-2xlarge-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-release-build
+      <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
@@ -1286,6 +1287,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
+      <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
@@ -1339,6 +1341,7 @@ jobs:
       <<: *env-linux-2xlarge-release
       <<: *env-arm
       <<: *env-release-build
+      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
@@ -1409,6 +1412,7 @@ jobs:
       <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
+      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
@@ -1468,6 +1472,7 @@ jobs:
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
+      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
@@ -1533,6 +1538,7 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-mas
       <<: *env-release-build
+      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
@@ -1800,32 +1806,38 @@ workflows:
   publish-x64-linux:
     when: << pipeline.parameters.run-linux-x64-publish >>
     jobs:
-    - linux-x64-publish
+    - linux-x64-publish:
+        context: release-env
 
   publish-ia32-linux:
     when: << pipeline.parameters.run-linux-ia32-publish >>
     jobs:
-    - linux-ia32-publish
+    - linux-ia32-publish:
+        context: release-env
 
   publish-arm-linux:
     when: << pipeline.parameters.run-linux-arm-publish >>
     jobs:
-    - linux-arm-publish
+    - linux-arm-publish:
+        context: release-env
   
   publish-arm64-linux:
     when: << pipeline.parameters.run-linux-arm64-publish >>
     jobs:
-    - linux-arm64-publish
+    - linux-arm64-publish:
+        context: release-env
   
   publish-osx:
     when: << pipeline.parameters.run-osx-publish >>
     jobs:
-    - osx-publish
+    - osx-publish:
+        context: release-env
 
   publish-mas:
     when: << pipeline.parameters.run-mas-publish >>
     jobs:
-    - mas-publish
+    - mas-publish:
+        context: release-env
 
   lint:
     when: << pipeline.parameters.run-lint >>

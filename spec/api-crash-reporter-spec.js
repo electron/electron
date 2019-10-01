@@ -415,6 +415,16 @@ describe('crashReporter module', () => {
       expect(crashReporter.getParameters()).to.not.have.a.property('hello')
     })
   })
+
+  describe('when not started', () => {
+    it('does not prevent process from crashing', (done) => {
+      const appPath = path.join(fixtures, 'api', 'cookie-app')
+      const appProcess = childProcess.spawn(process.execPath, [appPath])
+      appProcess.once('close', () => {
+        done()
+      })
+    })
+  })
 })
 
 const waitForCrashReport = () => {
