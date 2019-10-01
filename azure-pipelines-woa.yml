@@ -1,0 +1,84 @@
+steps:
+- task: CopyFiles@2
+  displayName: 'Copy Files to: src\electron'
+  inputs:
+    TargetFolder: src\electron
+
+- script: |
+    cd src\electron
+    npm install --verbose
+  displayName: 'NPM install'
+
+- powershell: |
+    $localArtifactPath = "$pwd\dist.zip"
+    $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/dist.zip"
+    Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\Default -y $localArtifactPath
+  displayName: 'Download and extract dist.zip for test'
+  env:
+    APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
+
+- powershell: |
+    $localArtifactPath = "$pwd\ffmpeg.zip"
+    $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/ffmpeg.zip"
+    Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\ffmpeg $localArtifactPath
+  displayName: 'Download and extract ffmpeg.zip for test'
+  env:
+    APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
+
+- powershell: |
+    $localArtifactPath = "$pwd\src\out\Default\mksnapshot.zip"
+    $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/mksnapshot.zip"
+    Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
+    cd src\out\Default
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y mksnapshot.zip
+  displayName: 'Download and unzip mksnapshot.zip for test'
+  env:
+    APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
+
+- powershell: |
+    $localArtifactPath = "$pwd\src\node_headers.zip"
+    $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/node_headers.zip"
+    Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
+    cd src
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y node_headers.zip
+  displayName: 'Download node headers for test'
+  env:
+    APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
+
+- powershell: |
+    $localArtifactPath = "$pwd\src\out\Default\electron.lib"
+    $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/electron.lib"
+    Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
+  displayName: 'Download electron.lib for test'
+  env:
+    APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
+
+- powershell: |
+    New-Item src\out\Default\gen\node_headers\Release -Type directory
+    Copy-Item -path src\out\Default\electron.lib -destination src\out\Default\gen\node_headers\Release\node.lib
+  displayName: 'Setup node headers'
+
+- script: |
+    cd src
+    set npm_config_nodedir=%cd%\out\Default\gen\node_headers
+    set npm_config_arch=arm64
+    cd electron
+    node script/yarn test -- --ci --enable-logging --verbose
+  displayName: 'Run Electron tests'
+  env:
+    ELECTRON_OUT_DIR: Default
+    IGNORE_YARN_INSTALL_ERROR: 1
+
+- script: |
+    cd src
+    echo "Verifying non proprietary ffmpeg"
+    python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
+  displayName: 'Verify ffmpeg'
+
+- script: |
+    cd src
+    echo "Verifying mksnapshot"
+    python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd%
+  displayName: 'Verify mksnapshot'

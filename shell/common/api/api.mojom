@@ -2,7 +2,7 @@ module electron.mojom;
 
 import "mojo/public/mojom/base/values.mojom";
 import "mojo/public/mojom/base/string16.mojom";
-import "ui/gfx/geometry/mojo/geometry.mojom";
+import "ui/gfx/geometry/mojom/geometry.mojom";
 
 interface ElectronRenderer {
   Message(
@@ -19,6 +19,11 @@ interface ElectronRenderer {
 
 interface ElectronAutofillAgent {
   AcceptDataListSuggestion(mojo_base.mojom.String16 value);
+};
+
+interface ElectronAutofillDriver {
+  ShowAutofillPopup(gfx.mojom.RectF bounds, array<mojo_base.mojom.String16> values, array<mojo_base.mojom.String16> labels);
+  HideAutofillPopup();
 };
 
 struct DraggableRegion {
@@ -71,8 +76,4 @@ interface ElectronBrowser {
 
   [Sync]
   DoGetZoomLevel() => (double result);
-
-  // TODO: move these into a separate interface
-  ShowAutofillPopup(gfx.mojom.RectF bounds, array<mojo_base.mojom.String16> values, array<mojo_base.mojom.String16> labels);
-  HideAutofillPopup();
 };

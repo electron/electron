@@ -4,6 +4,7 @@ import { BrowserWindow, WebContents, session, ipcMain } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import * as https from 'https';
+import * as http from 'http';
 import * as path from 'path';
 import * as fs from 'fs';
 import { EventEmitter } from 'events';
@@ -197,5 +198,47 @@ describe('focus handling', () => {
       focusedElementId = await focusChange
       expect(focusedElementId).to.equal('BUTTON-element-3', `focus should've looped back to element-3, it's instead in ${focusedElementId}`)
     })
+  })
+})
+
+describe('web security', () => {
+  afterEach(closeAllWindows)
+  let server: http.Server
+  let serverUrl: string
+  before(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html')
+      res.end('<body>')
+    })
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+    serverUrl = `http://localhost:${(server.address() as any).port}`
+  })
+  after(() => {
+    server.close()
+  })
+
+  it('engages CORB when web security is not disabled', async () => {
+    const w = new BrowserWindow({ show: true, webPreferences: { webSecurity: true, nodeIntegration: true } })
+    const p = emittedOnce(ipcMain, 'success')
+    await w.loadURL(`data:text/html,<script>
+        const s = document.createElement('script')
+        s.src = "${serverUrl}"
+        // The script will load successfully but its body will be emptied out
+        // by CORB, so we don't expect a syntax error.
+        s.onload = () => { require('electron').ipcRenderer.send('success') }
+        document.documentElement.appendChild(s)
+      </script>`)
+    await p
+  })
+
+  it('bypasses CORB when web security is disabled', async () => {
+    const w = new BrowserWindow({ show: true, webPreferences: { webSecurity: false, nodeIntegration: true } })
+    const p = emittedOnce(ipcMain, 'success')
+    await w.loadURL(`data:text/html,
+      <script>
+        window.onerror = (e) => { require('electron').ipcRenderer.send('success', e) }
+      </script>
+      <script src="${serverUrl}"></script>`)
+    await p
   })
 })

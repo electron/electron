@@ -71,12 +71,18 @@ void NodeStreamLoader::Start(network::ResourceResponseHead head) {
      base::BindRepeating(&NodeStreamLoader::NotifyComplete, weak, net::OK));
   On("error", base::BindRepeating(&NodeStreamLoader::NotifyComplete, weak,
                                   net::ERR_FAILED));
-  On("readable", base::BindRepeating(&NodeStreamLoader::ReadMore, weak));
+  On("readable", base::BindRepeating(&NodeStreamLoader::NotifyReadable, weak));
+}
+
+void NodeStreamLoader::NotifyReadable() {
+  if (!readable_)
+    ReadMore();
+  readable_ = true;
 }
 
 void NodeStreamLoader::NotifyComplete(int result) {
   // Wait until write finishes or fails.
-  if (is_writing_) {
+  if (is_reading_ || is_writing_) {
     ended_ = true;
     result_ = result;
     return;
@@ -87,19 +93,24 @@ void NodeStreamLoader::NotifyComplete(int result) {
 }
 
 void NodeStreamLoader::ReadMore() {
+  is_reading_ = true;
   // buffer = emitter.read()
   v8::MaybeLocal<v8::Value> ret = node::MakeCallback(
       isolate_, emitter_.Get(isolate_), "read", 0, nullptr, {0, 0});
 
   // If there is no buffer read, wait until |readable| is emitted again.
   v8::Local<v8::Value> buffer;
-  if (!ret.ToLocal(&buffer) || !node::Buffer::HasInstance(buffer))
+  if (!ret.ToLocal(&buffer) || !node::Buffer::HasInstance(buffer)) {
+    readable_ = false;
+    is_reading_ = false;
     return;
+  }
 
   // Hold the buffer until the write is done.
   buffer_.Reset(isolate_, buffer);
 
   // Write buffer to mojo pipe asyncronously.
+  is_reading_ = false;
   is_writing_ = true;
   producer_->Write(
       std::make_unique<mojo::StringDataSource>(
@@ -118,7 +129,7 @@ void NodeStreamLoader::DidWrite(MojoResult result) {
     return;
   }
 
-  if (result == MOJO_RESULT_OK)
+  if (result == MOJO_RESULT_OK && readable_)
     ReadMore();
   else
     NotifyComplete(net::ERR_FAILED);

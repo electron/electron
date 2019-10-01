@@ -18,8 +18,6 @@
 #include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_store.h"
 #include "net/cookies/cookie_util.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_getter.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/common/native_mate_converters/callback.h"

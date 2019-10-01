@@ -516,14 +516,14 @@ Note that this is only emitted when the window is being resized manually. Resizi
 
 Emitted after the window has been resized.
 
-#### Event: 'will-move' _Windows_
+#### Event: 'will-move' _macOS_ _Windows_
 
 Returns:
 
 * `event` Event
 * `newBounds` [`Rectangle`](structures/rectangle.md) - Location the window is being moved to.
 
-Emitted before the window is moved. Calling `event.preventDefault()` will prevent the window from being moved.
+Emitted before the window is moved. On Windows, calling `event.preventDefault()` will prevent the window from being moved.
 
 Note that this is only emitted when the window is being resized manually. Resizing the window with `setBounds`/`setSize` will not emit this event.
 
@@ -691,7 +691,7 @@ is emitted.
 
 #### `BrowserWindow.getExtensions()`
 
-Returns `Object` - The keys are the extension names and each value is
+Returns `Record<String, ExtensionInfo>` - The keys are the extension names and each value is
 an Object containing `name` and `version` properties.
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
@@ -724,7 +724,7 @@ is emitted.
 
 #### `BrowserWindow.getDevToolsExtensions()`
 
-Returns `Object` - The keys are the extension names and each value is
+Returns `Record<string, ExtensionInfo>` - The keys are the extension names and each value is
 an Object containing `name` and `version` properties.
 
 To check if a DevTools extension is installed you can run the following:
@@ -1194,6 +1194,14 @@ can not be focused on.
 
 Returns `Boolean` - Whether the window is always on top of other windows.
 
+#### `win.moveAbove(mediaSourceId)`
+
+* `mediaSourceId` String - Window id in the format of DesktopCapturerSource's id. For example "window:1869:0".
+
+Moves window above the source window in the sense of z-order. If the
+`mediaSourceId` is not of type window or if the window does not exist then
+this method throws an error.
+
 #### `win.moveTop()`
 
 Moves window to top(z-order) regardless of focus
@@ -1265,6 +1273,15 @@ Enters or leaves the kiosk mode.
 #### `win.isKiosk()`
 
 Returns `Boolean` - Whether the window is in kiosk mode.
+
+#### `win.getMediaSourceId()`
+
+Returns `String` - Window id in the format of DesktopCapturerSource's id. For example "window:1234:0".
+
+More precisely the format is `window:id:other_id` where `id` is `HWND` on
+Windows, `CGWindowID` (`uint64_t`) on macOS and `Window` (`unsigned long`) on
+Linux. `other_id` is used to identify web contents (tabs) so within the same
+top level window.
 
 #### `win.getNativeWindowHandle()`
 
@@ -1381,7 +1398,7 @@ win.loadURL('http://localhost:8000/post', {
 
 * `filePath` String
 * `options` Object (optional)
-  * `query` Object (optional) - Passed to `url.format()`.
+  * `query` Record<String, String> (optional) - Passed to `url.format()`.
   * `search` String (optional) - Passed to `url.format()`.
   * `hash` String (optional) - Passed to `url.format()`.
 
@@ -1437,29 +1454,27 @@ screen readers
 Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to
 convey some sort of application status or to passively notify the user.
 
-#### `win.setHasShadow(hasShadow)` _macOS_
+#### `win.setHasShadow(hasShadow)`
 
 * `hasShadow` Boolean
 
-Sets whether the window should have a shadow. On Windows and Linux does
-nothing.
+Sets whether the window should have a shadow.
 
-#### `win.hasShadow()` _macOS_
+#### `win.hasShadow()`
 
 Returns `Boolean` - Whether the window has a shadow.
-
-On Windows and Linux always returns
-`true`.
 
 #### `win.setOpacity(opacity)` _Windows_ _macOS_
 
 * `opacity` Number - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
-Sets the opacity of the window. On Linux does nothing.
+Sets the opacity of the window. On Linux, does nothing. Out of bound number
+values are clamped to the [0, 1] range.
 
-#### `win.getOpacity()` _Windows_ _macOS_
+#### `win.getOpacity()`
 
-Returns `Number` - between 0.0 (fully transparent) and 1.0 (fully opaque)
+Returns `Number` - between 0.0 (fully transparent) and 1.0 (fully opaque). On
+Linux, always returns 1.
 
 #### `win.setShape(rects)` _Windows_ _Linux_ _Experimental_
 

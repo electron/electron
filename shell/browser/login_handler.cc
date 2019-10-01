@@ -23,8 +23,7 @@ namespace electron {
 LoginHandler::LoginHandler(net::URLRequest* request,
                            const net::AuthChallengeInfo& auth_info,
                            net::NetworkDelegate::AuthCallback callback,
-                           net::AuthCredentials* credentials,
-                           content::ResourceRequestInfo* resource_request_info)
+                           net::AuthCredentials* credentials)
     : credentials_(credentials),
       auth_info_(std::make_unique<net::AuthChallengeInfo>(auth_info)),
       auth_callback_(std::move(callback)),
@@ -35,8 +34,11 @@ LoginHandler::LoginHandler(net::URLRequest* request,
       new base::DictionaryValue);
   FillRequestDetails(request_details.get(), request);
 
-  web_contents_getter_ =
-      resource_request_info->GetWebContentsGetterForRequest();
+  // TODO(deepak1556): fix with network service
+  // tracking issue: #19602
+  CHECK(false) << "fix with network service";
+  // web_contents_getter_ =
+  //     resource_request_info->GetWebContentsGetterForRequest();
 
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
@@ -72,6 +74,9 @@ void LoginHandler::NotifyRequestDestroyed() {
 
 content::WebContents* LoginHandler::GetWebContents() const {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  // TODO(deepak1556): fix with network service
+  // tracking issue: #19602
+  CHECK(false) << "fix with network service";
   return web_contents_getter_.Run();
 }
 

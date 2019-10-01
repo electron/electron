@@ -28,7 +28,7 @@ index 735da93c3cabb8c6139971295740ba14a30d1b69..533f53fbc42397608e3762e370cc935c
    // Non-owning pointer to the filter must outlive this class.
    explicit ChromeBrowserPepperHostFactory(content::BrowserPpapiHost* host);
 diff --git a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
-index 83cedb4c9e1323259afd041e571240cd971e1241..3686ae2fab5f400cf119a54aea547a72655c2b0a 100644
+index 37245c48cacbc5db164c61e4499f34ee83e0fce7..0fef12892e965e319e45f5dd1a9c5c9fc606aa9a 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 @@ -7,10 +7,12 @@
@@ -61,7 +61,7 @@ index 83cedb4c9e1323259afd041e571240cd971e1241..3686ae2fab5f400cf119a54aea547a72
 +  return PP_OK;
  }
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
-index 9d28e920676edd065f735b8939854468321e99ca..6c086a792e343cf537e46f2c97c21b6257d7268e 100644
+index c6c2ac11fd5551fe03978b947d2dda4c016e59ae..2dc392a6eab17b048df730e294398a3a0fb2eb8d 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 @@ -8,9 +8,11 @@
@@ -179,7 +179,7 @@ index f2f40b636a41649199a38c663f03e6182df82520..41d11d1f1f9921d4b4deaaf4b2d8ab4b
  
    DISALLOW_COPY_AND_ASSIGN(PepperFlashBrowserHost);
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
-index 0a727e8c438462a293db629da07d5aef2b25a9ee..b49303e2c19329715f72d8926cb765289224d000 100644
+index 2e51425cb66f25f240ad7f4a052bcf6eb76f2062..240fa299b1160ebb2f9b20c7361405c9b84d5d2f 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
 @@ -20,6 +20,7 @@
@@ -258,7 +258,7 @@ index b9d2ce7f7f6837ee7b304daac82d21a3147c6faf..4d4b023d62d12b4d119acbfdee64f415
  
    base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_{this};
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index 0d083bb09ff17a691c6399d2a5746b44e3196873..2023dc0240220362a1b503da07aa9fab4cb4b434 100644
+index 00db4e2fa2ac89d89ecd31174e192dcb17f3e912..df5a53c162059270ad673fffebbd432f6df0d212 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -8,17 +8,21 @@
@@ -316,7 +316,7 @@ index 0d083bb09ff17a691c6399d2a5746b44e3196873..2023dc0240220362a1b503da07aa9fab
  }
  
  PepperIsolatedFileSystemMessageFilter::
-@@ -96,6 +102,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnResourceMessageReceived(
+@@ -95,6 +101,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnResourceMessageReceived(
    return PP_ERROR_FAILED;
  }
  
@@ -324,7 +324,7 @@ index 0d083bb09ff17a691c6399d2a5746b44e3196873..2023dc0240220362a1b503da07aa9fab
  Profile* PepperIsolatedFileSystemMessageFilter::GetProfile() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    ProfileManager* profile_manager = g_browser_process->profile_manager();
-@@ -122,6 +129,7 @@ PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(Profile* profile) {
+@@ -121,6 +128,7 @@ PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(Profile* profile) {
    return storage::IsolatedContext::ScopedFSHandle();
  #endif
  }
@@ -332,7 +332,7 @@ index 0d083bb09ff17a691c6399d2a5746b44e3196873..2023dc0240220362a1b503da07aa9fab
  
  int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
      ppapi::host::HostMessageContext* context,
-@@ -130,7 +138,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+@@ -129,7 +137,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_INVALID:
        break;
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_CRX:
@@ -341,7 +341,7 @@ index 0d083bb09ff17a691c6399d2a5746b44e3196873..2023dc0240220362a1b503da07aa9fab
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_PLUGINPRIVATE:
        return OpenPluginPrivateFileSystem(context);
    }
-@@ -140,6 +148,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+@@ -139,6 +147,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
    return PP_ERROR_FAILED;
  }
  
@@ -349,7 +349,7 @@ index 0d083bb09ff17a691c6399d2a5746b44e3196873..2023dc0240220362a1b503da07aa9fab
  int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
      ppapi::host::HostMessageContext* context) {
  #if BUILDFLAG(ENABLE_EXTENSIONS)
-@@ -180,6 +189,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
+@@ -179,6 +188,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
    return PP_ERROR_NOTSUPPORTED;
  #endif
  }

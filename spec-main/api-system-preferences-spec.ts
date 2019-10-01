@@ -52,7 +52,7 @@ describe('systemPreferences module', () => {
 
       for (const badDefault of badDefaults) {
         expect(() => {
-          systemPreferences.registerDefaults(badDefault)
+          systemPreferences.registerDefaults(badDefault as any)
         }).to.throw('Invalid userDefault data provided')
       }
     })
@@ -117,6 +117,13 @@ describe('systemPreferences module', () => {
   })
 
   ifdescribe(process.platform === 'darwin')('systemPreferences.getSystemColor(color)', () => {
+    it('throws on invalid system colors', () => {
+      const color = 'bad-color'
+      expect(() => {
+        systemPreferences.getSystemColor(color as any)
+      }).to.throw(`Unknown system color: ${color}`)
+    })
+  
     it('returns a valid system color', () => {
       const colors = ['blue', 'brown', 'gray', 'green', 'orange', 'pink', 'purple', 'red', 'yellow']
       

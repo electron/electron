@@ -12,7 +12,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/sequenced_task_runner_helpers.h"
 #include "base/strings/string16.h"
-#include "content/public/browser/resource_request_info.h"
+#include "content/public/browser/web_contents.h"
 #include "net/base/network_delegate.h"
 
 namespace content {
@@ -27,8 +27,7 @@ class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
   LoginHandler(net::URLRequest* request,
                const net::AuthChallengeInfo& auth_info,
                net::NetworkDelegate::AuthCallback callback,
-               net::AuthCredentials* credentials,
-               content::ResourceRequestInfo* resource_request_info);
+               net::AuthCredentials* credentials);
 
   // The auth is cancelled, must be called on UI thread.
   void CancelAuth();
@@ -62,7 +61,7 @@ class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
   std::unique_ptr<const net::AuthChallengeInfo> auth_info_;
 
   // WebContents associated with the login request.
-  content::ResourceRequestInfo::WebContentsGetter web_contents_getter_;
+  content::WebContents::Getter web_contents_getter_;
 
   // Called with preferred value of net::NetworkDelegate::AuthRequiredResponse.
   net::NetworkDelegate::AuthCallback auth_callback_;

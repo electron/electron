@@ -20,6 +20,7 @@
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gfx_converter.h"
 #include "shell/common/native_mate_converters/image_converter.h"
+#include "shell/common/native_mate_converters/native_window_converter.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
@@ -552,6 +553,15 @@ std::vector<int> TopLevelWindow::GetPosition() {
   result[1] = pos.y();
   return result;
 }
+void TopLevelWindow::MoveAbove(const std::string& sourceId,
+                               mate::Arguments* args) {
+#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
+  if (!window_->MoveAbove(sourceId))
+    args->ThrowError("Invalid media source id");
+#else
+  args->ThrowError("enable_desktop_capturer=true to use this feature");
+#endif
+}
 
 void TopLevelWindow::MoveTop() {
   window_->MoveTop();
@@ -730,6 +740,11 @@ void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
     }
   }
 }
+
+std::string TopLevelWindow::GetMediaSourceId() const {
+  return window_->GetDesktopMediaID().ToString();
+}
+
 v8::Local<v8::Value> TopLevelWindow::GetNativeWindowHandle() {
   // TODO(MarshallOfSound): Replace once
   // https://chromium-review.googlesource.com/c/chromium/src/+/1253094/ has
@@ -1076,6 +1091,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setMaximumSize", &TopLevelWindow::SetMaximumSize)
       .SetMethod("getMaximumSize", &TopLevelWindow::GetMaximumSize)
       .SetMethod("setSheetOffset", &TopLevelWindow::SetSheetOffset)
+      .SetMethod("moveAbove", &TopLevelWindow::MoveAbove)
       .SetMethod("moveTop", &TopLevelWindow::MoveTop)
       .SetMethod("_setResizable", &TopLevelWindow::SetResizable)
       .SetMethod("_isResizable", &TopLevelWindow::IsResizable)
@@ -1135,6 +1151,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
       .SetMethod("addBrowserView", &TopLevelWindow::AddBrowserView)
       .SetMethod("removeBrowserView", &TopLevelWindow::RemoveBrowserView)
+      .SetMethod("getMediaSourceId", &TopLevelWindow::GetMediaSourceId)
       .SetMethod("getNativeWindowHandle",
                  &TopLevelWindow::GetNativeWindowHandle)
       .SetMethod("setProgressBar", &TopLevelWindow::SetProgressBar)

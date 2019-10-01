@@ -78,7 +78,7 @@ bool ResponseMustBeObject(ProtocolType type) {
 
 // Helper to convert value to Dictionary.
 mate::Dictionary ToDict(v8::Isolate* isolate, v8::Local<v8::Value> value) {
-  if (value->IsObject())
+  if (!value->IsFunction() && value->IsObject())
     return mate::Dictionary(
         isolate,
         value->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
@@ -322,10 +322,14 @@ void AtomURLLoaderFactory::StartLoadingString(
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
   std::string contents;
-  if (response->IsString())
+  if (response->IsString()) {
     contents = gin::V8ToString(isolate, response);
-  else if (!dict.IsEmpty())
+  } else if (!dict.IsEmpty()) {
     dict.Get("data", &contents);
+  } else {
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    return;
+  }
 
   SendContents(std::move(client), std::move(head), std::move(contents));
 }

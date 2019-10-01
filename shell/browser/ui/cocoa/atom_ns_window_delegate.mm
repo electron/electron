@@ -12,6 +12,7 @@
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/atom_preview_item.h"
 #include "shell/browser/ui/cocoa/atom_touch_bar.h"
+#include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
 
@@ -120,8 +121,10 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 
   {
     bool prevent_default = false;
-    gfx::Rect new_bounds(gfx::Point(sender.frame.origin), gfx::Size(newSize));
-    shell_->NotifyWindowWillResize(new_bounds, &prevent_default);
+    NSRect new_bounds = NSMakeRect(sender.frame.origin.x, sender.frame.origin.y,
+                                   newSize.width, newSize.height);
+    shell_->NotifyWindowWillResize(gfx::ScreenRectFromNSRect(new_bounds),
+                                   &prevent_default);
     if (prevent_default) {
       return sender.frame.size;
     }
@@ -133,6 +136,18 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 - (void)windowDidResize:(NSNotification*)notification {
   [super windowDidResize:notification];
   shell_->NotifyWindowResize();
+}
+
+- (void)windowWillMove:(NSNotification*)notification {
+  NSWindow* window = [notification object];
+  NSSize size = [[window contentView] frame].size;
+  NSRect new_bounds = NSMakeRect(window.frame.origin.x, window.frame.origin.y,
+                                 size.width, size.height);
+  bool prevent_default = false;
+
+  // prevent_default has no effect
+  shell_->NotifyWindowWillMove(gfx::ScreenRectFromNSRect(new_bounds),
+                               &prevent_default);
 }
 
 - (void)windowDidMove:(NSNotification*)notification {

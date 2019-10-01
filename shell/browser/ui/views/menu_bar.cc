@@ -268,15 +268,18 @@ void MenuBar::OnMenuButtonClicked(views::Button* source,
   if (!window_->HasFocus())
     window_->RequestFocus();
 
+  // This ensures that if you focus the menubar by clicking on an item, you can
+  // still use the arrow keys to move around
+  if (GetPaneFocusTraversable() == nullptr) {
+    SetPaneFocus(source);
+  }
+
   int id = source->tag();
   AtomMenuModel::ItemType type = menu_model_->GetTypeAt(id);
   if (type != AtomMenuModel::TYPE_SUBMENU) {
     menu_model_->ActivatedAt(id, 0);
     return;
   }
-
-  GetFocusManager()->SetFocusedViewWithReason(
-      source, views::FocusManager::kReasonFocusTraversal);
 
   // Deleted in MenuDelegate::OnMenuClosed
   MenuDelegate* menu_delegate = new MenuDelegate(this);

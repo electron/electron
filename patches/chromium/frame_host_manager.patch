@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..fab42c861fbc5f5344851b0bcb19e592678be8e6 100644
+index b95ab6369324c29763d4320dcc4b16820a0e5e95..a0179277fe51d336cbcb19d76e28d2111926184a 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2180,6 +2180,21 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2228,6 +2228,21 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      const NavigationRequest& request) {
@@ -67,12 +67,13 @@ index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..fab42c861fbc5f5344851b0bcb19e592
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2217,6 +2232,53 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2265,6 +2280,59 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
 +
 +    if (!GetContentClient()->browser()->CanUseCustomSiteInstance()) {
++      bool has_navigation_started = request.state() != NavigationRequest::NOT_STARTED;
 +      bool has_response_started =
 +          (request.state() == NavigationRequest::RESPONSE_STARTED ||
 +          request.state() == NavigationRequest::FAILED) &&
@@ -80,11 +81,12 @@ index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..fab42c861fbc5f5344851b0bcb19e592
 +      // Gives user a chance to choose a custom site instance.
 +      SiteInstance* affinity_site_instance = nullptr;
 +      scoped_refptr<SiteInstance> overriden_site_instance;
++      bool should_register_site_instance = false;
 +      ContentBrowserClient::SiteInstanceForNavigationType siteInstanceType =
 +          GetContentClient()->browser()->ShouldOverrideSiteInstanceForNavigation(
 +              current_frame_host(), speculative_frame_host(), browser_context,
-+              request.common_params().url, has_response_started,
-+              &affinity_site_instance);
++              request.common_params().url, has_navigation_started,
++              has_response_started, &affinity_site_instance);
 +      switch (siteInstanceType) {
 +        case ContentBrowserClient::SiteInstanceForNavigationType::
 +            FORCE_CANDIDATE_OR_NEW:
@@ -93,6 +95,12 @@ index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..fab42c861fbc5f5344851b0bcb19e592
 +                  ? candidate_site_instance
 +                  : current_site_instance->CreateRelatedSiteInstance(
 +                                              request.common_params().url);
++          should_register_site_instance = true;
++          break;
++        case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_NEW:
++          overriden_site_instance = current_site_instance->CreateRelatedSiteInstance(
++              request.common_params().url);
++          should_register_site_instance = true;
 +          break;
 +        case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_CURRENT:
 +          overriden_site_instance = render_frame_host_->GetSiteInstance();
@@ -109,9 +117,7 @@ index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..fab42c861fbc5f5344851b0bcb19e592
 +          break;
 +      }
 +      if (overriden_site_instance) {
-+        if (siteInstanceType ==
-+            ContentBrowserClient::SiteInstanceForNavigationType::
-+                FORCE_CANDIDATE_OR_NEW) {
++        if (should_register_site_instance) {
 +          GetContentClient()->browser()->RegisterPendingSiteInstance(
 +              render_frame_host_.get(), overriden_site_instance.get());
 +        }
@@ -121,7 +127,7 @@ index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..fab42c861fbc5f5344851b0bcb19e592
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2228,23 +2290,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2276,23 +2344,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
@@ -153,7 +159,7 @@ index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..fab42c861fbc5f5344851b0bcb19e592
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index a805b110c378d0584a361f3a499be57c7826a63a..00c1f807033a76390c12335e5a647a6f951372c2 100644
+index 47067d774c0490e3f0daf1f0d7ee60e4f51fc110..54aab183e80538173045c68d539c197af8b8d063 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
 @@ -367,6 +367,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
@@ -180,12 +186,12 @@ index 1edb9fd6b0c383f291735dd1a952fcb7b17cc87f..23967f040eb346be265faa2a92562e1f
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 44a574d3c621695d7d1304c7b8db08db8cf753d1..39d3c28ca33fa1eeab14b67ec31a6ae09f25c354 100644
+index 4d4710e8c5382ac9391bb693dc1fd42258efd181..45cf6657ea2055c45ff14669a0e09efc84efd133 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -52,6 +52,20 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
-                                                          handle);
- }
+@@ -44,6 +44,21 @@
+ 
+ namespace content {
  
 +bool ContentBrowserClient::CanUseCustomSiteInstance() {
 +  return false;
@@ -196,6 +202,7 @@ index 44a574d3c621695d7d1304c7b8db08db8cf753d1..39d3c28ca33fa1eeab14b67ec31a6ae0
 +    content::RenderFrameHost* speculative_rfh,
 +    content::BrowserContext* browser_context,
 +    const GURL& url,
++    bool has_navigation_started,
 +    bool has_request_started,
 +    content::SiteInstance** affinity_site_instance) const {
 +  return SiteInstanceForNavigationType::ASK_CHROMIUM;
@@ -205,10 +212,10 @@ index 44a574d3c621695d7d1304c7b8db08db8cf753d1..39d3c28ca33fa1eeab14b67ec31a6ae0
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 7d83d9e0d0c57511955921d85f15a27a88c3ac37..3d518759a3bc190970a2d45ec178c97096fa250d 100644
+index 897c2c1435a8c1a495aa84c928c360d74218bfa7..8b2b21f2ca7306751e123ed31198a2c5c38a4b5c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -208,8 +208,41 @@ CONTENT_EXPORT void OverrideOnBindInterface(
+@@ -204,8 +204,45 @@ struct WebPreferences;
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:
@@ -220,6 +227,9 @@ index 7d83d9e0d0c57511955921d85f15a27a88c3ac37..3d518759a3bc190970a2d45ec178c970
 +
 +    // Use the current site instance for the navigation.
 +    FORCE_CURRENT,
++
++    // Use a new, unrelated site instance.
++    FORCE_NEW,
 +
 +    // Use the provided affinity site instance for the navigation.
 +    FORCE_AFFINITY,
@@ -239,6 +249,7 @@ index 7d83d9e0d0c57511955921d85f15a27a88c3ac37..3d518759a3bc190970a2d45ec178c970
 +      content::RenderFrameHost* speculative_rfh,
 +      content::BrowserContext* browser_context,
 +      const GURL& url,
++      bool has_navigation_started,
 +      bool has_request_started,
 +      content::SiteInstance** affinity_site_instance) const;
 +

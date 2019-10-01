@@ -129,7 +129,7 @@ app.on('ready', () => {
     console.log('Debugger detached due to : ', reason)
   })
 
-  mainWindow.webContents.debugger.on('message', function (event, method, params) {
+  mainWindow.webContents.debugger.on('message', function (event, method, params: any) {
     if (method === 'Network.requestWillBeSent') {
       if (params.request.url === 'https://www.github.com') {
         mainWindow.webContents.debugger.detach()

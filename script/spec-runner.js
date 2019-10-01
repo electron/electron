@@ -123,7 +123,8 @@ async function runRemoteBasedElectronTests () {
     stdio: 'inherit'
   })
   if (status !== 0) {
-    throw new Error(`Electron tests failed with code ${status}.`)
+    const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString()
+    throw new Error(`Electron tests failed with code ${textStatus}.`)
   }
 }
 
@@ -135,12 +136,13 @@ async function runMainProcessElectronTests () {
     stdio: 'inherit'
   })
   if (status !== 0) {
-    throw new Error(`Electron tests failed with code ${status}.`)
+    const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString()
+    throw new Error(`Electron tests failed with code ${textStatus}.`)
   }
 }
 
 async function installSpecModules () {
-  const nodeDir = path.resolve(BASE, `out/${utils.OUT_DIR}/gen/node_headers`)
+  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir(true)}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2017'

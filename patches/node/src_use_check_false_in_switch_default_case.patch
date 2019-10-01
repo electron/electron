@@ -6,7 +6,7 @@ Subject: src: use CHECK(false) in switch default case
 Porting https://github.com/nodejs/node/pull/26502
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 4933bf7f1bd2cd5e4293e52a241fcfd5fda6b779..300d2b92d7040c831b3178202a725df15191407d 100644
+index dd78a59742fc05e938ba2397d3701b2ac8ccfc23..bca482cc9724fef680196a192a6bbd7b4d2e4fde 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -3476,7 +3476,7 @@ static ManagedEVPPKey GetPublicOrPrivateKeyFromJs(

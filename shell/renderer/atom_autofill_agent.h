@@ -67,8 +67,8 @@ class AutofillAgent : public content::RenderFrameObserver,
 
   void DoFocusChangeComplete();
 
-  const mojom::ElectronBrowserPtr& GetElectronBrowser();
-  mojom::ElectronBrowserPtr browser_ptr_;
+  const mojom::ElectronAutofillDriverAssociatedPtr& GetAutofillDriver();
+  mojom::ElectronAutofillDriverAssociatedPtr autofill_driver_;
 
   // True when the last click was on the focused node.
   bool focused_node_was_last_clicked_ = false;

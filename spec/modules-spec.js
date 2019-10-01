@@ -54,26 +54,6 @@ describe('modules support', () => {
       }
     })
 
-    // TODO(alexeykuzmin): Disabled during the Chromium 62 (Node.js 9) upgrade.
-    // Enable it back when "ffi" module supports Node.js 9.
-    // https://github.com/electron/electron/issues/11274
-    xdescribe('ffi', () => {
-      before(function () {
-        if (!nativeModulesEnabled || process.platform === 'win32' ||
-            process.arch === 'arm64') {
-          this.skip()
-        }
-      })
-
-      it('does not crash', () => {
-        const ffi = require('ffi')
-        const libm = ffi.Library('libm', {
-          ceil: ['double', ['double']]
-        })
-        expect(libm.ceil(1.5)).to.equal(2)
-      })
-    })
-
     describe('q', () => {
       const Q = require('q')
       describe('Q.when', () => {

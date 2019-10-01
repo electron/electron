@@ -147,9 +147,17 @@ bool Browser::IsEmojiPanelSupported() {
 }
 
 void Browser::ShowAboutPanel() {
-  GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(gtk_about_dialog_new());
-
   const auto& opts = about_panel_options_;
+
+  if (!opts.is_dict()) {
+    LOG(WARNING) << "Called showAboutPanel(), but didn't use "
+                    "setAboutPanelSettings() first";
+    return;
+  }
+
+  GtkWidget* dialogWidget = gtk_about_dialog_new();
+  GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(dialogWidget);
+
   const std::string* str;
   const base::Value* val;
 
@@ -198,7 +206,7 @@ void Browser::ShowAboutPanel() {
   }
 
   gtk_dialog_run(GTK_DIALOG(dialog));
-  g_clear_object(&dialog);
+  gtk_widget_destroy(dialogWidget);
 }
 
 void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {

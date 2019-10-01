@@ -50,7 +50,7 @@ Returns:
 
 * `event` Event
 * `method` String - Method name.
-* `params` Object - Event parameters defined by the 'parameters'
+* `params` unknown - Event parameters defined by the 'parameters'
    attribute in the remote debugging protocol.
 
 Emitted whenever the debugging target issues an instrumentation event.
@@ -78,7 +78,7 @@ Detaches the debugger from the `webContents`.
 
 * `method` String - Method name, should be one of the methods defined by the
    [remote debugging protocol][rdp].
-* `commandParams` Object (optional) - JSON object with request parameters.
+* `commandParams` any (optional) - JSON object with request parameters.
 
 Returns `Promise<any>` - A promise that resolves with the response defined by
 the 'returns' attribute of the command description in the remote debugging protocol

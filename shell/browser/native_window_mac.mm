@@ -12,9 +12,11 @@
 
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
+#include "base/numerics/ranges.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "content/public/browser/desktop_media_id.h"
 #include "native_mate/dictionary.h"
 #include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/atom_native_widget_mac.h"
@@ -29,6 +31,7 @@
 #include "shell/common/deprecate_util.h"
 #include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
+#include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
@@ -332,7 +335,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.native_widget = new AtomNativeWidgetMac(this, styleMask, widget());
-  widget()->Init(params);
+  widget()->Init(std::move(params));
   window_ = static_cast<AtomNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
 
@@ -723,6 +726,21 @@ void NativeWindowMac::SetContentSizeConstraints(
   NativeWindow::SetContentSizeConstraints(size_constraints);
 }
 
+bool NativeWindowMac::MoveAbove(const std::string& sourceId) {
+  const content::DesktopMediaID id = content::DesktopMediaID::Parse(sourceId);
+  if (id.type != content::DesktopMediaID::TYPE_WINDOW)
+    return false;
+
+  // Check if the window source is valid.
+  const CGWindowID window_id = id.id;
+  if (!webrtc::GetWindowOwnerPid(window_id))
+    return false;
+
+  [window_ orderWindow:NSWindowAbove relativeTo:id.id];
+
+  return true;
+}
+
 void NativeWindowMac::MoveTop() {
   [window_ orderWindow:NSWindowAbove relativeTo:0];
 }
@@ -1032,7 +1050,8 @@ bool NativeWindowMac::HasShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  [window_ setAlphaValue:opacity];
+  const double boundedOpacity = base::ClampToRange(opacity, 0.0, 1.0);
+  [window_ setAlphaValue:boundedOpacity];
 }
 
 double NativeWindowMac::GetOpacity() {
@@ -1126,7 +1145,12 @@ gfx::NativeWindow NativeWindowMac::GetNativeWindow() const {
 }
 
 gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() const {
-  return gfx::kNullAcceleratedWidget;
+  return [window_ windowNumber];
+}
+
+content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
+  return content::DesktopMediaID(content::DesktopMediaID::TYPE_WINDOW,
+                                 GetAcceleratedWidget());
 }
 
 NativeWindowHandle NativeWindowMac::GetNativeWindowHandle() const {

@@ -11,6 +11,7 @@
 
 # Upgrades WG
 /patches/                               @electron/wg-upgrades
+DEPS                                    @electron/wg-upgrades
 
 # Docs & Tooling WG
 /default_app/ @electron/wg-docs-tools

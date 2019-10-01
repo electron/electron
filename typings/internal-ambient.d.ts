@@ -10,8 +10,17 @@ declare namespace NodeJS {
     isViewApiEnabled(): boolean;
     isTtsEnabled(): boolean;
     isPrintingEnabled(): boolean;
+    isPictureInPictureEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
+  }
+
+  interface IpcBinding {
+    send(internal: boolean, channel: string, args: any[]): void;
+    sendSync(internal: boolean, channel: string, args: any[]): any;
+    sendToHost(channel: string, args: any[]): void;
+    sendTo(internal: boolean, sendToAll: boolean, webContentsId: number, channel: string, args: any[]): void;
+    invoke<T>(channel: string, args: any[]): Promise<{ error: string, result: T }>;
   }
 
   interface V8UtilBinding {
@@ -28,6 +37,7 @@ declare namespace NodeJS {
     _linkedBinding(name: string): any;
     electronBinding(name: string): any;
     electronBinding(name: 'features'): FeaturesBinding;
+    electronBinding(name: 'ipc'): { ipc: IpcBinding };
     electronBinding(name: 'v8_util'): V8UtilBinding;
     electronBinding(name: 'app'): { app: Electron.App, App: Function };
     electronBinding(name: 'command_line'): Electron.CommandLine;

@@ -48,7 +48,6 @@ v8Util.setHiddenValue(global, 'ipcNative', {
   onMessage (internal: boolean, channel: string, args: any[], senderId: number) {
     const sender = internal ? ipcInternalEmitter : ipcEmitter
     sender.emit(channel, { sender, senderId }, ...args)
-    process.activateUvLoop()
   }
 })
 

@@ -10,10 +10,10 @@ internalModuleStat` in the very beginning of the file holds a reference
 to a native Node.js implementation of the function.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index b6bef5f0fdb6f60e4baf5fbd647f191a0e290355..2f5385cea51d3456dffb43a852bd2b3cdce9998b 100644
+index 70da676a40feeaa82d3a0ccd1c17882ab5d6edf3..ffc7fb6fd5857b807198d4d26b7b899e63cde4a1 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -85,6 +85,8 @@ const relativeResolveCache = Object.create(null);
+@@ -93,6 +93,8 @@ const relativeResolveCache = Object.create(null);
  let requireDepth = 0;
  let statCache = null;
  function stat(filename) {

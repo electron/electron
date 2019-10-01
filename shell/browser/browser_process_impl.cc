@@ -93,14 +93,6 @@ void BrowserProcessImpl::PreCreateThreads() {
   // this can be created on first use.
   if (!SystemNetworkContextManager::GetInstance())
     SystemNetworkContextManager::CreateInstance(local_state_.get());
-
-  // Manage global state of net and other IO thread related.
-  io_thread_ =
-      std::make_unique<IOThread>(SystemNetworkContextManager::GetInstance());
-}
-
-void BrowserProcessImpl::PostDestroyThreads() {
-  io_thread_.reset();
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
@@ -249,11 +241,6 @@ BrowserProcessImpl::component_updater() {
   return nullptr;
 }
 
-component_updater::SupervisedUserWhitelistInstaller*
-BrowserProcessImpl::supervised_user_whitelist_installer() {
-  return nullptr;
-}
-
 MediaFileSystemRegistry* BrowserProcessImpl::media_file_system_registry() {
   return nullptr;
 }
@@ -282,11 +269,6 @@ resource_coordinator::TabManager* BrowserProcessImpl::GetTabManager() {
 shell_integration::DefaultWebClientState
 BrowserProcessImpl::CachedDefaultWebClientState() {
   return shell_integration::UNKNOWN_DEFAULT;
-}
-
-prefs::InProcessPrefServiceFactory* BrowserProcessImpl::pref_service_factory()
-    const {
-  return nullptr;
 }
 
 void BrowserProcessImpl::SetApplicationLocale(const std::string& locale) {

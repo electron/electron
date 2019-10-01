@@ -59,6 +59,7 @@ class NativeWindowMac : public NativeWindow {
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
+  bool MoveAbove(const std::string& sourceId) override;
   void MoveTop() override;
   bool IsResizable() override;
   void SetMovable(bool movable) override;
@@ -108,6 +109,7 @@ class NativeWindowMac : public NativeWindow {
   void AddBrowserView(NativeBrowserView* browser_view) override;
   void RemoveBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
+  content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;

@@ -168,6 +168,37 @@ describe('deprecate', () => {
     expect(warnings[1]).to.include(newProp)
   })
 
+  describe('moveAPI', () => {
+    beforeEach(() => {
+      deprecate.setHandler(null)
+    })
+
+    it('should call the original method', () => {
+      const warnings = []
+      deprecate.setHandler(warning => warnings.push(warning))
+
+      let called = false
+      const fn = () => {
+        called = true
+      }
+      const deprecated = deprecate.moveAPI(fn, 'old', 'new')
+      deprecated()
+      expect(called).to.equal(true)
+    })
+
+    it('should log the deprecation warning once', () => {
+      const warnings = []
+      deprecate.setHandler(warning => warnings.push(warning))
+
+      const deprecated = deprecate.moveAPI(() => null, 'old', 'new')
+      deprecated()
+      expect(warnings).to.have.lengthOf(1)
+      deprecated()
+      expect(warnings).to.have.lengthOf(1)
+      expect(warnings[0]).to.equal('\'old\' is deprecated and will be removed. Please use \'new\' instead.')
+    })
+  })
+
   describe('promisify', () => {
     const expected = 'Hello, world!'
     let promiseFunc

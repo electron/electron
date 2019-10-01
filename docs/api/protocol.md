@@ -228,7 +228,7 @@ should be called with either a `String` or an object that has the `data`,
     * `redirectRequest` Object
       * `url` String
       * `method` String (optional)
-      * `session` Object (optional)
+      * `session` Session | null (optional)
       * `uploadData` [ProtocolResponseUploadData](structures/protocol-response-upload-data.md) (optional)
 * `completion` Function (optional)
   * `error` Error
@@ -388,7 +388,7 @@ which sends a `Buffer` as a response.
     * `redirectRequest` Object
       * `url` String
       * `method` String (optional)
-      * `session` Object | null (optional)
+      * `session` Session | null (optional)
       * `uploadData` Object (optional)
         * `contentType` String - MIME type of the content.
         * `data` String - Content to be sent.

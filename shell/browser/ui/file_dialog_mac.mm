@@ -191,19 +191,28 @@ void SetupDialog(NSSavePanel* dialog, const DialogSettings& settings) {
     [dialog setNameFieldStringValue:default_filename];
 }
 
-void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
-  [dialog setCanChooseFiles:(properties & FILE_DIALOG_OPEN_FILE)];
-  if (properties & FILE_DIALOG_OPEN_DIRECTORY)
+void SetupOpenDialogForProperties(NSOpenPanel* dialog, int properties) {
+  [dialog setCanChooseFiles:(properties & OPEN_DIALOG_OPEN_FILE)];
+  if (properties & OPEN_DIALOG_OPEN_DIRECTORY)
     [dialog setCanChooseDirectories:YES];
-  if (properties & FILE_DIALOG_CREATE_DIRECTORY)
+  if (properties & OPEN_DIALOG_CREATE_DIRECTORY)
     [dialog setCanCreateDirectories:YES];
-  if (properties & FILE_DIALOG_MULTI_SELECTIONS)
+  if (properties & OPEN_DIALOG_MULTI_SELECTIONS)
     [dialog setAllowsMultipleSelection:YES];
-  if (properties & FILE_DIALOG_SHOW_HIDDEN_FILES)
+  if (properties & OPEN_DIALOG_SHOW_HIDDEN_FILES)
     [dialog setShowsHiddenFiles:YES];
-  if (properties & FILE_DIALOG_NO_RESOLVE_ALIASES)
+  if (properties & OPEN_DIALOG_NO_RESOLVE_ALIASES)
     [dialog setResolvesAliases:NO];
-  if (properties & FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY)
+  if (properties & OPEN_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY)
+    [dialog setTreatsFilePackagesAsDirectories:YES];
+}
+
+void SetupSaveDialogForProperties(NSSavePanel* dialog, int properties) {
+  if (properties & SAVE_DIALOG_CREATE_DIRECTORY)
+    [dialog setCanCreateDirectories:YES];
+  if (properties & SAVE_DIALOG_SHOW_HIDDEN_FILES)
+    [dialog setShowsHiddenFiles:YES];
+  if (properties & SAVE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY)
     [dialog setTreatsFilePackagesAsDirectories:YES];
 }
 
@@ -278,7 +287,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
   SetupDialog(dialog, settings);
-  SetupDialogForProperties(dialog, settings.properties);
+  SetupOpenDialogForProperties(dialog, settings.properties);
 
   int chosen = RunModalDialog(dialog, settings);
   if (chosen == NSFileHandlingPanelCancelButton)
@@ -324,7 +333,7 @@ void ShowOpenDialog(const DialogSettings& settings,
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
   SetupDialog(dialog, settings);
-  SetupDialogForProperties(dialog, settings.properties);
+  SetupOpenDialogForProperties(dialog, settings.properties);
 
   // Capture the value of the security_scoped_bookmarks settings flag
   // and pass it to the completion handler.
@@ -355,6 +364,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
+  SetupSaveDialogForProperties(dialog, settings.properties);
 
   int chosen = RunModalDialog(dialog, settings);
   if (chosen == NSFileHandlingPanelCancelButton || ![[dialog URL] isFileURL])
@@ -395,6 +405,7 @@ void ShowSaveDialog(const DialogSettings& settings,
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
+  SetupSaveDialogForProperties(dialog, settings.properties);
   [dialog setCanSelectHiddenExtension:YES];
 
   // Capture the value of the security_scoped_bookmarks settings flag

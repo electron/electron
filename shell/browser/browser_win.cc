@@ -22,9 +22,11 @@
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "electron/electron_version.h"
+#include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/skia_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 
 namespace electron {
@@ -83,6 +85,16 @@ bool FormatCommandLineString(base::string16* exe,
   return true;
 }
 
+std::unique_ptr<FileVersionInfo> FetchFileVersionInfo() {
+  base::FilePath path;
+
+  if (base::PathService::Get(base::FILE_EXE, &path)) {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    return FileVersionInfo::CreateFileVersionInfo(path);
+  }
+  return std::unique_ptr<FileVersionInfo>();
+}
+
 }  // namespace
 
 Browser::UserTask::UserTask() = default;
@@ -96,9 +108,6 @@ void Browser::Focus() {
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
-  if (base::win::GetVersion() < base::win::Version::WIN7)
-    return;
-
   CComPtr<IShellItem> item;
   HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), NULL,
                                            IID_PPV_ARGS(&item));
@@ -111,13 +120,7 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
 }
 
 void Browser::ClearRecentDocuments() {
-  CComPtr<IApplicationDestinations> destinations;
-  if (FAILED(destinations.CoCreateInstance(CLSID_ApplicationDestinations, NULL,
-                                           CLSCTX_INPROC_SERVER)))
-    return;
-  if (FAILED(destinations->SetAppID(GetAppUserModelID())))
-    return;
-  destinations->RemoveAllDestinations();
+  SHAddToRecentDocs(SHARD_APPIDINFO, nullptr);
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {
@@ -333,8 +336,7 @@ std::string Browser::GetExecutableFileVersion() const {
   base::FilePath path;
   if (base::PathService::Get(base::FILE_EXE, &path)) {
     base::ThreadRestrictions::ScopedAllowIO allow_io;
-    std::unique_ptr<FileVersionInfo> version_info(
-        FileVersionInfo::CreateFileVersionInfo(path));
+    std::unique_ptr<FileVersionInfo> version_info = FetchFileVersionInfo();
     return base::UTF16ToUTF8(version_info->product_version());
   }
 
@@ -367,6 +369,46 @@ void Browser::ShowEmojiPanel() {
   input[3].ki.wVk = ui::WindowsKeyCodeForKeyboardCode(ui::VKEY_OEM_PERIOD);
   input[3].ki.dwFlags |= KEYEVENTF_KEYUP;
   ::SendInput(4, input, sizeof(INPUT));
+}
+
+void Browser::ShowAboutPanel() {
+  base::Value dict(base::Value::Type::DICTIONARY);
+  std::string aboutMessage = "";
+  gfx::ImageSkia image;
+
+  // grab defaults from Windows .EXE file
+  std::unique_ptr<FileVersionInfo> exe_info = FetchFileVersionInfo();
+  dict.SetStringKey("applicationName", exe_info->file_description());
+  dict.SetStringKey("applicationVersion", exe_info->product_version());
+
+  if (about_panel_options_.is_dict()) {
+    dict.MergeDictionary(&about_panel_options_);
+  }
+
+  std::vector<std::string> stringOptions = {
+      "applicationName", "applicationVersion", "copyright", "credits"};
+
+  const std::string* str;
+  for (std::string opt : stringOptions) {
+    if ((str = dict.FindStringKey(opt))) {
+      aboutMessage.append(*str).append("\r\n");
+    }
+  }
+
+  if ((str = dict.FindStringKey("iconPath"))) {
+    base::FilePath path = base::FilePath::FromUTF8Unsafe(*str);
+    electron::util::PopulateImageSkiaRepsFromPath(&image, path);
+  }
+
+  electron::MessageBoxSettings settings = {};
+  settings.message = aboutMessage;
+  settings.icon = image;
+  settings.type = electron::MessageBoxType::kInformation;
+  electron::ShowMessageBoxSync(settings);
+}
+
+void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
+  about_panel_options_ = options.Clone();
 }
 
 }  // namespace electron

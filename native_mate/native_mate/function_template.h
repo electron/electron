@@ -5,6 +5,7 @@
 #ifndef NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 #define NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 
+#include "../shell/common/error_util.h"
 #include "base/callback.h"
 #include "base/logging.h"
 #include "native_mate/arguments.h"
@@ -125,6 +126,16 @@ inline bool GetNextArgument(Arguments* args,
                             bool is_first,
                             v8::Isolate** result) {
   *result = args->isolate();
+  return true;
+}
+
+// Allow clients to pass a util::Error to throw errors if they
+// don't need the full mate::Arguments
+inline bool GetNextArgument(Arguments* args,
+                            int create_flags,
+                            bool is_first,
+                            electron::util::ErrorThrower* result) {
+  *result = electron::util::ErrorThrower(args->isolate());
   return true;
 }
 

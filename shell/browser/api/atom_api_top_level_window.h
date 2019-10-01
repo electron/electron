@@ -127,6 +127,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetResizable(bool resizable);
   bool IsResizable();
   void SetMovable(bool movable);
+  void MoveAbove(const std::string& sourceId, mate::Arguments* args);
   void MoveTop();
   bool IsMovable();
   void SetMinimizable(bool minimizable);
@@ -173,6 +174,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   virtual void RemoveBrowserView(v8::Local<v8::Value> value);
   virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
   virtual void ResetBrowserViews();
+  std::string GetMediaSourceId() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
   void SetProgressBar(double progress, mate::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -260,29 +262,5 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 }  // namespace api
 
 }  // namespace electron
-
-namespace mate {
-
-template <>
-struct Converter<electron::NativeWindow*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::NativeWindow** out) {
-    // null would be tranfered to NULL.
-    if (val->IsNull()) {
-      *out = NULL;
-      return true;
-    }
-
-    electron::api::TopLevelWindow* window;
-    if (!Converter<electron::api::TopLevelWindow*>::FromV8(isolate, val,
-                                                           &window))
-      return false;
-    *out = window->window();
-    return true;
-  }
-};
-
-}  // namespace mate
 
 #endif  // SHELL_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_

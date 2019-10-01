@@ -8,7 +8,7 @@ This is to workaround the bug in crbug.com/969698#c10
 until fixes have landed in upstream.
 
 diff --git a/build/config/win/BUILD.gn b/build/config/win/BUILD.gn
-index a6c0aeaf98f7a860c131dc52161f52f308432a91..7b490d07d0f8383db5cea2703d7451db0108d252 100644
+index 8406c060c4e61282433ad40a52744fd7ea80366b..0bb1b871be97fe8275e17669ed0bcd77d9645f9b 100644
 --- a/build/config/win/BUILD.gn
 +++ b/build/config/win/BUILD.gn
 @@ -2,6 +2,7 @@

@@ -120,7 +120,6 @@ class App : public AtomBrowserClient::Delegate,
       const GURL& request_url,
       bool is_main_frame_request,
       bool strict_enforcement,
-      bool expired_previous_decision,
       const base::RepeatingCallback<
           void(content::CertificateRequestResultType)>& callback) override;
   base::OnceClosure SelectClientCertificate(
@@ -165,7 +164,8 @@ class App : public AtomBrowserClient::Delegate,
   void ChildProcessLaunched(int process_type, base::ProcessHandle handle);
   void ChildProcessDisconnected(base::ProcessId pid);
 
-  void SetAppLogsPath(mate::Arguments* args);
+  void SetAppLogsPath(base::Optional<base::FilePath> custom_path,
+                      mate::Arguments* args);
 
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);

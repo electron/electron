@@ -13,10 +13,6 @@
 #include "components/services/pdf_compositor/public/cpp/manifest.h"
 #endif
 
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-#include "chrome/services/printing/public/cpp/manifest.h"
-#endif
-
 namespace {
 
 // TODO(https://crbug.com/781334): Remove these helpers and just update the
@@ -53,9 +49,6 @@ GetElectronBuiltinServiceManifests() {
   static base::NoDestructor<std::vector<service_manager::Manifest>> manifests{{
 #if BUILDFLAG(ENABLE_PRINTING)
       MakeOutOfProcess(printing::GetPdfCompositorManifest()),
-#endif
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-      MakeOutOfProcess(GetChromePrintingManifest()),
 #endif
   }};
   return *manifests;

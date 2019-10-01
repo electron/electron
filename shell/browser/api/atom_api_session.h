@@ -100,11 +100,13 @@ class Session : public mate::TrackableObject<Session>,
                          download::DownloadItem* item) override;
 
  private:
-  // Cached object.
+  // Cached mate::Wrappable objects.
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;
-  v8::Global<v8::Value> web_request_;
   v8::Global<v8::Value> net_log_;
+
+  // Cached object.
+  v8::Global<v8::Value> web_request_;
 
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;

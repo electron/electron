@@ -143,7 +143,7 @@ Returns:
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window`, `save-to-disk` and `other`.
-* `options` Object - The options which will be used for creating the new
+* `options` BrowserWindowConstructorOptions - The options which will be used for creating the new
   [`BrowserWindow`](browser-window.md).
 * `additionalFeatures` String[] - The non-standard features (features not handled
   by Chromium or Electron) given to `window.open()`.
@@ -481,7 +481,7 @@ Returns:
   * `requestId` Integer
   * `activeMatchOrdinal` Integer - Position of the active match.
   * `matches` Integer - Number of Matches.
-  * `selectionArea` Object - Coordinates of first match region.
+  * `selectionArea` Rectangle - Coordinates of first match region.
   * `finalUpdate` Boolean
 
 Emitted when a result is available for
@@ -669,10 +669,10 @@ Emitted when the devtools window instructs the webContents to reload
 Returns:
 
 * `event` Event
-* `webPreferences` Object - The web preferences that will be used by the guest
+* `webPreferences` WebPreferences - The web preferences that will be used by the guest
   page. This object can be modified to adjust the preferences for the guest
   page.
-* `params` Object - The other `<webview>` parameters such as the `src` URL.
+* `params` Record<string, string> - The other `<webview>` parameters such as the `src` URL.
   This object can be modified to adjust the parameters of the guest page.
 
 Emitted when a `<webview>`'s web contents is being attached to this web
@@ -842,7 +842,7 @@ webContents.loadURL('https://github.com', options)
 
 * `filePath` String
 * `options` Object (optional)
-  * `query` Object (optional) - Passed to `url.format()`.
+  * `query` Record<String, String> (optional) - Passed to `url.format()`.
   * `search` String (optional) - Passed to `url.format()`.
   * `hash` String (optional) - Passed to `url.format()`.
 
@@ -1264,16 +1264,14 @@ Returns [`PrinterInfo[]`](structures/printer-info.md).
   * `dpi` Object (optional)
     * `horizontal` Number (optional) - The horizontal dpi.
     * `vertical` Number (optional) - The vertical dpi.
+  * `header` String (optional) - String to be printed as page header.
+  * `footer` String (optional) - String to be printed as page footer.
 * `callback` Function (optional)
   * `success` Boolean - Indicates success of the print call.
   * `failureReason` String - Called back if the print fails; can be `cancelled` or `failed`.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
-the system's default printer if `deviceName` is empty and the default settings
-for printing.
-
-Calling `window.print()` in web page is equivalent to calling
-`webContents.print({ silent: false, printBackground: false, deviceName: '' })`.
+the system's default printer if `deviceName` is empty and the default settings for printing.
 
 Use `page-break-before: always;` CSS style to force to print to a new page.
 
@@ -1563,13 +1561,6 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
 #### `contents.sendInputEvent(inputEvent)`
 
 * `inputEvent` [MouseInputEvent](structures/mouse-input-event.md) | [MouseWheelInputEvent](structures/mouse-wheel-input-event.md) | [KeyboardInputEvent](structures/keyboard-input-event.md)
-  * `type` String (**required**) - The type of the event, can be `mouseDown`,
-    `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
-    `mouseMove`, `keyDown`, `keyUp` or `char`.
-  * `modifiers` String[] - An array of modifiers of the event, can
-    include `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
-    `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
-    `numLock`, `left`, `right`.
 
 Sends an input `event` to the page.
 **Note:** The [`BrowserWindow`](browser-window.md) containing the contents needs to be focused for
