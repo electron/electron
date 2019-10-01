@@ -78,8 +78,7 @@ class NativeWindowMac : public NativeWindow {
   bool IsClosable() override;
   void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
-                      int relativeLevel,
-                      std::string* error) override;
+                      int relativeLevel) override;
   ui::ZOrderLevel GetZOrderLevel() override;
   void Center() override;
   void Invalidate() override;
@@ -148,6 +147,7 @@ class NativeWindowMac : public NativeWindow {
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
+  void SetWindowLevel(int level);
 
   enum class TitleBarStyle {
     NORMAL,
