@@ -10,12 +10,15 @@
 #include <vector>
 
 #include "base/strings/utf_string_conversions.h"
-#include "native_mate/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "ui/gfx/image/image.h"
+
+namespace gin {
+class Arguments;
+}
 
 namespace electron {
 
@@ -39,9 +42,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void NotificationClosed() override;
 
  protected:
-  Notification(v8::Isolate* isolate,
-               v8::Local<v8::Object> wrapper,
-               mate::Arguments* args);
+  Notification(v8::Local<v8::Object> wrapper, gin::Arguments* args);
   ~Notification() override;
 
   void Show();
@@ -96,5 +97,23 @@ class Notification : public mate::TrackableObject<Notification>,
 }  // namespace api
 
 }  // namespace electron
+
+namespace gin {
+
+// TODO(zcbenz): Remove this after converting Notification to gin::Wrapper.
+template <>
+struct Converter<electron::api::Notification*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::Notification** out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::Notification* in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_NOTIFICATION_H_
