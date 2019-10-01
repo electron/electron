@@ -28,9 +28,17 @@ namespace {
 #if defined(_WIN64)
 int CrashForException(EXCEPTION_POINTERS* info) {
   auto* reporter = crash_reporter::CrashReporterWin::GetInstance();
-  if (reporter->IsInitialized())
+  if (reporter->IsInitialized()) {
     reporter->GetCrashpadClient().DumpAndCrash(info);
-  return EXCEPTION_CONTINUE_SEARCH;
+    return EXCEPTION_CONTINUE_SEARCH;
+  }
+
+  // When there is exception and we do not have crashReporter set up, we just
+  // let the execution continue and crash, which is the default behavior.
+  //
+  // We must not return EXCEPTION_CONTINUE_SEARCH here, as it would end up with
+  // busy loop when there is no exception handler in the program.
+  return EXCEPTION_CONTINUE_EXECUTION;
 }
 #endif
 
