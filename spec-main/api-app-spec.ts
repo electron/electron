@@ -885,18 +885,21 @@ describe('app module', () => {
   })
 
   describe('getApplicationNameForProtocol()', () => {
-    it('does this even work', (done) => {
+    it('returns application names for common protocols', (done) => {
       const protocols = [
-        'zoommtg://',
-        'sip://',
-        'https://',
         'http://',
-        'mailto://'
+        'https://',
       ]
+      // We can't expect particular app names here, but these protocols should
+      // at least have _something_ registered.
       protocols.forEach((protocol) => {
-        const name = app.getApplicationNameForProtocol(protocol)
-        console.log(protocol, name)
+        expect(app.getApplicationNameForProtocol(protocol)).to.not.equal('')
       })
+      done()
+    })
+
+    it('returns an empty string for a bogus protocol', (done) => {
+      expect(app.getApplicationNameForProtocol('bogus-protocol://')).to.equal('')
       done()
     })
   })
