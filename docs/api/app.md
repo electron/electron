@@ -770,7 +770,7 @@ macOS machine. Please refer to
 
 The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
 
-### app.getApplicationNameForProtocol(url)
+### `app.getApplicationNameForProtocol(url)`
 
 * `url` String - a URL with the protocol name to check. Unlike the other
   methods in this family, this accepts an entire URL, including `://` at a
