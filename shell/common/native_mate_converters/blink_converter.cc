@@ -547,14 +547,14 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
     serializer_.WriteHeader();
     if (use_old_serialization_) {
-      WriteTag(kNewSerializationTag);
+      WriteTag(kOldSerializationTag);
       if (!WriteBaseValue(value)) {
         isolate_->ThrowException(
             mate::StringToV8(isolate_, "An object could not be cloned."));
         return false;
       }
     } else {
-      WriteTag(kOldSerializationTag);
+      WriteTag(kNewSerializationTag);
       bool wrote_value;
       v8::TryCatch try_catch(isolate_);
       if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
