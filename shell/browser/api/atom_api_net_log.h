@@ -53,7 +53,7 @@ class NetLog : public mate::TrackableObject<NetLog> {
 
   network::mojom::NetLogExporterPtr net_log_exporter_;
 
-  base::Optional<util::Promise> pending_start_promise_;
+  base::Optional<util::Promise<void*>> pending_start_promise_;
 
   scoped_refptr<base::TaskRunner> file_task_runner_;
 

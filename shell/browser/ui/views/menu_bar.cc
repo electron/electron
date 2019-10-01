@@ -39,7 +39,7 @@ const char MenuBar::kViewClassName[] = "ElectronMenuBar";
 MenuBarColorUpdater::MenuBarColorUpdater(MenuBar* menu_bar)
     : menu_bar_(menu_bar) {}
 
-MenuBarColorUpdater::~MenuBarColorUpdater() {}
+MenuBarColorUpdater::~MenuBarColorUpdater() = default;
 
 void MenuBarColorUpdater::OnDidChangeFocus(views::View* focused_before,
                                            views::View* focused_now) {
@@ -150,16 +150,17 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
       return true;
     case ui::VKEY_HOME:
       GetFocusManager()->SetFocusedViewWithReason(
-          GetFirstFocusableChild(), views::FocusManager::kReasonFocusTraversal);
+          GetFirstFocusableChild(),
+          views::FocusManager::FocusChangeReason::kFocusTraversal);
       return true;
     case ui::VKEY_END:
       GetFocusManager()->SetFocusedViewWithReason(
-          GetLastFocusableChild(), views::FocusManager::kReasonFocusTraversal);
+          GetLastFocusableChild(),
+          views::FocusManager::FocusChangeReason::kFocusTraversal);
       return true;
     default: {
-      auto children = GetChildrenInZOrder();
-      for (int i = 0, n = children.size(); i < n; ++i) {
-        auto* button = static_cast<SubmenuButton*>(children[i]);
+      for (auto* child : GetChildrenInZOrder()) {
+        auto* button = static_cast<SubmenuButton*>(child);
         bool shifted = false;
         auto keycode =
             electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
@@ -202,10 +203,9 @@ bool MenuBar::SetPaneFocus(views::View* initial_focus) {
   bool result = views::AccessiblePaneView::SetPaneFocus(initial_focus);
 
   if (result) {
-    auto children = GetChildrenInZOrder();
     std::set<ui::KeyboardCode> reg;
-    for (int i = 0, n = children.size(); i < n; ++i) {
-      auto* button = static_cast<SubmenuButton*>(children[i]);
+    for (auto* child : GetChildrenInZOrder()) {
+      auto* button = static_cast<SubmenuButton*>(child);
       bool shifted = false;
       auto keycode =
           electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
@@ -233,10 +233,9 @@ void MenuBar::RemovePaneFocus() {
   views::AccessiblePaneView::RemovePaneFocus();
   SetAcceleratorVisibility(false);
 
-  auto children = GetChildrenInZOrder();
   std::set<ui::KeyboardCode> unreg;
-  for (int i = 0, n = children.size(); i < n; ++i) {
-    auto* button = static_cast<SubmenuButton*>(children[i]);
+  for (auto* child : GetChildrenInZOrder()) {
+    auto* button = static_cast<SubmenuButton*>(child);
     bool shifted = false;
     auto keycode =
         electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
@@ -267,12 +266,6 @@ void MenuBar::OnMenuButtonClicked(views::Button* source,
 
   if (!window_->HasFocus())
     window_->RequestFocus();
-
-  // This ensures that if you focus the menubar by clicking on an item, you can
-  // still use the arrow keys to move around
-  if (GetPaneFocusTraversable() == nullptr) {
-    SetPaneFocus(source);
-  }
 
   int id = source->tag();
   AtomMenuModel::ItemType type = menu_model_->GetTypeAt(id);

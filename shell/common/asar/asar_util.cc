@@ -30,14 +30,22 @@ const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
 std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
   if (!g_archive_map_tls.Pointer()->Get())
     g_archive_map_tls.Pointer()->Set(new ArchiveMap);
-  ArchiveMap& archive_map = *g_archive_map_tls.Pointer()->Get();
-  if (!base::Contains(archive_map, path)) {
-    std::shared_ptr<Archive> archive(new Archive(path));
-    if (!archive->Init())
-      return nullptr;
-    archive_map[path] = archive;
+  ArchiveMap& map = *g_archive_map_tls.Pointer()->Get();
+
+  // if we have it, return it
+  const auto lower = map.lower_bound(path);
+  if (lower != std::end(map) && !map.key_comp()(path, lower->first))
+    return lower->second;
+
+  // if we can create it, return it
+  auto archive = std::make_shared<Archive>(path);
+  if (archive->Init()) {
+    base::TryEmplace(map, lower, path, archive);
+    return archive;
   }
-  return archive_map[path];
+
+  // didn't have it, couldn't create it
+  return nullptr;
 }
 
 void ClearArchives() {

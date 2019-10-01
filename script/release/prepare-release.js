@@ -19,8 +19,8 @@ const bumpType = args._[0]
 const targetRepo = bumpType === 'nightly' ? 'nightlies' : 'electron'
 
 require('colors')
-const pass = '\u2713'.green
-const fail = '\u2717'.red
+const pass = '✓'.green
+const fail = '✗'.red
 
 if (!bumpType && !args.notesOnly) {
   console.log(`Usage: prepare-release [stable | beta | nightly]` +

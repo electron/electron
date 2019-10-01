@@ -4,10 +4,11 @@ const dirtyChai = require('dirty-chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const { shell, remote } = require('electron')
-const { BrowserWindow } = remote
+const http = require('http')
+const { shell } = require('electron')
 
 const { closeWindow } = require('./window-helpers')
+const { emittedOnce } = require('./events-helpers')
 
 const { expect } = chai
 chai.use(dirtyChai)
@@ -23,58 +24,6 @@ describe('shell module', () => {
     icon: 'icon',
     iconIndex: 1
   }
-
-  describe('shell.openExternal()', () => {
-    let envVars = {}
-    let w
-
-    beforeEach(function () {
-      envVars = {
-        display: process.env.DISPLAY,
-        de: process.env.DE,
-        browser: process.env.BROWSER
-      }
-    })
-
-    afterEach(async () => {
-      await closeWindow(w)
-      w = null
-      // reset env vars to prevent side effects
-      if (process.platform === 'linux') {
-        process.env.DE = envVars.de
-        process.env.BROWSER = envVars.browser
-        process.env.DISPLAY = envVars.display
-      }
-    })
-
-    it('opens an external link', done => {
-      const url = 'http://www.example.com'
-      if (process.platform === 'linux') {
-        process.env.BROWSER = '/bin/true'
-        process.env.DE = 'generic'
-        process.env.DISPLAY = ''
-      }
-
-      // Ensure an external window is activated via a new window's blur event
-      w = new BrowserWindow()
-      let promiseResolved = false
-      let blurEventEmitted = false
-
-      w.on('blur', () => {
-        blurEventEmitted = true
-        if (promiseResolved) {
-          done()
-        }
-      })
-
-      shell.openExternal(url).then(() => {
-        promiseResolved = true
-        if (blurEventEmitted || process.platform === 'linux') {
-          done()
-        }
-      })
-    })
-  })
 
   describe('shell.readShortcutLink(shortcutPath)', () => {
     beforeEach(function () {

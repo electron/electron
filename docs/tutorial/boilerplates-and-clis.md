@@ -31,8 +31,7 @@ unifies the existing (and well maintained) build tools for Electron development
 into a cohesive package so that anyone can jump right in to Electron
 development.
 
-Forge comes with [ready-to-use templates](https://electronforge.io/templates) for popular
-frameworks like React, Vue, or Angular. It uses the same core modules used by the
+Forge comes with [a ready-to-use template](https://electronforge.io/templates) using Webpack as a bundler. It includes an example typescript configuration and provides two configuration files to enable easy customization. It uses the same core modules used by the
 greater Electron community (like [`electron-packager`](https://github.com/electron/electron-packager)) – 
 changes made by Electron maintainers (like Slack) benefit Forge's users, too.
 

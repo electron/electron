@@ -54,7 +54,8 @@ class Debugger : public mate::TrackableObject<Debugger>,
                               content::RenderFrameHost* new_rfh) override;
 
  private:
-  using PendingRequestMap = std::map<int, electron::util::Promise>;
+  using PendingRequestMap =
+      std::map<int, electron::util::Promise<base::DictionaryValue>>;
 
   void Attach(mate::Arguments* args);
   bool IsAttached();

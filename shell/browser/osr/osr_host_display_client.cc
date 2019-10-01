@@ -82,7 +82,7 @@ OffScreenHostDisplayClient::OffScreenHostDisplayClient(
     gfx::AcceleratedWidget widget,
     OnPaintCallback callback)
     : viz::HostDisplayClient(widget), callback_(callback) {}
-OffScreenHostDisplayClient::~OffScreenHostDisplayClient() {}
+OffScreenHostDisplayClient::~OffScreenHostDisplayClient() = default;
 
 void OffScreenHostDisplayClient::SetActive(bool active) {
   active_ = active;

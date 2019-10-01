@@ -3,6 +3,9 @@
 <script type="text/javascript" charset="utf-8">
   var windowUrl = decodeURIComponent(window.location.search.substring(3))
   window.open('file://' + windowUrl, '', 'nodeIntegration=yes,show=no')
+  addEventListener("message", (ev) => {
+    console.log(JSON.stringify(ev.data))
+  })
 </script>
 </body>
 </html>

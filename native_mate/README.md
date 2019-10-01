@@ -45,7 +45,7 @@ void Initialize(v8::Handle<v8::Object> exports) {
   types. You can define your own by specializing `Converter`.
 * `function_template.h` - Create JavaScript functions that dispatch to any C++
   function, member function pointer, or `base::Callback`.
-* `object_template_builder.h` - A handy utility for creation of `v8::ObjectTemplate`.
+* `object_template_builder_deprecated.h` - A handy utility for creation of `v8::ObjectTemplate`.
 * `wrappable.h` - Base class for C++ classes that want to be owned by the V8 GC.
   Wrappable objects are automatically deleted when GC discovers that nothing in
   the V8 heap refers to them. This is also an easy way to expose C++ objects to

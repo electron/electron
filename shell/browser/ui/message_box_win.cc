@@ -209,7 +209,7 @@ void RunMessageBoxInNewThread(base::Thread* thread,
                               const MessageBoxSettings& settings,
                               MessageBoxCallback callback) {
   int result = ShowTaskDialogUTF8(settings);
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(std::move(callback), result, settings.checkbox_checked));
   content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,

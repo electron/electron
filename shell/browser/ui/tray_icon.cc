@@ -8,9 +8,9 @@ namespace electron {
 
 TrayIcon::BalloonOptions::BalloonOptions() = default;
 
-TrayIcon::TrayIcon() {}
+TrayIcon::TrayIcon() = default;
 
-TrayIcon::~TrayIcon() {}
+TrayIcon::~TrayIcon() = default;
 
 void TrayIcon::SetPressedImage(ImageType image) {}
 

@@ -413,7 +413,7 @@ ToastEventHandler::~ToastEventHandler() {}
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     IInspectable* args) {
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&Notification::NotificationClicked, notification_));
   if (IsDebuggingNotifications())
@@ -425,7 +425,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) {
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&Notification::NotificationDismissed, notification_));
   if (IsDebuggingNotifications())
@@ -437,7 +437,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) {
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&Notification::NotificationFailed, notification_));
   if (IsDebuggingNotifications())

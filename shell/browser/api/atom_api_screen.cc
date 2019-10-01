@@ -8,9 +8,10 @@
 #include <string>
 
 #include "base/bind.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "gin/dictionary.h"
 #include "shell/browser/browser.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/native_mate_converters/gfx_converter.h"
 #include "shell/common/native_mate_converters/native_window_converter.h"
 #include "shell/common/node_includes.h"
@@ -41,13 +42,13 @@ typename T::iterator FindById(T* container, int id) {
 std::vector<std::string> MetricsToArray(uint32_t metrics) {
   std::vector<std::string> array;
   if (metrics & display::DisplayObserver::DISPLAY_METRIC_BOUNDS)
-    array.push_back("bounds");
+    array.emplace_back("bounds");
   if (metrics & display::DisplayObserver::DISPLAY_METRIC_WORK_AREA)
-    array.push_back("workArea");
+    array.emplace_back("workArea");
   if (metrics & display::DisplayObserver::DISPLAY_METRIC_DEVICE_SCALE_FACTOR)
-    array.push_back("scaleFactor");
+    array.emplace_back("scaleFactor");
   if (metrics & display::DisplayObserver::DISPLAY_METRIC_ROTATION)
-    array.push_back("rotation");
+    array.emplace_back("rotation");
   return array;
 }
 
@@ -133,22 +134,22 @@ void Screen::OnDisplayMetricsChanged(const display::Display& display,
 }
 
 // static
-v8::Local<v8::Value> Screen::Create(v8::Isolate* isolate) {
+v8::Local<v8::Value> Screen::Create(gin_helper::ErrorThrower error_thrower) {
   if (!Browser::Get()->is_ready()) {
-    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate,
-        "The 'screen' module can't be used before the app 'ready' event")));
-    return v8::Null(isolate);
+    error_thrower.ThrowError(
+        "The 'screen' module can't be used before the app 'ready' event");
+    return v8::Null(error_thrower.isolate());
   }
 
   display::Screen* screen = display::Screen::GetScreen();
   if (!screen) {
-    isolate->ThrowException(v8::Exception::Error(
-        mate::StringToV8(isolate, "Failed to get screen information")));
-    return v8::Null(isolate);
+    error_thrower.ThrowError("Failed to get screen information");
+    return v8::Null(error_thrower.isolate());
   }
 
-  return mate::CreateHandle(isolate, new Screen(isolate, screen)).ToV8();
+  return mate::CreateHandle(error_thrower.isolate(),
+                            new Screen(error_thrower.isolate(), screen))
+      .ToV8();
 }
 
 // static
@@ -182,8 +183,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("createScreen", base::BindRepeating(&Screen::Create, isolate));
+  gin::Dictionary dict(isolate, exports);
+  dict.Set("createScreen", base::BindRepeating(&Screen::Create));
   dict.Set(
       "Screen",
       Screen::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());

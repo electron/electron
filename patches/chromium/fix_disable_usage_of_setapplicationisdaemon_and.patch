@@ -1,8 +1,10 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sattard@slack-corp.com>
 Date: Mon, 4 Mar 2019 14:51:45 -0800
-Subject: fix: disable usage of SetApplicationIsDaemon and
- _LSSetApplicationLaunchServicesServerConnectionStatus in MAS builds
+Subject: fix_disable_usage_of_setapplicationisdaemon_and.patch
+
+Disable usage of SetApplicationIsDaemon and
+_LSSetApplicationLaunchServicesServerConnectionStatus in MAS builds
 
 diff --git a/content/utility/utility_service_factory.cc b/content/utility/utility_service_factory.cc
 index 9b0759ab820ddb0e2a9e609b88bbc1673607c4e3..2392fd01736550f404304df324da9d81dfb3d446 100644

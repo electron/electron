@@ -1,8 +1,9 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Fri, 12 Apr 2019 12:47:57 -0700
-Subject: patch the ensure_gn_version.py script to work on mac CI
+Subject: patch_the_ensure_gn_version_py_script_to_work_on_mac_ci.patch
 
+This patches the ensure_gn_version_py script to work on macOS CI.
 This script is temporary until https://crbug.com/944667 is resolved. We need to
 patch it because on mac CI, we check out the source code on Linux, which
 confuses the script.

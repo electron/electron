@@ -417,7 +417,7 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
     std::vector<base::string16> types;
     bool ignore;
     ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
-        ui::ClipboardType::kCopyPaste, &types, &ignore);
+        ui::ClipboardBuffer::kCopyPaste, &types, &ignore);
     pasteFlag = !types.empty();
   }
   dict.Set("canPaste", pasteFlag);

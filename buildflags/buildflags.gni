@@ -10,6 +10,8 @@ declare_args() {
 
   enable_osr = true
 
+  enable_remote_module = true
+
   enable_view_api = false
 
   enable_pdf_viewer = false

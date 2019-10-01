@@ -151,9 +151,15 @@ app._setDefaultAppPaths(packagePath)
 // Load the chrome devtools support.
 require('@electron/internal/browser/devtools')
 
+const features = process.electronBinding('features')
+
 // Load the chrome extension support.
-if (!process.electronBinding('features').isExtensionsEnabled()) {
+if (!features.isExtensionsEnabled()) {
   require('@electron/internal/browser/chrome-extension')
+}
+
+if (features.isRemoteModuleEnabled()) {
+  require('@electron/internal/browser/remote/server')
 }
 
 // Load protocol module to ensure it is populated on app ready

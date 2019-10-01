@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 if (!process.env.CI) require('dotenv-safe').load()
-require('colors')
+
 const args = require('minimist')(process.argv.slice(2), {
   boolean: [
     'validateRelease',
@@ -17,12 +17,14 @@ const nugget = require('nugget')
 const got = require('got')
 const pkg = require('../../package.json')
 const pkgVersion = `v${pkg.version}`
-const pass = '\u2713'.green
 const path = require('path')
-const fail = '\u2717'.red
 const sumchecker = require('sumchecker')
 const temp = require('temp').track()
 const { URL } = require('url')
+
+require('colors')
+const pass = '✓'.green
+const fail = '✗'.red
 
 const { ELECTRON_DIR } = require('../lib/utils')
 
@@ -94,6 +96,15 @@ function check (condition, statement, exitIfFail = false) {
 
 function assetsForVersion (version, validatingRelease) {
   const patterns = [
+    `chromedriver-${version}-darwin-x64.zip`,
+    `chromedriver-${version}-linux-arm64.zip`,
+    `chromedriver-${version}-linux-armv7l.zip`,
+    `chromedriver-${version}-linux-ia32.zip`,
+    `chromedriver-${version}-linux-x64.zip`,
+    `chromedriver-${version}-mas-x64.zip`,
+    `chromedriver-${version}-win32-ia32.zip`,
+    `chromedriver-${version}-win32-x64.zip`,
+    `chromedriver-${version}-win32-arm64.zip`,
     `electron-${version}-darwin-x64-dsym.zip`,
     `electron-${version}-darwin-x64-symbols.zip`,
     `electron-${version}-darwin-x64.zip`,
@@ -114,6 +125,9 @@ function assetsForVersion (version, validatingRelease) {
     `electron-${version}-win32-x64-pdb.zip`,
     `electron-${version}-win32-x64-symbols.zip`,
     `electron-${version}-win32-x64.zip`,
+    `electron-${version}-win32-arm64-pdb.zip`,
+    `electron-${version}-win32-arm64-symbols.zip`,
+    `electron-${version}-win32-arm64.zip`,
     `electron-api.json`,
     `electron.d.ts`,
     `ffmpeg-${version}-darwin-x64.zip`,
@@ -123,7 +137,17 @@ function assetsForVersion (version, validatingRelease) {
     `ffmpeg-${version}-linux-x64.zip`,
     `ffmpeg-${version}-mas-x64.zip`,
     `ffmpeg-${version}-win32-ia32.zip`,
-    `ffmpeg-${version}-win32-x64.zip`
+    `ffmpeg-${version}-win32-x64.zip`,
+    `ffmpeg-${version}-win32-arm64.zip`,
+    `mksnapshot-${version}-darwin-x64.zip`,
+    `mksnapshot-${version}-linux-arm64-x64.zip`,
+    `mksnapshot-${version}-linux-armv7l-x64.zip`,
+    `mksnapshot-${version}-linux-ia32.zip`,
+    `mksnapshot-${version}-linux-x64.zip`,
+    `mksnapshot-${version}-mas-x64.zip`,
+    `mksnapshot-${version}-win32-ia32.zip`,
+    `mksnapshot-${version}-win32-x64.zip`,
+    `mksnapshot-${version}-win32-arm64-x64.zip`
   ]
   if (!validatingRelease) {
     patterns.push('SHASUMS256.txt')

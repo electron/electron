@@ -10,7 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/task/thread_pool/thread_pool.h"
+#include "base/task/thread_pool/thread_pool_instance.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "electron/electron_version.h"
 #include "gin/array_buffer.h"

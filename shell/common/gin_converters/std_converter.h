@@ -6,10 +6,46 @@
 #define SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
 
 #include <set>
+#include <utility>
 
 #include "gin/converter.h"
 
 namespace gin {
+
+// Make it possible to convert move-only types.
+template <typename T>
+v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
+  return Converter<typename std::remove_reference<T>::type>::ToV8(
+      isolate, std::move(input));
+}
+
+#if !defined(OS_LINUX) && !defined(OS_FREEBSD)
+template <>
+struct Converter<unsigned long> {  // NOLINT(runtime/int)
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   unsigned long val);  // NOLINT(runtime/int)
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     unsigned long* out);  // NOLINT(runtime/int)
+};
+#endif
+
+template <>
+struct Converter<const char*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val) {
+    return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal)
+        .ToLocalChecked();
+  }
+};
+
+template <size_t n>
+struct Converter<const char[n]> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val) {
+    return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal,
+                                   n - 1)
+        .ToLocalChecked();
+  }
+};
 
 template <>
 struct Converter<v8::Local<v8::Array>> {
@@ -23,6 +59,22 @@ struct Converter<v8::Local<v8::Array>> {
     if (!val->IsArray())
       return false;
     *out = v8::Local<v8::Array>::Cast(val);
+    return true;
+  }
+};
+
+template <>
+struct Converter<v8::Local<v8::String>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   v8::Local<v8::String> val) {
+    return val;
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     v8::Local<v8::String>* out) {
+    if (!val->IsString())
+      return false;
+    *out = v8::Local<v8::String>::Cast(val);
     return true;
   }
 };

@@ -4,6 +4,7 @@ declare namespace NodeJS {
   interface FeaturesBinding {
     isDesktopCapturerEnabled(): boolean;
     isOffscreenRenderingEnabled(): boolean;
+    isRemoteModuleEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
     isRunAsNodeEnabled(): boolean;
     isFakeLocationProviderEnabled(): boolean;
@@ -20,7 +21,7 @@ declare namespace NodeJS {
     sendSync(internal: boolean, channel: string, args: any[]): any;
     sendToHost(channel: string, args: any[]): void;
     sendTo(internal: boolean, sendToAll: boolean, webContentsId: number, channel: string, args: any[]): void;
-    invoke<T>(channel: string, args: any[]): Promise<{ error: string, result: T }>;
+    invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string, result: T }>;
   }
 
   interface V8UtilBinding {
@@ -28,6 +29,8 @@ declare namespace NodeJS {
     setHiddenValue<T>(obj: any, key: string, value: T): void;
     deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
+    createDoubleIDWeakMap(): any;
+    setRemoteCallbackFreer(fn: Function, contextId: String, id: number, sender: any): void
   }
 
   interface Process {
@@ -53,6 +56,7 @@ declare namespace NodeJS {
     _firstFileName?: string;
 
     helperExecPath: string;
+    isRemoteModuleEnabled: boolean;
   }
 }
 

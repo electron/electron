@@ -10,8 +10,9 @@
 #include <string>
 #include <vector>
 
+#include "gin/arguments.h"
+#include "gin/dictionary.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
-#include "native_mate/dictionary.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
@@ -47,7 +48,7 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   bool SetExtraHeader(const std::string& name, const std::string& value);
   void RemoveExtraHeader(const std::string& name);
   void SetChunkedUpload(bool is_chunked_upload);
-  mate::Dictionary GetUploadProgress();
+  gin::Dictionary GetUploadProgress();
   int StatusCode() const;
   std::string StatusMessage() const;
   net::HttpResponseHeaders* RawResponseHeaders() const;
@@ -64,9 +65,9 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   friend class UploadDataPipeGetter;
 
   void OnResponseStarted(const GURL& final_url,
-                         const network::ResourceResponseHead& response_head);
+                         const network::mojom::URLResponseHead& response_head);
   void OnRedirect(const net::RedirectInfo& redirect_info,
-                  const network::ResourceResponseHead& response_head,
+                  const network::mojom::URLResponseHead& response_head,
                   std::vector<std::string>* to_be_removed_headers);
   void OnUploadProgress(uint64_t position, uint64_t total);
   void OnWrite(MojoResult result);
@@ -139,5 +140,23 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
 }  // namespace api
 
 }  // namespace electron
+
+namespace gin {
+
+// TODO(zcbenz): Remove this after converting URLRequestNS to gin::Wrapper.
+template <>
+struct Converter<electron::api::URLRequestNS*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::URLRequestNS** out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::URLRequestNS* in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_URL_REQUEST_NS_H_

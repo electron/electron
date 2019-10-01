@@ -173,7 +173,7 @@ class InspectableWebContentsImpl::NetworkResourceLoader
 
  private:
   void OnResponseStarted(const GURL& final_url,
-                         const network::ResourceResponseHead& response_head) {
+                         const network::mojom::URLResponseHead& response_head) {
     response_headers_ = response_head.headers;
   }
 

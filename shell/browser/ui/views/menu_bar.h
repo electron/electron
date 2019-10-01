@@ -71,8 +71,6 @@ class MenuBar : public views::AccessiblePaneView,
 
   // views::AccessiblePaneView:
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
-  bool SetPaneFocus(views::View* initial_focus) override;
-  void RemovePaneFocus() override;
 
  protected:
   // views::View:
@@ -83,6 +81,9 @@ class MenuBar : public views::AccessiblePaneView,
                            const gfx::Point& point,
                            const ui::Event* event) override;
   void OnThemeChanged() override;
+
+  bool SetPaneFocus(views::View* initial_focus);
+  void RemovePaneFocus();
 
  private:
   friend class MenuBarColorUpdater;

@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace mate {
@@ -19,7 +19,8 @@ struct Converter<in_app_purchase::Payment> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const in_app_purchase::Payment& payment) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-    dict.SetHidden("simple", true);
+    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
+    gin_helper::Dictionary(isolate, dict.GetHandle()).SetHidden("simple", true);
     dict.Set("productIdentifier", payment.productIdentifier);
     dict.Set("quantity", payment.quantity);
     return dict.GetHandle();
@@ -31,7 +32,8 @@ struct Converter<in_app_purchase::Transaction> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const in_app_purchase::Transaction& val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-    dict.SetHidden("simple", true);
+    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
+    gin_helper::Dictionary(isolate, dict.GetHandle()).SetHidden("simple", true);
     dict.Set("transactionIdentifier", val.transactionIdentifier);
     dict.Set("transactionDate", val.transactionDate);
     dict.Set("originalTransactionIdentifier",
@@ -49,7 +51,8 @@ struct Converter<in_app_purchase::Product> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const in_app_purchase::Product& val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-    dict.SetHidden("simple", true);
+    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
+    gin_helper::Dictionary(isolate, dict.GetHandle()).SetHidden("simple", true);
     dict.Set("productIdentifier", val.productIdentifier);
     dict.Set("localizedDescription", val.localizedDescription);
     dict.Set("localizedTitle", val.localizedTitle);
@@ -104,7 +107,7 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
     const std::string& product_id,
     mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  electron::util::Promise promise(isolate);
+  electron::util::Promise<bool> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   int quantity = 1;
@@ -112,7 +115,7 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
 
   in_app_purchase::PurchaseProduct(
       product_id, quantity,
-      base::BindOnce(electron::util::Promise::ResolvePromise<bool>,
+      base::BindOnce(electron::util::Promise<bool>::ResolvePromise,
                      std::move(promise)));
 
   return handle;
@@ -122,13 +125,15 @@ v8::Local<v8::Promise> InAppPurchase::GetProducts(
     const std::vector<std::string>& productIDs,
     mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  electron::util::Promise promise(isolate);
+  electron::util::Promise<std::vector<in_app_purchase::Product>> promise(
+      isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   in_app_purchase::GetProducts(
-      productIDs, base::BindOnce(electron::util::Promise::ResolvePromise<
-                                     std::vector<in_app_purchase::Product>>,
-                                 std::move(promise)));
+      productIDs,
+      base::BindOnce(electron::util::Promise<
+                         std::vector<in_app_purchase::Product>>::ResolvePromise,
+                     std::move(promise)));
 
   return handle;
 }

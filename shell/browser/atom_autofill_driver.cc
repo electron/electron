@@ -4,6 +4,8 @@
 
 #include "shell/browser/atom_autofill_driver.h"
 
+#include <memory>
+
 #include <utility>
 
 #include "content/public/browser/render_widget_host_view.h"
@@ -16,11 +18,11 @@ AutofillDriver::AutofillDriver(
     content::RenderFrameHost* render_frame_host,
     mojom::ElectronAutofillDriverAssociatedRequest request)
     : render_frame_host_(render_frame_host), binding_(this) {
-  autofill_popup_.reset(new AutofillPopup());
+  autofill_popup_ = std::make_unique<AutofillPopup>();
   binding_.Bind(std::move(request));
 }
 
-AutofillDriver::~AutofillDriver() {}
+AutofillDriver::~AutofillDriver() = default;
 
 void AutofillDriver::ShowAutofillPopup(
     const gfx::RectF& bounds,
@@ -45,13 +47,13 @@ void AutofillDriver::ShowAutofillPopup(
     auto* view = web_contents->web_contents()->GetMainFrame()->GetView();
     auto offset = view->GetViewBounds().origin() -
                   embedder_view->GetViewBounds().origin();
-    popup_bounds.Offset(offset.x(), offset.y());
+    popup_bounds.Offset(offset);
     embedder_frame_host = embedder->web_contents()->GetMainFrame();
   }
 
   autofill_popup_->CreateView(render_frame_host_, embedder_frame_host, osr,
                               web_contents->owner_window()->content_view(),
-                              bounds);
+                              popup_bounds);
   autofill_popup_->SetItems(values, labels);
 }
 

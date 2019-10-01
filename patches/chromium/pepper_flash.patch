@@ -61,7 +61,7 @@ index 37245c48cacbc5db164c61e4499f34ee83e0fce7..0fef12892e965e319e45f5dd1a9c5c9f
 +  return PP_OK;
  }
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
-index c6c2ac11fd5551fe03978b947d2dda4c016e59ae..2dc392a6eab17b048df730e294398a3a0fb2eb8d 100644
+index 91c1562d9894e57fd5c3abfde157127144b31a91..8f4caca848d649db9bd26a4ce37509b29865f3c1 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 @@ -8,9 +8,11 @@
@@ -132,10 +132,10 @@ index c6c2ac11fd5551fe03978b947d2dda4c016e59ae..2dc392a6eab17b048df730e294398a3a
  device::mojom::WakeLock* PepperFlashBrowserHost::GetWakeLock() {
    // Here is a lazy binding, and will not reconnect after connection error.
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
-index f2f40b636a41649199a38c663f03e6182df82520..41d11d1f1f9921d4b4deaaf4b2d8ab4be910e8fe 100644
+index 6b13bae8def62d9a26d68ac8396b4bf6f7439c1a..d92b5a5855c0cebf94922a31f686e15e3a6cd833 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
-@@ -23,9 +23,11 @@ namespace content {
+@@ -24,9 +24,11 @@ namespace content {
  class BrowserPpapiHost;
  }
  
@@ -147,7 +147,7 @@ index f2f40b636a41649199a38c663f03e6182df82520..41d11d1f1f9921d4b4deaaf4b2d8ab4b
  
  class GURL;
  
-@@ -49,15 +51,19 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
+@@ -50,15 +52,19 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
        const base::Time& t);
    int32_t OnGetLocalDataRestrictions(ppapi::host::HostMessageContext* context);
  
@@ -167,8 +167,8 @@ index f2f40b636a41649199a38c663f03e6182df82520..41d11d1f1f9921d4b4deaaf4b2d8ab4b
    int render_process_id_;
  
    // Requests a wake lock to prevent going to sleep, and a timer to cancel it
-@@ -65,8 +71,10 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
-   device::mojom::WakeLockPtr wake_lock_;
+@@ -66,8 +72,10 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
+   mojo::Remote<device::mojom::WakeLock> wake_lock_;
    base::DelayTimer delay_timer_;
  
 +#if 0

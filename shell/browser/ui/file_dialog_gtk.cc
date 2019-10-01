@@ -2,7 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <memory>
+
 #include "shell/browser/ui/file_dialog.h"
+#include "shell/browser/ui/util_gtk.h"
 
 #include "base/callback.h"
 #include "base/files/file_util.h"
@@ -10,6 +13,7 @@
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/unresponsive_suppressor.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
@@ -20,27 +24,6 @@ DialogSettings::DialogSettings(const DialogSettings&) = default;
 DialogSettings::~DialogSettings() = default;
 
 namespace {
-
-// Copied from L40-L55 in
-// https://cs.chromium.org/chromium/src/chrome/browser/ui/libgtkui/select_file_dialog_impl_gtk.cc
-#if GTK_CHECK_VERSION(3, 90, 0)
-// GTK stock items have been deprecated.  The docs say to switch to using the
-// strings "_Open", etc.  However this breaks i18n.  We could supply our own
-// internationalized strings, but the "_" in these strings is significant: it's
-// the keyboard shortcut to select these actions.  TODO(thomasanderson): Provide
-// internationalized strings when GTK provides support for it.
-const char kOkLabel[] = "_Ok";
-const char kCancelLabel[] = "_Cancel";
-const char kOpenLabel[] = "_Open";
-const char kSaveLabel[] = "_Save";
-#else
-G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-const char* const kOkLabel = GTK_STOCK_OK;
-const char* const kCancelLabel = GTK_STOCK_CANCEL;
-const char* const kOpenLabel = GTK_STOCK_OPEN;
-const char* const kSaveLabel = GTK_STOCK_SAVE;
-G_GNUC_END_IGNORE_DEPRECATIONS
-#endif
 
 static const int kPreviewWidth = 256;
 static const int kPreviewHeight = 512;
@@ -66,18 +49,18 @@ class FileChooserDialog {
       : parent_(
             static_cast<electron::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
-    const char* confirm_text = kOkLabel;
+    const char* confirm_text = gtk_util::kOkLabel;
 
     if (!settings.button_label.empty())
       confirm_text = settings.button_label.c_str();
     else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
-      confirm_text = kOpenLabel;
+      confirm_text = gtk_util::kOpenLabel;
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
-      confirm_text = kSaveLabel;
+      confirm_text = gtk_util::kSaveLabel;
 
     dialog_ = gtk_file_chooser_dialog_new(
-        settings.title.c_str(), NULL, action, kCancelLabel, GTK_RESPONSE_CANCEL,
-        confirm_text, GTK_RESPONSE_ACCEPT, NULL);
+        settings.title.c_str(), nullptr, action, gtk_util::kCancelLabel,
+        GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, NULL);
     if (parent_) {
       parent_->SetEnabled(false);
       libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
@@ -157,13 +140,19 @@ class FileChooserDialog {
     gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
   }
 
-  void RunSaveAsynchronous(electron::util::Promise promise) {
-    save_promise_.reset(new electron::util::Promise(std::move(promise)));
+  void RunSaveAsynchronous(
+      electron::util::Promise<gin_helper::Dictionary> promise) {
+    save_promise_ =
+        std::make_unique<electron::util::Promise<gin_helper::Dictionary>>(
+            std::move(promise));
     RunAsynchronous();
   }
 
-  void RunOpenAsynchronous(electron::util::Promise promise) {
-    open_promise_.reset(new electron::util::Promise(std::move(promise)));
+  void RunOpenAsynchronous(
+      electron::util::Promise<gin_helper::Dictionary> promise) {
+    open_promise_ =
+        std::make_unique<electron::util::Promise<gin_helper::Dictionary>>(
+            std::move(promise));
     RunAsynchronous();
   }
 
@@ -177,7 +166,7 @@ class FileChooserDialog {
   std::vector<base::FilePath> GetFileNames() const {
     std::vector<base::FilePath> paths;
     auto* filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog_));
-    for (auto* iter = filenames; iter != NULL; iter = iter->next) {
+    for (auto* iter = filenames; iter != nullptr; iter = iter->next) {
       auto* filename = static_cast<char*>(iter->data);
       paths.emplace_back(filename);
       g_free(filename);
@@ -204,8 +193,10 @@ class FileChooserDialog {
   GtkWidget* preview_;
 
   Filters filters_;
-  std::unique_ptr<electron::util::Promise> save_promise_;
-  std::unique_ptr<electron::util::Promise> open_promise_;
+  std::unique_ptr<electron::util::Promise<gin_helper::Dictionary>>
+      save_promise_;
+  std::unique_ptr<electron::util::Promise<gin_helper::Dictionary>>
+      open_promise_;
 
   // Callback for when we update the preview for the selection.
   CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkWidget*);
@@ -216,8 +207,8 @@ class FileChooserDialog {
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
   gtk_widget_hide(dialog_);
   if (save_promise_) {
-    mate::Dictionary dict =
-        mate::Dictionary::CreateEmpty(save_promise_->isolate());
+    gin_helper::Dictionary dict =
+        gin::Dictionary::CreateEmpty(save_promise_->isolate());
     if (response == GTK_RESPONSE_ACCEPT) {
       dict.Set("canceled", false);
       dict.Set("filePath", GetFileName());
@@ -225,10 +216,10 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
       dict.Set("canceled", true);
       dict.Set("filePath", base::FilePath());
     }
-    save_promise_->Resolve(dict.GetHandle());
+    save_promise_->ResolveWithGin(dict);
   } else if (open_promise_) {
-    mate::Dictionary dict =
-        mate::Dictionary::CreateEmpty(open_promise_->isolate());
+    gin_helper::Dictionary dict =
+        gin::Dictionary::CreateEmpty(open_promise_->isolate());
     if (response == GTK_RESPONSE_ACCEPT) {
       dict.Set("canceled", false);
       dict.Set("filePaths", GetFileNames());
@@ -236,19 +227,17 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
       dict.Set("canceled", true);
       dict.Set("filePaths", std::vector<base::FilePath>());
     }
-    open_promise_->Resolve(dict.GetHandle());
+    open_promise_->ResolveWithGin(dict);
   }
   delete this;
 }
 
 void FileChooserDialog::AddFilters(const Filters& filters) {
-  for (size_t i = 0; i < filters.size(); ++i) {
-    const Filter& filter = filters[i];
+  for (const auto& filter : filters) {
     GtkFileFilter* gtk_filter = gtk_file_filter_new();
 
-    for (size_t j = 0; j < filter.second.size(); ++j) {
-      auto file_extension =
-          std::make_unique<std::string>("." + filter.second[j]);
+    for (const auto& extension : filter.second) {
+      auto file_extension = std::make_unique<std::string>("." + extension);
       gtk_file_filter_add_custom(
           gtk_filter, GTK_FILE_FILTER_FILENAME,
           reinterpret_cast<GtkFileFilterFunc>(FileFilterCaseInsensitive),
@@ -312,7 +301,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise promise) {
+                    electron::util::Promise<gin_helper::Dictionary> promise) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   if (settings.properties & OPEN_DIALOG_OPEN_DIRECTORY)
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
@@ -335,7 +324,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise promise) {
+                    electron::util::Promise<gin_helper::Dictionary> promise) {
   FileChooserDialog* save_dialog =
       new FileChooserDialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
   save_dialog->RunSaveAsynchronous(std::move(promise));

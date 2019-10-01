@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/atom_api_app.h"
 
+#include <memory>
+
 #include <string>
 #include <vector>
 
@@ -26,8 +28,9 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
+#include "gin/arguments.h"
 #include "media/audio/audio_manager.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "services/service_manager/sandbox/switches.h"
@@ -42,7 +45,8 @@
 #include "shell/browser/relauncher.h"
 #include "shell/common/application_info.h"
 #include "shell/common/atom_command_line.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/image_converter.h"
@@ -532,7 +536,7 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 }
 #endif
 
-void OnIconDataAvailable(util::Promise promise, gfx::Image icon) {
+void OnIconDataAvailable(util::Promise<gfx::Image> promise, gfx::Image icon) {
   if (!icon.IsEmpty()) {
     promise.Resolve(icon);
   } else {
@@ -749,7 +753,7 @@ base::OnceClosure App::SelectClientCertificate(
   // to avoid changes in the API.
   auto client_certs = net::CertificateList();
   for (const std::unique_ptr<net::ClientCertIdentity>& identity : identities)
-    client_certs.push_back(identity->certificate());
+    client_certs.emplace_back(identity->certificate());
 
   auto shared_identities =
       std::make_shared<net::ClientCertIdentityList>(std::move(identities));
@@ -846,11 +850,11 @@ void App::SetAppPath(const base::FilePath& app_path) {
 }
 
 #if !defined(OS_MACOSX)
-void App::SetAppLogsPath(base::Optional<base::FilePath> custom_path,
-                         mate::Arguments* args) {
+void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
+                         base::Optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
-      args->ThrowError("Path must be absolute");
+      thrower.ThrowError("Path must be absolute");
       return;
     }
     base::PathService::Override(DIR_APP_LOGS, custom_path.value());
@@ -865,7 +869,8 @@ void App::SetAppLogsPath(base::Optional<base::FilePath> custom_path,
 }
 #endif
 
-base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
+base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
+                            const std::string& name) {
   bool succeed = false;
   base::FilePath path;
 
@@ -876,22 +881,22 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
     // set the path to a sensible default and then try to get it again
     if (!succeed && name == "logs") {
       base::ThreadRestrictions::ScopedAllowIO allow_io;
-      SetAppLogsPath(base::Optional<base::FilePath>(), args);
+      SetAppLogsPath(thrower, base::Optional<base::FilePath>());
       succeed = base::PathService::Get(key, &path);
     }
   }
 
   if (!succeed)
-    args->ThrowError("Failed to get '" + name + "' path");
+    thrower.ThrowError("Failed to get '" + name + "' path");
 
   return path;
 }
 
-void App::SetPath(mate::Arguments* args,
+void App::SetPath(gin_helper::ErrorThrower thrower,
                   const std::string& name,
                   const base::FilePath& path) {
   if (!path.IsAbsolute()) {
-    args->ThrowError("Path must be absolute");
+    thrower.ThrowError("Path must be absolute");
     return;
   }
 
@@ -901,7 +906,7 @@ void App::SetPath(mate::Arguments* args,
     succeed =
         base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
   if (!succeed)
-    args->ThrowError("Failed to set path");
+    thrower.ThrowError("Failed to set path");
 }
 
 void App::SetDesktopName(const std::string& desktop_name) {
@@ -938,9 +943,9 @@ std::string App::GetLocaleCountryCode() {
                      kCFStringEncodingUTF8);
   region = temporaryCString;
 #else
-  const char* locale_ptr = setlocale(LC_TIME, NULL);
+  const char* locale_ptr = setlocale(LC_TIME, nullptr);
   if (!locale_ptr)
-    locale_ptr = setlocale(LC_NUMERIC, NULL);
+    locale_ptr = setlocale(LC_NUMERIC, nullptr);
   if (locale_ptr) {
     std::string locale = locale_ptr;
     std::string::size_type rpos = locale.find('.');
@@ -974,8 +979,8 @@ bool App::RequestSingleInstanceLock() {
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
-  process_singleton_.reset(new ProcessSingleton(
-      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb)));
+  process_singleton_ = std::make_unique<ProcessSingleton>(
+      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb));
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
@@ -1030,9 +1035,9 @@ bool App::Relaunch(mate::Arguments* js_args) {
   return relauncher::RelaunchApp(argv);
 }
 
-void App::DisableHardwareAcceleration(mate::Arguments* args) {
+void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
-    args->ThrowError(
+    thrower.ThrowError(
         "app.disableHardwareAcceleration() can only be called "
         "before app is ready");
     return;
@@ -1040,9 +1045,9 @@ void App::DisableHardwareAcceleration(mate::Arguments* args) {
   content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
 }
 
-void App::DisableDomainBlockingFor3DAPIs(mate::Arguments* args) {
+void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
-    args->ThrowError(
+    thrower.ThrowError(
         "app.disableDomainBlockingFor3DAPIs() can only be called "
         "before app is ready");
     return;
@@ -1056,9 +1061,10 @@ bool App::IsAccessibilitySupportEnabled() {
   return ax_state->IsAccessibleBrowser();
 }
 
-void App::SetAccessibilitySupportEnabled(bool enabled, mate::Arguments* args) {
+void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
+                                         bool enabled) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError(
+    thrower.ThrowError(
         "app.setAccessibilitySupportEnabled() can only be called "
         "after app is ready");
     return;
@@ -1167,7 +1173,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 
 v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
                                         mate::Arguments* args) {
-  util::Promise promise(isolate());
+  util::Promise<gfx::Image> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   base::FilePath normalized_path = path.NormalizePathSeparators();
 
@@ -1204,8 +1210,11 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     mate::Dictionary pid_dict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary cpu_dict = mate::Dictionary::CreateEmpty(isolate);
 
-    pid_dict.SetHidden("simple", true);
-    cpu_dict.SetHidden("simple", true);
+    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
+    gin_helper::Dictionary(isolate, pid_dict.GetHandle())
+        .SetHidden("simple", true);
+    gin_helper::Dictionary(isolate, cpu_dict.GetHandle())
+        .SetHidden("simple", true);
 
     cpu_dict.Set(
         "percentCPUUsage",
@@ -1233,7 +1242,9 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     auto memory_info = process_metric.second->GetMemoryInfo();
 
     mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
-    memory_dict.SetHidden("simple", true);
+    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
+    gin_helper::Dictionary(isolate, memory_dict.GetHandle())
+        .SetHidden("simple", true);
     memory_dict.Set("workingSetSize",
                     static_cast<double>(memory_info.working_set_size >> 10));
     memory_dict.Set(
@@ -1272,7 +1283,7 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
                                        const std::string& info_type) {
   auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
-  util::Promise promise(isolate);
+  util::Promise<base::DictionaryValue> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   if (info_type != "basic" && info_type != "complete") {
     promise.RejectWithErrorMessage(
@@ -1312,9 +1323,9 @@ static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {
   }
 }
 
-void App::EnableSandbox(mate::Arguments* args) {
+void App::EnableSandbox(gin_helper::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
-    args->ThrowError(
+    thrower.ThrowError(
         "app.enableSandbox() can only be called "
         "before app is ready");
     return;
@@ -1341,12 +1352,14 @@ bool App::CanBrowserClientUseCustomSiteInstance() {
 }
 
 #if defined(OS_MACOSX)
-bool App::MoveToApplicationsFolder(mate::Arguments* args) {
-  return ui::cocoa::AtomBundleMover::Move(args);
+bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
+                                   mate::Arguments* args) {
+  gin::Arguments gin_args(args->info());
+  return AtomBundleMover::Move(thrower, &gin_args);
 }
 
 bool App::IsInApplicationsFolder() {
-  return ui::cocoa::AtomBundleMover::IsCurrentAppInApplicationsFolder();
+  return AtomBundleMover::IsCurrentAppInApplicationsFolder();
 }
 
 int DockBounce(mate::Arguments* args) {

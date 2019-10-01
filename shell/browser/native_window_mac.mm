@@ -35,7 +35,58 @@
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
+#include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/widget.h"
+
+// This view would inform Chromium to resize the hosted views::View.
+//
+// The overrided methods should behave the same with BridgedContentView.
+@interface ElectronAdapatedContentView : NSView {
+ @private
+  views::NativeWidgetMacNSWindowHost* bridge_host_;
+}
+@end
+
+@implementation ElectronAdapatedContentView
+
+- (id)initWithShell:(electron::NativeWindowMac*)shell {
+  if ((self = [self init])) {
+    bridge_host_ = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
+        shell->GetNativeWindow());
+  }
+  return self;
+}
+
+- (void)viewDidMoveToWindow {
+  // When this view is added to a window, AppKit calls setFrameSize before it is
+  // added to the window, so the behavior in setFrameSize is not triggered.
+  NSWindow* window = [self window];
+  if (window)
+    [self setFrameSize:NSZeroSize];
+}
+
+- (void)setFrameSize:(NSSize)newSize {
+  // The size passed in here does not always use
+  // -[NSWindow contentRectForFrameRect]. The following ensures that the
+  // contentView for a frameless window can extend over the titlebar of the new
+  // window containing it, since AppKit requires a titlebar to give frameless
+  // windows correct shadows and rounded corners.
+  NSWindow* window = [self window];
+  if (window && [window contentView] == self) {
+    newSize = [window contentRectForFrameRect:[window frame]].size;
+    // Ensure that the window geometry be updated on the host side before the
+    // view size is updated.
+    bridge_host_->GetInProcessNSWindowBridge()->UpdateWindowGeometry();
+  }
+
+  [super setFrameSize:newSize];
+
+  // The OnViewSizeChanged is marked private in derived class.
+  static_cast<remote_cocoa::mojom::NativeWidgetNSWindowHost*>(bridge_host_)
+      ->OnViewSizeChanged(gfx::Size(newSize.width, newSize.height));
+}
+
+@end
 
 // This view always takes the size of its superview. It is intended to be used
 // as a NSWindow's contentView.  It is needed because NSWindow's implementation
@@ -1558,10 +1609,15 @@ void NativeWindowMac::OverrideNSWindowContentView() {
   // `BridgedContentView` as content view, which does not support draggable
   // regions. In order to make draggable regions work, we have to replace the
   // content view with a simple NSView.
-  container_view_.reset([[FullSizeContentView alloc] init]);
+  if (has_frame()) {
+    container_view_.reset(
+        [[ElectronAdapatedContentView alloc] initWithShell:this]);
+  } else {
+    container_view_.reset([[FullSizeContentView alloc] init]);
+    [container_view_ setFrame:[[[window_ contentView] superview] bounds]];
+  }
   [container_view_
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  [container_view_ setFrame:[[[window_ contentView] superview] bounds]];
   [window_ setContentView:container_view_];
   AddContentViewLayers(IsMinimizable(), IsClosable());
 }

@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/ptr_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/window_list.h"
@@ -580,6 +582,22 @@ views::Widget* NativeWindow::GetWidget() {
 
 const views::Widget* NativeWindow::GetWidget() const {
   return widget();
+}
+
+base::string16 NativeWindow::GetAccessibleWindowTitle() const {
+  if (accessible_title_.empty()) {
+    return views::WidgetDelegate::GetAccessibleWindowTitle();
+  }
+
+  return accessible_title_;
+}
+
+void NativeWindow::SetAccessibleTitle(const std::string& title) {
+  accessible_title_ = base::UTF8ToUTF16(title);
+}
+
+std::string NativeWindow::GetAccessibleTitle() {
+  return base::UTF16ToUTF8(accessible_title_);
 }
 
 // static

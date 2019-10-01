@@ -6,9 +6,9 @@
 
 namespace electron {
 
-AtomQuotaPermissionContext::AtomQuotaPermissionContext() {}
+AtomQuotaPermissionContext::AtomQuotaPermissionContext() = default;
 
-AtomQuotaPermissionContext::~AtomQuotaPermissionContext() {}
+AtomQuotaPermissionContext::~AtomQuotaPermissionContext() = default;
 
 void AtomQuotaPermissionContext::RequestQuotaPermission(
     const content::StorageQuotaParams& params,

@@ -12,6 +12,7 @@
 
 #include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
+#include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "v8/include/v8.h"
 

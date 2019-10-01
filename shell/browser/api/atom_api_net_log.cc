@@ -16,7 +16,6 @@
 #include "native_mate/handle.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
-#include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
 
@@ -54,8 +53,8 @@ scoped_refptr<base::SequencedTaskRunner> CreateFileTaskRunner() {
   //
   // These operations can be skipped on shutdown since FileNetLogObserver's API
   // doesn't require things to have completed until notified of completion.
-  return base::CreateSequencedTaskRunnerWithTraits(
-      {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+  return base::CreateSequencedTaskRunner(
+      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_VISIBLE,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
 }
 
@@ -64,7 +63,7 @@ base::File OpenFileForWriting(base::FilePath path) {
                     base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
 }
 
-void ResolvePromiseWithNetError(util::Promise promise, int32_t error) {
+void ResolvePromiseWithNetError(util::Promise<void*> promise, int32_t error) {
   if (error == net::OK) {
     promise.Resolve();
   } else {
@@ -119,7 +118,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
     return v8::Local<v8::Promise>();
   }
 
-  pending_start_promise_ = base::make_optional<util::Promise>(isolate());
+  pending_start_promise_ = base::make_optional<util::Promise<void*>>(isolate());
   v8::Local<v8::Promise> handle = pending_start_promise_->GetHandle();
 
   auto command_line_string =
@@ -189,7 +188,7 @@ bool NetLog::IsCurrentlyLogging() const {
 }
 
 v8::Local<v8::Promise> NetLog::StopLogging(mate::Arguments* args) {
-  util::Promise promise(isolate());
+  util::Promise<void*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (net_log_exporter_) {
@@ -199,7 +198,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(mate::Arguments* args) {
     net_log_exporter_->Stop(
         base::Value(base::Value::Type::DICTIONARY),
         base::BindOnce(
-            [](network::mojom::NetLogExporterPtr, util::Promise promise,
+            [](network::mojom::NetLogExporterPtr, util::Promise<void*> promise,
                int32_t error) {
               ResolvePromiseWithNetError(std::move(promise), error);
             },

@@ -20,6 +20,7 @@
 #include "net/base/mime_util.h"
 #include "net/http/http_byte_range.h"
 #include "net/http/http_util.h"
+#include "services/network/public/cpp/resource_response.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
 
@@ -298,8 +299,8 @@ void CreateAsarURLLoader(
     network::mojom::URLLoaderRequest loader,
     network::mojom::URLLoaderClientPtr client,
     scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
-  auto task_runner = base::CreateSequencedTaskRunnerWithTraits(
-      {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+  auto task_runner = base::CreateSequencedTaskRunner(
+      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_VISIBLE,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
   task_runner->PostTask(
       FROM_HERE, base::BindOnce(&AsarURLLoader::CreateAndStart, request,

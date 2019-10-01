@@ -12,6 +12,10 @@
 #include "base/optional.h"
 #include "native_mate/converter.h"
 
+// =============================== NOTICE ===============================
+// Do not add code here, native_mate is being removed. Any new code
+// should use gin instead.
+
 namespace mate {
 
 // Arguments is a wrapper around v8::FunctionCallbackInfo that integrates
@@ -93,12 +97,13 @@ class Arguments {
   v8::Local<v8::Value> ThrowTypeError(const std::string& message) const;
 
   v8::Isolate* isolate() const { return isolate_; }
+  const v8::FunctionCallbackInfo<v8::Value>& info() const { return *info_; }
 
  private:
-  v8::Isolate* isolate_;
-  const v8::FunctionCallbackInfo<v8::Value>* info_;
-  int next_;
-  bool insufficient_arguments_;
+  v8::Isolate* isolate_ = nullptr;
+  const v8::FunctionCallbackInfo<v8::Value>* info_ = nullptr;
+  int next_ = 0;
+  bool insufficient_arguments_ = false;
 };
 
 }  // namespace mate

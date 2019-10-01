@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Mon, 16 Sep 2019 17:50:28 -0400
+Subject: fix microtasks
+
+backports https://github.com/nodejs/node/pull/29581 and https://github.com/nodejs/node/pull/29434
+
+diff --git a/src/api/callback.cc b/src/api/callback.cc
+index 43ccfafd9f2c85e23a9ea6277e88e4864e287905..3c518870c9c8d92f3dfcd6c270f5e023e3b69633 100644
+--- a/src/api/callback.cc
++++ b/src/api/callback.cc
+@@ -12,6 +12,7 @@ using v8::HandleScope;
+ using v8::Isolate;
+ using v8::Local;
+ using v8::MaybeLocal;
++using v8::MicrotasksScope;
+ using v8::NewStringType;
+ using v8::Object;
+ using v8::String;
+@@ -100,7 +101,7 @@ void InternalCallbackScope::Close() {
+ 
+   if (!env_->can_call_into_js()) return;
+   if (!tick_info->has_tick_scheduled()) {
+-    env_->isolate()->RunMicrotasks();
++    MicrotasksScope::PerformCheckpoint(env_->isolate());
+   }
+ 
+ #if 0  // FIXME(codebytere): figure out why this check fails/causes crash
+diff --git a/src/node_task_queue.cc b/src/node_task_queue.cc
+index e6b4d0b8e211cdb1fef4759457c2550e28448360..918796ba77d80cf66324164a930f8068e0622ccb 100644
+--- a/src/node_task_queue.cc
++++ b/src/node_task_queue.cc
+@@ -21,6 +21,7 @@ using v8::kPromiseRejectWithNoHandler;
+ using v8::kPromiseResolveAfterResolved;
+ using v8::Local;
+ using v8::Message;
++using v8::MicrotasksScope;
+ using v8::Number;
+ using v8::Object;
+ using v8::Promise;
+@@ -43,7 +44,7 @@ static void EnqueueMicrotask(const FunctionCallbackInfo<Value>& args) {
+ bool RunNextTicksNative(Environment* env) {
+   TickInfo* tick_info = env->tick_info();
+   if (!tick_info->has_tick_scheduled() && !tick_info->has_rejection_to_warn())
+-    env->isolate()->RunMicrotasks();
++    MicrotasksScope::PerformCheckpoint(env->isolate());
+   if (!tick_info->has_tick_scheduled() && !tick_info->has_rejection_to_warn())
+     return true;
+ 
+@@ -54,7 +55,7 @@ bool RunNextTicksNative(Environment* env) {
+ }
+ 
+ static void RunMicrotasks(const FunctionCallbackInfo<Value>& args) {
+-  args.GetIsolate()->RunMicrotasks();
++  MicrotasksScope::PerformCheckpoint(args.GetIsolate());
+ }
+ 
+ static void SetTickCallback(const FunctionCallbackInfo<Value>& args) {

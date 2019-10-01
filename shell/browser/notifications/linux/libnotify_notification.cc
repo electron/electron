@@ -100,6 +100,16 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
         nullptr);
   }
 
+  NotifyUrgency urgency = NOTIFY_URGENCY_NORMAL;
+  if (options.urgency == base::ASCIIToUTF16("critical")) {
+    urgency = NOTIFY_URGENCY_CRITICAL;
+  } else if (options.urgency == base::ASCIIToUTF16("low")) {
+    urgency = NOTIFY_URGENCY_LOW;
+  }
+
+  // Set the urgency level of the notification.
+  libnotify_loader_.notify_notification_set_urgency(notification_, urgency);
+
   if (!options.icon.drawsNothing()) {
     GdkPixbuf* pixbuf = libgtkui::GdkPixbufFromSkBitmap(options.icon);
     libnotify_loader_.notify_notification_set_image_from_pixbuf(notification_,

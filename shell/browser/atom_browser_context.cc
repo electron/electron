@@ -4,6 +4,8 @@
 
 #include "shell/browser/atom_browser_context.h"
 
+#include <memory>
+
 #include <utility>
 
 #include "base/command_line.h"
@@ -28,7 +30,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
-#include "shell/browser/atom_blob_reader.h"
+#include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_download_manager_delegate.h"
@@ -205,13 +207,13 @@ int AtomBrowserContext::GetMaxCacheSize() const {
 
 content::ResourceContext* AtomBrowserContext::GetResourceContext() {
   if (!resource_context_)
-    resource_context_.reset(new content::ResourceContext);
+    resource_context_ = std::make_unique<content::ResourceContext>();
   return resource_context_.get();
 }
 
 std::string AtomBrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
-    media_device_id_salt_.reset(new MediaDeviceIDSalt(prefs_.get()));
+    media_device_id_salt_ = std::make_unique<MediaDeviceIDSalt>(prefs_.get());
   return media_device_id_salt_->GetSalt();
 }
 
@@ -228,22 +230,22 @@ content::DownloadManagerDelegate*
 AtomBrowserContext::GetDownloadManagerDelegate() {
   if (!download_manager_delegate_.get()) {
     auto* download_manager = content::BrowserContext::GetDownloadManager(this);
-    download_manager_delegate_.reset(
-        new AtomDownloadManagerDelegate(download_manager));
+    download_manager_delegate_ =
+        std::make_unique<AtomDownloadManagerDelegate>(download_manager);
   }
   return download_manager_delegate_.get();
 }
 
 content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   if (!guest_manager_)
-    guest_manager_.reset(new WebViewManager);
+    guest_manager_ = std::make_unique<WebViewManager>();
   return guest_manager_.get();
 }
 
 content::PermissionControllerDelegate*
 AtomBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
-    permission_manager_.reset(new AtomPermissionManager);
+    permission_manager_ = std::make_unique<AtomPermissionManager>();
   return permission_manager_.get();
 }
 
@@ -255,13 +257,50 @@ std::string AtomBrowserContext::GetUserAgent() const {
   return user_agent_;
 }
 
-AtomBlobReader* AtomBrowserContext::GetBlobReader() {
-  if (!blob_reader_.get()) {
-    content::ChromeBlobStorageContext* blob_context =
-        content::ChromeBlobStorageContext::GetFor(this);
-    blob_reader_.reset(new AtomBlobReader(blob_context));
+predictors::PreconnectManager* AtomBrowserContext::GetPreconnectManager() {
+  if (!preconnect_manager_.get()) {
+    preconnect_manager_ =
+        std::make_unique<predictors::PreconnectManager>(nullptr, this);
   }
-  return blob_reader_.get();
+  return preconnect_manager_.get();
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+AtomBrowserContext::GetURLLoaderFactory() {
+  if (url_loader_factory_)
+    return url_loader_factory_;
+
+  network::mojom::URLLoaderFactoryPtr network_factory;
+  mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_request =
+      mojo::MakeRequest(&network_factory);
+
+  // Consult the embedder.
+  mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
+      header_client;
+  static_cast<content::ContentBrowserClient*>(AtomBrowserClient::Get())
+      ->WillCreateURLLoaderFactory(
+          this, nullptr, -1,
+          content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
+          url::Origin(), &factory_request, &header_client, nullptr);
+
+  network::mojom::URLLoaderFactoryParamsPtr params =
+      network::mojom::URLLoaderFactoryParams::New();
+  params->header_client = std::move(header_client);
+  params->process_id = network::mojom::kBrowserProcessId;
+  params->is_trusted = true;
+  params->is_corb_enabled = false;
+  // The tests of net module would fail if this setting is true, it seems that
+  // the non-NetworkService implementation always has web security enabled.
+  params->disable_web_security = false;
+
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(this);
+  storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
+      std::move(factory_request), std::move(params));
+  url_loader_factory_ =
+      base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
+          std::move(network_factory));
+  return url_loader_factory_;
 }
 
 content::PushMessagingService* AtomBrowserContext::GetPushMessagingService() {

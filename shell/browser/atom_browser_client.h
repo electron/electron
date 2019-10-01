@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
@@ -60,6 +61,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
+  base::FilePath GetFontLookupTableCacheDir() override;
 
   // content::ContentBrowserClient:
   bool ShouldEnableStrictSiteIsolation() override;
@@ -141,14 +143,13 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::ResourceContext* resource_context) override;
   std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
       override;
-  network::mojom::NetworkContextPtr CreateNetworkContext(
+  mojo::Remote<network::mojom::NetworkContext> CreateNetworkContext(
       content::BrowserContext* browser_context,
       bool in_memory,
       const base::FilePath& relative_partition_path) override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
   base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
-  std::vector<service_manager::Manifest> GetExtraServiceManifests() override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(
@@ -173,22 +174,24 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::BrowserContext* browser_context,
       content::RenderFrameHost* frame,
       int render_process_id,
-      bool is_navigation,
-      bool is_download,
+      URLLoaderFactoryType type,
       const url::Origin& request_initiator,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
-      network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+      mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
+          header_client,
       bool* bypass_redirect_checks) override;
   network::mojom::URLLoaderFactoryPtrInfo
   CreateURLLoaderFactoryForNetworkRequests(
       content::RenderProcessHost* process,
       network::mojom::NetworkContext* network_context,
-      network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+      mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
+          header_client,
       const url::Origin& request_initiator) override;
 #if defined(OS_WIN)
-  bool PreSpawnRenderer(sandbox::TargetPolicy* policy) override;
+  bool PreSpawnRenderer(sandbox::TargetPolicy* policy,
+                        RendererSpawnFlags flags) override;
 #endif
-  bool BindAssociatedInterfaceRequestFromFrame(
+  bool BindAssociatedReceiverFromFrame(
       content::RenderFrameHost* render_frame_host,
       const std::string& interface_name,
       mojo::ScopedInterfaceEndpointHandle* handle) override;

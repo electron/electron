@@ -12,6 +12,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
+#include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "net/base/upload_bytes_element_reader.h"
 #include "net/base/upload_data_stream.h"
@@ -21,9 +22,9 @@
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
 #include "services/network/public/cpp/resource_request.h"
+#include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
-#include "shell/common/gin_converters/string16_converter.h"
 #include "shell/common/gin_converters/value_converter_gin_adapter.h"
 #include "shell/common/node_includes.h"
 
@@ -264,9 +265,16 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
                                                     element.length())
                                      .ToLocalChecked());
         break;
-      case network::mojom::DataElementType::kBlob:
-        upload_data.Set("blobUUID", element.blob_uuid());
+      case network::mojom::DataElementType::kDataPipe: {
+        // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
+        // becomes unecessarily complex, we should deprecate the getBlobData API
+        // and return the DataPipeHolder wrapper directly.
+        auto holder = electron::api::DataPipeHolder::Create(isolate, element);
+        upload_data.Set("blobUUID", holder->id());
+        // The lifetime of data pipe is bound to the uploadData object.
+        upload_data.Set("dataPipe", holder);
         break;
+      }
       default:
         NOTREACHED() << "Found unsupported data element";
     }

@@ -42,6 +42,7 @@ interface ElectronBrowser {
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process, and returns the response.
   Invoke(
+      bool internal,
       string channel,
       mojo_base.mojom.ListValue arguments) => (mojo_base.mojom.Value result);
 

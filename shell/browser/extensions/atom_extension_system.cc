@@ -131,7 +131,7 @@ AppSorting* AtomExtensionSystem::app_sorting() {
 void AtomExtensionSystem::RegisterExtensionWithRequestContexts(
     const Extension* extension,
     const base::Closure& callback) {
-  base::PostTaskWithTraitsAndReply(
+  base::PostTaskAndReply(
       FROM_HERE, {BrowserThread::IO},
       base::Bind(&InfoMap::AddExtension, info_map(),
                  base::RetainedRef(extension), base::Time::Now(), false, false),

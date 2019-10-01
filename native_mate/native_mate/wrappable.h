@@ -21,7 +21,7 @@ void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val);
 template <typename T>
 class Wrappable : public WrappableBase {
  public:
-  Wrappable() {}
+  Wrappable() = default;
 
   template <typename Sig>
   static void SetConstructor(v8::Isolate* isolate,

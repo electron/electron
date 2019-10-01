@@ -4,13 +4,15 @@
 
 #include "shell/common/api/locker.h"
 
+#include <memory>
+
 namespace mate {
 
 Locker::Locker(v8::Isolate* isolate) {
   if (IsBrowserProcess())
-    locker_.reset(new v8::Locker(isolate));
+    locker_ = std::make_unique<v8::Locker>(isolate);
 }
 
-Locker::~Locker() {}
+Locker::~Locker() = default;
 
 }  // namespace mate

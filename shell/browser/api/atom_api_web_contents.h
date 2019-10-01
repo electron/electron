@@ -291,8 +291,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
   v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
-  bool IsRemoteModuleEnabled() const;
-
   // Returns the owner window.
   v8::Local<v8::Value> GetOwnerBrowserWindow() const;
 
@@ -491,7 +489,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Message(bool internal,
                const std::string& channel,
                base::Value arguments) override;
-  void Invoke(const std::string& channel,
+  void Invoke(bool internal,
+              const std::string& channel,
               base::Value arguments,
               InvokeCallback callback) override;
   void MessageSync(bool internal,
@@ -566,5 +565,23 @@ class WebContents : public mate::TrackableObject<WebContents>,
 }  // namespace api
 
 }  // namespace electron
+
+namespace gin {
+
+// TODO(zcbenz): Remove this after converting WebContents to gin::Wrapper.
+template <>
+struct Converter<electron::api::WebContents*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::WebContents** out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::WebContents* in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_WEB_CONTENTS_H_

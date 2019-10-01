@@ -1,6 +1,6 @@
 <html>
 <body>
-<webview nodeintegration src="zoom://host1" id="view" partition="webview-temp"/>
+<webview nodeintegration src="app://host1" id="view" partition="webview-temp"/>
 </body>
 <script>
   const {ipcRenderer, webFrame} = require('electron')
@@ -14,7 +14,7 @@
     const zoomFactor = view.getZoomFactor()
     ipcRenderer.send('webview-zoom-level', zoomLevel, zoomFactor, view.canGoBack(), finalNavigation)
     if (!view.canGoBack() && !finalNavigation) {
-      view.src = 'zoom://host2'
+      view.src = 'app://host2'
     } else if (!finalNavigation) {
       finalNavigation = true
       view.goBack()

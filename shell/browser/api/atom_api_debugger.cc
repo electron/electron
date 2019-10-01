@@ -13,7 +13,6 @@
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 
@@ -28,7 +27,7 @@ Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
   Init(isolate);
 }
 
-Debugger::~Debugger() {}
+Debugger::~Debugger() = default;
 
 void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host) {
   DCHECK(agent_host == agent_host_);
@@ -65,7 +64,8 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
     if (it == pending_requests_.end())
       return;
 
-    electron::util::Promise promise = std::move(it->second);
+    electron::util::Promise<base::DictionaryValue> promise =
+        std::move(it->second);
     pending_requests_.erase(it);
 
     base::DictionaryValue* error = nullptr;
@@ -129,7 +129,7 @@ void Debugger::Detach() {
 }
 
 v8::Local<v8::Promise> Debugger::SendCommand(mate::Arguments* args) {
-  electron::util::Promise promise(isolate());
+  electron::util::Promise<base::DictionaryValue> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!agent_host_) {

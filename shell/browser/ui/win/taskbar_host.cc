@@ -199,8 +199,9 @@ bool TaskbarHost::SetThumbnailToolTip(HWND window, const std::string& tooltip) {
 }
 
 bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
-  if (base::Contains(callback_map_, button_id)) {
-    auto callback = callback_map_[button_id];
+  const auto iter = callback_map_.find(button_id);
+  if (iter != std::end(callback_map_)) {
+    auto callback = iter->second;
     if (!callback.is_null())
       callback.Run();
     return true;

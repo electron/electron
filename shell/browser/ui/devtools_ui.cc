@@ -54,8 +54,8 @@ std::string GetMimeTypeForPath(const std::string& path) {
 
 class BundledDataSource : public content::URLDataSource {
  public:
-  BundledDataSource() {}
-  ~BundledDataSource() override {}
+  BundledDataSource() = default;
+  ~BundledDataSource() override = default;
 
   // content::URLDataSource implementation.
   std::string GetSource() override { return kChromeUIDevToolsHost; }

@@ -19,7 +19,7 @@ Net::Net(v8::Isolate* isolate) {
   Init(isolate);
 }
 
-Net::~Net() {}
+Net::~Net() = default;
 
 // static
 v8::Local<v8::Value> Net::Create(v8::Isolate* isolate) {

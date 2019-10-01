@@ -26,7 +26,7 @@ class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
  public:
   LoginHandler(net::URLRequest* request,
                const net::AuthChallengeInfo& auth_info,
-               net::NetworkDelegate::AuthCallback callback,
+               // net::NetworkDelegate::AuthCallback callback,
                net::AuthCredentials* credentials);
 
   // The auth is cancelled, must be called on UI thread.
@@ -64,7 +64,7 @@ class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
   content::WebContents::Getter web_contents_getter_;
 
   // Called with preferred value of net::NetworkDelegate::AuthRequiredResponse.
-  net::NetworkDelegate::AuthCallback auth_callback_;
+  // net::NetworkDelegate::AuthCallback auth_callback_;
 
   base::WeakPtrFactory<LoginHandler> weak_factory_;
 

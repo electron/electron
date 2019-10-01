@@ -5,8 +5,8 @@
 #ifndef SHELL_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_
 #define SHELL_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_
 
+#include "gin/converter.h"
 #include "native_mate/converter.h"
-#include "shell/common/gin_converters/string16_converter.h"
 
 namespace mate {
 

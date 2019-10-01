@@ -96,8 +96,8 @@ void WindowList::DestroyAllWindows() {
     window->CloseImmediately();  // e.g. Destroy()
 }
 
-WindowList::WindowList() {}
+WindowList::WindowList() = default;
 
-WindowList::~WindowList() {}
+WindowList::~WindowList() = default;
 
 }  // namespace electron

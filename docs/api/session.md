@@ -91,6 +91,20 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 })
 ```
 
+#### Event: 'preconnect'
+
+Returns:
+
+* `event` Event
+* `preconnectUrl` String - The URL being requested for preconnection by the
+  renderer.
+* `allowCredentials` Boolean - True if the renderer is requesting that the
+  connection include credentials (see the
+  [spec](https://w3c.github.io/resource-hints/#preconnect) for more details.)
+
+Emitted when a render process requests preconnection to a URL, generally due to
+a [resource hint](https://w3c.github.io/resource-hints/).
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
@@ -125,9 +139,9 @@ Writes any unwritten DOMStorage data to disk.
 #### `ses.setProxy(config)`
 
 * `config` Object
-  * `pacScript` String - The URL associated with the PAC file.
-  * `proxyRules` String - Rules indicating which proxies to use.
-  * `proxyBypassRules` String - Rules indicating which URLs should
+  * `pacScript` String (optional) - The URL associated with the PAC file.
+  * `proxyRules` String (optional) - Rules indicating which proxies to use.
+  * `proxyBypassRules` String (optional) - Rules indicating which URLs should
     bypass the proxy settings.
 
 Returns `Promise<void>` - Resolves when the proxy setting process is complete.
@@ -238,6 +252,14 @@ window.webContents.session.enableNetworkEmulation({
 window.webContents.session.enableNetworkEmulation({ offline: true })
 ```
 
+#### `ses.preconnect(options)`
+
+* `options` Object
+  * `url` String - URL for preconnect. Only the origin is relevant for opening the socket.
+  * `numSockets` Number (optional) - number of sockets to preconnect. Must be between 1 and 6. Defaults to 1.
+
+Preconnects the given number of sockets to an origin.
+
 #### `ses.disableNetworkEmulation()`
 
 Disables any network emulation already active for the `session`. Resets to
@@ -245,7 +267,7 @@ the original network configuration.
 
 #### `ses.setCertificateVerifyProc(proc)`
 
-* `proc` Function
+* `proc` Function | null
   * `request` Object
     * `hostname` String
     * `certificate` [Certificate](structures/certificate.md)
@@ -386,6 +408,17 @@ Returns `String` - The user agent for this session.
 
 Returns `Promise<Buffer>` - resolves with blob data.
 
+#### `ses.downloadURL(url)`
+
+* `url` String
+
+Initiates a download of the resource at `url`.
+The API will generate a [DownloadItem](download-item.md) that can be accessed
+with the [will-download](#event-will-download) event.
+
+**Note:** This does not perform any security checks that relate to a page's origin,
+unlike [`webContents.downloadURL`](web-contents.md#contentsdownloadurlurl).
+
 #### `ses.createInterruptedDownload(options)`
 
 * `options` Object
@@ -394,8 +427,8 @@ Returns `Promise<Buffer>` - resolves with blob data.
   * `mimeType` String (optional)
   * `offset` Integer - Start range for the download.
   * `length` Integer - Total length of the download.
-  * `lastModified` String - Last-Modified header value.
-  * `eTag` String - ETag header value.
+  * `lastModified` String (optional) - Last-Modified header value.
+  * `eTag` String (optional) - ETag header value.
   * `startTime` Double (optional) - Time when download was started in
     number of seconds since UNIX epoch.
 

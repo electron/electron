@@ -12,7 +12,7 @@
 #include "base/values.h"
 #include "native_mate/handle.h"
 #include "shell/browser/api/event_emitter.h"
-#include "shell/common/error_util.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/promise_util.h"
 
 #if defined(OS_WIN)
@@ -96,7 +96,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   void RemoveUserDefault(const std::string& name);
   bool IsSwipeTrackingFromScrollEventsEnabled();
 
-  std::string GetSystemColor(util::ErrorThrower thrower,
+  std::string GetSystemColor(gin_helper::ErrorThrower thrower,
                              const std::string& color);
 
   bool CanPromptTouchID();

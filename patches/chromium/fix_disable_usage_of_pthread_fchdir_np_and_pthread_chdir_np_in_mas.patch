@@ -1,27 +1,27 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sattard@slack-corp.com>
 Date: Mon, 4 Mar 2019 14:46:48 -0800
-Subject: fix: disable usage of pthread_fchdir_np and pthread_chdir_np in MAS
- builds
+Subject: 
+ fix_disable_usage_of_pthread_fchdir_np_and_pthread_chdir_np_in_MAS.patch
+
+Disable usage of pthread_fchdir_np and pthread_chdir_np in MAS builds.
 
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index c6d5cbbd5417a1b18a6cf94a681de6c671089e35..92d683619e8de505d5172a8ae09e6e67f28da96f 100644
+index 1119fb3f97b116028d78fdf42c1d336440a1681f..264178186f3f780b2b33de7649b1321b23964515 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
-@@ -25,10 +25,12 @@
+@@ -26,8 +26,10 @@ extern "C" {
  // descriptor. libpthread only exposes a syscall wrapper starting in
  // macOS 10.12, but the system call dates back to macOS 10.5. On older OSes,
  // the syscall is issued directly.
 +#if !defined(MAS_BUILD)
- extern "C" {
- int pthread_chdir_np(const char*) API_AVAILABLE(macosx(10.12));
+ int pthread_chdir_np(const char* dir) API_AVAILABLE(macosx(10.12));
  int pthread_fchdir_np(int fd) API_AVAILABLE(macosx(10.12));
- }
 +#endif
  
- namespace base {
- 
-@@ -95,21 +97,29 @@ class PosixSpawnFileActions {
+ int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
+     API_AVAILABLE(macosx(10.14));
+@@ -98,21 +100,29 @@ class PosixSpawnFileActions {
  };
  
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -51,3 +51,17 @@ index c6d5cbbd5417a1b18a6cf94a681de6c671089e35..92d683619e8de505d5172a8ae09e6e67
  }
  
  struct GetAppOutputOptions {
+@@ -228,11 +238,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+     file_actions.Inherit(STDERR_FILENO);
+   }
+ 
++#if 0
+   if (options.disclaim_responsibility) {
+     if (__builtin_available(macOS 10.14, *)) {
+       DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
+     }
+   }
++#endif
+ 
+   std::vector<char*> argv_cstr;
+   argv_cstr.reserve(argv.size() + 1);
