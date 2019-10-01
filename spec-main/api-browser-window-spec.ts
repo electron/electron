@@ -1105,16 +1105,6 @@ describe('BrowserWindow module', () => {
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop')
     })
 
-    ifit(process.platform === 'darwin')('raises an error when relativeLevel is out of bounds', () => {
-      expect(() => {
-        w.setAlwaysOnTop(true, 'normal', -2147483644)
-      }).to.throw()
-
-      expect(() => {
-        w.setAlwaysOnTop(true, 'normal', 2147483632)
-      }).to.throw()
-    })
-
     ifit(process.platform === 'darwin')('resets the windows level on minimize', () => {
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
       w.setAlwaysOnTop(true, 'screen-saver')
