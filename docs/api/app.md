@@ -776,8 +776,10 @@ The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internall
   methods in this family, this accepts an entire URL, including `://` at a
   minimum (e.g. `https://`).
 
-Returns String - Name of the application handling the protocol. For instance,
-  if Electron is the default handler of the passed URL, this will be `Electron`.
+Returns String - Name of the application handling the protocol, or an empty
+  string if there is no handler. For instance, if Electron is the default
+  handler of the URL, this will be `Electron` on Windows and Mac. On Linux,
+  it may be in a different format, possibly with a `.desktop` suffix.
 
 This method returns the application name of the default handler for the protocol
 (aka URI scheme) of a URL.
