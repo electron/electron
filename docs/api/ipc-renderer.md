@@ -125,7 +125,7 @@ and replies by setting `event.returnValue`.
 > :warning: **WARNING**: Sending a synchronous message will block the whole
 > renderer process until the reply is received, so use this method only as a
 > last resort. It's much better to use the asynchronous version,
-> [`invoke()`](ipc-main.md#ipcmaininvokechannel-args).
+> [`invoke()`](ipc-renderer.md#ipcrendererinvokechannel-args).
 
 ### `ipcRenderer.sendTo(webContentsId, channel, ...args)`
 
