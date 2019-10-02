@@ -1479,4 +1479,40 @@ describe('webContents module', () => {
       expect(val).to.equal('test value', 'value should eventually become the pasted value')
     })
   })
+
+  describe('Shared Workers', () => {
+    afterEach(closeAllWindows)
+
+    it('can get multiple shared workers', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+
+      const ready = emittedOnce(ipcMain, 'ready')
+      w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'))
+      await ready
+
+      const sharedWorkers = w.webContents.getAllSharedWorkers()
+
+      expect(sharedWorkers).to.have.lengthOf(2)
+      expect(sharedWorkers[0].url).to.contain('shared-worker')
+      expect(sharedWorkers[1].url).to.contain('shared-worker')
+    })
+
+    it('can inspect a specific shared worker', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+
+      const ready = emittedOnce(ipcMain, 'ready')
+      w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'))
+      await ready
+
+      const sharedWorkers = w.webContents.getAllSharedWorkers()
+
+      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
+      w.webContents.inspectSharedWorkerById(sharedWorkers[0].id)
+      await devtoolsOpened
+
+      const devtoolsClosed = emittedOnce(w.webContents, 'devtools-closed')
+      w.webContents.closeDevTools()
+      await devtoolsClosed
+    })
+  })
 })
