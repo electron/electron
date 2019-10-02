@@ -280,7 +280,7 @@ describe('protocol module', () => {
   })
 
   describe('protocol.registerFileProtocol', () => {
-    const filePath = path.join(__dirname, 'fixtures', 'asar', 'a.asar', 'file1')
+    const filePath = path.join(__dirname, 'fixtures', 'test.asar', 'a.asar', 'file1')
     const fileContent = require('fs').readFileSync(filePath)
     const normalPath = path.join(__dirname, 'fixtures', 'pages', 'a.html')
     const normalContent = require('fs').readFileSync(normalPath)
@@ -394,7 +394,7 @@ describe('protocol module', () => {
     })
 
     it('fails when sending unexist-file', (done) => {
-      const fakeFilePath = path.join(__dirname, 'fixtures', 'asar', 'a.asar', 'not-exist')
+      const fakeFilePath = path.join(__dirname, 'fixtures', 'test.asar', 'a.asar', 'not-exist')
       const handler = (request, callback) => callback(fakeFilePath)
       protocol.registerFileProtocol(protocolName, handler, (error) => {
         if (error) return done(error)
