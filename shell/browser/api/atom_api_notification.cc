@@ -7,24 +7,23 @@
 #include "base/guid.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/constructor.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder_deprecated.h"
 #include "shell/browser/api/atom_api_menu.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/browser.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
-#include "shell/common/native_mate_converters/image_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "url/gurl.h"
 
-namespace mate {
+namespace gin {
+
 template <>
 struct Converter<electron::NotificationAction> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::NotificationAction* out) {
-    mate::Dictionary dict;
+    gin::Dictionary dict(isolate);
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
 
@@ -37,27 +36,27 @@ struct Converter<electron::NotificationAction> {
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::NotificationAction val) {
-    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("text", val.text);
     dict.Set("type", val.type);
-    return dict.GetHandle();
+    return ConvertToV8(isolate, dict);
   }
 };
-}  // namespace mate
+
+}  // namespace gin
 
 namespace electron {
 
 namespace api {
 
-Notification::Notification(v8::Isolate* isolate,
-                           v8::Local<v8::Object> wrapper,
-                           mate::Arguments* args) {
-  InitWith(isolate, wrapper);
+Notification::Notification(v8::Local<v8::Object> wrapper,
+                           gin::Arguments* args) {
+  InitWith(args->isolate(), wrapper);
 
   presenter_ = static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
                    ->GetNotificationPresenter();
 
-  mate::Dictionary opts;
+  gin::Dictionary opts(nullptr);
   if (args->GetNext(&opts)) {
     opts.Get("title", &title_);
     opts.Get("subtitle", &subtitle_);
@@ -87,7 +86,8 @@ mate::WrappableBase* Notification::New(mate::Arguments* args) {
     args->ThrowError("Cannot create Notification before app is ready");
     return nullptr;
   }
-  return new Notification(args->isolate(), args->GetThis(), args);
+  gin::Arguments gin_args(args->info());
+  return new Notification(args->GetThis(), &gin_args);
 }
 
 // Getters
@@ -234,9 +234,9 @@ bool Notification::IsSupported() {
 // static
 void Notification::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Notification"));
+  prototype->SetClassName(gin::StringToV8(isolate, "Notification"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
@@ -273,7 +273,7 @@ void Initialize(v8::Local<v8::Object> exports,
   Notification::SetConstructor(isolate,
                                base::BindRepeating(&Notification::New));
 
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("Notification", Notification::GetConstructor(isolate)
                                ->GetFunction(context)
                                .ToLocalChecked());
