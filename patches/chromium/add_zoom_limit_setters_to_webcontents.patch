@@ -8,10 +8,10 @@ This is needed by Electron to allow apps to limit how much an app can zoom in
 or out.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 156370ef8d23a2014d5ca897c580eb7b1fe3dd22..6d23e18cbfeaeb364cc547fdda07a05434faf267 100644
+index 8586f71224f1cae6a5e9b4005a6acfef9ff64d4d..4d4dce8124312d46f90db8d2fc59bd0b7acd498d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4124,10 +4124,18 @@ bool WebContentsImpl::GetClosedByUserGesture() {
+@@ -4142,10 +4142,18 @@ bool WebContentsImpl::GetClosedByUserGesture() {
    return closed_by_user_gesture_;
  }
  
@@ -31,7 +31,7 @@ index 156370ef8d23a2014d5ca897c580eb7b1fe3dd22..6d23e18cbfeaeb364cc547fdda07a054
    return maximum_zoom_percent_;
  }
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index d260705ac6cbbe6c814ea3c5f4c9d3d9f59b8fcd..d5da36fc848ca9d869bc8da2e19e466c9ad1bcd2 100644
+index 72f7570ed92886e97629116fec98c1c4dcf95f52..e876929be3df7ba7251886a56acf9b84bbe62e32 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -450,7 +450,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -56,10 +56,10 @@ index d260705ac6cbbe6c814ea3c5f4c9d3d9f59b8fcd..d5da36fc848ca9d869bc8da2e19e466c
    // Used to correctly handle integer zooming through a smooth scroll device.
    float zoom_scroll_remainder_;
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 8824198706757a2a55bae977a91ef57feb18c17a..5dd2ec79d3a40ec9330bc2d3a63e06295622ffbf 100644
+index 94a5b87ca72998729f1fca14f247914bb81d60d1..3af575d51d0a36f9586a3cfc00575e83e70a46b9 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -802,8 +802,10 @@ class WebContents : public PageNavigator,
+@@ -808,8 +808,10 @@ class WebContents : public PageNavigator,
    virtual void SetClosedByUserGesture(bool value) = 0;
    virtual bool GetClosedByUserGesture() = 0;
  
