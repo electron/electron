@@ -13,6 +13,7 @@
 #include "base/lazy_instance.h"
 #include "base/stl_util.h"
 #include "base/threading/thread_local.h"
+#include "base/threading/thread_restrictions.h"
 
 namespace asar {
 
@@ -24,6 +25,17 @@ base::LazyInstance<base::ThreadLocalPointer<ArchiveMap>>::Leaky
     g_archive_map_tls = LAZY_INSTANCE_INITIALIZER;
 
 const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
+
+std::map<base::FilePath, bool> g_is_directory_cache;
+
+bool IsDirectoryCached(const base::FilePath& path) {
+  auto it = g_is_directory_cache.find(path);
+  if (it != g_is_directory_cache.end()) {
+    return it->second;
+  }
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  return g_is_directory_cache[path] = base::DirectoryExists(path);
+}
 
 }  // namespace
 
@@ -47,11 +59,12 @@ void ClearArchives() {
 
 bool GetAsarArchivePath(const base::FilePath& full_path,
                         base::FilePath* asar_path,
-                        base::FilePath* relative_path) {
+                        base::FilePath* relative_path,
+                        bool allow_root) {
   base::FilePath iter = full_path;
   while (true) {
     base::FilePath dirname = iter.DirName();
-    if (iter.MatchesExtension(kAsarExtension))
+    if (iter.MatchesExtension(kAsarExtension) && !IsDirectoryCached(iter))
       break;
     else if (iter == dirname)
       return false;
@@ -59,7 +72,8 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
   }
 
   base::FilePath tail;
-  if (!iter.AppendRelativePath(full_path, &tail))
+  if (!((allow_root && iter == full_path) ||
+        iter.AppendRelativePath(full_path, &tail)))
     return false;
 
   *asar_path = iter;

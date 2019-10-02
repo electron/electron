@@ -25,7 +25,8 @@ void ClearArchives();
 // Separates the path to Archive out.
 bool GetAsarArchivePath(const base::FilePath& full_path,
                         base::FilePath* asar_path,
-                        base::FilePath* relative_path);
+                        base::FilePath* relative_path,
+                        bool allow_root = false);
 
 // Same with base::ReadFileToString but supports asar Archive.
 bool ReadFileToString(const base::FilePath& path, std::string* contents);
