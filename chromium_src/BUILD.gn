@@ -45,6 +45,7 @@ static_library("chrome") {
     "//chrome/browser/predictors/resolve_host_client_impl.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
+    "//chrome/browser/ssl/tls_deprecation_config.cc",
     "//chrome/browser/ui/autofill/popup_view_common.cc",
     "//chrome/browser/ui/autofill/popup_view_common.h",
     "//chrome/browser/win/chrome_process_finder.cc",
