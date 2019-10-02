@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const stats = fs.statSync(path.join(__dirname, '..', 'asar', 'a.asar'))
+const stats = fs.statSync(path.join(__dirname, '..', 'test.asar', 'a.asar'))
 
 const details = {
   isFile: stats.isFile(),
