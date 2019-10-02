@@ -23,7 +23,6 @@
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
 #include "services/network/public/cpp/network_switches.h"
-#include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_job_manager.h"

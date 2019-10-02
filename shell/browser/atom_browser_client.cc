@@ -81,7 +81,6 @@
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
