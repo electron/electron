@@ -7,7 +7,7 @@
 
 #include "native_mate/converter.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
-#include "third_party/blink/public/platform/web_cache.h"
+#include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/web/web_context_menu_data.h"
 
@@ -110,17 +110,16 @@ struct Converter<blink::WebContextMenuData::InputFieldType> {
 };
 
 template <>
-struct Converter<blink::WebCache::ResourceTypeStat> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const blink::WebCache::ResourceTypeStat& stat);
+struct Converter<blink::WebCacheResourceTypeStat> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::WebCacheResourceTypeStat& stat);
 };
 
 template <>
-struct Converter<blink::WebCache::ResourceTypeStats> {
+struct Converter<blink::WebCacheResourceTypeStats> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const blink::WebCache::ResourceTypeStats& stats);
+      const blink::WebCacheResourceTypeStats& stats);
 };
 
 template <>

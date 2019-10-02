@@ -22,6 +22,7 @@
 #include "shell/common/promise_util.h"
 #include "shell/renderer/api/atom_api_spell_check_client.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
+#include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/platform/web_cache.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/web_custom_element.h"
@@ -460,8 +461,8 @@ void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
   GetRenderFrame(window)->GetWebFrame()->SetIsolatedWorldInfo(world_id, info);
 }
 
-blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
-  blink::WebCache::ResourceTypeStats stats;
+blink::WebCacheResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
+  blink::WebCacheResourceTypeStats stats;
   blink::WebCache::GetResourceTypeStats(&stats);
   return stats;
 }
