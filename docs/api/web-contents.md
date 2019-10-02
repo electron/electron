@@ -705,8 +705,7 @@ Returns:
 * `line` Integer
 * `sourceId` String
 
-Emitted when the associated window logs a console message. Will not be emitted
-for windows with *offscreen rendering* enabled.
+Emitted when the associated window logs a console message.
 
 #### Event: 'preload-error'
 
@@ -1460,6 +1459,16 @@ Starts inspecting element at position (`x`, `y`).
 #### `contents.inspectSharedWorker()`
 
 Opens the developer tools for the shared worker context.
+
+#### `contents.inspectSharedWorkerById(workerId)`
+
+* `workerId` String
+
+Inspects the shared worker based on its ID.
+
+#### `contents.getAllSharedWorkers()`
+
+Returns [`SharedWorkerInfo[]`](structures/shared-worker-info.md) - Information about all Shared Workers.
 
 #### `contents.inspectServiceWorker()`
 

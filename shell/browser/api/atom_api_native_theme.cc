@@ -9,8 +9,10 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder_deprecated.h"
+#include "gin/handle.h"
+#include "shell/common/gin_converters/std_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/native_theme/native_theme.h"
@@ -84,14 +86,14 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
 // static
 v8::Local<v8::Value> NativeTheme::Create(v8::Isolate* isolate) {
   ui::NativeTheme* theme = ui::NativeTheme::GetInstanceForNativeUi();
-  return mate::CreateHandle(isolate, new NativeTheme(isolate, theme)).ToV8();
+  return gin::CreateHandle(isolate, new NativeTheme(isolate, theme)).ToV8();
 }
 
 // static
 void NativeTheme::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "NativeTheme"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "NativeTheme"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetProperty("shouldUseDarkColors", &NativeTheme::ShouldUseDarkColors)
       .SetProperty("themeSource", &NativeTheme::GetThemeSource,
                    &NativeTheme::SetThemeSource)
@@ -112,7 +114,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin::Dictionary dict(isolate, exports);
   dict.Set("nativeTheme", electron::api::NativeTheme::Create(isolate));
   dict.Set("NativeTheme", electron::api::NativeTheme::GetConstructor(isolate)
                               ->GetFunction(context)
@@ -121,19 +123,19 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-namespace mate {
+namespace gin {
 
 v8::Local<v8::Value> Converter<ui::NativeTheme::ThemeSource>::ToV8(
     v8::Isolate* isolate,
     const ui::NativeTheme::ThemeSource& val) {
   switch (val) {
     case ui::NativeTheme::ThemeSource::kForcedDark:
-      return mate::ConvertToV8(isolate, "dark");
+      return ConvertToV8(isolate, "dark");
     case ui::NativeTheme::ThemeSource::kForcedLight:
-      return mate::ConvertToV8(isolate, "light");
+      return ConvertToV8(isolate, "light");
     case ui::NativeTheme::ThemeSource::kSystem:
     default:
-      return mate::ConvertToV8(isolate, "system");
+      return ConvertToV8(isolate, "system");
   }
 }
 
@@ -142,7 +144,7 @@ bool Converter<ui::NativeTheme::ThemeSource>::FromV8(
     v8::Local<v8::Value> val,
     ui::NativeTheme::ThemeSource* out) {
   std::string theme_source;
-  if (mate::ConvertFromV8(isolate, val, &theme_source)) {
+  if (ConvertFromV8(isolate, val, &theme_source)) {
     if (theme_source == "dark") {
       *out = ui::NativeTheme::ThemeSource::kForcedDark;
     } else if (theme_source == "light") {
@@ -157,6 +159,6 @@ bool Converter<ui::NativeTheme::ThemeSource>::FromV8(
   return false;
 }
 
-}  // namespace mate
+}  // namespace gin
 
 NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_native_theme, Initialize)

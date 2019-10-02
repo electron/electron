@@ -5,7 +5,6 @@ accelerator.patch
 blink_file_path.patch
 blink_local_frame.patch
 blink_world_context.patch
-browser_compositor_mac.patch
 can_create_window.patch
 disable_hidden.patch
 dom_storage_limits.patch
