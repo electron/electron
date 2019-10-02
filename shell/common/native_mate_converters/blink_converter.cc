@@ -610,7 +610,6 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   }
 
   void FreeBufferMemory(void* buffer) override {
-    DCHECK_EQ(buffer, data_.data());
     // Do nothing; data_ will be freed when this delegate object is cleaned up.
   }
 
