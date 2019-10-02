@@ -377,31 +377,6 @@ index 9fbea6d0a2dbe55b1d600fbc217dee5aa8ae8cd5..de9bd267e408c02fd4da7d903523c0e6
  
    // content::BrowserMessageFilter:
    bool OnMessageReceived(const IPC::Message& message) override;
-diff --git a/chrome/browser/printing/printing_service.cc b/chrome/browser/printing/printing_service.cc
-index 9b0f43d94ace424fd67b15a8e8b01d85aa5dbfbd..306a1ff4f21eb6e19ff5afe668b6bfcfd6809bf2 100644
---- a/chrome/browser/printing/printing_service.cc
-+++ b/chrome/browser/printing/printing_service.cc
-@@ -7,10 +7,12 @@
- #include "base/no_destructor.h"
- #include "chrome/grit/generated_resources.h"
- #include "content/public/browser/service_process_host.h"
-+#include "printing/buildflags/buildflags.h"
- 
- const mojo::Remote<printing::mojom::PrintingService>& GetPrintingService() {
-   static base::NoDestructor<mojo::Remote<printing::mojom::PrintingService>>
-       remote;
-+#if BUILDFLAG(ENABLE_PRINTING)
-   if (!*remote) {
-     content::ServiceProcessHost::Launch(
-         remote->BindNewPipeAndPassReceiver(),
-@@ -27,6 +29,6 @@ const mojo::Remote<printing::mojom::PrintingService>& GetPrintingService() {
-     remote->reset_on_disconnect();
-     remote->reset_on_idle_timeout(base::TimeDelta::FromSeconds(5));
-   }
--
-+#endif
-   return *remote;
- }
 diff --git a/components/printing/common/print_messages.h b/components/printing/common/print_messages.h
 index f9f5d1c07e4068d0706770ca81bd92ce166c3822..9f0e079b941296fa27b8cf0a66abfa45a6183b42 100644
 --- a/components/printing/common/print_messages.h
