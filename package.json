@@ -130,5 +130,9 @@
       "python script/check-trailing-whitespace.py --fix",
       "git add filenames.auto.gni"
     ]
+  },
+  "dependencies": {
+    "@types/multiparty": "^0.0.32",
+    "@types/temp": "^0.8.34"
   }
 }

@@ -119,6 +119,14 @@ Remove a extra parameter from the current set of parameters so that it will not 
 
 See all of the current parameters being passed to the crash reporter.
 
+### `crashReporter.getCrashesDirectory()`
+
+Returns `String` - The directory where crashes are temporarily stored before being uploaded.
+
+### `crashReporter.getProductName()`
+
+Returns `String` - The product name that crashReporter was initialized with.
+
 ## Crash Report Payload
 
 The crash reporter will send the following data to the `submitURL` as
