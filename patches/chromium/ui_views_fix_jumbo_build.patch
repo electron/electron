@@ -16,10 +16,10 @@ COMPONENT_EXPORT(UI_BASE_FEATURES) bool IsFormControlsRefreshEnabled();
 ninja: build stopped: subcommand failed.
 
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index fad8e4f632e8825713eb9b082549c43870490e78..74746c6dd7570f7e4bfd0da97ce22066527577b5 100644
+index ff4d8f68bececf0b286fe529f84819438480fc8b..9ba6a40230aecee184ddff76b37bd62f456d128a 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -587,6 +587,7 @@ jumbo_component("views") {
+@@ -590,6 +590,7 @@ jumbo_component("views") {
        "win/scoped_enable_unadjusted_mouse_events_win.cc",
        "win/scoped_fullscreen_visibility.cc",
      ]

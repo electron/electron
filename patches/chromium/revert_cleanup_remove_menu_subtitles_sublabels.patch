@@ -280,7 +280,7 @@ index 3cc9d686da8f64ddc8bdc66df40b1866bdd20607..dfacbdd4a55b5f5aa4d8c67136c607f7
      const gfx::VectorIcon* minor_icon = nullptr;
      gfx::Image icon;
 diff --git a/ui/views/controls/menu/menu_item_view.cc b/ui/views/controls/menu/menu_item_view.cc
-index 729e5ec0b3df05ac96460498612d3fa6742de61a..cfcb44804073da550b77878b0ca216cd3d46da95 100644
+index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87bdfce181 100644
 --- a/ui/views/controls/menu/menu_item_view.cc
 +++ b/ui/views/controls/menu/menu_item_view.cc
 @@ -277,6 +277,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
@@ -395,7 +395,7 @@ index 729e5ec0b3df05ac96460498612d3fa6742de61a..cfcb44804073da550b77878b0ca216cd
 +                                          : available_height / 2);
    text_bounds.set_x(GetMirroredXForRect(text_bounds));
    int flags = GetDrawStringFlags();
-   if (mode == PB_FOR_DRAG)
+   if (mode == PaintButtonMode::kForDrag)
      flags |= gfx::Canvas::NO_SUBPIXEL_RENDERING;
    canvas->DrawStringRectWithFlags(title(), style.font_list, style.foreground,
                                    text_bounds, flags);
@@ -437,7 +437,7 @@ index 729e5ec0b3df05ac96460498612d3fa6742de61a..cfcb44804073da550b77878b0ca216cd
        std::max(dimensions.height, MenuConfig::instance().item_min_height);
  
 diff --git a/ui/views/controls/menu/menu_item_view.h b/ui/views/controls/menu/menu_item_view.h
-index 0e97c35a8a452e8c602f08e2f2b72fc71becfa4b..332b11faae5eb05291dfd268f1b951a134b559c4 100644
+index e129bed9de80df5a6aeaca8e22e7d12a949ab759..d7cfa2a5d93af7b865ab01f2cc004c4215fc9986 100644
 --- a/ui/views/controls/menu/menu_item_view.h
 +++ b/ui/views/controls/menu/menu_item_view.h
 @@ -151,6 +151,7 @@ class VIEWS_EXPORT MenuItemView : public View {
