@@ -232,10 +232,10 @@ index e42a2f780170f01edce84753d60b1fba3a429aeb..3cb62924adf93c4d437c8fa81529efc5
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 180b02f3d5c2747b47e432982973d8ad67c5ce32..18f977d15d0118f0c6a5332fb4521a098af00066 100644
+index 0408a35db18ecdcad1521e4123aed4bd12bcf2c8..94898420ab1b93f61c830e19cd31ed0a1716922e 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -224,6 +224,7 @@
+@@ -225,6 +225,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
@@ -243,7 +243,7 @@ index 180b02f3d5c2747b47e432982973d8ad67c5ce32..18f977d15d0118f0c6a5332fb4521a09
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/url_constants.h"
-@@ -2995,6 +2996,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3015,6 +3016,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -252,10 +252,10 @@ index 180b02f3d5c2747b47e432982973d8ad67c5ce32..18f977d15d0118f0c6a5332fb4521a09
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 32bac12f4520afb0983cdd18fe4ce86274acace6..76d0a5aea85dace60ae6c6a73010ed5f6b49961c 100644
+index 74cdb6031587640946ed08f37f1579ea4e68414c..68a5ec2d04dc3ec1c81d8f62fa067416f2faee29 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2937,6 +2937,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2930,6 +2930,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 1106857b2d75fffcc26b463eaac1e08dbd827449..8c622db2191a4a0545322e5c7083cd2d434f6214 100644
+index b1be27659d80a3199242d43ec80ccd28a43059b1..f475ec2301011a0840e76dd0e8e40bf65fdf6106 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2225,6 +2225,21 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2250,6 +2250,21 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -67,7 +67,7 @@ index 1106857b2d75fffcc26b463eaac1e08dbd827449..8c622db2191a4a0545322e5c7083cd2d
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2268,6 +2283,59 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2293,6 +2308,59 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request->common_params().url);
      no_renderer_swap_allowed |=
          request->from_begin_navigation() && !can_renderer_initiate_transfer;
@@ -127,7 +127,7 @@ index 1106857b2d75fffcc26b463eaac1e08dbd827449..8c622db2191a4a0545322e5c7083cd2d
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2279,23 +2347,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2304,23 +2372,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
@@ -186,7 +186,7 @@ index 1edb9fd6b0c383f291735dd1a952fcb7b17cc87f..23967f040eb346be265faa2a92562e1f
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index d309add867ed55f23fa6924328b2eda0702b8026..c14fc58cd2f7e0e5519303d3e196fa84668e7a9f 100644
+index da7eca5f443e2ecdcb3f0819848735aafeb43a00..ee14a76bf705c41082c78f7f0fcce968acf3a3b7 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -44,6 +44,21 @@
@@ -212,7 +212,7 @@ index d309add867ed55f23fa6924328b2eda0702b8026..c14fc58cd2f7e0e5519303d3e196fa84
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index ce802beeb0ecc474b042d62c699045b58243ec77..1eb7d1e6289f17d42451f6dad4105e05578b9c17 100644
+index 07fa16953d6167a5a381b28a5da3c08a78de4306..fe6864b5ba4c77a6694510db2f1add479241b156 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -205,8 +205,45 @@ struct WebPreferences;
