@@ -776,7 +776,7 @@ The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internall
   methods in this family, this accepts an entire URL, including `://` at a
   minimum (e.g. `https://`).
 
-Returns String - Name of the application handling the protocol, or an empty
+Returns `String` - Name of the application handling the protocol, or an empty
   string if there is no handler. For instance, if Electron is the default
   handler of the URL, this could be `Electron` on Windows and Mac. However,
   don't rely on the precise format which is not guaranteed to remain unchanged.
