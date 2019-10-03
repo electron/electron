@@ -896,9 +896,14 @@ describe('app module', () => {
       })
     })
 
-    it('returns an empty string for a bogus protocol', (done) => {
+    it('returns an empty string for a bogus protocol', () => {
       expect(app.getApplicationNameForProtocol('bogus-protocol://')).to.equal('')
-      done()
+    })
+  })
+
+  describe('isDefaultProtocolClient()', () => {
+    it('returns false for a bogus protocol', () => {
+      expect(app.isDefaultProtocolClient('bogus-protocol://')).to.equal(false)
     })
   })
 
