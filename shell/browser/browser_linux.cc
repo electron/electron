@@ -68,14 +68,12 @@ base::Optional<std::string> GetXdgAppOutput(
 bool SetDefaultWebClient(const std::string& protocol) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
-  std::vector<std::string> argv;
-  argv.emplace_back(kXdgSettings);
-  argv.emplace_back("set");
+  std::vector<std::string> argv = {kXdgSettings, "set"};
   if (!protocol.empty()) {
     argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
-    argv.push_back(protocol);
+    argv.emplace_back(protocol);
   }
-  argv.push_back(libgtkui::GetDesktopName(env.get()));
+  argv.emplace_back(libgtkui::GetDesktopName(env.get()));
 
   int exit_code;
   bool ran_ok = LaunchXdgUtility(argv, &exit_code);
@@ -110,13 +108,9 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  std::vector<std::string> argv;
-  argv.emplace_back(kXdgSettings);
-  argv.emplace_back("check");
-  argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
-  argv.push_back(protocol);
-  argv.push_back(libgtkui::GetDesktopName(env.get()));
-
+  const std::vector<std::string> argv = {
+      "check", kXdgSettingsDefaultSchemeHandler, protocol,
+      libgtkui::GetDesktopName(env.get())};
   const auto output = GetXdgAppOutput(argv);
   if (!output)
     return false;
@@ -132,11 +126,9 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
-  std::vector<std::string> argv;
-  argv.emplace_back("xdg-mime");
-  argv.emplace_back("query");
-  argv.emplace_back("default");
-  argv.emplace_back(std::string("x-scheme-handler/") + url.scheme());
+  const std::vector<std::string> argv = {
+      "xdg-mime", "query", "default",
+      std::string("x-scheme-handler/") + url.scheme()};
 
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }
