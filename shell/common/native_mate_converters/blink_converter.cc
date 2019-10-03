@@ -543,6 +543,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
       : isolate_(isolate),
         serializer_(isolate, this),
         use_old_serialization_(use_old_serialization) {}
+  ~V8Serializer() override = default;
 
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
     serializer_.WriteHeader();
@@ -610,6 +611,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   }
 
   void FreeBufferMemory(void* buffer) override {
+    DCHECK_EQ(buffer, data_.data());
     // Do nothing; data_ will be freed when this delegate object is cleaned up.
   }
 
@@ -619,9 +621,9 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
 
  private:
   v8::Isolate* isolate_;
+  std::vector<uint8_t> data_;
   v8::ValueSerializer serializer_;
   bool use_old_serialization_;
-  std::vector<uint8_t> data_;
 };
 
 class V8Deserializer : public v8::ValueDeserializer::Delegate {
