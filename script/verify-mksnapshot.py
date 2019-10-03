@@ -27,7 +27,6 @@ def main():
       if args.snapshot_files_dir is None:
         mkargs = [ get_binary_path('mksnapshot', app_path), \
                     SNAPSHOT_SOURCE, '--startup_blob', 'snapshot_blob.bin', \
-                    '--turbo_instruction_scheduling',
                     '--no-native-code-counters' ]
         subprocess.check_call(mkargs)
         print('ok mksnapshot successfully created snapshot_blob.bin.')
