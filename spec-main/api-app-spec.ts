@@ -877,15 +877,14 @@ describe('app module', () => {
       })
     })
 
-    it('sets the default client such that getApplicationNameForProtocol returns Electron', (done) => {
-      app.setAsDefaultProtocolClient(protocol);
+    it('sets the default client such that getApplicationNameForProtocol returns Electron', () => {
+      app.setAsDefaultProtocolClient(protocol)
       expect(app.getApplicationNameForProtocol(`${protocol}://`)).to.equal('Electron')
-      done()
     })
   })
 
   describe('getApplicationNameForProtocol()', () => {
-    it('returns application names for common protocols', (done) => {
+    it('returns application names for common protocols', () => {
       const protocols = [
         'http://',
         'https://',
@@ -895,7 +894,6 @@ describe('app module', () => {
       protocols.forEach((protocol) => {
         expect(app.getApplicationNameForProtocol(protocol)).to.not.equal('')
       })
-      done()
     })
 
     it('returns an empty string for a bogus protocol', (done) => {
