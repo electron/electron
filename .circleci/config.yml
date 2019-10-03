@@ -328,6 +328,14 @@ step-electron-build: &step-electron-build
       cd src
       ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
 
+step-native-unittests-build: &step-native-unittests-build
+  run: 
+    name: Build native test targets
+    no_output_timeout: 30m
+    command: |
+      cd src
+      ninja -C out/Default shell_browser_ui_unittests -j $NUMBER_OF_NINJA_PROCESSES
+
 step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
     name: Strip electron binaries
@@ -399,6 +407,11 @@ step-nodejs-headers-store: &step-nodejs-headers-store
     path: src/out/Default/gen/node_headers.tar.gz
     destination: node_headers.tar.gz
 
+step-native-unittests-store: &step-native-unittests-store
+  store_artifacts:
+    path: src/out/Default/shell_browser_ui_unittests
+    destination: shell_browser_ui_unittests
+
 step-electron-publish: &step-electron-publish
   run:
     name: Publish Electron Dist
@@ -419,6 +432,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       # Build artifacts
       - src/out/Default/dist.zip
       - src/out/Default/mksnapshot.zip
+      - src/out/Default/shell_browser_ui_unittests
       - src/out/Default/gen/node_headers
       - src/out/ffmpeg/ffmpeg.zip
       - src/electron
@@ -819,6 +833,10 @@ steps-electron-build: &steps-electron-build
     - *step-electron-dist-store
     - *step-ninja-summary
 
+    # Native test targets
+    - *step-native-unittests-build
+    - *step-native-unittests-store
+
     # Node.js headers
     - *step-nodejs-headers-build
     - *step-nodejs-headers-store
@@ -888,6 +906,10 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
     - *step-electron-dist-build
     - *step-electron-dist-store
     - *step-ninja-summary
+
+    # Native test targets
+    - *step-native-unittests-build
+    - *step-native-unittests-store
 
     # Node.js headers
     - *step-nodejs-headers-build
