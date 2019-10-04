@@ -32,11 +32,13 @@
 #include "shell/common/options_switches.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
+#include "ui/content_accelerators/accelerator_util.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
+#include "ui/views/focus/focus_manager.h"
 #include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/client_view.h"
@@ -1418,6 +1420,21 @@ void NativeWindowViews::HandleKeyboardEvent(
   keyboard_event_handler_->HandleKeyboardEvent(event,
                                                root_view_->GetFocusManager());
   root_view_->HandleKeyEvent(event);
+}
+
+bool NativeWindowViews::HandleKeyboardEventForMenu(
+    const content::NativeWebKeyboardEvent& event) {
+  auto* focus_manager = root_view_->GetFocusManager();
+  if (!focus_manager ||
+      event.GetType() != content::NativeWebKeyboardEvent::kRawKeyDown) {
+    return false;
+  }
+
+  // We don't use `keyboard_event_handler_->HandleKeyboardEvent` here because
+  // it does more than processing the registered menu accelerators.
+  ui::Accelerator accelerator =
+      ui::GetAcceleratorFromNativeWebKeyboardEvent(event);
+  return focus_manager->ProcessAccelerator(accelerator);
 }
 
 #if defined(OS_LINUX)

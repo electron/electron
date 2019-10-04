@@ -6,9 +6,8 @@
 
 #include "base/strings/string_util.h"
 #include "content/public/browser/native_web_keyboard_event.h"
-#include "shell/browser/api/atom_api_web_contents_view.h"
+#include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/native_window_views.h"
-#include "shell/browser/web_contents_preferences.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 #if defined(USE_X11)
@@ -16,6 +15,18 @@
 #endif
 
 namespace electron {
+
+content::KeyboardEventProcessingResult
+CommonWebContentsDelegate::PreHandleKeyboardEvent(
+    content::WebContents* source,
+    const content::NativeWebKeyboardEvent& event) {
+  if (menu_shortcut_priority_ == MenuShortcutPriority::FIRST &&
+      owner_window() && owner_window()->HandleKeyboardEventForMenu(event)) {
+    return content::KeyboardEventProcessingResult::HANDLED;
+  }
+
+  return content::KeyboardEventProcessingResult::NOT_HANDLED;
+}
 
 bool CommonWebContentsDelegate::HandleKeyboardEvent(
     content::WebContents* source,
@@ -26,14 +37,8 @@ bool CommonWebContentsDelegate::HandleKeyboardEvent(
     return true;
   }
 
-  // Check if the webContents has preferences and to ignore shortcuts
-  auto* web_preferences = WebContentsPreferences::From(source);
-  if (web_preferences &&
-      web_preferences->IsEnabled("ignoreMenuShortcuts", false))
-    return false;
-
   // Let the NativeWindow handle other parts.
-  if (owner_window()) {
+  if (menu_shortcut_priority_ == MenuShortcutPriority::LAST && owner_window()) {
     owner_window()->HandleKeyboardEvent(source, event);
     return true;
   }

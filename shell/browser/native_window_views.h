@@ -127,6 +127,8 @@ class NativeWindowViews : public NativeWindow,
 
   void SetGTKDarkThemeEnabled(bool use_dark_theme) override;
 
+  bool HandleKeyboardEventForMenu(const content::NativeWebKeyboardEvent& event);
+
   content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
   NativeWindowHandle GetNativeWindowHandle() const override;

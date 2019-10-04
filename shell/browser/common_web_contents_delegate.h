@@ -32,6 +32,12 @@ class WebDialogHelper;
 class OffScreenWebContentsView;
 #endif
 
+enum class MenuShortcutPriority {
+  FIRST,
+  LAST,
+  NEVER,
+};
+
 class CommonWebContentsDelegate : public content::WebContentsDelegate,
                                   public InspectableWebContentsDelegate,
                                   public InspectableWebContentsViewDelegate {
@@ -68,6 +74,13 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
     fullscreen_frame_ = rfh;
   }
 
+  MenuShortcutPriority menu_shortcut_priority() const {
+    return menu_shortcut_priority_;
+  }
+  void set_menu_shortcut_priority(MenuShortcutPriority priority) {
+    menu_shortcut_priority_ = priority;
+  }
+
  protected:
 #if BUILDFLAG(ENABLE_OSR)
   virtual OffScreenWebContentsView* GetOffScreenWebContentsView() const;
@@ -99,6 +112,9 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
       content::WebContents* web_contents,
       content::SecurityStyleExplanations* explanations) override;
   bool TakeFocus(content::WebContents* source, bool reverse) override;
+  content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
+      content::WebContents* source,
+      const content::NativeWebKeyboardEvent& event) override;
   bool HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
@@ -166,6 +182,8 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
 
   // Whether window is fullscreened by window api.
   bool native_fullscreen_ = false;
+
+  MenuShortcutPriority menu_shortcut_priority_ = MenuShortcutPriority::LAST;
 
   // UI related helper classes.
   std::unique_ptr<WebDialogHelper> web_dialog_helper_;

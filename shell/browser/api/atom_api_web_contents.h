@@ -176,6 +176,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   std::vector<scoped_refptr<content::DevToolsAgentHost>> GetAllSharedWorkers();
   void InspectServiceWorker();
   void SetIgnoreMenuShortcuts(bool ignore);
+  MenuShortcutPriority GetMenuShortcutPriority();
+  void SetMenuShortcutPriority(MenuShortcutPriority priority);
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
   bool IsCurrentlyAudible();

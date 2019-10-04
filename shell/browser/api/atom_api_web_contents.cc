@@ -311,6 +311,45 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
   }
 };
 
+struct Converter<electron::MenuShortcutPriority> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::MenuShortcutPriority val) {
+    std::string priority;
+    switch (val) {
+      case electron::MenuShortcutPriority::FIRST:
+        priority = "first";
+        break;
+      case electron::MenuShortcutPriority::LAST:
+        priority = "last";
+        break;
+      case electron::MenuShortcutPriority::NEVER:
+        priority = "never";
+        break;
+      default:
+        break;
+    }
+    return mate::ConvertToV8(isolate, priority);
+  }
+
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::MenuShortcutPriority* out) {
+    std::string priority;
+    if (!ConvertFromV8(isolate, val, &priority))
+      return false;
+    if (priority == "first") {
+      *out = electron::MenuShortcutPriority::FIRST;
+    } else if (priority == "last") {
+      *out = electron::MenuShortcutPriority::LAST;
+    } else if (priority == "never") {
+      *out = electron::MenuShortcutPriority::NEVER;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
 }  // namespace mate
 
 namespace electron {
@@ -711,6 +750,11 @@ bool WebContents::HandleKeyboardEvent(
 content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
+  if (CommonWebContentsDelegate::PreHandleKeyboardEvent(source, event) ==
+      content::KeyboardEventProcessingResult::HANDLED) {
+    return content::KeyboardEventProcessingResult::HANDLED;
+  }
+
   if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown ||
       event.GetType() == blink::WebInputEvent::Type::kKeyUp) {
     bool prevent_default = Emit("before-input-event", event);
@@ -1655,10 +1699,16 @@ void WebContents::InspectServiceWorker() {
 }
 
 void WebContents::SetIgnoreMenuShortcuts(bool ignore) {
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  DCHECK(web_preferences);
-  web_preferences->preference()->SetKey("ignoreMenuShortcuts",
-                                        base::Value(ignore));
+  set_menu_shortcut_priority(ignore ? MenuShortcutPriority::NEVER
+                                    : MenuShortcutPriority::LAST);
+}
+
+MenuShortcutPriority WebContents::GetMenuShortcutPriority() {
+  return menu_shortcut_priority();
+}
+
+void WebContents::SetMenuShortcutPriority(MenuShortcutPriority priority) {
+  set_menu_shortcut_priority(priority);
 }
 
 void WebContents::SetAudioMuted(bool muted) {
@@ -2489,6 +2539,9 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
       .SetMethod("inspectElement", &WebContents::InspectElement)
       .SetMethod("setIgnoreMenuShortcuts", &WebContents::SetIgnoreMenuShortcuts)
+      .SetProperty("menuShortcutPriority",
+                   &WebContents::GetMenuShortcutPriority,
+                   &WebContents::SetMenuShortcutPriority)
       .SetMethod("_setAudioMuted", &WebContents::SetAudioMuted)
       .SetMethod("_isAudioMuted", &WebContents::IsAudioMuted)
       .SetProperty("audioMuted", &WebContents::IsAudioMuted,

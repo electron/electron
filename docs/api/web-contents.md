@@ -376,19 +376,7 @@ Calling `event.preventDefault` will prevent the page `keydown`/`keyup` events
 and the menu shortcuts.
 
 To only prevent the menu shortcuts, use
-[`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore-experimental):
-
-```javascript
-const { BrowserWindow } = require('electron')
-
-let win = new BrowserWindow({ width: 800, height: 600 })
-
-win.webContents.on('before-input-event', (event, input) => {
-  // For example, only enable application menu keyboard shortcuts when
-  // Ctrl/Cmd are down.
-  win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
-})
-```
+[`menuShortcutPriority`](#contentsmenushortcutpriority).
 
 #### Event: 'enter-html-full-screen'
 
@@ -1041,7 +1029,7 @@ contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1"
   })
 ```
 
-#### `contents.setIgnoreMenuShortcuts(ignore)` _Experimental_
+#### `contents.setIgnoreMenuShortcuts(ignore)` _Deprecated_
 
 * `ignore` Boolean
 
@@ -1759,6 +1747,14 @@ An `Integer` property that sets the frame rate of the web contents to the specif
 Only values between 1 and 60 are accepted.
 
 Only applicable if *offscreen rendering* is enabled.
+
+#### `contents.menuShortcutPriority`
+
+A `String` property that controls when the application menu shortcuts are handled while this web contents is focused. Can be set to:
+
+* `"first"` to handle menu shortcuts before the web content. If a menu shortcut is triggered, the `before-input-event` event will not fire and the web content will not receive the keyboard event.
+* `"last"` (default) to give the `before-input-event` event and the web content a chance to handle the shortcut before the menu shortcuts. If the web content calls `event.preventDefault()` on the keyboard event, the menu shortcuts will not be checked.
+* `"never"` to completely disable the menu shortcuts.
 
 #### `contents.id` _Readonly_
 

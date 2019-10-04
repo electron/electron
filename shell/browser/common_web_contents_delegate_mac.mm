@@ -7,15 +7,32 @@
 #import <Cocoa/Cocoa.h>
 
 #include "content/public/browser/native_web_keyboard_event.h"
+#include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
-#include "shell/browser/web_contents_preferences.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 @interface NSWindow (EventDispatchingWindow)
 - (void)redispatchKeyEvent:(NSEvent*)event;
 @end
 
+bool HandleKeyboardEventForMenu(const content::NativeWebKeyboardEvent& event) {
+  return event.os_event.type == NSKeyDown &&
+         [[NSApp mainMenu] performKeyEquivalent:event.os_event];
+}
+
 namespace electron {
+
+content::KeyboardEventProcessingResult
+CommonWebContentsDelegate::PreHandleKeyboardEvent(
+    content::WebContents* source,
+    const content::NativeWebKeyboardEvent& event) {
+  if (menu_shortcut_priority_ == MenuShortcutPriority::FIRST &&
+      HandleKeyboardEventForMenu(event)) {
+    return content::KeyboardEventProcessingResult::HANDLED;
+  }
+
+  return content::KeyboardEventProcessingResult::NOT_HANDLED;
+}
 
 bool CommonWebContentsDelegate::HandleKeyboardEvent(
     content::WebContents* source,
@@ -30,16 +47,11 @@ bool CommonWebContentsDelegate::HandleKeyboardEvent(
     return true;
   }
 
-  // Check if the webContents has preferences and to ignore shortcuts
-  auto* web_preferences = WebContentsPreferences::From(source);
-  if (web_preferences &&
-      web_preferences->IsEnabled("ignoreMenuShortcuts", false))
-    return false;
-
   // Send the event to the menu before sending it to the window
-  if (event.os_event.type == NSKeyDown &&
-      [[NSApp mainMenu] performKeyEquivalent:event.os_event])
+  if (menu_shortcut_priority_ == MenuShortcutPriority::LAST &&
+      HandleKeyboardEventForMenu(event)) {
     return true;
+  }
 
   if (event.os_event.window &&
       [event.os_event.window isKindOfClass:[EventDispatchingWindow class]]) {

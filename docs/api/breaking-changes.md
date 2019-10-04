@@ -6,6 +6,18 @@ Breaking changes will be documented here, and deprecation warnings added to JS c
 
 The `FIXME` string is used in code comments to denote things that should be fixed for future releases. See https://github.com/electron/electron/search?q=fixme
 
+## Planned Breaking API Changes (8.0)
+
+### `contents.setIgnoreMenuShortcuts`
+
+```js
+// Deprecated
+contents.setIgnoreMenuShortcuts(true)
+
+// Replace with
+contents.menuShortcutPriority = 'never' // or 'last'
+```
+
 ## Planned Breaking API Changes (7.0)
 
 ### Node Headers URL
