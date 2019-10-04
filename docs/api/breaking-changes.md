@@ -47,7 +47,7 @@ ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
   convert a `Uint8Array` back to a Node.js `Buffer` by wrapping the underlying
   `ArrayBuffer`:
 ```js
-Buffer.from(someUint8Array.buffer)
+Buffer.from(value.buffer, value.byteOffset, value.byteLength)
 ```
 
 Sending any objects that aren't native JS types, such as DOM objects (e.g.
