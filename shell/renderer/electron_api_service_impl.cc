@@ -177,10 +177,10 @@ void ElectronApiServiceImpl::Message(bool internal,
   }
 }
 
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
 void ElectronApiServiceImpl::DereferenceRemoteJSCallback(
     const std::string& context_id,
     int32_t object_id) {
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
   const auto* channel = "ELECTRON_RENDERER_RELEASE_CALLBACK";
   if (!document_created_)
     return;
@@ -201,10 +201,8 @@ void ElectronApiServiceImpl::DereferenceRemoteJSCallback(
   v8::Local<v8::Value> v8_args = gin::ConvertToV8(isolate, args);
   EmitIPCEvent(context, true /* internal */, channel, v8_args,
                0 /* sender_id */);
-#else
-  NOTREACHED() << "Remote module is disabled at build-time.";
-#endif
 }
+#endif
 
 void ElectronApiServiceImpl::UpdateCrashpadPipeName(
     const std::string& pipe_name) {

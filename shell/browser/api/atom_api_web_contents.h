@@ -507,9 +507,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
                  blink::CloneableMessage arguments) override;
   void MessageHost(const std::string& channel,
                    blink::CloneableMessage arguments) override;
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
   void DereferenceRemoteJSObject(const std::string& context_id,
                                  int object_id,
                                  int ref_count) override;
+#endif
   void UpdateDraggableRegions(
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;

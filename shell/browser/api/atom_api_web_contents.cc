@@ -1064,10 +1064,10 @@ void WebContents::MessageHost(const std::string& channel,
                  base::nullopt, channel, std::move(arguments));
 }
 
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
 void WebContents::DereferenceRemoteJSObject(const std::string& context_id,
                                             int object_id,
                                             int ref_count) {
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
   base::ListValue args;
   args.AppendString(context_id);
   args.AppendInteger(object_id);
@@ -1075,10 +1075,8 @@ void WebContents::DereferenceRemoteJSObject(const std::string& context_id,
   EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
                  /* internal */ true, "ELECTRON_BROWSER_DEREFERENCE",
                  std::move(args));
-#else
-  NOTREACHED() << "Remote module is disabled at build-time.";
-#endif
 }
+#endif
 
 void WebContents::UpdateDraggableRegions(
     std::vector<mojom::DraggableRegionPtr> regions) {
