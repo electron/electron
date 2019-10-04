@@ -72,6 +72,7 @@ origin URLs.
 $ cd src/electron
 $ git remote remove origin
 $ git remote add origin https://github.com/electron/electron
+$ git checkout master
 $ git branch --set-upstream-to=origin/master
 $ cd -
 ```
@@ -226,20 +227,9 @@ under `src/` directory.
 
 ```sh
 $ ninja -C out/Debug third_party/electron_node:headers
-# Install the test modules with the generated headers
-$ (cd electron/spec && npm i --nodedir=../../out/Debug/gen/node_headers)
 ```
 
-Then, run Electron with `electron/spec` as the argument:
-
-```sh
-# on Mac:
-$ ./out/Debug/Electron.app/Contents/MacOS/Electron electron/spec
-# on Windows:
-$ ./out/Debug/electron.exe electron/spec
-# on Linux:
-$ ./out/Debug/electron electron/spec
-```
+You can now [run the tests](testing.md#unit-tests).
 
 If you're debugging something, it can be helpful to pass some extra flags to
 the Electron binary:
