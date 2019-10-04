@@ -354,14 +354,17 @@ class NativeWindow : public base::SupportsUserData,
 class NativeWindowRelay
     : public content::WebContentsUserData<NativeWindowRelay> {
  public:
-  static const void* const kNativeWindowRelayUserDataKey;
-
   static void CreateForWebContents(content::WebContents*,
                                    base::WeakPtr<NativeWindow>);
 
   ~NativeWindowRelay() override;
 
   NativeWindow* GetNativeWindow() const { return native_window_.get(); }
+
+  // UserDataKey() is protected in content::WebContentsUserData<T>
+  static inline const void* UserDataKey() {
+    return content::WebContentsUserData<NativeWindowRelay>::UserDataKey();
+  }
 
  private:
   friend class content::WebContentsUserData<NativeWindow>;
