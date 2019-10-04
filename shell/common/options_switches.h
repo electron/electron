@@ -107,6 +107,7 @@ extern const char kFetchSchemes[];
 extern const char kCORSSchemes[];
 extern const char kAppUserModelId[];
 extern const char kAppPath[];
+extern const char kEnableApiFilteringLogging[];
 
 extern const char kBackgroundColor[];
 extern const char kPreloadScript[];

@@ -1,4 +1,4 @@
-# Supported Chrome Command Line Switches
+# Supported Command Line Switches
 
 > Command line switches supported by Electron.
 
@@ -180,6 +180,17 @@ whole pathname and not only the module. E.g. `*/foo/bar/*=2` would change the
 logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
+
+## --enable-api-filtering-logging
+
+Enables caller stack logging for the following APIs (filtering events):
+- `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
+- `remote.require()` / `remote-require`
+- `remote.getGlobal()` / `remote-get-builtin`
+- `remote.getBuiltin()` / `remote-get-global`
+- `remote.getCurrentWindow()` / `remote-get-current-window`
+- `remote.getCurrentWebContents()` / `remote-get-current-web-contents`
+- `remote.getGuestWebContents()` / `remote-get-guest-web-contents`
 
 ## --no-sandbox
 

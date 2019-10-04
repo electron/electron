@@ -532,10 +532,10 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   // Copy following switches to child process.
   static const char* const kCommonSwitchNames[] = {
-      switches::kStandardSchemes,     switches::kEnableSandbox,
-      switches::kSecureSchemes,       switches::kBypassCSPSchemes,
-      switches::kCORSSchemes,         switches::kFetchSchemes,
-      switches::kServiceWorkerSchemes};
+      switches::kStandardSchemes,      switches::kEnableSandbox,
+      switches::kSecureSchemes,        switches::kBypassCSPSchemes,
+      switches::kCORSSchemes,          switches::kFetchSchemes,
+      switches::kServiceWorkerSchemes, switches::kEnableApiFilteringLogging};
   command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                  kCommonSwitchNames,
                                  base::size(kCommonSwitchNames));

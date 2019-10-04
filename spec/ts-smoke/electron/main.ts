@@ -356,8 +356,8 @@ app.on('ready', () => {
   window.loadURL('https://github.com')
 })
 
-// Supported Chrome command line switches
-// https://github.com/atom/electron/blob/master/docs/api/chrome-command-line-switches.md
+// Supported command line switches
+// https://github.com/atom/electron/blob/master/docs/api/command-line-switches.md
 
 app.commandLine.appendSwitch('remote-debugging-port', '8315')
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
