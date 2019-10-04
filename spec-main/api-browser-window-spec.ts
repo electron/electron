@@ -2212,7 +2212,7 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-iframe.html'))
       });
       ifit(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('loads native addons correctly after reload', async () => {
-        w.loadFile(path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
+        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'native-window-open-native-addon.html'))
         {
           const [, content] = await emittedOnce(ipcMain, 'answer')
           expect(content).to.equal('function')
