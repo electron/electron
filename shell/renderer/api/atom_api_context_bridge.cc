@@ -103,22 +103,6 @@ void RenderFramePersistenceStore::OnDestruct() {
   delete this;
 }
 
-// v8::Local<v8::Value> PassValueToOtherContext(
-//     v8::Local<v8::Context> source,
-//     v8::Local<v8::Context> destination,
-//     v8::Local<v8::Value> value,
-//     RenderFramePersistenceStore* store) {
-//   // Check Cache
-//   auto cached_value = store->GetCachedProxiedObject(value);
-//   if (!cached_value.IsEmpty()) {
-//     return cached_value.ToLocalChecked();
-//   }
-
-//   // Proxy the value and store in the cache, each creator is responsibler for
-//   // storing into the cache
-//   return PassValueToOtherContext(source, destination, value, store);
-// }
-
 template <typename Sig>
 v8::Local<v8::Value> BindRepeatingFunctionToV8(
     v8::Isolate* isolate,
