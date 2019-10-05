@@ -49,7 +49,7 @@ The `contextBridge` module has the following instance methods:
 
 ### API Objects
 
-The `api` object provided to [`exposeInMainWorld`](#contextbridgeexposeInMainWorldapikey-api-options) must be an object
+The `api` object provided to [`exposeInMainWorld`](#contextbridgeexposeinmainworldapikey-api) must be an object
 whose keys are strings and values are a `Function`, `String`, `Number`, `Array`, `Boolean` or another nested object that meets the same conditions.
 
 `Function` values are proxied to the other context and all other values are **copied** and **frozen**.  I.e. Any data / primtives sent in
@@ -64,8 +64,8 @@ contextBridge.exposeInMainWorld(
   'electron',
   {
     doThing: () => ipcRenderer.send('do-a-thing'),
-    myPromises: [Promise.resolve(), Promise.reject()],
-    anAsyncFunction: async () => return 123,
+    myPromises: [Promise.resolve(), Promise.reject(new Error('whoops'))],
+    anAsyncFunction: async () => 123,
     data: {
       myFlags: ['a', 'b', 'c'],
       bootTime: 1234
@@ -119,6 +119,7 @@ contextBridge.exposeInMainWorld(
   'electron',
   {
     getData: () => JSON.stringify(myLargeData)
+  }
 )
 
 // Main World

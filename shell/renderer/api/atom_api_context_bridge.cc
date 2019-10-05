@@ -4,8 +4,7 @@
 
 #include "shell/renderer/api/atom_api_context_bridge.h"
 
-#include <map>
-#include <string>
+#include <set>
 #include <utility>
 #include <vector>
 
