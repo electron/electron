@@ -15,18 +15,15 @@
 #include "shell/common/native_mate_converters/once_callback.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/promise_util.h"
-#include "shell/renderer/atom_render_frame_observer.h"
-#include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
 
 namespace api {
 
-namespace {
+namespace context_bridge {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
-  v8::Local<v8::Context> context =
-      v8::Local<v8::Object>::Cast(value)->CreationContext();
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
+  v8::Local<v8::Context> context = value->CreationContext();
   if (context.IsEmpty())
     return nullptr;
   blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
@@ -51,7 +48,13 @@ RenderFramePersistenceStore* GetOrCreateStore(
 // Sourced from "extensions/renderer/v8_schema_registry.cc"
 // Recursively freezes every v8 object on |object|.
 void DeepFreeze(const v8::Local<v8::Object>& object,
-                const v8::Local<v8::Context>& context) {
+                const v8::Local<v8::Context>& context,
+                std::set<int> frozen = std::set<int>()) {
+  int hash = object->GetIdentityHash();
+  if (frozen.find(hash) != frozen.end())
+    return;
+  frozen.insert(hash);
+
   v8::Local<v8::Array> property_names =
       object->GetOwnPropertyNames(context).ToLocalChecked();
   for (uint32_t i = 0; i < property_names->Length(); ++i) {
@@ -59,7 +62,7 @@ void DeepFreeze(const v8::Local<v8::Object>& object,
         object->Get(context, property_names->Get(context, i).ToLocalChecked())
             .ToLocalChecked();
     if (child->IsObject())
-      DeepFreeze(v8::Local<v8::Object>::Cast(child), context);
+      DeepFreeze(v8::Local<v8::Object>::Cast(child), context, frozen);
   }
   object->SetIntegrityLevel(context, v8::IntegrityLevel::kFrozen);
 }
@@ -88,7 +91,13 @@ class FunctionLifeMonitor final : public ObjectLifeMonitor {
   size_t func_id_;
 };
 
-}  // namespace
+PassedValueCache::PassedValueCache() = default;
+PassedValueCache::~PassedValueCache() = default;
+PassedValueCache::PassedValueCache(const PassedValueCache&) = default;
+
+}  // namespace context_bridge
+
+using namespace electron::api::context_bridge;
 
 RenderFramePersistenceStore::RenderFramePersistenceStore(
     content::RenderFrame* render_frame)
@@ -100,10 +109,38 @@ void RenderFramePersistenceStore::OnDestruct() {
   delete this;
 }
 
+v8::Local<v8::Value> PassValueToOtherContextWithCache(
+    v8::Local<v8::Context> source,
+    v8::Local<v8::Context> destination,
+    v8::Local<v8::Value> value,
+    PassedValueCache cache,
+    RenderFramePersistenceStore* store) {
+  // Check Cache
+  auto cached_value = store->GetCachedProxiedObject(value);
+  if (!cached_value.IsEmpty()) {
+    return cached_value.ToLocalChecked();
+  }
+
+  // Proxy the value and store in the cache, each creator is responsibler for
+  // storing into the cache
+  return PassValueToOtherContext(source, destination, value, cache, store);
+}
+
+template <typename Sig>
+v8::Local<v8::Value> BindRepeatingFunctionToV8(
+    v8::Isolate* isolate,
+    const base::RepeatingCallback<Sig>& val) {
+  auto translater =
+      base::BindRepeating(&mate::internal::NativeFunctionInvoker<Sig>::Go, val);
+  return mate::internal::CreateFunctionFromTranslater(isolate, translater,
+                                                      false);
+}
+
 v8::Local<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Context> source,
     v8::Local<v8::Context> destination,
     v8::Local<v8::Value> value,
+    PassedValueCache cache,
     RenderFramePersistenceStore* store) {
   // Proxy functions and monitor the lifetime in the new context to release
   // the global handle at the right time.
@@ -112,23 +149,35 @@ v8::Local<v8::Value> PassValueToOtherContext(
     v8::Global<v8::Function> global_func(source->GetIsolate(), func);
     v8::Global<v8::Context> global_source(source->GetIsolate(), source);
 
-    size_t func_id = store->take_id();
+    size_t func_id = store->take_func_id();
     store->functions()[func_id] =
         std::make_tuple(std::move(global_func), std::move(global_source));
-    {
-      v8::Context::Scope destination_scope(destination);
-      v8::Local<v8::Value> proxy_func = mate::ConvertToV8(
-          destination->GetIsolate(),
-          base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
-      FunctionLifeMonitor::BindTo(destination->GetIsolate(),
-                                  v8::Local<v8::Object>::Cast(proxy_func),
-                                  store, func_id);
-      return proxy_func;
-    }
+    v8::Context::Scope destination_scope(destination);
+    // v8::Local<v8::Value> proxy_func =
+    // mate::CreateFunctionTemplate(destination->GetIsolate(),
+    // base::BindRepeating(&ProxyFunctionWrapper, store, func_id))
+    //               ->GetFunction(destination)
+    //               .ToLocalChecked();
+    // v8::Local<v8::Value> proxy_func = mate::ConvertToV8(
+    //     destination->GetIsolate(),
+    //     base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
+    // auto translater =
+    //     base::BindRepeating(&gin_helper::NativeFunctionInvoker<Sig>::Go,
+    //     base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
+    // v8::Local<v8::Value> proxy_func =
+    // gin_helper::CreateFunctionFromTranslater(destination->GetIsolate(),
+    // translater, false)
+    v8::Local<v8::Value> proxy_func = BindRepeatingFunctionToV8(
+        destination->GetIsolate(),
+        base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
+    FunctionLifeMonitor::BindTo(destination->GetIsolate(),
+                                v8::Local<v8::Object>::Cast(proxy_func), store,
+                                func_id);
+    store->CacheProxiedObject(value, proxy_func);
+    return proxy_func;
   }
 
-  // Proxy promises as they have a safe and guarunteed memory lifecycle (unlike
-  // functions)
+  // Proxy promises as they have a safe and guaranteed memory lifecycle
   if (value->IsPromise()) {
     v8::Context::Scope destination_scope(destination);
 
@@ -141,8 +190,9 @@ v8::Local<v8::Value> PassValueToOtherContext(
         [](util::Promise<v8::Local<v8::Value>>* promise, v8::Isolate* isolate,
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
            RenderFramePersistenceStore* store, v8::Local<v8::Value> result) {
-          promise->Resolve(PassValueToOtherContext(
-              source.Get(isolate), destination.Get(isolate), result, store));
+          promise->Resolve(PassValueToOtherContextWithCache(
+              source.Get(isolate), destination.Get(isolate), result,
+              PassedValueCache(), store));
           delete promise;
         },
         promise, destination->GetIsolate(),
@@ -152,8 +202,9 @@ v8::Local<v8::Value> PassValueToOtherContext(
         [](util::Promise<v8::Local<v8::Value>>* promise, v8::Isolate* isolate,
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
            RenderFramePersistenceStore* store, v8::Local<v8::Value> result) {
-          promise->Reject(PassValueToOtherContext(
-              source.Get(isolate), destination.Get(isolate), result, store));
+          promise->Reject(PassValueToOtherContextWithCache(
+              source.Get(isolate), destination.Get(isolate), result,
+              PassedValueCache(), store));
           delete promise;
         },
         promise, destination->GetIsolate(),
@@ -167,6 +218,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
         v8::Local<v8::Function>::Cast(
             mate::ConvertToV8(destination->GetIsolate(), catch_cb))));
 
+    store->CacheProxiedObject(value, handle);
     return handle;
   }
 
@@ -179,7 +231,8 @@ v8::Local<v8::Value> PassValueToOtherContext(
   }
 
   // Manually go through the array and pass each value individually into a new
-  // array so that deep functions get proxied or arrays of promises.
+  // array so that functions deep insidee arrays get proxied or arrays of
+  // promises are proxied correctly.
   if (value->IsArray()) {
     v8::Context::Scope destination_context_scope(destination);
     v8::Local<v8::Array> arr = v8::Local<v8::Array>::Cast(value);
@@ -189,10 +242,11 @@ v8::Local<v8::Value> PassValueToOtherContext(
     for (size_t i = 0; i < length; i++) {
       ignore_result(cloned_arr->Set(
           destination, static_cast<int>(i),
-          PassValueToOtherContext(source, destination,
-                                  arr->Get(source, i).ToLocalChecked(),
-                                  store)));
+          PassValueToOtherContextWithCache(source, destination,
+                                           arr->Get(source, i).ToLocalChecked(),
+                                           cache, store)));
     }
+    store->CacheProxiedObject(value, cloned_arr);
     return cloned_arr;
   }
 
@@ -201,7 +255,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
     return CreateProxyForAPI(
                mate::Dictionary(source->GetIsolate(),
                                 v8::Local<v8::Object>::Cast(value)),
-               source, destination, store)
+               source, destination, cache, store)
         .GetHandle();
   }
 
@@ -247,9 +301,11 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
   std::vector<v8::Local<v8::Value>> original_args;
   std::vector<v8::Local<v8::Value>> proxied_args;
   args->GetRemaining(&original_args);
+  PassedValueCache cache;
+
   for (auto value : original_args) {
-    proxied_args.push_back(PassValueToOtherContext(
-        calling_context, func_owning_context, value, store));
+    proxied_args.push_back(PassValueToOtherContextWithCache(
+        calling_context, func_owning_context, value, cache, store));
   }
 
   v8::MaybeLocal<v8::Value> maybe_return_value;
@@ -284,16 +340,18 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
 
   auto return_value = maybe_return_value.ToLocalChecked();
 
-  return PassValueToOtherContext(func_owning_context, calling_context,
-                                 return_value, store);
+  return PassValueToOtherContextWithCache(func_owning_context, calling_context,
+                                          return_value, cache, store);
 }
 
 mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
                                    v8::Local<v8::Context> source_context,
                                    v8::Local<v8::Context> target_context,
+                                   PassedValueCache cache,
                                    RenderFramePersistenceStore* store) {
   mate::Dictionary proxy =
       mate::Dictionary::CreateEmpty(target_context->GetIsolate());
+  store->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
   auto maybe_keys =
       api.GetHandle()->GetOwnPropertyNames(api.isolate()->GetCurrentContext());
   if (maybe_keys.IsEmpty())
@@ -318,27 +376,29 @@ mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
     if (!api.Get(key_str, &value))
       continue;
 
-    if (value->IsFunction()) {
-      auto func = v8::Local<v8::Function>::Cast(value);
-      v8::Global<v8::Function> global_func(api.isolate(), func);
+    // if (value->IsFunction()) {
+    //   auto func = v8::Local<v8::Function>::Cast(value);
+    //   v8::Global<v8::Function> global_func(api.isolate(), func);
 
-      size_t func_id = store->take_id();
-      store->functions()[func_id] =
-          std::make_tuple(std::move(global_func),
-                          v8::Global<v8::Context>(source_context->GetIsolate(),
-                                                  source_context));
-      proxy.SetMethod(
-          key_str, base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
-    } else if (value->IsObject() && !value->IsNullOrUndefined() &&
-               !value->IsArray() && !value->IsPromise()) {
-      mate::Dictionary sub_api(api.isolate(),
-                               v8::Local<v8::Object>::Cast(value));
-      proxy.Set(key_str, CreateProxyForAPI(sub_api, source_context,
-                                           target_context, store));
-    } else {
-      proxy.Set(key_str, PassValueToOtherContext(source_context, target_context,
-                                                 value, store));
-    }
+    //   size_t func_id = store->take_func_id();
+    //   store->functions()[func_id] =
+    //       std::make_tuple(std::move(global_func),
+    //                       v8::Global<v8::Context>(source_context->GetIsolate(),
+    //                                               source_context));
+    //   proxy.SetMethod(
+    //       key_str, base::BindRepeating(&ProxyFunctionWrapper, store,
+    //       func_id));
+    // // } else if (value->IsObject() && !value->IsNullOrUndefined() &&
+    // //            !value->IsArray() && !value->IsPromise()) {
+    // //   mate::Dictionary sub_api(api.isolate(),
+    // //                            v8::Local<v8::Object>::Cast(value));
+    // //   proxy.Set(key_str, CreateProxyForAPI(sub_api, source_context,
+    // //                                        target_context, cache, store));
+    // } else {
+    proxy.Set(key_str,
+              PassValueToOtherContextWithCache(source_context, target_context,
+                                               value, cache, store));
+    // }
   }
 
   return proxy;
@@ -350,6 +410,24 @@ mate::Dictionary DebugGC(mate::Dictionary empty) {
   RenderFramePersistenceStore* store = GetOrCreateStore(render_frame);
   mate::Dictionary ret = mate::Dictionary::CreateEmpty(empty.isolate());
   ret.Set("functionCount", store->functions().size());
+  auto* main_world_map = store->main_world_proxy_map();
+  auto* isolated_world_map = store->isolated_world_proxy_map();
+  ret.Set("mainWorldObjectCount", main_world_map->size());
+  ret.Set("isolatedWorldObjectCount", isolated_world_map->size());
+  int live_main = 0;
+  for (auto iter = main_world_map->begin(); iter != main_world_map->end();
+       iter++) {
+    if (!iter->second.IsEmpty())
+      live_main++;
+  }
+  int live_isolated = 0;
+  for (auto iter = isolated_world_map->begin();
+       iter != isolated_world_map->end(); iter++) {
+    if (!iter->second.IsEmpty())
+      live_isolated++;
+  }
+  ret.Set("mainWorlLiveObjectCount", live_main);
+  ret.Set("isolatedWorldLiveObjectCount", live_isolated);
   return ret;
 }
 #endif
@@ -358,9 +436,10 @@ void ExposeAPIInMainWorld(const std::string& key,
                           mate::Dictionary api,
                           mate::Arguments* args) {
   auto* render_frame = GetRenderFrame(api.GetHandle());
+  CHECK(render_frame);
   RenderFramePersistenceStore* store = GetOrCreateStore(render_frame);
   auto* frame = render_frame->GetWebFrame();
-  DCHECK(frame);
+  CHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
   mate::Dictionary global(main_context->GetIsolate(), main_context->Global());
 
@@ -374,13 +453,11 @@ void ExposeAPIInMainWorld(const std::string& key,
   v8::Local<v8::Context> isolated_context =
       frame->WorldScriptContext(api.isolate(), World::ISOLATED_WORLD);
 
-  {
-    v8::Context::Scope main_context_scope(main_context);
-    mate::Dictionary proxy =
-        CreateProxyForAPI(api, isolated_context, main_context, store);
-    DeepFreeze(proxy.GetHandle(), main_context);
-    global.SetReadOnlyNonConfigurable(key, proxy);
-  }
+  v8::Context::Scope main_context_scope(main_context);
+  mate::Dictionary proxy = CreateProxyForAPI(
+      api, isolated_context, main_context, PassedValueCache(), store);
+  DeepFreeze(proxy.GetHandle(), main_context);
+  global.SetReadOnlyNonConfigurable(key, proxy);
 }
 
 }  // namespace api
@@ -393,13 +470,11 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  using namespace electron::api;  // NOLINT(build/namespaces)
-
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("exposeAPIInMainWorld", &ExposeAPIInMainWorld);
+  dict.SetMethod("exposeAPIInMainWorld", &electron::api::ExposeAPIInMainWorld);
 #ifdef DCHECK_IS_ON
-  dict.SetMethod("_debugGCMaps", &DebugGC);
+  dict.SetMethod("_debugGCMaps", &electron::api::DebugGC);
 #endif
 }
 

@@ -4,7 +4,7 @@
 
 Process: [Renderer](../glossary.md#renderer-process)
 
-An example of exposing a basic API to a renderer from an isolated preload script is given below:
+An example of exposing an API to a renderer from an isolated preload script is given below:
 
 ```javascript
 // Preload (Isolated World)
@@ -55,7 +55,7 @@ whose keys are strings and values are a `Function`, `String`, `Number`, `Array`,
 `Function` values are proxied to the other context and all other values are **copied** and **frozen**.  I.e. Any data / primtives sent in
 the API object become immutable and updates on either side of the bridge do not result in an update on the other side.
 
-An example complex API object is uncluded below.
+An example of a complex API object is shown below.
 
 ```javascript
 const { contextBridge } = require('electron')
@@ -65,6 +65,7 @@ contextBridge.exposeInMainWorld(
   {
     doThing: () => ipcRenderer.send('do-a-thing'),
     myPromises: [Promise.resolve(), Promise.reject()],
+    anAsyncFunction: async () => return 123,
     data: {
       myFlags: ['a', 'b', 'c'],
       bootTime: 1234
@@ -110,7 +111,7 @@ If the type you care about is not in the above table it is probably not supporte
 
 ### Performance
 
-Electron will attempt to proxy any object, array or other structure you provide the `contextBridge` module.  This includes method parameters, method return types, etc.  This can be quite costly when sending large data blobs.  If you need more performance out of the bridge and you are sending data, no methods or dynamic content then we reccomend you `JSON.stringify` and `JSON.parse` the content across the bridge.  E.g.
+Electron will attempt to proxy any object, array or other structure you provide the `contextBridge` module.  This includes method parameters, method return types, etc.  This can be quite costly when sending large data blobs.  If you need more performance out of the bridge and you are sending data, no methods or dynamic content then we recommend you `JSON.stringify` and `JSON.parse` the content across the bridge.  E.g.
 
 ```javascript
 // Isolated World
@@ -124,4 +125,4 @@ contextBridge.exposeInMainWorld(
 console.log(JSON.parse(window.electron.getData()))
 ```
 
-Your mileage may vary and before you start stringifying everything we reccomend that you measure the speed of both to see which one works best for you.
+Your mileage may vary and before you start stringifying everything we recommend that you measure the speed of both to see which one works best for you.

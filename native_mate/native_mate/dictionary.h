@@ -43,9 +43,7 @@ class Dictionary {
   bool Has(base::StringPiece key) const {
     v8::Local<v8::Context> context = isolate_->GetCurrentContext();
     v8::Local<v8::String> v8_key = StringToV8(isolate_, key);
-    if (!internal::IsTrue(GetHandle()->Has(context, v8_key)))
-      return false;
-    return true;
+    return internal::IsTrue(GetHandle()->Has(context, v8_key));
   }
 
   template <typename T>
