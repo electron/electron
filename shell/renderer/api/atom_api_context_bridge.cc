@@ -32,13 +32,14 @@ content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
   return content::RenderFrame::FromWebFrame(frame);
 }
 
-std::map<content::RenderFrame*, RenderFramePersistenceStore*> store_map_;
+std::map<content::RenderFrame*, context_bridge::RenderFramePersistenceStore*>
+    store_map_;
 
-RenderFramePersistenceStore* GetOrCreateStore(
+context_bridge::RenderFramePersistenceStore* GetOrCreateStore(
     content::RenderFrame* render_frame) {
   auto it = store_map_.find(render_frame);
   if (it == store_map_.end()) {
-    auto* store = new RenderFramePersistenceStore(render_frame);
+    auto* store = new context_bridge::RenderFramePersistenceStore(render_frame);
     store_map_[render_frame] = store;
     return store;
   }
@@ -71,7 +72,7 @@ class FunctionLifeMonitor final : public ObjectLifeMonitor {
  public:
   static void BindTo(v8::Isolate* isolate,
                      v8::Local<v8::Object> target,
-                     RenderFramePersistenceStore* store,
+                     context_bridge::RenderFramePersistenceStore* store,
                      size_t func_id) {
     new FunctionLifeMonitor(isolate, target, store, func_id);
   }
@@ -79,7 +80,7 @@ class FunctionLifeMonitor final : public ObjectLifeMonitor {
  protected:
   FunctionLifeMonitor(v8::Isolate* isolate,
                       v8::Local<v8::Object> target,
-                      RenderFramePersistenceStore* store,
+                      context_bridge::RenderFramePersistenceStore* store,
                       size_t func_id)
       : ObjectLifeMonitor(isolate, target), store_(store), func_id_(func_id) {}
   ~FunctionLifeMonitor() override = default;
@@ -87,21 +88,11 @@ class FunctionLifeMonitor final : public ObjectLifeMonitor {
   void RunDestructor() override { store_->functions().erase(func_id_); }
 
  private:
-  RenderFramePersistenceStore* store_;
+  context_bridge::RenderFramePersistenceStore* store_;
   size_t func_id_;
 };
 
 }  // namespace
-
-RenderFramePersistenceStore::RenderFramePersistenceStore(
-    content::RenderFrame* render_frame)
-    : content::RenderFrameObserver(render_frame) {}
-
-RenderFramePersistenceStore::~RenderFramePersistenceStore() = default;
-
-void RenderFramePersistenceStore::OnDestruct() {
-  delete this;
-}
 
 template <typename Sig>
 v8::Local<v8::Value> BindRepeatingFunctionToV8(
@@ -117,7 +108,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Context> source,
     v8::Local<v8::Context> destination,
     v8::Local<v8::Value> value,
-    RenderFramePersistenceStore* store) {
+    context_bridge::RenderFramePersistenceStore* store) {
   // Check Cache
   auto cached_value = store->GetCachedProxiedObject(value);
   if (!cached_value.IsEmpty()) {
@@ -157,7 +148,8 @@ v8::Local<v8::Value> PassValueToOtherContext(
     auto then_cb = base::BindOnce(
         [](util::Promise<v8::Local<v8::Value>>* promise, v8::Isolate* isolate,
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
-           RenderFramePersistenceStore* store, v8::Local<v8::Value> result) {
+           context_bridge::RenderFramePersistenceStore* store,
+           v8::Local<v8::Value> result) {
           promise->Resolve(PassValueToOtherContext(
               source.Get(isolate), destination.Get(isolate), result, store));
           delete promise;
@@ -168,7 +160,8 @@ v8::Local<v8::Value> PassValueToOtherContext(
     auto catch_cb = base::BindOnce(
         [](util::Promise<v8::Local<v8::Value>>* promise, v8::Isolate* isolate,
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
-           RenderFramePersistenceStore* store, v8::Local<v8::Value> result) {
+           context_bridge::RenderFramePersistenceStore* store,
+           v8::Local<v8::Value> result) {
           promise->Reject(PassValueToOtherContext(
               source.Get(isolate), destination.Get(isolate), result, store));
           delete promise;
@@ -251,9 +244,10 @@ v8::Local<v8::Value> PassValueToOtherContext(
   return mate::ConvertToV8(destination->GetIsolate(), ret);
 }
 
-v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
-                                          size_t func_id,
-                                          mate::Arguments* args) {
+v8::Local<v8::Value> ProxyFunctionWrapper(
+    context_bridge::RenderFramePersistenceStore* store,
+    size_t func_id,
+    mate::Arguments* args) {
   // Context the proxy function was called from
   v8::Local<v8::Context> calling_context = args->isolate()->GetCurrentContext();
   // Context the function was created in
@@ -309,10 +303,11 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
                                  return_value, store);
 }
 
-mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
-                                   v8::Local<v8::Context> source_context,
-                                   v8::Local<v8::Context> target_context,
-                                   RenderFramePersistenceStore* store) {
+mate::Dictionary CreateProxyForAPI(
+    mate::Dictionary api,
+    v8::Local<v8::Context> source_context,
+    v8::Local<v8::Context> target_context,
+    context_bridge::RenderFramePersistenceStore* store) {
   mate::Dictionary proxy =
       mate::Dictionary::CreateEmpty(target_context->GetIsolate());
   store->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
@@ -350,7 +345,7 @@ mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
 #ifdef DCHECK_IS_ON
 mate::Dictionary DebugGC(mate::Dictionary empty) {
   auto* render_frame = GetRenderFrame(empty.GetHandle());
-  RenderFramePersistenceStore* store = GetOrCreateStore(render_frame);
+  auto* store = GetOrCreateStore(render_frame);
   mate::Dictionary ret = mate::Dictionary::CreateEmpty(empty.isolate());
   ret.Set("functionCount", store->functions().size());
   auto* main_world_map = store->main_world_proxy_map();
@@ -380,7 +375,8 @@ void ExposeAPIInMainWorld(const std::string& key,
                           mate::Arguments* args) {
   auto* render_frame = GetRenderFrame(api.GetHandle());
   CHECK(render_frame);
-  RenderFramePersistenceStore* store = GetOrCreateStore(render_frame);
+  context_bridge::RenderFramePersistenceStore* store =
+      GetOrCreateStore(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
