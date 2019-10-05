@@ -265,6 +265,20 @@ describe('contextBridge', () => {
         })
         expect(result).to.equal('my-proxied-value')
       })
+
+      it('should proxy objects with number keys', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            [1]: 123,
+            [2]: 456,
+            '3': 789
+          })
+        })
+        const result = await callWithBindings(async (root: any) => {
+          return [root.example[1], root.example[2], root.example[3], Array.isArray(root.example)]
+        })
+        expect(result).to.deep.equal([123, 456, 789, false])
+      })
     
       it('it should proxy null and undefined correctly', async () => {
         await makeBindingWindow(() => {

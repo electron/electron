@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/strings/string_number_conversions.h"
 #include "shell/common/api/remote/object_life_monitor.h"
 #include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/once_callback.h"
@@ -320,17 +319,11 @@ mate::Dictionary CreateProxyForAPI(
   v8::Context::Scope target_context_scope(target_context);
   uint32_t length = keys->Length();
   std::string key_str;
-  int key_int;
   for (uint32_t i = 0; i < length; i++) {
     v8::Local<v8::Value> key = keys->Get(target_context, i).ToLocalChecked();
     // Try get the key as a string
-    if (!mate::ConvertFromV8(api.isolate(), key, &key_str)) {
-      // Try get the key as an int
-      if (!mate::ConvertFromV8(api.isolate(), key, &key_int))
-        continue;
-      // Convert the int to a string as they are interoperable as object keys
-      key_str = base::NumberToString(key_int);
-    }
+    if (!mate::ConvertFromV8(api.isolate(), key, &key_str))
+      continue;
     v8::Local<v8::Value> value;
     if (!api.Get(key_str, &value))
       continue;
