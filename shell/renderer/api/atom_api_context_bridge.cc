@@ -151,20 +151,6 @@ v8::Local<v8::Value> PassValueToOtherContext(
     store->functions()[func_id] =
         std::make_tuple(std::move(global_func), std::move(global_source));
     v8::Context::Scope destination_scope(destination);
-    // v8::Local<v8::Value> proxy_func =
-    // mate::CreateFunctionTemplate(destination->GetIsolate(),
-    // base::BindRepeating(&ProxyFunctionWrapper, store, func_id))
-    //               ->GetFunction(destination)
-    //               .ToLocalChecked();
-    // v8::Local<v8::Value> proxy_func = mate::ConvertToV8(
-    //     destination->GetIsolate(),
-    //     base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
-    // auto translater =
-    //     base::BindRepeating(&gin_helper::NativeFunctionInvoker<Sig>::Go,
-    //     base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
-    // v8::Local<v8::Value> proxy_func =
-    // gin_helper::CreateFunctionFromTranslater(destination->GetIsolate(),
-    // translater, false)
     v8::Local<v8::Value> proxy_func = BindRepeatingFunctionToV8(
         destination->GetIsolate(),
         base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
@@ -370,28 +356,8 @@ mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
     if (!api.Get(key_str, &value))
       continue;
 
-    // if (value->IsFunction()) {
-    //   auto func = v8::Local<v8::Function>::Cast(value);
-    //   v8::Global<v8::Function> global_func(api.isolate(), func);
-
-    //   size_t func_id = store->take_func_id();
-    //   store->functions()[func_id] =
-    //       std::make_tuple(std::move(global_func),
-    //                       v8::Global<v8::Context>(source_context->GetIsolate(),
-    //                                               source_context));
-    //   proxy.SetMethod(
-    //       key_str, base::BindRepeating(&ProxyFunctionWrapper, store,
-    //       func_id));
-    // // } else if (value->IsObject() && !value->IsNullOrUndefined() &&
-    // //            !value->IsArray() && !value->IsPromise()) {
-    // //   mate::Dictionary sub_api(api.isolate(),
-    // //                            v8::Local<v8::Object>::Cast(value));
-    // //   proxy.Set(key_str, CreateProxyForAPI(sub_api, source_context,
-    // //                                        target_context, cache, store));
-    // } else {
     proxy.Set(key_str, PassValueToOtherContext(source_context, target_context,
                                                value, store));
-    // }
   }
 
   return proxy;
