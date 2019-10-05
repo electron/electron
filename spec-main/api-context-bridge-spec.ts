@@ -9,7 +9,7 @@ import { emittedOnce } from './events-helpers'
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge')
 
-describe.only('contextBridge', () => {
+describe('contextBridge', () => {
   let w: BrowserWindow
   let dir: string
 
