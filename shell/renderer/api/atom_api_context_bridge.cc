@@ -20,7 +20,7 @@ namespace electron {
 
 namespace api {
 
-namespace context_bridge {
+namespace {
 
 content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
   v8::Local<v8::Context> context = value->CreationContext();
@@ -91,9 +91,7 @@ class FunctionLifeMonitor final : public ObjectLifeMonitor {
   size_t func_id_;
 };
 
-}  // namespace context_bridge
-
-using namespace electron::api::context_bridge;
+}  // namespace
 
 RenderFramePersistenceStore::RenderFramePersistenceStore(
     content::RenderFrame* render_frame)
@@ -118,7 +116,7 @@ v8::Local<v8::Value> PassValueToOtherContextWithCache(
 
   // Proxy the value and store in the cache, each creator is responsibler for
   // storing into the cache
-  return PassValueToOtherContext(source, destination, value, cache, store);
+  return PassValueToOtherContext(source, destination, value, store);
 }
 
 template <typename Sig>
@@ -236,7 +234,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
           destination, static_cast<int>(i),
           PassValueToOtherContextWithCache(source, destination,
                                            arr->Get(source, i).ToLocalChecked(),
-                                           cache, store)));
+                                           store)));
     }
     store->CacheProxiedObject(value, cloned_arr);
     return cloned_arr;
@@ -247,7 +245,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
     return CreateProxyForAPI(
                mate::Dictionary(source->GetIsolate(),
                                 v8::Local<v8::Object>::Cast(value)),
-               source, destination, cache, store)
+               source, destination, store)
         .GetHandle();
   }
 
@@ -296,7 +294,7 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
 
   for (auto value : original_args) {
     proxied_args.push_back(PassValueToOtherContextWithCache(
-        calling_context, func_owning_context, value, cache, store));
+        calling_context, func_owning_context, value, store));
   }
 
   v8::MaybeLocal<v8::Value> maybe_return_value;
@@ -332,7 +330,7 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
   auto return_value = maybe_return_value.ToLocalChecked();
 
   return PassValueToOtherContextWithCache(func_owning_context, calling_context,
-                                          return_value, cache, store);
+                                          return_value, store);
 }
 
 mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
@@ -385,9 +383,8 @@ mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
     // //   proxy.Set(key_str, CreateProxyForAPI(sub_api, source_context,
     // //                                        target_context, cache, store));
     // } else {
-    proxy.Set(key_str,
-              PassValueToOtherContextWithCache(source_context, target_context,
-                                               value, cache, store));
+    proxy.Set(key_str, PassValueToOtherContextWithCache(
+                           source_context, target_context, value, store));
     // }
   }
 
