@@ -117,54 +117,15 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
                                           size_t func_id,
                                           mate::Arguments* args);
 
-namespace context_bridge {
-
-// PassedValueCache ensures that in the current transaction
-// no value is proxied twice
-class PassedValueCache final {
- public:
-  PassedValueCache();
-  ~PassedValueCache();
-  PassedValueCache(const PassedValueCache&);
-
-  void Register(v8::Local<v8::Value> from, v8::Local<v8::Value> proxy_value) {
-    if (from->IsObject() && !from->IsNullOrUndefined()) {
-      int hash = v8::Local<v8::Object>::Cast(from)->GetIdentityHash();
-      // Should not already be in the cache
-      DCHECK(proxy_map_.find(hash) == proxy_map_.end());
-      proxy_map_[hash] = proxy_value;
-    }
-  }
-
-  v8::MaybeLocal<v8::Value> Get(v8::Local<v8::Value> from) {
-    if (!from->IsObject() || from->IsNullOrUndefined())
-      return v8::MaybeLocal<v8::Value>();
-
-    int hash = v8::Local<v8::Object>::Cast(from)->GetIdentityHash();
-    auto iter = proxy_map_.find(hash);
-    if (iter == proxy_map_.end())
-      return v8::MaybeLocal<v8::Value>();
-    return iter->second;
-  }
-
- private:
-  // { from_identity_hash --> to_proxy }
-  std::map<int, v8::Local<v8::Value>> proxy_map_;
-};
-
-}  // namespace context_bridge
-
 v8::Local<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Context> source,
     v8::Local<v8::Context> destination,
     v8::Local<v8::Value> value,
-    context_bridge::PassedValueCache cache,
     RenderFramePersistenceStore* store);
 
 mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
                                    v8::Local<v8::Context> source_context,
                                    v8::Local<v8::Context> target_context,
-                                   context_bridge::PassedValueCache cache,
                                    RenderFramePersistenceStore* store);
 
 }  // namespace api

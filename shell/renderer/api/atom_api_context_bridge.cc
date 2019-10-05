@@ -91,10 +91,6 @@ class FunctionLifeMonitor final : public ObjectLifeMonitor {
   size_t func_id_;
 };
 
-PassedValueCache::PassedValueCache() = default;
-PassedValueCache::~PassedValueCache() = default;
-PassedValueCache::PassedValueCache(const PassedValueCache&) = default;
-
 }  // namespace context_bridge
 
 using namespace electron::api::context_bridge;
@@ -113,7 +109,6 @@ v8::Local<v8::Value> PassValueToOtherContextWithCache(
     v8::Local<v8::Context> source,
     v8::Local<v8::Context> destination,
     v8::Local<v8::Value> value,
-    PassedValueCache cache,
     RenderFramePersistenceStore* store) {
   // Check Cache
   auto cached_value = store->GetCachedProxiedObject(value);
@@ -140,7 +135,6 @@ v8::Local<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Context> source,
     v8::Local<v8::Context> destination,
     v8::Local<v8::Value> value,
-    PassedValueCache cache,
     RenderFramePersistenceStore* store) {
   // Proxy functions and monitor the lifetime in the new context to release
   // the global handle at the right time.
@@ -191,8 +185,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
            RenderFramePersistenceStore* store, v8::Local<v8::Value> result) {
           promise->Resolve(PassValueToOtherContextWithCache(
-              source.Get(isolate), destination.Get(isolate), result,
-              PassedValueCache(), store));
+              source.Get(isolate), destination.Get(isolate), result, store));
           delete promise;
         },
         promise, destination->GetIsolate(),
@@ -203,8 +196,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
            RenderFramePersistenceStore* store, v8::Local<v8::Value> result) {
           promise->Reject(PassValueToOtherContextWithCache(
-              source.Get(isolate), destination.Get(isolate), result,
-              PassedValueCache(), store));
+              source.Get(isolate), destination.Get(isolate), result, store));
           delete promise;
         },
         promise, destination->GetIsolate(),
@@ -301,7 +293,6 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
   std::vector<v8::Local<v8::Value>> original_args;
   std::vector<v8::Local<v8::Value>> proxied_args;
   args->GetRemaining(&original_args);
-  PassedValueCache cache;
 
   for (auto value : original_args) {
     proxied_args.push_back(PassValueToOtherContextWithCache(
@@ -347,7 +338,6 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
 mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
                                    v8::Local<v8::Context> source_context,
                                    v8::Local<v8::Context> target_context,
-                                   PassedValueCache cache,
                                    RenderFramePersistenceStore* store) {
   mate::Dictionary proxy =
       mate::Dictionary::CreateEmpty(target_context->GetIsolate());
@@ -454,8 +444,8 @@ void ExposeAPIInMainWorld(const std::string& key,
       frame->WorldScriptContext(api.isolate(), World::ISOLATED_WORLD);
 
   v8::Context::Scope main_context_scope(main_context);
-  mate::Dictionary proxy = CreateProxyForAPI(
-      api, isolated_context, main_context, PassedValueCache(), store);
+  mate::Dictionary proxy =
+      CreateProxyForAPI(api, isolated_context, main_context, store);
   DeepFreeze(proxy.GetHandle(), main_context);
   global.SetReadOnlyNonConfigurable(key, proxy);
 }
