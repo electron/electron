@@ -117,12 +117,6 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
                                           size_t func_id,
                                           mate::Arguments* args);
 
-v8::Local<v8::Value> PassValueToOtherContext(
-    v8::Local<v8::Context> source,
-    v8::Local<v8::Context> destination,
-    v8::Local<v8::Value> value,
-    RenderFramePersistenceStore* store);
-
 mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
                                    v8::Local<v8::Context> source_context,
                                    v8::Local<v8::Context> target_context,

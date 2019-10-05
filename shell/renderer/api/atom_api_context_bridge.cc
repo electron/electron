@@ -103,21 +103,21 @@ void RenderFramePersistenceStore::OnDestruct() {
   delete this;
 }
 
-v8::Local<v8::Value> PassValueToOtherContextWithCache(
-    v8::Local<v8::Context> source,
-    v8::Local<v8::Context> destination,
-    v8::Local<v8::Value> value,
-    RenderFramePersistenceStore* store) {
-  // Check Cache
-  auto cached_value = store->GetCachedProxiedObject(value);
-  if (!cached_value.IsEmpty()) {
-    return cached_value.ToLocalChecked();
-  }
+// v8::Local<v8::Value> PassValueToOtherContext(
+//     v8::Local<v8::Context> source,
+//     v8::Local<v8::Context> destination,
+//     v8::Local<v8::Value> value,
+//     RenderFramePersistenceStore* store) {
+//   // Check Cache
+//   auto cached_value = store->GetCachedProxiedObject(value);
+//   if (!cached_value.IsEmpty()) {
+//     return cached_value.ToLocalChecked();
+//   }
 
-  // Proxy the value and store in the cache, each creator is responsibler for
-  // storing into the cache
-  return PassValueToOtherContext(source, destination, value, store);
-}
+//   // Proxy the value and store in the cache, each creator is responsibler for
+//   // storing into the cache
+//   return PassValueToOtherContext(source, destination, value, store);
+// }
 
 template <typename Sig>
 v8::Local<v8::Value> BindRepeatingFunctionToV8(
@@ -134,6 +134,12 @@ v8::Local<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Context> destination,
     v8::Local<v8::Value> value,
     RenderFramePersistenceStore* store) {
+  // Check Cache
+  auto cached_value = store->GetCachedProxiedObject(value);
+  if (!cached_value.IsEmpty()) {
+    return cached_value.ToLocalChecked();
+  }
+
   // Proxy functions and monitor the lifetime in the new context to release
   // the global handle at the right time.
   if (value->IsFunction()) {
@@ -182,7 +188,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
         [](util::Promise<v8::Local<v8::Value>>* promise, v8::Isolate* isolate,
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
            RenderFramePersistenceStore* store, v8::Local<v8::Value> result) {
-          promise->Resolve(PassValueToOtherContextWithCache(
+          promise->Resolve(PassValueToOtherContext(
               source.Get(isolate), destination.Get(isolate), result, store));
           delete promise;
         },
@@ -193,7 +199,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
         [](util::Promise<v8::Local<v8::Value>>* promise, v8::Isolate* isolate,
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
            RenderFramePersistenceStore* store, v8::Local<v8::Value> result) {
-          promise->Reject(PassValueToOtherContextWithCache(
+          promise->Reject(PassValueToOtherContext(
               source.Get(isolate), destination.Get(isolate), result, store));
           delete promise;
         },
@@ -232,9 +238,9 @@ v8::Local<v8::Value> PassValueToOtherContext(
     for (size_t i = 0; i < length; i++) {
       ignore_result(cloned_arr->Set(
           destination, static_cast<int>(i),
-          PassValueToOtherContextWithCache(source, destination,
-                                           arr->Get(source, i).ToLocalChecked(),
-                                           store)));
+          PassValueToOtherContext(source, destination,
+                                  arr->Get(source, i).ToLocalChecked(),
+                                  store)));
     }
     store->CacheProxiedObject(value, cloned_arr);
     return cloned_arr;
@@ -293,7 +299,7 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
   args->GetRemaining(&original_args);
 
   for (auto value : original_args) {
-    proxied_args.push_back(PassValueToOtherContextWithCache(
+    proxied_args.push_back(PassValueToOtherContext(
         calling_context, func_owning_context, value, store));
   }
 
@@ -329,8 +335,8 @@ v8::Local<v8::Value> ProxyFunctionWrapper(RenderFramePersistenceStore* store,
 
   auto return_value = maybe_return_value.ToLocalChecked();
 
-  return PassValueToOtherContextWithCache(func_owning_context, calling_context,
-                                          return_value, store);
+  return PassValueToOtherContext(func_owning_context, calling_context,
+                                 return_value, store);
 }
 
 mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
@@ -383,8 +389,8 @@ mate::Dictionary CreateProxyForAPI(mate::Dictionary api,
     // //   proxy.Set(key_str, CreateProxyForAPI(sub_api, source_context,
     // //                                        target_context, cache, store));
     // } else {
-    proxy.Set(key_str, PassValueToOtherContextWithCache(
-                           source_context, target_context, value, store));
+    proxy.Set(key_str, PassValueToOtherContext(source_context, target_context,
+                                               value, store));
     // }
   }
 
