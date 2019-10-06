@@ -210,11 +210,8 @@ v8::Local<v8::Value> PassValueToOtherContext(
 
   // Proxy all objects
   if (value->IsObject() && !value->IsNullOrUndefined()) {
-    return CreateProxyForAPI(
-               mate::Dictionary(source->GetIsolate(),
-                                v8::Local<v8::Object>::Cast(value)),
-               source, destination, store)
-        .GetHandle();
+    return CreateProxyForAPI(v8::Local<v8::Object>::Cast(value), source,
+                             destination, store);
   }
 
   // Serializable objects
@@ -302,18 +299,18 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
                                  return_value, store);
 }
 
-mate::Dictionary CreateProxyForAPI(
-    mate::Dictionary api,
+v8::Local<v8::Object> CreateProxyForAPI(
+    v8::Local<v8::Object> api_object,
     v8::Local<v8::Context> source_context,
     v8::Local<v8::Context> target_context,
     context_bridge::RenderFramePersistenceStore* store) {
+  mate::Dictionary api(source_context->GetIsolate(), api_object);
   mate::Dictionary proxy =
       mate::Dictionary::CreateEmpty(target_context->GetIsolate());
   store->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
-  auto maybe_keys =
-      api.GetHandle()->GetOwnPropertyNames(api.isolate()->GetCurrentContext());
+  auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(source_context);
   if (maybe_keys.IsEmpty())
-    return proxy;
+    return proxy.GetHandle();
   auto keys = maybe_keys.ToLocalChecked();
 
   v8::Context::Scope target_context_scope(target_context);
@@ -338,7 +335,7 @@ mate::Dictionary CreateProxyForAPI(
                                                value, store));
   }
 
-  return proxy;
+  return proxy.GetHandle();
 }
 
 #ifdef DCHECK_IS_ON
@@ -370,9 +367,9 @@ mate::Dictionary DebugGC(mate::Dictionary empty) {
 #endif
 
 void ExposeAPIInMainWorld(const std::string& key,
-                          mate::Dictionary api,
+                          v8::Local<v8::Object> api_object,
                           mate::Arguments* args) {
-  auto* render_frame = GetRenderFrame(api.GetHandle());
+  auto* render_frame = GetRenderFrame(api_object);
   CHECK(render_frame);
   context_bridge::RenderFramePersistenceStore* store =
       GetOrCreateStore(render_frame);
@@ -389,12 +386,12 @@ void ExposeAPIInMainWorld(const std::string& key,
   }
 
   v8::Local<v8::Context> isolated_context =
-      frame->WorldScriptContext(api.isolate(), World::ISOLATED_WORLD);
+      frame->WorldScriptContext(args->isolate(), World::ISOLATED_WORLD);
 
   v8::Context::Scope main_context_scope(main_context);
-  mate::Dictionary proxy =
-      CreateProxyForAPI(api, isolated_context, main_context, store);
-  DeepFreeze(proxy.GetHandle(), main_context);
+  v8::Local<v8::Object> proxy =
+      CreateProxyForAPI(api_object, isolated_context, main_context, store);
+  DeepFreeze(proxy, main_context);
   global.SetReadOnlyNonConfigurable(key, proxy);
 }
 

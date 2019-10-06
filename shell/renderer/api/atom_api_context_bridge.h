@@ -27,8 +27,8 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
     size_t func_id,
     mate::Arguments* args);
 
-mate::Dictionary CreateProxyForAPI(
-    mate::Dictionary api,
+v8::Local<v8::Object> CreateProxyForAPI(
+    v8::Local<v8::Object> api_object,
     v8::Local<v8::Context> source_context,
     v8::Local<v8::Context> target_context,
     context_bridge::RenderFramePersistenceStore* store);
