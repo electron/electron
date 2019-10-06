@@ -1119,7 +1119,7 @@ describe('webContents module', () => {
       it(`should not crash when invoked synchronously inside ${e.name} handler`, async () => {
         const contents = (webContents as any).create() as WebContents
         const originalEmit = contents.emit.bind(contents)
-        contents.emit = (...args) => { console.log(args); return originalEmit(...args) }
+        contents.emit = (...args) => { return originalEmit(...args) }
         contents.once(e.name as any, () => (contents as any).destroy())
         const destroyed = emittedOnce(contents, 'destroyed')
         contents.loadURL(serverUrl + e.url)
