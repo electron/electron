@@ -108,7 +108,7 @@ These individual tutorials expand on topics discussed in the guide above.
 
 * [Synopsis](api/synopsis.md)
 * [Process Object](api/process.md)
-* [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
+* [Supported Command Line Switches](api/command-line-switches.md)
 * [Environment Variables](api/environment-variables.md)
 * [Breaking API Changes](api/breaking-changes.md)
 

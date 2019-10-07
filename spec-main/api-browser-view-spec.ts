@@ -27,11 +27,11 @@ describe('BrowserView module', () => {
   })
 
   afterEach(async () => {
+    await closeWindow(w)
+
     if (view) {
       view.destroy()
     }
-
-    await closeWindow(w)
   })
 
   describe('BrowserView.destroy()', () => {

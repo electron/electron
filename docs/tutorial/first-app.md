@@ -196,7 +196,7 @@ Finally the `index.html` is the web page you want to show:
     <meta charset="UTF-8">
     <title>Hello World!</title>
     <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
   </head>
   <body>
     <h1>Hello World!</h1>

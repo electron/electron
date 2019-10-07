@@ -12,7 +12,7 @@ app.commandLine.hasSwitch('disable-gpu')
 ```
 
 For more information on what kinds of flags and switches you can use, check
-out the [Chrome Command Line Switches](./chrome-command-line-switches.md)
+out the [Command Line Switches](./command-line-switches.md)
 document.
 
 ### Instance Methods

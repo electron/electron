@@ -56,7 +56,6 @@
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)

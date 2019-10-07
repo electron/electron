@@ -1052,7 +1052,7 @@ describe('<webview> tag', function () {
       await loadWebView(webview, { src })
 
       ipcRenderer.send('handle-next-remote-get-guest-web-contents')
-      expect(() => webview.getWebContents()).to.throw('Blocked remote.getGuestForWebContents()')
+      expect(() => webview.getWebContents()).to.throw('Blocked remote.getGuestWebContents()')
     })
   })
 

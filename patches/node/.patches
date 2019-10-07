@@ -18,7 +18,6 @@ pass_all_globals_through_require.patch
 call_process_log_from_fallback_stream_on_windows.patch
 fixme_use_redefined_version_of_internalmodulestat.patch
 fixme_remove_async_id_assertion_check.patch
-src_use_check_false_in_switch_default_case.patch
 fixme_comment_trace_event_macro.patch
 fix_export_node_abort_and_assert.patch
 fix_key_gen_apis_are_not_available_in_boringssl.patch
@@ -41,3 +40,4 @@ add_openssl_is_boringssl_guard_to_oaep_hash_check.patch
 fix_microtasks.patch
 fsevents-stop-using-fsevents-to-watch-files.patch
 fsevents-regression-in-watching.patch
+fix_enable_worker_threads.patch

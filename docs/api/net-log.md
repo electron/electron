@@ -15,7 +15,7 @@ app.on('ready', async () => {
 })
 ```
 
-See [`--log-net-log`](chrome-command-line-switches.md#--log-net-logpath) to log network events throughout the app's lifecycle.
+See [`--log-net-log`](command-line-switches.md#--log-net-logpath) to log network events throughout the app's lifecycle.
 
 **Note:** All methods unless specified can only be used after the `ready` event
 of the `app` module gets emitted.
