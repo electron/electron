@@ -1252,6 +1252,8 @@ you exactly what went wrong
 * `type` String (optional) - Can be `critical` or `informational`. The default is
  `informational`
 
+Returns `Integer` an ID representing the request.
+
 When `critical` is passed, the dock icon will bounce until either the
 application becomes active or the request is canceled.
 
@@ -1259,7 +1261,7 @@ When `informational` is passed, the dock icon will bounce for one second.
 However, the request remains active until either the application becomes active
 or the request is canceled.
 
-Returns `Integer` an ID representing the request.
+**Nota Bene:** This method can only be used while the app is not focused; when the app is focused it will return -1.
 
 ### `app.dock.cancelBounce(id)` _macOS_
 
