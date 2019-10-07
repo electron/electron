@@ -1,0 +1,124 @@
+From 9f23fab378a8a367418f1454c147cd7f96b15b1a Mon Sep 17 00:00:00 2001
+From: Jameson Nash <vtjnash@gmail.com>
+Date: Sat, 7 Sep 2019 14:55:40 -0400
+Subject: [PATCH] fsevents: stop using fsevents to watch files
+
+Goes back to just using it to watch folders,
+but keeps the other logic changes around.
+
+Refs: https://github.com/libuv/libuv/pull/387
+Refs: https://github.com/libuv/libuv/pull/2082
+Refs: https://github.com/libuv/libuv/pull/1572
+Refs: https://github.com/nodejs/node/issues/29460
+Fixes: https://github.com/libuv/libuv/issues/2488
+Closes: https://github.com/libuv/libuv/pull/2452
+PR-URL: https://github.com/libuv/libuv/pull/2459
+Reviewed-By: Ben Noordhuis <info@bnoordhuis.nl>
+Reviewed-By: Saúl Ibarra Corretgé <s@saghul.net>
+
+diff --git a/deps/uv/src/unix/kqueue.c b/deps/uv/src/unix/kqueue.c
+index 09200516..f5b5782c 100644
+--- a/deps/uv/src/unix/kqueue.c
++++ b/deps/uv/src/unix/kqueue.c
+@@ -454,25 +454,44 @@ int uv_fs_event_start(uv_fs_event_t* handle,
+                       const char* path,
+                       unsigned int flags) {
+   int fd;
++#if defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
++  struct stat statbuf;
++#endif
+ 
+   if (uv__is_active(handle))
+     return UV_EINVAL;
+ 
+-#if defined(__APPLE__)
++  handle->cb = cb;
++  handle->path = uv__strdup(path);
++  if (handle->path == NULL)
++    return UV_ENOMEM;
++
++  /* TODO open asynchronously - but how do we report back errors? */
++  fd = open(handle->path, O_RDONLY);
++  if (fd == -1) {
++    uv__free(handle->path);
++    handle->path = NULL;
++    return UV__ERR(errno);
++  }
++
++#if defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
+   /* Nullify field to perform checks later */
+   handle->cf_cb = NULL;
+   handle->realpath = NULL;
+   handle->realpath_len = 0;
+   handle->cf_flags = flags;
+ 
++  if (fstat(fd, &statbuf))
++    goto fallback;
++  /* FSEvents works only with directories */
++  if (!(statbuf.st_mode & S_IFDIR))
++    goto fallback;
++
+   if (!uv__has_forked_with_cfrunloop) {
+     int r;
+-    /* The fallback fd is not used */
++    /* The fallback fd is no longer needed */
++    uv__close_nocheckstdio(fd);
+     handle->event_watcher.fd = -1;
+-    handle->path = uv__strdup(path);
+-    if (handle->path == NULL)
+-      return UV_ENOMEM;
+-    handle->cb = cb;
+     r = uv__fsevents_init(handle);
+     if (r == 0) {
+       uv__handle_start(handle);
+@@ -482,20 +501,9 @@ int uv_fs_event_start(uv_fs_event_t* handle,
+     }
+     return r;
+   }
+-#endif /* defined(__APPLE__) */
+-
+-  /* TODO open asynchronously - but how do we report back errors? */
+-  fd = open(path, O_RDONLY);
+-  if (fd == -1)
+-    return UV__ERR(errno);
++fallback:
++#endif /* #if defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1070 */
+ 
+-  handle->path = uv__strdup(path);
+-  if (handle->path == NULL) {
+-    uv__close_nocheckstdio(fd);
+-    return UV_ENOMEM;
+-  }
+-
+-  handle->cb = cb;
+   uv__handle_start(handle);
+   uv__io_init(&handle->event_watcher, uv__fs_event, fd);
+   uv__io_start(handle->loop, &handle->event_watcher, POLLIN);
+@@ -513,8 +521,8 @@ int uv_fs_event_stop(uv_fs_event_t* handle) {
+ 
+   uv__handle_stop(handle);
+ 
+-#if defined(__APPLE__)
+-  if (!uv__has_forked_with_cfrunloop)
++#if defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
++  if (!uv__has_forked_with_cfrunloop && handle->cf_cb != NULL)
+     r = uv__fsevents_close(handle);
+ #endif
+ 
+diff --git a/deps/uv/test/test-fs-event.c b/deps/uv/test/test-fs-event.c
+index ea34bd63..4b8bb1ef 100644
+--- a/deps/uv/test/test-fs-event.c
++++ b/deps/uv/test/test-fs-event.c
+@@ -656,6 +656,12 @@ TEST_IMPL(fs_event_watch_file_current_dir) {
+   /* Setup */
+   remove("watch_file");
+   create_file("watch_file");
++#if defined(__APPLE__) && !defined(MAC_OS_X_VERSION_10_12)
++  /* Empirically, kevent seems to (sometimes) report the preceeding
++   * create_file events prior to macOS 10.11.6 in the subsequent fs_event_start
++   * So let the system settle before running the test. */
++  uv_sleep(1100);
++#endif
+ 
+   r = uv_fs_event_init(loop, &fs_event);
+   ASSERT(r == 0);
