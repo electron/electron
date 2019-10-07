@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jaime Bernardo <jaime@janeasystems.com>
+Date: Mon, 30 Sep 2019 17:53:56 +0100
+Subject: GLES2: Use require_constant_initialization for g_Mutex
+
+A static assert to verify that the global mutex g_Mutex is trivially
+constructed fails to compile with clang when using the STL shipped
+with Visual Studio 2019.
+
+Use __attribute__((require_constant_initialization)) instead to verify
+for constant initialization.
+
+BUG=angleproject:3936
+
+Change-Id: I5969762ad5a99033143513d7c4992344da276b1a
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/1832164
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/AUTHORS b/AUTHORS
+index ab39ee01a47c15da57b531d2c711649f1685091b..7a0f3b32b101b34195c57637b227062d9b173d6a 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -58,3 +58,4 @@ Jérôme Duval
+ Thomas Miller
+ Till Rathmann
+ Nick Shaforostov
++Jaime Bernardo
+diff --git a/src/common/angleutils.h b/src/common/angleutils.h
+index 131d5796da4399df1144bc349c506cde8220973a..3a1391e29b72e7ec356e44c7ced202cc29773fb3 100644
+--- a/src/common/angleutils.h
++++ b/src/common/angleutils.h
+@@ -345,4 +345,10 @@ std::string ToString(const T &value)
+ #    define ANGLE_MAYBE_UNUSED
+ #endif  // __has_cpp_attribute(maybe_unused)
+ 
++#if __has_cpp_attribute(require_constant_initialization)
++#    define ANGLE_REQUIRE_CONSTANT_INIT [[require_constant_initialization]]
++#else
++#    define ANGLE_REQUIRE_CONSTANT_INIT
++#endif  // __has_cpp_attribute(require_constant_initialization)
++
+ #endif  // COMMON_ANGLEUTILS_H_
+diff --git a/src/libGLESv2/global_state.cpp b/src/libGLESv2/global_state.cpp
+index 8ea912eea045c912ef64dfedcfd8f07db4337a9d..c8c9a732fbad5cc50ed2a7fc4b5387a30274435b 100644
+--- a/src/libGLESv2/global_state.cpp
++++ b/src/libGLESv2/global_state.cpp
+@@ -35,9 +35,8 @@ namespace
+ {
+ static TLSIndex threadTLS = TLS_INVALID_INDEX;
+ Debug *g_Debug            = nullptr;
+-std::atomic<std::mutex *> g_Mutex;
+-static_assert(std::is_trivially_constructible<decltype(g_Mutex)>::value,
+-              "global mutex is not trivially constructible");
++
++ANGLE_REQUIRE_CONSTANT_INIT std::atomic<std::mutex *> g_Mutex(nullptr);
+ static_assert(std::is_trivially_destructible<decltype(g_Mutex)>::value,
+               "global mutex is not trivially destructible");
+ 
