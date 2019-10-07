@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jaime Bernardo <jaime@janeasystems.com>
+Date: Tue, 1 Oct 2019 20:06:03 +0100
+Subject: Include string in v8.h
+
+Explicitly #include<string> in v8.h, since std::string is referenced
+in it. In the C++ STL shipped with Visual Studio 2019, none of the
+headers included in v8.h ends up including the C++ string header, which
+caused a compile error.
+
+Bug: v8:9793
+Change-Id: I84a133dd10dd6dcc7b70287af393e82cf0dc97df
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/1834321
+Reviewed-by: Adam Klein <adamk@chromium.org>
+Commit-Queue: Adam Klein <adamk@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#64074}
+
+diff --git a/include/v8.h b/include/v8.h
+index f0c47907292b9da438347276ac240541577899ad..a8010f4dadef1636697d08888a4c5e2da68f884a 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -19,6 +19,7 @@
+ #include <stdint.h>
+ #include <stdio.h>
+ #include <memory>
++#include <string>
+ #include <type_traits>
+ #include <utility>
+ #include <vector>
