@@ -1,0 +1,22 @@
+# Web embeds in Electron
+
+If you want to show (third party) web content in Electron, there are three options available to you: iframes, webviews and browserviews. Each one offers slightly different functionality and is useful in different situations. To help you choose between these this guide will explain the differences and capabilities of each.
+
+## Iframes
+
+Iframes in Electron behave like iframes in regular browsers. An <iframe> element in your page can show external web pages, provided that their [Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) allows it. To limit the amount of capabilities a site in an iframe, it's recommended to use the [`sandbox` attribute](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox) and only allow the capabilities you want to support.
+
+## Webviews
+
+[Webviews](https://electronjs.org/docs/api/webview-tag) are based on Chromium's webviews and are not explicitly supported by Electron, in such way that we do not give guarantees that the Webview api will remain available in future versions of Electron. This is why, if you want to use webviews, you will need to set `webviewTag` to `true` in the `webPreferences` of your BrowserWindow.
+
+Webviews are a custom element(<webview>) that will only work inside Electron.
+They are implemented as an "out-of-process iframe". This means all communication with the webview is done asynchronously using IPC. The webview element has many custom methods and events, similar to webContents, that allow you much greater control over the contents of a webview.
+
+Compared to an iframe, webviews tend to be slightly slower, but offer much greater control in loading and communicating with the third party content and handling various events.
+
+## Browserviews
+
+Browserviews are not part of your DOM, but are created in your main process and are overlaid on top of your BrowserWindow content. This means they are completely separate from your own BrowserWindow content and their position is not controlled by the DOM and CSS, but by setting the bounds in the main process.
+
+Browserviews offer the greatest control over their contents, since they implement the webContents similarly to how a BrowserWindows implements it. However they are not part of your DOM but are overlaid on top of them, which means you will have to manage their position manually.
