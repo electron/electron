@@ -68,9 +68,14 @@ int NodeMain(int argc, char* argv[]) {
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
 
-    node::Environment* env = node::CreateEnvironment(
-        node::CreateIsolateData(gin_env.isolate(), loop, gin_env.platform()),
-        gin_env.context(), argc, argv, exec_argc, exec_argv, false);
+    node::IsolateData* isolate_data =
+        node::CreateIsolateData(gin_env.isolate(), loop, gin_env.platform());
+    CHECK_NE(nullptr, isolate_data);
+
+    node::Environment* env =
+        node::CreateEnvironment(isolate_data, gin_env.context(), argc, argv,
+                                exec_argc, exec_argv, false);
+    CHECK_NE(nullptr, env);
 
     // Enable support for v8 inspector.
     NodeDebugger node_debugger(env);
@@ -118,6 +123,7 @@ int NodeMain(int argc, char* argv[]) {
 
     v8::Isolate* isolate = env->isolate();
     node::FreeEnvironment(env);
+    node::FreeIsolateData(isolate_data);
 
     gin_env.platform()->DrainTasks(isolate);
     gin_env.platform()->CancelPendingDelayedTasks(isolate);
