@@ -572,7 +572,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
 
     std::pair<uint8_t*, size_t> buffer = serializer_.Release();
     DCHECK_EQ(buffer.first, data_.data());
-    out->encoded_message = {buffer.first, buffer.second};
+    out->encoded_message = base::make_span(buffer.first, buffer.second);
     out->owned_encoded_message = std::move(data_);
 
     return true;
@@ -605,6 +605,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   void* ReallocateBufferMemory(void* old_buffer,
                                size_t size,
                                size_t* actual_size) override {
+    DCHECK_EQ(old_buffer, data_.data());
     data_.resize(size);
     *actual_size = data_.capacity();
     return data_.data();
@@ -612,7 +613,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
 
   void FreeBufferMemory(void* buffer) override {
     DCHECK_EQ(buffer, data_.data());
-    // Do nothing; data_ will be freed when this delegate object is cleaned up.
+    data_ = {};
   }
 
   void ThrowDataCloneError(v8::Local<v8::String> message) override {
@@ -681,7 +682,8 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
         !deserializer_.ReadRawBytes(length, &data)) {
       return false;
     }
-    mojo::Message message({reinterpret_cast<const uint8_t*>(data), length}, {});
+    mojo::Message message(
+        base::make_span(reinterpret_cast<const uint8_t*>(data), length), {});
     base::Value out;
     if (!mojo_base::mojom::Value::DeserializeFromMessage(std::move(message),
                                                          &out)) {
