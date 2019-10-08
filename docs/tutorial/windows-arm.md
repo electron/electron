@@ -74,7 +74,7 @@ By default, `node-gyp` unpacks Electron's node headers and downloads the x86 and
 1. Download the arm64 `node.lib` from https://atom.io/download/v6.0.9/win-arm64/node.lib
 2. Move it to `%APPDATA%\..\Local\node-gyp\Cache\6.0.9\arm64\node.lib`
 
-Ssubstitute `6.0.9` for the version you're using.
+Substitute `6.0.9` for the version you're using.
 
 
 ## Cross-compiling native modules
