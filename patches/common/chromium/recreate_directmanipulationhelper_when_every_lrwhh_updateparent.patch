@@ -1,0 +1,975 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Siye Liu <siliu@microsoft.com>
+Date: Mon, 12 Aug 2019 19:26:49 +0000
+Subject: Recreate DirectManipulationHelper when every LRWHH UpdateParent
+
+This is a reland of 7da070704275ac67c95a89dd373a1dc0a1ba1256 and
+d77c5029a13a83e676833aea61966a003564e57a
+
+Compositor and window event target is associated with window's parent.
+We call LRWHH UpdateParent when window's parent update, includes
+window's parent actually update and window initialize. Recreate
+DirectManipulationHelper on every window's parent update helps keep
+DirectManipulationHelper lifecycle tracking simpler. We also make
+CompositorAnimationObserver owned by DirectManipulationHelper.
+
+With this changes, we start the DirectManipulation event polling when
+DirectManipulationHelper created and stop when it destroyed. The issue
+should be fix since event polling start no more depends on
+DM_POINTERHITTEST.
+
+This CL also includes 3 refactoring changes:
+
+1. Move CompositorAnimationObserver into DirectManipulationHelper.
+2. Call ZoomToRect to reset viewport of DirectManipulation when
+   viewport is actually transformed in RUNNING - READAY sequence.
+3. Pass the viewport size to DMEventHandler and use it to reset viewport
+   at gesture end.
+
+The original changes caused a regression that browser UI composition
+keeps ticking begin frames. We register DirectManipulationHelperWin
+as an AnimationObserver of ui::Compositor. UI compositor will ask for
+begin frames as long as it has an AnimationObserver. We should call
+OnCompositorShuttingDown() when the compositor is going Idle. Therefore,
+I added a IDirectManipulationInteractionEventHandler that adds the
+observer when a manipulation begins, and removes it when manipulation
+ends. After my fix, we start the DirectManipulation event polling when
+DirectManipulation interaction begin and stop when DirectManipulation
+interaction end.
+
+Bug: 914914
+Change-Id: I9f59381bdcc6e4ed0970003d87b26ac750bfb42d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1689922
+Reviewed-by: Scott Violet <sky@chromium.org>
+Commit-Queue: Siye Liu <siliu@microsoft.com>
+Cr-Commit-Position: refs/heads/master@{#686111}
+
+diff --git a/content/browser/renderer_host/direct_manipulation_event_handler_win.cc b/content/browser/renderer_host/direct_manipulation_event_handler_win.cc
+index eec54fcb0187cfd47286d51226057b2fc4b3204a..33ce63d8d0f59573cb4764f146b4f88008cca4a8 100644
+--- a/content/browser/renderer_host/direct_manipulation_event_handler_win.cc
++++ b/content/browser/renderer_host/direct_manipulation_event_handler_win.cc
+@@ -28,19 +28,16 @@ bool FloatEquals(float f1, float f2) {
+ }  // namespace
+ 
+ DirectManipulationEventHandler::DirectManipulationEventHandler(
+-    DirectManipulationHelper* helper)
+-    : helper_(helper) {}
+-
+-void DirectManipulationEventHandler::SetWindowEventTarget(
+-    ui::WindowEventTarget* event_target) {
+-  if (!event_target && LoggingEnabled()) {
+-    DebugLogging("Event target is null.", S_OK);
+-    if (event_target_)
+-      DebugLogging("Previous event target is not null", S_OK);
+-    else
+-      DebugLogging("Previous event target is null", S_OK);
+-  }
+-  event_target_ = event_target;
++    DirectManipulationHelper* helper,
++    ui::WindowEventTarget* event_target)
++    : helper_(helper), event_target_(event_target) {}
++
++bool DirectManipulationEventHandler::SetViewportSizeInPixels(
++    const gfx::Size& viewport_size_in_pixels) {
++  if (viewport_size_in_pixels_ == viewport_size_in_pixels)
++    return false;
++  viewport_size_in_pixels_ = viewport_size_in_pixels;
++  return true;
+ }
+ 
+ void DirectManipulationEventHandler::SetDeviceScaleFactor(
+@@ -175,19 +172,28 @@ HRESULT DirectManipulationEventHandler::OnViewportStatusChanged(
+   if (current != DIRECTMANIPULATION_READY)
+     return S_OK;
+ 
+-  // Reset the viewport when we're idle, so the content transforms always start
+-  // at identity.
+-  // Every animation will receive 2 ready message, we should stop request
+-  // compositor animation at the second ready.
+-  first_ready_ = !first_ready_;
+-  HRESULT hr = helper_->Reset(first_ready_);
++  // Normally gesture sequence will receive 2 READY message, the first one is
++  // gesture end, the second one is from viewport reset. We don't have content
++  // transform in the second RUNNING -> READY. We should not reset on an empty
++  // RUNNING -> READY sequence.
++  if (last_scale_ != 1.0f || last_x_offset_ != 0 || last_y_offset_ != 0) {
++    HRESULT hr = viewport->ZoomToRect(
++        static_cast<float>(0), static_cast<float>(0),
++        static_cast<float>(viewport_size_in_pixels_.width()),
++        static_cast<float>(viewport_size_in_pixels_.height()), FALSE);
++    if (!SUCCEEDED(hr)) {
++      DebugLogging("Viewport zoom to rect failed.", hr);
++      return hr;
++    }
++  }
++
+   last_scale_ = 1.0f;
+   last_x_offset_ = 0.0f;
+   last_y_offset_ = 0.0f;
+ 
+   TransitionToState(GestureState::kNone);
+ 
+-  return hr;
++  return S_OK;
+ }
+ 
+ HRESULT DirectManipulationEventHandler::OnViewportUpdated(
+@@ -294,4 +300,18 @@ HRESULT DirectManipulationEventHandler::OnContentUpdated(
+   return hr;
+ }
+ 
++HRESULT DirectManipulationEventHandler::OnInteraction(
++    IDirectManipulationViewport2* viewport,
++    DIRECTMANIPULATION_INTERACTION_TYPE interaction) {
++  if (interaction == DIRECTMANIPULATION_INTERACTION_BEGIN) {
++    DebugLogging("OnInteraction BEGIN.", S_OK);
++    helper_->AddAnimationObserver();
++  } else if (interaction == DIRECTMANIPULATION_INTERACTION_END) {
++    DebugLogging("OnInteraction END.", S_OK);
++    helper_->RemoveAnimationObserver();
++  }
++
++  return S_OK;
++}
++
+ }  // namespace content
+diff --git a/content/browser/renderer_host/direct_manipulation_event_handler_win.h b/content/browser/renderer_host/direct_manipulation_event_handler_win.h
+index 270e85a09feb0add5b62afe3d9234627070ffe00..f1902085032ffc95edb2d8dcd5224f1c5ecda3d2 100644
+--- a/content/browser/renderer_host/direct_manipulation_event_handler_win.h
++++ b/content/browser/renderer_host/direct_manipulation_event_handler_win.h
+@@ -11,6 +11,7 @@
+ #include <wrl.h>
+ 
+ #include "base/macros.h"
++#include "ui/gfx/geometry/size.h"
+ 
+ namespace ui {
+ 
+@@ -21,6 +22,7 @@ class WindowEventTarget;
+ namespace content {
+ 
+ class DirectManipulationHelper;
++class DirectManipulationBrowserTest;
+ class DirectManipulationUnitTest;
+ 
+ // DirectManipulationEventHandler receives status update and gesture events from
+@@ -33,17 +35,19 @@ class DirectManipulationEventHandler
+               Microsoft::WRL::RuntimeClassFlags<
+                   Microsoft::WRL::RuntimeClassType::ClassicCom>,
+               Microsoft::WRL::FtmBase,
+-              IDirectManipulationViewportEventHandler>> {
++              IDirectManipulationViewportEventHandler,
++              IDirectManipulationInteractionEventHandler>> {
+  public:
+-  explicit DirectManipulationEventHandler(DirectManipulationHelper* helper);
++  DirectManipulationEventHandler(DirectManipulationHelper* helper,
++                                 ui::WindowEventTarget* event_target);
+ 
+-  // WindowEventTarget updates for every DM_POINTERHITTEST in case window
+-  // hierarchy changed.
+-  void SetWindowEventTarget(ui::WindowEventTarget* event_target);
++  // Return true if viewport_size_in_pixels_ changed.
++  bool SetViewportSizeInPixels(const gfx::Size& viewport_size_in_pixels);
+ 
+   void SetDeviceScaleFactor(float device_scale_factor);
+ 
+  private:
++  friend class DirectManipulationBrowserTest;
+   friend DirectManipulationUnitTest;
+ 
+   // DirectManipulationEventHandler();
+@@ -65,18 +69,23 @@ class DirectManipulationEventHandler
+   OnContentUpdated(_In_ IDirectManipulationViewport* viewport,
+                    _In_ IDirectManipulationContent* content) override;
+ 
++  HRESULT STDMETHODCALLTYPE
++  OnInteraction(_In_ IDirectManipulationViewport2* viewport,
++                _In_ DIRECTMANIPULATION_INTERACTION_TYPE interaction) override;
++
+   DirectManipulationHelper* helper_ = nullptr;
+   ui::WindowEventTarget* event_target_ = nullptr;
+   float device_scale_factor_ = 1.0f;
+   float last_scale_ = 1.0f;
+   int last_x_offset_ = 0;
+   int last_y_offset_ = 0;
+-  bool first_ready_ = false;
+   bool should_send_scroll_begin_ = false;
+ 
+   // Current recognized gesture from Direct Manipulation.
+   GestureState gesture_state_ = GestureState::kNone;
+ 
++  gfx::Size viewport_size_in_pixels_;
++
+   DISALLOW_COPY_AND_ASSIGN(DirectManipulationEventHandler);
+ };
+ 
+diff --git a/content/browser/renderer_host/direct_manipulation_helper_win.cc b/content/browser/renderer_host/direct_manipulation_helper_win.cc
+index cc62fd688711153e2930fe06550c219e4cc01173..9401e7f8fb1fafd0532bb1e86035701c1df2ffda 100644
+--- a/content/browser/renderer_host/direct_manipulation_helper_win.cc
++++ b/content/browser/renderer_host/direct_manipulation_helper_win.cc
+@@ -14,6 +14,8 @@
+ #include "base/win/windows_version.h"
+ #include "ui/base/ui_base_features.h"
+ #include "ui/base/win/window_event_target.h"
++#include "ui/compositor/compositor.h"
++#include "ui/compositor/compositor_animation_observer.h"
+ #include "ui/display/win/screen_win.h"
+ #include "ui/gfx/geometry/rect.h"
+ 
+@@ -39,8 +41,9 @@ void DebugLogging(const std::string& s, HRESULT hr) {
+ // static
+ std::unique_ptr<DirectManipulationHelper>
+ DirectManipulationHelper::CreateInstance(HWND window,
++                                         ui::Compositor* compositor,
+                                          ui::WindowEventTarget* event_target) {
+-  if (!::IsWindow(window))
++  if (!::IsWindow(window) || !compositor || !event_target)
+     return nullptr;
+ 
+   if (!base::FeatureList::IsEnabled(features::kPrecisionTouchpad))
+@@ -51,8 +54,7 @@ DirectManipulationHelper::CreateInstance(HWND window,
+     return nullptr;
+ 
+   std::unique_ptr<DirectManipulationHelper> instance =
+-      base::WrapUnique(new DirectManipulationHelper());
+-  instance->window_ = window;
++      base::WrapUnique(new DirectManipulationHelper(window, compositor));
+ 
+   if (instance->Initialize(event_target))
+     return instance;
+@@ -73,11 +75,11 @@ DirectManipulationHelper::CreateInstanceForTesting(
+     return nullptr;
+ 
+   std::unique_ptr<DirectManipulationHelper> instance =
+-      base::WrapUnique(new DirectManipulationHelper());
++      base::WrapUnique(new DirectManipulationHelper(0, nullptr));
+ 
+   instance->event_handler_ =
+-      Microsoft::WRL::Make<DirectManipulationEventHandler>(instance.get());
+-  instance->event_handler_->SetWindowEventTarget(event_target);
++      Microsoft::WRL::Make<DirectManipulationEventHandler>(instance.get(),
++                                                           event_target);
+ 
+   instance->viewport_ = viewport;
+ 
+@@ -85,11 +87,25 @@ DirectManipulationHelper::CreateInstanceForTesting(
+ }
+ 
+ DirectManipulationHelper::~DirectManipulationHelper() {
+-  if (viewport_)
+-    viewport_->Abandon();
++  Destroy();
+ }
+ 
+-DirectManipulationHelper::DirectManipulationHelper() {}
++DirectManipulationHelper::DirectManipulationHelper(HWND window,
++                                                   ui::Compositor* compositor)
++    : window_(window), compositor_(compositor) {}
++
++void DirectManipulationHelper::OnAnimationStep(base::TimeTicks timestamp) {
++  // Simulate 1 frame in update_manager_.
++  HRESULT hr = update_manager_->Update(nullptr);
++  if (!SUCCEEDED(hr))
++    DebugLogging("UpdateManager update failed.", hr);
++}
++
++void DirectManipulationHelper::OnCompositingShuttingDown(
++    ui::Compositor* compositor) {
++  DCHECK_EQ(compositor, compositor_);
++  Destroy();
++}
+ 
+ bool DirectManipulationHelper::Initialize(ui::WindowEventTarget* event_target) {
+   // IDirectManipulationUpdateManager is the first COM object created by the
+@@ -142,8 +158,8 @@ bool DirectManipulationHelper::Initialize(ui::WindowEventTarget* event_target) {
+     return false;
+   }
+ 
+-  event_handler_ = Microsoft::WRL::Make<DirectManipulationEventHandler>(this);
+-  event_handler_->SetWindowEventTarget(event_target);
++  event_handler_ =
++      Microsoft::WRL::Make<DirectManipulationEventHandler>(this, event_target);
+ 
+   // We got Direct Manipulation transform from
+   // IDirectManipulationViewportEventHandler.
+@@ -155,8 +171,9 @@ bool DirectManipulationHelper::Initialize(ui::WindowEventTarget* event_target) {
+   }
+ 
+   // Set default rect for viewport before activate.
+-  viewport_size_in_pixels_ = {1000, 1000};
+-  RECT rect = gfx::Rect(viewport_size_in_pixels_).ToRECT();
++  gfx::Size viewport_size_in_pixels = {1000, 1000};
++  event_handler_->SetViewportSizeInPixels(viewport_size_in_pixels);
++  RECT rect = gfx::Rect(viewport_size_in_pixels).ToRECT();
+   hr = viewport_->SetViewportRect(&rect);
+   if (!SUCCEEDED(hr)) {
+     DebugLogging("Viewport set rect failed.", hr);
+@@ -185,33 +202,9 @@ bool DirectManipulationHelper::Initialize(ui::WindowEventTarget* event_target) {
+   return true;
+ }
+ 
+-void DirectManipulationHelper::Activate() {
+-  HRESULT hr = viewport_->Stop();
+-  if (!SUCCEEDED(hr)) {
+-    DebugLogging("Viewport stop failed.", hr);
+-    return;
+-  }
+-
+-  hr = manager_->Activate(window_);
+-  if (!SUCCEEDED(hr))
+-    DebugLogging("DirectManipulationManager activate failed.", hr);
+-}
+-
+-void DirectManipulationHelper::Deactivate() {
+-  HRESULT hr = viewport_->Stop();
+-  if (!SUCCEEDED(hr)) {
+-    DebugLogging("Viewport stop failed.", hr);
+-    return;
+-  }
+-
+-  hr = manager_->Deactivate(window_);
+-  if (!SUCCEEDED(hr))
+-    DebugLogging("DirectManipulationManager deactivate failed.", hr);
+-}
+-
+ void DirectManipulationHelper::SetSizeInPixels(
+     const gfx::Size& size_in_pixels) {
+-  if (viewport_size_in_pixels_ == size_in_pixels)
++  if (!event_handler_->SetViewportSizeInPixels(size_in_pixels))
+     return;
+ 
+   HRESULT hr = viewport_->Stop();
+@@ -220,16 +213,13 @@ void DirectManipulationHelper::SetSizeInPixels(
+     return;
+   }
+ 
+-  viewport_size_in_pixels_ = size_in_pixels;
+-  RECT rect = gfx::Rect(viewport_size_in_pixels_).ToRECT();
++  RECT rect = gfx::Rect(size_in_pixels).ToRECT();
+   hr = viewport_->SetViewportRect(&rect);
+   if (!SUCCEEDED(hr))
+     DebugLogging("Viewport set rect failed.", hr);
+ }
+ 
+-bool DirectManipulationHelper::OnPointerHitTest(
+-    WPARAM w_param,
+-    ui::WindowEventTarget* event_target) {
++void DirectManipulationHelper::OnPointerHitTest(WPARAM w_param) {
+   // Update the device scale factor.
+   event_handler_->SetDeviceScaleFactor(
+       display::win::ScreenWin::GetScaleFactorForHWND(window_));
+@@ -240,53 +230,62 @@ bool DirectManipulationHelper::OnPointerHitTest(
+   // For WM_POINTER, the pointer type will show the event from mouse.
+   // For WM_POINTERACTIVATE, the pointer id will be different with the following
+   // message.
+-  event_handler_->SetWindowEventTarget(event_target);
+-
+   using GetPointerTypeFn = BOOL(WINAPI*)(UINT32, POINTER_INPUT_TYPE*);
+   UINT32 pointer_id = GET_POINTERID_WPARAM(w_param);
+   POINTER_INPUT_TYPE pointer_type;
+   static const auto get_pointer_type = reinterpret_cast<GetPointerTypeFn>(
+       base::win::GetUser32FunctionPointer("GetPointerType"));
+   if (get_pointer_type && get_pointer_type(pointer_id, &pointer_type) &&
+-      pointer_type == PT_TOUCHPAD && event_target) {
++      pointer_type == PT_TOUCHPAD) {
+     HRESULT hr = viewport_->SetContact(pointer_id);
+-    if (!SUCCEEDED(hr)) {
++    if (!SUCCEEDED(hr))
+       DebugLogging("Viewport set contact failed.", hr);
+-      return false;
+-    }
+-
+-    // Request begin frame for fake viewport.
+-    need_poll_events_ = true;
+   }
+-  return need_poll_events_;
+ }
+ 
+-HRESULT DirectManipulationHelper::Reset(bool need_poll_events) {
+-  // By zooming the primary content to a rect that match the viewport rect, we
+-  // reset the content's transform to identity.
+-  HRESULT hr = viewport_->ZoomToRect(
+-      static_cast<float>(0), static_cast<float>(0),
+-      static_cast<float>(viewport_size_in_pixels_.width()),
+-      static_cast<float>(viewport_size_in_pixels_.height()), FALSE);
+-  if (!SUCCEEDED(hr)) {
+-    DebugLogging("Viewport zoom to rect failed.", hr);
+-    return hr;
+-  }
+-
+-  need_poll_events_ = need_poll_events;
+-  return S_OK;
++void DirectManipulationHelper::AddAnimationObserver() {
++  DCHECK(compositor_);
++  compositor_->AddAnimationObserver(this);
++  has_animation_observer_ = true;
+ }
+ 
+-bool DirectManipulationHelper::PollForNextEvent() {
+-  // Simulate 1 frame in update_manager_.
+-  HRESULT hr = update_manager_->Update(nullptr);
+-  if (!SUCCEEDED(hr))
+-    DebugLogging("UpdateManager update failed.", hr);
+-  return need_poll_events_;
++void DirectManipulationHelper::RemoveAnimationObserver() {
++  DCHECK(compositor_);
++  compositor_->RemoveAnimationObserver(this);
++  has_animation_observer_ = false;
+ }
+ 
+ void DirectManipulationHelper::SetDeviceScaleFactorForTesting(float factor) {
+   event_handler_->SetDeviceScaleFactor(factor);
+ }
+ 
++void DirectManipulationHelper::Destroy() {
++  if (!compositor_)
++    return;
++  if (has_animation_observer_)
++    RemoveAnimationObserver();
++  compositor_ = nullptr;
++
++  HRESULT hr;
++  if (viewport_) {
++    hr = viewport_->Stop();
++    if (!SUCCEEDED(hr))
++      DebugLogging("Viewport stop failed.", hr);
++
++    hr = viewport_->RemoveEventHandler(view_port_handler_cookie_);
++    if (!SUCCEEDED(hr))
++      DebugLogging("Viewport remove event handler failed.", hr);
++
++    hr = viewport_->Abandon();
++    if (!SUCCEEDED(hr))
++      DebugLogging("Viewport abandon failed.", hr);
++  }
++
++  if (manager_) {
++    hr = manager_->Deactivate(window_);
++    if (!SUCCEEDED(hr))
++      DebugLogging("DirectManipulationManager deactivate failed.", hr);
++  }
++}
++
+ }  // namespace content
+diff --git a/content/browser/renderer_host/direct_manipulation_helper_win.h b/content/browser/renderer_host/direct_manipulation_helper_win.h
+index 76c889b35508ebd92f803a2dd723cfdc11cef1e1..adf19d6849f69b83c51b123c86600a15679da9c6 100644
+--- a/content/browser/renderer_host/direct_manipulation_helper_win.h
++++ b/content/browser/renderer_host/direct_manipulation_helper_win.h
+@@ -16,10 +16,12 @@
+ #include "base/macros.h"
+ #include "content/browser/renderer_host/direct_manipulation_event_handler_win.h"
+ #include "content/common/content_export.h"
++#include "ui/compositor/compositor_animation_observer.h"
+ #include "ui/gfx/geometry/size.h"
+ 
+ namespace ui {
+ 
++class Compositor;
+ class WindowEventTarget;
+ 
+ }  // namespace ui
+@@ -44,13 +46,15 @@ bool LoggingEnabled();
+ //    when DM_POINTERHITTEST.
+ // 3. OnViewportStatusChanged will be called when the gesture phase change.
+ //    OnContentUpdated will be called when the gesture update.
+-class CONTENT_EXPORT DirectManipulationHelper {
++class CONTENT_EXPORT DirectManipulationHelper
++    : public ui::CompositorAnimationObserver {
+  public:
+   // Creates and initializes an instance of this class if Direct Manipulation is
+   // enabled on the platform. Returns nullptr if it disabled or failed on
+   // initialization.
+   static std::unique_ptr<DirectManipulationHelper> CreateInstance(
+       HWND window,
++      ui::Compositor* compositor,
+       ui::WindowEventTarget* event_target);
+ 
+   // Creates and initializes an instance for testing.
+@@ -58,49 +62,48 @@ class CONTENT_EXPORT DirectManipulationHelper {
+       ui::WindowEventTarget* event_target,
+       Microsoft::WRL::ComPtr<IDirectManipulationViewport> viewport);
+ 
+-  ~DirectManipulationHelper();
++  ~DirectManipulationHelper() override;
+ 
+-  // Actives Direct Manipulation, call when window show.
+-  void Activate();
+-
+-  // Deactivates Direct Manipulation, call when window show.
+-  void Deactivate();
++  // CompositorAnimationObserver implements.
++  // DirectManipulation needs to poll for new events every frame while finger
++  // gesturing on touchpad.
++  void OnAnimationStep(base::TimeTicks timestamp) override;
++  void OnCompositingShuttingDown(ui::Compositor* compositor) override;
+ 
+   // Updates viewport size. Call it when window bounds updated.
+   void SetSizeInPixels(const gfx::Size& size_in_pixels);
+ 
+-  // Reset for gesture end.
+-  HRESULT Reset(bool need_animtation);
++  // Pass the pointer hit test to Direct Manipulation.
++  void OnPointerHitTest(WPARAM w_param);
+ 
+-  // Pass the pointer hit test to Direct Manipulation. Return true indicated we
+-  // need poll for new events every frame from here.
+-  bool OnPointerHitTest(WPARAM w_param, ui::WindowEventTarget* event_target);
++  // Register this as an AnimationObserver of ui::Compositor.
++  void AddAnimationObserver();
+ 
+-  // On each frame poll new Direct Manipulation events. Return true if we still
+-  // need poll for new events on next frame, otherwise stop request need begin
+-  // frame.
+-  bool PollForNextEvent();
++  // Unregister this as an AnimationObserver of ui::Compositor.
++  void RemoveAnimationObserver();
+ 
+  private:
+   friend class content::DirectManipulationBrowserTest;
+   friend class DirectManipulationUnitTest;
+ 
+-  DirectManipulationHelper();
++  DirectManipulationHelper(HWND window, ui::Compositor* compositor);
+ 
+   // This function instantiates Direct Manipulation and creates a viewport for
+-  // the passed in |window|. Return false if initialize failed.
++  // |window_|. Return false if initialize failed.
+   bool Initialize(ui::WindowEventTarget* event_target);
+ 
+   void SetDeviceScaleFactorForTesting(float factor);
+ 
++  void Destroy();
++
+   Microsoft::WRL::ComPtr<IDirectManipulationManager> manager_;
+   Microsoft::WRL::ComPtr<IDirectManipulationUpdateManager> update_manager_;
+   Microsoft::WRL::ComPtr<IDirectManipulationViewport> viewport_;
+   Microsoft::WRL::ComPtr<DirectManipulationEventHandler> event_handler_;
+   HWND window_;
++  ui::Compositor* compositor_ = nullptr;
+   DWORD view_port_handler_cookie_;
+-  bool need_poll_events_ = false;
+-  gfx::Size viewport_size_in_pixels_;
++  bool has_animation_observer_ = false;
+ 
+   DISALLOW_COPY_AND_ASSIGN(DirectManipulationHelper);
+ };
+diff --git a/content/browser/renderer_host/direct_manipulation_win_browsertest.cc b/content/browser/renderer_host/direct_manipulation_win_browsertest.cc
+index 7648cf140d0de6e82ea81c33877495c91e7a57a9..10cf453cda7110b0531854ba63bb908fdd590d50 100644
+--- a/content/browser/renderer_host/direct_manipulation_win_browsertest.cc
++++ b/content/browser/renderer_host/direct_manipulation_win_browsertest.cc
+@@ -49,33 +49,23 @@ class DirectManipulationBrowserTest : public ContentBrowserTest,
+     return rwhva->legacy_render_widget_host_HWND_;
+   }
+ 
+-  HWND GetSubWindowHWND() {
+-    LegacyRenderWidgetHostHWND* lrwhh = GetLegacyRenderWidgetHostHWND();
+-
+-    return lrwhh->hwnd();
+-  }
+-
+   ui::WindowEventTarget* GetWindowEventTarget() {
+     LegacyRenderWidgetHostHWND* lrwhh = GetLegacyRenderWidgetHostHWND();
+ 
+     return lrwhh->GetWindowEventTarget(lrwhh->GetParent());
+   }
+ 
+-  void SimulatePointerHitTest() {
+-    LegacyRenderWidgetHostHWND* lrwhh = GetLegacyRenderWidgetHostHWND();
+-
+-    lrwhh->direct_manipulation_helper_->need_poll_events_ = true;
+-    lrwhh->CreateAnimationObserver();
+-  }
+-
+-  void UpdateParent(HWND hwnd) {
++  void SetDirectManipulationInteraction(
++      DIRECTMANIPULATION_INTERACTION_TYPE type) {
+     LegacyRenderWidgetHostHWND* lrwhh = GetLegacyRenderWidgetHostHWND();
+ 
+-    lrwhh->UpdateParent(hwnd);
++    lrwhh->direct_manipulation_helper_->event_handler_->OnInteraction(nullptr,
++                                                                      type);
+   }
+ 
+-  bool HasCompositorAnimationObserver(LegacyRenderWidgetHostHWND* lrwhh) {
+-    return lrwhh->compositor_animation_observer_ != nullptr;
++  bool HasAnimationObserver(LegacyRenderWidgetHostHWND* lrwhh) {
++    return lrwhh->direct_manipulation_helper_->compositor_
++        ->HasAnimationObserver(lrwhh->direct_manipulation_helper_.get());
+   }
+ 
+  private:
+@@ -88,8 +78,10 @@ INSTANTIATE_TEST_SUITE_P(WithScrollEventPhase,
+                          DirectManipulationBrowserTest,
+                          testing::Bool());
+ 
+-// Ensure the AnimationObserver destroy when hwnd reparent to other hwnd.
+-IN_PROC_BROWSER_TEST_P(DirectManipulationBrowserTest, HWNDReparent) {
++// Ensure the AnimationObserver is only created after direct manipulation
++// interaction begin and destroyed after direct manipulation interaction end.
++IN_PROC_BROWSER_TEST_P(DirectManipulationBrowserTest,
++                       ObserverDuringInteraction) {
+   if (base::win::GetVersion() < base::win::Version::WIN10)
+     return;
+ 
+@@ -98,25 +90,20 @@ IN_PROC_BROWSER_TEST_P(DirectManipulationBrowserTest, HWNDReparent) {
+   LegacyRenderWidgetHostHWND* lrwhh = GetLegacyRenderWidgetHostHWND();
+   ASSERT_TRUE(lrwhh);
+ 
+-  // The observer should not create before it needed.
+-  ASSERT_TRUE(!HasCompositorAnimationObserver(lrwhh));
++  // The observer should not be created before it is needed.
++  EXPECT_FALSE(HasAnimationObserver(lrwhh));
+ 
+-  // Add AnimationObserver to tab to simulate direct manipulation start.
+-  SimulatePointerHitTest();
+-  ASSERT_TRUE(HasCompositorAnimationObserver(lrwhh));
++  // Begin direct manipulation interaction.
++  SetDirectManipulationInteraction(DIRECTMANIPULATION_INTERACTION_BEGIN);
++  // AnimationObserver should be added after direct manipulation interaction
++  // begin.
++  EXPECT_TRUE(HasAnimationObserver(lrwhh));
+ 
+-  // Create another browser.
+-  Shell* shell2 = CreateBrowser();
+-  NavigateToURL(shell2, GURL(url::kAboutBlankURL));
+-
+-  // Move to the tab to browser2.
+-  UpdateParent(
+-      shell2->window()->GetRootWindow()->GetHost()->GetAcceleratedWidget());
++  // End direct manipulation interaction.
++  SetDirectManipulationInteraction(DIRECTMANIPULATION_INTERACTION_END);
+ 
+   // The animation observer should be removed.
+-  EXPECT_FALSE(HasCompositorAnimationObserver(lrwhh));
+-
+-  shell2->Close();
++  EXPECT_FALSE(HasAnimationObserver(lrwhh));
+ }
+ 
+ // EventLogger is to observe the events sent from WindowEventTarget (the root
+diff --git a/content/browser/renderer_host/direct_manipulation_win_unittest.cc b/content/browser/renderer_host/direct_manipulation_win_unittest.cc
+index 3bf1b55555d0485c25575264045d415cf534323c..ccfa4d90b4e5c546c78afdac7c6b7b36f6096514 100644
+--- a/content/browser/renderer_host/direct_manipulation_win_unittest.cc
++++ b/content/browser/renderer_host/direct_manipulation_win_unittest.cc
+@@ -31,6 +31,12 @@ class MockDirectManipulationViewport
+ 
+   ~MockDirectManipulationViewport() override {}
+ 
++  bool WasZoomToRectCalled() {
++    bool called = zoom_to_rect_called_;
++    zoom_to_rect_called_ = false;
++    return called;
++  }
++
+   HRESULT STDMETHODCALLTYPE Enable() override { return S_OK; }
+ 
+   HRESULT STDMETHODCALLTYPE Disable() override { return S_OK; }
+@@ -75,6 +81,7 @@ class MockDirectManipulationViewport
+                                        _In_ const float right,
+                                        _In_ const float bottom,
+                                        _In_ BOOL animate) override {
++    zoom_to_rect_called_ = true;
+     return S_OK;
+   }
+ 
+@@ -161,6 +168,8 @@ class MockDirectManipulationViewport
+   HRESULT STDMETHODCALLTYPE Abandon() override { return S_OK; }
+ 
+  private:
++  bool zoom_to_rect_called_ = false;
++
+   DISALLOW_COPY_AND_ASSIGN(MockDirectManipulationViewport);
+ };
+ 
+@@ -397,13 +406,7 @@ class DirectManipulationUnitTest : public testing::Test {
+         viewport_.Get(), content_.Get());
+   }
+ 
+-  void SetNeedAnimation(bool need_poll_events) {
+-    direct_manipulation_helper_->need_poll_events_ = need_poll_events;
+-  }
+-
+-  bool NeedAnimation() {
+-    return direct_manipulation_helper_->need_poll_events_;
+-  }
++  bool WasZoomToRectCalled() { return viewport_->WasZoomToRectCalled(); }
+ 
+   void SetDeviceScaleFactor(float factor) {
+     direct_manipulation_helper_->SetDeviceScaleFactorForTesting(factor);
+@@ -721,21 +724,19 @@ TEST_F(DirectManipulationUnitTest,
+ }
+ 
+ TEST_F(DirectManipulationUnitTest,
+-       NeedAnimtationShouldBeFalseAfterSecondReset) {
++       ZoomToRectShouldNotBeCalledInEmptyRunningReadySequence) {
+   if (!GetDirectManipulationHelper())
+     return;
+ 
+-  // Direct Manipulation will set need_poll_events_ true when DM_POINTERTEST
+-  // from touchpad.
+-  SetNeedAnimation(true);
++  ContentUpdated(1.0f, 5, 0);
+ 
+   // Receive first ready when gesture end.
+   ViewportStatusChanged(DIRECTMANIPULATION_READY, DIRECTMANIPULATION_RUNNING);
+-  EXPECT_TRUE(NeedAnimation());
++  EXPECT_TRUE(WasZoomToRectCalled());
+ 
+   // Receive second ready from ZoomToRect.
+   ViewportStatusChanged(DIRECTMANIPULATION_READY, DIRECTMANIPULATION_RUNNING);
+-  EXPECT_FALSE(NeedAnimation());
++  EXPECT_FALSE(WasZoomToRectCalled());
+ }
+ 
+ TEST_F(DirectManipulationUnitTest, HiDPIScroll) {
+diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+index b78186969fc928468c67f0bfcc853f5d7418df95..d2dd02a743a9bc908b6f8438ccac9dd85aa0a281 100644
+--- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
++++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+@@ -27,7 +27,6 @@
+ #include "ui/base/view_prop.h"
+ #include "ui/base/win/internal_constants.h"
+ #include "ui/base/win/window_event_target.h"
+-#include "ui/compositor/compositor.h"
+ #include "ui/display/win/screen_win.h"
+ #include "ui/gfx/geometry/rect.h"
+ 
+@@ -38,47 +37,6 @@ namespace content {
+ // accessibility support.
+ const int kIdScreenReaderHoneyPot = 1;
+ 
+-// DirectManipulation needs to poll for new events every frame while finger
+-// gesturing on touchpad.
+-class CompositorAnimationObserverForDirectManipulation
+-    : public ui::CompositorAnimationObserver {
+- public:
+-  CompositorAnimationObserverForDirectManipulation(
+-      LegacyRenderWidgetHostHWND* render_widget_host_hwnd,
+-      ui::Compositor* compositor)
+-      : render_widget_host_hwnd_(render_widget_host_hwnd),
+-        compositor_(compositor) {
+-    DCHECK(compositor_);
+-    compositor_->AddAnimationObserver(this);
+-    DebugLogging("Add AnimationObserverForDirectManipulation.");
+-  }
+-
+-  ~CompositorAnimationObserverForDirectManipulation() override {
+-    if (compositor_) {
+-      compositor_->RemoveAnimationObserver(this);
+-      DebugLogging("Remove AnimationObserverForDirectManipulation.");
+-    }
+-  }
+-
+-  // ui::CompositorAnimationObserver
+-  void OnAnimationStep(base::TimeTicks timestamp) override {
+-    render_widget_host_hwnd_->PollForNextEvent();
+-  }
+-
+-  // ui::CompositorAnimationObserver
+-  void OnCompositingShuttingDown(ui::Compositor* compositor) override {
+-    DebugLogging("OnCompositingShuttingDown.");
+-    compositor->RemoveAnimationObserver(this);
+-    compositor_ = nullptr;
+-  }
+-
+- private:
+-  LegacyRenderWidgetHostHWND* render_widget_host_hwnd_;
+-  ui::Compositor* compositor_;
+-
+-  DISALLOW_COPY_AND_ASSIGN(CompositorAnimationObserverForDirectManipulation);
+-};
+-
+ // static
+ LegacyRenderWidgetHostHWND* LegacyRenderWidgetHostHWND::Create(
+     HWND parent) {
+@@ -103,8 +61,9 @@ LegacyRenderWidgetHostHWND* LegacyRenderWidgetHostHWND::Create(
+ }
+ 
+ void LegacyRenderWidgetHostHWND::Destroy() {
+-  // Stop the AnimationObserver when window close.
+-  DestroyAnimationObserver();
++  // Delete DirectManipulationHelper before the window is destroyed.
++  if (direct_manipulation_helper_)
++    direct_manipulation_helper_.reset();
+   host_ = nullptr;
+   if (::IsWindow(hwnd()))
+     ::DestroyWindow(hwnd());
+@@ -113,10 +72,16 @@ void LegacyRenderWidgetHostHWND::Destroy() {
+ void LegacyRenderWidgetHostHWND::UpdateParent(HWND parent) {
+   if (GetWindowEventTarget(GetParent()))
+     GetWindowEventTarget(GetParent())->HandleParentChanged();
+-  // Stop the AnimationObserver when window hide. eg. tab switch, move tab to
+-  // another window.
+-  DestroyAnimationObserver();
++
+   ::SetParent(hwnd(), parent);
++
++  // Direct Manipulation is enabled on Windows 10+. The CreateInstance function
++  // returns NULL if Direct Manipulation is not available. Recreate
++  // |direct_manipulation_helper_| when parent changed (compositor and window
++  // event target updated).
++  direct_manipulation_helper_ = DirectManipulationHelper::CreateInstance(
++      hwnd(), host_->GetNativeView()->GetHost()->compositor(),
++      GetWindowEventTarget(GetParent()));
+ }
+ 
+ HWND LegacyRenderWidgetHostHWND::GetParent() {
+@@ -125,14 +90,10 @@ HWND LegacyRenderWidgetHostHWND::GetParent() {
+ 
+ void LegacyRenderWidgetHostHWND::Show() {
+   ::ShowWindow(hwnd(), SW_SHOW);
+-  if (direct_manipulation_helper_)
+-    direct_manipulation_helper_->Activate();
+ }
+ 
+ void LegacyRenderWidgetHostHWND::Hide() {
+   ::ShowWindow(hwnd(), SW_HIDE);
+-  if (direct_manipulation_helper_)
+-    direct_manipulation_helper_->Deactivate();
+ }
+ 
+ void LegacyRenderWidgetHostHWND::SetBounds(const gfx::Rect& bounds) {
+@@ -191,11 +152,6 @@ bool LegacyRenderWidgetHostHWND::Init() {
+                    CHILDID_SELF);
+   }
+ 
+-  // Direct Manipulation is enabled on Windows 10+. The CreateInstance function
+-  // returns NULL if Direct Manipulation is not available.
+-  direct_manipulation_helper_ = DirectManipulationHelper::CreateInstance(
+-      hwnd(), GetWindowEventTarget(GetParent()));
+-
+   // Disable pen flicks (http://crbug.com/506977)
+   base::win::DisableFlicks(hwnd());
+ 
+@@ -501,21 +457,6 @@ LRESULT LegacyRenderWidgetHostHWND::OnSize(UINT message,
+   return 0;
+ }
+ 
+-LRESULT LegacyRenderWidgetHostHWND::OnWindowPosChanged(UINT message,
+-                                                       WPARAM w_param,
+-                                                       LPARAM l_param) {
+-  WINDOWPOS* window_pos = reinterpret_cast<WINDOWPOS*>(l_param);
+-  if (direct_manipulation_helper_) {
+-    if (window_pos->flags & SWP_SHOWWINDOW) {
+-      direct_manipulation_helper_->Activate();
+-    } else if (window_pos->flags & SWP_HIDEWINDOW) {
+-      direct_manipulation_helper_->Deactivate();
+-    }
+-  }
+-  SetMsgHandled(FALSE);
+-  return 0;
+-}
+-
+ LRESULT LegacyRenderWidgetHostHWND::OnDestroy(UINT message,
+                                               WPARAM w_param,
+                                               LPARAM l_param) {
+@@ -534,30 +475,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnPointerHitTest(UINT message,
+     return 0;
+ 
+   DebugLogging("Receive DM_POINTERHITTEST.");
+-  // Update window event target for each DM_POINTERHITTEST.
+-  if (direct_manipulation_helper_->OnPointerHitTest(
+-          w_param, GetWindowEventTarget(GetParent()))) {
+-    if (compositor_animation_observer_) {
+-      // This is reach if Windows send a DM_POINTERHITTEST before the last
+-      // DM_POINTERHITTEST receive READY status. We never see this but still
+-      // worth to handle it.
+-      DebugLogging("AnimationObserverForDirectManipulation exists.");
+-      return 0;
+-    }
+ 
+-    CreateAnimationObserver();
+-  }
++  direct_manipulation_helper_->OnPointerHitTest(w_param);
+ 
+   return 0;
+ }
+ 
+-void LegacyRenderWidgetHostHWND::PollForNextEvent() {
+-  DCHECK(direct_manipulation_helper_);
+-
+-  if (!direct_manipulation_helper_->PollForNextEvent())
+-    DestroyAnimationObserver();
+-}
+-
+ gfx::NativeViewAccessible
+ LegacyRenderWidgetHostHWND::GetOrCreateWindowRootAccessible() {
+   if (!host_)
+@@ -589,20 +512,4 @@ LegacyRenderWidgetHostHWND::GetOrCreateWindowRootAccessible() {
+   return root->GetNativeViewAccessible();
+ }
+ 
+-void LegacyRenderWidgetHostHWND::CreateAnimationObserver() {
+-  DCHECK(!compositor_animation_observer_);
+-  DCHECK(host_);
+-  DCHECK(host_->GetNativeView()->GetHost());
+-  DCHECK(host_->GetNativeView()->GetHost()->compositor());
+-
+-  compositor_animation_observer_ =
+-      std::make_unique<CompositorAnimationObserverForDirectManipulation>(
+-          this, host_->GetNativeView()->GetHost()->compositor());
+-}
+-
+-void LegacyRenderWidgetHostHWND::DestroyAnimationObserver() {
+-  DebugLogging("DestroyAnimationObserver.");
+-  compositor_animation_observer_.reset();
+-}
+-
+ }  // namespace content
+diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
+index 4f12296e3185caac685c8326192d88d32037a9d9..be0ea7bdbf460f414c94b0f2275a00424ec3198a 100644
+--- a/content/browser/renderer_host/legacy_render_widget_host_win.h
++++ b/content/browser/renderer_host/legacy_render_widget_host_win.h
+@@ -17,7 +17,6 @@
+ 
+ #include "base/macros.h"
+ #include "content/common/content_export.h"
+-#include "ui/compositor/compositor_animation_observer.h"
+ #include "ui/gfx/geometry/rect.h"
+ #include "ui/gfx/native_widget_types.h"
+ 
+@@ -99,7 +98,6 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
+                           OnMouseRange)
+     MESSAGE_HANDLER_EX(WM_NCCALCSIZE, OnNCCalcSize)
+     MESSAGE_HANDLER_EX(WM_SIZE, OnSize)
+-    MESSAGE_HANDLER_EX(WM_WINDOWPOSCHANGED, OnWindowPosChanged)
+     MESSAGE_HANDLER_EX(WM_DESTROY, OnDestroy)
+     MESSAGE_HANDLER_EX(DM_POINTERHITTEST, OnPointerHitTest)
+   END_MSG_MAP()
+@@ -126,10 +124,6 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
+     host_ = host;
+   }
+ 
+-  // DirectManipulation needs to poll for new events every frame while finger
+-  // gesturing on touchpad.
+-  void PollForNextEvent();
+-
+   // Return the root accessible object for either MSAA or UI Automation.
+   gfx::NativeViewAccessible GetOrCreateWindowRootAccessible();
+ 
+@@ -166,15 +160,10 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
+   LRESULT OnSetCursor(UINT message, WPARAM w_param, LPARAM l_param);
+   LRESULT OnNCCalcSize(UINT message, WPARAM w_param, LPARAM l_param);
+   LRESULT OnSize(UINT message, WPARAM w_param, LPARAM l_param);
+-  LRESULT OnWindowPosChanged(UINT message, WPARAM w_param, LPARAM l_param);
+   LRESULT OnDestroy(UINT message, WPARAM w_param, LPARAM l_param);
+ 
+   LRESULT OnPointerHitTest(UINT message, WPARAM w_param, LPARAM l_param);
+ 
+-  void CreateAnimationObserver();
+-
+-  void DestroyAnimationObserver();
+-
+   Microsoft::WRL::ComPtr<IAccessible> window_accessible_;
+ 
+   // Set to true if we turned on mouse tracking.
+@@ -193,9 +182,6 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
+   // in Chrome on Windows 10.
+   std::unique_ptr<DirectManipulationHelper> direct_manipulation_helper_;
+ 
+-  std::unique_ptr<ui::CompositorAnimationObserver>
+-      compositor_animation_observer_;
+-
+   DISALLOW_COPY_AND_ASSIGN(LegacyRenderWidgetHostHWND);
+ };
+ 
