@@ -4,7 +4,7 @@ parameters:
   upload-to-s3:
     type: string
     default: '1'
-  
+
   run-lint:
     type: boolean
     default: true
@@ -28,11 +28,11 @@ parameters:
   run-linux-arm-publish:
     type: boolean
     default: false
-  
+
   run-linux-arm64-publish:
     type: boolean
     default: false
-  
+
   run-osx-publish:
     type: boolean
     default: false
@@ -136,7 +136,7 @@ env-linux-medium: &env-linux-medium
 
 env-linux-2xlarge: &env-linux-2xlarge
   NUMBER_OF_NINJA_PROCESSES: 34
-  
+
 env-linux-2xlarge-release: &env-linux-2xlarge-release
   NUMBER_OF_NINJA_PROCESSES: 16
 
@@ -221,7 +221,7 @@ step-setup-env-for-build: &step-setup-env-for-build
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
         if [ "$CIRCLE_PR_NUMBER" != "" ]; then
           #if building a fork set readonly access to sccache
-          echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
+          echo 'export SCCACHE_BUCKET="electronjs-sccache-ci"' >> $BASH_ENV
           echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
         fi
       fi
@@ -329,7 +329,7 @@ step-electron-build: &step-electron-build
       ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
 
 step-native-unittests-build: &step-native-unittests-build
-  run: 
+  run:
     name: Build native test targets
     no_output_timeout: 30m
     command: |
@@ -890,7 +890,7 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
     - *step-generate-deps-hash-cleanly
     - *step-mark-sync-done
     - *step-minimize-workspace-size-from-checkout
-    
+
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-restore-brew-cache
@@ -1548,7 +1548,7 @@ jobs:
       <<: *env-mas
       <<: *env-release-build
       <<: *env-enable-sccache
-      <<: *env-ninja-status      
+      <<: *env-ninja-status
     <<: *steps-electron-build
 
   mas-publish:
@@ -1814,7 +1814,7 @@ jobs:
 workflows:
   version: 2.1
 
-  # The publish workflows below each contain one job so that they are 
+  # The publish workflows below each contain one job so that they are
   # compatible with how sudowoodo works today.  If these workflows are
   # changed to have multiple jobs, then scripts/release/ci-release-build.js
   # will need to be updated and there will most likely need to be changes to
@@ -1837,13 +1837,13 @@ workflows:
     jobs:
     - linux-arm-publish:
         context: release-env
-  
+
   publish-arm64-linux:
     when: << pipeline.parameters.run-linux-arm64-publish >>
     jobs:
     - linux-arm64-publish:
         context: release-env
-  
+
   publish-osx:
     when: << pipeline.parameters.run-osx-publish >>
     jobs:
