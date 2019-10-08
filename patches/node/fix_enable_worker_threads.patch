@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 3 Oct 2019 19:03:30 +0200
+Subject: fix: enable worker_threads
+
+Electron sets NODE_USE_V8_PLATFORM to false, because Electron
+initializes the v8 platform itself and Node.js worker thread
+initialization relies on the platform it uses having been set inside
+code guarded by NODE_USE_V8_PLATFORM.
+
+This commit fixes this problem by changing node_worker to use the three-arg
+implementation of `NewIsolate` to prevent it trying to use a possibly-null ptr.
+
+diff --git a/src/node_worker.cc b/src/node_worker.cc
+index 8f97f5c351..2bfbb28e61 100644
+--- a/src/node_worker.cc
++++ b/src/node_worker.cc
+@@ -112,7 +112,10 @@ class WorkerThreadData {
+       array_buffer_allocator_(ArrayBufferAllocator::Create()) {
+     CHECK_EQ(uv_loop_init(&loop_), 0);
+ 
+-    Isolate* isolate = NewIsolate(array_buffer_allocator_.get(), &loop_);
++    Isolate* isolate = NewIsolate(
++        array_buffer_allocator_.get(),
++        &loop_,
++        w->platform_);
+     CHECK_NOT_NULL(isolate);
+ 
+     {
