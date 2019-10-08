@@ -40,7 +40,7 @@ To help manage these patch sets, we provide two tools: `git-import-patches` and 
 
 ### Usage
 
-#### Adding a new patch:
+#### Adding a new patch
 ```
 $ cd src/third_party/electron_node
 $ vim some/code/file.cc
@@ -50,7 +50,7 @@ $ ../../electron/script/git-export-patches -o ../../electron/patches/node
 
 Re-exporting patches will sometimes cause shasums in unrelated patches to change. This is generally harmless and can be ignored (but go ahead and add those changes to your PR, it'll stop them from showing up for other people).
 
-#### Editing an existing patch:
+#### Editing an existing patch
 ```
 $ cd src/v8
 $ vim some/code/file.cc
@@ -61,7 +61,7 @@ $ git rebase --autosquash -i [COMMIT_SHA]^
 $ ../electron/script/git-export-patches -o ../electron/patches/v8
 ```
 
-#### Removing a patch:
+#### Removing a patch
 ```
 $ vim src/electron/patches/node/.patches
 # Delete the line with the name of the patch you want to remove
