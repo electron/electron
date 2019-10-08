@@ -2,11 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_ATOM_API_NATIVE_THEME_H_
-#define SHELL_COMMON_API_ATOM_API_NATIVE_THEME_H_
+#ifndef SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
+#define SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
 
 #include "native_mate/handle.h"
 #include "shell/browser/api/event_emitter.h"
+#include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
 namespace electron {
@@ -25,12 +26,19 @@ class NativeTheme : public mate::EventEmitter<NativeTheme>,
   NativeTheme(v8::Isolate* isolate, ui::NativeTheme* theme);
   ~NativeTheme() override;
 
+  void SetThemeSource(ui::NativeTheme::ThemeSource override);
+#if defined(OS_MACOSX)
+  void UpdateMacOSAppearanceForOverrideValue(
+      ui::NativeTheme::ThemeSource override);
+#endif
+  ui::NativeTheme::ThemeSource GetThemeSource() const;
   bool ShouldUseDarkColors();
   bool ShouldUseHighContrastColors();
   bool ShouldUseInvertedColorScheme();
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* theme) override;
+  void OnNativeThemeUpdatedOnUI();
 
  private:
   ui::NativeTheme* theme_;
@@ -42,4 +50,17 @@ class NativeTheme : public mate::EventEmitter<NativeTheme>,
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_API_ATOM_API_NATIVE_THEME_H_
+namespace mate {
+
+template <>
+struct Converter<ui::NativeTheme::ThemeSource> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const ui::NativeTheme::ThemeSource& val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     ui::NativeTheme::ThemeSource* out);
+};
+
+}  // namespace mate
+
+#endif  // SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
