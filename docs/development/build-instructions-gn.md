@@ -56,7 +56,7 @@ You can avoid much of the wait by reusing Electron CI's build output via
 optional steps (listed below) and these two environment variables:
 
 ```sh
-export SCCACHE_BUCKET="electronjs-sccache"
+export SCCACHE_BUCKET="electronjs-sccache-ci"
 export SCCACHE_TWO_TIER=true
 ```
 
