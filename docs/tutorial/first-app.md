@@ -5,7 +5,7 @@ providing a runtime with rich native (operating system) APIs. You could see it
 as a variant of the Node.js runtime that is focused on desktop applications
 instead of web servers.
 
-This doesn't mean Electron is a JavaScript binding to graphical user interface
+This doesn't mean Electron is a JavaScript binding to a graphical user interface
 (GUI) libraries. Instead, Electron uses web pages as its GUI, so you could also
 see it as a minimal Chromium browser, controlled by JavaScript.
 
@@ -25,7 +25,7 @@ your-app/
 ```
 
 Create a new empty folder for your new Electron application. Open up your
-command line client and run `npm init` from that very folder.
+command-line client and run `npm init` from that very folder.
 
 ```sh
 npm init
@@ -155,7 +155,7 @@ function createWindow () {
   // Emitted when the window is closed.
   win.on('closed', () => {
     // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
+    // in an array if your app supports multi-windows, this is the time
     // when you should delete the corresponding element.
     win = null
   })
@@ -176,14 +176,14 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
-  // On macOS it's common to re-create a window in the app when the
+  // On macOS, it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (win === null) {
     createWindow()
   }
 })
 
-// In this file you can include the rest of your app's specific main process
+// In this file, you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 ```
 
