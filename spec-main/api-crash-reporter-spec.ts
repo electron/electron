@@ -177,20 +177,6 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
       preload: path.join(fixtures, 'module', 'preload-sandbox.js')
     }
   })
-  generateSpecs('with remote module disabled', {
-    webPreferences: {
-      nodeIntegration: true,
-      enableRemoteModule: false
-    }
-  })
-
-  describe('getProductName', () => {
-    it('returns the product name if one is specified', () => {
-      const name = crashReporter.getProductName()
-      const expectedName = 'Electron Test Main'
-      expect(name).to.equal(expectedName)
-    })
-  })
 
   describe('start(options)', () => {
     it('requires that the companyName and submitURL options be specified', () => {
