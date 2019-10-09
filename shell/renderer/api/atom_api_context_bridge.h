@@ -28,9 +28,9 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
     mate::Arguments* args);
 
 v8::Local<v8::Object> CreateProxyForAPI(
-    v8::Local<v8::Object> api_object,
-    v8::Local<v8::Context> source_context,
-    v8::Local<v8::Context> target_context,
+    v8::Local<v8::Object>& api_object,
+    v8::Local<v8::Context>& source_context,
+    v8::Local<v8::Context>& target_context,
     context_bridge::RenderFramePersistenceStore* store);
 
 }  // namespace api

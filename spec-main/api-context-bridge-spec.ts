@@ -293,6 +293,19 @@ describe('contextBridge', () => {
         })
         expect(result).to.deep.equal(['null', 'undefined'])
       })
+
+      it('should proxy typed arrays and regexps through the serializer', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            arr: new Uint8Array(100),
+            regexp: /a/g
+          })
+        })
+        const result = await callWithBindings((root: any) => {
+          return [root.example.arr.__proto__ === Uint8Array.prototype, root.example.regexp.__proto__ === RegExp.prototype]
+        })
+        expect(result).to.deep.equal([true, true])
+      })
     
       it('it should handle recursive objects', async () => {
         await makeBindingWindow(() => {

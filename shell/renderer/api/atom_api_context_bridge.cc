@@ -10,9 +10,9 @@
 
 #include "base/strings/string_number_conversions.h"
 #include "shell/common/api/remote/object_life_monitor.h"
+#include "shell/common/native_mate_converters/blink_converter.h"
 #include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/once_callback.h"
-#include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/promise_util.h"
 
 namespace electron {
@@ -21,7 +21,7 @@ namespace api {
 
 namespace {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
+content::RenderFrame* GetRenderFrame(const v8::Local<v8::Object>& value) {
   v8::Local<v8::Context> context = value->CreationContext();
   if (context.IsEmpty())
     return nullptr;
@@ -65,6 +65,32 @@ void DeepFreeze(const v8::Local<v8::Object>& object,
       DeepFreeze(v8::Local<v8::Object>::Cast(child), context, frozen);
   }
   object->SetIntegrityLevel(context, v8::IntegrityLevel::kFrozen);
+}
+
+bool IsPlainObject(const v8::Local<v8::Value>& object) {
+  if (!object->IsObject())
+    return false;
+
+  return !(object->IsNullOrUndefined() || object->IsDate() ||
+           object->IsArgumentsObject() || object->IsBigIntObject() ||
+           object->IsBooleanObject() || object->IsNumberObject() ||
+           object->IsStringObject() || object->IsSymbolObject() ||
+           object->IsNativeError() || object->IsRegExp() ||
+           object->IsPromise() || object->IsMap() || object->IsSet() ||
+           object->IsMapIterator() || object->IsSetIterator() ||
+           object->IsWeakMap() || object->IsWeakSet() ||
+           object->IsArrayBuffer() || object->IsArrayBufferView() ||
+           object->IsArray() || object->IsDataView() ||
+           object->IsSharedArrayBuffer() || object->IsProxy() ||
+           object->IsWebAssemblyCompiledModule() ||
+           object->IsModuleNamespaceObject());
+}
+
+bool IsPlainArray(const v8::Local<v8::Value>& arr) {
+  if (!arr->IsArray())
+    return false;
+
+  return !arr->IsTypedArray();
 }
 
 class FunctionLifeMonitor final : public ObjectLifeMonitor {
@@ -191,7 +217,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
   // Manually go through the array and pass each value individually into a new
   // array so that functions deep insidee arrays get proxied or arrays of
   // promises are proxied correctly.
-  if (value->IsArray()) {
+  if (IsPlainArray(value)) {
     v8::Context::Scope destination_context_scope(destination);
     v8::Local<v8::Array> arr = v8::Local<v8::Array>::Cast(value);
     size_t length = arr->Length();
@@ -209,25 +235,13 @@ v8::Local<v8::Value> PassValueToOtherContext(
   }
 
   // Proxy all objects
-  if (value->IsObject() && !value->IsNullOrUndefined()) {
-    return CreateProxyForAPI(v8::Local<v8::Object>::Cast(value), source,
-                             destination, store);
+  if (IsPlainObject(value)) {
+    auto object_value = v8::Local<v8::Object>::Cast(value);
+    return CreateProxyForAPI(object_value, source, destination, store);
   }
 
   // Serializable objects
-  // TODO(MarshallOfSound): Use the V8 serializer so we can remove the special
-  // null / undefiend handling
-  if (value->IsUndefined()) {
-    v8::Context::Scope destination_context_scope(destination);
-    return v8::Undefined(destination->GetIsolate());
-  }
-
-  if (value->IsNull()) {
-    v8::Context::Scope destination_context_scope(destination);
-    return v8::Null(destination->GetIsolate());
-  }
-
-  base::Value ret;
+  blink::CloneableMessage ret;
   {
     v8::Context::Scope source_context_scope(source);
     // TODO(MarshallOfSound): What do we do if serialization fails? Throw an
@@ -300,9 +314,9 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
 }
 
 v8::Local<v8::Object> CreateProxyForAPI(
-    v8::Local<v8::Object> api_object,
-    v8::Local<v8::Context> source_context,
-    v8::Local<v8::Context> target_context,
+    v8::Local<v8::Object>& api_object,
+    v8::Local<v8::Context>& source_context,
+    v8::Local<v8::Context>& target_context,
     context_bridge::RenderFramePersistenceStore* store) {
   mate::Dictionary api(source_context->GetIsolate(), api_object);
   mate::Dictionary proxy =
