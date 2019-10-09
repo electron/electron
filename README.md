@@ -13,6 +13,8 @@ using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) an
 [Chromium](https://www.chromium.org) and is used by the [Atom
 editor](https://github.com/atom/atom) and many other [apps](https://electronjs.org/apps).
 
+// This is a very good project aimed at solving multiple issues and that too in a very swift and nice manner.
+
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
