@@ -18,7 +18,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 400,
-    title: 'Manage Window State',
+    title: 'Customize menus',
     webPreferences: {
       nodeIntegration: true
     }
