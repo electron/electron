@@ -163,6 +163,11 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   // Only enable logging when --enable-logging is specified.
   auto env = base::Environment::Create();
+
+  // Leaving this might screw up the Apple tools, so remove it.
+  if (env->HasVar("NEXT_ROOT"))
+    env->UnSetVar("NEXT_ROOT");
+
   if (!command_line->HasSwitch(::switches::kEnableLogging) &&
       !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
     settings.logging_dest = logging::LOG_NONE;
