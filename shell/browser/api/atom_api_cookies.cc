@@ -15,6 +15,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
+#include "native_mate/dictionary.h"
 #include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_store.h"
 #include "net/cookies/cookie_util.h"
@@ -121,16 +122,21 @@ bool MatchesCookie(const base::Value& filter,
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
 void FilterCookies(const base::Value& filter,
                    util::Promise<net::CookieList> promise,
-                   const net::CookieStatusList& list,
-                   const net::CookieStatusList& excluded_list) {
+                   const net::CookieList& cookies) {
   net::CookieList result;
-  net::CookieList stripped_cookies = net::cookie_util::StripStatuses(list);
-  for (const auto& cookie : stripped_cookies) {
+  for (const auto& cookie : cookies) {
     if (MatchesCookie(filter, cookie))
       result.push_back(cookie);
   }
-
   promise.ResolveWithGin(result);
+}
+
+void FilterCookieWithStatuses(const base::Value& filter,
+                              util::Promise<net::CookieList> promise,
+                              const net::CookieStatusList& list,
+                              const net::CookieStatusList& excluded_list) {
+  FilterCookies(filter, std::move(promise),
+                net::cookie_util::StripStatuses(list));
 }
 
 std::string InclusionStatusToString(
@@ -169,28 +175,33 @@ Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 
 Cookies::~Cookies() = default;
 
-v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
+v8::Local<v8::Promise> Cookies::Get(const mate::Dictionary& filter) {
   util::Promise<net::CookieList> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
-
-  std::string url_string;
-  filter.GetString("url", &url_string);
-  GURL url(url_string);
-
-  auto callback =
-      base::BindOnce(FilterCookies, filter.Clone(), std::move(promise));
 
   auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
       browser_context_.get());
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
-  net::CookieOptions options;
-  options.set_include_httponly();
-  options.set_same_site_cookie_context(
-      net::CookieOptions::SameSiteCookieContext::SAME_SITE_STRICT);
-  options.set_do_not_update_access_time();
+  base::DictionaryValue dict;
+  mate::ConvertFromV8(isolate(), filter.GetHandle(), &dict);
 
-  manager->GetCookieList(url, options, std::move(callback));
+  std::string url;
+  filter.Get("url", &url);
+  if (url.empty()) {
+    manager->GetAllCookies(
+        base::BindOnce(&FilterCookies, std::move(dict), std::move(promise)));
+  } else {
+    net::CookieOptions options;
+    options.set_include_httponly();
+    options.set_same_site_cookie_context(
+        net::CookieOptions::SameSiteCookieContext::SAME_SITE_STRICT);
+    options.set_do_not_update_access_time();
+
+    manager->GetCookieList(GURL(url), options,
+                           base::BindOnce(&FilterCookieWithStatuses,
+                                          std::move(dict), std::move(promise)));
+  }
 
   return handle;
 }

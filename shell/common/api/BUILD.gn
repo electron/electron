@@ -1,4 +1,5 @@
 import("//mojo/public/tools/bindings/mojom.gni")
+import("../../../buildflags/buildflags.gni")
 
 mojom("mojo") {
   sources = [
@@ -7,6 +8,12 @@ mojom("mojo") {
 
   public_deps = [
     "//mojo/public/mojom/base",
+    "//third_party/blink/public/mojom:mojom_core",
     "//ui/gfx/geometry/mojom",
   ]
+
+  enabled_features = []
+  if (enable_remote_module) {
+    enabled_features += [ "enable_remote_module" ]
+  }
 }

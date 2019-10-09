@@ -48,6 +48,7 @@
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder_deprecated.h"
+#include "ppapi/buildflags/buildflags.h"
 #include "shell/browser/api/atom_api_browser_window.h"
 #include "shell/browser/api/atom_api_debugger.h"
 #include "shell/browser/api/atom_api_session.h"
@@ -898,10 +899,12 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
 
 void WebContents::PluginCrashed(const base::FilePath& plugin_path,
                                 base::ProcessId plugin_pid) {
+#if BUILDFLAG(ENABLE_PLUGINS)
   content::WebPluginInfo info;
   auto* plugin_service = content::PluginService::GetInstance();
   plugin_service->GetPluginInfoByPath(plugin_path, &info);
   Emit("plugin-crashed", info.name, info.version);
+#endif  // BUILDFLAG(ENABLE_PLUIGNS)
 }
 
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
@@ -1017,7 +1020,7 @@ void WebContents::OnElectronBrowserConnectionError() {
 
 void WebContents::Message(bool internal,
                           const std::string& channel,
-                          base::Value arguments) {
+                          blink::CloneableMessage arguments) {
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
@@ -1026,7 +1029,7 @@ void WebContents::Message(bool internal,
 
 void WebContents::Invoke(bool internal,
                          const std::string& channel,
-                         base::Value arguments,
+                         blink::CloneableMessage arguments,
                          InvokeCallback callback) {
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
   EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
@@ -1035,7 +1038,7 @@ void WebContents::Invoke(bool internal,
 
 void WebContents::MessageSync(bool internal,
                               const std::string& channel,
-                              base::Value arguments,
+                              blink::CloneableMessage arguments,
                               MessageSyncCallback callback) {
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
@@ -1047,23 +1050,36 @@ void WebContents::MessageTo(bool internal,
                             bool send_to_all,
                             int32_t web_contents_id,
                             const std::string& channel,
-                            base::Value arguments) {
+                            blink::CloneableMessage arguments) {
   auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
       isolate(), web_contents_id);
 
   if (web_contents) {
     web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
-                                           base::ListValue(arguments.GetList()),
-                                           ID());
+                                           std::move(arguments), ID());
   }
 }
 
 void WebContents::MessageHost(const std::string& channel,
-                              base::Value arguments) {
+                              blink::CloneableMessage arguments) {
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
                  base::nullopt, channel, std::move(arguments));
 }
+
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+void WebContents::DereferenceRemoteJSObject(const std::string& context_id,
+                                            int object_id,
+                                            int ref_count) {
+  base::ListValue args;
+  args.Append(context_id);
+  args.Append(object_id);
+  args.Append(ref_count);
+  EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
+                 /* internal */ true, "ELECTRON_BROWSER_DEREFERENCE",
+                 std::move(args));
+}
+#endif
 
 void WebContents::UpdateDraggableRegions(
     std::vector<mojom::DraggableRegionPtr> regions) {
@@ -1986,14 +2002,21 @@ void WebContents::TabTraverse(bool reverse) {
 bool WebContents::SendIPCMessage(bool internal,
                                  bool send_to_all,
                                  const std::string& channel,
-                                 const base::ListValue& args) {
-  return SendIPCMessageWithSender(internal, send_to_all, channel, args);
+                                 v8::Local<v8::Value> args) {
+  blink::CloneableMessage message;
+  if (!mate::ConvertFromV8(isolate(), args, &message)) {
+    isolate()->ThrowException(v8::Exception::Error(
+        mate::StringToV8(isolate(), "Failed to serialize arguments")));
+    return false;
+  }
+  return SendIPCMessageWithSender(internal, send_to_all, channel,
+                                  std::move(message));
 }
 
 bool WebContents::SendIPCMessageWithSender(bool internal,
                                            bool send_to_all,
                                            const std::string& channel,
-                                           const base::ListValue& args,
+                                           blink::CloneableMessage args,
                                            int32_t sender_id) {
   std::vector<content::RenderFrameHost*> target_hosts;
   if (!send_to_all) {
@@ -2009,7 +2032,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(internal, false, channel, args.Clone(), sender_id);
+    electron_ptr->Message(internal, false, channel, std::move(args), sender_id);
   }
   return true;
 }
@@ -2018,7 +2041,13 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
                                         bool send_to_all,
                                         int32_t frame_id,
                                         const std::string& channel,
-                                        const base::ListValue& args) {
+                                        v8::Local<v8::Value> args) {
+  blink::CloneableMessage message;
+  if (!mate::ConvertFromV8(isolate(), args, &message)) {
+    isolate()->ThrowException(v8::Exception::Error(
+        mate::StringToV8(isolate(), "Failed to serialize arguments")));
+    return false;
+  }
   auto frames = web_contents()->GetAllFrames();
   auto iter = std::find_if(frames.begin(), frames.end(), [frame_id](auto* f) {
     return f->GetRoutingID() == frame_id;
@@ -2031,7 +2060,7 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   mojom::ElectronRendererAssociatedPtr electron_ptr;
   (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(internal, send_to_all, channel, args.Clone(),
+  electron_ptr->Message(internal, send_to_all, channel, std::move(message),
                         0 /* sender_id */);
   return true;
 }
