@@ -85,6 +85,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
+#include "ppapi/buildflags/buildflags.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/platform/web_cursor_info.h"
@@ -833,10 +834,12 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
 
 void WebContents::PluginCrashed(const base::FilePath& plugin_path,
                                 base::ProcessId plugin_pid) {
+#if BUILDFLAG(ENABLE_PLUGINS)
   content::WebPluginInfo info;
   auto* plugin_service = content::PluginService::GetInstance();
   plugin_service->GetPluginInfoByPath(plugin_path, &info);
   Emit("plugin-crashed", info.name, info.version);
+#endif  // BUILDFLAG(ENABLE_PLUIGNS)
 }
 
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
