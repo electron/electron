@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Siye Liu <siliu@microsoft.com>
+Date: Thu, 15 Aug 2019 02:30:05 +0000
+Subject: Notify DirectManipulationEventHandler when DirectManipulationHelper
+ is destructed.
+
+The crash report shows that DirectManipulation may call
+|DirectManipulationEventHandler::OnInteraction| after
+DirectManipulationHelper is destroyed. Since |OnInteraction| is relying
+on DirectManipulationHelper to add/remove animation observer, we should
+set the pointer to DirectManipulationHelper to nullptr after it is
+destroyed.
+
+In this CL, we set the pointer to DirectManipulationHelper in separate
+function |SetDirectManipulationHelper| instead of passing the pointer
+during ctor of DirectManipulationEventHandler.
+
+Bug: 993260
+Change-Id: Id781af047e72268532d861920a077a0c6b1650bb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1753661
+Reviewed-by: Scott Violet <sky@chromium.org>
+Commit-Queue: Siye Liu <siliu@microsoft.com>
+Cr-Commit-Position: refs/heads/master@{#687125}
+
+diff --git a/content/browser/renderer_host/direct_manipulation_event_handler_win.cc b/content/browser/renderer_host/direct_manipulation_event_handler_win.cc
+index 33ce63d8d0f59573cb4764f146b4f88008cca4a8..bae879411fb253a810034eb2cb531a54530a4183 100644
+--- a/content/browser/renderer_host/direct_manipulation_event_handler_win.cc
++++ b/content/browser/renderer_host/direct_manipulation_event_handler_win.cc
+@@ -28,9 +28,8 @@ bool FloatEquals(float f1, float f2) {
+ }  // namespace
+ 
+ DirectManipulationEventHandler::DirectManipulationEventHandler(
+-    DirectManipulationHelper* helper,
+     ui::WindowEventTarget* event_target)
+-    : helper_(helper), event_target_(event_target) {}
++    : event_target_(event_target) {}
+ 
+ bool DirectManipulationEventHandler::SetViewportSizeInPixels(
+     const gfx::Size& viewport_size_in_pixels) {
+@@ -45,6 +44,11 @@ void DirectManipulationEventHandler::SetDeviceScaleFactor(
+   device_scale_factor_ = device_scale_factor;
+ }
+ 
++void DirectManipulationEventHandler::SetDirectManipulationHelper(
++    DirectManipulationHelper* helper) {
++  helper_ = helper;
++}
++
+ DirectManipulationEventHandler::~DirectManipulationEventHandler() {}
+ 
+ void DirectManipulationEventHandler::TransitionToState(
+@@ -303,6 +307,9 @@ HRESULT DirectManipulationEventHandler::OnContentUpdated(
+ HRESULT DirectManipulationEventHandler::OnInteraction(
+     IDirectManipulationViewport2* viewport,
+     DIRECTMANIPULATION_INTERACTION_TYPE interaction) {
++  if (!helper_)
++    return S_OK;
++
+   if (interaction == DIRECTMANIPULATION_INTERACTION_BEGIN) {
+     DebugLogging("OnInteraction BEGIN.", S_OK);
+     helper_->AddAnimationObserver();
+diff --git a/content/browser/renderer_host/direct_manipulation_event_handler_win.h b/content/browser/renderer_host/direct_manipulation_event_handler_win.h
+index f1902085032ffc95edb2d8dcd5224f1c5ecda3d2..e654c5f1a45da9e054d2c367df6f5115fa25862c 100644
+--- a/content/browser/renderer_host/direct_manipulation_event_handler_win.h
++++ b/content/browser/renderer_host/direct_manipulation_event_handler_win.h
+@@ -38,14 +38,15 @@ class DirectManipulationEventHandler
+               IDirectManipulationViewportEventHandler,
+               IDirectManipulationInteractionEventHandler>> {
+  public:
+-  DirectManipulationEventHandler(DirectManipulationHelper* helper,
+-                                 ui::WindowEventTarget* event_target);
++  DirectManipulationEventHandler(ui::WindowEventTarget* event_target);
+ 
+   // Return true if viewport_size_in_pixels_ changed.
+   bool SetViewportSizeInPixels(const gfx::Size& viewport_size_in_pixels);
+ 
+   void SetDeviceScaleFactor(float device_scale_factor);
+ 
++  void SetDirectManipulationHelper(DirectManipulationHelper* helper);
++
+  private:
+   friend class DirectManipulationBrowserTest;
+   friend DirectManipulationUnitTest;
+diff --git a/content/browser/renderer_host/direct_manipulation_helper_win.cc b/content/browser/renderer_host/direct_manipulation_helper_win.cc
+index 9401e7f8fb1fafd0532bb1e86035701c1df2ffda..6ce09b9f7b80e94c2adb582954c90afc95fc20e4 100644
+--- a/content/browser/renderer_host/direct_manipulation_helper_win.cc
++++ b/content/browser/renderer_host/direct_manipulation_helper_win.cc
+@@ -78,8 +78,9 @@ DirectManipulationHelper::CreateInstanceForTesting(
+       base::WrapUnique(new DirectManipulationHelper(0, nullptr));
+ 
+   instance->event_handler_ =
+-      Microsoft::WRL::Make<DirectManipulationEventHandler>(instance.get(),
+-                                                           event_target);
++      Microsoft::WRL::Make<DirectManipulationEventHandler>(event_target);
++
++  instance->event_handler_->SetDirectManipulationHelper(instance.get());
+ 
+   instance->viewport_ = viewport;
+ 
+@@ -159,7 +160,9 @@ bool DirectManipulationHelper::Initialize(ui::WindowEventTarget* event_target) {
+   }
+ 
+   event_handler_ =
+-      Microsoft::WRL::Make<DirectManipulationEventHandler>(this, event_target);
++      Microsoft::WRL::Make<DirectManipulationEventHandler>(event_target);
++
++  event_handler_->SetDirectManipulationHelper(this);
+ 
+   // We got Direct Manipulation transform from
+   // IDirectManipulationViewportEventHandler.
+@@ -265,6 +268,7 @@ void DirectManipulationHelper::Destroy() {
+   if (has_animation_observer_)
+     RemoveAnimationObserver();
+   compositor_ = nullptr;
++  event_handler_->SetDirectManipulationHelper(nullptr);
+ 
+   HRESULT hr;
+   if (viewport_) {
