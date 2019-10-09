@@ -19,6 +19,10 @@ namespace base {
 class DictionaryValue;
 }
 
+namespace mate {
+class Dictionary;
+}
+
 namespace net {
 class URLRequestContextGetter;
 }
@@ -42,7 +46,7 @@ class Cookies : public mate::TrackableObject<Cookies> {
   Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~Cookies() override;
 
-  v8::Local<v8::Promise> Get(const base::DictionaryValue& filter);
+  v8::Local<v8::Promise> Get(const mate::Dictionary& filter);
   v8::Local<v8::Promise> Set(const base::DictionaryValue& details);
   v8::Local<v8::Promise> Remove(const GURL& url, const std::string& name);
   v8::Local<v8::Promise> FlushStore();
