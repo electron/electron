@@ -220,19 +220,19 @@ class WebContents : public mate::TrackableObject<WebContents>,
   bool SendIPCMessage(bool internal,
                       bool send_to_all,
                       const std::string& channel,
-                      const base::ListValue& args);
+                      v8::Local<v8::Value> args);
 
   bool SendIPCMessageWithSender(bool internal,
                                 bool send_to_all,
                                 const std::string& channel,
-                                const base::ListValue& args,
+                                blink::CloneableMessage args,
                                 int32_t sender_id = 0);
 
   bool SendIPCMessageToFrame(bool internal,
                              bool send_to_all,
                              int32_t frame_id,
                              const std::string& channel,
-                             const base::ListValue& args);
+                             v8::Local<v8::Value> args);
 
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
@@ -491,21 +491,27 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // mojom::ElectronBrowser
   void Message(bool internal,
                const std::string& channel,
-               base::Value arguments) override;
+               blink::CloneableMessage arguments) override;
   void Invoke(bool internal,
               const std::string& channel,
-              base::Value arguments,
+              blink::CloneableMessage arguments,
               InvokeCallback callback) override;
   void MessageSync(bool internal,
                    const std::string& channel,
-                   base::Value arguments,
+                   blink::CloneableMessage arguments,
                    MessageSyncCallback callback) override;
   void MessageTo(bool internal,
                  bool send_to_all,
                  int32_t web_contents_id,
                  const std::string& channel,
-                 base::Value arguments) override;
-  void MessageHost(const std::string& channel, base::Value arguments) override;
+                 blink::CloneableMessage arguments) override;
+  void MessageHost(const std::string& channel,
+                   blink::CloneableMessage arguments) override;
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+  void DereferenceRemoteJSObject(const std::string& context_id,
+                                 int object_id,
+                                 int ref_count) override;
+#endif
   void UpdateDraggableRegions(
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;

@@ -503,7 +503,7 @@ describe('app module', () => {
       await w.loadURL('about:blank')
 
       const promise = emittedOnce(app, 'remote-get-current-window')
-      w.webContents.executeJavaScript(`require('electron').remote.getCurrentWindow()`)
+      w.webContents.executeJavaScript(`{ require('electron').remote.getCurrentWindow() }`)
 
       const [, webContents] = await promise
       expect(webContents).to.equal(w.webContents)
@@ -519,7 +519,7 @@ describe('app module', () => {
       await w.loadURL('about:blank')
 
       const promise = emittedOnce(app, 'remote-get-current-web-contents')
-      w.webContents.executeJavaScript(`require('electron').remote.getCurrentWebContents()`)
+      w.webContents.executeJavaScript(`{ require('electron').remote.getCurrentWebContents() }`)
 
       const [, webContents] = await promise
       expect(webContents).to.equal(w.webContents)

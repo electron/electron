@@ -82,8 +82,7 @@ class EventEmitter : public Wrappable<T> {
   bool EmitWithSender(
       base::StringPiece name,
       content::RenderFrameHost* sender,
-      base::Optional<electron::mojom::ElectronBrowser::MessageSyncCallback>
-          callback,
+      base::Optional<electron::mojom::ElectronBrowser::InvokeCallback> callback,
       Args&&... args) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Locker locker(isolate());

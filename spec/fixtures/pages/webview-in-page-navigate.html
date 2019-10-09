@@ -19,7 +19,7 @@
     SendZoomLevel().then(() => {
       if (!finalNavigation) {
         finalNavigation = true
-        view.executeJavaScript('window.location.hash=123', () => {})
+        view.executeJavaScript('window.location.hash=123')
       }
     })
   })

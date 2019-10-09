@@ -1068,7 +1068,7 @@ describe('<webview> tag', function () {
       await loadWebView(webview, { src })
 
       const data = await webview.printToPDF({})
-      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
+      expect(data).to.be.an.instanceof(Uint8Array).that.is.not.empty()
     })
   })
 

@@ -6,14 +6,19 @@
 
 #include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "gin/converter.h"
+#include "mojo/public/cpp/base/values_mojom_traits.h"
+#include "mojo/public/mojom/base/values.mojom.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/deprecate_util.h"
 #include "shell/common/keyboard_util.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/platform/web_mouse_event.h"
 #include "third_party/blink/public/platform/web_mouse_wheel_event.h"
@@ -525,6 +530,186 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
   else
     return false;
   return true;
+}
+
+namespace {
+constexpr uint8_t kNewSerializationTag = 0;
+constexpr uint8_t kOldSerializationTag = 1;
+
+class V8Serializer : public v8::ValueSerializer::Delegate {
+ public:
+  explicit V8Serializer(v8::Isolate* isolate,
+                        bool use_old_serialization = false)
+      : isolate_(isolate),
+        serializer_(isolate, this),
+        use_old_serialization_(use_old_serialization) {}
+  ~V8Serializer() override = default;
+
+  bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
+    serializer_.WriteHeader();
+    if (use_old_serialization_) {
+      WriteTag(kOldSerializationTag);
+      if (!WriteBaseValue(value)) {
+        isolate_->ThrowException(
+            mate::StringToV8(isolate_, "An object could not be cloned."));
+        return false;
+      }
+    } else {
+      WriteTag(kNewSerializationTag);
+      bool wrote_value;
+      v8::TryCatch try_catch(isolate_);
+      if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
+               .To(&wrote_value)) {
+        try_catch.Reset();
+        if (!V8Serializer(isolate_, true).Serialize(value, out)) {
+          try_catch.ReThrow();
+          return false;
+        }
+        return true;
+      }
+      DCHECK(wrote_value);
+    }
+
+    std::pair<uint8_t*, size_t> buffer = serializer_.Release();
+    DCHECK_EQ(buffer.first, data_.data());
+    out->encoded_message = base::make_span(buffer.first, buffer.second);
+    out->owned_encoded_message = std::move(data_);
+
+    return true;
+  }
+
+  bool WriteBaseValue(v8::Local<v8::Value> object) {
+    node::Environment* env = node::Environment::GetCurrent(isolate_);
+    if (env) {
+      electron::EmitDeprecationWarning(
+          env,
+          "Passing functions, DOM objects and other non-cloneable JavaScript "
+          "objects to IPC methods is deprecated and will throw an exception "
+          "beginning with Electron 9.",
+          "DeprecationWarning");
+    }
+    base::Value value;
+    if (!ConvertFromV8(isolate_, object, &value)) {
+      return false;
+    }
+    mojo::Message message = mojo_base::mojom::Value::SerializeAsMessage(&value);
+
+    serializer_.WriteUint32(message.data_num_bytes());
+    serializer_.WriteRawBytes(message.data(), message.data_num_bytes());
+    return true;
+  }
+
+  void WriteTag(uint8_t tag) { serializer_.WriteRawBytes(&tag, 1); }
+
+  // v8::ValueSerializer::Delegate
+  void* ReallocateBufferMemory(void* old_buffer,
+                               size_t size,
+                               size_t* actual_size) override {
+    DCHECK_EQ(old_buffer, data_.data());
+    data_.resize(size);
+    *actual_size = data_.capacity();
+    return data_.data();
+  }
+
+  void FreeBufferMemory(void* buffer) override {
+    DCHECK_EQ(buffer, data_.data());
+    data_ = {};
+  }
+
+  void ThrowDataCloneError(v8::Local<v8::String> message) override {
+    isolate_->ThrowException(v8::Exception::Error(message));
+  }
+
+ private:
+  v8::Isolate* isolate_;
+  std::vector<uint8_t> data_;
+  v8::ValueSerializer serializer_;
+  bool use_old_serialization_;
+};
+
+class V8Deserializer : public v8::ValueDeserializer::Delegate {
+ public:
+  V8Deserializer(v8::Isolate* isolate, const blink::CloneableMessage& message)
+      : isolate_(isolate),
+        deserializer_(isolate,
+                      message.encoded_message.data(),
+                      message.encoded_message.size(),
+                      this) {}
+
+  v8::Local<v8::Value> Deserialize() {
+    v8::EscapableHandleScope scope(isolate_);
+    auto context = isolate_->GetCurrentContext();
+    bool read_header;
+    if (!deserializer_.ReadHeader(context).To(&read_header))
+      return v8::Null(isolate_);
+    DCHECK(read_header);
+    uint8_t tag;
+    if (!ReadTag(&tag))
+      return v8::Null(isolate_);
+    switch (tag) {
+      case kNewSerializationTag: {
+        v8::Local<v8::Value> value;
+        if (!deserializer_.ReadValue(context).ToLocal(&value)) {
+          return v8::Null(isolate_);
+        }
+        return scope.Escape(value);
+      }
+      case kOldSerializationTag: {
+        v8::Local<v8::Value> value;
+        if (!ReadBaseValue(&value)) {
+          return v8::Null(isolate_);
+        }
+        return scope.Escape(value);
+      }
+      default:
+        NOTREACHED() << "Invalid tag: " << tag;
+        return v8::Null(isolate_);
+    }
+  }
+
+  bool ReadTag(uint8_t* tag) {
+    const void* tag_bytes;
+    if (!deserializer_.ReadRawBytes(1, &tag_bytes))
+      return false;
+    *tag = *reinterpret_cast<const uint8_t*>(tag_bytes);
+    return true;
+  }
+
+  bool ReadBaseValue(v8::Local<v8::Value>* value) {
+    uint32_t length;
+    const void* data;
+    if (!deserializer_.ReadUint32(&length) ||
+        !deserializer_.ReadRawBytes(length, &data)) {
+      return false;
+    }
+    mojo::Message message(
+        base::make_span(reinterpret_cast<const uint8_t*>(data), length), {});
+    base::Value out;
+    if (!mojo_base::mojom::Value::DeserializeFromMessage(std::move(message),
+                                                         &out)) {
+      return false;
+    }
+    *value = ConvertToV8(isolate_, out);
+    return true;
+  }
+
+ private:
+  v8::Isolate* isolate_;
+  v8::ValueDeserializer deserializer_;
+};
+
+}  // namespace
+
+v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(
+    v8::Isolate* isolate,
+    const blink::CloneableMessage& in) {
+  return V8Deserializer(isolate, in).Deserialize();
+}
+
+bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
+                                                v8::Handle<v8::Value> val,
+                                                blink::CloneableMessage* out) {
+  return V8Serializer(isolate).Serialize(val, out);
 }
 
 }  // namespace mate

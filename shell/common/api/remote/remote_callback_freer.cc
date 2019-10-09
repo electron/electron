@@ -35,18 +35,12 @@ RemoteCallbackFreer::RemoteCallbackFreer(v8::Isolate* isolate,
 RemoteCallbackFreer::~RemoteCallbackFreer() = default;
 
 void RemoteCallbackFreer::RunDestructor() {
-  auto* channel = "ELECTRON_RENDERER_RELEASE_CALLBACK";
-  base::ListValue args;
-  int32_t sender_id = 0;
-  args.AppendString(context_id_);
-  args.AppendInteger(object_id_);
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
     mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(true /* internal */, false /* send_to_all */, channel,
-                          args.Clone(), sender_id);
+    electron_ptr->DereferenceRemoteJSCallback(context_id_, object_id_);
   }
 
   Observe(nullptr);
