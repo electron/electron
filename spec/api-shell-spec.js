@@ -7,9 +7,6 @@ const os = require('os')
 const http = require('http')
 const { shell } = require('electron')
 
-const { closeWindow } = require('./window-helpers')
-const { emittedOnce } = require('./events-helpers')
-
 const { expect } = chai
 chai.use(dirtyChai)
 

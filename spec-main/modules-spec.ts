@@ -1,64 +1,55 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+import { expect } from 'chai'
+import * as path from 'path'
+import * as fs from 'fs'
+import { BrowserWindow } from 'electron'
+import { ifdescribe, ifit } from './spec-helpers'
+import { closeAllWindows } from './window-helpers'
+import * as childProcess from 'child_process'
 
 const Module = require('module')
-const path = require('path')
-const fs = require('fs')
-const { remote } = require('electron')
-const { BrowserWindow } = remote
-const { closeWindow } = require('./window-helpers')
+
 const features = process.electronBinding('features')
-
-const { expect } = chai
-chai.use(dirtyChai)
-
-const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
+const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
 
 describe('modules support', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
   describe('third-party module', () => {
-    (nativeModulesEnabled ? describe : describe.skip)('echo', () => {
-      it('can be required in renderer', () => {
-        require('echo')
+    ifdescribe(nativeModulesEnabled)('echo', () => {
+      afterEach(closeAllWindows)
+      it('can be required in renderer', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+        w.loadURL('about:blank')
+        await expect(w.webContents.executeJavaScript(`{ require('echo') }`)).to.be.fulfilled()
       })
 
-      it('can be required in node binary', function (done) {
-        if (!features.isRunAsNodeEnabled()) {
-          this.skip()
-          done()
-        }
-
-        const echo = path.join(fixtures, 'module', 'echo.js')
-        const child = require('child_process').fork(echo)
+      ifit(features.isRunAsNodeEnabled())('can be required in node binary', function (done) {
+        const child = childProcess.fork(path.join(fixtures, 'module', 'echo.js'))
         child.on('message', (msg) => {
           expect(msg).to.equal('ok')
           done()
         })
       })
 
-      if (process.platform === 'win32') {
-        it('can be required if electron.exe is renamed', () => {
-          const { execPath } = remote.process
-          const testExecPath = path.join(path.dirname(execPath), 'test.exe')
-          fs.copyFileSync(execPath, testExecPath)
-          try {
-            const fixture = path.join(fixtures, 'module', 'echo-renamed.js')
-            expect(fs.existsSync(fixture)).to.be.true()
-            const child = require('child_process').spawnSync(testExecPath, [fixture])
-            expect(child.status).to.equal(0)
-          } finally {
-            fs.unlinkSync(testExecPath)
-          }
-        })
-      }
+      ifit(process.platform === 'win32')('can be required if electron.exe is renamed', () => {
+        const testExecPath = path.join(path.dirname(process.execPath), 'test.exe')
+        fs.copyFileSync(process.execPath, testExecPath)
+        try {
+          const fixture = path.join(fixtures, 'module', 'echo-renamed.js')
+          expect(fs.existsSync(fixture)).to.be.true()
+          const child = childProcess.spawnSync(testExecPath, [fixture])
+          expect(child.status).to.equal(0)
+        } finally {
+          fs.unlinkSync(testExecPath)
+        }
+      })
     })
 
     describe('q', () => {
       const Q = require('q')
       describe('Q.when', () => {
         it('emits the fullfil callback', (done) => {
-          Q(true).then((val) => {
+          Q(true).then((val: boolean) => {
             expect(val).to.be.true()
             done()
           })
@@ -150,23 +141,9 @@ describe('modules support', () => {
 
   describe('require', () => {
     describe('when loaded URL is not file: protocol', () => {
-      let w
-
-      beforeEach(() => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true
-          }
-        })
-      })
-
-      afterEach(async () => {
-        await closeWindow(w)
-        w = null
-      })
-
+      afterEach(closeAllWindows)
       it('searches for module under app directory', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
         w.loadURL('about:blank')
         const result = await w.webContents.executeJavaScript('typeof require("q").when')
         expect(result).to.equal('function')
