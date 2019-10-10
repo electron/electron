@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Milan Burda <milan.burda@gmail.com>
+Date: Wed, 9 Oct 2019 09:25:04 +0200
+Subject: Fix /usr/lib/libobjc-trampolines.dylib dlopen() crashes on macOS
+ Catalina
+
+diff --git a/services/service_manager/sandbox/mac/common.sb b/services/service_manager/sandbox/mac/common.sb
+index b7dc1998df0f42cc58d24f2233a929810244440e..9994105e7aaf65009ccb406330adb6a5d7bfadd4 100644
+--- a/services/service_manager/sandbox/mac/common.sb
++++ b/services/service_manager/sandbox/mac/common.sb
+@@ -47,7 +47,8 @@
+ (allow file-read*
+     (subpath "/System/Library/Frameworks")
+     (subpath "/System/Library/PrivateFrameworks")
+-    (subpath "/System/Library/CoreServices"))
++    (subpath "/System/Library/CoreServices")
++    (subpath "/usr/lib"))
+ 
+ (allow ipc-posix-shm)
+ 
