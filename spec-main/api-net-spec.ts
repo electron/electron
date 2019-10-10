@@ -1,8 +1,21 @@
 import { expect } from 'chai'
-import { net, session, ClientRequest } from 'electron'
+import { net as originalNet, session, ClientRequest } from 'electron'
 import * as http from 'http'
 import * as url from 'url'
 import { AddressInfo } from 'net'
+
+const outstandingRequests: ClientRequest[] = []
+const net: {request: (typeof originalNet)['request']} = {
+  request: (...args) => {
+    const r = originalNet.request(...args)
+    outstandingRequests.push(r)
+    return r
+  }
+}
+const abortOutstandingRequests = () => {
+  outstandingRequests.forEach(r => r.abort())
+  outstandingRequests.length = 0
+}
 
 const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
@@ -57,6 +70,7 @@ respondOnce.toSingleURL = (fn: http.RequestListener) => {
 }
 
 describe('net module', () => {
+  afterEach(abortOutstandingRequests)
   describe('HTTP basics', () => {
     it('should be able to issue a basic GET request', (done) => {
       respondOnce.toSingleURL((request, response) => {
