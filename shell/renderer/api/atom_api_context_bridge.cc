@@ -314,9 +314,9 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
 }
 
 v8::Local<v8::Object> CreateProxyForAPI(
-    v8::Local<v8::Object>& api_object,
-    v8::Local<v8::Context>& source_context,
-    v8::Local<v8::Context>& target_context,
+    const v8::Local<v8::Object>& api_object,
+    const v8::Local<v8::Context>& source_context,
+    const v8::Local<v8::Context>& target_context,
     context_bridge::RenderFramePersistenceStore* store) {
   mate::Dictionary api(source_context->GetIsolate(), api_object);
   mate::Dictionary proxy =
