@@ -953,10 +953,10 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Electron app
     - *step-electron-build
+    - *step-maybe-generate-breakpad-symbols
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
 
     # mksnapshot
