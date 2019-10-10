@@ -153,7 +153,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   [userActivity setNeedsSave:YES];
 }
 
-- (void)awakeFromNib {
+- (void)registerURLHandler {
   [[NSAppleEventManager sharedAppleEventManager]
       setEventHandler:self
           andSelector:@selector(handleURLEvent:withReplyEvent:)
