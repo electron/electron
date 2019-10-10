@@ -5,6 +5,7 @@
 #include "shell/browser/atom_browser_main_parts.h"
 
 #include "shell/browser/atom_paths.h"
+#import "shell/browser/mac/atom_application.h"
 #include "shell/browser/mac/atom_application_delegate.h"
 
 namespace electron {
@@ -70,6 +71,10 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 void AtomBrowserMainParts::FreeAppDelegate() {
   [[NSApp delegate] release];
   [NSApp setDelegate:nil];
+}
+
+void AtomBrowserMainParts::RegisterURLHandler() {
+  [[AtomApplication sharedApplication] registerURLHandler];
 }
 
 void AtomBrowserMainParts::InitializeEmptyApplicationMenu() {
