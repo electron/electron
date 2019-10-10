@@ -15,9 +15,8 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/common/content_constants.h"
-#include "content/public/common/pepper_plugin_info.h"
 #include "electron/buildflags/buildflags.h"
-#include "ppapi/shared_impl/ppapi_permissions.h"
+#include "ppapi/buildflags/buildflags.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "url/url_constants.h"
@@ -34,6 +33,11 @@
 #include "atom/common/atom_constants.h"
 #include "pdf/pdf.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
+#if BUILDFLAG(ENABLE_PLUGINS)
+#include "content/public/common/pepper_plugin_info.h"
+#include "ppapi/shared_impl/ppapi_permissions.h"
+#endif  // BUILDFLAG(ENABLE_PLUGINS)
 
 namespace atom {
 
@@ -141,6 +145,7 @@ void AddPepperFlashFromCommandLine(
 }
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
+#if BUILDFLAG(ENABLE_PLUGINS)
 void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   content::PepperPluginInfo pdf_info;
@@ -161,6 +166,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   plugins->push_back(pdf_info);
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
+#endif  // BUILDFLAG(ENABLE_PLUGINS)
 
 void AppendDelimitedSwitchToVector(const base::StringPiece cmd_switch,
                                    std::vector<std::string>* append_me) {
@@ -227,7 +233,9 @@ void AtomContentClient::AddPepperPlugins(
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   AddPepperFlashFromCommandLine(command_line, plugins);
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PLUGINS)
   ComputeBuiltInPlugins(plugins);
+#endif  // BUILDFLAG(ENABLE_PLUGINS)
 }
 
 void AtomContentClient::AddContentDecryptionModules(
