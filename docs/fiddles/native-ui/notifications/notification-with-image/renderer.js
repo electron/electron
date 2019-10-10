@@ -1,5 +1,3 @@
-const path = require('path')
-
 const notification = {
   title: 'Notification with image',
   body: 'Short message plus a custom image',
