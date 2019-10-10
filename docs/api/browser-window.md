@@ -51,6 +51,9 @@ This event is usually emitted after the `did-finish-load` event, but for
 pages with many remote resources, it may be emitted before the `did-finish-load`
 event.
 
+Please note that using this event implies that the renderer will be considered "visible" and
+paint even though `show` is false.  This event will never fire if you use `paintWhenInitiallyHidden: false`
+
 ## Setting `backgroundColor`
 
 For a complex app, the `ready-to-show` event could be emitted too late, making
@@ -184,6 +187,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     leave it undefined so the executable's icon will be used.
   * `show` Boolean (optional) - Whether window should be shown when created. Default is
     `true`.
+  * `paintWhenInitiallyHidden` Boolean (optional) - Whether the renderer should be active when `show` is `false` and it has just been created.  In order for `document.visibilityState` to work correctly on first load with `show: false` you should set this to `false`.  Setting this to `false` will cause the `ready-to-show` event to not fire.  Default is `true`.
   * `frame` Boolean (optional) - Specify `false` to create a
     [Frameless Window](frameless-window.md). Default is `true`.
   * `parent` BrowserWindow (optional) - Specify parent window. Default is `null`.
@@ -202,8 +206,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
     like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha in #AARRGGBB format is supported if
     `transparent` is set to `true`). Default is `#FFF` (white).
-  * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
-    implemented on macOS. Default is `true`.
+  * `hasShadow` Boolean (optional) - Whether window should have a shadow. Default is `true`.
   * `opacity` Number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
   * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
@@ -379,6 +382,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `disableHtmlFullscreenWindowResize` Boolean (optional) - Whether to
       prevent the window from resizing when entering HTML Fullscreen. Default
       is `false`.
+    * `accessibleTitle` String (optional) - An alternative title string provided only
+      to accessibility tools such as screen readers. This string is not directly
+      visible to users.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -485,6 +491,9 @@ Emitted when the window is hidden.
 Emitted when the web page has been rendered (while not being shown) and window can be displayed without
 a visual flash.
 
+Please note that using this event implies that the renderer will be considered "visible" and
+paint even though `show` is false.  This event will never fire if you use `paintWhenInitiallyHidden: false`
+
 #### Event: 'maximize'
 
 Emitted when window is maximized.
@@ -516,14 +525,14 @@ Note that this is only emitted when the window is being resized manually. Resizi
 
 Emitted after the window has been resized.
 
-#### Event: 'will-move' _Windows_
+#### Event: 'will-move' _macOS_ _Windows_
 
 Returns:
 
 * `event` Event
 * `newBounds` [`Rectangle`](structures/rectangle.md) - Location the window is being moved to.
 
-Emitted before the window is moved. Calling `event.preventDefault()` will prevent the window from being moved.
+Emitted before the window is moved. On Windows, calling `event.preventDefault()` will prevent the window from being moved.
 
 Note that this is only emitted when the window is being resized manually. Resizing the window with `setBounds`/`setSize` will not emit this event.
 
@@ -655,7 +664,8 @@ Returns `BrowserWindow | null` - The window that is focused in this application,
 
 * `webContents` [WebContents](web-contents.md)
 
-Returns `BrowserWindow` - The window that owns the given `webContents`.
+Returns `BrowserWindow | null` - The window that owns the given `webContents`
+or `null` if the contents are not owned by a window.
 
 #### `BrowserWindow.fromBrowserView(browserView)`
 
@@ -820,6 +830,12 @@ win.excludedFromShownWindowsMenu = true
 const menu = Menu.buildFromTemplate(template)
 Menu.setApplicationMenu(menu)
 ```
+
+#### `win.accessibleTitle`
+
+A `String` property that defines an alternative title provided only to
+accessibility tools such as screen readers. This string is not directly
+visible to users.
 
 ### Instance Methods
 
@@ -1194,6 +1210,14 @@ can not be focused on.
 
 Returns `Boolean` - Whether the window is always on top of other windows.
 
+#### `win.moveAbove(mediaSourceId)`
+
+* `mediaSourceId` String - Window id in the format of DesktopCapturerSource's id. For example "window:1869:0".
+
+Moves window above the source window in the sense of z-order. If the
+`mediaSourceId` is not of type window or if the window does not exist then
+this method throws an error.
+
 #### `win.moveTop()`
 
 Moves window to top(z-order) regardless of focus
@@ -1265,6 +1289,15 @@ Enters or leaves the kiosk mode.
 #### `win.isKiosk()`
 
 Returns `Boolean` - Whether the window is in kiosk mode.
+
+#### `win.getMediaSourceId()`
+
+Returns `String` - Window id in the format of DesktopCapturerSource's id. For example "window:1234:0".
+
+More precisely the format is `window:id:other_id` where `id` is `HWND` on
+Windows, `CGWindowID` (`uint64_t`) on macOS and `Window` (`unsigned long`) on
+Linux. `other_id` is used to identify web contents (tabs) so within the same
+top level window.
 
 #### `win.getNativeWindowHandle()`
 
@@ -1437,19 +1470,15 @@ screen readers
 Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to
 convey some sort of application status or to passively notify the user.
 
-#### `win.setHasShadow(hasShadow)` _macOS_
+#### `win.setHasShadow(hasShadow)`
 
 * `hasShadow` Boolean
 
-Sets whether the window should have a shadow. On Windows and Linux does
-nothing.
+Sets whether the window should have a shadow.
 
-#### `win.hasShadow()` _macOS_
+#### `win.hasShadow()`
 
 Returns `Boolean` - Whether the window has a shadow.
-
-On Windows and Linux always returns
-`true`.
 
 #### `win.setOpacity(opacity)` _Windows_ _macOS_
 
@@ -1717,14 +1746,14 @@ removed in future Electron releases.
 
 #### `win.setBrowserView(browserView)` _Experimental_
 
-* `browserView` [BrowserView](browser-view.md) | null - Attach browserView to win.
-If there is some other browserViews was attached they will be removed from
+* `browserView` [BrowserView](browser-view.md) | null - Attach `browserView` to `win`.
+If there are other `BrowserView`s attached, they will be removed from
 this window.
 
 #### `win.getBrowserView()` _Experimental_
 
-Returns `BrowserView | null` - an BrowserView what is attached. Returns `null`
-if none is attached. Throw error if multiple BrowserViews is attached.
+Returns `BrowserView | null` - The `BrowserView` attached to `win`. Returns `null`
+if one is not attached. Throws an error if multiple `BrowserView`s are attached.
 
 #### `win.addBrowserView(browserView)` _Experimental_
 

@@ -41,7 +41,7 @@ void OpenExternal(const GURL& url,
                   OpenExternalCallback callback);
 
 // Move a file to trash.
-bool MoveItemToTrash(const base::FilePath& full_path);
+bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail);
 
 void Beep();
 

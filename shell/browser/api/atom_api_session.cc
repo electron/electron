@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/atom_api_session.h"
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -18,6 +19,7 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
+#include "components/download/public/common/download_url_parameters.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
@@ -28,9 +30,10 @@
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/storage_partition.h"
-#include "mojo/public/cpp/bindings/strong_binding.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_auth_handler_factory.h"
@@ -39,6 +42,7 @@
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/atom_api_cookies.h"
+#include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/browser/api/atom_api_download_item.h"
 #include "shell/browser/api/atom_api_net_log.h"
 #include "shell/browser/api/atom_api_protocol_ns.h"
@@ -50,11 +54,12 @@
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/session_preferences.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/content_converter.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/once_callback.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -206,8 +211,10 @@ Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())
       ->RemoveObserver(this);
+  // TODO(zcbenz): Now since URLRequestContextGetter is gone, is this still
+  // needed?
+  // Refs https://github.com/electron/electron/pull/12305.
   DestroyGlobalHandle(isolate(), cookies_);
-  DestroyGlobalHandle(isolate(), web_request_);
   DestroyGlobalHandle(isolate(), protocol_);
   DestroyGlobalHandle(isolate(), net_log_);
   g_sessions.erase(weak_map_id());
@@ -234,14 +241,14 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
 
 v8::Local<v8::Promise> Session::ResolveProxy(mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise promise(isolate);
+  util::Promise<std::string> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   GURL url;
   args->GetNext(&url);
 
   browser_context_->GetResolveProxyHelper()->ResolveProxy(
-      url, base::BindOnce(util::Promise::ResolvePromise<std::string>,
+      url, base::BindOnce(util::Promise<std::string>::ResolvePromise,
                           std::move(promise)));
 
   return handle;
@@ -249,36 +256,37 @@ v8::Local<v8::Promise> Session::ResolveProxy(mate::Arguments* args) {
 
 v8::Local<v8::Promise> Session::GetCacheSize() {
   auto* isolate = v8::Isolate::GetCurrent();
-  auto promise = util::Promise(isolate);
+  util::Promise<int64_t> promise(isolate);
   auto handle = promise.GetHandle();
 
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
-      ->ComputeHttpCacheSize(base::Time(), base::Time::Max(),
-                             base::BindOnce(
-                                 [](util::Promise promise, bool is_upper_bound,
-                                    int64_t size_or_error) {
-                                   if (size_or_error < 0) {
-                                     promise.RejectWithErrorMessage(
-                                         net::ErrorToString(size_or_error));
-                                   } else {
-                                     promise.Resolve(size_or_error);
-                                   }
-                                 },
-                                 std::move(promise)));
+      ->ComputeHttpCacheSize(
+          base::Time(), base::Time::Max(),
+          base::BindOnce(
+              [](util::Promise<int64_t> promise, bool is_upper_bound,
+                 int64_t size_or_error) {
+                if (size_or_error < 0) {
+                  promise.RejectWithErrorMessage(
+                      net::ErrorToString(size_or_error));
+                } else {
+                  promise.Resolve(size_or_error);
+                }
+              },
+              std::move(promise)));
 
   return handle;
 }
 
 v8::Local<v8::Promise> Session::ClearCache() {
   auto* isolate = v8::Isolate::GetCurrent();
-  auto promise = util::Promise(isolate);
+  util::Promise<void*> promise(isolate);
   auto handle = promise.GetHandle();
 
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
       ->ClearHttpCache(base::Time(), base::Time::Max(), nullptr,
-                       base::BindOnce(util::Promise::ResolveEmptyPromise,
+                       base::BindOnce(util::Promise<void*>::ResolveEmptyPromise,
                                       std::move(promise)));
 
   return handle;
@@ -286,7 +294,7 @@ v8::Local<v8::Promise> Session::ClearCache() {
 
 v8::Local<v8::Promise> Session::ClearStorageData(mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise promise(isolate);
+  util::Promise<void*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   ClearStorageDataOptions options;
@@ -303,7 +311,8 @@ v8::Local<v8::Promise> Session::ClearStorageData(mate::Arguments* args) {
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin, base::Time(),
       base::Time::Max(),
-      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
+      base::BindOnce(util::Promise<void*>::ResolveEmptyPromise,
+                     std::move(promise)));
   return handle;
 }
 
@@ -315,7 +324,7 @@ void Session::FlushStorageData() {
 
 v8::Local<v8::Promise> Session::SetProxy(mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise promise(isolate);
+  util::Promise<void*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   mate::Dictionary options;
@@ -348,8 +357,8 @@ v8::Local<v8::Promise> Session::SetProxy(mate::Arguments* args) {
   }
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE,
-      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
+      FROM_HERE, base::BindOnce(util::Promise<void*>::ResolveEmptyPromise,
+                                std::move(promise)));
 
   return handle;
 }
@@ -393,14 +402,16 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
     return;
   }
 
-  network::mojom::CertVerifierClientPtr cert_verifier_client;
+  mojo::PendingRemote<network::mojom::CertVerifierClient>
+      cert_verifier_client_remote;
   if (proc) {
-    mojo::MakeStrongBinding(std::make_unique<CertVerifierClient>(proc),
-                            mojo::MakeRequest(&cert_verifier_client));
+    mojo::MakeSelfOwnedReceiver(
+        std::make_unique<CertVerifierClient>(proc),
+        cert_verifier_client_remote.InitWithNewPipeAndPassReceiver());
   }
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
-      ->SetCertVerifierClient(std::move(cert_verifier_client));
+      ->SetCertVerifierClient(std::move(cert_verifier_client_remote));
 
   // This causes the cert verifier cache to be cleared.
   content::GetNetworkService()->OnCertDBChanged();
@@ -447,13 +458,13 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
 
 v8::Local<v8::Promise> Session::ClearHostResolverCache(mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise promise(isolate);
+  util::Promise<void*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
       ->ClearHostCache(nullptr,
-                       base::BindOnce(util::Promise::ResolveEmptyPromise,
+                       base::BindOnce(util::Promise<void*>::ResolveEmptyPromise,
                                       std::move(promise)));
 
   return handle;
@@ -461,14 +472,15 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(mate::Arguments* args) {
 
 v8::Local<v8::Promise> Session::ClearAuthCache() {
   auto* isolate = v8::Isolate::GetCurrent();
-  util::Promise promise(isolate);
+  util::Promise<void*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
-      ->ClearHttpAuthCache(base::Time(),
-                           base::BindOnce(util::Promise::ResolveEmptyPromise,
-                                          std::move(promise)));
+      ->ClearHttpAuthCache(
+          base::Time(),
+          base::BindOnce(util::Promise<void*>::ResolveEmptyPromise,
+                         std::move(promise)));
 
   return handle;
 }
@@ -483,8 +495,10 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
 
 void Session::SetUserAgent(const std::string& user_agent,
                            mate::Arguments* args) {
-  CHECK(false)
-      << "TODO: This was disabled when the network service was turned on";
+  browser_context_->SetUserAgent(user_agent);
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->SetUserAgent(user_agent);
 }
 
 std::string Session::GetUserAgent() {
@@ -493,20 +507,27 @@ std::string Session::GetUserAgent() {
 
 v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
                                             const std::string& uuid) {
-  util::Promise promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
+  gin::Handle<DataPipeHolder> holder = DataPipeHolder::From(isolate, uuid);
+  if (holder.IsEmpty()) {
+    util::Promise<v8::Local<v8::Value>> promise(isolate);
+    promise.RejectWithErrorMessage("Could not get blob data handle");
+    return promise.GetHandle();
+  }
 
-  AtomBlobReader* blob_reader = browser_context()->GetBlobReader();
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&AtomBlobReader::StartReading,
-                     base::Unretained(blob_reader), uuid, std::move(promise)));
-  return handle;
+  return holder->ReadAll(isolate);
+}
+
+void Session::DownloadURL(const GURL& url) {
+  auto* download_manager =
+      content::BrowserContext::GetDownloadManager(browser_context());
+  auto download_params = std::make_unique<download::DownloadUrlParameters>(
+      url, MISSING_TRAFFIC_ANNOTATION);
+  download_manager->DownloadUrl(std::move(download_params));
 }
 
 void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
   int64_t offset = 0, length = 0;
-  double start_time = 0.0;
+  double start_time = base::Time::Now().ToDoubleT();
   std::string mime_type, last_modified, etag;
   base::FilePath path;
   std::vector<GURL> url_chain;
@@ -575,9 +596,8 @@ v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmpty()) {
-    v8::Local<v8::Value> handle;
-    handle = WebRequestNS::Create(isolate, browser_context()).ToV8();
-    web_request_.Reset(isolate, handle);
+    auto handle = WebRequestNS::Create(isolate, browser_context());
+    web_request_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, web_request_);
 }
@@ -588,6 +608,42 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
     net_log_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, net_log_);
+}
+
+static void StartPreconnectOnUI(
+    scoped_refptr<AtomBrowserContext> browser_context,
+    const GURL& url,
+    int num_sockets_to_preconnect) {
+  std::vector<predictors::PreconnectRequest> requests = {
+      {url.GetOrigin(), num_sockets_to_preconnect, net::NetworkIsolationKey()}};
+  browser_context->GetPreconnectManager()->Start(url, requests);
+}
+
+void Session::Preconnect(const mate::Dictionary& options,
+                         mate::Arguments* args) {
+  GURL url;
+  if (!options.Get("url", &url) || !url.is_valid()) {
+    args->ThrowError("Must pass non-empty valid url to session.preconnect.");
+    return;
+  }
+  int num_sockets_to_preconnect = 1;
+  if (options.Get("numSockets", &num_sockets_to_preconnect)) {
+    const int kMinSocketsToPreconnect = 1;
+    const int kMaxSocketsToPreconnect = 6;
+    if (num_sockets_to_preconnect < kMinSocketsToPreconnect ||
+        num_sockets_to_preconnect > kMaxSocketsToPreconnect) {
+      args->ThrowError(
+          base::StringPrintf("numSocketsToPreconnect is outside range [%d,%d]",
+                             kMinSocketsToPreconnect, kMaxSocketsToPreconnect));
+      return;
+    }
+  }
+
+  DCHECK_GT(num_sockets_to_preconnect, 0);
+  base::PostTask(
+      FROM_HERE, {content::BrowserThread::UI},
+      base::BindOnce(&StartPreconnectOnUI, base::RetainedRef(browser_context_),
+                     url, num_sockets_to_preconnect));
 }
 
 // static
@@ -630,8 +686,8 @@ mate::Handle<Session> Session::FromPartition(
 void Session::BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Session"));
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
       .SetMethod("clearCache", &Session::ClearCache)
@@ -653,6 +709,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
       .SetMethod("getBlobData", &Session::GetBlobData)
+      .SetMethod("downloadURL", &Session::DownloadURL)
       .SetMethod("createInterruptedDownload",
                  &Session::CreateInterruptedDownload)
       .SetMethod("setPreloads", &Session::SetPreloads)
@@ -660,6 +717,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
       .SetMethod("loadChromeExtension", &Session::LoadChromeExtension)
 #endif
+      .SetMethod("preconnect", &Session::Preconnect)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)

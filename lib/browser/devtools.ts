@@ -2,7 +2,8 @@ import { dialog, Menu } from 'electron'
 import * as fs from 'fs'
 import * as url from 'url'
 
-const ipcMainUtils = require('@electron/internal/browser/ipc-main-internal-utils')
+import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal'
+import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils'
 
 const convertToMenuTemplate = function (items: ContextMenuItem[], handler: (id: number) => void) {
   return items.map(function (item) {
@@ -59,7 +60,7 @@ const assertChromeDevTools = function (contents: Electron.WebContents, api: stri
   }
 }
 
-ipcMainUtils.handle('ELECTRON_INSPECTOR_CONTEXT_MENU', function (event: Electron.IpcMainEvent, items: ContextMenuItem[], isEditMenu: boolean) {
+ipcMainInternal.handle('ELECTRON_INSPECTOR_CONTEXT_MENU', function (event: Electron.IpcMainInvokeEvent, items: ContextMenuItem[], isEditMenu: boolean) {
   return new Promise(resolve => {
     assertChromeDevTools(event.sender, 'window.InspectorFrontendHost.showContextMenuAtPoint()')
 
@@ -71,7 +72,7 @@ ipcMainUtils.handle('ELECTRON_INSPECTOR_CONTEXT_MENU', function (event: Electron
   })
 })
 
-ipcMainUtils.handle('ELECTRON_INSPECTOR_SELECT_FILE', async function (event: Electron.IpcMainEvent) {
+ipcMainInternal.handle('ELECTRON_INSPECTOR_SELECT_FILE', async function (event: Electron.IpcMainInvokeEvent) {
   assertChromeDevTools(event.sender, 'window.UI.createFileSelectorElement()')
 
   const result = await dialog.showOpenDialog({})
@@ -83,7 +84,7 @@ ipcMainUtils.handle('ELECTRON_INSPECTOR_SELECT_FILE', async function (event: Ele
   return [path, data]
 })
 
-ipcMainUtils.handle('ELECTRON_INSPECTOR_CONFIRM', async function (event: Electron.IpcMainEvent, message: string = '', title: string = '') {
+ipcMainUtils.handleSync('ELECTRON_INSPECTOR_CONFIRM', async function (event: Electron.IpcMainInvokeEvent, message: string = '', title: string = '') {
   assertChromeDevTools(event.sender, 'window.confirm()')
 
   const options = {

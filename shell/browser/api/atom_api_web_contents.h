@@ -13,7 +13,9 @@
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "content/common/cursors/webcursor.h"
+#include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_binding_set.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -27,7 +29,6 @@
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/common_web_contents_delegate.h"
-#include "shell/browser/ui/autofill_popup.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -171,6 +172,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectSharedWorker();
+  void InspectSharedWorkerById(const std::string& workerId);
+  std::vector<scoped_refptr<content::DevToolsAgentHost>> GetAllSharedWorkers();
   void InspectServiceWorker();
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);
@@ -217,19 +220,19 @@ class WebContents : public mate::TrackableObject<WebContents>,
   bool SendIPCMessage(bool internal,
                       bool send_to_all,
                       const std::string& channel,
-                      const base::ListValue& args);
+                      v8::Local<v8::Value> args);
 
   bool SendIPCMessageWithSender(bool internal,
                                 bool send_to_all,
                                 const std::string& channel,
-                                const base::ListValue& args,
+                                blink::CloneableMessage args,
                                 int32_t sender_id = 0);
 
   bool SendIPCMessageToFrame(bool internal,
                              bool send_to_all,
                              int32_t frame_id,
                              const std::string& channel,
-                             const base::ListValue& args);
+                             v8::Local<v8::Value> args);
 
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
@@ -291,8 +294,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
   v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
-  bool IsRemoteModuleEnabled() const;
-
   // Returns the owner window.
   v8::Local<v8::Value> GetOwnerBrowserWindow() const;
 
@@ -305,7 +306,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Properties.
   int32_t ID() const;
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
-  content::WebContents* HostWebContents();
+  content::WebContents* HostWebContents() const;
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
@@ -322,6 +323,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
+
+  WebContents* embedder() { return embedder_; }
 
  protected:
   // Does not manage lifetime of |web_contents|.
@@ -469,13 +472,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsOpened() override;
   void DevToolsClosed() override;
 
-#if defined(TOOLKIT_VIEWS)
-  void ShowAutofillPopup(content::RenderFrameHost* frame_host,
-                         const gfx::RectF& bounds,
-                         const std::vector<base::string16>& values,
-                         const std::vector<base::string16>& labels);
-#endif
-
  private:
   AtomBrowserContext* GetBrowserContext() const;
 
@@ -495,29 +491,31 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // mojom::ElectronBrowser
   void Message(bool internal,
                const std::string& channel,
-               base::Value arguments) override;
-  void Invoke(const std::string& channel,
-              base::Value arguments,
+               blink::CloneableMessage arguments) override;
+  void Invoke(bool internal,
+              const std::string& channel,
+              blink::CloneableMessage arguments,
               InvokeCallback callback) override;
   void MessageSync(bool internal,
                    const std::string& channel,
-                   base::Value arguments,
+                   blink::CloneableMessage arguments,
                    MessageSyncCallback callback) override;
   void MessageTo(bool internal,
                  bool send_to_all,
                  int32_t web_contents_id,
                  const std::string& channel,
-                 base::Value arguments) override;
-  void MessageHost(const std::string& channel, base::Value arguments) override;
+                 blink::CloneableMessage arguments) override;
+  void MessageHost(const std::string& channel,
+                   blink::CloneableMessage arguments) override;
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+  void DereferenceRemoteJSObject(const std::string& context_id,
+                                 int object_id,
+                                 int ref_count) override;
+#endif
   void UpdateDraggableRegions(
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
-
-  void ShowAutofillPopup(const gfx::RectF& bounds,
-                         const std::vector<base::string16>& values,
-                         const std::vector<base::string16>& labels) override;
-  void HideAutofillPopup() override;
 
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);
@@ -576,5 +574,23 @@ class WebContents : public mate::TrackableObject<WebContents>,
 }  // namespace api
 
 }  // namespace electron
+
+namespace gin {
+
+// TODO(zcbenz): Remove this after converting WebContents to gin::Wrapper.
+template <>
+struct Converter<electron::api::WebContents*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::WebContents** out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::WebContents* in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_WEB_CONTENTS_H_

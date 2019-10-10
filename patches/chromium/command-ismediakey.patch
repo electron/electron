@@ -1,9 +1,9 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <jeremya@chromium.org>
 Date: Wed, 10 Oct 2018 15:07:34 -0700
-Subject: define Command::IsMediaKey on mac
+Subject: command-ismediakey.patch
 
-the definition is copied from //chrome/common/extensions/command.cc,
+define Command::IsMediaKey on mac; copied from //chrome/common/extensions/command.cc,
 which also defines a bunch of other stuff that depends on extensions.
 since we only need IsMediaKey, and we don't want the extensions stuff
 (and aren't compiling command.cc), it's safe to duplicate the

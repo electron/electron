@@ -5,14 +5,15 @@ gclient_gn_args = [
   'checkout_android_native_support',
   'checkout_libaom',
   'checkout_nacl',
-  'checkout_oculus_sdk'
+  'checkout_oculus_sdk',
+  'checkout_openxr'
 ]
 
 vars = {
   'chromium_version':
-    '0b543daaf04d9b3f4e4f485738a304e742b2ee7d',
+    '6c775c358b709f4353bc693623bf58820adf3918',
   'node_version':
-    'v12.6.0',
+    'v12.9.1',
   'nan_version':
     '2ee313aaca52e2b478965ac50eb5082520380d1b',
 
@@ -59,6 +60,8 @@ vars = {
   'checkout_libaom':
     True,
   'checkout_oculus_sdk':
+    False,
+  'checkout_openxr':
     False,
   'build_with_chromium':
     True,

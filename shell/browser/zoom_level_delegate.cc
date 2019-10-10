@@ -50,7 +50,7 @@ ZoomLevelDelegate::ZoomLevelDelegate(PrefService* pref_service,
   partition_key_ = GetHash(partition_path);
 }
 
-ZoomLevelDelegate::~ZoomLevelDelegate() {}
+ZoomLevelDelegate::~ZoomLevelDelegate() = default;
 
 void ZoomLevelDelegate::SetDefaultZoomLevelPref(double level) {
   if (content::ZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel()))

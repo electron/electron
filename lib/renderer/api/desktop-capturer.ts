@@ -1,10 +1,22 @@
 import { nativeImage } from 'electron'
-import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
+
+const { hasSwitch } = process.electronBinding('command_line')
 
 // |options.types| can't be empty and must be an array
 function isValid (options: Electron.SourcesOptions) {
   const types = options ? options.types : undefined
   return Array.isArray(types)
+}
+
+const enableStacks = hasSwitch('enable-api-filtering-logging')
+
+function getCurrentStack () {
+  const target = {}
+  if (enableStacks) {
+    Error.captureStackTrace(target, getCurrentStack)
+  }
+  return (target as any).stack
 }
 
 export async function getSources (options: Electron.SourcesOptions) {
@@ -16,12 +28,12 @@ export async function getSources (options: Electron.SourcesOptions) {
   const { thumbnailSize = { width: 150, height: 150 } } = options
   const { fetchWindowIcons = false } = options
 
-  const sources = await ipcRendererUtils.invoke<ElectronInternal.GetSourcesResult[]>('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', {
+  const sources = await ipcRendererInternal.invoke<ElectronInternal.GetSourcesResult[]>('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', {
     captureWindow,
     captureScreen,
     thumbnailSize,
     fetchWindowIcons
-  } as ElectronInternal.GetSourcesOptions)
+  } as ElectronInternal.GetSourcesOptions, getCurrentStack())
 
   return sources.map(source => ({
     id: source.id,

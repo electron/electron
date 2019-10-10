@@ -19,7 +19,13 @@ export const getSources = (event: Electron.IpcMainEvent, options: ElectronIntern
   }
 
   const getSources = new Promise<ElectronInternal.GetSourcesResult[]>((resolve, reject) => {
+    let capturer: ElectronInternal.DesktopCapturer | null = createDesktopCapturer()
+
     const stopRunning = () => {
+      if (capturer) {
+        capturer.emit = null
+        capturer = null
+      }
       // Remove from currentlyRunning once we resolve or reject
       currentlyRunning = currentlyRunning.filter(running => running.options !== options)
     }
@@ -42,19 +48,13 @@ export const getSources = (event: Electron.IpcMainEvent, options: ElectronIntern
       })))
     })
 
-    let capturer: ElectronInternal.DesktopCapturer | null = createDesktopCapturer()
-
     capturer.emit = emitter.emit.bind(emitter)
     capturer.startHandling(options.captureWindow, options.captureScreen, options.thumbnailSize, options.fetchWindowIcons)
 
     // If the WebContents is destroyed before receiving result, just remove the
     // reference to emit and the capturer itself so that it never dispatches
     // back to the renderer
-    event.sender.once('destroyed', () => {
-      capturer!.emit = null
-      capturer = null
-      stopRunning()
-    })
+    event.sender.once('destroyed', () => stopRunning())
   })
 
   currentlyRunning.push({

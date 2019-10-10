@@ -4,6 +4,8 @@
 
 #include "shell/browser/browser_process_impl.h"
 
+#include <memory>
+
 #include <utility>
 
 #include "chrome/common/chrome_switches.h"
@@ -21,7 +23,6 @@
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
 #include "services/network/public/cpp/network_switches.h"
-#include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_job_manager.h"
@@ -271,11 +272,6 @@ BrowserProcessImpl::CachedDefaultWebClientState() {
   return shell_integration::UNKNOWN_DEFAULT;
 }
 
-prefs::InProcessPrefServiceFactory* BrowserProcessImpl::pref_service_factory()
-    const {
-  return nullptr;
-}
-
 void BrowserProcessImpl::SetApplicationLocale(const std::string& locale) {
   locale_ = locale;
 }
@@ -287,7 +283,7 @@ const std::string& BrowserProcessImpl::GetApplicationLocale() {
 printing::PrintJobManager* BrowserProcessImpl::print_job_manager() {
 #if BUILDFLAG(ENABLE_PRINTING)
   if (!print_job_manager_)
-    print_job_manager_.reset(new printing::PrintJobManager());
+    print_job_manager_ = std::make_unique<printing::PrintJobManager>();
   return print_job_manager_.get();
 #else
   return nullptr;

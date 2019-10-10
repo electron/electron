@@ -176,21 +176,15 @@ void ProtocolNS::RegisterURLLoaderFactories(
 ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
                                            const std::string& scheme,
                                            const ProtocolHandler& handler) {
-  ProtocolError error = ProtocolError::OK;
-  if (!base::Contains(handlers_, scheme))
-    handlers_[scheme] = std::make_pair(type, handler);
-  else
-    error = ProtocolError::REGISTERED;
-  return error;
+  const bool added = base::TryEmplace(handlers_, scheme, type, handler).second;
+  return added ? ProtocolError::OK : ProtocolError::REGISTERED;
 }
 
 void ProtocolNS::UnregisterProtocol(const std::string& scheme,
                                     mate::Arguments* args) {
-  ProtocolError error = ProtocolError::OK;
-  if (base::Contains(handlers_, scheme))
-    handlers_.erase(scheme);
-  else
-    error = ProtocolError::NOT_REGISTERED;
+  const bool removed = handlers_.erase(scheme) != 0;
+  const auto error =
+      removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED;
   HandleOptionalCallback(args, error);
 }
 
@@ -201,21 +195,16 @@ bool ProtocolNS::IsProtocolRegistered(const std::string& scheme) {
 ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
                                             const std::string& scheme,
                                             const ProtocolHandler& handler) {
-  ProtocolError error = ProtocolError::OK;
-  if (!base::Contains(intercept_handlers_, scheme))
-    intercept_handlers_[scheme] = std::make_pair(type, handler);
-  else
-    error = ProtocolError::INTERCEPTED;
-  return error;
+  const bool added =
+      base::TryEmplace(intercept_handlers_, scheme, type, handler).second;
+  return added ? ProtocolError::OK : ProtocolError::INTERCEPTED;
 }
 
 void ProtocolNS::UninterceptProtocol(const std::string& scheme,
                                      mate::Arguments* args) {
-  ProtocolError error = ProtocolError::OK;
-  if (base::Contains(intercept_handlers_, scheme))
-    intercept_handlers_.erase(scheme);
-  else
-    error = ProtocolError::NOT_INTERCEPTED;
+  const bool removed = intercept_handlers_.erase(scheme) != 0;
+  const auto error =
+      removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED;
   HandleOptionalCallback(args, error);
 }
 
@@ -232,18 +221,17 @@ v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
       "protocol.isProtocolRegistered or protocol.isProtocolIntercepted "
       "instead.",
       "ProtocolDeprecateIsProtocolHandled");
-  util::Promise promise(isolate());
-  promise.Resolve(IsProtocolRegistered(scheme) ||
-                  IsProtocolIntercepted(scheme) ||
-                  // The |isProtocolHandled| should return true for builtin
-                  // schemes, however with NetworkService it is impossible to
-                  // know which schemes are registered until a real network
-                  // request is sent.
-                  // So we have to test against a hard-coded builtin schemes
-                  // list make it work with old code. We should deprecate this
-                  // API with the new |isProtocolRegistered| API.
-                  base::Contains(kBuiltinSchemes, scheme));
-  return promise.GetHandle();
+  return util::Promise<bool>::ResolvedPromise(
+      isolate(), IsProtocolRegistered(scheme) ||
+                     IsProtocolIntercepted(scheme) ||
+                     // The |isProtocolHandled| should return true for builtin
+                     // schemes, however with NetworkService it is impossible to
+                     // know which schemes are registered until a real network
+                     // request is sent.
+                     // So we have to test against a hard-coded builtin schemes
+                     // list make it work with old code. We should deprecate
+                     // this API with the new |isProtocolRegistered| API.
+                     base::Contains(kBuiltinSchemes, scheme));
 }
 
 void ProtocolNS::HandleOptionalCallback(mate::Arguments* args,

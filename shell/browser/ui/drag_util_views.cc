@@ -28,8 +28,9 @@ void DragFileItems(const std::vector<base::FilePath>& files,
       *views::Widget::GetTopLevelWidgetForNativeView(view), data.get());
 
   std::vector<ui::FileInfo> file_infos;
+  file_infos.reserve(files.size());
   for (const base::FilePath& file : files) {
-    file_infos.push_back(ui::FileInfo(file, base::FilePath()));
+    file_infos.emplace_back(file, base::FilePath());
   }
   data->SetFilenames(file_infos);
 

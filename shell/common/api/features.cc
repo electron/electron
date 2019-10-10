@@ -17,6 +17,10 @@ bool IsOffscreenRenderingEnabled() {
   return BUILDFLAG(ENABLE_OSR);
 }
 
+bool IsRemoteModuleEnabled() {
+  return BUILDFLAG(ENABLE_REMOTE_MODULE);
+}
+
 bool IsPDFViewerEnabled() {
   return BUILDFLAG(ENABLE_PDF_VIEWER);
 }
@@ -45,6 +49,10 @@ bool IsExtensionsEnabled() {
   return BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS);
 }
 
+bool IsPictureInPictureEnabled() {
+  return BUILDFLAG(ENABLE_PICTURE_IN_PICTURE);
+}
+
 bool IsComponentBuild() {
 #if defined(COMPONENT_BUILD)
   return true;
@@ -60,6 +68,7 @@ void Initialize(v8::Local<v8::Object> exports,
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("isDesktopCapturerEnabled", &IsDesktopCapturerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
+  dict.SetMethod("isRemoteModuleEnabled", &IsRemoteModuleEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
   dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);
   dict.SetMethod("isFakeLocationProviderEnabled",
@@ -67,6 +76,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
   dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
+  dict.SetMethod("isPictureInPictureEnabled", &IsPictureInPictureEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
   dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
 }

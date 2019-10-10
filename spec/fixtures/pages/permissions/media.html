@@ -2,6 +2,7 @@
   navigator.webkitGetUserMedia({ audio: true, video: true }, function(mediaStream) {
 
   }, function(err) {
-    require('electron').ipcRenderer.sendToHost('message', err.name);
+    console.log(err)
+    require('electron').ipcRenderer.send('message', err.name);
   });
 </script>

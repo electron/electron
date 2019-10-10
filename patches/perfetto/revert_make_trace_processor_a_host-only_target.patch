@@ -1,0 +1,389 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 11 Sep 2019 12:40:33 -0700
+Subject: Revert "Make trace_processor a host-only target"
+
+This reverts commit d0001c31122289ab00ca03dc493f622aeb8a2e81.
+
+diff --git a/Android.bp b/Android.bp
+index 1d3c676bed57846207d68a5d1193991e688655c9..59eaefb7a4a91019eaf9c14d7c078d5aeb4073d5 100644
+--- a/Android.bp
++++ b/Android.bp
+@@ -4660,7 +4660,7 @@ cc_test {
+ }
+ 
+ // GN target: //src/trace_processor:trace_processor_shell
+-cc_binary_host {
++cc_binary {
+   name: "trace_processor_shell",
+   srcs: [
+     ":perfetto_protos_perfetto_common_zero_gen",
+@@ -4783,12 +4783,10 @@ cc_binary_host {
+   ],
+   shared_libs: [
+     "liblog",
+-    "libprotoc",
++    "libprotobuf-cpp-full",
+     "libz",
+   ],
+-  static_libs: [
+-    "libsqlite",
+-  ],
++  host_supported: true,
+   generated_headers: [
+     "gen_merged_sql_metrics",
+     "perfetto_protos_perfetto_common_zero_gen_headers",
+@@ -4828,6 +4826,21 @@ cc_binary_host {
+     "-DGOOGLE_PROTOBUF_NO_STATIC_INITIALIZER",
+     "-DHAVE_HIDDEN",
+   ],
++  target: {
++    android: {
++      shared_libs: [
++        "libandroidicu",
++        "liblog",
++        "libsqlite",
++        "libutils",
++      ],
++    },
++    host: {
++      static_libs: [
++        "libsqlite",
++      ],
++    },
++  },
+ }
+ 
+ // GN target: //tools/trace_to_text:trace_to_text
+diff --git a/buildtools/BUILD.gn b/buildtools/BUILD.gn
+index 220fb8ba22d228b95c6b14247edebf54dc9db6c2..cdbdb6a5548df3e984bde1f5406767aa1accf97a 100644
+--- a/buildtools/BUILD.gn
++++ b/buildtools/BUILD.gn
+@@ -273,111 +273,111 @@ source_set("protobuf_full") {
+   public_configs = [ ":protobuf_gen_config" ]
+ }
+ 
+-source_set("protoc_lib") {
+-  visibility = _buildtools_visibility
+-  deps = [
+-    ":protobuf_full",
+-    "//gn:default_deps",
+-  ]
+-  sources = [
+-    "protobuf/src/google/protobuf/compiler/code_generator.cc",
+-    "protobuf/src/google/protobuf/compiler/command_line_interface.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_enum.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_enum_field.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_extension.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_field.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_file.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_generator.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_helpers.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_map_field.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_message.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_message_field.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_primitive_field.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_service.cc",
+-    "protobuf/src/google/protobuf/compiler/cpp/cpp_string_field.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_doc_comment.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_enum.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_enum_field.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_field_base.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_generator.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_helpers.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_map_field.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_message.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_message_field.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_primitive_field.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_reflection_class.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_repeated_enum_field.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_repeated_message_field.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_repeated_primitive_field.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_source_generator_base.cc",
+-    "protobuf/src/google/protobuf/compiler/csharp/csharp_wrapper_field.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_context.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_doc_comment.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_enum.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_enum_field.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_enum_field_lite.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_enum_lite.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_extension.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_extension_lite.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_field.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_file.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_generator.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_generator_factory.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_helpers.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_lazy_message_field.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_lazy_message_field_lite.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_map_field.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_map_field_lite.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_message.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_message_builder.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_message_builder_lite.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_message_field.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_message_field_lite.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_message_lite.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_name_resolver.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_primitive_field.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_primitive_field_lite.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_service.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_shared_code_generator.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_string_field.cc",
+-    "protobuf/src/google/protobuf/compiler/java/java_string_field_lite.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_enum.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_enum_field.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_extension.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_field.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_file.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_generator.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_helpers.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_map_field.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_message.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_message_field.cc",
+-    "protobuf/src/google/protobuf/compiler/javanano/javanano_primitive_field.cc",
+-    "protobuf/src/google/protobuf/compiler/js/js_generator.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_enum.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_enum_field.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_extension.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_field.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_file.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_generator.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_helpers.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_map_field.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_message.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_message_field.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_oneof.cc",
+-    "protobuf/src/google/protobuf/compiler/objectivec/objectivec_primitive_field.cc",
+-    "protobuf/src/google/protobuf/compiler/plugin.cc",
+-    "protobuf/src/google/protobuf/compiler/plugin.pb.cc",
+-    "protobuf/src/google/protobuf/compiler/python/python_generator.cc",
+-    "protobuf/src/google/protobuf/compiler/ruby/ruby_generator.cc",
+-    "protobuf/src/google/protobuf/compiler/subprocess.cc",
+-    "protobuf/src/google/protobuf/compiler/zip_writer.cc",
+-  ]
+-  configs -= [ "//gn/standalone:extra_warnings" ]
+-  configs += [ ":protobuf_config" ]
+-  public_configs = [ ":protobuf_gen_config" ]
+-}
+-
+ if (current_toolchain == host_toolchain) {
++  source_set("protoc_lib") {
++    visibility = _buildtools_visibility
++    deps = [
++      ":protobuf_full",
++      "//gn:default_deps",
++    ]
++    sources = [
++      "protobuf/src/google/protobuf/compiler/code_generator.cc",
++      "protobuf/src/google/protobuf/compiler/command_line_interface.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_enum.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_enum_field.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_extension.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_field.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_file.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_generator.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_helpers.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_map_field.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_message.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_message_field.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_primitive_field.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_service.cc",
++      "protobuf/src/google/protobuf/compiler/cpp/cpp_string_field.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_doc_comment.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_enum.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_enum_field.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_field_base.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_generator.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_helpers.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_map_field.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_message.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_message_field.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_primitive_field.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_reflection_class.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_repeated_enum_field.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_repeated_message_field.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_repeated_primitive_field.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_source_generator_base.cc",
++      "protobuf/src/google/protobuf/compiler/csharp/csharp_wrapper_field.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_context.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_doc_comment.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_enum.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_enum_field.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_enum_field_lite.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_enum_lite.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_extension.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_extension_lite.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_field.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_file.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_generator.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_generator_factory.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_helpers.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_lazy_message_field.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_lazy_message_field_lite.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_map_field.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_map_field_lite.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_message.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_message_builder.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_message_builder_lite.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_message_field.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_message_field_lite.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_message_lite.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_name_resolver.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_primitive_field.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_primitive_field_lite.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_service.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_shared_code_generator.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_string_field.cc",
++      "protobuf/src/google/protobuf/compiler/java/java_string_field_lite.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_enum.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_enum_field.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_extension.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_field.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_file.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_generator.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_helpers.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_map_field.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_message.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_message_field.cc",
++      "protobuf/src/google/protobuf/compiler/javanano/javanano_primitive_field.cc",
++      "protobuf/src/google/protobuf/compiler/js/js_generator.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_enum.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_enum_field.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_extension.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_field.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_file.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_generator.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_helpers.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_map_field.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_message.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_message_field.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_oneof.cc",
++      "protobuf/src/google/protobuf/compiler/objectivec/objectivec_primitive_field.cc",
++      "protobuf/src/google/protobuf/compiler/plugin.cc",
++      "protobuf/src/google/protobuf/compiler/plugin.pb.cc",
++      "protobuf/src/google/protobuf/compiler/python/python_generator.cc",
++      "protobuf/src/google/protobuf/compiler/ruby/ruby_generator.cc",
++      "protobuf/src/google/protobuf/compiler/subprocess.cc",
++      "protobuf/src/google/protobuf/compiler/zip_writer.cc",
++    ]
++    configs -= [ "//gn/standalone:extra_warnings" ]
++    configs += [ ":protobuf_config" ]
++    public_configs = [ ":protobuf_gen_config" ]
++  }
++
+   executable("protoc") {
+     visibility = _buildtools_visibility
+     deps = [
+diff --git a/gn/BUILD.gn b/gn/BUILD.gn
+index 5ead1b50fb43047081b29fa55d5c0eda7a5c8142..529b4e24c5aa9532e4945c0826231ec60ce78b6d 100644
+--- a/gn/BUILD.gn
++++ b/gn/BUILD.gn
+@@ -173,34 +173,23 @@ group("gtest_main") {
+   }
+ }
+ 
+-# Full protobuf is just for host tools .No binary shipped on device should
+-# depend on this.
+-whitelisted_protobuf_full_deps = [
+-  "../tools/*",
+-  "../src/ipc/protoc_plugin:*",
+-  "../src/protozero/protoc_plugin:*",
+-  "../src/trace_processor:trace_processor_shell",
+-]
+-
++# protoc compiler library, for building protoc plugins on the host.
+ if (current_toolchain == host_toolchain) {
++  group("protoc_lib") {
++    public_deps = [
++      "${perfetto_protobuf_target_prefix}:protoc_lib",
++    ]
++  }
++
+   group("protoc") {
+     public_deps = [
+       "${perfetto_protobuf_target_prefix}:protoc",
+     ]
+   }
+-}  # current_toolchain == host_toolchain
+-
+-# protoc compiler library, it's used for building protoc plugins and by
+-# trace_processor_shell to dynamically load .proto files for metrics.
+-group("protoc_lib") {
+-  visibility = whitelisted_protobuf_full_deps
+-  public_deps = [
+-    "${perfetto_protobuf_target_prefix}:protoc_lib",
+-  ]
+ }
+ 
+ group("protobuf_full") {
+-  visibility = whitelisted_protobuf_full_deps
++  testonly = true
+   public_deps = [
+     "${perfetto_protobuf_target_prefix}:protobuf_full",
+   ]
+diff --git a/src/trace_processor/BUILD.gn b/src/trace_processor/BUILD.gn
+index 952dd65d9ad1c5f4d4ee0443007bfaf6110c8dfb..12e0d800b5673af1785e5a09e49847702442d2a1 100644
+--- a/src/trace_processor/BUILD.gn
++++ b/src/trace_processor/BUILD.gn
+@@ -14,7 +14,6 @@
+ 
+ import("../../gn/fuzzer.gni")
+ import("../../gn/perfetto.gni")
+-import("../../gn/perfetto_host_executable.gni")
+ import("../../gn/test.gni")
+ import("../../gn/wasm.gni")
+ 
+@@ -229,11 +228,12 @@ source_set("common") {
+   ]
+ }
+ 
+-perfetto_host_executable("trace_processor_shell") {
++executable("trace_processor_shell") {
++  testonly = true  # We need this for proto full.
+   deps = [
+     ":lib",
+     "../../gn:default_deps",
+-    "../../gn:protoc_lib",
++    "../../gn:protobuf_full",
+     "../base",
+     "metrics:lib",
+   ]
+diff --git a/tools/gen_android_bp b/tools/gen_android_bp
+index f01e95d5de4bbfd1c8658bfbb6b7e061bfe6b632..0d6b01a8cc838efda58634d21298243f2a649da8 100755
+--- a/tools/gen_android_bp
++++ b/tools/gen_android_bp
+@@ -61,6 +61,11 @@ default_targets = [
+     '//tools/trace_to_text:trace_to_text',
+ ]
+ 
++# Targets which are testonly but should still be a cc_binary.
++non_test_binaries = [
++    '//src/trace_processor:trace_processor_shell',
++]
++
+ # Defines a custom init_rc argument to be applied to the corresponding output
+ # blueprint target.
+ target_initrc = {
+@@ -70,11 +75,11 @@ target_initrc = {
+ 
+ target_host_supported = [
+     '//protos/perfetto/trace:perfetto_trace_protos',
++    '//src/trace_processor:trace_processor_shell',
+ ]
+ 
+ target_host_only = [
+     '//tools/trace_to_text:trace_to_text',
+-    '//src/trace_processor:trace_processor_shell',
+ ]
+ 
+ # All module names are prefixed with this string to avoid collisions.
+@@ -640,7 +645,7 @@ def create_modules_from_target(blueprint, desc, target_name):
+     if target['type'] == 'executable':
+         if 'host' in target['toolchain'] or target_name in target_host_only:
+             module_type = 'cc_binary_host'
+-        elif target.get('testonly'):
++        elif target.get('testonly') and target_name not in non_test_binaries:
+             module_type = 'cc_test'
+         else:
+             module_type = 'cc_binary'

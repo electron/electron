@@ -17,6 +17,7 @@
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/desktop_media_id.h"
 #include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/native_browser_view_views.h"
@@ -198,7 +199,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   params.wm_class_class = name;
 #endif
 
-  widget()->Init(params);
+  widget()->Init(std::move(params));
 
   bool fullscreen = false;
   options.Get(options::kFullscreen, &fullscreen);
@@ -208,17 +209,12 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
 
 #if defined(USE_X11)
   // Start monitoring window states.
-  window_state_watcher_.reset(new WindowStateWatcher(this));
+  window_state_watcher_ = std::make_unique<WindowStateWatcher>(this);
 
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
   bool use_dark_theme = false;
   if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
-    XDisplay* xdisplay = gfx::GetXDisplay();
-    XChangeProperty(xdisplay, GetAcceleratedWidget(),
-                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
-                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
-                    PropModeReplace,
-                    reinterpret_cast<const unsigned char*>("dark"), 4);
+    SetGTKDarkThemeEnabled(use_dark_theme);
   }
 
   // Before the window is mapped the SetWMSpecState can not work, so we have
@@ -278,7 +274,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (has_frame()) {
     // TODO(zcbenz): This was used to force using native frame on Windows 2003,
     // we should check whether setting it in InitParams can work.
-    widget()->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
+    widget()->set_frame_type(views::Widget::FrameType::kForceNative);
     widget()->FrameTypeChanged();
 #if defined(OS_WIN)
     // thickFrame also works for normal window.
@@ -304,7 +300,6 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
     last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
   else
     last_window_state_ = ui::SHOW_STATE_NORMAL;
-  last_normal_bounds_ = GetBounds();
 #endif
 
 #if defined(OS_LINUX)
@@ -327,6 +322,25 @@ NativeWindowViews::~NativeWindowViews() {
   aura::Window* window = GetNativeWindow();
   if (window)
     window->RemovePreTargetHandler(this);
+#endif
+}
+
+void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
+#if defined(USE_X11)
+  XDisplay* xdisplay = gfx::GetXDisplay();
+  if (use_dark_theme) {
+    XChangeProperty(xdisplay, GetAcceleratedWidget(),
+                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
+                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
+                    PropModeReplace,
+                    reinterpret_cast<const unsigned char*>("dark"), 4);
+  } else {
+    XChangeProperty(xdisplay, GetAcceleratedWidget(),
+                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
+                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
+                    PropModeReplace,
+                    reinterpret_cast<const unsigned char*>("light"), 5);
+  }
 #endif
 }
 
@@ -463,7 +477,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
     tree_host->RemoveEventRewriter(event_disabler_.get());
     event_disabler_.reset();
   } else {
-    event_disabler_.reset(new EventDisabler);
+    event_disabler_ = std::make_unique<EventDisabler>();
     tree_host->AddEventRewriter(event_disabler_.get());
   }
 #endif
@@ -645,6 +659,31 @@ void NativeWindowViews::SetResizable(bool resizable) {
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
   resizable_ = resizable;
+}
+
+bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
+  const content::DesktopMediaID id = content::DesktopMediaID::Parse(sourceId);
+  if (id.type != content::DesktopMediaID::TYPE_WINDOW)
+    return false;
+
+#if defined(OS_WIN)
+  const HWND otherWindow = reinterpret_cast<HWND>(id.id);
+  if (!::IsWindow(otherWindow))
+    return false;
+
+  gfx::Point pos = GetPosition();
+  gfx::Size size = GetSize();
+  ::SetWindowPos(GetAcceleratedWidget(), otherWindow, pos.x(), pos.y(),
+                 size.width(), size.height(),
+                 SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+#elif defined(USE_X11)
+  if (!IsWindowValid(id.id))
+    return false;
+
+  electron::MoveWindowAbove(GetAcceleratedWidget(), id.id);
+#endif
+
+  return true;
 }
 
 void NativeWindowViews::MoveTop() {
@@ -958,7 +997,7 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   }
 
   if (!global_menu_bar_ && ShouldUseGlobalMenuBar())
-    global_menu_bar_.reset(new GlobalMenuBarX11(this));
+    global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
 
   // Use global application menu bar when possible.
   if (global_menu_bar_ && global_menu_bar_->IsServerStarted()) {
@@ -1115,6 +1154,37 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
          wm_states.end();
 #endif
   return false;
+}
+
+content::DesktopMediaID NativeWindowViews::GetDesktopMediaID() const {
+  const gfx::AcceleratedWidget accelerated_widget = GetAcceleratedWidget();
+  content::DesktopMediaID::Id window_handle = content::DesktopMediaID::kNullId;
+  content::DesktopMediaID::Id aura_id = content::DesktopMediaID::kNullId;
+#if defined(OS_WIN)
+  window_handle =
+      reinterpret_cast<content::DesktopMediaID::Id>(accelerated_widget);
+#elif defined(USE_X11)
+  window_handle = accelerated_widget;
+#endif
+  aura::WindowTreeHost* const host =
+      aura::WindowTreeHost::GetForAcceleratedWidget(accelerated_widget);
+  aura::Window* const aura_window = host ? host->window() : nullptr;
+  if (aura_window) {
+    aura_id = content::DesktopMediaID::RegisterNativeWindow(
+                  content::DesktopMediaID::TYPE_WINDOW, aura_window)
+                  .window_id;
+  }
+
+  // No constructor to pass the aura_id. Make sure to not use the other
+  // constructor that has a third parameter, it is for yet another purpose.
+  content::DesktopMediaID result = content::DesktopMediaID(
+      content::DesktopMediaID::TYPE_WINDOW, window_handle);
+
+  // Confusing but this is how content::DesktopMediaID is designed. The id
+  // property is the window handle whereas the window_id property is an id
+  // given by a map containing all aura instances.
+  result.window_id = aura_id;
+  return result;
 }
 
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {

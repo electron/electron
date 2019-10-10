@@ -110,10 +110,10 @@ index b6a3376e735094f970ef61a52ef9bb6d6101647a..bb70c2305fd44cfea46a8df5e65d1af5
  
  Sign.prototype.sign = function sign(options, encoding) {
 diff --git a/src/env.h b/src/env.h
-index 63e71fc1fc2b0e95a85f38b58b34eeb290d8f09d..1415e32c02c4ffc6e3205ff15bef2006021bb1c2 100644
+index ecb845803776f5ff6e7eec712ec7a5ebea2e8d0a..1516d77be8514ce55d8d21b78a7cd85ead2cb95f 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -170,7 +170,6 @@ constexpr size_t kFsStatsBufferLength = kFsStatsFieldsNumber * 2;
+@@ -173,7 +173,6 @@ constexpr size_t kFsStatsBufferLength = kFsStatsFieldsNumber * 2;
    V(crypto_x25519_string, "x25519")                                            \
    V(crypto_x448_string, "x448")                                                \
    V(crypto_rsa_string, "rsa")                                                  \
@@ -122,7 +122,7 @@ index 63e71fc1fc2b0e95a85f38b58b34eeb290d8f09d..1415e32c02c4ffc6e3205ff15bef2006
    V(data_string, "data")                                                       \
    V(dest_string, "dest")                                                       \
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa63c7085b 100644
+index 1cc2372fe2e385e9a9db27e38f0da61d62de2e81..cd09cdb3f2244825f6631891b94e61eeb6bc60bf 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -3727,8 +3727,6 @@ Local<Value> KeyObject::GetAsymmetricKeyType() const {
@@ -134,7 +134,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
    case EVP_PKEY_DSA:
      return env()->crypto_dsa_string();
    case EVP_PKEY_EC:
-@@ -4730,14 +4728,13 @@ void SignBase::CheckThrow(SignBase::Error error) {
+@@ -4775,14 +4773,13 @@ void SignBase::CheckThrow(SignBase::Error error) {
  static bool ApplyRSAOptions(const ManagedEVPPKey& pkey,
                              EVP_PKEY_CTX* pkctx,
                              int padding,
@@ -153,7 +153,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
          return false;
      }
    }
-@@ -4788,16 +4785,11 @@ void Sign::SignUpdate(const FunctionCallbackInfo<Value>& args) {
+@@ -4833,16 +4830,11 @@ void Sign::SignUpdate(const FunctionCallbackInfo<Value>& args) {
    sign->CheckThrow(err);
  }
  
@@ -171,7 +171,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
    unsigned char m[EVP_MAX_MD_SIZE];
    unsigned int m_len;
  
-@@ -4830,7 +4822,7 @@ static AllocatedBuffer Node_SignFinal(Environment* env,
+@@ -4875,7 +4867,7 @@ static AllocatedBuffer Node_SignFinal(Environment* env,
  Sign::SignResult Sign::SignFinal(
      const ManagedEVPPKey& pkey,
      int padding,
@@ -180,7 +180,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
    if (!mdctx_)
      return SignResult(kSignNotInitialised);
  
-@@ -4881,17 +4873,11 @@ void Sign::SignFinal(const FunctionCallbackInfo<Value>& args) {
+@@ -4926,17 +4918,11 @@ void Sign::SignFinal(const FunctionCallbackInfo<Value>& args) {
    if (!key)
      return;
  
@@ -202,7 +202,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
  
    SignResult ret = sign->SignFinal(
        key,
-@@ -4952,17 +4938,11 @@ void SignOneShot(const FunctionCallbackInfo<Value>& args) {
+@@ -4997,17 +4983,11 @@ void SignOneShot(const FunctionCallbackInfo<Value>& args) {
        return CheckThrow(env, SignBase::Error::kSignUnknownDigest);
    }
  
@@ -224,7 +224,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
  
    EVP_PKEY_CTX* pkctx = nullptr;
    EVPMDPointer mdctx(EVP_MD_CTX_new());
-@@ -5040,7 +5020,7 @@ SignBase::Error Verify::VerifyFinal(const ManagedEVPPKey& pkey,
+@@ -5085,7 +5065,7 @@ SignBase::Error Verify::VerifyFinal(const ManagedEVPPKey& pkey,
                                      const char* sig,
                                      int siglen,
                                      int padding,
@@ -233,7 +233,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
                                      bool* verify_result) {
    if (!mdctx_)
      return kSignNotInitialised;
-@@ -5084,17 +5064,11 @@ void Verify::VerifyFinal(const FunctionCallbackInfo<Value>& args) {
+@@ -5129,17 +5109,11 @@ void Verify::VerifyFinal(const FunctionCallbackInfo<Value>& args) {
  
    ArrayBufferViewContents<char> hbuf(args[offset]);
  
@@ -255,7 +255,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
  
    bool verify_result;
    Error err = verify->VerifyFinal(pkey, hbuf.data(), hbuf.length(), padding,
-@@ -5127,17 +5101,11 @@ void VerifyOneShot(const FunctionCallbackInfo<Value>& args) {
+@@ -5172,17 +5146,11 @@ void VerifyOneShot(const FunctionCallbackInfo<Value>& args) {
        return CheckThrow(env, SignBase::Error::kSignUnknownDigest);
    }
  
@@ -277,7 +277,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
  
    EVP_PKEY_CTX* pkctx = nullptr;
    EVPMDPointer mdctx(EVP_MD_CTX_new());
-@@ -6135,48 +6103,6 @@ class RSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6181,48 +6149,6 @@ class RSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
    const unsigned int exponent_;
  };
  
@@ -326,7 +326,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
  class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
   public:
    DSAKeyPairGenerationConfig(unsigned int modulus_bits, int divisor_bits)
-@@ -6410,44 +6336,6 @@ void GenerateKeyPairRSA(const FunctionCallbackInfo<Value>& args) {
+@@ -6456,44 +6382,6 @@ void GenerateKeyPairRSA(const FunctionCallbackInfo<Value>& args) {
    GenerateKeyPair(args, 2, std::move(config));
  }
  
@@ -371,7 +371,7 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
  void GenerateKeyPairDSA(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    const uint32_t modulus_bits = args[0].As<Uint32>()->Value();
-@@ -6899,7 +6787,6 @@ void Initialize(Local<Object> target,
+@@ -6945,7 +6833,6 @@ void Initialize(Local<Object> target,
  
    env->SetMethod(target, "pbkdf2", PBKDF2);
    env->SetMethod(target, "generateKeyPairRSA", GenerateKeyPairRSA);
@@ -380,10 +380,10 @@ index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa
    env->SetMethod(target, "generateKeyPairEC", GenerateKeyPairEC);
    env->SetMethod(target, "generateKeyPairNid", GenerateKeyPairNid);
 diff --git a/src/node_crypto.h b/src/node_crypto.h
-index 3e337eaddbe490b98aa2f9da2e310c94e4a96bf8..e526325a60feaa345f02e021f7ba1c9e3d8ca602 100644
+index 07ca412e8f7fc6281553ca90a4c3c8c18726c526..04a06affce1de8c567034d084c43b1a016076353 100644
 --- a/src/node_crypto.h
 +++ b/src/node_crypto.h
-@@ -657,7 +657,7 @@ class Sign : public SignBase {
+@@ -660,7 +660,7 @@ class Sign : public SignBase {
    SignResult SignFinal(
        const ManagedEVPPKey& pkey,
        int padding,
@@ -392,7 +392,7 @@ index 3e337eaddbe490b98aa2f9da2e310c94e4a96bf8..e526325a60feaa345f02e021f7ba1c9e
  
   protected:
    static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
-@@ -678,7 +678,7 @@ class Verify : public SignBase {
+@@ -681,7 +681,7 @@ class Verify : public SignBase {
                      const char* sig,
                      int siglen,
                      int padding,
@@ -402,7 +402,7 @@ index 3e337eaddbe490b98aa2f9da2e310c94e4a96bf8..e526325a60feaa345f02e021f7ba1c9e
  
   protected:
 diff --git a/test/fixtures/keys/Makefile b/test/fixtures/keys/Makefile
-index 226dc67346ef740ae9d622c03271d2761e51e713..492a30f6e43fc8068b8b89da86cdfe6250fe1fe6 100644
+index 824704c7241b0ae58f5b4f2768b429f465aafb9b..28afa6685955b1ad57901c776c268cd3aef7d508 100644
 --- a/test/fixtures/keys/Makefile
 +++ b/test/fixtures/keys/Makefile
 @@ -61,12 +61,6 @@ all: \

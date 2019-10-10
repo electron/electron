@@ -8,6 +8,7 @@ const path = require('path')
 const temp = require('temp').track()
 const url = require('url')
 const { closeWindow } = require('./window-helpers')
+const { ifit, ifdescribe } = require('./spec-helpers')
 
 const { remote } = require('electron')
 const { app, BrowserWindow, crashReporter } = remote
@@ -15,15 +16,11 @@ const { app, BrowserWindow, crashReporter } = remote
 const { expect } = chai
 chai.use(dirtyChai)
 
-describe('crashReporter module', () => {
-  if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
-
-  // TODO(alexeykuzmin): [Ch66] Fails. Fix it and enable back.
-  if (process.platform === 'linux') return
-
+// TODO(alexeykuzmin): [Ch66] Fails on linux. Fix it and enable back.
+ifdescribe(!process.mas && process.platform !== 'linux')('crashReporter module', () => {
   let originalTempDirectory = null
   let tempDirectory = null
-  const specTimeout = 180000
+  const specTimeout = 10000
 
   before(() => {
     tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
@@ -68,19 +65,21 @@ describe('crashReporter module', () => {
         })
       })
 
-      it('should send minidump when node processes crash', function (done) {
+      ifit(!browserWindowOpts.webPreferences.sandbox)('should send minidump when node processes crash', function (done) {
         this.timeout(specTimeout)
-
         stopServer = startServer({
           callback (port) {
             const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`)
             const version = app.getVersion()
             const crashPath = path.join(fixtures, 'module', 'crash.js')
-
-            childProcess.fork(crashPath, [port, version, crashesDir], { silent: true })
+            w.loadFile(path.join(fixtures, 'api', 'crash_child.html'), { query: { port, crashesDir, crashPath, version } })
           },
           processType: 'node',
-          done: done
+          done: done,
+          preAssert: fields => {
+            expect(String(fields.newExtra)).to.equal('newExtra')
+            expect(fields.removeExtra).to.be.undefined()
+          }
         })
       })
 
@@ -147,44 +146,6 @@ describe('crashReporter module', () => {
           },
           processType: 'renderer',
           done: testDone.bind(null, true)
-        })
-      })
-
-      it('should send minidump with updated extra parameters when node processes crash', function (done) {
-        if (process.platform === 'linux') {
-          // FIXME(alexeykuzmin): Skip the test.
-          // this.skip()
-          return
-        }
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
-        this.timeout(specTimeout)
-        stopServer = startServer({
-          callback (port) {
-            const crashesDir = path.join(app.getPath('temp'), `${process.platform === 'win32' ? 'Zombies' : app.getName()} Crashes`)
-            const version = app.getVersion()
-            const crashPath = path.join(fixtures, 'module', 'crash.js')
-            if (process.platform === 'win32') {
-              const crashServiceProcess = childProcess.spawn(process.execPath, [
-                `--reporter-url=http://127.0.0.1:${port}`,
-                '--application-name=Zombies',
-                `--crashes-directory=${crashesDir}`
-              ], {
-                env: {
-                  ELECTRON_INTERNAL_CRASH_SERVICE: 1
-                },
-                detached: true
-              })
-              remote.process.crashServicePid = crashServiceProcess.pid
-            }
-            childProcess.fork(crashPath, [port, version, crashesDir], { silent: true })
-          },
-          processType: 'browser',
-          done: done,
-          preAssert: fields => {
-            expect(String(fields.newExtra)).to.equal('newExtra')
-            expect(String(fields.removeExtra)).to.equal(undefined)
-          }
         })
       })
 
@@ -305,12 +266,6 @@ describe('crashReporter module', () => {
       expect(() => require('electron').crashReporter.getUploadToServer()).to.throw()
     })
     it('returns true when uploadToServer is set to true', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
@@ -319,12 +274,6 @@ describe('crashReporter module', () => {
       expect(crashReporter.getUploadToServer()).to.be.true()
     })
     it('returns false when uploadToServer is set to false', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
@@ -340,12 +289,6 @@ describe('crashReporter module', () => {
       expect(() => require('electron').crashReporter.setUploadToServer('arg')).to.throw()
     })
     it('sets uploadToServer false when called with false', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
@@ -355,12 +298,6 @@ describe('crashReporter module', () => {
       expect(crashReporter.getUploadToServer()).to.be.false()
     })
     it('sets uploadToServer true when called with true', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
@@ -382,12 +319,6 @@ describe('crashReporter module', () => {
       expect(parameters).to.be.an('object')
     })
     it('adds a parameter to current parameters', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes'
@@ -397,12 +328,6 @@ describe('crashReporter module', () => {
       expect(crashReporter.getParameters()).to.have.a.property('hello')
     })
     it('removes a parameter from current parameters', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes'
@@ -413,6 +338,16 @@ describe('crashReporter module', () => {
 
       crashReporter.removeExtraParameter('hello')
       expect(crashReporter.getParameters()).to.not.have.a.property('hello')
+    })
+  })
+
+  describe('when not started', () => {
+    it('does not prevent process from crashing', (done) => {
+      const appPath = path.join(fixtures, 'api', 'cookie-app')
+      const appProcess = childProcess.spawn(process.execPath, [appPath])
+      appProcess.once('close', () => {
+        done()
+      })
     })
   })
 })

@@ -311,8 +311,8 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
 namespace platform_util {
 
 void ShowItemInFolder(const base::FilePath& full_path) {
-  base::CreateCOMSTATaskRunnerWithTraits(
-      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+  base::CreateCOMSTATaskRunner(
+      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_BLOCKING})
       ->PostTask(FROM_HERE,
                  base::BindOnce(&ShowItemInFolderOnWorkerThread, full_path));
 }
@@ -328,14 +328,14 @@ void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
                   OpenExternalCallback callback) {
   base::PostTaskAndReplyWithResult(
-      base::CreateCOMSTATaskRunnerWithTraits(
-          {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+      base::CreateCOMSTATaskRunner({base::ThreadPool(), base::MayBlock(),
+                                    base::TaskPriority::USER_BLOCKING})
           .get(),
       FROM_HERE, base::BindOnce(&OpenExternalOnWorkerThread, url, options),
       std::move(callback));
 }
 
-bool MoveItemToTrash(const base::FilePath& path) {
+bool MoveItemToTrash(const base::FilePath& path, bool delete_on_fail) {
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.Succeeded())
     return false;

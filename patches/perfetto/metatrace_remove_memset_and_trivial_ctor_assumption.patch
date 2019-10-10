@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Primiano Tucci <primiano@google.com>
+Date: Thu, 3 Oct 2019 16:24:52 +0100
+Subject: metatrace: remove memset and trivial-ctor assumption
+
+Turns out that on MSVC std::atomic<int> is not trivially constructible
+(although I think is still a plain old int, it just fails the check).
+Fall back on resetting each element individually.
+Thankfully the compiler can see through and eventually figures out
+it can do a memset: https://godbolt.org/z/wMre8O
+
+Bug: chromium:1010616
+Change-Id: I971ff888306d6bdbaf6e6b886f9ca506ddc1b30a
+
+diff --git a/include/perfetto/ext/base/metatrace.h b/include/perfetto/ext/base/metatrace.h
+index 3858f68ec5eaf130aafa7d33f52a00e370395204..2c587c3fc63093f71a05e4c757def5c6384bf703 100644
+--- a/include/perfetto/ext/base/metatrace.h
++++ b/include/perfetto/ext/base/metatrace.h
+@@ -116,22 +116,33 @@ struct Record {
+     timestamp_ns_high = static_cast<uint16_t>(diff >> 32);
+   }
+ 
++  // We can't just memset() this class because on MSVC std::atomic<> is not
++  // trivially constructible anymore. Also std::atomic<> has a deleted copy
++  // constructor so we cant just do "*this = Record()" either.
++  // See http://bit.ly/339Jlzd .
++  void clear() {
++    this->~Record();
++    new (this) Record();
++  }
++
+   // This field holds the type (counter vs event) in the MSB and event ID (as
+   // defined in metatrace_events.h) in the lowest 15 bits. It is also used also
+   // as a linearization point: this is always written after all the other
+   // fields with a release-store. This is so the reader can determine whether it
+   // can safely process the other event fields after a load-acquire.
+-  std::atomic<uint16_t> type_and_id;
++  std::atomic<uint16_t> type_and_id{};
+ 
+   // Timestamp is stored as a 48-bits value diffed against g_enabled_timestamp.
+   // This gives us 78 hours from Enabled().
+-  uint16_t timestamp_ns_high;
+-  uint32_t timestamp_ns_low;
++  uint16_t timestamp_ns_high = 0;
++  uint32_t timestamp_ns_low = 0;
+ 
+-  uint32_t thread_id;
++  uint32_t thread_id = 0;
+ 
+   union {
+-    uint32_t duration_ns;   // If type == event.
++    // Only one of the two elements can be zero initialized, clang complains
++    // about "initializing multiple members of union" otherwise.
++    uint32_t duration_ns = 0;  // If type == event.
+     int32_t counter_value;  // If type == counter.
+   };
+ };
+diff --git a/src/base/metatrace.cc b/src/base/metatrace.cc
+index 9ef2c68777c5d497d92b12d52df4df2454feda02..67d167c8d07bc8701d261c56d11ba17afcb6ec8a 100644
+--- a/src/base/metatrace.cc
++++ b/src/base/metatrace.cc
+@@ -84,15 +84,9 @@ void Disable() {
+ 
+ // static
+ void RingBuffer::Reset() {
+-  static_assert(PERFETTO_IS_TRIVIALLY_CONSTRUCTIBLE(Record) &&
+-                    std::is_trivially_destructible<Record>::value,
+-                "Record must be trivial");
+-  // Cast pointers to void* to suppress "-Wclass-memaccess" from gcc, which
+-  // triggers as we're doing a raw memory set for a class (Record) that doesn't
+-  // have a copy assignment operator (due to the atomic |type_and_id|).
+-  memset(static_cast<void*>(records_.data()), 0, sizeof(records_));
+-  memset(static_cast<void*>(&bankruptcy_record_), 0,
+-         sizeof(bankruptcy_record_));
++  bankruptcy_record_.clear();
++  for (Record& record : records_)
++    record.clear();
+   wr_index_ = 0;
+   rd_index_ = 0;
+   has_overruns_ = false;

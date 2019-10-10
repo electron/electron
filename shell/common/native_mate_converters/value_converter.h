@@ -7,6 +7,8 @@
 
 #include "native_mate/converter.h"
 
+#include "base/optional.h"
+
 namespace base {
 class DictionaryValue;
 class ListValue;
@@ -31,6 +33,29 @@ struct Converter<base::Value> {
                      base::Value* out);
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const base::Value& val);
+};
+
+template <typename T>
+struct Converter<base::Optional<T>> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     base::Optional<T>* out) {
+    if (val->IsNull() || val->IsUndefined()) {
+      return true;
+    }
+    T converted;
+    if (Converter<T>::FromV8(isolate, val, &converted)) {
+      return true;
+    }
+    out->emplace(converted);
+    return true;
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::Optional<T>& val) {
+    if (val.has_value())
+      return Converter<T>::ToV8(val.value());
+    return v8::Undefined(isolate);
+  }
 };
 
 template <>

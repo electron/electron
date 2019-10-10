@@ -16,9 +16,9 @@ NotificationPresenter* NotificationPresenter::Create() {
   return new NotificationPresenterLinux;
 }
 
-NotificationPresenterLinux::NotificationPresenterLinux() {}
+NotificationPresenterLinux::NotificationPresenterLinux() = default;
 
-NotificationPresenterLinux::~NotificationPresenterLinux() {}
+NotificationPresenterLinux::~NotificationPresenterLinux() = default;
 
 Notification* NotificationPresenterLinux::CreateNotificationObject(
     NotificationDelegate* delegate) {

@@ -44,7 +44,7 @@ BluetoothChooser::BluetoothChooser(api::WebContents* contents,
                                    const EventHandler& event_handler)
     : api_web_contents_(contents), event_handler_(event_handler) {}
 
-BluetoothChooser::~BluetoothChooser() {}
+BluetoothChooser::~BluetoothChooser() = default;
 
 void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
   switch (presence) {
@@ -117,6 +117,7 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
 std::vector<electron::BluetoothChooser::DeviceInfo>
 BluetoothChooser::GetDeviceList() {
   std::vector<electron::BluetoothChooser::DeviceInfo> vec;
+  vec.reserve(device_map_.size());
   for (const auto& it : device_map_) {
     DeviceInfo info = {it.first, it.second};
     vec.push_back(info);

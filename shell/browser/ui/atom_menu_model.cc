@@ -17,7 +17,7 @@ bool AtomMenuModel::Delegate::GetAcceleratorForCommandId(
 AtomMenuModel::AtomMenuModel(Delegate* delegate)
     : ui::SimpleMenuModel(delegate), delegate_(delegate) {}
 
-AtomMenuModel::~AtomMenuModel() {}
+AtomMenuModel::~AtomMenuModel() = default;
 
 void AtomMenuModel::SetToolTip(int index, const base::string16& toolTip) {
   int command_id = GetCommandIdAt(index);
@@ -25,11 +25,9 @@ void AtomMenuModel::SetToolTip(int index, const base::string16& toolTip) {
 }
 
 base::string16 AtomMenuModel::GetToolTipAt(int index) {
-  int command_id = GetCommandIdAt(index);
-  if (base::Contains(toolTips_, command_id))
-    return toolTips_[command_id];
-  else
-    return base::string16();
+  const int command_id = GetCommandIdAt(index);
+  const auto iter = toolTips_.find(command_id);
+  return iter == std::end(toolTips_) ? base::string16() : iter->second;
 }
 
 void AtomMenuModel::SetRole(int index, const base::string16& role) {
@@ -38,11 +36,20 @@ void AtomMenuModel::SetRole(int index, const base::string16& role) {
 }
 
 base::string16 AtomMenuModel::GetRoleAt(int index) {
+  const int command_id = GetCommandIdAt(index);
+  const auto iter = roles_.find(command_id);
+  return iter == std::end(roles_) ? base::string16() : iter->second;
+}
+
+void AtomMenuModel::SetSublabel(int index, const base::string16& sublabel) {
   int command_id = GetCommandIdAt(index);
-  if (base::Contains(roles_, command_id))
-    return roles_[command_id];
-  else
-    return base::string16();
+  sublabels_[command_id] = sublabel;
+}
+
+base::string16 AtomMenuModel::GetSublabelAt(int index) const {
+  int command_id = GetCommandIdAt(index);
+  const auto iter = sublabels_.find(command_id);
+  return iter == std::end(sublabels_) ? base::string16() : iter->second;
 }
 
 bool AtomMenuModel::GetAcceleratorAtWithParams(

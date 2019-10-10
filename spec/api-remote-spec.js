@@ -5,10 +5,13 @@ const dirtyChai = require('dirty-chai')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
 const { resolveGetters } = require('./expect-helpers')
+const { ifdescribe } = require('./spec-helpers')
 
 const { remote, ipcRenderer } = require('electron')
 const { ipcMain, BrowserWindow } = remote
 const { expect } = chai
+
+const features = process.electronBinding('features')
 
 chai.use(dirtyChai)
 
@@ -20,7 +23,7 @@ const comparePaths = (path1, path2) => {
   expect(path1).to.equal(path2)
 }
 
-describe('remote module', () => {
+ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
   describe('remote.require', () => {
@@ -238,14 +241,14 @@ describe('remote module', () => {
     const print = path.join(fixtures, 'module', 'print_name.js')
     const printName = remote.require(print)
 
-    it('converts NaN to undefined', () => {
-      expect(printName.getNaN()).to.be.undefined()
-      expect(printName.echo(NaN)).to.be.undefined()
+    it('preserves NaN', () => {
+      expect(printName.getNaN()).to.be.NaN()
+      expect(printName.echo(NaN)).to.be.NaN()
     })
 
-    it('converts Infinity to undefined', () => {
-      expect(printName.getInfinity()).to.be.undefined()
-      expect(printName.echo(Infinity)).to.be.undefined()
+    it('preserves Infinity', () => {
+      expect(printName.getInfinity()).to.equal(Infinity)
+      expect(printName.echo(Infinity)).to.equal(Infinity)
     })
 
     it('keeps its constructor name for objects', () => {
@@ -253,10 +256,34 @@ describe('remote module', () => {
       expect(printName.print(buf)).to.equal('Buffer')
     })
 
+    it('supports instanceof Boolean', () => {
+      const obj = Boolean(true)
+      expect(printName.print(obj)).to.equal('Boolean')
+      expect(printName.echo(obj)).to.deep.equal(obj)
+    })
+
+    it('supports instanceof Number', () => {
+      const obj = Number(42)
+      expect(printName.print(obj)).to.equal('Number')
+      expect(printName.echo(obj)).to.deep.equal(obj)
+    })
+
+    it('supports instanceof String', () => {
+      const obj = String('Hello World!')
+      expect(printName.print(obj)).to.equal('String')
+      expect(printName.echo(obj)).to.deep.equal(obj)
+    })
+
     it('supports instanceof Date', () => {
       const now = new Date()
       expect(printName.print(now)).to.equal('Date')
       expect(printName.echo(now)).to.deep.equal(now)
+    })
+
+    it('supports instanceof RegExp', () => {
+      const regexp = RegExp('.*')
+      expect(printName.print(regexp)).to.equal('RegExp')
+      expect(printName.echo(regexp)).to.deep.equal(regexp)
     })
 
     it('supports instanceof Buffer', () => {
@@ -481,7 +508,6 @@ describe('remote module', () => {
       try {
         throwFunction(err)
       } catch (error) {
-        expect(error.from).to.equal('browser')
         expect(error.cause).to.deep.equal(...resolveGetters(err))
       }
     })
@@ -506,6 +532,42 @@ describe('remote module', () => {
       })
       w.once('closed', () => done())
       w.loadURL('about:blank')
+    })
+  })
+
+  describe('remote listeners', () => {
+    let w = null
+    afterEach(() => closeWindow(w).then(() => { w = null }))
+
+    it('detaches listeners subscribed to destroyed renderers, and shows a warning', (done) => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.once('did-finish-load', () => {
+          const expectedMessage = [
+            'Attempting to call a function in a renderer window that has been closed or released.',
+            'Function provided here: remote-event-handler.html:11:33',
+            'Remote event names: remote-handler, other-remote-handler'
+          ].join('\n')
+
+          const results = ipcRenderer.sendSync('try-emit-web-contents-event', w.webContents.id, 'remote-handler')
+
+          expect(results).to.deep.equal({
+            warningMessage: expectedMessage,
+            listenerCountBefore: 2,
+            listenerCountAfter: 1
+          })
+          done()
+        })
+
+        w.webContents.reload()
+      })
+      w.loadFile(path.join(fixtures, 'api', 'remote-event-handler.html'))
     })
   })
 })

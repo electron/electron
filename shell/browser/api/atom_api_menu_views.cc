@@ -51,7 +51,7 @@ void MenuViews::PopupAt(TopLevelWindow* window,
   menu_runners_[window_id] =
       std::make_unique<MenuRunner>(model(), flags, close_callback);
   menu_runners_[window_id]->RunMenuAt(
-      native_window->widget(), NULL, gfx::Rect(location, gfx::Size()),
+      native_window->widget(), nullptr, gfx::Rect(location, gfx::Size()),
       views::MenuAnchorPosition::kTopLeft, ui::MENU_SOURCE_MOUSE);
 }
 

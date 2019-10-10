@@ -186,10 +186,8 @@ class Browser : public WindowListObserver {
 
 #endif  // defined(OS_MACOSX)
 
-#if defined(OS_MACOSX) || defined(OS_LINUX)
   void ShowAboutPanel();
   void SetAboutPanelOptions(const base::DictionaryValue& options);
-#endif
 
 #if defined(OS_MACOSX) || defined(OS_WIN)
   void ShowEmojiPanel();
@@ -264,7 +262,7 @@ class Browser : public WindowListObserver {
   bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
-  const util::Promise& WhenReady(v8::Isolate* isolate);
+  const util::Promise<void*>& WhenReady(v8::Isolate* isolate);
 
  protected:
   // Returns the version of application bundle or executable file.
@@ -303,9 +301,9 @@ class Browser : public WindowListObserver {
 
   int badge_count_ = 0;
 
-  std::unique_ptr<util::Promise> ready_promise_;
+  std::unique_ptr<util::Promise<void*>> ready_promise_;
 
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) || defined(OS_WIN)
   base::Value about_panel_options_;
 #elif defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;

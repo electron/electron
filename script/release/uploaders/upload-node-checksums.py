@@ -62,7 +62,10 @@ def get_files_list(version):
     { "filename": 'win-x86/iojs.lib', "required": False },
     { "filename": 'win-x64/iojs.lib', "required": False },
     { "filename": 'win-x86/node.lib', "required": False },
-    { "filename": 'win-x64/node.lib', "required": False }
+    { "filename": 'win-x64/node.lib', "required": False },
+    { "filename": 'arm64/node.lib', "required": False },
+    { "filename": 'win-arm64/iojs.lib', "required": False },
+    { "filename": 'win-arm64/node.lib', "required": False }
   ]
 
 

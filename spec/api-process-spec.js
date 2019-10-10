@@ -1,4 +1,4 @@
-const { remote } = require('electron')
+const { ipcRenderer } = require('electron')
 const fs = require('fs')
 const path = require('path')
 
@@ -89,8 +89,8 @@ describe('process module', () => {
   })
 
   describe('process.takeHeapSnapshot()', () => {
-    it('returns true on success', () => {
-      const filePath = path.join(remote.app.getPath('temp'), 'test.heapsnapshot')
+    it('returns true on success', async () => {
+      const filePath = path.join(await ipcRenderer.invoke('get-temp-dir'), 'test.heapsnapshot')
 
       const cleanup = () => {
         try {

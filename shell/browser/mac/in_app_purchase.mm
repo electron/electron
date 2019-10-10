@@ -122,9 +122,8 @@
  */
 - (void)runCallback:(bool)isProductValid {
   if (callback_) {
-    base::PostTaskWithTraits(
-        FROM_HERE, {content::BrowserThread::UI},
-        base::BindOnce(std::move(callback_), isProductValid));
+    base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                   base::BindOnce(std::move(callback_), isProductValid));
   }
   // Release this delegate.
   [self release];

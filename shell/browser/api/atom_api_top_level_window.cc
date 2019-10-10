@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "electron/buildflags/buildflags.h"
-#include "gin/converter.h"
+#include "gin/dictionary.h"
 #include "native_mate/handle.h"
 #include "native_mate/persistent_dictionary.h"
 #include "shell/browser/api/atom_api_browser_view.h"
@@ -16,10 +16,12 @@
 #include "shell/browser/api/atom_api_view.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/color_util.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/gfx_converter.h"
 #include "shell/common/native_mate_converters/image_converter.h"
+#include "shell/common/native_mate_converters/native_window_converter.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
@@ -34,6 +36,9 @@
 #include "ui/base/win/shell.h"
 #endif
 
+// TODO(zcbenz): Remove this after removing mate::ObjectTemplateBuilder.
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
+
 #if defined(OS_WIN)
 namespace mate {
 
@@ -42,8 +47,8 @@ struct Converter<electron::TaskbarHost::ThumbarButton> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      electron::TaskbarHost::ThumbarButton* out) {
-    mate::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
+    gin::Dictionary dict(isolate);
+    if (!gin::ConvertFromV8(isolate, val, &dict))
       return false;
     dict.Get("click", &(out->clicked_callback));
     dict.Get("tooltip", &(out->tooltip));
@@ -552,6 +557,15 @@ std::vector<int> TopLevelWindow::GetPosition() {
   result[1] = pos.y();
   return result;
 }
+void TopLevelWindow::MoveAbove(const std::string& sourceId,
+                               mate::Arguments* args) {
+#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
+  if (!window_->MoveAbove(sourceId))
+    args->ThrowError("Invalid media source id");
+#else
+  args->ThrowError("enable_desktop_capturer=true to use this feature");
+#endif
+}
 
 void TopLevelWindow::MoveTop() {
   window_->MoveTop();
@@ -563,6 +577,14 @@ void TopLevelWindow::SetTitle(const std::string& title) {
 
 std::string TopLevelWindow::GetTitle() {
   return window_->GetTitle();
+}
+
+void TopLevelWindow::SetAccessibleTitle(const std::string& title) {
+  window_->SetAccessibleTitle(title);
+}
+
+std::string TopLevelWindow::GetAccessibleTitle() {
+  return window_->GetAccessibleTitle();
 }
 
 void TopLevelWindow::FlashFrame(bool flash) {
@@ -730,6 +752,11 @@ void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
     }
   }
 }
+
+std::string TopLevelWindow::GetMediaSourceId() const {
+  return window_->GetDesktopMediaID().ToString();
+}
+
 v8::Local<v8::Value> TopLevelWindow::GetNativeWindowHandle() {
   // TODO(MarshallOfSound): Replace once
   // https://chromium-review.googlesource.com/c/chromium/src/+/1253094/ has
@@ -866,6 +893,10 @@ void TopLevelWindow::CloseFilePreview() {
   window_->CloseFilePreview();
 }
 
+void TopLevelWindow::SetGTKDarkThemeEnabled(bool use_dark_theme) {
+  window_->SetGTKDarkThemeEnabled(use_dark_theme);
+}
+
 v8::Local<v8::Value> TopLevelWindow::GetContentView() const {
   if (content_view_.IsEmpty())
     return v8::Null(isolate());
@@ -949,9 +980,6 @@ bool TopLevelWindow::HookWindowMessage(UINT message,
 }
 
 void TopLevelWindow::UnhookWindowMessage(UINT message) {
-  if (!base::Contains(messages_callback_map_, message))
-    return;
-
   messages_callback_map_.erase(message);
 }
 
@@ -1040,8 +1068,8 @@ mate::WrappableBase* TopLevelWindow::New(mate::Arguments* args) {
 void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
                                     v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "TopLevelWindow"));
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
       .SetMethod("setContentView", &TopLevelWindow::SetContentView)
       .SetMethod("close", &TopLevelWindow::Close)
       .SetMethod("focus", &TopLevelWindow::Focus)
@@ -1076,6 +1104,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setMaximumSize", &TopLevelWindow::SetMaximumSize)
       .SetMethod("getMaximumSize", &TopLevelWindow::GetMaximumSize)
       .SetMethod("setSheetOffset", &TopLevelWindow::SetSheetOffset)
+      .SetMethod("moveAbove", &TopLevelWindow::MoveAbove)
       .SetMethod("moveTop", &TopLevelWindow::MoveTop)
       .SetMethod("_setResizable", &TopLevelWindow::SetResizable)
       .SetMethod("_isResizable", &TopLevelWindow::IsResizable)
@@ -1108,6 +1137,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getPosition", &TopLevelWindow::GetPosition)
       .SetMethod("setTitle", &TopLevelWindow::SetTitle)
       .SetMethod("getTitle", &TopLevelWindow::GetTitle)
+      .SetProperty("accessibleTitle", &TopLevelWindow::GetAccessibleTitle,
+                   &TopLevelWindow::SetAccessibleTitle)
       .SetMethod("flashFrame", &TopLevelWindow::FlashFrame)
       .SetMethod("setSkipTaskbar", &TopLevelWindow::SetSkipTaskbar)
       .SetMethod("setSimpleFullScreen", &TopLevelWindow::SetSimpleFullScreen)
@@ -1135,6 +1166,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
       .SetMethod("addBrowserView", &TopLevelWindow::AddBrowserView)
       .SetMethod("removeBrowserView", &TopLevelWindow::RemoveBrowserView)
+      .SetMethod("getMediaSourceId", &TopLevelWindow::GetMediaSourceId)
       .SetMethod("getNativeWindowHandle",
                  &TopLevelWindow::GetNativeWindowHandle)
       .SetMethod("setProgressBar", &TopLevelWindow::SetProgressBar)

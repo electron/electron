@@ -34,5 +34,9 @@
     <false/>
     <key>NSQuitAlwaysKeepsWindows</key>
     <false/>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>This app needs access to the microphone</string>
+    <key>NSCameraUsageDescription</key>
+    <string>This app needs access to the camera</string>
   </dict>
 </plist>

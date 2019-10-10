@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: vasilvv <vasilvv@google.com>
+Date: Thu, 3 Oct 2019 09:37:10 -0700
+Subject: [build] Include ostream in quic_ip_address.h
+
+Explicitly #include <ostream> in quic/platform/api/quic_ip_address.h, since std::ostream is referenced in it. In the C++ STL shipped with Visual Studio 2019, none of the headers included in quic_ip_address.h ends up including the required templates, which caused a compile error.
+
+Patch by Jaime Bernardo <jaime@janeasystems.com>: https://quiche-review.googlesource.com/c/quiche/+/10280
+
+gfe-relnote: n/a (no functional change)
+PiperOrigin-RevId: 272678937
+Change-Id: I304ed7ad7f114924268ef832551fb2ddcba73402
+
+diff --git a/quic/platform/api/quic_ip_address.h b/quic/platform/api/quic_ip_address.h
+index e1a1076cbcbd0bfe72e69b4c0fefe2b21ec4426c..3585970d9d50f2b026616e758576dd466044c39b 100644
+--- a/quic/platform/api/quic_ip_address.h
++++ b/quic/platform/api/quic_ip_address.h
+@@ -15,6 +15,7 @@
+ #include <sys/types.h>
+ #endif
+ 
++#include <ostream>
+ #include <string>
+ 
+ #include "net/third_party/quiche/src/quic/platform/api/quic_export.h"

@@ -25,8 +25,10 @@ app.on('window-all-closed', () => null)
 app.commandLine.appendSwitch('ignore-certificate-errors')
 
 global.standardScheme = 'app'
+global.zoomScheme = 'zoom'
 protocol.registerSchemesAsPrivileged([
   { scheme: global.standardScheme, privileges: { standard: true, secure: true } },
+  { scheme: global.zoomScheme, privileges: { standard: true, secure: true } },
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
@@ -76,14 +78,17 @@ app.whenReady().then(() => {
     ? new RegExp(process.env.npm_config_match, 'g')
     : null
 
+  const testFiles = []
   walker.on('file', (file) => {
     if (/-spec\.[tj]s$/.test(file) &&
         (!moduleMatch || moduleMatch.test(file))) {
-      mocha.addFile(file)
+      testFiles.push(file)
     }
   })
 
   walker.on('end', () => {
+    testFiles.sort()
+    testFiles.forEach((file) => mocha.addFile(file))
     const cb = () => {
       // Ensure the callback is called after runner is defined
       process.nextTick(() => {

@@ -13,7 +13,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "shell/browser/api/trackable_object.h"
-#include "shell/browser/atom_blob_reader.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/promise_util.h"
 
@@ -79,6 +78,7 @@ class Session : public mate::TrackableObject<Session>,
   std::string GetUserAgent();
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
                                      const std::string& uuid);
+  void DownloadURL(const GURL& url);
   void CreateInterruptedDownload(const mate::Dictionary& options);
   void SetPreloads(const std::vector<base::FilePath::StringType>& preloads);
   std::vector<base::FilePath::StringType> GetPreloads() const;
@@ -86,6 +86,7 @@ class Session : public mate::TrackableObject<Session>,
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
+  void Preconnect(const mate::Dictionary& options, mate::Arguments* args);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void LoadChromeExtension(const base::FilePath extension_path);
@@ -100,11 +101,13 @@ class Session : public mate::TrackableObject<Session>,
                          download::DownloadItem* item) override;
 
  private:
-  // Cached object.
+  // Cached mate::Wrappable objects.
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;
-  v8::Global<v8::Value> web_request_;
   v8::Global<v8::Value> net_log_;
+
+  // Cached object.
+  v8::Global<v8::Value> web_request_;
 
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
@@ -117,5 +120,23 @@ class Session : public mate::TrackableObject<Session>,
 }  // namespace api
 
 }  // namespace electron
+
+namespace gin {
+
+// TODO(zcbenz): Remove this after converting Session to gin::Wrapper.
+template <>
+struct Converter<electron::api::Session*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::Session** out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::Session* in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_SESSION_H_

@@ -71,7 +71,7 @@ class ElectronBindings {
 
   static void DidReceiveMemoryDump(
       v8::Global<v8::Context> context,
-      util::Promise promise,
+      util::Promise<mate::Dictionary> promise,
       bool success,
       std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump);
 

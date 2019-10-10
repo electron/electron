@@ -27,7 +27,7 @@
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/promise_util.h"
 
 #if defined(USE_NSS_CERTS)
@@ -120,7 +120,6 @@ class App : public AtomBrowserClient::Delegate,
       const GURL& request_url,
       bool is_main_frame_request,
       bool strict_enforcement,
-      bool expired_previous_decision,
       const base::RepeatingCallback<
           void(content::CertificateRequestResultType)>& callback) override;
   base::OnceClosure SelectClientCertificate(
@@ -165,11 +164,13 @@ class App : public AtomBrowserClient::Delegate,
   void ChildProcessLaunched(int process_type, base::ProcessHandle handle);
   void ChildProcessDisconnected(base::ProcessId pid);
 
-  void SetAppLogsPath(mate::Arguments* args);
+  void SetAppLogsPath(gin_helper::ErrorThrower thrower,
+                      base::Optional<base::FilePath> custom_path);
 
   // Get/Set the pre-defined path in PathService.
-  base::FilePath GetPath(mate::Arguments* args, const std::string& name);
-  void SetPath(mate::Arguments* args,
+  base::FilePath GetPath(gin_helper::ErrorThrower thrower,
+                         const std::string& name);
+  void SetPath(gin_helper::ErrorThrower thrower,
                const std::string& name,
                const base::FilePath& path);
 
@@ -182,10 +183,11 @@ class App : public AtomBrowserClient::Delegate,
   bool RequestSingleInstanceLock();
   void ReleaseSingleInstanceLock();
   bool Relaunch(mate::Arguments* args);
-  void DisableHardwareAcceleration(mate::Arguments* args);
-  void DisableDomainBlockingFor3DAPIs(mate::Arguments* args);
+  void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
+  void DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower);
   bool IsAccessibilitySupportEnabled();
-  void SetAccessibilitySupportEnabled(bool enabled, mate::Arguments* args);
+  void SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
+                                      bool enabled);
   Browser::LoginItemSettings GetLoginItemSettings(mate::Arguments* args);
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
@@ -198,14 +200,15 @@ class App : public AtomBrowserClient::Delegate,
   v8::Local<v8::Value> GetGPUFeatureStatus(v8::Isolate* isolate);
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
-  void EnableSandbox(mate::Arguments* args);
+  void EnableSandbox(gin_helper::ErrorThrower thrower);
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
   void SetBrowserClientCanUseCustomSiteInstance(bool should_disable);
   bool CanBrowserClientUseCustomSiteInstance();
 
 #if defined(OS_MACOSX)
-  bool MoveToApplicationsFolder(mate::Arguments* args);
+  bool MoveToApplicationsFolder(gin_helper::ErrorThrower,
+                                mate::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
   v8::Global<v8::Value> dock_;

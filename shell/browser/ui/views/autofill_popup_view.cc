@@ -5,6 +5,7 @@
 #include "shell/browser/ui/views/autofill_popup_view.h"
 
 #include <memory>
+#include <utility>
 
 #include "base/bind.h"
 #include "base/i18n/rtl.h"
@@ -75,7 +76,7 @@ void AutofillPopupView::Show() {
     params.delegate = this;
     params.parent = parent_widget_->GetNativeView();
     params.z_order = ui::ZOrderLevel::kFloatingUIElement;
-    widget->Init(params);
+    widget->Init(std::move(params));
 
     // No animation for popup appearance (too distracting).
     widget->SetVisibilityAnimationTransition(views::Widget::ANIMATE_HIDE);
@@ -244,7 +245,7 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   if (view_proxy_.get()) {
     bitmap.allocN32Pixels(popup_->popup_bounds_in_view().width(),
                           popup_->popup_bounds_in_view().height(), true);
-    paint_canvas.reset(new cc::SkiaPaintCanvas(bitmap));
+    paint_canvas = std::make_unique<cc::SkiaPaintCanvas>(bitmap);
     draw_canvas = new gfx::Canvas(paint_canvas.get(), 1.0);
   }
 #endif

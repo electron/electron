@@ -46,10 +46,10 @@ def hasTrailingWhiteSpace(filepath, fix):
     f.close()
 
   fixed_lines = []
-  for line in lines:
+  for num, line in enumerate(lines):
     fixed_lines.append(line.rstrip() + '\n')
     if not fix and line != line.rstrip():
-      print("Trailing whitespace in: " + filepath)
+      print("Trailing whitespace on line {} in file: {}".format(num + 1, filepath))
       return True
   if fix:
     with open(filepath, 'w') as f:

@@ -356,8 +356,8 @@ app.on('ready', () => {
   window.loadURL('https://github.com')
 })
 
-// Supported Chrome command line switches
-// https://github.com/atom/electron/blob/master/docs/api/chrome-command-line-switches.md
+// Supported command line switches
+// https://github.com/atom/electron/blob/master/docs/api/command-line-switches.md
 
 app.commandLine.appendSwitch('remote-debugging-port', '8315')
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
@@ -918,10 +918,17 @@ app.on('ready', () => {
     { label: 'Item3', type: 'radio', checked: true },
     { label: 'Item4', type: 'radio' }
   ])
+
+  appIcon.setTitle('title')
   appIcon.setToolTip('This is my application.')
-  appIcon.setContextMenu(contextMenu)
+
   appIcon.setImage('/path/to/new/icon')
+  appIcon.setPressedImage('/path/to/new/icon')
+
   appIcon.popUpContextMenu(contextMenu, { x: 100, y: 100 })
+  appIcon.setContextMenu(contextMenu)
+
+  appIcon.setIgnoreDoubleClickEvents(true)
 
   appIcon.on('click', (event, bounds) => {
     console.log('click', event, bounds)
@@ -933,7 +940,12 @@ app.on('ready', () => {
 
   appIcon.displayBalloon({
     title: 'Hello World!',
-    content: 'This the the balloon content.'
+    content: 'This the the balloon content.',
+    iconType: 'error',
+    icon: 'path/to/icon',
+    respectQuietTime: true,
+    largeIcon: true,
+    noSound: true
   })
 })
 

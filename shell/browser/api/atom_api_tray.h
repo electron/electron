@@ -74,6 +74,7 @@ class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
   bool GetIgnoreDoubleClickEvents();
   void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
   void RemoveBalloon();
+  void Focus();
   void PopUpContextMenu(mate::Arguments* args);
   void SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu);
   gfx::Rect GetBounds();

@@ -27,12 +27,13 @@ PLATFORM = {
 
 LINUX_BINARIES = [
   'electron',
+  'chrome_sandbox',
   'libffmpeg.so',
   'libGLESv2.so',
   'libEGL.so',
   'swiftshader/libGLESv2.so',
-  'swiftshader/libEGL.so'
-  'swiftshader/libvulkan.so'
+  'swiftshader/libEGL.so',
+  'libvk_swiftshader.so'
 ]
 
 verbose_mode = False

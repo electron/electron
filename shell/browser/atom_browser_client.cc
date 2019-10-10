@@ -51,7 +51,10 @@
 #include "shell/app/manifests.h"
 #include "shell/browser/api/atom_api_app.h"
 #include "shell/browser/api/atom_api_protocol_ns.h"
+#include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/atom_api_web_request_ns.h"
+#include "shell/browser/atom_autofill_driver_factory.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_navigation_throttle.h"
@@ -68,15 +71,16 @@
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
+#include "shell/browser/renderer_host/electron_render_message_filter.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
@@ -106,7 +110,6 @@
 
 #if BUILDFLAG(ENABLE_TTS)
 #include "chrome/browser/speech/tts_controller_delegate_impl.h"
-#include "chrome/browser/speech/tts_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_TTS)
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -170,7 +173,7 @@ AtomBrowserClient* AtomBrowserClient::Get() {
 // static
 void AtomBrowserClient::SetApplicationLocale(const std::string& locale) {
   if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
-      !base::PostTaskWithTraits(
+      !base::PostTask(
           FROM_HERE, {BrowserThread::IO},
           base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
     g_io_thread_application_locale.Get() = locale;
@@ -192,8 +195,9 @@ content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
   // If the process is a pending process, we should use the web contents
   // for the frame host passed into RegisterPendingProcess.
-  if (base::Contains(pending_processes_, process_id))
-    return pending_processes_[process_id];
+  const auto iter = pending_processes_.find(process_id);
+  if (iter != std::end(pending_processes_))
+    return iter->second;
 
   // Certain render process will be created with no associated render view,
   // for example: ServiceWorker.
@@ -336,8 +340,7 @@ bool AtomBrowserClient::IsRendererSubFrame(int process_id) const {
 }
 
 void AtomBrowserClient::RenderProcessWillLaunch(
-    content::RenderProcessHost* host,
-    service_manager::mojom::ServiceRequest* service_request) {
+    content::RenderProcessHost* host) {
   // When a render process is crashed, it might be reused.
   int process_id = host->GetID();
   if (IsProcessObserved(process_id))
@@ -346,10 +349,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 #if BUILDFLAG(ENABLE_PRINTING)
   host->AddFilter(new printing::PrintingMessageFilter(
       process_id, host->GetBrowserContext()));
-#endif
-
-#if BUILDFLAG(ENABLE_TTS)
-  host->AddFilter(new TtsMessageFilter(host->GetBrowserContext()));
 #endif
 
   ProcessPreferences prefs;
@@ -363,6 +362,9 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     prefs.web_security = web_preferences->IsEnabled(options::kWebSecurity,
                                                     true /* default value */);
   }
+
+  host->AddFilter(new ElectronRenderMessageFilter(host->GetBrowserContext()));
+
   AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);
@@ -400,9 +402,12 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->default_minimum_page_scale_factor = 1.f;
   prefs->default_maximum_page_scale_factor = 1.f;
   prefs->navigate_on_drag_drop = false;
+#if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  prefs->picture_in_picture_enabled = false;
+#endif
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  prefs->preferred_color_scheme = native_theme->SystemDarkModeEnabled()
+  prefs->preferred_color_scheme = native_theme->ShouldUseDarkColors()
                                       ? blink::PreferredColorScheme::kDark
                                       : blink::PreferredColorScheme::kLight;
 
@@ -429,6 +434,7 @@ AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
     content::RenderFrameHost* speculative_rfh,
     content::BrowserContext* browser_context,
     const GURL& url,
+    bool has_navigation_started,
     bool has_response_started,
     content::SiteInstance** affinity_site_instance) const {
   if (g_suppress_renderer_process_restart) {
@@ -461,6 +467,13 @@ AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
   // with the availability of a speculative render frame host.
   if (has_response_started) {
     return SiteInstanceForNavigationType::FORCE_CURRENT;
+  }
+
+  if (!has_navigation_started) {
+    // If the navigation didn't start yet, ignore any candidate site instance.
+    // If such instance exists, it belongs to a previous navigation still
+    // taking place. Fixes https://github.com/electron/electron/issues/17576.
+    return SiteInstanceForNavigationType::FORCE_NEW;
   }
 
   return SiteInstanceForNavigationType::FORCE_CANDIDATE_OR_NEW;
@@ -519,10 +532,10 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   // Copy following switches to child process.
   static const char* const kCommonSwitchNames[] = {
-      switches::kStandardSchemes,     switches::kEnableSandbox,
-      switches::kSecureSchemes,       switches::kBypassCSPSchemes,
-      switches::kCORSSchemes,         switches::kFetchSchemes,
-      switches::kServiceWorkerSchemes};
+      switches::kStandardSchemes,      switches::kEnableSandbox,
+      switches::kSecureSchemes,        switches::kBypassCSPSchemes,
+      switches::kCORSSchemes,          switches::kFetchSchemes,
+      switches::kServiceWorkerSchemes, switches::kEnableApiFilteringLogging};
   command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                  kCommonSwitchNames,
                                  base::size(kCommonSwitchNames));
@@ -543,9 +556,6 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   if (web_contents) {
-    if (web_contents->GetVisibleURL().SchemeIs("devtools")) {
-      command_line->AppendSwitch(switches::kDisableRemoteModule);
-    }
     auto* web_preferences = WebContentsPreferences::From(web_contents);
     if (web_preferences)
       web_preferences->AppendCommandLineSwitches(
@@ -610,13 +620,12 @@ void AtomBrowserClient::AllowCertificateError(
     const GURL& request_url,
     bool is_main_frame_request,
     bool strict_enforcement,
-    bool expired_previous_decision,
     const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
         callback) {
   if (delegate_) {
-    delegate_->AllowCertificateError(
-        web_contents, cert_error, ssl_info, request_url, is_main_frame_request,
-        strict_enforcement, expired_previous_decision, callback);
+    delegate_->AllowCertificateError(web_contents, cert_error, ssl_info,
+                                     request_url, is_main_frame_request,
+                                     strict_enforcement, callback);
   }
 }
 
@@ -675,6 +684,14 @@ bool AtomBrowserClient::CanCreateWindow(
   return false;
 }
 
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+std::unique_ptr<content::OverlayWindow>
+AtomBrowserClient::CreateWindowForPictureInPicture(
+    content::PictureInPictureWindowController* controller) {
+  return content::OverlayWindow::Create(controller);
+}
+#endif
+
 void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
   auto schemes_list = api::GetStandardSchemes();
@@ -725,13 +742,12 @@ AtomBrowserClient::OverrideSystemLocationProvider() {
 #endif
 }
 
-network::mojom::NetworkContextPtr AtomBrowserClient::CreateNetworkContext(
+mojo::Remote<network::mojom::NetworkContext>
+AtomBrowserClient::CreateNetworkContext(
     content::BrowserContext* browser_context,
     bool /*in_memory*/,
     const base::FilePath& /*relative_partition_path*/) {
-  if (!browser_context)
-    return nullptr;
-
+  DCHECK(browser_context);
   return NetworkContextServiceFactory::GetForContext(browser_context)
       ->CreateNetworkContext();
 }
@@ -747,11 +763,6 @@ AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
   if (name == content::mojom::kBrowserServiceName)
     return GetElectronContentBrowserOverlayManifest();
   return base::nullopt;
-}
-
-std::vector<service_manager::Manifest>
-AtomBrowserClient::GetExtraServiceManifests() {
-  return GetElectronBuiltinServiceManifests();
 }
 
 std::unique_ptr<content::BrowserMainParts>
@@ -843,10 +854,9 @@ bool AtomBrowserClient::HandleExternalProtocol(
     ui::PageTransition page_transition,
     bool has_user_gesture,
     network::mojom::URLLoaderFactoryPtr* out_factory) {
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::UI},
-      base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,
-                     has_user_gesture));
+  base::PostTask(FROM_HERE, {BrowserThread::UI},
+                 base::BindOnce(&HandleExternalProtocolInUI, url,
+                                web_contents_getter, has_user_gesture));
   return true;
 }
 
@@ -878,7 +888,7 @@ content::PlatformNotificationService*
 AtomBrowserClient::GetPlatformNotificationService(
     content::BrowserContext* browser_context) {
   if (!notification_service_) {
-    notification_service_.reset(new PlatformNotificationService(this));
+    notification_service_ = std::make_unique<PlatformNotificationService>(this);
   }
   return notification_service_.get();
 }
@@ -963,33 +973,32 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     content::BrowserContext* browser_context,
     content::RenderFrameHost* frame_host,
     int render_process_id,
-    bool is_navigation,
-    bool is_download,
+    URLLoaderFactoryType type,
     const url::Origin& request_initiator,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
-    network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+    mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
+        header_client,
     bool* bypass_redirect_checks) {
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(frame_host);
-  if (!web_contents) {
-    return false;
-  }
-  api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
-      v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
-  if (!protocol)
-    return false;
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  api::ProtocolNS* protocol =
+      api::ProtocolNS::FromWrappedClass(isolate, browser_context);
+  DCHECK(protocol);
+  auto web_request = api::WebRequestNS::FromOrCreate(isolate, browser_context);
+  DCHECK(web_request.get());
 
   auto proxied_receiver = std::move(*factory_receiver);
   network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
   *factory_receiver = mojo::MakeRequest(&target_factory_info);
 
-  network::mojom::TrustedURLLoaderHeaderClientRequest header_client_request;
+  mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
+      header_client_receiver;
   if (header_client)
-    header_client_request = mojo::MakeRequest(header_client);
+    header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
 
   new ProxyingURLLoaderFactory(
-      protocol->intercept_handlers(), std::move(proxied_receiver),
-      std::move(target_factory_info), std::move(header_client_request));
+      web_request.get(), protocol->intercept_handlers(), render_process_id,
+      std::move(proxied_receiver), std::move(target_factory_info),
+      std::move(header_client_receiver), type);
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
@@ -1000,7 +1009,8 @@ network::mojom::URLLoaderFactoryPtrInfo
 AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
     content::RenderProcessHost* process,
     network::mojom::NetworkContext* network_context,
-    network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+    mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
+        header_client,
     const url::Origin& request_initiator) {
   auto render_process_id = process->GetID();
   auto it = process_preferences_.find(render_process_id);
@@ -1024,7 +1034,8 @@ AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
 }
 
 #if defined(OS_WIN)
-bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy) {
+bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy,
+                                         RendererSpawnFlags flags) {
   // Allow crashpad to communicate via named pipe.
   sandbox::ResultCode result = policy->AddRule(
       sandbox::TargetPolicy::SUBSYS_FILES,
@@ -1035,10 +1046,31 @@ bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy) {
 }
 #endif  // defined(OS_WIN)
 
+bool AtomBrowserClient::BindAssociatedReceiverFromFrame(
+    content::RenderFrameHost* render_frame_host,
+    const std::string& interface_name,
+    mojo::ScopedInterfaceEndpointHandle* handle) {
+  if (interface_name == mojom::ElectronAutofillDriver::Name_) {
+    AutofillDriverFactory::BindAutofillDriver(
+        mojom::ElectronAutofillDriverAssociatedRequest(std::move(*handle)),
+        render_frame_host);
+    return true;
+  }
+
+  return false;
+}
+
 std::string AtomBrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))
     return g_io_thread_application_locale.Get();
   return *g_application_locale;
+}
+
+base::FilePath AtomBrowserClient::GetFontLookupTableCacheDir() {
+  base::FilePath user_data_dir;
+  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  DCHECK(!user_data_dir.empty());
+  return user_data_dir.Append(FILE_PATH_LITERAL("FontLookupTableCache"));
 }
 
 bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {

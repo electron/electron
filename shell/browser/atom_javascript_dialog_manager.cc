@@ -67,7 +67,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
   std::vector<std::string> buttons = {"OK"};
   if (dialog_type == JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
-    buttons.push_back("Cancel");
+    buttons.emplace_back("Cancel");
     // First button is default, second button is cancel
     default_id = 0;
     cancel_id = 1;

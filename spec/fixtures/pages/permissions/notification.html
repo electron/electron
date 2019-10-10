@@ -5,6 +5,6 @@ Notification.requestPermission().then((result) => {
   n1.close()
   n2.close()
 
-  require('electron').ipcRenderer.sendToHost('message', result)
+  require('electron').ipcRenderer.send('message', result)
 })
 </script>

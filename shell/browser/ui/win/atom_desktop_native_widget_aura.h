@@ -19,7 +19,7 @@ class AtomDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
   explicit AtomDesktopNativeWidgetAura(NativeWindowViews* native_window_view);
 
   // views::DesktopNativeWidgetAura:
-  void InitNativeWidget(const views::Widget::InitParams& params) override;
+  void InitNativeWidget(views::Widget::InitParams params) override;
 
   // internal::NativeWidgetPrivate:
   void Activate() override;

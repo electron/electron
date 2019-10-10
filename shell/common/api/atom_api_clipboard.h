@@ -19,7 +19,7 @@ namespace api {
 
 class Clipboard {
  public:
-  static ui::ClipboardType GetClipboardType(mate::Arguments* args);
+  static ui::ClipboardBuffer GetClipboardBuffer(mate::Arguments* args);
   static std::vector<base::string16> AvailableFormats(mate::Arguments* args);
   static bool Has(const std::string& format_string, mate::Arguments* args);
   static void Clear(mate::Arguments* args);

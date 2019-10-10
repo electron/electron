@@ -11,7 +11,7 @@ from lib.patches import patch_from_dir
 
 def apply_patches(dirs):
   threeway = os.environ.get("ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES")
-  for patch_dir, repo in dirs.iteritems():
+  for patch_dir, repo in dirs.items():
     git.import_patches(repo=repo, patch_data=patch_from_dir(patch_dir),
       threeway=threeway is not None,
       committer_name="Electron Scripts", committer_email="scripts@electron")

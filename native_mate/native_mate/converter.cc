@@ -159,7 +159,7 @@ bool Converter<std::string>::FromV8(v8::Isolate* isolate,
   v8::Local<v8::String> str = v8::Local<v8::String>::Cast(val);
   int length = str->Utf8Length(isolate);
   out->resize(length);
-  str->WriteUtf8(isolate, &(*out)[0], length, NULL,
+  str->WriteUtf8(isolate, &(*out)[0], length, nullptr,
                  v8::String::NO_NULL_TERMINATION);
   return true;
 }

@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:47:44 -0700
+Subject: gin_with_namespace.patch
+
+When using gin with native_mate together we may have C++ confused with
+finding the correct ConvertFromV8. We add gin:: namespace explicitly in
+those calls to work around the ambiguous compilation error.
+
+Note that this is only a work around to make it easier to remove
+native_mate, and we should remove this patch once native_mate is erased
+from Electron.
+
+diff --git a/gin/arguments.h b/gin/arguments.h
+index eaded13e29919793494dfe2f7f85fad7dcb125cf..03e1495566d1ab561dcd67517053173911288cea 100644
+--- a/gin/arguments.h
++++ b/gin/arguments.h
+@@ -28,14 +28,14 @@ class GIN_EXPORT Arguments {
+     v8::Local<v8::Object> holder = is_for_property_
+                                        ? info_for_property_->Holder()
+                                        : info_for_function_->Holder();
+-    return ConvertFromV8(isolate_, holder, out);
++    return gin::ConvertFromV8(isolate_, holder, out);
+   }
+ 
+   template<typename T>
+   bool GetData(T* out) {
+     v8::Local<v8::Value> data = is_for_property_ ? info_for_property_->Data()
+                                                  : info_for_function_->Data();
+-    return ConvertFromV8(isolate_, data, out);
++    return gin::ConvertFromV8(isolate_, data, out);
+   }
+ 
+   template<typename T>
+@@ -45,7 +45,7 @@ class GIN_EXPORT Arguments {
+       return false;
+     }
+     v8::Local<v8::Value> val = (*info_for_function_)[next_++];
+-    return ConvertFromV8(isolate_, val, out);
++    return gin::ConvertFromV8(isolate_, val, out);
+   }
+ 
+   template<typename T>
+@@ -58,7 +58,7 @@ class GIN_EXPORT Arguments {
+     out->resize(remaining);
+     for (int i = 0; i < remaining; ++i) {
+       v8::Local<v8::Value> val = (*info_for_function_)[next_++];
+-      if (!ConvertFromV8(isolate_, val, &out->at(i)))
++      if (!gin::ConvertFromV8(isolate_, val, &out->at(i)))
+         return false;
+     }
+     return true;
+@@ -80,7 +80,7 @@ class GIN_EXPORT Arguments {
+   template<typename T>
+   void Return(T val) {
+     v8::Local<v8::Value> v8_value;
+-    if (!TryConvertToV8(isolate_, val, &v8_value))
++    if (!gin::TryConvertToV8(isolate_, val, &v8_value))
+       return;
+     (is_for_property_ ? info_for_property_->GetReturnValue()
+                       : info_for_function_->GetReturnValue())
+diff --git a/gin/converter.h b/gin/converter.h
+index 27b4d0acd016df378e4cb44ccda1a433244fe2c6..b19209a8534a497373c5a2f861b26502e96144c9 100644
+--- a/gin/converter.h
++++ b/gin/converter.h
+@@ -250,7 +250,7 @@ std::enable_if_t<ToV8ReturnsMaybe<T>::value, bool> TryConvertToV8(
+     v8::Isolate* isolate,
+     const T& input,
+     v8::Local<v8::Value>* output) {
+-  return ConvertToV8(isolate, input).ToLocal(output);
++  return gin::ConvertToV8(isolate, input).ToLocal(output);
+ }
+ 
+ template <typename T>
+@@ -258,7 +258,7 @@ std::enable_if_t<!ToV8ReturnsMaybe<T>::value, bool> TryConvertToV8(
+     v8::Isolate* isolate,
+     const T& input,
+     v8::Local<v8::Value>* output) {
+-  *output = ConvertToV8(isolate, input);
++  *output = gin::ConvertToV8(isolate, input);
+   return true;
+ }
+ 

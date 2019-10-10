@@ -6,15 +6,23 @@
 #include <utility>
 
 #include "base/hash/hash.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/api/atom_api_key_weak_map.h"
-#include "shell/common/api/remote_callback_freer.h"
-#include "shell/common/api/remote_object_freer.h"
-#include "shell/common/native_mate_converters/content_converter.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "electron/buildflags/buildflags.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/native_mate_handle_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
+
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+#include "shell/common/api/atom_api_key_weak_map.h"
+#include "shell/common/api/remote/remote_callback_freer.h"
+#include "shell/common/api/remote/remote_object_freer.h"
+#endif
+
+// TODO(zcbenz): Remove the includes after removing native_mate.
+#include "native_mate/dictionary.h"
+#include "shell/common/native_mate_converters/content_converter.h"
 
 namespace std {
 
@@ -28,7 +36,7 @@ struct hash<std::pair<Type1, Type2>> {
 
 }  // namespace std
 
-namespace mate {
+namespace gin {
 
 template <typename Type1, typename Type2>
 struct Converter<std::pair<Type1, Type2>> {
@@ -50,7 +58,7 @@ struct Converter<std::pair<Type1, Type2>> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace {
 
@@ -111,14 +119,18 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getHiddenValue", &GetHiddenValue);
   dict.SetMethod("setHiddenValue", &SetHiddenValue);
   dict.SetMethod("deleteHiddenValue", &DeleteHiddenValue);
   dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
-  dict.SetMethod("setRemoteCallbackFreer",
-                 &electron::RemoteCallbackFreer::BindTo);
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+  // TODO(zcbenz): Use gin_helper::Dictionary when content_converter.h is moved
+  // to gin.
+  mate::Dictionary mdict(context->GetIsolate(), exports);
+  mdict.SetMethod("setRemoteCallbackFreer",
+                  &electron::RemoteCallbackFreer::BindTo);
   dict.SetMethod("setRemoteObjectFreer", &electron::RemoteObjectFreer::BindTo);
   dict.SetMethod("addRemoteObjectRef", &electron::RemoteObjectFreer::AddRef);
   dict.SetMethod("createIDWeakMap",
@@ -126,6 +138,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod(
       "createDoubleIDWeakMap",
       &electron::api::KeyWeakMap<std::pair<std::string, int32_t>>::Create);
+#endif
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);

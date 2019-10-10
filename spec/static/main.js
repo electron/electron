@@ -42,6 +42,8 @@ ipcMain.on('message', function (event, ...args) {
   event.sender.send('message', ...args)
 })
 
+ipcMain.handle('get-temp-dir', () => app.getPath('temp'))
+
 // Set productName so getUploadedReports() uses the right directory in specs
 if (process.platform !== 'darwin') {
   crashReporter.productName = 'Zombies'
@@ -152,23 +154,9 @@ app.on('ready', function () {
     console.error('Renderer process crashed')
     process.exit(1)
   })
-
-  ipcMain.on('prevent-next-input-event', (event, key, id) => {
-    webContents.fromId(id).once('before-input-event', (event, input) => {
-      if (key === input.key) event.preventDefault()
-    })
-    event.returnValue = null
-  })
-})
-
-ipcMain.on('handle-next-ipc-message-sync', function (event, returnValue) {
-  event.sender.once('ipc-message-sync', (event, channel, args) => {
-    event.returnValue = returnValue
-  })
 })
 
 for (const eventName of [
-  'desktop-capturer-get-sources',
   'remote-get-guest-web-contents'
 ]) {
   ipcMain.on(`handle-next-${eventName}`, function (event, returnValue) {

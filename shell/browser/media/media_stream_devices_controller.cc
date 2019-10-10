@@ -170,19 +170,19 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
 
   if (request_.audio_type ==
       blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE) {
-    devices.push_back(blink::MediaStreamDevice(
-        blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE, "", ""));
+    devices.emplace_back(blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE,
+                         "", "");
   }
   if (request_.video_type ==
       blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE) {
-    devices.push_back(blink::MediaStreamDevice(
-        blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE, "", ""));
+    devices.emplace_back(blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE,
+                         "", "");
   }
   if (request_.audio_type ==
       blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE) {
-    devices.push_back(blink::MediaStreamDevice(
+    devices.emplace_back(
         blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE, "loopback",
-        "System Audio"));
+        "System Audio");
   }
   if (request_.video_type ==
       blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
@@ -197,9 +197,9 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
           content::DesktopMediaID::Parse(request_.requested_video_device_id);
     }
 
-    devices.push_back(blink::MediaStreamDevice(
+    devices.emplace_back(
         blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE,
-        screen_id.ToString(), "Screen"));
+        screen_id.ToString(), "Screen");
   }
 
   std::move(callback_).Run(

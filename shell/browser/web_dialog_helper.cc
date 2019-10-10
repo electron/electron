@@ -4,6 +4,8 @@
 
 #include "shell/browser/web_dialog_helper.h"
 
+#include <memory>
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -20,13 +22,15 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "native_mate/dictionary.h"
+#include "gin/dictionary.h"
 #include "net/base/directory_lister.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
-#include "shell/common/native_mate_converters/once_callback.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
 using blink::mojom::FileChooserFileInfo;
@@ -54,7 +58,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    electron::util::Promise promise(isolate);
+    electron::util::Promise<gin_helper::Dictionary> promise(isolate);
 
     auto callback = base::BindOnce(&FileSelectHelper::OnOpenDialogDone, this);
     ignore_result(promise.Then(std::move(callback)));
@@ -64,22 +68,18 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   void ShowSaveDialog(const file_dialog::DialogSettings& settings) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    v8::Local<v8::Context> context = isolate->GetCurrentContext();
-    electron::util::Promise promise(isolate);
-    v8::Local<v8::Promise> handle = promise.GetHandle();
+    electron::util::Promise<gin_helper::Dictionary> promise(isolate);
+
+    auto callback = base::BindOnce(&FileSelectHelper::OnSaveDialogDone, this);
+    ignore_result(promise.Then(std::move(callback)));
 
     file_dialog::ShowSaveDialog(settings, std::move(promise));
-    ignore_result(handle->Then(
-        context,
-        v8::Local<v8::Function>::Cast(mate::ConvertToV8(
-            isolate,
-            base::BindOnce(&FileSelectHelper::OnSaveDialogDone, this)))));
   }
 
  private:
   friend class base::RefCounted<FileSelectHelper>;
 
-  ~FileSelectHelper() override {}
+  ~FileSelectHelper() override = default;
 
   // net::DirectoryLister::DirectoryListerDelegate
   void OnListFile(
@@ -108,8 +108,8 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     DCHECK(!lister_base_dir_.empty());
     DCHECK(lister_paths_.empty());
 
-    lister_.reset(new net::DirectoryLister(
-        lister_base_dir_, net::DirectoryLister::NO_SORT_RECURSIVE, this));
+    lister_ = std::make_unique<net::DirectoryLister>(
+        lister_base_dir_, net::DirectoryLister::NO_SORT_RECURSIVE, this);
     lister_->Start();
     // It is difficult for callers to know how long to keep a reference to
     // this instance.  We AddRef() here to keep the instance alive after we
@@ -119,7 +119,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     AddRef();
   }
 
-  void OnOpenDialogDone(mate::Dictionary result) {
+  void OnOpenDialogDone(gin_helper::Dictionary result) {
     std::vector<FileChooserFileInfoPtr> file_info;
     bool canceled = true;
     result.Get("canceled", &canceled);
@@ -128,7 +128,9 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     // listener is called from the directory enumerator.
     bool ready_to_call_listener = false;
 
-    if (!canceled) {
+    if (canceled) {
+      OnSelectionCancelled();
+    } else {
       std::vector<base::FilePath> paths;
       if (result.Get("filePaths", &paths)) {
         // If we are uploading a folder we need to enumerate its contents
@@ -153,32 +155,43 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
                                                 paths[0].DirName());
         }
       }
+      // We should only call this if we have not cancelled the dialog
+      if (ready_to_call_listener)
+        OnFilesSelected(std::move(file_info), lister_base_dir_);
     }
-
-    if (ready_to_call_listener)
-      OnFilesSelected(std::move(file_info), lister_base_dir_);
   }
 
-  void OnSaveDialogDone(mate::Dictionary result) {
+  void OnSaveDialogDone(gin_helper::Dictionary result) {
     std::vector<FileChooserFileInfoPtr> file_info;
     bool canceled = true;
     result.Get("canceled", &canceled);
 
-    if (!canceled) {
+    if (canceled) {
+      OnSelectionCancelled();
+    } else {
       base::FilePath path;
       if (result.Get("filePath", &path)) {
         file_info.push_back(FileChooserFileInfo::NewNativeFile(
             blink::mojom::NativeFileInfo::New(
                 path, path.BaseName().AsUTF16Unsafe())));
       }
+      // We should only call this if we have not cancelled the dialog
+      OnFilesSelected(std::move(file_info), base::FilePath());
     }
-    OnFilesSelected(std::move(file_info), base::FilePath());
   }
 
   void OnFilesSelected(std::vector<FileChooserFileInfoPtr> file_info,
                        base::FilePath base_dir) {
     if (listener_) {
       listener_->FileSelected(std::move(file_info), base_dir, mode_);
+      listener_.reset();
+    }
+    render_frame_host_ = nullptr;
+  }
+
+  void OnSelectionCancelled() {
+    if (listener_) {
+      listener_->FileSelectionCanceled();
       listener_.reset();
     }
     render_frame_host_ = nullptr;
@@ -271,7 +284,7 @@ file_dialog::Filters GetFileTypesFromAcceptType(
   // Allow all files when extension is specified.
   filters.push_back(file_dialog::Filter());
   filters.back().first = "All Files";
-  filters.back().second.push_back("*");
+  filters.back().second.emplace_back("*");
 
   return filters;
 }
@@ -283,7 +296,7 @@ namespace electron {
 WebDialogHelper::WebDialogHelper(NativeWindow* window, bool offscreen)
     : window_(window), offscreen_(offscreen), weak_factory_(this) {}
 
-WebDialogHelper::~WebDialogHelper() {}
+WebDialogHelper::~WebDialogHelper() = default;
 
 void WebDialogHelper::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
@@ -301,17 +314,17 @@ void WebDialogHelper::RunFileChooser(
     settings.default_path = params.default_file_name;
     file_select_helper->ShowSaveDialog(settings);
   } else {
-    int flags = file_dialog::FILE_DIALOG_CREATE_DIRECTORY;
+    int flags = file_dialog::OPEN_DIALOG_CREATE_DIRECTORY;
     switch (params.mode) {
       case FileChooserParams::Mode::kOpenMultiple:
-        flags |= file_dialog::FILE_DIALOG_MULTI_SELECTIONS;
+        flags |= file_dialog::OPEN_DIALOG_MULTI_SELECTIONS;
         FALLTHROUGH;
       case FileChooserParams::Mode::kOpen:
-        flags |= file_dialog::FILE_DIALOG_OPEN_FILE;
-        flags |= file_dialog::FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY;
+        flags |= file_dialog::OPEN_DIALOG_OPEN_FILE;
+        flags |= file_dialog::OPEN_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY;
         break;
       case FileChooserParams::Mode::kUploadFolder:
-        flags |= file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
+        flags |= file_dialog::OPEN_DIALOG_OPEN_DIRECTORY;
         break;
       default:
         NOTREACHED();

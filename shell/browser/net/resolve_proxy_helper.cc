@@ -33,7 +33,7 @@ void ResolveProxyHelper::ResolveProxy(const GURL& url,
                                       ResolveProxyCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   // Enqueue the pending request.
-  pending_requests_.push_back(PendingRequest(url, std::move(callback)));
+  pending_requests_.emplace_back(url, std::move(callback));
 
   // If nothing is in progress, start.
   if (!binding_.is_bound()) {

@@ -32,7 +32,7 @@ bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
     return false;
 
   base::LaunchOptions options;
-  options.fds_to_remap.push_back(std::make_pair(devnull, STDIN_FILENO));
+  options.fds_to_remap.emplace_back(devnull, STDIN_FILENO);
 
   base::Process process = base::LaunchProcess(argv, options);
   close(devnull);
@@ -46,10 +46,10 @@ bool SetDefaultWebClient(const std::string& protocol) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
   std::vector<std::string> argv;
-  argv.push_back(kXdgSettings);
-  argv.push_back("set");
+  argv.emplace_back(kXdgSettings);
+  argv.emplace_back("set");
   if (!protocol.empty()) {
-    argv.push_back(kXdgSettingsDefaultSchemeHandler);
+    argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
     argv.push_back(protocol);
   }
   argv.push_back(libgtkui::GetDesktopName(env.get()));
@@ -88,9 +88,9 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   std::vector<std::string> argv;
-  argv.push_back(kXdgSettings);
-  argv.push_back("check");
-  argv.push_back(kXdgSettingsDefaultSchemeHandler);
+  argv.emplace_back(kXdgSettings);
+  argv.emplace_back("check");
+  argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
   argv.push_back(protocol);
   argv.push_back(libgtkui::GetDesktopName(env.get()));
 

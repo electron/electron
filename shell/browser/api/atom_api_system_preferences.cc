@@ -5,7 +5,8 @@
 #include "shell/browser/api/atom_api_system_preferences.h"
 
 #include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "ui/gfx/animation/animation.h"
@@ -31,7 +32,7 @@ SystemPreferences::~SystemPreferences() {
 
 #if !defined(OS_MACOSX)
 bool SystemPreferences::IsDarkMode() {
-  return ui::NativeTheme::GetInstanceForNativeUi()->SystemDarkModeEnabled();
+  return ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
 }
 #endif
 
@@ -45,7 +46,7 @@ bool SystemPreferences::IsHighContrastColorScheme() {
 
 v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
     v8::Isolate* isolate) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("shouldRenderRichAnimation",
            gfx::Animation::ShouldRenderRichAnimation());
@@ -99,7 +100,7 @@ void SystemPreferences::BuildPrototype(
       .SetMethod("removeUserDefault", &SystemPreferences::RemoveUserDefault)
       .SetMethod("isSwipeTrackingFromScrollEventsEnabled",
                  &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
-      .SetMethod("getEffectiveAppearance",
+      .SetMethod("_getEffectiveAppearance",
                  &SystemPreferences::GetEffectiveAppearance)
       .SetMethod("_getAppLevelAppearance",
                  &SystemPreferences::GetAppLevelAppearance)
@@ -108,6 +109,8 @@ void SystemPreferences::BuildPrototype(
       .SetProperty("appLevelAppearance",
                    &SystemPreferences::GetAppLevelAppearance,
                    &SystemPreferences::SetAppLevelAppearance)
+      .SetProperty("effectiveAppearance",
+                   &SystemPreferences::GetEffectiveAppearance)
       .SetMethod("getSystemColor", &SystemPreferences::GetSystemColor)
       .SetMethod("canPromptTouchID", &SystemPreferences::CanPromptTouchID)
       .SetMethod("promptTouchID", &SystemPreferences::PromptTouchID)

@@ -6,11 +6,11 @@
 
 #include "base/logging.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/object_template_builder_deprecated.h"
 
 namespace mate {
 
-WrappableBase::WrappableBase() : isolate_(nullptr) {}
+WrappableBase::WrappableBase() = default;
 
 WrappableBase::~WrappableBase() {
   if (wrapper_.IsEmpty())

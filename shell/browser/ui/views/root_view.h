@@ -40,8 +40,6 @@ class RootView : public views::View {
   // Register/Unregister accelerators supported by the menu model.
   void RegisterAcceleratorsWithFocusManager(AtomMenuModel* menu_model);
   void UnregisterAcceleratorsWithFocusManager();
-  void SetInsets(const gfx::Insets& insets);
-  gfx::Insets insets() const { return insets_; }
 
   // views::View:
   void Layout() override;
@@ -58,8 +56,6 @@ class RootView : public views::View {
   bool menu_bar_autohide_ = false;
   bool menu_bar_visible_ = false;
   bool menu_bar_alt_pressed_ = false;
-
-  gfx::Insets insets_;
 
   // Map from accelerator to menu item's command id.
   accelerator_util::AcceleratorTable accelerator_table_;

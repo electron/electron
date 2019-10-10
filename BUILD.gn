@@ -4,6 +4,7 @@ import("//build/config/win/manifest.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//pdf/features.gni")
 import("//printing/buildflags/buildflags.gni")
+import("//testing/test.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -58,6 +59,10 @@ config("branding") {
     "ELECTRON_PRODUCT_NAME=\"$electron_product_name\"",
     "ELECTRON_PROJECT_NAME=\"$electron_project_name\"",
   ]
+}
+
+config("electron_lib_config") {
+  include_dirs = [ "." ]
 }
 
 # We geneate the definitions twice here, once in //electron/electron.d.ts
@@ -280,6 +285,7 @@ if (is_linux) {
       "notify_notification_add_action",
       "notify_notification_set_image_from_pixbuf",
       "notify_notification_set_timeout",
+      "notify_notification_set_urgency",
       "notify_notification_set_hint_string",
       "notify_notification_show",
       "notify_notification_close",
@@ -300,14 +306,6 @@ source_set("manifests") {
     "//printing/buildflags",
     "//services/service_manager/public/cpp",
   ]
-
-  if (enable_basic_printing) {
-    deps += [ "//components/services/pdf_compositor/public/cpp:manifest" ]
-  }
-
-  if (enable_print_preview) {
-    deps += [ "//chrome/services/printing/public/cpp:manifest" ]
-  }
 }
 
 npm_action("electron_version_args") {
@@ -340,7 +338,10 @@ source_set("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
 
-  public_configs = [ ":branding" ]
+  public_configs = [
+    ":branding",
+    ":electron_lib_config",
+  ]
 
   deps = [
     ":atom_js2c",
@@ -354,8 +355,11 @@ source_set("electron_lib") {
     "//base:base_static",
     "//base/allocator:buildflags",
     "//chrome/app/resources:platform_locale_settings",
+    "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
     "//components/net_log",
+    "//components/network_hints/common",
+    "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//components/spellcheck/renderer",
@@ -371,7 +375,7 @@ source_set("electron_lib") {
     "//device/bluetooth/public/cpp",
     "//gin",
     "//media/capture/mojom:video_capture",
-    "//media/mojo/interfaces",
+    "//media/mojo/mojom",
     "//net:extras",
     "//net:net_resources",
     "//net:net_with_v8",
@@ -479,6 +483,19 @@ source_set("electron_lib") {
       "//content/common:mac_helpers",
       "//ui/accelerated_widget_mac",
     ]
+
+    libs = [
+      "AVFoundation.framework",
+      "Carbon.framework",
+      "LocalAuthentication.framework",
+      "QuartzCore.framework",
+      "Quartz.framework",
+      "Security.framework",
+      "SecurityInterface.framework",
+      "ServiceManagement.framework",
+      "StoreKit.framework",
+    ]
+
     sources += [
       "shell/browser/ui/views/autofill_popup_view.cc",
       "shell/browser/ui/views/autofill_popup_view.h",
@@ -584,10 +601,22 @@ source_set("electron_lib") {
     ]
   }
 
+  if (enable_remote_module) {
+    sources += [
+      "shell/common/api/remote/object_life_monitor.cc",
+      "shell/common/api/remote/object_life_monitor.h",
+      "shell/common/api/remote/remote_callback_freer.cc",
+      "shell/common/api/remote/remote_callback_freer.h",
+      "shell/common/api/remote/remote_object_freer.cc",
+      "shell/common/api/remote/remote_object_freer.h",
+    ]
+  }
+
   if (enable_desktop_capturer) {
-    if (is_component_build && is_win) {
+    if (is_component_build && !is_linux) {
       # On windows the implementation relies on unexported
-      # DxgiDuplicatorController class.
+      # DxgiDuplicatorController class.  On macOS the implementation
+      # relies on unexported webrtc::GetWindowOwnerPid method.
       deps += [ "//third_party/webrtc/modules/desktop_capture" ]
     }
     sources += [
@@ -766,6 +795,7 @@ if (is_mac) {
       "Libraries",
     ]
     public_deps = [
+      ":electron_framework_libraries",
       ":electron_lib",
     ]
     deps = [
@@ -786,18 +816,6 @@ if (is_mac) {
 
     include_dirs = [ "." ]
     sources = filenames.framework_sources
-
-    libs = [
-      "AVFoundation.framework",
-      "Carbon.framework",
-      "LocalAuthentication.framework",
-      "QuartzCore.framework",
-      "Quartz.framework",
-      "Security.framework",
-      "SecurityInterface.framework",
-      "ServiceManagement.framework",
-      "StoreKit.framework",
-    ]
 
     if (enable_osr) {
       libs += [ "IOSurface.framework" ]
@@ -1178,6 +1196,37 @@ if (is_mac) {
         ":swiftshader_gles_symbols",
       ]
     }
+  }
+}
+
+test("shell_browser_ui_unittests") {
+  sources = [
+    "//electron/shell/browser/ui/accelerator_util_unittests.cc",
+    "//electron/shell/browser/ui/run_all_unittests.cc",
+  ]
+
+  configs += [ ":electron_lib_config" ]
+
+  deps = [
+    ":electron_lib",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+    "//ui/base",
+    "//ui/strings",
+  ]
+
+  if (is_mac) {
+    # Resolve paths owing to different test executable locations
+    ldflags = [
+      "-F",
+      rebase_path("external_binaries", root_build_dir),
+      "-rpath",
+      "@loader_path",
+      "-rpath",
+      "@executable_path/" + rebase_path("external_binaries", root_build_dir),
+    ]
   }
 }
 

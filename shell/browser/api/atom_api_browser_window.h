@@ -76,6 +76,8 @@ class BrowserWindow : public TopLevelWindow,
   void RemoveBrowserView(v8::Local<v8::Value> value) override;
   void ResetBrowserViews() override;
   void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) override;
+  void OnWindowShow() override;
+  void OnWindowHide() override;
 
   // BrowserWindow APIs.
   void FocusOnWebView();

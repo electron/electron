@@ -13,7 +13,7 @@ AtomNavigationThrottle::AtomNavigationThrottle(
     content::NavigationHandle* navigation_handle)
     : content::NavigationThrottle(navigation_handle) {}
 
-AtomNavigationThrottle::~AtomNavigationThrottle() {}
+AtomNavigationThrottle::~AtomNavigationThrottle() = default;
 
 const char* AtomNavigationThrottle::GetNameForLogging() {
   return "AtomNavigationThrottle";
