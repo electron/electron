@@ -13,7 +13,6 @@
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
-#include "chrome/browser/shell_integration.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/atom_application.h"
 #include "shell/browser/mac/atom_application_delegate.h"
