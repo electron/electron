@@ -535,6 +535,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 void AtomBrowserMainParts::PreMainMessageLoopStartCommon() {
 #if defined(OS_MACOSX)
   InitializeEmptyApplicationMenu();
+  RegisterURLHandler();
 #endif
   media::SetLocalizedStringProvider(MediaStringProvider);
 }
