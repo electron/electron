@@ -97,6 +97,7 @@ typedef NS_ENUM(NSInteger, AVAuthorizationStatusMac) {
 + (AtomApplication*)sharedApplication;
 
 - (void)setShutdownHandler:(base::Callback<bool()>)handler;
+- (void)registerURLHandler;
 
 // CrAppProtocol:
 - (BOOL)isHandlingSendEvent;
