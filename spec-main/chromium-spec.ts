@@ -323,7 +323,6 @@ describe('chromium features', () => {
     })
   })
 
-  // FIXME(robo/nornagon): re-enable these once service workers work
   describe('navigator.serviceWorker', () => {
     it('should register for file scheme', (done) => {
       const w = new BrowserWindow({
