@@ -123,9 +123,8 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
       }
       // Some apps are passing content-type via headers, which is not accepted
       // in NetworkService.
-      if (base::ToLowerASCII(iter.first) == "content-type" &&
-          iter.second.is_string()) {
-        head.mime_type = iter.second.GetString();
+      if (base::ToLowerASCII(iter.first) == "content-type") {
+        head.headers->GetMimeTypeAndCharset(&head.mime_type, &head.charset);
         has_content_type = true;
       }
     }
