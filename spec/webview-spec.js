@@ -4,7 +4,6 @@ const path = require('path')
 const http = require('http')
 const url = require('url')
 const { ipcRenderer } = require('electron')
-const { closeWindow } = require('./window-helpers')
 const { emittedOnce, waitForEvent } = require('./events-helpers')
 
 const { expect } = chai
