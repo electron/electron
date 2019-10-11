@@ -273,8 +273,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   blink::CloneableMessage ret;
   {
     v8::Context::Scope source_context_scope(source);
-    // TODO(MarshallOfSound): What do we do if serialization fails? Throw an
-    // error here?
+    // V8 serializer will throw an error if required
     if (!mate::ConvertFromV8(source->GetIsolate(), value, &ret))
       return v8::MaybeLocal<v8::Value>();
   }
