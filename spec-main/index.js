@@ -24,6 +24,9 @@ app.on('window-all-closed', () => null)
 // not the entire test suite
 app.commandLine.appendSwitch('ignore-certificate-errors')
 
+// Use fake device for Media Stream to replace actual camera and microphone.
+app.commandLine.appendSwitch('use-fake-device-for-media-stream')
+
 global.standardScheme = 'app'
 global.zoomScheme = 'zoom'
 protocol.registerSchemesAsPrivileged([

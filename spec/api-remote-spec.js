@@ -535,6 +535,13 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     })
   })
 
+  describe('constructing a Uint8Array', () => {
+    it('does not crash', () => {
+      const RUint8Array = remote.getGlobal('Uint8Array')
+      const arr = new RUint8Array()
+    })
+  })
+
   describe('remote listeners', () => {
     let w = null
     afterEach(() => closeWindow(w).then(() => { w = null }))
