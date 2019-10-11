@@ -47,9 +47,22 @@ notifications:
     on_build_failure: true
     on_build_status_changed: false
 build_script:
-  - ps: >-
+  - ps: >-  
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
         Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+      } else {
+      
+        node script/yarn install --frozen-lockfile
+
+        $DOC_ONLY_CHANGE = node script/doc-only-change.js $env:APPVEYOR_REPO_COMMIT
+
+        echo $DOC_ONLY_CHANGE
+
+        if($DOC_ONLY_CHANGE -eq "true" ) {
+          Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+        } else {
+          Write-warning "Not skipping build because change is more than docs"; Exit-AppveyorBuild
+        }
       }
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true

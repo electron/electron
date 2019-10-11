@@ -699,6 +699,36 @@ step-save-src-cache: &step-save-src-cache
     key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
     name: Persisting src cache
 
+# Check for doc only change
+step-check-for-doc-only-change: &step-check-for-doc-only-change
+  run:
+    name: Check if commit is doc only change
+    command: |
+      cd src/electron
+      node script/yarn install --frozen-lockfile
+      export DOC_ONLY_CHANGE="`node script/doc-only-change.js $CIRCLE_SHA1`"
+      if [ "$DOC_ONLY_CHANGE" = "true" ]; then
+        echo "only docs changed $DOC_ONLY_CHANGE"
+        touch .skip-ci-build
+      else
+        echo "MORE THAN DOCS CHANGED $DOC_ONLY_CHANGE"
+        touch .skip-ci-build
+      fi
+
+step-persist-doc-only-change: &step-persist-doc-only-change
+  persist_to_workspace:
+    root: .
+    paths:
+      - src/electron/.skip-ci-build
+
+step-maybe-early-exit: &step-maybe-early-exit
+  run:
+    name: Shortcircuit build if doc only change
+    command: |
+      if [ -f "src/electron/.skip-ci-build" ]; then
+        circleci-agent step halt
+      fi
+
 # Lists of steps.
 steps-lint: &steps-lint
   steps:
@@ -747,6 +777,9 @@ steps-lint: &steps-lint
 steps-checkout-fast: &steps-checkout-fast
   steps:
     - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-persist-doc-only-change
+    - *step-maybe-early-exit
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
@@ -778,6 +811,9 @@ steps-checkout-fast: &steps-checkout-fast
 steps-checkout-and-save-cache: &steps-checkout-and-save-cache
   steps:
     - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-persist-doc-only-change
+    - *step-maybe-early-exit
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
@@ -808,6 +844,7 @@ steps-electron-gn-check: &steps-electron-gn-check
   steps:
     - attach_workspace:
         at: .
+    - *step-maybe-early-exit
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-gn-gen-default
@@ -817,6 +854,7 @@ steps-electron-build: &steps-electron-build
   steps:
     - attach_workspace:
         at: .
+    - *step-maybe-early-exit
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-restore-brew-cache
@@ -869,6 +907,9 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
   steps:
     # Checkout - Copied ffrom steps-checkout
     - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-persist-doc-only-change
+    - *step-maybe-early-exit
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
@@ -1056,6 +1097,7 @@ steps-tests: &steps-tests
   steps:
     - attach_workspace:
         at: .
+    - *step-maybe-early-exit
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
     - *step-mksnapshot-unzip
@@ -1098,6 +1140,7 @@ steps-test-nan: &steps-test-nan
   steps:
     - attach_workspace:
           at: .
+    - *step-maybe-early-exit
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
     - *step-setup-linux-for-headless-testing
@@ -1113,6 +1156,7 @@ steps-test-node: &steps-test-node
   steps:
     - attach_workspace:
           at: .
+    - *step-maybe-early-exit
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
     - *step-setup-linux-for-headless-testing
