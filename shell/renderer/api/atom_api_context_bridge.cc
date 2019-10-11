@@ -253,7 +253,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
               cloned_arr->Set(destination, static_cast<int>(i),
                               value_for_array.ToLocalChecked()))) {
         return v8::MaybeLocal<v8::Value>();
-      };
+      }
     }
     store->CacheProxiedObject(value, cloned_arr);
     return v8::MaybeLocal<v8::Value>(cloned_arr);

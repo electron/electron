@@ -25,7 +25,7 @@ using FunctionContextPair =
 using WeakGlobalPair = std::tuple<v8::Global<v8::Value>, v8::Global<v8::Value>>;
 
 struct WeakGlobalPairNode {
-  WeakGlobalPairNode(WeakGlobalPair pair_);
+  explicit WeakGlobalPairNode(WeakGlobalPair pair_);
   ~WeakGlobalPairNode();
   WeakGlobalPair pair;
   struct WeakGlobalPairNode* next = nullptr;
