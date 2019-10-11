@@ -12,7 +12,7 @@ import { AddressInfo } from 'net'
 import { closeWindow, closeAllWindows } from './window-helpers'
 import { EventEmitter } from 'events'
 
-temp.track(true)
+temp.track()
 
 const afterTest: ((() => void) | (() => Promise<void>))[] = []
 async function cleanup() {
@@ -38,6 +38,12 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
 
   after(() => {
     app.setPath('temp', originalTempDirectory)
+    try {
+      temp.cleanupSync()
+    } catch (e) {
+      // ignore.
+      console.warn(e.stack)
+    }
   })
 
   afterEach(cleanup)
