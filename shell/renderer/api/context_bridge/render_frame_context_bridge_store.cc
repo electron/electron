@@ -12,6 +12,16 @@ namespace api {
 
 namespace context_bridge {
 
+WeakGlobalPairNode::WeakGlobalPairNode(WeakGlobalPair pair_) {
+  pair = std::move(pair_);
+}
+
+WeakGlobalPairNode::~WeakGlobalPairNode() {
+  if (next) {
+    delete next;
+  }
+}
+
 RenderFramePersistenceStore::RenderFramePersistenceStore(
     content::RenderFrame* render_frame)
     : content::RenderFrameObserver(render_frame) {}
@@ -28,11 +38,24 @@ void RenderFramePersistenceStore::CacheProxiedObject(
   if (from->IsObject() && !from->IsNullOrUndefined()) {
     auto obj = v8::Local<v8::Object>::Cast(from);
     int hash = obj->GetIdentityHash();
+    auto global_from = v8::Global<v8::Value>(v8::Isolate::GetCurrent(), from);
     auto global_proxy =
         v8::Global<v8::Value>(v8::Isolate::GetCurrent(), proxy_value);
     // Do not retain
+    global_from.SetWeak();
     global_proxy.SetWeak();
-    GetProxyMapForObject(obj)->emplace(hash, std::move(global_proxy));
+    auto iter = proxy_map_.find(hash);
+    auto* node = new WeakGlobalPairNode(
+        std::make_tuple(std::move(global_from), std::move(global_proxy)));
+    if (iter == proxy_map_.end()) {
+      proxy_map_.emplace(hash, node);
+    } else {
+      WeakGlobalPairNode* target = iter->second;
+      while (target->next) {
+        target = target->next;
+      }
+      target->next = node;
+    }
   }
 }
 
@@ -43,26 +66,20 @@ v8::MaybeLocal<v8::Value> RenderFramePersistenceStore::GetCachedProxiedObject(
 
   auto obj = v8::Local<v8::Object>::Cast(from);
   int hash = obj->GetIdentityHash();
-  auto* map = GetProxyMapForObject(obj);
-  auto iter = map->find(hash);
-  if (iter == map->end() || iter->second.IsEmpty())
+  auto iter = proxy_map_.find(hash);
+  if (iter == proxy_map_.end())
     return v8::MaybeLocal<v8::Value>();
-  return v8::MaybeLocal<v8::Value>(iter->second.Get(v8::Isolate::GetCurrent()));
-}
-
-std::map<int, v8::Global<v8::Value>>*
-RenderFramePersistenceStore::GetProxyMapForObject(v8::Local<v8::Object> obj) {
-  v8::Local<v8::Context> from_context =
-      v8::Local<v8::Object>::Cast(obj)->CreationContext();
-  v8::Local<v8::Context> main_context = main_world_context();
-  v8::Local<v8::Context> isolated_context = isolated_world_context();
-  bool is_main_context = from_context == main_context;
-  CHECK(is_main_context || from_context == isolated_context);
-  if (is_main_context) {
-    return &main_world_proxy_map_;
-  } else {
-    return &isolated_world_proxy_map_;
+  WeakGlobalPairNode* target = iter->second;
+  while (target) {
+    auto from_cmp = std::get<0>(target->pair).Get(v8::Isolate::GetCurrent());
+    if (from_cmp == from) {
+      if (std::get<1>(target->pair).IsEmpty())
+        return v8::MaybeLocal<v8::Value>();
+      return std::get<1>(target->pair).Get(v8::Isolate::GetCurrent());
+    }
+    target = target->next;
   }
+  return v8::MaybeLocal<v8::Value>();
 }
 
 }  // namespace context_bridge

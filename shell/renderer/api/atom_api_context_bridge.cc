@@ -47,12 +47,12 @@ context_bridge::RenderFramePersistenceStore* GetOrCreateStore(
 
 // Sourced from "extensions/renderer/v8_schema_registry.cc"
 // Recursively freezes every v8 object on |object|.
-void DeepFreeze(const v8::Local<v8::Object>& object,
+bool DeepFreeze(const v8::Local<v8::Object>& object,
                 const v8::Local<v8::Context>& context,
                 std::set<int> frozen = std::set<int>()) {
   int hash = object->GetIdentityHash();
   if (frozen.find(hash) != frozen.end())
-    return;
+    return true;
   frozen.insert(hash);
 
   v8::Local<v8::Array> property_names =
@@ -61,10 +61,13 @@ void DeepFreeze(const v8::Local<v8::Object>& object,
     v8::Local<v8::Value> child =
         object->Get(context, property_names->Get(context, i).ToLocalChecked())
             .ToLocalChecked();
-    if (child->IsObject())
-      DeepFreeze(v8::Local<v8::Object>::Cast(child), context, frozen);
+    if (child->IsObject() && !child->IsTypedArray()) {
+      if (!DeepFreeze(v8::Local<v8::Object>::Cast(child), context, frozen))
+        return false;
+    }
   }
-  object->SetIntegrityLevel(context, v8::IntegrityLevel::kFrozen);
+  return mate::internal::IsTrue(
+      object->SetIntegrityLevel(context, v8::IntegrityLevel::kFrozen));
 }
 
 bool IsPlainObject(const v8::Local<v8::Value>& object) {
@@ -358,24 +361,22 @@ mate::Dictionary DebugGC(mate::Dictionary empty) {
   auto* store = GetOrCreateStore(render_frame);
   mate::Dictionary ret = mate::Dictionary::CreateEmpty(empty.isolate());
   ret.Set("functionCount", store->functions().size());
-  auto* main_world_map = store->main_world_proxy_map();
-  auto* isolated_world_map = store->isolated_world_proxy_map();
-  ret.Set("mainWorldObjectCount", main_world_map->size());
-  ret.Set("isolatedWorldObjectCount", isolated_world_map->size());
-  int live_main = 0;
-  for (auto iter = main_world_map->begin(); iter != main_world_map->end();
-       iter++) {
-    if (!iter->second.IsEmpty())
-      live_main++;
+  auto* proxy_map = store->proxy_map();
+  ret.Set("objectCount", proxy_map->size() * 2);
+  int live_from = 0;
+  int live_proxy = 0;
+  for (auto iter = proxy_map->begin(); iter != proxy_map->end(); iter++) {
+    auto* node = iter->second;
+    while (node) {
+      if (!std::get<0>(node->pair).IsEmpty())
+        live_from++;
+      if (!std::get<1>(node->pair).IsEmpty())
+        live_proxy++;
+      node = node->next;
+    }
   }
-  int live_isolated = 0;
-  for (auto iter = isolated_world_map->begin();
-       iter != isolated_world_map->end(); iter++) {
-    if (!iter->second.IsEmpty())
-      live_isolated++;
-  }
-  ret.Set("mainWorlLiveObjectCount", live_main);
-  ret.Set("isolatedWorldLiveObjectCount", live_isolated);
+  ret.Set("liveFromValues", live_from);
+  ret.Set("liveProxyValues", live_proxy);
   return ret;
 }
 #endif
@@ -405,7 +406,9 @@ void ExposeAPIInMainWorld(const std::string& key,
   v8::Context::Scope main_context_scope(main_context);
   v8::Local<v8::Object> proxy =
       CreateProxyForAPI(api_object, isolated_context, main_context, store);
-  DeepFreeze(proxy, main_context);
+  if (!DeepFreeze(proxy, main_context))
+    return;
+
   global.SetReadOnlyNonConfigurable(key, proxy);
 }
 

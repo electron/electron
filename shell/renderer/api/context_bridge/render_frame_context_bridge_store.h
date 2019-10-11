@@ -22,6 +22,15 @@ namespace context_bridge {
 using FunctionContextPair =
     std::tuple<v8::Global<v8::Function>, v8::Global<v8::Context>>;
 
+using WeakGlobalPair = std::tuple<v8::Global<v8::Value>, v8::Global<v8::Value>>;
+
+struct WeakGlobalPairNode {
+  WeakGlobalPairNode(WeakGlobalPair pair_);
+  ~WeakGlobalPairNode();
+  WeakGlobalPair pair;
+  struct WeakGlobalPairNode* next = nullptr;
+};
+
 class RenderFramePersistenceStore final : public content::RenderFrameObserver {
  public:
   explicit RenderFramePersistenceStore(content::RenderFrame* render_frame);
@@ -33,12 +42,7 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
   size_t take_func_id() { return next_func_id_++; }
 
   std::map<size_t, FunctionContextPair>& functions() { return functions_; }
-  std::map<int, v8::Global<v8::Value>>* main_world_proxy_map() {
-    return &main_world_proxy_map_;
-  }
-  std::map<int, v8::Global<v8::Value>>* isolated_world_proxy_map() {
-    return &isolated_world_proxy_map_;
-  }
+  std::map<int, WeakGlobalPairNode*>* proxy_map() { return &proxy_map_; }
 
   v8::Local<v8::Context> isolated_world_context() {
     CHECK(render_frame());
@@ -60,9 +64,6 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
   v8::MaybeLocal<v8::Value> GetCachedProxiedObject(v8::Local<v8::Value> from);
 
  private:
-  std::map<int, v8::Global<v8::Value>>* GetProxyMapForObject(
-      v8::Local<v8::Object> obj);
-
   // func_id ==> { function, owning_context }
   std::map<size_t, FunctionContextPair> functions_;
   size_t next_func_id_ = 1;
@@ -70,10 +71,8 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
   // proxy maps are weak globals, i.e. these are not retained beyond
   // there normal JS lifetime.  You must check IsEmpty()
 
-  // object_identity (main world) ==> proxy_value (isolated world)
-  std::map<int, v8::Global<v8::Value>> main_world_proxy_map_;
-  // object_identity (isolated world) ==> proxy_value (main world)
-  std::map<int, v8::Global<v8::Value>> isolated_world_proxy_map_;
+  // object_identity ==> [from_value, proxy_value]
+  std::map<int, WeakGlobalPairNode*> proxy_map_;
 };
 
 }  // namespace context_bridge

@@ -77,8 +77,9 @@ describe('contextBridge', () => {
     
       const getGCInfo = async (): Promise<{
         functionCount: number;
-        mainWorlLiveObjectCount: number;
-        mainWorldObjectCount: number;
+        objectCount: number;
+        liveFromValues: number;
+        liveProxyValues: number;
       }> => {
         const [,info] = await emittedOnce(ipcMain, 'gc-info', () => w.webContents.send('get-gc-info'))
         return info
@@ -390,23 +391,35 @@ describe('contextBridge', () => {
               getObj: () => myObj
             })
           })
+          await callWithBindings(async (root: any) => {
+            root.GCRunner.run()
+          })
+          // Initial Setup
           let info = await getGCInfo();
-          expect(info.mainWorlLiveObjectCount).to.equal(0)
-          expect(info.mainWorldObjectCount).to.equal(0)
+          expect(info.liveFromValues).to.equal(3)
+          expect(info.liveProxyValues).to.equal(5)
+          expect(info.objectCount).to.equal(10)
+
+          // Create Reference
           await callWithBindings(async (root: any) => {
             root.x = { value: 123 }
             root.example.setObj(root.x)
+            root.GCRunner.run()
           })
           info = await getGCInfo();
-          expect(info.mainWorlLiveObjectCount).to.equal(1)
-          expect(info.mainWorldObjectCount).to.equal(1)
+          expect(info.liveFromValues).to.equal(4)
+          expect(info.liveProxyValues).to.equal(6)
+          expect(info.objectCount).to.equal(12)
+
+          // Release Reference
           await callWithBindings(async (root: any) => {
             root.example.setObj(null)
             root.GCRunner.run()
           })
           info = await getGCInfo();
-          expect(info.mainWorlLiveObjectCount).to.equal(0)
-          expect(info.mainWorldObjectCount).to.equal(1)
+          expect(info.liveFromValues).to.equal(4)
+          expect(info.liveProxyValues).to.equal(5)
+          expect(info.objectCount).to.equal(12)
         })
       }
     
