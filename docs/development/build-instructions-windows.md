@@ -12,8 +12,10 @@ Follow the guidelines below for building Electron on Windows.
   * If your Visual Studio is installed in a directory other than the default, you'll need to
   set a few environment variables to point the toolchains to your installation path.
     * `vs2019_install = DRIVE:\path\to\Microsoft Visual Studio\2019\Community`
-       (replace `2019` and `Community` with your installed versions)
+      * replace `2019` and `Community` with your installed versions.
+      * replace `DRIVE:` with the drive that Visual Studio is on. Often, this will be `C:`.
     * `WINDOWSSDKDIR = DRIVE:\path\to\Windows Kits\10`
+          * replace `DRIVE:` with the drive that Windows Kits is on. Often, this will be `C:`.
 * [Python 2.7.10 or higher](http://www.python.org/download/releases/2.7/)
   * Contrary to the `depot_tools` setup instructions linked below, you will need
   to use your locally installed Python with at least version 2.7.10 (with
