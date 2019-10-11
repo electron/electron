@@ -27,11 +27,12 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
     size_t func_id,
     mate::Arguments* args);
 
-v8::Local<v8::Object> CreateProxyForAPI(
+v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Object>& api_object,
     const v8::Local<v8::Context>& source_context,
     const v8::Local<v8::Context>& target_context,
-    context_bridge::RenderFramePersistenceStore* store);
+    context_bridge::RenderFramePersistenceStore* store,
+    int recursion_depth);
 
 }  // namespace api
 

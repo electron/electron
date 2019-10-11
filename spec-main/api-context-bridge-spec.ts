@@ -460,6 +460,40 @@ describe('contextBridge', () => {
         })
         expect(result).to.equal('final value')
       })
+
+      it('should throw an error when recursion depth is exceeded', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            doThing: (a: any) => console.log(a)
+          })
+        })
+        let threw = await callWithBindings((root: any) => {
+          try {
+            let a: any = []
+            for (let i = 0; i < 9999; i++) {
+              a = [ a ]
+            }
+            root.example.doThing(a)
+            return false
+          } catch {
+            return true
+          }
+        })
+        expect(threw).to.equal(false)
+        threw = await callWithBindings((root: any) => {
+          try {
+            let a: any = []
+            for (let i = 0; i < 10000; i++) {
+              a = [ a ]
+            }
+            root.example.doThing(a)
+            return false
+          } catch {
+            return true
+          }
+        })
+        expect(threw).to.equal(true)
+      })
     
       it('should not leak prototypes', async () => {
         await makeBindingWindow(() => {

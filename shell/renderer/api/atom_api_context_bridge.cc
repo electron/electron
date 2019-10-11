@@ -21,6 +21,8 @@ namespace api {
 
 namespace {
 
+static int kMaxRecursion = 10000;
+
 content::RenderFrame* GetRenderFrame(const v8::Local<v8::Object>& value) {
   v8::Local<v8::Context> context = value->CreationContext();
   if (context.IsEmpty())
@@ -132,15 +134,25 @@ v8::Local<v8::Value> BindRepeatingFunctionToV8(
                                                       false);
 }
 
-v8::Local<v8::Value> PassValueToOtherContext(
+v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Context> source,
     v8::Local<v8::Context> destination,
     v8::Local<v8::Value> value,
-    context_bridge::RenderFramePersistenceStore* store) {
+    context_bridge::RenderFramePersistenceStore* store,
+    int recursion_depth) {
+  if (recursion_depth >= kMaxRecursion) {
+    v8::Context::Scope source_scope(source);
+    source->GetIsolate()->ThrowException(
+        v8::Exception::TypeError(mate::StringToV8(
+            source->GetIsolate(),
+            "Electron contextBridge recursion depth exceeded.  Nested objects "
+            "deeper than 10000 are not supported.")));
+    return v8::MaybeLocal<v8::Value>();
+  }
   // Check Cache
   auto cached_value = store->GetCachedProxiedObject(value);
   if (!cached_value.IsEmpty()) {
-    return cached_value.ToLocalChecked();
+    return cached_value;
   }
 
   // Proxy functions and monitor the lifetime in the new context to release
@@ -161,7 +173,7 @@ v8::Local<v8::Value> PassValueToOtherContext(
                                 v8::Local<v8::Object>::Cast(proxy_func), store,
                                 func_id);
     store->CacheProxiedObject(value, proxy_func);
-    return proxy_func;
+    return v8::MaybeLocal<v8::Value>(proxy_func);
   }
 
   // Proxy promises as they have a safe and guaranteed memory lifecycle
@@ -178,8 +190,10 @@ v8::Local<v8::Value> PassValueToOtherContext(
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
            context_bridge::RenderFramePersistenceStore* store,
            v8::Local<v8::Value> result) {
-          promise->Resolve(PassValueToOtherContext(
-              source.Get(isolate), destination.Get(isolate), result, store));
+          auto val = PassValueToOtherContext(
+              source.Get(isolate), destination.Get(isolate), result, store, 0);
+          if (!val.IsEmpty())
+            promise->Resolve(val.ToLocalChecked());
           delete promise;
         },
         promise, destination->GetIsolate(),
@@ -190,8 +204,10 @@ v8::Local<v8::Value> PassValueToOtherContext(
            v8::Global<v8::Context> source, v8::Global<v8::Context> destination,
            context_bridge::RenderFramePersistenceStore* store,
            v8::Local<v8::Value> result) {
-          promise->Reject(PassValueToOtherContext(
-              source.Get(isolate), destination.Get(isolate), result, store));
+          auto val = PassValueToOtherContext(
+              source.Get(isolate), destination.Get(isolate), result, store, 0);
+          if (!val.IsEmpty())
+            promise->Reject(val.ToLocalChecked());
           delete promise;
         },
         promise, destination->GetIsolate(),
@@ -206,15 +222,15 @@ v8::Local<v8::Value> PassValueToOtherContext(
             mate::ConvertToV8(destination->GetIsolate(), catch_cb))));
 
     store->CacheProxiedObject(value, handle);
-    return handle;
+    return v8::MaybeLocal<v8::Value>(handle);
   }
 
   // Errors aren't serializable currently, we need to pull the message out and
   // re-construct in the destination context
   if (value->IsNativeError()) {
     v8::Context::Scope destination_context_scope(destination);
-    return v8::Exception::Error(
-        v8::Exception::CreateMessage(destination->GetIsolate(), value)->Get());
+    return v8::MaybeLocal<v8::Value>(v8::Exception::Error(
+        v8::Exception::CreateMessage(destination->GetIsolate(), value)->Get()));
   }
 
   // Manually go through the array and pass each value individually into a new
@@ -227,20 +243,30 @@ v8::Local<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Array> cloned_arr =
         v8::Array::New(destination->GetIsolate(), length);
     for (size_t i = 0; i < length; i++) {
-      ignore_result(cloned_arr->Set(
-          destination, static_cast<int>(i),
-          PassValueToOtherContext(source, destination,
-                                  arr->Get(source, i).ToLocalChecked(),
-                                  store)));
+      auto value_for_array = PassValueToOtherContext(
+          source, destination, arr->Get(source, i).ToLocalChecked(), store,
+          recursion_depth + 1);
+      if (value_for_array.IsEmpty())
+        return v8::MaybeLocal<v8::Value>();
+
+      if (!mate::internal::IsTrue(
+              cloned_arr->Set(destination, static_cast<int>(i),
+                              value_for_array.ToLocalChecked()))) {
+        return v8::MaybeLocal<v8::Value>();
+      };
     }
     store->CacheProxiedObject(value, cloned_arr);
-    return cloned_arr;
+    return v8::MaybeLocal<v8::Value>(cloned_arr);
   }
 
   // Proxy all objects
   if (IsPlainObject(value)) {
     auto object_value = v8::Local<v8::Object>::Cast(value);
-    return CreateProxyForAPI(object_value, source, destination, store);
+    auto passed_value = CreateProxyForAPI(object_value, source, destination,
+                                          store, recursion_depth + 1);
+    if (passed_value.IsEmpty())
+      return v8::MaybeLocal<v8::Value>();
+    return v8::MaybeLocal<v8::Value>(passed_value.ToLocalChecked());
   }
 
   // Serializable objects
@@ -250,11 +276,12 @@ v8::Local<v8::Value> PassValueToOtherContext(
     // TODO(MarshallOfSound): What do we do if serialization fails? Throw an
     // error here?
     if (!mate::ConvertFromV8(source->GetIsolate(), value, &ret))
-      return v8::Null(destination->GetIsolate());
+      return v8::MaybeLocal<v8::Value>();
   }
 
   v8::Context::Scope destination_context_scope(destination);
-  return mate::ConvertToV8(destination->GetIsolate(), ret);
+  return v8::MaybeLocal<v8::Value>(
+      mate::ConvertToV8(destination->GetIsolate(), ret));
 }
 
 v8::Local<v8::Value> ProxyFunctionWrapper(
@@ -276,8 +303,11 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
   args->GetRemaining(&original_args);
 
   for (auto value : original_args) {
-    proxied_args.push_back(PassValueToOtherContext(
-        calling_context, func_owning_context, value, store));
+    auto arg = PassValueToOtherContext(calling_context, func_owning_context,
+                                       value, store, 0);
+    if (arg.IsEmpty())
+      return v8::Undefined(args->isolate());
+    proxied_args.push_back(arg.ToLocalChecked());
   }
 
   v8::MaybeLocal<v8::Value> maybe_return_value;
@@ -310,24 +340,27 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
   if (maybe_return_value.IsEmpty())
     return v8::Undefined(args->isolate());
 
-  auto return_value = maybe_return_value.ToLocalChecked();
-
-  return PassValueToOtherContext(func_owning_context, calling_context,
-                                 return_value, store);
+  auto ret =
+      PassValueToOtherContext(func_owning_context, calling_context,
+                              maybe_return_value.ToLocalChecked(), store, 0);
+  if (ret.IsEmpty())
+    return v8::Undefined(args->isolate());
+  return ret.ToLocalChecked();
 }
 
-v8::Local<v8::Object> CreateProxyForAPI(
+v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Object>& api_object,
     const v8::Local<v8::Context>& source_context,
     const v8::Local<v8::Context>& target_context,
-    context_bridge::RenderFramePersistenceStore* store) {
+    context_bridge::RenderFramePersistenceStore* store,
+    int recursion_depth) {
   mate::Dictionary api(source_context->GetIsolate(), api_object);
   mate::Dictionary proxy =
       mate::Dictionary::CreateEmpty(target_context->GetIsolate());
   store->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
   auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(source_context);
   if (maybe_keys.IsEmpty())
-    return proxy.GetHandle();
+    return v8::MaybeLocal<v8::Object>(proxy.GetHandle());
   auto keys = maybe_keys.ToLocalChecked();
 
   v8::Context::Scope target_context_scope(target_context);
@@ -348,8 +381,11 @@ v8::Local<v8::Object> CreateProxyForAPI(
     if (!api.Get(key_str, &value))
       continue;
 
-    proxy.Set(key_str, PassValueToOtherContext(source_context, target_context,
-                                               value, store));
+    auto passed_value = PassValueToOtherContext(
+        source_context, target_context, value, store, recursion_depth + 1);
+    if (passed_value.IsEmpty())
+      return v8::MaybeLocal<v8::Object>();
+    proxy.Set(key_str, passed_value.ToLocalChecked());
   }
 
   return proxy.GetHandle();
@@ -404,8 +440,11 @@ void ExposeAPIInMainWorld(const std::string& key,
       frame->WorldScriptContext(args->isolate(), World::ISOLATED_WORLD);
 
   v8::Context::Scope main_context_scope(main_context);
-  v8::Local<v8::Object> proxy =
-      CreateProxyForAPI(api_object, isolated_context, main_context, store);
+  v8::MaybeLocal<v8::Object> maybe_proxy =
+      CreateProxyForAPI(api_object, isolated_context, main_context, store, 0);
+  if (maybe_proxy.IsEmpty())
+    return;
+  auto proxy = maybe_proxy.ToLocalChecked();
   if (!DeepFreeze(proxy, main_context))
     return;
 
