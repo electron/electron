@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "native_mate/object_template_builder_deprecated.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/native_mate_converters/blink_converter.h"
 
 namespace mate {
 
@@ -17,7 +17,7 @@ Event::Event(v8::Isolate* isolate) {
 
 Event::~Event() = default;
 
-void Event::SetCallback(base::Optional<MessageSyncCallback> callback) {
+void Event::SetCallback(base::Optional<InvokeCallback> callback) {
   DCHECK(!callback_);
   callback_ = std::move(callback);
 }
@@ -29,11 +29,16 @@ void Event::PreventDefault(v8::Isolate* isolate) {
       .Check();
 }
 
-bool Event::SendReply(const base::Value& result) {
+bool Event::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> result) {
   if (!callback_)
     return false;
 
-  std::move(*callback_).Run(result.Clone());
+  blink::CloneableMessage message;
+  if (!ConvertFromV8(isolate, result, &message)) {
+    return false;
+  }
+
+  std::move(*callback_).Run(std::move(message));
   callback_.reset();
   return true;
 }

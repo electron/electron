@@ -6,6 +6,7 @@
 #define SHELL_COMMON_NATIVE_MATE_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "native_mate/converter.h"
+#include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "third_party/blink/public/platform/web_cache.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/web/web_context_menu_data.h"
@@ -129,6 +130,15 @@ struct Converter<network::mojom::ReferrerPolicy> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      network::mojom::ReferrerPolicy* out);
+};
+
+template <>
+struct Converter<blink::CloneableMessage> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::CloneableMessage& in);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::CloneableMessage* out);
 };
 
 v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags);

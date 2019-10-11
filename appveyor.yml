@@ -83,10 +83,12 @@ build_script:
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
   - ninja -C out/Default electron:electron_dist_zip
+  - ninja -C out/Default shell_browser_ui_unittests
   - ninja -C out/Default electron:electron_mksnapshot_zip
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
   - appveyor PushArtifact out/Default/dist.zip
+  - appveyor PushArtifact out/Default/shell_browser_ui_unittests.exe
   - appveyor PushArtifact out/Default/chromedriver.zip
   - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
   - 7z a node_headers.zip out\Default\gen\node_headers

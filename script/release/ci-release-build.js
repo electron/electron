@@ -86,13 +86,11 @@ async function circleCIcall (targetBranch, job, options) {
       return
     }
     console.log(`CircleCI release build workflow running at https://circleci.com/workflow-run/${workflowId} for ${job}.`)
-    const jobInfoUrl = `https://circleci.com/api/v2/workflow/${workflowId}/jobs`
-    const jobInfo = await circleCIRequest(jobInfoUrl, 'GET')
-    if (!jobInfo.items || jobInfo.items.length !== 1) {
-      console.log('Error retrieving job for workflow, response was:', jobInfo)
+    const jobNumber = await getCircleCIJobNumber(workflowId)
+    if (jobNumber === -1) {
       return
     }
-    const jobUrl = `https://circleci.com/gh/electron/electron/${jobInfo.items[0].job_number}`
+    const jobUrl = `https://circleci.com/gh/electron/electron/${jobNumber}`
     console.log(`CircleCI release build request for ${job} successful.  Check ${jobUrl} for status.`)
   } catch (err) {
     console.log('Error calling CircleCI: ', err)
@@ -113,6 +111,37 @@ async function getCircleCIWorkflowId (pipelineId) {
       }
       case 'error': {
         console.log('Error retrieving workflows, response was:', pipelineInfo)
+        return -1
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, 5000))
+  }
+  return -1
+}
+
+async function getCircleCIJobNumber (workflowId) {
+  const jobInfoUrl = `https://circleci.com/api/v2/workflow/${workflowId}/jobs`
+  for (let i = 0; i < 5; i++) {
+    const jobInfo = await circleCIRequest(jobInfoUrl, 'GET')
+    if (!jobInfo.items) {
+      continue
+    }
+    if (jobInfo.items.length !== 1) {
+      console.log('Unxpected number of jobs, response was:', jobInfo)
+      return -1
+    }
+
+    switch (jobInfo.items[0].status) {
+      case 'not_running':
+      case 'queued':
+      case 'running': {
+        if (jobInfo.items[0].job_number && !isNaN(jobInfo.items[0].job_number)) {
+          return jobInfo.items[0].job_number
+        }
+        break
+      }
+      case 'error': {
+        console.log('Error retrieving jobs, response was:', jobInfo)
         return -1
       }
     }

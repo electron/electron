@@ -363,6 +363,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     button.bezelColor = nil;
   }
 
+  std::string accessibilityLabel;
+  settings.Get("accessibilityLabel", &accessibilityLabel);
+  button.accessibilityLabel = base::SysUTF8ToNSString(accessibilityLabel);
+
   std::string label;
   settings.Get("label", &label);
   button.title = base::SysUTF8ToNSString(label);
@@ -404,6 +408,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::string label;
   settings.Get("label", &label);
   text_field.stringValue = base::SysUTF8ToNSString(label);
+
+  std::string accessibilityLabel;
+  settings.Get("accessibilityLabel", &accessibilityLabel);
+  text_field.accessibilityLabel = base::SysUTF8ToNSString(accessibilityLabel);
 
   std::string textColor;
   if (settings.Get("textColor", &textColor) && !textColor.empty()) {

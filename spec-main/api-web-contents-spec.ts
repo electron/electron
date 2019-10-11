@@ -199,6 +199,7 @@ describe('webContents module', () => {
             var iframe = document.createElement('iframe')
             iframe.src = '${serverUrl}/slow'
             document.body.appendChild(iframe)
+            null // don't return the iframe
           `).then(() => {
             w.webContents.executeJavaScript('console.log(\'hello\')').then(() => {
               done()
@@ -211,15 +212,6 @@ describe('webContents module', () => {
       it('executes after page load', (done) => {
         w.webContents.executeJavaScript(`(() => "test")()`).then(result => {
           expect(result).to.equal("test")
-          done()
-        })
-        w.loadURL(serverUrl)
-      })
-
-      it('works with result objects that have DOM class prototypes', (done) => {
-        w.webContents.executeJavaScript('document.location').then(result => {
-          expect(result.origin).to.equal(serverUrl)
-          expect(result.protocol).to.equal('http:')
           done()
         })
         w.loadURL(serverUrl)
@@ -1119,7 +1111,7 @@ describe('webContents module', () => {
       it(`should not crash when invoked synchronously inside ${e.name} handler`, async () => {
         const contents = (webContents as any).create() as WebContents
         const originalEmit = contents.emit.bind(contents)
-        contents.emit = (...args) => { console.log(args); return originalEmit(...args) }
+        contents.emit = (...args) => { return originalEmit(...args) }
         contents.once(e.name as any, () => (contents as any).destroy())
         const destroyed = emittedOnce(contents, 'destroyed')
         contents.loadURL(serverUrl + e.url)

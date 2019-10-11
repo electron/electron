@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+  </head>
+  <body>
+    <div>
+      <div>
+        <h1>Clipboard copy</h1>
+        <i>Supports: Win, macOS, Linux <span>|</span> Process: Both</i>
+        <div>
+          <div>
+            <button id="copy-to">Copy</button>
+            <input id="copy-to-input" aria-label="Click copy" placeholder="Click copy."></input>
+          </div>
+          <p>In this example we copy a phrase to the clipboard. After clicking 'Copy' use the text area to paste (CMD + V or CTRL + V) the phrase from the clipboard.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script>
+    require('./renderer.js')
+  </script>
+</html>

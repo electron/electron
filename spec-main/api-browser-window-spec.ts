@@ -1588,7 +1588,7 @@ describe('BrowserWindow module', () => {
         })
         w.loadFile(path.join(fixtures, 'api', 'preload.html'))
         const [, test] = await emittedOnce(ipcMain, 'answer')
-        expect(test.toString()).to.eql('buffer')
+        expect(test).to.eql(Buffer.from('buffer'))
       })
       it('has synchronous access to all eventual window APIs', async () => {
         const preload = path.join(fixtures, 'module', 'access-blink-apis.js')
@@ -1630,13 +1630,7 @@ describe('BrowserWindow module', () => {
 
       const generateSpecs = (description: string, sandbox: boolean) => {
         describe(description, () => {
-          it('loads the script before other scripts in window including normal preloads', function (done) {
-            ipcMain.once('vars', function (event, preload1, preload2, preload3) {
-              expect(preload1).to.equal('preload-1')
-              expect(preload2).to.equal('preload-1-2')
-              expect(preload3).to.be.null('preload 3')
-              done()
-            })
+          it('loads the script before other scripts in window including normal preloads', async () => {
             const w = new BrowserWindow({
               show: false,
               webPreferences: {
@@ -1645,6 +1639,10 @@ describe('BrowserWindow module', () => {
               }
             })
             w.loadURL('about:blank')
+            const [, preload1, preload2, preload3] = await emittedOnce(ipcMain, 'vars')
+            expect(preload1).to.equal('preload-1')
+            expect(preload2).to.equal('preload-1-2')
+            expect(preload3).to.be.undefined('preload 3')
           })
         })
       }
@@ -2212,7 +2210,7 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-iframe.html'))
       });
       ifit(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('loads native addons correctly after reload', async () => {
-        w.loadFile(path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
+        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'native-window-open-native-addon.html'))
         {
           const [, content] = await emittedOnce(ipcMain, 'answer')
           expect(content).to.equal('function')

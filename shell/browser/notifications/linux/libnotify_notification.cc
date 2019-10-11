@@ -114,10 +114,13 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
     GdkPixbuf* pixbuf = libgtkui::GdkPixbufFromSkBitmap(options.icon);
     libnotify_loader_.notify_notification_set_image_from_pixbuf(notification_,
                                                                 pixbuf);
-    libnotify_loader_.notify_notification_set_timeout(notification_,
-                                                      NOTIFY_EXPIRES_DEFAULT);
     g_object_unref(pixbuf);
   }
+
+  // Set the timeout duration for the notification
+  bool neverTimeout = options.timeout_type == base::ASCIIToUTF16("never");
+  int timeout = (neverTimeout) ? NOTIFY_EXPIRES_NEVER : NOTIFY_EXPIRES_DEFAULT;
+  libnotify_loader_.notify_notification_set_timeout(notification_, timeout);
 
   if (!options.tag.empty()) {
     GQuark id = g_quark_from_string(options.tag.c_str());

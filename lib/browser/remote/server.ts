@@ -2,12 +2,10 @@
 
 import * as electron from 'electron'
 import { EventEmitter } from 'events'
-import { isBuffer, bufferToMeta, BufferMeta, metaToBuffer } from '@electron/internal/common/remote/buffer-utils'
 import objectsRegistry from './objects-registry'
 import { ipcMainInternal } from '../ipc-main-internal'
 import * as guestViewManager from '@electron/internal/browser/guest-view-manager'
-import * as errorUtils from '@electron/internal/common/error-utils'
-import { isPromise } from '@electron/internal/common/remote/is-promise'
+import { isPromise, isSerializableObject } from '@electron/internal/common/remote/type-utils'
 
 const v8Util = process.electronBinding('v8_util')
 const eventBinding = process.electronBinding('event')
@@ -105,16 +103,14 @@ type MetaType = {
   value: any,
 } | {
   type: 'buffer',
-  value: BufferMeta,
+  value: Uint8Array,
 } | {
   type: 'array',
   members: MetaType[]
 } | {
   type: 'error',
+  value: Error,
   members: ObjectMember[]
-} | {
-  type: 'date',
-  value: number
 } | {
   type: 'promise',
   then: MetaType
@@ -126,16 +122,14 @@ const valueToMeta = function (sender: electron.WebContents, contextId: string, v
   let type: MetaType['type'] = typeof value
   if (type === 'object') {
     // Recognize certain types of objects.
-    if (value === null) {
-      type = 'value'
-    } else if (isBuffer(value)) {
+    if (value instanceof Buffer) {
       type = 'buffer'
     } else if (Array.isArray(value)) {
       type = 'array'
     } else if (value instanceof Error) {
       type = 'error'
-    } else if (value instanceof Date) {
-      type = 'date'
+    } else if (isSerializableObject(value)) {
+      type = 'value'
     } else if (isPromise(value)) {
       type = 'promise'
     } else if (hasProp.call(value, 'callee') && value.length != null) {
@@ -165,7 +159,7 @@ const valueToMeta = function (sender: electron.WebContents, contextId: string, v
       proto: getObjectPrototype(value)
     }
   } else if (type === 'buffer') {
-    return { type, value: bufferToMeta(value) }
+    return { type, value }
   } else if (type === 'promise') {
     // Add default handler to prevent unhandled rejections in main process
     // Instead they should appear in the renderer process
@@ -178,39 +172,19 @@ const valueToMeta = function (sender: electron.WebContents, contextId: string, v
       })
     }
   } else if (type === 'error') {
-    const members = plainObjectToMeta(value)
-
-    // Error.name is not part of own properties.
-    members.push({
-      name: 'name',
-      value: value.name
-    })
-    return { type, members }
-  } else if (type === 'date') {
-    return { type, value: value.getTime() }
+    return {
+      type,
+      value,
+      members: Object.keys(value).map(name => ({
+        name,
+        value: valueToMeta(sender, contextId, value[name])
+      }))
+    }
   } else {
     return {
       type: 'value',
       value
     }
-  }
-}
-
-// Convert object to meta by value.
-const plainObjectToMeta = function (obj: any): ObjectMember[] {
-  return Object.getOwnPropertyNames(obj).map(function (name) {
-    return {
-      name: name,
-      value: obj[name]
-    }
-  })
-}
-
-// Convert Error into meta data.
-const exceptionToMeta = function (error: Error) {
-  return {
-    type: 'exception',
-    value: errorUtils.serialize(error)
   }
 }
 
@@ -253,10 +227,7 @@ type MetaTypeFromRenderer = {
   value: MetaTypeFromRenderer[]
 } | {
   type: 'buffer',
-  value: BufferMeta
-} | {
-  type: 'date',
-  value: number
+  value: Uint8Array
 } | {
   type: 'promise',
   then: MetaTypeFromRenderer
@@ -285,9 +256,7 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
       case 'array':
         return unwrapArgs(sender, frameId, contextId, meta.value)
       case 'buffer':
-        return metaToBuffer(meta.value)
-      case 'date':
-        return new Date(meta.value)
+        return Buffer.from(meta.value.buffer, meta.value.byteOffset, meta.value.byteLength)
       case 'promise':
         return Promise.resolve({
           then: metaToValue(meta.then)
@@ -365,7 +334,10 @@ const handleRemoteCommand = function (channel: string, handler: (event: Electron
     try {
       returnValue = handler(event, contextId, ...args)
     } catch (error) {
-      returnValue = exceptionToMeta(error)
+      returnValue = {
+        type: 'exception',
+        value: valueToMeta(event.sender, contextId, error)
+      }
     }
 
     if (returnValue !== undefined) {
@@ -383,6 +355,12 @@ const emitCustomEvent = function (contents: electron.WebContents, eventName: str
   return event
 }
 
+const logStack = function (contents: electron.WebContents, code: string, stack: string | undefined) {
+  if (stack) {
+    console.warn(`WebContents (${contents.id}): ${code}`, stack)
+  }
+}
+
 handleRemoteCommand('ELECTRON_BROWSER_WRONG_CONTEXT_ERROR', function (event, contextId, passedContextId, id) {
   const objectId = [passedContextId, id]
   if (!rendererFunctions.has(objectId)) {
@@ -392,7 +370,8 @@ handleRemoteCommand('ELECTRON_BROWSER_WRONG_CONTEXT_ERROR', function (event, con
   removeRemoteListenersAndLogWarning(event.sender, rendererFunctions.get(objectId))
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, moduleName) {
+handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, moduleName, stack) {
+  logStack(event.sender, `remote.require('${moduleName}')`, stack)
   const customEvent = emitCustomEvent(event.sender, 'remote-require', moduleName)
 
   if (customEvent.returnValue === undefined) {
@@ -406,7 +385,8 @@ handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, modu
   return valueToMeta(event.sender, contextId, customEvent.returnValue)
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_GET_BUILTIN', function (event, contextId, moduleName) {
+handleRemoteCommand('ELECTRON_BROWSER_GET_BUILTIN', function (event, contextId, moduleName, stack) {
+  logStack(event.sender, `remote.getBuiltin('${moduleName}')`, stack)
   const customEvent = emitCustomEvent(event.sender, 'remote-get-builtin', moduleName)
 
   if (customEvent.returnValue === undefined) {
@@ -420,7 +400,8 @@ handleRemoteCommand('ELECTRON_BROWSER_GET_BUILTIN', function (event, contextId, 
   return valueToMeta(event.sender, contextId, customEvent.returnValue)
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_GLOBAL', function (event, contextId, globalName) {
+handleRemoteCommand('ELECTRON_BROWSER_GLOBAL', function (event, contextId, globalName, stack) {
+  logStack(event.sender, `remote.getGlobal('${globalName}')`, stack)
   const customEvent = emitCustomEvent(event.sender, 'remote-get-global', globalName)
 
   if (customEvent.returnValue === undefined) {
@@ -434,7 +415,8 @@ handleRemoteCommand('ELECTRON_BROWSER_GLOBAL', function (event, contextId, globa
   return valueToMeta(event.sender, contextId, customEvent.returnValue)
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_CURRENT_WINDOW', function (event, contextId) {
+handleRemoteCommand('ELECTRON_BROWSER_CURRENT_WINDOW', function (event, contextId, stack) {
+  logStack(event.sender, 'remote.getCurrentWindow()', stack)
   const customEvent = emitCustomEvent(event.sender, 'remote-get-current-window')
 
   if (customEvent.returnValue === undefined) {
@@ -448,7 +430,8 @@ handleRemoteCommand('ELECTRON_BROWSER_CURRENT_WINDOW', function (event, contextI
   return valueToMeta(event.sender, contextId, customEvent.returnValue)
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_CURRENT_WEB_CONTENTS', function (event, contextId) {
+handleRemoteCommand('ELECTRON_BROWSER_CURRENT_WEB_CONTENTS', function (event, contextId, stack) {
+  logStack(event.sender, 'remote.getCurrentWebContents()', stack)
   const customEvent = emitCustomEvent(event.sender, 'remote-get-current-web-contents')
 
   if (customEvent.returnValue === undefined) {
@@ -549,14 +532,15 @@ handleRemoteCommand('ELECTRON_BROWSER_CONTEXT_RELEASE', (event, contextId) => {
   return null
 })
 
-handleRemoteCommand('ELECTRON_BROWSER_GUEST_WEB_CONTENTS', function (event, contextId, guestInstanceId) {
+handleRemoteCommand('ELECTRON_BROWSER_GUEST_WEB_CONTENTS', function (event, contextId, guestInstanceId, stack) {
+  logStack(event.sender, 'remote.getGuestWebContents()', stack)
   const guest = guestViewManager.getGuestForWebContents(guestInstanceId, event.sender)
 
   const customEvent = emitCustomEvent(event.sender, 'remote-get-guest-web-contents', guest)
 
   if (customEvent.returnValue === undefined) {
     if (customEvent.defaultPrevented) {
-      throw new Error(`Blocked remote.getGuestForWebContents()`)
+      throw new Error(`Blocked remote.getGuestWebContents()`)
     } else {
       customEvent.returnValue = guest
     }

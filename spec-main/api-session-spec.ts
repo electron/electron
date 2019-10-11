@@ -83,6 +83,16 @@ describe('session module', () => {
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true)
     })
 
+    it('gets cookies without url', async () => {
+      const { cookies } = session.defaultSession
+      const name = '1'
+      const value = '1'
+
+      await cookies.set({ url, name, value, expirationDate: (+new Date) / 1000 + 120 })
+      const cs = await cookies.get({ domain: '127.0.0.1' })
+      expect(cs.some(c => c.name === name && c.value === value)).to.equal(true)
+    })
+
     it('yields an error when setting a cookie with missing required fields', async () => {
       const { cookies } = session.defaultSession
       const name = '1'
