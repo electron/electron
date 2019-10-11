@@ -5,12 +5,7 @@ const fs = require('fs')
 const path = require('path')
 const temp = require('temp').track()
 const util = require('util')
-const { closeWindow } = require('./window-helpers')
-
 const nativeImage = require('electron').nativeImage
-const remote = require('electron').remote
-
-const { ipcMain, BrowserWindow } = remote
 
 const features = process.electronBinding('features')
 
@@ -1353,12 +1348,6 @@ describe('asar package', function () {
   })
 
   describe('asar protocol', function () {
-    let w = null
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
-    })
-
     it('can request a file in package', function (done) {
       const p = path.resolve(asarDir, 'a.asar', 'file1')
       $.get('file://' + p, function (data) {
@@ -1398,75 +1387,6 @@ describe('asar package', function () {
         error: function (err) {
           expect(err.status).to.equal(404)
           done()
-        }
-      })
-    })
-
-    it('sets __dirname correctly', function (done) {
-      after(function () {
-        ipcMain.removeAllListeners('dirname')
-      })
-
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      })
-      const p = path.resolve(asarDir, 'web.asar', 'index.html')
-      ipcMain.once('dirname', function (event, dirname) {
-        expect(dirname).to.equal(path.dirname(p))
-        done()
-      })
-      w.loadFile(p)
-    })
-
-    it('loads script tag in html', function (done) {
-      after(function () {
-        ipcMain.removeAllListeners('ping')
-      })
-
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      })
-      const p = path.resolve(asarDir, 'script.asar', 'index.html')
-      w.loadFile(p)
-      ipcMain.once('ping', function (event, message) {
-        expect(message).to.equal('pong')
-        done()
-      })
-    })
-
-    it('loads video tag in html', function (done) {
-      this.timeout(60000)
-
-      after(function () {
-        ipcMain.removeAllListeners('asar-video')
-      })
-
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      })
-      const p = path.resolve(asarDir, 'video.asar', 'index.html')
-      w.loadFile(p)
-      ipcMain.on('asar-video', function (event, message, error) {
-        if (message === 'ended') {
-          expect(error).to.be.null()
-          done()
-        } else if (message === 'error') {
-          done(error)
         }
       })
     })
