@@ -195,53 +195,6 @@ describe('chromium feature', () => {
     })
   })
 
-  describe('window.opener access from BrowserWindow', () => {
-    const scheme = 'other'
-    const url = `${scheme}://${fixtures}/pages/window-opener-location.html`
-    let w = null
-
-    before((done) => {
-      protocol.registerFileProtocol(scheme, (request, callback) => {
-        callback(`${fixtures}/pages/window-opener-location.html`)
-      }, (error) => done(error))
-    })
-
-    after(() => {
-      protocol.unregisterProtocol(scheme)
-    })
-
-    afterEach(() => {
-      w.close()
-    })
-
-    it('fails when origin of current window does not match opener', (done) => {
-      listener = (event) => {
-        expect(event.data).to.equal(null)
-        done()
-      }
-      window.addEventListener('message', listener)
-      w = window.open(url, '', 'show=no,nodeIntegration=no')
-    })
-
-    it('works when origin matches', (done) => {
-      listener = (event) => {
-        expect(event.data).to.equal(location.href)
-        done()
-      }
-      window.addEventListener('message', listener)
-      w = window.open(`file://${fixtures}/pages/window-opener-location.html`, '', 'show=no,nodeIntegration=no')
-    })
-
-    it('works when origin does not match opener but has node integration', (done) => {
-      listener = (event) => {
-        expect(event.data).to.equal(location.href)
-        done()
-      }
-      window.addEventListener('message', listener)
-      w = window.open(url, '', 'show=no,nodeIntegration=yes')
-    })
-  })
-
   describe('window.opener access from <webview>', () => {
     const scheme = 'other'
     const srcPath = `${fixtures}/pages/webview-opener-postMessage.html`
