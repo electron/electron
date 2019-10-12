@@ -674,6 +674,9 @@ describe('chromium features', () => {
         callback(`${fixturesPath}/pages/window-opener-location.html`)
       })
     })
+    after(async () => {
+      await promisify(protocol.unregisterProtocol)(scheme)
+    })
     afterEach(closeAllWindows)
 
     for (const {parent, child, nodeIntegration, nativeWindowOpen, openerAccessible} of table) {
