@@ -12,7 +12,8 @@ import * as url from 'url'
 import * as ChildProcess from 'child_process'
 import { EventEmitter } from 'events'
 import { promisify } from 'util'
-import { ifit } from './spec-helpers'
+import { ifit, ifdescribe } from './spec-helpers'
+import { AddressInfo } from 'net'
 
 const features = process.electronBinding('features')
 
@@ -828,5 +829,248 @@ describe('chromium features', () => {
         contents.loadURL(`${protocolName}://host/cookie`)
       })
     })
+
+    describe('can be accessed', () => {
+      let server: http.Server
+      let serverUrl: string
+      let serverCrossSiteUrl: string
+      before((done) => {
+        server = http.createServer((req, res) => {
+          const respond = () => {
+            if (req.url === '/redirect-cross-site') {
+              res.setHeader('Location', `${serverCrossSiteUrl}/redirected`)
+              res.statusCode = 302
+              res.end()
+            } else if (req.url === '/redirected') {
+              res.end('<html><script>window.localStorage</script></html>')
+            } else {
+              res.end()
+            }
+          }
+          setTimeout(respond, 0)
+        })
+        server.listen(0, '127.0.0.1', () => {
+          serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+          serverCrossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}`
+          done()
+        })
+      })
+
+      after(() => {
+        server.close()
+        server = null as any
+      })
+
+      afterEach(closeAllWindows)
+
+      const testLocalStorageAfterXSiteRedirect = (testTitle: string, extraPreferences = {}) => {
+        it(testTitle, (done) => {
+          const w = new BrowserWindow({
+            show: false,
+            ...extraPreferences
+          })
+          let redirected = false
+          w.webContents.on('crashed', () => {
+            expect.fail('renderer crashed / was killed')
+          })
+          w.webContents.on('did-redirect-navigation', (event, url) => {
+            expect(url).to.equal(`${serverCrossSiteUrl}/redirected`)
+            redirected = true
+          })
+          w.webContents.on('did-finish-load', () => {
+            expect(redirected).to.be.true('didnt redirect')
+            done()
+          })
+          w.loadURL(`${serverUrl}/redirect-cross-site`)
+        })
+      }
+
+      testLocalStorageAfterXSiteRedirect('after a cross-site redirect')
+      testLocalStorageAfterXSiteRedirect('after a cross-site redirect in sandbox mode', { sandbox: true })
+    })
+  })
+
+  ifdescribe(features.isPDFViewerEnabled())('PDF Viewer', () => {
+    const pdfSource = url.format({
+      pathname: path.join(fixturesPath, 'assets', 'cat.pdf').replace(/\\/g, '/'),
+      protocol: 'file',
+      slashes: true
+    })
+    const pdfSourceWithParams = url.format({
+      pathname: path.join(fixturesPath, 'assets', 'cat.pdf').replace(/\\/g, '/'),
+      query: {
+        a: 1,
+        b: 2
+      },
+      protocol: 'file',
+      slashes: true
+    })
+
+    const createBrowserWindow = ({ plugins, preload }: { plugins: boolean, preload: string }) => {
+      return new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(fixturesPath, 'module', preload),
+          plugins: plugins
+        }
+      })
+    }
+
+    const testPDFIsLoadedInSubFrame = (page: string, preloadFile: string, done: Function) => {
+      const pagePath = url.format({
+        pathname: path.join(fixturesPath, 'pages', page).replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      })
+
+      const w = createBrowserWindow({ plugins: true, preload: preloadFile })
+      ipcMain.once('pdf-loaded', (event, state) => {
+        expect(state).to.equal('success')
+        done()
+      })
+      w.webContents.on('page-title-updated', () => {
+        const parsedURL = url.parse(w.webContents.getURL(), true)
+        expect(parsedURL.protocol).to.equal('chrome:')
+        expect(parsedURL.hostname).to.equal('pdf-viewer')
+        expect(parsedURL.query.src).to.equal(pagePath)
+        expect(w.webContents.getTitle()).to.equal('cat.pdf')
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', page))
+    }
+
+    it('opens when loading a pdf resource as top level navigation', (done) => {
+      const w = createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
+      ipcMain.once('pdf-loaded', (event, state) => {
+        expect(state).to.equal('success')
+        done()
+      })
+      w.webContents.on('page-title-updated', () => {
+        const parsedURL = url.parse(w.webContents.getURL(), true)
+        expect(parsedURL.protocol).to.equal('chrome:')
+        expect(parsedURL.hostname).to.equal('pdf-viewer')
+        expect(parsedURL.query.src).to.equal(pdfSource)
+        expect(w.webContents.getTitle()).to.equal('cat.pdf')
+      })
+      w.webContents.loadURL(pdfSource)
+    })
+
+    it('opens a pdf link given params, the query string should be escaped', (done) => {
+      const w = createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
+      ipcMain.once('pdf-loaded', (event, state) => {
+        expect(state).to.equal('success')
+        done()
+      })
+      w.webContents.on('page-title-updated', () => {
+        const parsedURL = url.parse(w.webContents.getURL(), true)
+        expect(parsedURL.protocol).to.equal('chrome:')
+        expect(parsedURL.hostname).to.equal('pdf-viewer')
+        expect(parsedURL.query.src).to.equal(pdfSourceWithParams)
+        expect(parsedURL.query.b).to.be.undefined()
+        expect(parsedURL.search!.endsWith('%3Fa%3D1%26b%3D2')).to.be.true()
+        expect(w.webContents.getTitle()).to.equal('cat.pdf')
+      })
+      w.webContents.loadURL(pdfSourceWithParams)
+    })
+
+    it('should download a pdf when plugins are disabled', async () => {
+      const w = createBrowserWindow({ plugins: false, preload: 'preload-pdf-loaded.js' })
+      w.webContents.loadURL(pdfSource)
+      const [state, filename, mimeType] = await new Promise(resolve => {
+        session.defaultSession.once('will-download', (event, item, webContents) => {
+          item.setSavePath(path.join(fixturesPath, 'mock.pdf'))
+          item.on('done', (e, state) => {
+            resolve([state, item.getFilename(), item.getMimeType()])
+          })
+        })
+      })
+      expect(state).to.equal('completed')
+      expect(filename).to.equal('cat.pdf')
+      expect(mimeType).to.equal('application/pdf')
+      fs.unlinkSync(path.join(fixturesPath, 'mock.pdf'))
+    })
+
+    it('should not open when pdf is requested as sub resource', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL('about:blank')
+      const [status, title] = await w.webContents.executeJavaScript(`fetch(${JSON.stringify(pdfSource)}).then(res => [res.status, document.title])`)
+      expect(status).to.equal(200)
+      expect(title).to.not.equal('cat.pdf')
+    })
+
+    it('opens when loading a pdf resource in a iframe', (done) => {
+      testPDFIsLoadedInSubFrame('pdf-in-iframe.html', 'preload-pdf-loaded-in-subframe.js', done)
+    })
+
+    it('opens when loading a pdf resource in a nested iframe', (done) => {
+      testPDFIsLoadedInSubFrame('pdf-in-nested-iframe.html', 'preload-pdf-loaded-in-nested-subframe.js', done)
+    })
+  })
+
+  describe('window.history', () => {
+    describe('window.history.pushState', () => {
+      it('should push state after calling history.pushState() from the same url', (done) => {
+        const w = new BrowserWindow({ show: false })
+        w.webContents.once('did-finish-load', async () => {
+          // History should have current page by now.
+          expect((w.webContents as any).length()).to.equal(1)
+
+          w.webContents.executeJavaScript('window.history.pushState({}, "")').then(() => {
+            // Initial page + pushed state
+            expect((w.webContents as any).length()).to.equal(2)
+            done()
+          })
+        })
+        w.loadURL('about:blank')
+      })
+    })
+  })
+})
+
+
+describe('font fallback', () => {
+  async function getRenderedFonts (html: string) {
+    const w = new BrowserWindow({ show: false })
+    try {
+      await w.loadURL(`data:text/html,${html}`)
+      w.webContents.debugger.attach()
+      const sendCommand = (method: string, commandParams?: any) => w.webContents.debugger.sendCommand(method, commandParams)
+      const { nodeId } = (await sendCommand('DOM.getDocument')).root.children[0]
+      await sendCommand('CSS.enable')
+      const { fonts } = await sendCommand('CSS.getPlatformFontsForNode', { nodeId })
+      return fonts
+    } finally {
+      w.close()
+    }
+  }
+
+  it('should use Helvetica for sans-serif on Mac, and Arial on Windows and Linux', async () => {
+    const html = `<body style="font-family: sans-serif">test</body>`
+    const fonts = await getRenderedFonts(html)
+    expect(fonts).to.be.an('array')
+    expect(fonts).to.have.length(1)
+    if (process.platform === 'win32')
+      expect(fonts[0].familyName).to.equal('Arial')
+    else if (process.platform === 'darwin')
+      expect(fonts[0].familyName).to.equal('Helvetica')
+    else if (process.platform === 'linux')
+      expect(fonts[0].familyName).to.equal('DejaVu Sans') // I think this depends on the distro? We don't specify a default.
+  })
+
+  ifit(process.platform !== 'linux')('should fall back to Japanese font for sans-serif Japanese script', async function () {
+    const html = `
+    <html lang="ja-JP">
+      <head>
+        <meta charset="utf-8" />
+      </head>
+      <body style="font-family: sans-serif">test 智史</body>
+    </html>
+    `
+    const fonts = await getRenderedFonts(html)
+    expect(fonts).to.be.an('array')
+    expect(fonts).to.have.length(1)
+    if (process.platform === 'win32')
+      expect(fonts[0].familyName).to.be.oneOf(['Meiryo', 'Yu Gothic'])
+    else if (process.platform === 'darwin')
+      expect(fonts[0].familyName).to.equal('Hiragino Kaku Gothic ProN')
   })
 })
