@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html><head><style>
+  body {
+    padding: 20px;
+    font-family: system, -apple-system, '.SFNSText-Regular', 'SF UI Text', 'Lucida Grande', 'Segoe UI', Ubuntu, Cantarell, sans-serif;
+    color: #fff;
+    background-color: #8aba87;
+    text-align: center;
+    font-size: 40px;
+  }
+
+  #crash {
+    color: white;
+    opacity: 0.7;
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    text-decoration: none;
+  }
+</style>
+
+</head><body><p>Click the text below to crash and then reload this process.</p>
+<a id="crash" href="javascript:process.crash()" >Crash this process</a>
+</body></html>
