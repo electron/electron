@@ -27,6 +27,17 @@ class Dictionary : public gin::Dictionary {
   Dictionary(const gin::Dictionary& dict)  // NOLINT(runtime/explicit)
       : gin::Dictionary(dict) {}
 
+  // The Get method in gin::Dictionary is not a const method, work around it
+  // by adding our own version.
+  //
+  // TODO(zcbenz): Add the const method in upstream.
+  template <typename T>
+  bool Get(const std::string& key, T* out) const {
+    return const_cast<gin::Dictionary*>(
+               static_cast<const gin::Dictionary*>(this))
+        ->Get(key, out);
+  }
+
   template <typename T>
   bool GetHidden(base::StringPiece key, T* out) const {
     v8::Local<v8::Context> context = isolate()->GetCurrentContext();
@@ -79,6 +90,8 @@ class Dictionary : public gin::Dictionary {
         isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key));
     return !result.IsNothing() && result.FromJust();
   }
+
+  bool IsEmpty() const { return isolate() == nullptr || GetHandle().IsEmpty(); }
 
   v8::Local<v8::Object> GetHandle() const {
     return gin::ConvertToV8(isolate(),

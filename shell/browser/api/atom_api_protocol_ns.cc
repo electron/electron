@@ -13,8 +13,10 @@
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/browser.h"
 #include "shell/common/deprecate_util.h"
-#include "shell/common/native_mate_converters/net_converter.h"
-#include "shell/common/native_mate_converters/once_callback.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/promise_util.h"
 
@@ -39,19 +41,19 @@ struct CustomScheme {
 
 }  // namespace
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<CustomScheme> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      CustomScheme* out) {
-    mate::Dictionary dict;
+    gin::Dictionary dict(isolate);
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
     if (!dict.Get("scheme", &(out->scheme)))
       return false;
-    mate::Dictionary opt;
+    gin::Dictionary opt(isolate);
     // options are optional. Default values specified in SchemeOptions are used
     if (dict.Get("privileges", &opt)) {
       opt.Get("standard", &(out->options.standard));
@@ -66,7 +68,7 @@ struct Converter<CustomScheme> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 namespace api {
@@ -75,11 +77,11 @@ std::vector<std::string> GetStandardSchemes() {
   return g_standard_schemes;
 }
 
-void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
-                                 mate::Arguments* args) {
+void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
+                                 v8::Local<v8::Value> val) {
   std::vector<CustomScheme> custom_schemes;
-  if (!mate::ConvertFromV8(args->isolate(), val, &custom_schemes)) {
-    args->ThrowError("Argument must be an array of custom schemes.");
+  if (!gin::ConvertFromV8(thrower.isolate(), val, &custom_schemes)) {
+    thrower.ThrowError("Argument must be an array of custom schemes.");
     return;
   }
 
@@ -181,7 +183,7 @@ ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
 }
 
 void ProtocolNS::UnregisterProtocol(const std::string& scheme,
-                                    mate::Arguments* args) {
+                                    gin::Arguments* args) {
   const bool removed = handlers_.erase(scheme) != 0;
   const auto error =
       removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED;
@@ -201,7 +203,7 @@ ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
 }
 
 void ProtocolNS::UninterceptProtocol(const std::string& scheme,
-                                     mate::Arguments* args) {
+                                     gin::Arguments* args) {
   const bool removed = intercept_handlers_.erase(scheme) != 0;
   const auto error =
       removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED;
@@ -213,7 +215,7 @@ bool ProtocolNS::IsProtocolIntercepted(const std::string& scheme) {
 }
 
 v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
-                                                     mate::Arguments* args) {
+                                                     gin::Arguments* args) {
   node::Environment* env = node::Environment::GetCurrent(args->isolate());
   EmitDeprecationWarning(
       env,
@@ -234,7 +236,7 @@ v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
                      base::Contains(kBuiltinSchemes, scheme));
 }
 
-void ProtocolNS::HandleOptionalCallback(mate::Arguments* args,
+void ProtocolNS::HandleOptionalCallback(gin::Arguments* args,
                                         ProtocolError error) {
   CompletionCallback callback;
   if (args->GetNext(&callback)) {
@@ -247,22 +249,22 @@ void ProtocolNS::HandleOptionalCallback(mate::Arguments* args,
       callback.Run(v8::Null(args->isolate()));
     else
       callback.Run(v8::Exception::Error(
-          mate::StringToV8(isolate(), ErrorCodeToString(error))));
+          gin::StringToV8(isolate(), ErrorCodeToString(error))));
   }
 }
 
 // static
-mate::Handle<ProtocolNS> ProtocolNS::Create(
+gin::Handle<ProtocolNS> ProtocolNS::Create(
     v8::Isolate* isolate,
     AtomBrowserContext* browser_context) {
-  return mate::CreateHandle(isolate, new ProtocolNS(isolate, browser_context));
+  return gin::CreateHandle(isolate, new ProtocolNS(isolate, browser_context));
 }
 
 // static
 void ProtocolNS::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Protocol"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "Protocol"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("registerStringProtocol",
                  &ProtocolNS::RegisterProtocolFor<ProtocolType::kString>)
       .SetMethod("registerBufferProtocol",
@@ -299,16 +301,16 @@ void ProtocolNS::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
-void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
-                                 mate::Arguments* args) {
+void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
+                                 v8::Local<v8::Value> val) {
   if (electron::Browser::Get()->is_ready()) {
-    args->ThrowError(
+    thrower.ThrowError(
         "protocol.registerSchemesAsPrivileged should be called before "
         "app is ready");
     return;
   }
 
-  electron::api::RegisterSchemesAsPrivileged(val, args);
+  electron::api::RegisterSchemesAsPrivileged(thrower, val);
 }
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -316,7 +318,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
   dict.SetMethod("getStandardSchemes", &electron::api::GetStandardSchemes);
 }
