@@ -57,15 +57,9 @@ namespace electron {
 
 namespace api {
 
-BrowserView::BrowserView(v8::Isolate* isolate,
-                         v8::Local<v8::Object> wrapper,
+BrowserView::BrowserView(gin::Arguments* args,
                          const mate::Dictionary& options) {
-  Init(isolate, wrapper, options);
-}
-
-void BrowserView::Init(v8::Isolate* isolate,
-                       v8::Local<v8::Object> wrapper,
-                       const mate::Dictionary& options) {
+  v8::Isolate* isolate = args->isolate();
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
   web_preferences.Set("type", "browserView");
@@ -79,7 +73,7 @@ void BrowserView::Init(v8::Isolate* isolate,
   view_.reset(
       NativeBrowserView::Create(api_web_contents_->managed_web_contents()));
 
-  InitWith(isolate, wrapper);
+  InitWithArgs(args);
 }
 
 BrowserView::~BrowserView() {
@@ -106,9 +100,7 @@ mate::WrappableBase* BrowserView::New(gin_helper::ErrorThrower thrower,
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
-  v8::Local<v8::Object> holder;
-  args->GetHolder(&holder);
-  return new BrowserView(args->isolate(), holder, options);
+  return new BrowserView(args, options);
 }
 
 int32_t BrowserView::ID() const {

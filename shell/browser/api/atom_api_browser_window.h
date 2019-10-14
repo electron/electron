@@ -38,9 +38,7 @@ class BrowserWindow : public TopLevelWindow,
   }
 
  protected:
-  BrowserWindow(v8::Isolate* isolate,
-                v8::Local<v8::Object> wrapper,
-                const mate::Dictionary& options);
+  BrowserWindow(gin::Arguments* args, const mate::Dictionary& options);
   ~BrowserWindow() override;
 
   // content::RenderWidgetHost::InputEventObserver:

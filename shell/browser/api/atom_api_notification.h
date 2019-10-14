@@ -44,7 +44,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void NotificationClosed() override;
 
  protected:
-  Notification(v8::Local<v8::Object> wrapper, gin::Arguments* args);
+  Notification(gin::Arguments* args);
   ~Notification() override;
 
   void Show();

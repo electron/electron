@@ -46,19 +46,13 @@ class BrowserView : public mate::TrackableObject<BrowserView>,
   int32_t ID() const;
 
  protected:
-  BrowserView(v8::Isolate* isolate,
-              v8::Local<v8::Object> wrapper,
-              const mate::Dictionary& options);
+  BrowserView(gin::Arguments* args, const mate::Dictionary& options);
   ~BrowserView() override;
 
   // content::WebContentsObserver:
   void WebContentsDestroyed() override;
 
  private:
-  void Init(v8::Isolate* isolate,
-            v8::Local<v8::Object> wrapper,
-            const mate::Dictionary& options);
-
   void SetAutoResize(AutoResizeFlags flags);
   void SetBounds(const gfx::Rect& bounds);
   gfx::Rect GetBounds();

@@ -16,8 +16,7 @@ namespace electron {
 
 namespace api {
 
-MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : Menu(isolate, wrapper), weak_factory_(this) {}
+MenuViews::MenuViews(gin::Arguments* args) : Menu(args), weak_factory_(this) {}
 
 MenuViews::~MenuViews() = default;
 
@@ -76,9 +75,7 @@ void MenuViews::OnClosed(int32_t window_id, base::Closure callback) {
 
 // static
 mate::WrappableBase* Menu::New(gin::Arguments* args) {
-  v8::Local<v8::Object> holder;
-  args->GetHolder(&holder);
-  return new MenuViews(args->isolate(), holder);
+  return new MenuViews(args);
 }
 
 }  // namespace api

@@ -38,7 +38,7 @@ class Menu : public mate::TrackableObject<Menu>,
   AtomMenuModel* model() const { return model_.get(); }
 
  protected:
-  Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
+  Menu(gin::Arguments* args);
   ~Menu() override;
 
   // mate::Wrappable:

@@ -43,9 +43,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   // Common constructor.
   TopLevelWindow(v8::Isolate* isolate, const mate::Dictionary& options);
   // Creating independent TopLevelWindow instance.
-  TopLevelWindow(v8::Isolate* isolate,
-                 v8::Local<v8::Object> wrapper,
-                 const mate::Dictionary& options);
+  TopLevelWindow(gin::Arguments* args, const mate::Dictionary& options);
   ~TopLevelWindow() override;
 
   // TrackableObject:

@@ -49,9 +49,8 @@ namespace electron {
 
 namespace api {
 
-Notification::Notification(v8::Local<v8::Object> wrapper,
-                           gin::Arguments* args) {
-  InitWith(args->isolate(), wrapper);
+Notification::Notification(gin::Arguments* args) {
+  InitWithArgs(args);
 
   presenter_ = static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
                    ->GetNotificationPresenter();
@@ -88,9 +87,7 @@ mate::WrappableBase* Notification::New(gin_helper::ErrorThrower thrower,
     thrower.ThrowError("Cannot create Notification before app is ready");
     return nullptr;
   }
-  v8::Local<v8::Object> holder;
-  args->GetHolder(&holder);
-  return new Notification(holder, args);
+  return new Notification(args);
 }
 
 // Getters

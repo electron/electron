@@ -29,13 +29,13 @@ namespace electron {
 
 namespace api {
 
-BrowserWindow::BrowserWindow(v8::Isolate* isolate,
-                             v8::Local<v8::Object> wrapper,
+BrowserWindow::BrowserWindow(gin::Arguments* args,
                              const mate::Dictionary& options)
-    : TopLevelWindow(isolate, options), weak_factory_(this) {
+    : TopLevelWindow(args->isolate(), options), weak_factory_(this) {
   mate::Handle<class WebContents> web_contents;
 
   // Use options.webPreferences in WebContents.
+  v8::Isolate* isolate = args->isolate();
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
@@ -92,7 +92,7 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   if (host)
     host->GetWidget()->AddInputEventObserver(this);
 
-  InitWith(isolate, wrapper);
+  InitWithArgs(args);
 
 #if defined(OS_MACOSX)
   OverrideNSWindowContentView(web_contents->managed_web_contents());
@@ -461,9 +461,7 @@ mate::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
     options = mate::Dictionary::CreateEmpty(args->isolate());
   }
 
-  v8::Local<v8::Object> holder;
-  args->GetHolder(&holder);
-  return new BrowserWindow(args->isolate(), holder, options);
+  return new BrowserWindow(args, options);
 }
 
 // static
