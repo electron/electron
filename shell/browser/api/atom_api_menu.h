@@ -38,7 +38,7 @@ class Menu : public mate::TrackableObject<Menu>,
   AtomMenuModel* model() const { return model_.get(); }
 
  protected:
-  Menu(gin::Arguments* args);
+  explicit Menu(gin::Arguments* args);
   ~Menu() override;
 
   // mate::Wrappable:

@@ -20,7 +20,7 @@ namespace api {
 
 class MenuMac : public Menu {
  protected:
-  MenuMac(gin::Arguments* args);
+  explicit MenuMac(gin::Arguments* args);
   ~MenuMac() override;
 
   void PopupAt(TopLevelWindow* window,

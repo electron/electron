@@ -19,7 +19,7 @@ namespace api {
 
 class MenuViews : public Menu {
  public:
-  MenuViews(gin::Arguments* args);
+  explicit MenuViews(gin::Arguments* args);
   ~MenuViews() override;
 
  protected:
