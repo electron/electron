@@ -6,12 +6,14 @@ import * as http from 'http'
 import { BrowserWindow, ipcMain, webContents } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
+import { ifdescribe } from './spec-helpers';
 
 const { expect } = chai
 
 chai.use(chaiAsPromised)
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
+const features = process.electronBinding('features')
 
 describe('webContents module', () => {
   describe('getAllWebContents() API', () => {
@@ -99,7 +101,7 @@ describe('webContents module', () => {
     })
   })
 
-  describe('webContents.print()', () => {
+  ifdescribe(features.isPrintingEnabled())('webContents.print()', () => {
     it('throws when invalid settings are passed', () => {
       const w = new BrowserWindow({ show: false })
       expect(() => {
