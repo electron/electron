@@ -42,10 +42,3 @@ exports.closeWindow = async (window = null,
     expect(windows).to.have.lengthOf(1)
   }
 }
-
-exports.waitForWebContentsToLoad = async (webContents) => {
-  const didFinishLoadPromise = emittedOnce(webContents, 'did-finish-load')
-  if (webContents.isLoadingMainFrame()) {
-    await didFinishLoadPromise
-  }
-}

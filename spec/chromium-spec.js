@@ -8,7 +8,6 @@ const url = require('url')
 const ChildProcess = require('child_process')
 const { ipcRenderer } = require('electron')
 const { emittedOnce } = require('./events-helpers')
-const { closeWindow, waitForWebContentsToLoad } = require('./window-helpers')
 const { resolveGetters } = require('./expect-helpers')
 const features = process.electronBinding('features')
 
@@ -21,18 +20,12 @@ chai.use(dirtyChai)
 describe('chromium feature', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let listener = null
-  let w = null
 
   afterEach(() => {
     if (listener != null) {
       window.removeEventListener('message', listener)
     }
     listener = null
-  })
-
-  afterEach(async () => {
-    await closeWindow(w)
-    w = null
   })
 
   describe('heap snapshot', () => {
