@@ -103,7 +103,7 @@ describe('webContents module', () => {
     })
   })
 
-  describe('webContents.print()', () => {
+  ifdescribe(features.isPrintingEnabled())('webContents.print()', () => {
     afterEach(closeAllWindows)
     it('throws when invalid settings are passed', () => {
       const w = new BrowserWindow({ show: false })
