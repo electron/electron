@@ -12,6 +12,7 @@ import * as url from 'url'
 import * as ChildProcess from 'child_process'
 import { EventEmitter } from 'events'
 import { promisify } from 'util'
+import { ifit } from './spec-helpers'
 
 const features = process.electronBinding('features')
 
@@ -640,38 +641,45 @@ describe('chromium features', () => {
     const fileUrl = `file://${fixturesPath}/pages/window-opener-location.html`
     const httpUrl1 = `${scheme}://origin1`
     const httpUrl2 = `${scheme}://origin2`
+    const fileBlank = `file://${fixturesPath}/pages/blank.html`
+    const httpBlank = `${scheme}://origin1/blank`
 
     const table = [
-      {parent: fileUrl, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
-      {parent: fileUrl, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false},
-      {parent: fileUrl, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: fileUrl, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false},
+      {parent: fileBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
+      {parent: fileBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false},
+      {parent: fileBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
+      {parent: fileBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false},
 
-      {parent: httpUrl1, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
-      //{parent: httpUrl1, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
-      {parent: httpUrl1, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      //{parent: httpUrl1, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
+      {parent: httpBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
+      //{parent: httpBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
+      {parent: httpBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
+      //{parent: httpBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
 
       // NB. this is different from Chrome's behavior, which isolates file: urls from each other
-      {parent: fileUrl, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true},
-      {parent: fileUrl, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true},
-      {parent: fileUrl, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: fileUrl, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true},
+      {parent: fileBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true},
+      {parent: fileBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true},
+      {parent: fileBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
+      {parent: fileBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true},
 
-      {parent: httpUrl1, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true},
-      {parent: httpUrl1, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true},
-      {parent: httpUrl1, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: httpUrl1, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true},
+      {parent: httpBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true},
+      {parent: httpBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true},
+      {parent: httpBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
+      {parent: httpBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true},
 
-      {parent: httpUrl1, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
-      {parent: httpUrl1, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false},
-      {parent: httpUrl1, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: httpUrl1, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false},
+      {parent: httpBlank, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
+      {parent: httpBlank, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false},
+      {parent: httpBlank, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
+      {parent: httpBlank, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false},
     ]
+    const s = (url: string) => url.startsWith('file') ? 'file://...' : url
 
     before(async () => {
       await promisify(protocol.registerFileProtocol)(scheme, (request, callback) => {
-        callback(`${fixturesPath}/pages/window-opener-location.html`)
+        if (request.url.includes('blank')) {
+          callback(`${fixturesPath}/pages/blank.html`)
+        } else {
+          callback(`${fixturesPath}/pages/window-opener-location.html`)
+        }
       })
     })
     after(async () => {
@@ -679,24 +687,69 @@ describe('chromium features', () => {
     })
     afterEach(closeAllWindows)
 
-    for (const {parent, child, nodeIntegration, nativeWindowOpen, openerAccessible} of table) {
-      const s = (url: string) => url.startsWith('file') ? 'file://...' : url
-      const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen}, child should ${openerAccessible ? '' : 'not '}be able to access opener`
-      it(description, async () => {
-        const w = new BrowserWindow({show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen }})
-        await w.loadURL(parent)
-        const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
-          window.addEventListener('message', function f(e) {
-            resolve(e.data)
-          })
-          window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? "yes" : "no"}")
-        })`)
-        if (openerAccessible) {
-          expect(childOpenerLocation).to.be.a('string')
-        } else {
-          expect(childOpenerLocation).to.be.null()
-        }
-      })
-    }
+    describe('when opened from main window', () => {
+      for (const {parent, child, nodeIntegration, nativeWindowOpen, openerAccessible} of table) {
+        const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen}, child should ${openerAccessible ? '' : 'not '}be able to access opener`
+        it(description, async () => {
+          const w = new BrowserWindow({show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen }})
+          await w.loadURL(parent)
+          const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
+            window.addEventListener('message', function f(e) {
+              resolve(e.data)
+            })
+            window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? "yes" : "no"}")
+          })`)
+          if (openerAccessible) {
+            expect(childOpenerLocation).to.be.a('string')
+          } else {
+            expect(childOpenerLocation).to.be.null()
+          }
+        })
+      }
+    })
+
+    describe('when opened from <webview>', () => {
+      for (const {parent, child, nodeIntegration, nativeWindowOpen, openerAccessible} of table) {
+        const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen}, child should ${openerAccessible ? '' : 'not '}be able to access opener`
+        // WebView erroneously allows access to the parent window when nativeWindowOpen is false.
+        const skip = !nativeWindowOpen && !openerAccessible
+        ifit(!skip)(description, async () => {
+          // This test involves three contexts:
+          //  1. The root BrowserWindow in which the test is run,
+          //  2. A <webview> belonging to the root window,
+          //  3. A window opened by calling window.open() from within the <webview>.
+          // We are testing whether context (3) can access context (2) under various conditions.
+
+          // This is context (1), the base window for the test.
+          const w = new BrowserWindow({show: false, webPreferences: { nodeIntegration: true, webviewTag: true }})
+          await w.loadURL('about:blank')
+
+          const parentCode = `new Promise((resolve) => {
+            // This is context (3), a child window of the WebView.
+            const child = window.open(${JSON.stringify(child)}, "", "show=no")
+            window.addEventListener("message", e => {
+              resolve(e.data)
+            })
+          })`
+          const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+            // This is context (2), a WebView which will call window.open()
+            const webview = new WebView()
+            webview.setAttribute('nodeintegration', '${nodeIntegration ? "on" : "off"}')
+            webview.setAttribute('webpreferences', 'nativeWindowOpen=${nativeWindowOpen ? "yes" : "no"}')
+            webview.setAttribute('allowpopups', 'on')
+            webview.src = ${JSON.stringify(parent + '?p=' + encodeURIComponent(child))}
+            webview.addEventListener('dom-ready', async () => {
+              webview.executeJavaScript(${JSON.stringify(parentCode)}).then(resolve, reject)
+            })
+            document.body.appendChild(webview)
+          })`)
+          if (openerAccessible) {
+            expect(childOpenerLocation).to.be.a('string')
+          } else {
+            expect(childOpenerLocation).to.be.null()
+          }
+        })
+      }
+    })
   })
 })
