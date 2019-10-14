@@ -1,7 +1,7 @@
 import * as chai from 'chai'
 import { expect } from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
-import { BrowserWindow, WebContents, session, ipcMain, app, protocol } from 'electron'
+import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron'
 import { emittedOnce } from './events-helpers'
 import { closeAllWindows } from './window-helpers'
 import * as https from 'https'
@@ -750,6 +750,83 @@ describe('chromium features', () => {
           }
         })
       }
+    })
+  })
+
+  describe('storage', () => {
+    describe('custom non standard schemes', () => {
+      const protocolName = 'storage'
+      let contents: WebContents
+      before((done) => {
+        protocol.registerFileProtocol(protocolName, (request, callback) => {
+          const parsedUrl = url.parse(request.url)
+          let filename
+          switch (parsedUrl.pathname) {
+            case '/localStorage' : filename = 'local_storage.html'; break
+            case '/sessionStorage' : filename = 'session_storage.html'; break
+            case '/WebSQL' : filename = 'web_sql.html'; break
+            case '/indexedDB' : filename = 'indexed_db.html'; break
+            case '/cookie' : filename = 'cookie.html'; break
+            default : filename = ''
+          }
+          callback({ path: `${fixturesPath}/pages/storage/${filename}` })
+        }, (error) => done(error))
+      })
+
+      after((done) => {
+        protocol.unregisterProtocol(protocolName, () => done())
+      })
+
+      beforeEach(() => {
+        contents = (webContents as any).create({
+          nodeIntegration: true
+        })
+      })
+
+      afterEach(() => {
+        (contents as any).destroy()
+        contents = null as any
+      })
+
+      it('cannot access localStorage', (done) => {
+        ipcMain.once('local-storage-response', (event, error) => {
+          expect(error).to.equal(`Failed to read the 'localStorage' property from 'Window': Access is denied for this document.`)
+          done()
+        })
+        contents.loadURL(protocolName + '://host/localStorage')
+      })
+
+      it('cannot access sessionStorage', (done) => {
+        ipcMain.once('session-storage-response', (event, error) => {
+          expect(error).to.equal(`Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document.`)
+          done()
+        })
+        contents.loadURL(`${protocolName}://host/sessionStorage`)
+      })
+
+      it('cannot access WebSQL database', (done) => {
+        ipcMain.once('web-sql-response', (event, error) => {
+          expect(error).to.equal(`Failed to execute 'openDatabase' on 'Window': Access to the WebDatabase API is denied in this context.`)
+          done()
+        })
+        contents.loadURL(`${protocolName}://host/WebSQL`)
+      })
+
+      it('cannot access indexedDB', (done) => {
+        ipcMain.once('indexed-db-response', (event, error) => {
+          expect(error).to.equal(`Failed to execute 'open' on 'IDBFactory': access to the Indexed Database API is denied in this context.`)
+          done()
+        })
+        contents.loadURL(`${protocolName}://host/indexedDB`)
+      })
+
+      it('cannot access cookie', (done) => {
+        ipcMain.once('cookie-response', (event, error) => {
+          expect(error).to.equal(`Failed to set the 'cookie' property on 'Document': Access is denied for this document.`)
+          done()
+        })
+        contents.loadURL(`${protocolName}://host/cookie`)
+      })
     })
   })
 })
