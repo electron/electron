@@ -1,17 +1,14 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
-const http = require('http')
-const path = require('path')
-const { emittedOnce } = require('./events-helpers')
-const { closeWindow } = require('./window-helpers')
-const { BrowserWindow } = require('electron').remote
-
-const { expect } = chai
-chai.use(dirtyChai)
+import { expect } from 'chai'
+import * as http from 'http'
+import * as path from 'path'
+import { AddressInfo } from 'net'
+import { BrowserWindow } from 'electron'
+import { closeAllWindows } from './window-helpers'
+import { emittedOnce } from './events-helpers'
 
 describe('debugger module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures')
-  let w = null
+  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
+  let w: BrowserWindow
 
   beforeEach(() => {
     w = new BrowserWindow({
@@ -21,7 +18,7 @@ describe('debugger module', () => {
     })
   })
 
-  afterEach(() => closeWindow(w).then(() => { w = null }))
+  afterEach(closeAllWindows)
 
   describe('debugger.attach', () => {
     it('succeeds when devtools is already open', done => {
@@ -87,19 +84,19 @@ describe('debugger module', () => {
       })
       w.webContents.debugger.on('detach', (e, reason) => {
         expect(w.webContents.debugger.isAttached()).to.be.false()
-        expect(w.devToolsWebContents.isDestroyed()).to.be.false()
+        expect((w as any).devToolsWebContents.isDestroyed()).to.be.false()
         done()
       })
     })
   })
 
   describe('debugger.sendCommand', () => {
-    let server
+    let server: http.Server
 
     afterEach(() => {
       if (server != null) {
         server.close()
-        server = null
+        server = null as any
       }
     })
 
@@ -193,7 +190,7 @@ describe('debugger module', () => {
 
       server.listen(0, '127.0.0.1', () => {
         w.webContents.debugger.sendCommand('Network.enable')
-        w.loadURL(`http://127.0.0.1:${server.address().port}`)
+        w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)
       })
     })
 
@@ -219,7 +216,7 @@ describe('debugger module', () => {
 
       server.listen(0, '127.0.0.1', () => {
         w.webContents.debugger.sendCommand('Network.enable')
-        w.loadURL(`http://127.0.0.1:${server.address().port}`)
+        w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)
       })
     })
   })
