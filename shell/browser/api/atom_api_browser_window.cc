@@ -444,9 +444,10 @@ void BrowserWindow::OnWindowHide() {
 }
 
 // static
-mate::WrappableBase* BrowserWindow::New(mate::Arguments* args) {
+mate::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
+                                        gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create BrowserWindow before app is ready");
+    thrower.ThrowError("Cannot create BrowserWindow before app is ready");
     return nullptr;
   }
 
@@ -460,7 +461,9 @@ mate::WrappableBase* BrowserWindow::New(mate::Arguments* args) {
     options = mate::Dictionary::CreateEmpty(args->isolate());
   }
 
-  return new BrowserWindow(args->isolate(), args->GetThis(), options);
+  v8::Local<v8::Object> holder;
+  args->GetHolder(&holder);
+  return new BrowserWindow(args->isolate(), holder, options);
 }
 
 // static

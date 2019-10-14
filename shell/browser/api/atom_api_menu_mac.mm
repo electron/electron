@@ -173,8 +173,10 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-mate::WrappableBase* Menu::New(mate::Arguments* args) {
-  return new MenuMac(args->isolate(), args->GetThis());
+mate::WrappableBase* Menu::New(gin::Arguments* args) {
+  v8::Local<v8::Object> holder;
+  args->GetHolder(&holder);
+  return new MenuMac(args->isolate(), holder);
 }
 
 }  // namespace api

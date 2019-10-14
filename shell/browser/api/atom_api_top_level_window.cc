@@ -1057,11 +1057,13 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
 }
 
 // static
-mate::WrappableBase* TopLevelWindow::New(mate::Arguments* args) {
+mate::WrappableBase* TopLevelWindow::New(gin::Arguments* args) {
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
-  return new TopLevelWindow(args->isolate(), args->GetThis(), options);
+  v8::Local<v8::Object> holder;
+  args->GetHolder(&holder);
+  return new TopLevelWindow(args->isolate(), holder, options);
 }
 
 // static

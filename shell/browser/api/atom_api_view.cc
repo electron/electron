@@ -42,9 +42,9 @@ void View::AddChildViewAt(mate::Handle<View> child, size_t index) {
 #endif
 
 // static
-mate::WrappableBase* View::New(mate::Arguments* args) {
+mate::WrappableBase* View::New(gin::Arguments* args) {
   auto* view = new View();
-  view->InitWith(args->isolate(), args->GetThis());
+  view->InitWithArgs(args);
   return view;
 }
 

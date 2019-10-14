@@ -82,13 +82,15 @@ Notification::~Notification() {
 }
 
 // static
-mate::WrappableBase* Notification::New(mate::Arguments* args) {
+mate::WrappableBase* Notification::New(gin_helper::ErrorThrower thrower,
+                                       gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create Notification before app is ready");
+    thrower.ThrowError("Cannot create Notification before app is ready");
     return nullptr;
   }
-  gin::Arguments gin_args(args->info());
-  return new Notification(args->GetThis(), &gin_args);
+  v8::Local<v8::Object> holder;
+  args->GetHolder(&holder);
+  return new Notification(holder, args);
 }
 
 // Getters

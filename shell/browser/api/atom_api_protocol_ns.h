@@ -99,22 +99,4 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
 
 }  // namespace electron
 
-namespace gin {
-
-// TODO(zcbenz): Remove this after converting ProtocolNS to gin::Wrapper.
-template <>
-struct Converter<electron::api::ProtocolNS*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::ProtocolNS** out) {
-    return mate::ConvertFromV8(isolate, val, out);
-  }
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::api::ProtocolNS* in) {
-    return mate::ConvertToV8(isolate, in);
-  }
-};
-
-}  // namespace gin
-
 #endif  // SHELL_BROWSER_API_ATOM_API_PROTOCOL_NS_H_

@@ -60,20 +60,6 @@ struct Converter<ui::NativeTheme::ThemeSource> {
                      ui::NativeTheme::ThemeSource* out);
 };
 
-// TODO(zcbenz): Remove this after converting NativeTheme to gin::Wrapper.
-template <>
-struct Converter<electron::api::NativeTheme*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::NativeTheme** out) {
-    return mate::ConvertFromV8(isolate, val, out);
-  }
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::api::NativeTheme* in) {
-    return mate::ConvertToV8(isolate, in);
-  }
-};
-
 }  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_

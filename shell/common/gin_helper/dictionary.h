@@ -5,6 +5,7 @@
 #ifndef SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
 #define SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
 
+#include <string>
 #include <type_traits>
 
 #include "gin/dictionary.h"

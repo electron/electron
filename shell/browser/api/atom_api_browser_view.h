@@ -12,6 +12,7 @@
 #include "native_mate/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/native_browser_view.h"
+#include "shell/common/gin_helper/error_thrower.h"
 
 namespace gfx {
 class Rect;
@@ -33,7 +34,8 @@ class WebContents;
 class BrowserView : public mate::TrackableObject<BrowserView>,
                     public content::WebContentsObserver {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args);
+  static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
+                                  gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

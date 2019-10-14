@@ -75,8 +75,10 @@ void MenuViews::OnClosed(int32_t window_id, base::Closure callback) {
 }
 
 // static
-mate::WrappableBase* Menu::New(mate::Arguments* args) {
-  return new MenuViews(args->isolate(), args->GetThis());
+mate::WrappableBase* Menu::New(gin::Arguments* args) {
+  v8::Local<v8::Object> holder;
+  args->GetHolder(&holder);
+  return new MenuViews(args->isolate(), holder);
 }
 
 }  // namespace api

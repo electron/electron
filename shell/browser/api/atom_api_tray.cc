@@ -55,26 +55,25 @@ namespace electron {
 
 namespace api {
 
-Tray::Tray(v8::Isolate* isolate,
-           v8::Local<v8::Object> wrapper,
-           mate::Handle<NativeImage> image)
+Tray::Tray(mate::Handle<NativeImage> image, gin::Arguments* args)
     : tray_icon_(TrayIcon::Create()) {
-  SetImage(isolate, image);
+  SetImage(args->isolate(), image);
   tray_icon_->AddObserver(this);
 
-  InitWith(isolate, wrapper);
+  InitWithArgs(args);
 }
 
 Tray::~Tray() = default;
 
 // static
-mate::WrappableBase* Tray::New(mate::Handle<NativeImage> image,
-                               mate::Arguments* args) {
+mate::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
+                               mate::Handle<NativeImage> image,
+                               gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create Tray before app is ready");
+    thrower.ThrowError("Cannot create Tray before app is ready");
     return nullptr;
   }
-  return new Tray(args->isolate(), args->GetThis(), image);
+  return new Tray(image, args);
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds,

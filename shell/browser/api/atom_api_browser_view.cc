@@ -96,16 +96,19 @@ void BrowserView::WebContentsDestroyed() {
 }
 
 // static
-mate::WrappableBase* BrowserView::New(mate::Arguments* args) {
+mate::WrappableBase* BrowserView::New(gin_helper::ErrorThrower thrower,
+                                      gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create BrowserView before app is ready");
+    thrower.ThrowError("Cannot create BrowserView before app is ready");
     return nullptr;
   }
 
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
-  return new BrowserView(args->isolate(), args->GetThis(), options);
+  v8::Local<v8::Object> holder;
+  args->GetHolder(&holder);
+  return new BrowserView(args->isolate(), holder, options);
 }
 
 int32_t BrowserView::ID() const {

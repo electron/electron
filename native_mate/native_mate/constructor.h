@@ -11,6 +11,7 @@
 
 #include "base/bind.h"
 #include "native_mate/function_template.h"
+#include "shell/common/gin_helper/function_template.h"
 
 namespace mate {
 
@@ -30,7 +31,8 @@ inline WrappableBase* InvokeFactory(
     Arguments* args,
     const base::Callback<WrappableBase*(P1)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
-  if (!GetNextArgument(args, 0, true, &a1))
+  gin::Arguments gin_args(args->info());
+  if (!gin_helper::GetNextArgument(&gin_args, 0, true, &a1))
     return nullptr;
   return callback.Run(a1);
 }
@@ -41,8 +43,9 @@ inline WrappableBase* InvokeFactory(
     const base::Callback<WrappableBase*(P1, P2)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
-  if (!GetNextArgument(args, 0, true, &a1) ||
-      !GetNextArgument(args, 0, false, &a2))
+  gin::Arguments gin_args(args->info());
+  if (!gin_helper::GetNextArgument(&gin_args, 0, true, &a1) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a2))
     return nullptr;
   return callback.Run(a1, a2);
 }
@@ -54,9 +57,10 @@ inline WrappableBase* InvokeFactory(
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   typename CallbackParamTraits<P3>::LocalType a3;
-  if (!GetNextArgument(args, 0, true, &a1) ||
-      !GetNextArgument(args, 0, false, &a2) ||
-      !GetNextArgument(args, 0, false, &a3))
+  gin::Arguments gin_args(args->info());
+  if (!gin_helper::GetNextArgument(&gin_args, 0, true, &a1) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a2) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a3))
     return nullptr;
   return callback.Run(a1, a2, a3);
 }
@@ -69,10 +73,11 @@ inline WrappableBase* InvokeFactory(
   typename CallbackParamTraits<P2>::LocalType a2;
   typename CallbackParamTraits<P3>::LocalType a3;
   typename CallbackParamTraits<P4>::LocalType a4;
-  if (!GetNextArgument(args, 0, true, &a1) ||
-      !GetNextArgument(args, 0, false, &a2) ||
-      !GetNextArgument(args, 0, false, &a3) ||
-      !GetNextArgument(args, 0, false, &a4))
+  gin::Arguments gin_args(args->info());
+  if (!gin_helper::GetNextArgument(&gin_args, 0, true, &a1) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a2) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a3) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a4))
     return nullptr;
   return callback.Run(a1, a2, a3, a4);
 }
@@ -86,11 +91,12 @@ inline WrappableBase* InvokeFactory(
   typename CallbackParamTraits<P3>::LocalType a3;
   typename CallbackParamTraits<P4>::LocalType a4;
   typename CallbackParamTraits<P5>::LocalType a5;
-  if (!GetNextArgument(args, 0, true, &a1) ||
-      !GetNextArgument(args, 0, false, &a2) ||
-      !GetNextArgument(args, 0, false, &a3) ||
-      !GetNextArgument(args, 0, false, &a4) ||
-      !GetNextArgument(args, 0, false, &a5))
+  gin::Arguments gin_args(args->info());
+  if (!gin_helper::GetNextArgument(&gin_args, 0, true, &a1) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a2) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a3) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a4) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a5))
     return nullptr;
   return callback.Run(a1, a2, a3, a4, a5);
 }
@@ -110,12 +116,13 @@ inline WrappableBase* InvokeFactory(
   typename CallbackParamTraits<P4>::LocalType a4;
   typename CallbackParamTraits<P5>::LocalType a5;
   typename CallbackParamTraits<P6>::LocalType a6;
-  if (!GetNextArgument(args, 0, true, &a1) ||
-      !GetNextArgument(args, 0, false, &a2) ||
-      !GetNextArgument(args, 0, false, &a3) ||
-      !GetNextArgument(args, 0, false, &a4) ||
-      !GetNextArgument(args, 0, false, &a5) ||
-      !GetNextArgument(args, 0, false, &a6))
+  gin::Arguments gin_args(args->info());
+  if (!gin_helper::GetNextArgument(&gin_args, 0, true, &a1) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a2) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a3) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a4) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a5) ||
+      !gin_helper::GetNextArgument(&gin_args, 0, false, &a6))
     return nullptr;
   return callback.Run(a1, a2, a3, a4, a5, a6);
 }
