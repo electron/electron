@@ -553,6 +553,11 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
       ninja -C out/Default electron:electron_version
       electron/script/zip-symbols.py -b $BUILD_PATH
 
+step-symbols-store: &step-symbols-store
+  store_artifacts:
+    path: src/out/Default/symbols.zip
+    destination: symbols.zip
+
 step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
   run:
     name: Generate cross arch snapshot (arm/arm64)
@@ -859,6 +864,7 @@ steps-electron-build: &steps-electron-build
 
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
+    - *step-symbols-store
 
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
@@ -933,6 +939,7 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
 
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
+    - *step-symbols-store
 
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
@@ -953,11 +960,12 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Electron app
     - *step-electron-build
+    - *step-maybe-generate-breakpad-symbols
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
+    - *step-symbols-store
 
     # mksnapshot
     - *step-mksnapshot-build
