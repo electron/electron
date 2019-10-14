@@ -121,11 +121,10 @@ void AtomRendererClient::DidCreateScriptContext(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
-  v8::Local<v8::Context> context =
-      node::MaybeInitializeContext(renderer_context);
-  DCHECK(!context.IsEmpty());
+  DCHECK(node::InitializeContext(renderer_context));
   node::Environment* env =
-      node_bindings_->CreateEnvironment(context, nullptr, true);
+      node_bindings_->CreateEnvironment(renderer_context, nullptr, true);
+
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
   if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
