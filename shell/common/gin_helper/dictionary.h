@@ -5,7 +5,6 @@
 #ifndef SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
 #define SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
 
-#include <string>
 #include <type_traits>
 
 #include "gin/dictionary.h"
@@ -28,15 +27,21 @@ class Dictionary : public gin::Dictionary {
   Dictionary(const gin::Dictionary& dict)  // NOLINT(runtime/explicit)
       : gin::Dictionary(dict) {}
 
-  // The Get method in gin::Dictionary is not a const method, work around it
-  // by adding our own version.
-  //
-  // TODO(zcbenz): Add the const method in upstream.
+  // Difference from the Get method in gin::Dictionary:
+  // 1. This is a const method;
+  // 2. It checks whether the key exists before reading.
   template <typename T>
-  bool Get(const std::string& key, T* out) const {
-    return const_cast<gin::Dictionary*>(
-               static_cast<const gin::Dictionary*>(this))
-        ->Get(key, out);
+  bool Get(base::StringPiece key, T* out) const {
+    // Check for existence before getting, otherwise this method will always
+    // returns true when T == v8::Local<v8::Value>.
+    v8::Local<v8::Context> context = isolate()->GetCurrentContext();
+    v8::Local<v8::String> v8_key = gin::StringToV8(isolate(), key);
+    v8::Local<v8::Value> value;
+    v8::Maybe<bool> result = GetHandle()->Has(context, v8_key);
+    if (result.IsJust() && result.FromJust() &&
+        GetHandle()->Get(context, v8_key).ToLocal(&value))
+      return gin::ConvertFromV8(isolate(), value, out);
+    return false;
   }
 
   template <typename T>

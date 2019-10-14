@@ -15,6 +15,7 @@
 #include "shell/browser/atom_browser_context.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 
@@ -167,7 +168,7 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
 
 URLRequestNS::URLRequestNS(gin::Arguments* args) : weak_factory_(this) {
   request_ = std::make_unique<network::ResourceRequest>();
-  gin::Dictionary dict(args->isolate());
+  gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("method", &request_->method);
     dict.Get("url", &request_->url);
