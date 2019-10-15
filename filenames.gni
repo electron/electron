@@ -522,7 +522,6 @@ filenames = {
     "shell/common/native_mate_converters/gfx_converter.h",
     "shell/common/native_mate_converters/gurl_converter.h",
     "shell/common/native_mate_converters/image_converter.h",
-    "shell/common/native_mate_converters/map_converter.h",
     "shell/common/native_mate_converters/native_window_converter.h",
     "shell/common/native_mate_converters/net_converter.h",
     "shell/common/native_mate_converters/network_converter.cc",
