@@ -2155,23 +2155,10 @@ void WebContents::StartDrag(const mate::Dictionary& item,
   }
 
   mate::Handle<NativeImage> icon;
-  if (!item.Get("icon", &icon) && !file.empty()) {
-    // TODO(zcbenz): Set default icon from file.
-  }
-
-  // Error checking.
-  if (icon.IsEmpty()) {
-    args->ThrowError("Must specify 'icon' option");
-    return;
-  }
-
-#if defined(OS_MACOSX)
-  // NSWindow.dragImage requires a non-empty NSImage
-  if (icon->image().IsEmpty()) {
+  if (!item.Get("icon", &icon)) {
     args->ThrowError("Must specify non-empty 'icon' option");
     return;
   }
-#endif
 
   // Start dragging.
   if (!files.empty()) {
