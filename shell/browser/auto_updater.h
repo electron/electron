@@ -10,10 +10,13 @@
 
 #include "base/macros.h"
 #include "build/build_config.h"
-#include "native_mate/arguments.h"
 
 namespace base {
 class Time;
+}
+
+namespace gin {
+class Arguments;
 }
 
 namespace auto_updater {
@@ -55,7 +58,7 @@ class AutoUpdater {
   static void SetDelegate(Delegate* delegate);
 
   static std::string GetFeedURL();
-  static void SetFeedURL(mate::Arguments* args);
+  static void SetFeedURL(gin::Arguments* args);
   static void CheckForUpdates();
   static void QuitAndInstall();
 
