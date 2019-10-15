@@ -13,8 +13,6 @@
 #include "gin/arguments.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/handle.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
 
 namespace content {

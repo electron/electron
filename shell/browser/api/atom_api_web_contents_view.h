@@ -19,7 +19,7 @@ class WebContents;
 
 class WebContentsView : public View, public content::WebContentsObserver {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args,
+  static mate::WrappableBase* New(gin::Arguments* args,
                                   mate::Handle<WebContents> web_contents);
 
   static void BuildPrototype(v8::Isolate* isolate,

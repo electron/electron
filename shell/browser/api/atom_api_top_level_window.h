@@ -28,7 +28,7 @@ class View;
 class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
                        public NativeWindowObserver {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args);
+  static mate::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -43,9 +43,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   // Common constructor.
   TopLevelWindow(v8::Isolate* isolate, const mate::Dictionary& options);
   // Creating independent TopLevelWindow instance.
-  TopLevelWindow(v8::Isolate* isolate,
-                 v8::Local<v8::Object> wrapper,
-                 const mate::Dictionary& options);
+  TopLevelWindow(gin::Arguments* args, const mate::Dictionary& options);
   ~TopLevelWindow() override;
 
   // TrackableObject:
@@ -265,23 +263,5 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 }  // namespace api
 
 }  // namespace electron
-
-namespace gin {
-
-// TODO(zcbenz): Remove this after converting TopLevelWindow to gin::Wrapper.
-template <>
-struct Converter<electron::api::TopLevelWindow*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::TopLevelWindow** out) {
-    return mate::ConvertFromV8(isolate, val, out);
-  }
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::api::TopLevelWindow* in) {
-    return mate::ConvertToV8(isolate, in);
-  }
-};
-
-}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_

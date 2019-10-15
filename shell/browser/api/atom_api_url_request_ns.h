@@ -28,13 +28,13 @@ class UploadDataPipeGetter;
 class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
                      public network::SimpleURLLoaderStreamConsumer {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args);
+  static mate::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  explicit URLRequestNS(mate::Arguments* args);
+  explicit URLRequestNS(gin::Arguments* args);
   ~URLRequestNS() override;
 
   bool NotStarted() const;
@@ -140,23 +140,5 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
 }  // namespace api
 
 }  // namespace electron
-
-namespace gin {
-
-// TODO(zcbenz): Remove this after converting URLRequestNS to gin::Wrapper.
-template <>
-struct Converter<electron::api::URLRequestNS*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::URLRequestNS** out) {
-    return mate::ConvertFromV8(isolate, val, out);
-  }
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::api::URLRequestNS* in) {
-    return mate::ConvertToV8(isolate, in);
-  }
-};
-
-}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_URL_REQUEST_NS_H_

@@ -27,6 +27,23 @@ class Dictionary : public gin::Dictionary {
   Dictionary(const gin::Dictionary& dict)  // NOLINT(runtime/explicit)
       : gin::Dictionary(dict) {}
 
+  // Difference from the Get method in gin::Dictionary:
+  // 1. This is a const method;
+  // 2. It checks whether the key exists before reading.
+  template <typename T>
+  bool Get(base::StringPiece key, T* out) const {
+    // Check for existence before getting, otherwise this method will always
+    // returns true when T == v8::Local<v8::Value>.
+    v8::Local<v8::Context> context = isolate()->GetCurrentContext();
+    v8::Local<v8::String> v8_key = gin::StringToV8(isolate(), key);
+    v8::Local<v8::Value> value;
+    v8::Maybe<bool> result = GetHandle()->Has(context, v8_key);
+    if (result.IsJust() && result.FromJust() &&
+        GetHandle()->Get(context, v8_key).ToLocal(&value))
+      return gin::ConvertFromV8(isolate(), value, out);
+    return false;
+  }
+
   template <typename T>
   bool GetHidden(base::StringPiece key, T* out) const {
     v8::Local<v8::Context> context = isolate()->GetCurrentContext();
@@ -79,6 +96,8 @@ class Dictionary : public gin::Dictionary {
         isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key));
     return !result.IsNothing() && result.FromJust();
   }
+
+  bool IsEmpty() const { return isolate() == nullptr || GetHandle().IsEmpty(); }
 
   v8::Local<v8::Object> GetHandle() const {
     return gin::ConvertToV8(isolate(),

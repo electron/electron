@@ -9,10 +9,10 @@
 #include <vector>
 
 #include "content/public/browser/content_browser_client.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/net/atom_url_loader_factory.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace electron {
 
@@ -22,8 +22,8 @@ namespace api {
 
 std::vector<std::string> GetStandardSchemes();
 
-void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
-                                 mate::Arguments* args);
+void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
+                                 v8::Local<v8::Value> val);
 
 // Possible errors.
 enum class ProtocolError {
@@ -37,8 +37,8 @@ enum class ProtocolError {
 // Protocol implementation based on network services.
 class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
  public:
-  static mate::Handle<ProtocolNS> Create(v8::Isolate* isolate,
-                                         AtomBrowserContext* browser_context);
+  static gin::Handle<ProtocolNS> Create(v8::Isolate* isolate,
+                                        AtomBrowserContext* browser_context);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -61,35 +61,35 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
   ProtocolError RegisterProtocol(ProtocolType type,
                                  const std::string& scheme,
                                  const ProtocolHandler& handler);
-  void UnregisterProtocol(const std::string& scheme, mate::Arguments* args);
+  void UnregisterProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolRegistered(const std::string& scheme);
 
   ProtocolError InterceptProtocol(ProtocolType type,
                                   const std::string& scheme,
                                   const ProtocolHandler& handler);
-  void UninterceptProtocol(const std::string& scheme, mate::Arguments* args);
+  void UninterceptProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolIntercepted(const std::string& scheme);
 
   // Old async version of IsProtocolRegistered.
   v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme,
-                                           mate::Arguments* args);
+                                           gin::Arguments* args);
 
   // Helper for converting old registration APIs to new RegisterProtocol API.
   template <ProtocolType type>
   void RegisterProtocolFor(const std::string& scheme,
                            const ProtocolHandler& handler,
-                           mate::Arguments* args) {
+                           gin::Arguments* args) {
     HandleOptionalCallback(args, RegisterProtocol(type, scheme, handler));
   }
   template <ProtocolType type>
   void InterceptProtocolFor(const std::string& scheme,
                             const ProtocolHandler& handler,
-                            mate::Arguments* args) {
+                            gin::Arguments* args) {
     HandleOptionalCallback(args, InterceptProtocol(type, scheme, handler));
   }
 
   // Be compatible with old interface, which accepts optional callback.
-  void HandleOptionalCallback(mate::Arguments* args, ProtocolError error);
+  void HandleOptionalCallback(gin::Arguments* args, ProtocolError error);
 
   HandlersMap handlers_;
   HandlersMap intercept_handlers_;

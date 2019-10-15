@@ -5,6 +5,7 @@
 #include "native_mate/wrappable.h"
 
 #include "base/logging.h"
+#include "gin/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder_deprecated.h"
 
@@ -35,6 +36,12 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(
         v8::Local<v8::Object>::New(isolate, wrapper_));
   else
     return v8::MaybeLocal<v8::Object>();
+}
+
+void WrappableBase::InitWithArgs(gin::Arguments* args) {
+  v8::Local<v8::Object> holder;
+  args->GetHolder(&holder);
+  InitWith(args->isolate(), holder);
 }
 
 void WrappableBase::InitWith(v8::Isolate* isolate,

@@ -57,15 +57,9 @@ namespace electron {
 
 namespace api {
 
-BrowserView::BrowserView(v8::Isolate* isolate,
-                         v8::Local<v8::Object> wrapper,
+BrowserView::BrowserView(gin::Arguments* args,
                          const mate::Dictionary& options) {
-  Init(isolate, wrapper, options);
-}
-
-void BrowserView::Init(v8::Isolate* isolate,
-                       v8::Local<v8::Object> wrapper,
-                       const mate::Dictionary& options) {
+  v8::Isolate* isolate = args->isolate();
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
   web_preferences.Set("type", "browserView");
@@ -79,7 +73,7 @@ void BrowserView::Init(v8::Isolate* isolate,
   view_.reset(
       NativeBrowserView::Create(api_web_contents_->managed_web_contents()));
 
-  InitWith(isolate, wrapper);
+  InitWithArgs(args);
 }
 
 BrowserView::~BrowserView() {
@@ -96,16 +90,17 @@ void BrowserView::WebContentsDestroyed() {
 }
 
 // static
-mate::WrappableBase* BrowserView::New(mate::Arguments* args) {
+mate::WrappableBase* BrowserView::New(gin_helper::ErrorThrower thrower,
+                                      gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create BrowserView before app is ready");
+    thrower.ThrowError("Cannot create BrowserView before app is ready");
     return nullptr;
   }
 
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
-  return new BrowserView(args->isolate(), args->GetThis(), options);
+  return new BrowserView(args, options);
 }
 
 int32_t BrowserView::ID() const {

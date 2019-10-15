@@ -19,7 +19,7 @@ namespace api {
 
 class MenuViews : public Menu {
  public:
-  MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
+  explicit MenuViews(gin::Arguments* args);
   ~MenuViews() override;
 
  protected:

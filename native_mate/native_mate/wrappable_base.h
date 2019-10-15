@@ -6,8 +6,9 @@
 #define NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_
 
 namespace gin {
+class Arguments;
 struct Destroyable;
-}
+}  // namespace gin
 
 namespace mate {
 
@@ -46,6 +47,9 @@ class WrappableBase {
   // Bind the C++ class to the JS wrapper.
   // This method should only be called by classes using Constructor.
   virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
+
+  // Helper to migrate from native_mate to gin.
+  void InitWithArgs(gin::Arguments* args);
 
  private:
   friend struct gin::Destroyable;
