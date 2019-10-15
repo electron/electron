@@ -82,6 +82,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
                        bool internal,
                        const std::string& channel,
                        const base::ListValue& arguments) {
+    std::string error;
     base::Value result;
 
     // A task is posted to a separate thread to execute the request so that
@@ -98,14 +99,18 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     // interface.
     auto interface_info = electron_browser_ptr_.PassInterface();
     task_runner->PostTask(
-        FROM_HERE, base::BindOnce(&IPCRenderer::SendMessageSyncOnWorkerThread,
-                                  base::Unretained(this),
-                                  base::Unretained(&interface_info),
-                                  base::Unretained(&response_received_event),
-                                  base::Unretained(&result), internal, channel,
-                                  base::Unretained(&arguments)));
+        FROM_HERE,
+        base::BindOnce(&IPCRenderer::SendMessageSyncOnWorkerThread,
+                       base::Unretained(this),
+                       base::Unretained(&interface_info),
+                       base::Unretained(&response_received_event),
+                       base::Unretained(&result), internal, channel,
+                       base::Unretained(&arguments), base::Unretained(&error)));
     response_received_event.Wait();
     electron_browser_ptr_.Bind(std::move(interface_info));
+    if (!error.empty()) {
+      args->ThrowError(error);
+    }
     return result;
   }
 
@@ -116,19 +121,20 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
       base::Value* result,
       bool internal,
       const std::string& channel,
-      const base::ListValue* arguments) {
+      const base::ListValue* arguments,
+      std::string* error) {
     atom::mojom::ElectronBrowserPtr browser_ptr(std::move(*interface_info));
-    worker_thread_electron_browser_ptr_ = std::move(browser_ptr);
+    electron_browser_ptr_ = std::move(browser_ptr);
 
-    worker_thread_electron_browser_ptr_.set_connection_error_handler(
+    electron_browser_ptr_.set_connection_error_handler(
         base::BindOnce(&IPCRenderer::HandleMojoConnectionErrorOnWorkerThread,
-                       base::Unretained(&worker_thread_electron_browser_ptr_),
+                       base::Unretained(&electron_browser_ptr_),
                        base::Unretained(interface_info),
-                       base::Unretained(event)));
-    worker_thread_electron_browser_ptr_->MessageSync(
+                       base::Unretained(event), base::Unretained(error)));
+    electron_browser_ptr_->MessageSync(
         internal, channel, arguments->Clone(),
         base::BindOnce(&IPCRenderer::ReturnSyncResponseToMainThread,
-                       base::Unretained(&worker_thread_electron_browser_ptr_),
+                       base::Unretained(&electron_browser_ptr_),
                        base::Unretained(interface_info),
                        base::Unretained(event), base::Unretained(result)));
   }
@@ -147,7 +153,11 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
   static void HandleMojoConnectionErrorOnWorkerThread(
       atom::mojom::ElectronBrowserPtr* ptr,
       atom::mojom::ElectronBrowserPtrInfo* interface_info,
-      base::WaitableEvent* event) {
+      base::WaitableEvent* event,
+      std::string* error) {
+    LOG(INFO) << "Mojo connection interuppted, likely due to the Mojo receiver "
+                 "process crashing.";
+    *error = "IPC connection fatally interrupted.";
     *interface_info = ptr->PassInterface();
     event->Signal();
   }
