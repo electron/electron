@@ -93,7 +93,7 @@ Find documentation translations in [electron/i18n](https://github.com/electron/i
 
 ## Contributing
 
-If you are interested in reporting/fixing issues and contributing directly to the code base, please see [CONTRIBUTING.md](CONTRIBUTING.md) for more information on what we're looking for and how to get started.
+If you are interested in reporting/fixing issues/bugs and contributing directly to the code base, please see [CONTRIBUTING.md](CONTRIBUTING.md) for more information on what we're looking for and how to get started.
 
 ## Community
 
@@ -104,4 +104,4 @@ and more can be found in the [support document](docs/tutorial/support.md#finding
 
 [MIT](https://github.com/electron/electron/blob/master/LICENSE)
 
-When using the Electron or other GitHub logos, be sure to follow the [GitHub logo guidelines](https://github.com/logos).
+When using the Electron or other GitHub logos, please be sure to follow the [GitHub logo guidelines](https://github.com/logos).
