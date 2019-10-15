@@ -144,6 +144,7 @@ struct Converter<std::map<K, V>> {
     }
     return true;
   }
+
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const std::map<K, V>& dict) {
     v8::Local<v8::Object> obj = v8::Object::New(isolate);
@@ -151,7 +152,7 @@ struct Converter<std::map<K, V>> {
     for (const auto& it : dict) {
       if (obj->Set(context, ConvertToV8(isolate, it.first),
                    ConvertToV8(isolate, it.second))
-              .IsEmpty())
+              .IsNothing())
         break;
     }
     return obj;
