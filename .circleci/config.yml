@@ -1107,7 +1107,6 @@ jobs:
       <<: *env-mac-large
       <<: *env-debug-build
       <<: *env-enable-sccache
-      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests    
 
   osx-debug-gn-check:
@@ -1165,7 +1164,6 @@ jobs:
       <<: *env-mas
       <<: *env-debug-build
       <<: *env-enable-sccache
-      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   mas-debug-gn-check:
