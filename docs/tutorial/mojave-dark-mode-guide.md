@@ -31,6 +31,6 @@ const id = systemPreferences.subscribeNotification(
 )
 
 app.on('will-quit', () => {
-  systemPreferences.unsubscribeNotification(id);
-});
+  systemPreferences.unsubscribeNotification(id)
+})
 ```
