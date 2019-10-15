@@ -217,35 +217,18 @@ describe('node feature', () => {
 
     describe('setInterval called under blink env in renderer process', () => {
       it('can be scheduled in time', (done) => {
-        let interval = null
-        let clearing = false
-        const clear = () => {
-          if (interval === null || clearing) return
-
-          // interval might trigger while clearing (remote is slow sometimes)
-          clearing = true
-          clearInterval(interval)
-          clearing = false
-          interval = null
+        const id = setInterval(() => {
+          clearInterval(id)
           done()
-        }
-        interval = setInterval(clear, 10)
+        }, 10)
       })
 
       it('can be scheduled in time from timers module', (done) => {
-        let interval = null
-        let clearing = false
-        const clear = () => {
-          if (interval === null || clearing) return
-
-          // interval might trigger while clearing (remote is slow sometimes)
-          clearing = true
-          require('timers').clearInterval(interval)
-          clearing = false
-          interval = null
+        const { setInterval, clearInterval } = require('timers')
+        const id = setInterval(() => {
+          clearInterval(id)
           done()
-        }
-        interval = require('timers').setInterval(clear, 10)
+        }, 10)
       })
     })
   })
