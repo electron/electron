@@ -9,7 +9,7 @@ import { emittedOnce } from './events-helpers'
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge')
 
-describe('contextBridge', () => {
+describe.only('contextBridge', () => {
   let w: BrowserWindow
   let dir: string
 
@@ -70,10 +70,6 @@ describe('contextBridge', () => {
       const callWithBindings = async (fn: Function) => {
         return await w.webContents.executeJavaScript(`(${fn.toString()})(window)`)
       }
-    
-      // const forceGC = async () => {
-        
-      // }
     
       const getGCInfo = async (): Promise<{
         functionCount: number;

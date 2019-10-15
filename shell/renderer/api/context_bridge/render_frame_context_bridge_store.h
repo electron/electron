@@ -44,21 +44,6 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
   std::map<size_t, FunctionContextPair>& functions() { return functions_; }
   std::map<int, WeakGlobalPairNode*>* proxy_map() { return &proxy_map_; }
 
-  v8::Local<v8::Context> isolated_world_context() {
-    CHECK(render_frame());
-    auto* frame = render_frame()->GetWebFrame();
-    CHECK(frame);
-    return frame->WorldScriptContext(v8::Isolate::GetCurrent(),
-                                     World::ISOLATED_WORLD);
-  }
-
-  v8::Local<v8::Context> main_world_context() {
-    CHECK(render_frame());
-    auto* frame = render_frame()->GetWebFrame();
-    CHECK(frame);
-    return frame->MainWorldScriptContext();
-  }
-
   void CacheProxiedObject(v8::Local<v8::Value> from,
                           v8::Local<v8::Value> proxy_value);
   v8::MaybeLocal<v8::Value> GetCachedProxiedObject(v8::Local<v8::Value> from);

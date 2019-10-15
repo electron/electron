@@ -52,7 +52,7 @@ The `contextBridge` module has the following instance methods:
 The `api` object provided to [`exposeInMainWorld`](#contextbridgeexposeinmainworldapikey-api) must be an object
 whose keys are strings and values are a `Function`, `String`, `Number`, `Array`, `Boolean` or another nested object that meets the same conditions.
 
-`Function` values are proxied to the other context and all other values are **copied** and **frozen**.  I.e. Any data / primtives sent in
+`Function` values are proxied to the other context and all other values are **copied** and **frozen**.  I.e. Any data / primitives sent in
 the API object become immutable and updates on either side of the bridge do not result in an update on the other side.
 
 An example of a complex API object is shown below.
@@ -104,26 +104,8 @@ has been included below for completeness.
 | `Error` | Complex | ✅ | ✅ | Errors that are thrown are also copied, this can result in the message and stack trace of the error changing slightly due to being thrown in a different context |
 | `Promise` | Complex | ✅ | ✅ | Promises are only proxied if they are a the return value or exact parameter.  Promises nested in arrays or obejcts will be dropped. |
 | `Function` | Complex | ✅ | ✅ | Prototype modifications are dropped.  Sending classes or constructors will not work. |
+| [Cloneable Types](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) | Simple | ✅ | ✅ | See the linked document on cloneable types |
 | `Symbol` | N/A | ❌ | ❌ | Symbols cannot be copied across contexts so they are dropped |
 
 
 If the type you care about is not in the above table it is probably not supported.
-
-### Performance
-
-Electron will attempt to proxy any object, array or other structure you provide the `contextBridge` module.  This includes method parameters, method return types, etc.  This can be quite costly when sending large data blobs.  If you need more performance out of the bridge and you are sending data, no methods or dynamic content then we recommend you `JSON.stringify` and `JSON.parse` the content across the bridge.  E.g.
-
-```javascript
-// Isolated World
-contextBridge.exposeInMainWorld(
-  'electron',
-  {
-    getData: () => JSON.stringify(myLargeData)
-  }
-)
-
-// Main World
-console.log(JSON.parse(window.electron.getData()))
-```
-
-Your mileage may vary and before you start stringifying everything we recommend that you measure the speed of both to see which one works best for you.

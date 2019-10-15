@@ -12,8 +12,8 @@ namespace api {
 
 namespace context_bridge {
 
-WeakGlobalPairNode::WeakGlobalPairNode(WeakGlobalPair pair_) {
-  pair = std::move(pair_);
+WeakGlobalPairNode::WeakGlobalPairNode(WeakGlobalPair pair) {
+  this->pair = std::move(pair);
 }
 
 WeakGlobalPairNode::~WeakGlobalPairNode() {
