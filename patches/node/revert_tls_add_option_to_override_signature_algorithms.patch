@@ -1,0 +1,364 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 15 Oct 2019 11:21:13 -0700
+Subject: Revert "tls: add option to override signature algorithms"
+
+This reverts commit 6272f82c07e913a76a316a786c9aadbc09f953ff.
+
+diff --git a/doc/api/tls.md b/doc/api/tls.md
+index 70c6b96a0e471d48c1432245db914362ab6ff938..63635d60bb872e09ec8c3a5d6ceee6dd731b0db5 100644
+--- a/doc/api/tls.md
++++ b/doc/api/tls.md
+@@ -839,7 +839,7 @@ Returns an object containing information on the negotiated cipher suite.
+ For example: `{ name: 'AES256-SHA', version: 'TLSv1.2' }`.
+ 
+ See
+-[SSL_CIPHER_get_name](https://www.openssl.org/docs/man1.1.1/man3/SSL_CIPHER_get_name.html)
++[OpenSSL](https://www.openssl.org/docs/man1.1.1/man3/SSL_CIPHER_get_name.html)
+ for more information.
+ 
+ ### tlsSocket.getEphemeralKeyInfo()
+@@ -1358,14 +1358,6 @@ argument.
+ <!-- YAML
+ added: v0.11.13
+ changes:
+-  - version: v12.12.0
+-    pr-url: https://github.com/nodejs/node/pull/28973
+-    description: Added `privateKeyIdentifier` and `privateKeyEngine` options
+-                 to get private key from an OpenSSL engine.
+-  - version: v12.11.0
+-    pr-url: https://github.com/nodejs/node/pull/29598
+-    description: Added `sigalgs` option to override supported signature
+-                 algorithms.
+   - version: v12.0.0
+     pr-url: https://github.com/nodejs/node/pull/26209
+     description: TLSv1.3 support added.
+@@ -1426,12 +1418,6 @@ changes:
+     order as their private keys in `key`. If the intermediate certificates are
+     not provided, the peer will not be able to validate the certificate, and the
+     handshake will fail.
+-  * `sigalgs` {string} Colon-separated list of supported signature algorithms.
+-    The list can contain digest algorithms (`SHA256`, `MD5` etc.), public key
+-    algorithms (`RSA-PSS`, `ECDSA` etc.), combination of both (e.g
+-    'RSA+SHA384') or TLS v1.3 scheme names (e.g. `rsa_pss_pss_sha512`).
+-    See [OpenSSL man pages](https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set1_sigalgs_list.html)
+-    for more info.
+   * `ciphers` {string} Cipher suite specification, replacing the default. For
+     more information, see [modifying the default cipher suite][]. Permitted
+     ciphers can be obtained via [`tls.getCiphers()`][]. Cipher names must be
+diff --git a/lib/_tls_common.js b/lib/_tls_common.js
+index 6cd93036c273a07e39554af12ec0304acd03537e..efe90409563cc68e55301ee489b442c466891bb6 100644
+--- a/lib/_tls_common.js
++++ b/lib/_tls_common.js
+@@ -153,49 +153,6 @@ exports.createSecureContext = function createSecureContext(options) {
+     }
+   }
+ 
+-  const sigalgs = options.sigalgs;
+-  if (sigalgs !== undefined) {
+-    if (typeof sigalgs !== 'string') {
+-      throw new ERR_INVALID_ARG_TYPE('options.sigalgs', 'string', sigalgs);
+-    }
+-
+-    if (sigalgs === '') {
+-      throw new ERR_INVALID_OPT_VALUE('sigalgs', sigalgs);
+-    }
+-
+-    c.context.setSigalgs(sigalgs);
+-  }
+-
+-  const { privateKeyIdentifier, privateKeyEngine } = options;
+-  if (privateKeyIdentifier !== undefined) {
+-    if (privateKeyEngine === undefined) {
+-      // Engine is required when privateKeyIdentifier is present
+-      throw new ERR_INVALID_OPT_VALUE('privateKeyEngine',
+-                                      privateKeyEngine);
+-    }
+-    if (key) {
+-      // Both data key and engine key can't be set at the same time
+-      throw new ERR_INVALID_OPT_VALUE('privateKeyIdentifier',
+-                                      privateKeyIdentifier);
+-    }
+-
+-    if (typeof privateKeyIdentifier === 'string' &&
+-        typeof privateKeyEngine === 'string') {
+-      if (c.context.setEngineKey)
+-        c.context.setEngineKey(privateKeyIdentifier, privateKeyEngine);
+-      else
+-        throw new ERR_CRYPTO_CUSTOM_ENGINE_NOT_SUPPORTED();
+-    } else if (typeof privateKeyIdentifier !== 'string') {
+-      throw new ERR_INVALID_ARG_TYPE('options.privateKeyIdentifier',
+-                                     ['string', 'undefined'],
+-                                     privateKeyIdentifier);
+-    } else {
+-      throw new ERR_INVALID_ARG_TYPE('options.privateKeyEngine',
+-                                     ['string', 'undefined'],
+-                                     privateKeyEngine);
+-    }
+-  }
+-
+   if (options.ciphers && typeof options.ciphers !== 'string') {
+     throw new ERR_INVALID_ARG_TYPE(
+       'options.ciphers', 'string', options.ciphers);
+diff --git a/lib/_tls_wrap.js b/lib/_tls_wrap.js
+index 9c3fe656a7ce806381bc18a33102820b7967d6e5..4187d3c551e91e25d4b9d33780abf000547f853c 100644
+--- a/lib/_tls_wrap.js
++++ b/lib/_tls_wrap.js
+@@ -861,7 +861,6 @@ function makeSocketMethodProxy(name) {
+ 
+ [
+   'getCipher',
+-  'getSharedSigalgs',
+   'getEphemeralKeyInfo',
+   'getFinished',
+   'getPeerFinished',
+@@ -1117,8 +1116,6 @@ Server.prototype.setSecureContext = function(options) {
+   else
+     this.crl = undefined;
+ 
+-  this.sigalgs = options.sigalgs;
+-
+   if (options.ciphers)
+     this.ciphers = options.ciphers;
+   else
+@@ -1160,7 +1157,6 @@ Server.prototype.setSecureContext = function(options) {
+     clientCertEngine: this.clientCertEngine,
+     ca: this.ca,
+     ciphers: this.ciphers,
+-    sigalgs: this.sigalgs,
+     ecdhCurve: this.ecdhCurve,
+     dhparam: this.dhparam,
+     minVersion: this.minVersion,
+diff --git a/src/node_crypto.cc b/src/node_crypto.cc
+index 870456216983c2685c53580e60c44aa4dd3f7267..63dd6a186366baad660ee8e38401ba842c6ddb17 100644
+--- a/src/node_crypto.cc
++++ b/src/node_crypto.cc
+@@ -470,7 +470,6 @@ void SecureContext::Initialize(Environment* env, Local<Object> target) {
+   env->SetProtoMethod(t, "addRootCerts", AddRootCerts);
+   env->SetProtoMethod(t, "setCipherSuites", SetCipherSuites);
+   env->SetProtoMethod(t, "setCiphers", SetCiphers);
+-  env->SetProtoMethod(t, "setSigalgs", SetSigalgs);
+   env->SetProtoMethod(t, "setECDHCurve", SetECDHCurve);
+   env->SetProtoMethod(t, "setDHParam", SetDHParam);
+   env->SetProtoMethod(t, "setMaxProto", SetMaxProto);
+@@ -739,23 +738,6 @@ void SecureContext::SetKey(const FunctionCallbackInfo<Value>& args) {
+   }
+ }
+ 
+-void SecureContext::SetSigalgs(const FunctionCallbackInfo<Value>& args) {
+-  SecureContext* sc;
+-  ASSIGN_OR_RETURN_UNWRAP(&sc, args.Holder());
+-  Environment* env = sc->env();
+-  ClearErrorOnReturn clear_error_on_return;
+-
+-  CHECK_EQ(args.Length(), 1);
+-  CHECK(args[0]->IsString());
+-
+-  const node::Utf8Value sigalgs(env->isolate(), args[0]);
+-
+-  int rv = SSL_CTX_set1_sigalgs_list(sc->ctx_.get(), *sigalgs);
+-
+-  if (rv == 0) {
+-    return ThrowCryptoError(env, ERR_get_error());
+-  }
+-}
+ 
+ #ifndef OPENSSL_NO_ENGINE
+ // Helpers for the smart pointer.
+@@ -1748,7 +1730,6 @@ void SSLWrap<Base>::AddMethods(Environment* env, Local<FunctionTemplate> t) {
+   env->SetProtoMethodNoSideEffect(t, "isSessionReused", IsSessionReused);
+   env->SetProtoMethodNoSideEffect(t, "verifyError", VerifyError);
+   env->SetProtoMethodNoSideEffect(t, "getCipher", GetCipher);
+-  env->SetProtoMethodNoSideEffect(t, "getSharedSigalgs", GetSharedSigalgs);
+   env->SetProtoMethod(t, "endParser", EndParser);
+   env->SetProtoMethod(t, "certCbDone", CertCbDone);
+   env->SetProtoMethod(t, "renegotiate", Renegotiate);
+@@ -2685,88 +2666,6 @@ void SSLWrap<Base>::GetCipher(const FunctionCallbackInfo<Value>& args) {
+ }
+ 
+ 
+-template <class Base>
+-void SSLWrap<Base>::GetSharedSigalgs(const FunctionCallbackInfo<Value>& args) {
+-  Base* w;
+-  ASSIGN_OR_RETURN_UNWRAP(&w, args.Holder());
+-  Environment* env = w->ssl_env();
+-  std::vector<Local<Value>> ret_arr;
+-
+-  SSL* ssl = w->ssl_.get();
+-  int nsig = SSL_get_shared_sigalgs(ssl, 0, nullptr, nullptr, nullptr, nullptr,
+-                                    nullptr);
+-
+-  for (int i = 0; i < nsig; i++) {
+-    int hash_nid;
+-    int sign_nid;
+-    std::string sig_with_md;
+-
+-    SSL_get_shared_sigalgs(ssl, i, &sign_nid, &hash_nid, nullptr, nullptr,
+-                           nullptr);
+-
+-    switch (sign_nid) {
+-      case EVP_PKEY_RSA:
+-        sig_with_md = "RSA+";
+-        break;
+-
+-      case EVP_PKEY_RSA_PSS:
+-        sig_with_md = "RSA-PSS+";
+-        break;
+-
+-      case EVP_PKEY_DSA:
+-        sig_with_md = "DSA+";
+-        break;
+-
+-      case EVP_PKEY_EC:
+-        sig_with_md = "ECDSA+";
+-        break;
+-
+-      case NID_ED25519:
+-        sig_with_md = "Ed25519+";
+-        break;
+-
+-      case NID_ED448:
+-        sig_with_md = "Ed448+";
+-        break;
+-
+-      case NID_id_GostR3410_2001:
+-        sig_with_md = "gost2001+";
+-        break;
+-
+-      case NID_id_GostR3410_2012_256:
+-        sig_with_md = "gost2012_256+";
+-        break;
+-
+-      case NID_id_GostR3410_2012_512:
+-        sig_with_md = "gost2012_512+";
+-        break;
+-
+-      default:
+-        const char* sn = OBJ_nid2sn(sign_nid);
+-
+-        if (sn != nullptr) {
+-          sig_with_md = std::string(sn) + "+";
+-        } else {
+-          sig_with_md = "UNDEF+";
+-        }
+-        break;
+-    }
+-
+-    const char* sn_hash = OBJ_nid2sn(hash_nid);
+-    if (sn_hash != nullptr) {
+-      sig_with_md += std::string(sn_hash);
+-    } else {
+-      sig_with_md += "UNDEF";
+-    }
+-
+-    ret_arr.push_back(OneByteString(env->isolate(), sig_with_md.c_str()));
+-  }
+-
+-  args.GetReturnValue().Set(
+-                 Array::New(env->isolate(), ret_arr.data(), ret_arr.size()));
+-}
+-
+-
+ template <class Base>
+ void SSLWrap<Base>::GetProtocol(const FunctionCallbackInfo<Value>& args) {
+   Base* w;
+diff --git a/src/node_crypto.h b/src/node_crypto.h
+index fb21077132dec0900118d178605c9b93cc458105..31e7da7da9daf2ecf965dc38df24272f838ba1a0 100644
+--- a/src/node_crypto.h
++++ b/src/node_crypto.h
+@@ -129,7 +129,6 @@ class SecureContext : public BaseObject {
+   static void AddRootCerts(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetCipherSuites(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetCiphers(const v8::FunctionCallbackInfo<v8::Value>& args);
+-  static void SetSigalgs(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetECDHCurve(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetDHParam(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
+@@ -255,7 +254,6 @@ class SSLWrap {
+   static void IsSessionReused(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void VerifyError(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void GetCipher(const v8::FunctionCallbackInfo<v8::Value>& args);
+-  static void GetSharedSigalgs(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void EndParser(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void CertCbDone(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void Renegotiate(const v8::FunctionCallbackInfo<v8::Value>& args);
+diff --git a/test/parallel/test-tls-set-sigalgs.js b/test/parallel/test-tls-set-sigalgs.js
+deleted file mode 100644
+index 59dc2ca0c786cf2ead5ff5bddf3feaeb4d9c79bc..0000000000000000000000000000000000000000
+--- a/test/parallel/test-tls-set-sigalgs.js
++++ /dev/null
+@@ -1,74 +0,0 @@
+-'use strict';
+-const common = require('../common');
+-if (!common.hasCrypto) common.skip('missing crypto');
+-const fixtures = require('../common/fixtures');
+-
+-// Test sigalgs: option for TLS.
+-
+-const {
+-  assert, connect, keys
+-} = require(fixtures.path('tls-connect'));
+-
+-function assert_arrays_equal(left, right) {
+-  assert.strictEqual(left.length, right.length);
+-  for (let i = 0; i < left.length; i++) {
+-    assert.strictEqual(left[i], right[i]);
+-  }
+-}
+-
+-function test(csigalgs, ssigalgs, shared_sigalgs, cerr, serr) {
+-  assert(shared_sigalgs || serr || cerr, 'test missing any expectations');
+-  connect({
+-    client: {
+-      checkServerIdentity: (servername, cert) => { },
+-      ca: `${keys.agent1.cert}\n${keys.agent6.ca}`,
+-      cert: keys.agent2.cert,
+-      key: keys.agent2.key,
+-      sigalgs: csigalgs
+-    },
+-    server: {
+-      cert: keys.agent6.cert,
+-      key: keys.agent6.key,
+-      ca: keys.agent2.ca,
+-      context: {
+-        requestCert: true,
+-        rejectUnauthorized: true
+-      },
+-      sigalgs: ssigalgs
+-    },
+-  }, common.mustCall((err, pair, cleanup) => {
+-    if (shared_sigalgs) {
+-      assert.ifError(err);
+-      assert.ifError(pair.server.err);
+-      assert.ifError(pair.client.err);
+-      assert(pair.server.conn);
+-      assert(pair.client.conn);
+-      assert_arrays_equal(pair.server.conn.getSharedSigalgs(), shared_sigalgs);
+-    } else {
+-      if (serr) {
+-        assert(pair.server.err);
+-        assert(pair.server.err.code, serr);
+-      }
+-
+-      if (cerr) {
+-        assert(pair.client.err);
+-        assert(pair.client.err.code, cerr);
+-      }
+-    }
+-
+-    return cleanup();
+-  }));
+-}
+-
+-// Have shared sigalgs
+-test('RSA-PSS+SHA384', 'RSA-PSS+SHA384', ['RSA-PSS+SHA384']);
+-test('RSA-PSS+SHA256:RSA-PSS+SHA512:ECDSA+SHA256',
+-     'RSA-PSS+SHA256:ECDSA+SHA256',
+-     ['RSA-PSS+SHA256', 'ECDSA+SHA256']);
+-
+-// Do not have shared sigalgs.
+-test('RSA-PSS+SHA384', 'ECDSA+SHA256',
+-     undefined, 'ECONNRESET', 'ERR_SSL_NO_SHARED_SIGNATURE_ALGORITMS');
+-
+-test('RSA-PSS+SHA384:ECDSA+SHA256', 'ECDSA+SHA384:RSA-PSS+SHA256',
+-     undefined, 'ECONNRESET', 'ERR_SSL_NO_SHARED_SIGNATURE_ALGORITMS');
