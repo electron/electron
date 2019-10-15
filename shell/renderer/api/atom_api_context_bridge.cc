@@ -21,7 +21,7 @@ namespace api {
 
 namespace {
 
-static int kMaxRecursion = 10000;
+static int kMaxRecursion = 1000;
 
 content::RenderFrame* GetRenderFrame(const v8::Local<v8::Object>& value) {
   v8::Local<v8::Context> context = value->CreationContext();

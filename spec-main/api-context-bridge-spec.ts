@@ -9,7 +9,7 @@ import { emittedOnce } from './events-helpers'
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge')
 
-describe.only('contextBridge', () => {
+describe('contextBridge', () => {
   let w: BrowserWindow
   let dir: string
 
@@ -466,7 +466,7 @@ describe.only('contextBridge', () => {
         let threw = await callWithBindings((root: any) => {
           try {
             let a: any = []
-            for (let i = 0; i < 9999; i++) {
+            for (let i = 0; i < 999; i++) {
               a = [ a ]
             }
             root.example.doThing(a)
@@ -479,7 +479,7 @@ describe.only('contextBridge', () => {
         threw = await callWithBindings((root: any) => {
           try {
             let a: any = []
-            for (let i = 0; i < 10000; i++) {
+            for (let i = 0; i < 1000; i++) {
               a = [ a ]
             }
             root.example.doThing(a)
