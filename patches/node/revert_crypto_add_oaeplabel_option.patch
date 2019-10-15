@@ -1,0 +1,245 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 15 Oct 2019 11:30:27 -0700
+Subject: Revert "crypto: add oaepLabel option"
+
+This reverts commit 54f327b4dcb37f373bc4146686c7e4edcd9c524d.
+
+diff --git a/doc/api/crypto.md b/doc/api/crypto.md
+index 1b0a7e2f2f2d3acb0b8ed6f413afad3b7a4a5f1f..a0053ef385cbe80e4488692b7996052aaa6a8304 100644
+--- a/doc/api/crypto.md
++++ b/doc/api/crypto.md
+@@ -2378,9 +2378,6 @@ An array of supported digest functions can be retrieved using
+ <!-- YAML
+ added: v0.11.14
+ changes:
+-  - version: v12.11.0
+-    pr-url: https://github.com/nodejs/node/pull/29489
+-    description: The `oaepLabel` option was added.
+   - version: v12.9.0
+     pr-url: https://github.com/nodejs/node/pull/28335
+     description: The `oaepHash` option was added.
+@@ -2465,9 +2462,6 @@ be passed instead of a public key.
+ <!-- YAML
+ added: v0.11.14
+ changes:
+-  - version: v12.11.0
+-    pr-url: https://github.com/nodejs/node/pull/29489
+-    description: The `oaepLabel` option was added.
+   - version: v12.9.0
+     pr-url: https://github.com/nodejs/node/pull/28335
+     description: The `oaepHash` option was added.
+diff --git a/lib/internal/crypto/cipher.js b/lib/internal/crypto/cipher.js
+index c888d5fdaef8d9dfaf8ce859e632640768121747..c7baae8423cfcc6878279ba5401cb19e033678f5 100644
+--- a/lib/internal/crypto/cipher.js
++++ b/lib/internal/crypto/cipher.js
+@@ -50,16 +50,10 @@ function rsaFunctionFor(method, defaultPadding, keyType) {
+         preparePrivateKey(options) :
+         preparePublicOrPrivateKey(options);
+     const padding = options.padding || defaultPadding;
+-    const { oaepHash, oaepLabel } = options;
++    const { oaepHash } = options;
+     if (oaepHash !== undefined && typeof oaepHash !== 'string')
+       throw new ERR_INVALID_ARG_TYPE('options.oaepHash', 'string', oaepHash);
+-    if (oaepLabel !== undefined && !isArrayBufferView(oaepLabel)) {
+-      throw new ERR_INVALID_ARG_TYPE('options.oaepLabel',
+-                                     ['Buffer', 'TypedArray', 'DataView'],
+-                                     oaepLabel);
+-    }
+-    return method(data, format, type, passphrase, buffer, padding, oaepHash,
+-                  oaepLabel);
++    return method(data, format, type, passphrase, buffer, padding, oaepHash);
+   };
+ }
+ 
+diff --git a/src/node_crypto.cc b/src/node_crypto.cc
+index be53ccc9759fcfb4cfa301e02fee6ff46b681033..2f73b3dc13a7f38b44f5f095da5dae3e24e7a629 100644
+--- a/src/node_crypto.cc
++++ b/src/node_crypto.cc
+@@ -5170,8 +5170,6 @@ bool PublicKeyCipher::Cipher(Environment* env,
+                              const ManagedEVPPKey& pkey,
+                              int padding,
+                              const EVP_MD* digest,
+-                             const void* oaep_label,
+-                             size_t oaep_label_len,
+                              const unsigned char* data,
+                              int len,
+                              AllocatedBuffer* out) {
+@@ -5188,16 +5186,6 @@ bool PublicKeyCipher::Cipher(Environment* env,
+       return false;
+   }
+ 
+-  if (oaep_label_len != 0) {
+-    // OpenSSL takes ownership of the label, so we need to create a copy.
+-    void* label = OPENSSL_memdup(oaep_label, oaep_label_len);
+-    CHECK_NOT_NULL(label);
+-    if (!EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(), label, oaep_label_len)) {
+-      OPENSSL_free(label);
+-      return false;
+-    }
+-  }
+-
+   size_t out_len = 0;
+   if (EVP_PKEY_cipher(ctx.get(), nullptr, &out_len, data, len) <= 0)
+     return false;
+@@ -5243,12 +5231,6 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+       return THROW_ERR_OSSL_EVP_INVALID_DIGEST(env);
+   }
+ 
+-  ArrayBufferViewContents<unsigned char> oaep_label;
+-  if (!args[offset + 3]->IsUndefined()) {
+-    CHECK(args[offset + 3]->IsArrayBufferView());
+-    oaep_label.Read(args[offset + 3].As<ArrayBufferView>());
+-  }
+-
+   AllocatedBuffer out;
+ 
+   ClearErrorOnReturn clear_error_on_return;
+@@ -5258,8 +5240,6 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+       pkey,
+       padding,
+       digest,
+-      oaep_label.data(),
+-      oaep_label.length(),
+       buf.data(),
+       buf.length(),
+       &out);
+diff --git a/src/node_crypto.h b/src/node_crypto.h
+index 31e7da7da9daf2ecf965dc38df24272f838ba1a0..021d5234d3c2e8073081ba98adf276a3bcff47ab 100644
+--- a/src/node_crypto.h
++++ b/src/node_crypto.h
+@@ -715,8 +715,6 @@ class PublicKeyCipher {
+                      const ManagedEVPPKey& pkey,
+                      int padding,
+                      const EVP_MD* digest,
+-                     const void* oaep_label,
+-                     size_t oaep_label_size,
+                      const unsigned char* data,
+                      int len,
+                      AllocatedBuffer* out);
+diff --git a/test/fixtures/rsa-oaep-test-vectors.js b/test/fixtures/rsa-oaep-test-vectors.js
+deleted file mode 100644
+index 47e681f84d19081de6dfb1b093fd7e64befced50..0000000000000000000000000000000000000000
+--- a/test/fixtures/rsa-oaep-test-vectors.js
++++ /dev/null
+@@ -1,30 +0,0 @@
+-{
+-  "comment": "RSA-OAEP test vectors for test-crypto-rsa-dsa.js",
+-  "decryptionTests": [
+-    {
+-      "ct": "16ece59cf985a8cf1a3434e4b9707c922c20638fdf9abf7e5dc7943f4136899348c54116d15b2c17563b9c7143f9d5b85b45615ad0598ea6d21c900f3957b65400612306a9bebae441f005646f7a7c97129a103ab54e777168ef966514adb17786b968ea0ff430a524904c4a11c683764b7c8dbb60df0952768381cdba4d665e5006034393a10d56d33e75b2714db824a18da46441ef7f94a34a7058c0bbad0394083a038558bcc6dd370f8e518e1bd8d73b296fc51d77da44799e4ee774926ded7910e8768f92db76f63107338d33354b735d3ad094240dbd7ffdfda27ef0255306dcf4a6462849492abd1a97fdd37743ff87c4d2ec89866c5cdbb696bd2b30"
+-    },
+-    {
+-      "ct": "16ece59cf985a8cf1a3434e4b9707c922c20638fdf9abf7e5dc7943f4136899348c54116d15b2c17563b9c7143f9d5b85b45615ad0598ea6d21c900f3957b65400612306a9bebae441f005646f7a7c97129a103ab54e777168ef966514adb17786b968ea0ff430a524904c4a11c683764b7c8dbb60df0952768381cdba4d665e5006034393a10d56d33e75b2714db824a18da46441ef7f94a34a7058c0bbad0394083a038558bcc6dd370f8e518e1bd8d73b296fc51d77da44799e4ee774926ded7910e8768f92db76f63107338d33354b735d3ad094240dbd7ffdfda27ef0255306dcf4a6462849492abd1a97fdd37743ff87c4d2ec89866c5cdbb696bd2b30",
+-      "oaepHash": "sha1"
+-    },
+-    {
+-      "ct": "16ccf09afe5eb0130182b9fc1ca4af61a38e772047cac42146bfa0fa5879aa9639203e4d01442d212ff95bddfbe4661222215a2e91908c37ab926edea7cfc53f83357bc27f86af0f5f2818ae141f4e9e934d4e66189aff30f062c9c3f6eb9bc495a59082cb978f99b56ce5fa530a8469e46129258e5c42897cb194b6805e936e5cbbeaa535bad6b1d3cdfc92119b7dd325a2e6d2979e316bdacc9f80e29c7bbdf6846d738e380deadcb48df8c1e8aabf7a9dd2f8c71d6681dbec7dcadc01887c51288674268796bc77fdf8f1c94c9ca50b1cc7cddbaf4e56cb151d23e2c699d2844c0104ee2e7e9dcdb907cfab43339120a40c59ca54f32b8d21b48a29656c77",
+-      "oaepHash": "sha256"
+-    },
+-    {
+-      "ct": "831b72e8dd91841729ecbddf2647d6f19dc0094734f8803d8c651b5655a12ae6156b74d9b594bcc0eacd002728380b94f46e8657f130f354e03b6e7815ee257eda78dba296d67d24410c31c48e5875cc79e4bde594b412be5f357f57a7ac1f1d18b718e408df162d1795508e6a0616192b647ad942ea068a44fb2b323d35a3a61b926feb105d6c0b2a8fc8050222d1cf4a9e44da1f95bbc677fd643749c6c89ac551d072f04cd9320c97a8d94755c8a804954c082bed7fa59199a00aca154c14a7b584b63c538daf9b9c7c90abfca19387d2131f9d9b9ecfc8672249c33144d1be3bfc41558a13f994663661a3af24fd0a97619d508db36f5fc131af86fc68cf",
+-      "oaepHash": "sha512"
+-    },
+-    {
+-      "ct": "04a25a3dbe0a44b10b7dde19632ce0963e7a7e9876905cd4a4f68ba8e0bda593a738847235df4494f9c28927b165511d22006ef6fae0eb7fe01883e4ae495643328d21e13dad65e71e45f885c7e1e2fe77c39fa84b8bbd2d7d3ed72fea2bf3c87a5c864bdc41b45caa3d668ca3f35297f43dc97950fa959ee88031c8385da7628d03923dfd26a7e0568c95a2f38ec5760335b00fa30935abdd9ab5b3581fc319ff787c59930319707caa24fe9e5d0ce6c48eff4ee6e124fd6c595353acc29a194863dbf7b74d08edf7129ca52eb5f4ccf3888311e97602fcd37b476c41749b260efad4e0760064082f7c9ea0f8704134936b2e38fd0f82886486b5f7e5fb9696",
+-      "oaepHash": "sha384",
+-      "oaepLabel": "01020304"
+-    },
+-    {
+-      "ct": "678f9ff724e0f48b48e6ff3cbdac5eb995d263da1c23f948d8d09411131f69f40da07f0c650e1aedc82fbaf0972a5d3b3e8f1f82cc4fa1780abfebb4e06b6827a52bf768b12388817c1e3ee1324342e05135733a4056a6cc02f5211172c338eb96e5e33c1d6f53560e3f3aab2419c13a600c4e67648088ffe8aac2cea8bce78e2ab899741cf7c9a9d5246cde6ce97aae0157f42db68eea380dec6dcd842c1e6900ae21d5275c4bf21810b5e1b0e1bc0441cbce34e00a31b9e857f6f2c791257d45997c278ea928f42e8cb6476f633f5de102fa0c4af964a9c4f4336869509e933ebc0aa94ad16b0b1db2aaa924f409a5f9f29dfbd88849c5eaa4818e1c3e335e",
+-      "oaepHash": "sha1",
+-      "oaepLabel": "00112233445566778899"
+-    }
+-  ]
+-}
+diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
+index 30ef7ec6d185edc29eb5386027d5bd5e57f772a2..c773aae829481e5c01b93962c7091692cd5cf95b 100644
+--- a/test/parallel/test-crypto-rsa-dsa.js
++++ b/test/parallel/test-crypto-rsa-dsa.js
+@@ -202,21 +202,59 @@ common.expectsError(() => {
+ // The following RSA-OAEP test cases were created using the WebCrypto API to
+ // ensure compatibility when using non-SHA1 hash functions.
+ {
+-  const { decryptionTests } =
+-      JSON.parse(fixtures.readSync('rsa-oaep-test-vectors.js', 'utf8'));
+-
+-  for (const { ct, oaepHash, oaepLabel } of decryptionTests) {
++  function testDecrypt(oaepHash, ciphertext) {
+     const decrypted = crypto.privateDecrypt({
+       key: rsaPkcs8KeyPem,
+-      oaepHash,
+-      oaepLabel: oaepLabel ? Buffer.from(oaepLabel, 'hex') : undefined
+-    }, Buffer.from(ct, 'hex'));
++      oaepHash
++    }, Buffer.from(ciphertext, 'hex'));
+ 
+     assert.strictEqual(decrypted.toString('utf8'), 'Hello Node.js');
+   }
++
++  testDecrypt(undefined, '16ece59cf985a8cf1a3434e4b9707c922c20638fdf9abf7e5dc' +
++                         '7943f4136899348c54116d15b2c17563b9c7143f9d5b85b4561' +
++                         '5ad0598ea6d21c900f3957b65400612306a9bebae441f005646' +
++                         'f7a7c97129a103ab54e777168ef966514adb17786b968ea0ff4' +
++                         '30a524904c4a11c683764b7c8dbb60df0952768381cdba4d665' +
++                         'e5006034393a10d56d33e75b2714db824a18da46441ef7f94a3' +
++                         '4a7058c0bbad0394083a038558bcc6dd370f8e518e1bd8d73b2' +
++                         '96fc51d77da44799e4ee774926ded7910e8768f92db76f63107' +
++                         '338d33354b735d3ad094240dbd7ffdfda27ef0255306dcf4a64' +
++                         '62849492abd1a97fdd37743ff87c4d2ec89866c5cdbb696bd2b' +
++                         '30');
++  testDecrypt('sha1', '16ece59cf985a8cf1a3434e4b9707c922c20638fdf9abf7e5dc794' +
++                      '3f4136899348c54116d15b2c17563b9c7143f9d5b85b45615ad059' +
++                      '8ea6d21c900f3957b65400612306a9bebae441f005646f7a7c9712' +
++                      '9a103ab54e777168ef966514adb17786b968ea0ff430a524904c4a' +
++                      '11c683764b7c8dbb60df0952768381cdba4d665e5006034393a10d' +
++                      '56d33e75b2714db824a18da46441ef7f94a34a7058c0bbad039408' +
++                      '3a038558bcc6dd370f8e518e1bd8d73b296fc51d77da44799e4ee7' +
++                      '74926ded7910e8768f92db76f63107338d33354b735d3ad094240d' +
++                      'bd7ffdfda27ef0255306dcf4a6462849492abd1a97fdd37743ff87' +
++                      'c4d2ec89866c5cdbb696bd2b30');
++  testDecrypt('sha256', '16ccf09afe5eb0130182b9fc1ca4af61a38e772047cac42146bf' +
++                        'a0fa5879aa9639203e4d01442d212ff95bddfbe4661222215a2e' +
++                        '91908c37ab926edea7cfc53f83357bc27f86af0f5f2818ae141f' +
++                        '4e9e934d4e66189aff30f062c9c3f6eb9bc495a59082cb978f99' +
++                        'b56ce5fa530a8469e46129258e5c42897cb194b6805e936e5cbb' +
++                        'eaa535bad6b1d3cdfc92119b7dd325a2e6d2979e316bdacc9f80' +
++                        'e29c7bbdf6846d738e380deadcb48df8c1e8aabf7a9dd2f8c71d' +
++                        '6681dbec7dcadc01887c51288674268796bc77fdf8f1c94c9ca5' +
++                        '0b1cc7cddbaf4e56cb151d23e2c699d2844c0104ee2e7e9dcdb9' +
++                        '07cfab43339120a40c59ca54f32b8d21b48a29656c77');
++  testDecrypt('sha512', '831b72e8dd91841729ecbddf2647d6f19dc0094734f8803d8c65' +
++                        '1b5655a12ae6156b74d9b594bcc0eacd002728380b94f46e8657' +
++                        'f130f354e03b6e7815ee257eda78dba296d67d24410c31c48e58' +
++                        '75cc79e4bde594b412be5f357f57a7ac1f1d18b718e408df162d' +
++                        '1795508e6a0616192b647ad942ea068a44fb2b323d35a3a61b92' +
++                        '6feb105d6c0b2a8fc8050222d1cf4a9e44da1f95bbc677fd6437' +
++                        '49c6c89ac551d072f04cd9320c97a8d94755c8a804954c082bed' +
++                        '7fa59199a00aca154c14a7b584b63c538daf9b9c7c90abfca193' +
++                        '87d2131f9d9b9ecfc8672249c33144d1be3bfc41558a13f99466' +
++                        '3661a3af24fd0a97619d508db36f5fc131af86fc68cf');
+ }
+ 
+-// Test invalid oaepHash and oaepLabel options.
++// Test invalid oaepHash options.
+ for (const fn of [crypto.publicEncrypt, crypto.privateDecrypt]) {
+   assert.throws(() => {
+     fn({
+@@ -237,17 +275,6 @@ for (const fn of [crypto.publicEncrypt, crypto.privateDecrypt]) {
+       code: 'ERR_INVALID_ARG_TYPE'
+     });
+   }
+-
+-  for (const oaepLabel of [0, false, null, Symbol(), () => {}, {}, 'foo']) {
+-    common.expectsError(() => {
+-      fn({
+-        key: rsaPubPem,
+-        oaepLabel
+-      }, Buffer.alloc(10));
+-    }, {
+-      code: 'ERR_INVALID_ARG_TYPE'
+-    });
+-  }
+ }
+ 
+ // Test RSA key signing/verification

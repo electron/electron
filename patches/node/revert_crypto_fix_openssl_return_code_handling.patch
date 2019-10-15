@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 15 Oct 2019 11:23:56 -0700
+Subject: Revert "crypto: fix OpenSSL return code handling"
+
+This reverts commit dd5d944005166fbbfd4b72b9779f398598b3481d.
+
+diff --git a/src/node_crypto.cc b/src/node_crypto.cc
+index 63dd6a186366baad660ee8e38401ba842c6ddb17..be53ccc9759fcfb4cfa301e02fee6ff46b681033 100644
+--- a/src/node_crypto.cc
++++ b/src/node_crypto.cc
+@@ -5184,7 +5184,7 @@ bool PublicKeyCipher::Cipher(Environment* env,
+     return false;
+ 
+   if (digest != nullptr) {
+-    if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx.get(), digest) <= 0)
++    if (!EVP_PKEY_CTX_set_rsa_oaep_md(ctx.get(), digest))
+       return false;
+   }
+ 
+@@ -5192,8 +5192,7 @@ bool PublicKeyCipher::Cipher(Environment* env,
+     // OpenSSL takes ownership of the label, so we need to create a copy.
+     void* label = OPENSSL_memdup(oaep_label, oaep_label_len);
+     CHECK_NOT_NULL(label);
+-    if (0 >= EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(), label,
+-                                              oaep_label_len)) {
++    if (!EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(), label, oaep_label_len)) {
+       OPENSSL_free(label);
+       return false;
+     }
