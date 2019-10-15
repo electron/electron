@@ -64,6 +64,12 @@ dependencies, and tools contained in the `electron/electron` repository.
 
 See [Coding Style](https://electronjs.org/docs/development/coding-style) for information about which standards Electron adheres to in different parts of its codebase.
 
+## FAQ
+
+How to make pull request ?
+
+Lets have a look [pull request](https://github.com/electron/electron/blob/master/docs/development/pull-requests.md)
+
 ## Further Reading
 
 For more in-depth guides on developing Electron, see 
