@@ -42,9 +42,6 @@ std::string AutoUpdater::GetFeedURL() {
 
 // static
 void AutoUpdater::SetFeedURL(gin::Arguments* args) {
-  // FIXME(zcbenz): We should not do V8 in this file, this method should only
-  // accept C++ struct as parameter, and atom_api_auto_updater.cc is responsible
-  // for parsing the parameter from JavaScript.
   gin_helper::ErrorThrower thrower(args->isolate());
   gin_helper::Dictionary opts;
 
