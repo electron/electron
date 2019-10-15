@@ -1070,6 +1070,14 @@ bool AtomBrowserClient::BindAssociatedReceiverFromFrame(
   return false;
 }
 
+void AtomBrowserClient::EnableRendererCodeIntegrity() {
+  enable_renderer_code_integrity_ = true;
+}
+
+bool AtomBrowserClient::IsRendererCodeIntegrityEnabled() {
+  return enable_renderer_code_integrity_;
+}
+
 std::string AtomBrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))
     return g_io_thread_application_locale.Get();

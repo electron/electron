@@ -55,6 +55,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void WebNotificationAllowed(int render_process_id,
                               base::OnceCallback<void(bool, bool)> callback);
 
+  void EnableRendererCodeIntegrity();
+
   // content::NavigatorDelegate
   std::vector<std::unique_ptr<content::NavigationThrottle>>
   CreateThrottlesForNavigation(content::NavigationHandle* handle) override;
@@ -190,6 +192,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 #if defined(OS_WIN)
   bool PreSpawnRenderer(sandbox::TargetPolicy* policy,
                         RendererSpawnFlags flags) override;
+  bool IsRendererCodeIntegrityEnabled() override;
 #endif
   bool BindAssociatedReceiverFromFrame(
       content::RenderFrameHost* render_frame_host,
@@ -268,6 +271,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   std::string user_agent_override_ = "";
 
   bool disable_process_restart_tricks_ = false;
+  bool enable_renderer_code_integrity_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

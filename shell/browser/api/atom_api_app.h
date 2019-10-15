@@ -201,6 +201,9 @@ class App : public AtomBrowserClient::Delegate,
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
   void EnableSandbox(gin_helper::ErrorThrower thrower);
+#if defined(OS_WIN)
+  void EnableRendererCodeIntegrity(gin_helper::ErrorThrower thrower);
+#endif
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
   void SetBrowserClientCanUseCustomSiteInstance(bool should_disable);

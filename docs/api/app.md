@@ -1220,6 +1220,12 @@ Enables full sandbox mode on the app.
 
 This method can only be called before app is ready.
 
+### `app.enableRendererCodeIntegrity()` _Windows_
+
+Enables "Renderer Code Integrity" for sandboxed renderers, which prevents third party code from being injected.
+
+This method can only be called before app is ready.
+
 ### `app.isInApplicationsFolder()` _macOS_
 
 Returns `Boolean` - Whether the application is currently running from the

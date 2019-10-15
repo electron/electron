@@ -1335,6 +1335,20 @@ void App::EnableSandbox(gin_helper::ErrorThrower thrower) {
   command_line->AppendSwitch(switches::kEnableSandbox);
 }
 
+#if defined(OS_WIN)
+void App::EnableRendererCodeIntegrity() {
+  if (Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "app.enableRendererCodeIntegrity() can only be called "
+        "before app is ready");
+    return;
+  }
+
+  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
+      ->EnableRendererCodeIntegrity();
+}
+#endif
+
 void App::SetUserAgentFallback(const std::string& user_agent) {
   AtomBrowserClient::Get()->SetUserAgent(user_agent);
 }
@@ -1536,6 +1550,10 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
       .SetMethod("enableSandbox", &App::EnableSandbox)
+#if defined(OS_WIN)
+      .SetMethod("enableRendererCodeIntegrity",
+                 &App::EnableRendererCodeIntegrity)
+#endif
       .SetProperty("allowRendererProcessReuse",
                    &App::CanBrowserClientUseCustomSiteInstance,
                    &App::SetBrowserClientCanUseCustomSiteInstance);
