@@ -526,32 +526,31 @@ void NativeImage::BuildPrototype(v8::Isolate* isolate,
 
 namespace gin {
 
-v8::Local<v8::Value> Converter<gin::Handle<electron::api::NativeImage>>::ToV8(
+v8::Local<v8::Value> Converter<electron::api::NativeImage*>::ToV8(
     v8::Isolate* isolate,
-    const gin::Handle<electron::api::NativeImage>& val) {
-  return val.ToV8();
+    electron::api::NativeImage* val) {
+  if (val)
+    return val->GetWrapper();
+  else
+    return v8::Null(isolate);
 }
 
-bool Converter<gin::Handle<electron::api::NativeImage>>::FromV8(
+bool Converter<electron::api::NativeImage*>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
-    gin::Handle<electron::api::NativeImage>* out) {
+    electron::api::NativeImage** out) {
   // Try converting from file path.
   base::FilePath path;
   if (ConvertFromV8(isolate, val, &path)) {
-    *out = electron::api::NativeImage::CreateFromPath(isolate, path);
+    *out = electron::api::NativeImage::CreateFromPath(isolate, path).get();
     // Should throw when failed to initialize from path.
     return !(*out)->image().IsEmpty();
   }
 
-  auto* wrapper = static_cast<mate::WrappableBase*>(
-      mate::internal::FromV8Impl(isolate, val));
-  if (!wrapper)
-    return false;
-
-  *out = gin::CreateHandle(isolate,
-                           static_cast<electron::api::NativeImage*>(wrapper));
-  return true;
+  *out = static_cast<electron::api::NativeImage*>(
+      static_cast<mate::WrappableBase*>(
+          mate::internal::FromV8Impl(isolate, val)));
+  return *out != nullptr;
 }
 
 }  // namespace gin
