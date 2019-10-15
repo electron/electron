@@ -1,8 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sattard@slack-corp.com>
 Date: Wed, 22 May 2019 13:34:18 -0700
-Subject: chore: add ability to prevent / warn non context-aware native modules
- being loaded
+Subject: chore: prevent / warn non context-aware native modules being loaded
+
+This should be updated to take advantage of https://github.com/nodejs/node/pull/29631
+once we stop warning and begin to unilaterally prevent non-context aware modules
+from being loaded.
 
 diff --git a/src/env.h b/src/env.h
 index 2dd6bdb75f02e2ccb07129996d16df99c0c4ccf2..ecb845803776f5ff6e7eec712ec7a5ebea2e8d0a 100644
@@ -46,17 +49,18 @@ index c51a892e1bcd3df6ea8af952c8200975c7f4ac7e..9a4a7780f4ac1bcc0855cc9e3eed904d
  #include "util.h"
  
  #if HAVE_OPENSSL
-@@ -463,6 +464,13 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
-     }
+@@ -466,10 +466,12 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
  
      if (mp != nullptr) {
-+      if (mp->nm_context_register_func == nullptr) {
+       if (mp->nm_context_register_func == nullptr) {
+-        if (env->options()->force_context_aware) {
 +        if (env->force_context_aware()) {
-+          env->ThrowError("Loading non context-aware native modules has been disabled in this process.  This means you have loaded a non context-aware native module with app.allowRendererProcessReuse set to true. See https://github.com/electron/electron/issues/18397 for more information");
+           dlib->Close();
+           THROW_ERR_NON_CONTEXT_AWARE_DISABLED(env);
+           return false;
 +        } else if (env->warn_non_context_aware()) {
 +          ProcessEmitWarningGeneric(env, "Loading non context-aware native modules in the renderer process is deprecated and will stop working at some point in the future, please see https://github.com/electron/electron/issues/18397 for more information", "Electron");
-+        }
-+      }
+         }
+       }
        mp->nm_dso_handle = dlib->handle_;
-       dlib->SaveInGlobalHandleMap(mp);
-     } else {
+ 
