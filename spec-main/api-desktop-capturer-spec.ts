@@ -27,7 +27,7 @@ ifdescribe(features.isDesktopCapturerEnabled() && !process.arch.includes('arm') 
 
   it('throws an error for invalid options', async () => {
     const promise = getSources(['window', 'screen'] as any)
-    expect(promise).to.be.eventually.rejectedWith(Error, 'Invalid options')
+    await expect(promise).to.be.eventually.rejectedWith(Error, 'Invalid options')
   })
 
   it('does not throw an error when called more than once (regression)', async () => {
@@ -40,10 +40,10 @@ ifdescribe(features.isDesktopCapturerEnabled() && !process.arch.includes('arm') 
 
   it('responds to subsequent calls of different options', async () => {
     const promise1 = getSources({ types: ['window'] })
-    expect(promise1).to.not.eventually.be.rejected()
+    await expect(promise1).to.eventually.be.fulfilled()
 
     const promise2 = getSources({ types: ['screen'] })
-    expect(promise2).to.not.eventually.be.rejected()
+    await expect(promise2).to.eventually.be.fulfilled()
   })
 
   // Linux doesn't return any window sources.
