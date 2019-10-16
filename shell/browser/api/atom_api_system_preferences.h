@@ -13,6 +13,7 @@
 #include "native_mate/handle.h"
 #include "shell/browser/api/event_emitter_deprecated.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 
 #if defined(OS_WIN)
@@ -52,7 +53,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 
 #if defined(OS_WIN) || defined(OS_MACOSX)
   std::string GetAccentColor();
-  std::string GetColor(const std::string& color, mate::Arguments* args);
+  std::string GetColor(gin_helper::ErrorThrower thrower,
+                       const std::string& color);
 #endif
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
