@@ -6,7 +6,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 300,
-    title: 'Desktop Capturer',
+    title: 'Take a Screenshot',
     webPreferences: {
       nodeIntegration: true
     }
