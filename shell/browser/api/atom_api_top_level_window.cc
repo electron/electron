@@ -108,11 +108,10 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
 #endif
 }
 
-TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
-                               v8::Local<v8::Object> wrapper,
+TopLevelWindow::TopLevelWindow(gin::Arguments* args,
                                const mate::Dictionary& options)
-    : TopLevelWindow(isolate, options) {
-  InitWith(isolate, wrapper);
+    : TopLevelWindow(args->isolate(), options) {
+  InitWithArgs(args);
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
 }
@@ -1057,11 +1056,11 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
 }
 
 // static
-mate::WrappableBase* TopLevelWindow::New(mate::Arguments* args) {
+mate::WrappableBase* TopLevelWindow::New(gin::Arguments* args) {
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
-  return new TopLevelWindow(args->isolate(), args->GetThis(), options);
+  return new TopLevelWindow(args, options);
 }
 
 // static

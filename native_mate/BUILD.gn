@@ -10,6 +10,7 @@ source_set("native_mate") {
     "//v8:v8_headers",
   ]
   public_configs = [ ":native_mate_config" ]
+  include_dirs = [ ".." ]
   sources = [
     "native_mate/arguments.cc",
     "native_mate/arguments.h",

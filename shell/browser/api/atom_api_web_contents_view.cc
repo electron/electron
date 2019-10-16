@@ -80,7 +80,7 @@ void WebContentsView::WebContentsDestroyed() {
 
 // static
 mate::WrappableBase* WebContentsView::New(
-    mate::Arguments* args,
+    gin::Arguments* args,
     mate::Handle<WebContents> web_contents) {
   // Currently we only support InspectableWebContents, e.g. the WebContents
   // created by users directly. To support devToolsWebContents we need to create
@@ -101,7 +101,7 @@ mate::WrappableBase* WebContentsView::New(
   // Constructor call.
   auto* view = new WebContentsView(args->isolate(), web_contents,
                                    web_contents->managed_web_contents());
-  view->InitWith(args->isolate(), args->GetThis());
+  view->InitWithArgs(args);
   return view;
 }
 

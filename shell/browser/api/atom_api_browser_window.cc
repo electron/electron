@@ -29,13 +29,13 @@ namespace electron {
 
 namespace api {
 
-BrowserWindow::BrowserWindow(v8::Isolate* isolate,
-                             v8::Local<v8::Object> wrapper,
+BrowserWindow::BrowserWindow(gin::Arguments* args,
                              const mate::Dictionary& options)
-    : TopLevelWindow(isolate, options), weak_factory_(this) {
+    : TopLevelWindow(args->isolate(), options), weak_factory_(this) {
   mate::Handle<class WebContents> web_contents;
 
   // Use options.webPreferences in WebContents.
+  v8::Isolate* isolate = args->isolate();
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
@@ -92,7 +92,7 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   if (host)
     host->GetWidget()->AddInputEventObserver(this);
 
-  InitWith(isolate, wrapper);
+  InitWithArgs(args);
 
 #if defined(OS_MACOSX)
   OverrideNSWindowContentView(web_contents->managed_web_contents());
@@ -444,9 +444,10 @@ void BrowserWindow::OnWindowHide() {
 }
 
 // static
-mate::WrappableBase* BrowserWindow::New(mate::Arguments* args) {
+mate::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
+                                        gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create BrowserWindow before app is ready");
+    thrower.ThrowError("Cannot create BrowserWindow before app is ready");
     return nullptr;
   }
 
@@ -460,7 +461,7 @@ mate::WrappableBase* BrowserWindow::New(mate::Arguments* args) {
     options = mate::Dictionary::CreateEmpty(args->isolate());
   }
 
-  return new BrowserWindow(args->isolate(), args->GetThis(), options);
+  return new BrowserWindow(args, options);
 }
 
 // static

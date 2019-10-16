@@ -469,6 +469,18 @@ describe('protocol module', () => {
       expect(r.data).to.have.property('value').that.is.equal(1)
     })
 
+    it('can set content-type with charset', async () => {
+      await interceptStringProtocol('http', (request, callback) => {
+        callback({
+          mimeType: 'application/json; charset=UTF-8',
+          data: '{"value": 1}'
+        })
+      })
+      const r = await ajax('http://fake-host')
+      expect(r.data).to.be.an('object')
+      expect(r.data).to.have.property('value').that.is.equal(1)
+    })
+
     it('can receive post data', async () => {
       await interceptStringProtocol('http', (request, callback) => {
         const uploadData = request.uploadData[0].bytes.toString()

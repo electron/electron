@@ -241,14 +241,14 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     const print = path.join(fixtures, 'module', 'print_name.js')
     const printName = remote.require(print)
 
-    it('converts NaN to undefined', () => {
-      expect(printName.getNaN()).to.be.undefined()
-      expect(printName.echo(NaN)).to.be.undefined()
+    it('preserves NaN', () => {
+      expect(printName.getNaN()).to.be.NaN()
+      expect(printName.echo(NaN)).to.be.NaN()
     })
 
-    it('converts Infinity to undefined', () => {
-      expect(printName.getInfinity()).to.be.undefined()
-      expect(printName.echo(Infinity)).to.be.undefined()
+    it('preserves Infinity', () => {
+      expect(printName.getInfinity()).to.equal(Infinity)
+      expect(printName.echo(Infinity)).to.equal(Infinity)
     })
 
     it('keeps its constructor name for objects', () => {
@@ -256,10 +256,34 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       expect(printName.print(buf)).to.equal('Buffer')
     })
 
+    it('supports instanceof Boolean', () => {
+      const obj = Boolean(true)
+      expect(printName.print(obj)).to.equal('Boolean')
+      expect(printName.echo(obj)).to.deep.equal(obj)
+    })
+
+    it('supports instanceof Number', () => {
+      const obj = Number(42)
+      expect(printName.print(obj)).to.equal('Number')
+      expect(printName.echo(obj)).to.deep.equal(obj)
+    })
+
+    it('supports instanceof String', () => {
+      const obj = String('Hello World!')
+      expect(printName.print(obj)).to.equal('String')
+      expect(printName.echo(obj)).to.deep.equal(obj)
+    })
+
     it('supports instanceof Date', () => {
       const now = new Date()
       expect(printName.print(now)).to.equal('Date')
       expect(printName.echo(now)).to.deep.equal(now)
+    })
+
+    it('supports instanceof RegExp', () => {
+      const regexp = RegExp('.*')
+      expect(printName.print(regexp)).to.equal('RegExp')
+      expect(printName.echo(regexp)).to.deep.equal(regexp)
     })
 
     it('supports instanceof Buffer', () => {
@@ -484,7 +508,6 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       try {
         throwFunction(err)
       } catch (error) {
-        expect(error.from).to.equal('browser')
         expect(error.cause).to.deep.equal(...resolveGetters(err))
       }
     })
@@ -509,6 +532,13 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       })
       w.once('closed', () => done())
       w.loadURL('about:blank')
+    })
+  })
+
+  describe('constructing a Uint8Array', () => {
+    it('does not crash', () => {
+      const RUint8Array = remote.getGlobal('Uint8Array')
+      const arr = new RUint8Array()
     })
   })
 

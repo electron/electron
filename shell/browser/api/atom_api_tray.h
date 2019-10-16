@@ -13,6 +13,7 @@
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
+#include "shell/common/gin_helper/error_thrower.h"
 
 namespace gfx {
 class Image;
@@ -34,16 +35,15 @@ class NativeImage;
 
 class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
  public:
-  static mate::WrappableBase* New(mate::Handle<NativeImage> image,
-                                  mate::Arguments* args);
+  static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
+                                  mate::Handle<NativeImage> image,
+                                  gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  Tray(v8::Isolate* isolate,
-       v8::Local<v8::Object> wrapper,
-       mate::Handle<NativeImage> image);
+  Tray(mate::Handle<NativeImage> image, gin::Arguments* args);
   ~Tray() override;
 
   // TrayIconObserver:

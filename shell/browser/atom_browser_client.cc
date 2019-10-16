@@ -580,6 +580,16 @@ void AtomBrowserClient::AdjustUtilityServiceProcessCommandLine(
   if (identity.name() == audio::mojom::kServiceName)
     command_line->AppendSwitch(::switches::kMessageLoopTypeUi);
 #endif
+  if (identity.name() == content::mojom::kNetworkServiceName) {
+    // Copy following switches to network service process.
+    static const char* const kCommonSwitchNames[] = {
+        switches::kStandardSchemes,  switches::kSecureSchemes,
+        switches::kBypassCSPSchemes, switches::kCORSSchemes,
+        switches::kFetchSchemes,     switches::kServiceWorkerSchemes};
+    command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
+                                   kCommonSwitchNames,
+                                   base::size(kCommonSwitchNames));
+  }
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(content::BrowserPpapiHost* host) {

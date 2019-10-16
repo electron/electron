@@ -1,5 +1,4 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
-import * as errorUtils from '@electron/internal/common/error-utils'
 
 type IPCHandler = (event: Electron.IpcRendererEvent, ...args: any[]) => any
 
@@ -9,7 +8,7 @@ export const handle = function <T extends IPCHandler> (channel: string, handler:
     try {
       event.sender.send(replyChannel, null, await handler(event, ...args))
     } catch (error) {
-      event.sender.send(replyChannel, errorUtils.serialize(error))
+      event.sender.send(replyChannel, error)
     }
   })
 }
@@ -18,7 +17,7 @@ export function invokeSync<T> (command: string, ...args: any[]): T {
   const [ error, result ] = ipcRendererInternal.sendSync(command, ...args)
 
   if (error) {
-    throw errorUtils.deserialize(error)
+    throw error
   } else {
     return result
   }

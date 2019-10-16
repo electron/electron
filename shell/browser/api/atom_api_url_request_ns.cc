@@ -6,21 +6,22 @@
 
 #include <utility>
 
+#include "gin/handle.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/system/string_data_source.h"
-#include "native_mate/dictionary.h"
 #include "net/http/http_util.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/atom_browser_context.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/net_converter.h"
 
 #include "shell/common/node_includes.h"
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<network::mojom::RedirectMode> {
@@ -42,7 +43,7 @@ struct Converter<network::mojom::RedirectMode> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -165,9 +166,9 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
   mojo::ReceiverSet<network::mojom::ChunkedDataPipeGetter> receiver_set_;
 };
 
-URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
+URLRequestNS::URLRequestNS(gin::Arguments* args) : weak_factory_(this) {
   request_ = std::make_unique<network::ResourceRequest>();
-  mate::Dictionary dict;
+  gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("method", &request_->method);
     dict.Get("url", &request_->url);
@@ -186,7 +187,7 @@ URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
 
   url_loader_factory_ = session->browser_context()->GetURLLoaderFactory();
 
-  InitWith(args->isolate(), args->GetThis());
+  InitWithArgs(args);
 }
 
 URLRequestNS::~URLRequestNS() = default;
@@ -518,7 +519,7 @@ void URLRequestNS::EmitEvent(EventType type, Args... args) {
 }
 
 // static
-mate::WrappableBase* URLRequestNS::New(mate::Arguments* args) {
+mate::WrappableBase* URLRequestNS::New(gin::Arguments* args) {
   return new URLRequestNS(args);
 }
 

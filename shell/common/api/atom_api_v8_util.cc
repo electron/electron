@@ -8,7 +8,6 @@
 #include "base/hash/hash.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/common/gin_converters/gurl_converter.h"
-#include "shell/common/gin_converters/native_mate_handle_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "url/origin.h"

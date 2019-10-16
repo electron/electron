@@ -24,6 +24,9 @@ app.on('window-all-closed', () => null)
 // not the entire test suite
 app.commandLine.appendSwitch('ignore-certificate-errors')
 
+// Use fake device for Media Stream to replace actual camera and microphone.
+app.commandLine.appendSwitch('use-fake-device-for-media-stream')
+
 global.standardScheme = 'app'
 global.zoomScheme = 'zoom'
 protocol.registerSchemesAsPrivileged([
@@ -88,7 +91,7 @@ app.whenReady().then(() => {
 
   walker.on('end', () => {
     testFiles.sort()
-    testFiles.forEach((file) => mocha.addFile(file))
+    sortToEnd(testFiles, f => f.includes('crash-reporter')).forEach((file) => mocha.addFile(file))
     const cb = () => {
       // Ensure the callback is called after runner is defined
       process.nextTick(() => {
@@ -98,3 +101,15 @@ app.whenReady().then(() => {
     const runner = mocha.run(cb)
   })
 })
+
+function partition (xs, f) {
+  const trues = []
+  const falses = []
+  xs.forEach(x => (f(x) ? trues : falses).push(x))
+  return [trues, falses]
+}
+
+function sortToEnd (xs, f) {
+  const [end, beginning] = partition(xs, f)
+  return beginning.concat(end)
+}

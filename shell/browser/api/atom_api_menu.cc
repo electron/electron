@@ -28,9 +28,8 @@ namespace electron {
 
 namespace api {
 
-Menu::Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : model_(new AtomMenuModel(this)) {
-  InitWith(isolate, wrapper);
+Menu::Menu(gin::Arguments* args) : model_(new AtomMenuModel(this)) {
+  InitWithArgs(args);
   model_->AddObserver(this);
 }
 

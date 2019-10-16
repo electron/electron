@@ -49,9 +49,8 @@ namespace electron {
 
 namespace api {
 
-Notification::Notification(v8::Local<v8::Object> wrapper,
-                           gin::Arguments* args) {
-  InitWith(args->isolate(), wrapper);
+Notification::Notification(gin::Arguments* args) {
+  InitWithArgs(args);
 
   presenter_ = static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
                    ->GetNotificationPresenter();
@@ -69,6 +68,7 @@ Notification::Notification(v8::Local<v8::Object> wrapper,
     opts.Get("replyPlaceholder", &reply_placeholder_);
     opts.Get("urgency", &urgency_);
     opts.Get("hasReply", &has_reply_);
+    opts.Get("timeoutType", &timeout_type_);
     opts.Get("actions", &actions_);
     opts.Get("sound", &sound_);
     opts.Get("closeButtonText", &close_button_text_);
@@ -81,13 +81,13 @@ Notification::~Notification() {
 }
 
 // static
-mate::WrappableBase* Notification::New(mate::Arguments* args) {
+mate::WrappableBase* Notification::New(gin_helper::ErrorThrower thrower,
+                                       gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create Notification before app is ready");
+    thrower.ThrowError("Cannot create Notification before app is ready");
     return nullptr;
   }
-  gin::Arguments gin_args(args->info());
-  return new Notification(args->GetThis(), &gin_args);
+  return new Notification(args);
 }
 
 // Getters
@@ -109,6 +109,10 @@ bool Notification::GetSilent() const {
 
 bool Notification::GetHasReply() const {
   return has_reply_;
+}
+
+base::string16 Notification::GetTimeoutType() const {
+  return timeout_type_;
 }
 
 base::string16 Notification::GetReplyPlaceholder() const {
@@ -150,6 +154,10 @@ void Notification::SetSilent(bool new_silent) {
 
 void Notification::SetHasReply(bool new_has_reply) {
   has_reply_ = new_has_reply;
+}
+
+void Notification::SetTimeoutType(const base::string16& new_timeout_type) {
+  timeout_type_ = new_timeout_type;
 }
 
 void Notification::SetReplyPlaceholder(const base::string16& new_placeholder) {
@@ -216,6 +224,7 @@ void Notification::Show() {
       options.icon = icon_.AsBitmap();
       options.silent = silent_;
       options.has_reply = has_reply_;
+      options.timeout_type = timeout_type_;
       options.reply_placeholder = reply_placeholder_;
       options.actions = actions_;
       options.sound = sound_;
@@ -246,6 +255,8 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("silent", &Notification::GetSilent, &Notification::SetSilent)
       .SetProperty("hasReply", &Notification::GetHasReply,
                    &Notification::SetHasReply)
+      .SetProperty("timeoutType", &Notification::GetTimeoutType,
+                   &Notification::SetTimeoutType)
       .SetProperty("replyPlaceholder", &Notification::GetReplyPlaceholder,
                    &Notification::SetReplyPlaceholder)
       .SetProperty("urgency", &Notification::GetUrgency,

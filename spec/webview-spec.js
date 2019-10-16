@@ -4,7 +4,6 @@ const path = require('path')
 const http = require('http')
 const url = require('url')
 const { ipcRenderer } = require('electron')
-const { closeWindow } = require('./window-helpers')
 const { emittedOnce, waitForEvent } = require('./events-helpers')
 
 const { expect } = chai
@@ -1068,7 +1067,7 @@ describe('<webview> tag', function () {
       await loadWebView(webview, { src })
 
       const data = await webview.printToPDF({})
-      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
+      expect(data).to.be.an.instanceof(Uint8Array).that.is.not.empty()
     })
   })
 
