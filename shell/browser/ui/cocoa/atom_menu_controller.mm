@@ -128,11 +128,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
   // Locate & retain the recent documents menu item
   if (!recentDocumentsMenuItem_) {
-    base::string16 title = base::ASCIIToUTF16("Open Recent");
-    NSString* openTitle = l10n_util::FixUpWindowsStyleLabel(title);
-
-    recentDocumentsMenuItem_.reset([[[[[NSApp mainMenu]
-        itemWithTitle:@"Electron"] submenu] itemWithTitle:openTitle] retain]);
+    recentDocumentsMenuItem_.reset(
+        [[[[[NSApp mainMenu] itemWithTitle:@"Electron"] submenu]
+            itemWithTitle:@"Open Recent"] retain]);
   }
 
   model_ = model;
@@ -195,17 +193,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 // Replaces the item's submenu instance with the singleton recent documents
 // menu. Previously replaced menu items will be recovered.
 - (void)replaceSubmenuShowingRecentDocuments:(NSMenuItem*)item {
-  NSMenu* recentDocumentsMenu = [recentDocumentsMenuItem_ submenu];
-  if (!recentDocumentsMenu) {
-    base::string16 title = base::ASCIIToUTF16("Clear Menu");
-    NSString* clearTitle = l10n_util::FixUpWindowsStyleLabel(title);
-    recentDocumentsMenu = [[[NSMenu alloc] initWithTitle:@""] autorelease];
-    [recentDocumentsMenu
-        addItem:[[[NSMenuItem alloc]
-                    initWithTitle:clearTitle
-                           action:@selector(clearRecentDocuments:)
-                    keyEquivalent:@""] autorelease]];
-  }
+  NSMenu* recentDocumentsMenu =
+      [[[recentDocumentsMenuItem_ submenu] retain] autorelease];
 
   // Remove menu items in recent documents back to swap menu
   [self moveMenuItems:recentDocumentsMenu to:recentDocumentsMenuSwap_];
