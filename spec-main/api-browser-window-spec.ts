@@ -348,7 +348,7 @@ describe('BrowserWindow module', () => {
     })
 
     it('should return a promise that resolves', async () => {
-      expect(w.loadURL('about:blank')).to.eventually.be.fulfilled
+      await expect(w.loadURL('about:blank')).to.eventually.be.fulfilled()
     })
 
     it('should return a promise that rejects on a load failure', async () => {
