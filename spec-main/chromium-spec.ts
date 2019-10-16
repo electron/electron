@@ -1,7 +1,7 @@
 import * as chai from 'chai'
 import { expect } from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
-import { BrowserWindow, WebContents, session, ipcMain, app, protocol } from 'electron'
+import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron'
 import { emittedOnce } from './events-helpers'
 import { closeAllWindows } from './window-helpers'
 import * as https from 'https'
@@ -12,6 +12,8 @@ import * as url from 'url'
 import * as ChildProcess from 'child_process'
 import { EventEmitter } from 'events'
 import { promisify } from 'util'
+import { ifit, ifdescribe } from './spec-helpers'
+import { AddressInfo } from 'net'
 
 const features = process.electronBinding('features')
 
@@ -640,38 +642,45 @@ describe('chromium features', () => {
     const fileUrl = `file://${fixturesPath}/pages/window-opener-location.html`
     const httpUrl1 = `${scheme}://origin1`
     const httpUrl2 = `${scheme}://origin2`
+    const fileBlank = `file://${fixturesPath}/pages/blank.html`
+    const httpBlank = `${scheme}://origin1/blank`
 
     const table = [
-      {parent: fileUrl, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
-      {parent: fileUrl, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false},
-      {parent: fileUrl, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: fileUrl, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false},
+      {parent: fileBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
+      {parent: fileBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false},
+      {parent: fileBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
+      {parent: fileBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false},
 
-      {parent: httpUrl1, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
-      //{parent: httpUrl1, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
-      {parent: httpUrl1, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      //{parent: httpUrl1, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
+      {parent: httpBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
+      //{parent: httpBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
+      {parent: httpBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
+      //{parent: httpBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
 
       // NB. this is different from Chrome's behavior, which isolates file: urls from each other
-      {parent: fileUrl, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true},
-      {parent: fileUrl, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true},
-      {parent: fileUrl, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: fileUrl, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true},
+      {parent: fileBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true},
+      {parent: fileBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true},
+      {parent: fileBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
+      {parent: fileBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true},
 
-      {parent: httpUrl1, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true},
-      {parent: httpUrl1, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true},
-      {parent: httpUrl1, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: httpUrl1, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true},
+      {parent: httpBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true},
+      {parent: httpBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true},
+      {parent: httpBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
+      {parent: httpBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true},
 
-      {parent: httpUrl1, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
-      {parent: httpUrl1, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false},
-      {parent: httpUrl1, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: httpUrl1, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false},
+      {parent: httpBlank, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
+      {parent: httpBlank, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false},
+      {parent: httpBlank, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
+      {parent: httpBlank, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false},
     ]
+    const s = (url: string) => url.startsWith('file') ? 'file://...' : url
 
     before(async () => {
       await promisify(protocol.registerFileProtocol)(scheme, (request, callback) => {
-        callback(`${fixturesPath}/pages/window-opener-location.html`)
+        if (request.url.includes('blank')) {
+          callback(`${fixturesPath}/pages/blank.html`)
+        } else {
+          callback(`${fixturesPath}/pages/window-opener-location.html`)
+        }
       })
     })
     after(async () => {
@@ -679,24 +688,389 @@ describe('chromium features', () => {
     })
     afterEach(closeAllWindows)
 
-    for (const {parent, child, nodeIntegration, nativeWindowOpen, openerAccessible} of table) {
-      const s = (url: string) => url.startsWith('file') ? 'file://...' : url
-      const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen}, child should ${openerAccessible ? '' : 'not '}be able to access opener`
-      it(description, async () => {
-        const w = new BrowserWindow({show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen }})
-        await w.loadURL(parent)
-        const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
-          window.addEventListener('message', function f(e) {
-            resolve(e.data)
+    describe('when opened from main window', () => {
+      for (const {parent, child, nodeIntegration, nativeWindowOpen, openerAccessible} of table) {
+        const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen}, child should ${openerAccessible ? '' : 'not '}be able to access opener`
+        it(description, async () => {
+          const w = new BrowserWindow({show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen }})
+          await w.loadURL(parent)
+          const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
+            window.addEventListener('message', function f(e) {
+              resolve(e.data)
+            })
+            window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? "yes" : "no"}")
+          })`)
+          if (openerAccessible) {
+            expect(childOpenerLocation).to.be.a('string')
+          } else {
+            expect(childOpenerLocation).to.be.null()
+          }
+        })
+      }
+    })
+
+    describe('when opened from <webview>', () => {
+      for (const {parent, child, nodeIntegration, nativeWindowOpen, openerAccessible} of table) {
+        const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen}, child should ${openerAccessible ? '' : 'not '}be able to access opener`
+        // WebView erroneously allows access to the parent window when nativeWindowOpen is false.
+        const skip = !nativeWindowOpen && !openerAccessible
+        ifit(!skip)(description, async () => {
+          // This test involves three contexts:
+          //  1. The root BrowserWindow in which the test is run,
+          //  2. A <webview> belonging to the root window,
+          //  3. A window opened by calling window.open() from within the <webview>.
+          // We are testing whether context (3) can access context (2) under various conditions.
+
+          // This is context (1), the base window for the test.
+          const w = new BrowserWindow({show: false, webPreferences: { nodeIntegration: true, webviewTag: true }})
+          await w.loadURL('about:blank')
+
+          const parentCode = `new Promise((resolve) => {
+            // This is context (3), a child window of the WebView.
+            const child = window.open(${JSON.stringify(child)}, "", "show=no")
+            window.addEventListener("message", e => {
+              resolve(e.data)
+            })
+          })`
+          const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+            // This is context (2), a WebView which will call window.open()
+            const webview = new WebView()
+            webview.setAttribute('nodeintegration', '${nodeIntegration ? "on" : "off"}')
+            webview.setAttribute('webpreferences', 'nativeWindowOpen=${nativeWindowOpen ? "yes" : "no"}')
+            webview.setAttribute('allowpopups', 'on')
+            webview.src = ${JSON.stringify(parent + '?p=' + encodeURIComponent(child))}
+            webview.addEventListener('dom-ready', async () => {
+              webview.executeJavaScript(${JSON.stringify(parentCode)}).then(resolve, reject)
+            })
+            document.body.appendChild(webview)
+          })`)
+          if (openerAccessible) {
+            expect(childOpenerLocation).to.be.a('string')
+          } else {
+            expect(childOpenerLocation).to.be.null()
+          }
+        })
+      }
+    })
+  })
+
+  describe('storage', () => {
+    describe('custom non standard schemes', () => {
+      const protocolName = 'storage'
+      let contents: WebContents
+      before((done) => {
+        protocol.registerFileProtocol(protocolName, (request, callback) => {
+          const parsedUrl = url.parse(request.url)
+          let filename
+          switch (parsedUrl.pathname) {
+            case '/localStorage' : filename = 'local_storage.html'; break
+            case '/sessionStorage' : filename = 'session_storage.html'; break
+            case '/WebSQL' : filename = 'web_sql.html'; break
+            case '/indexedDB' : filename = 'indexed_db.html'; break
+            case '/cookie' : filename = 'cookie.html'; break
+            default : filename = ''
+          }
+          callback({ path: `${fixturesPath}/pages/storage/${filename}` })
+        }, (error) => done(error))
+      })
+
+      after((done) => {
+        protocol.unregisterProtocol(protocolName, () => done())
+      })
+
+      beforeEach(() => {
+        contents = (webContents as any).create({
+          nodeIntegration: true
+        })
+      })
+
+      afterEach(() => {
+        (contents as any).destroy()
+        contents = null as any
+      })
+
+      it('cannot access localStorage', (done) => {
+        ipcMain.once('local-storage-response', (event, error) => {
+          expect(error).to.equal(`Failed to read the 'localStorage' property from 'Window': Access is denied for this document.`)
+          done()
+        })
+        contents.loadURL(protocolName + '://host/localStorage')
+      })
+
+      it('cannot access sessionStorage', (done) => {
+        ipcMain.once('session-storage-response', (event, error) => {
+          expect(error).to.equal(`Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document.`)
+          done()
+        })
+        contents.loadURL(`${protocolName}://host/sessionStorage`)
+      })
+
+      it('cannot access WebSQL database', (done) => {
+        ipcMain.once('web-sql-response', (event, error) => {
+          expect(error).to.equal(`Failed to execute 'openDatabase' on 'Window': Access to the WebDatabase API is denied in this context.`)
+          done()
+        })
+        contents.loadURL(`${protocolName}://host/WebSQL`)
+      })
+
+      it('cannot access indexedDB', (done) => {
+        ipcMain.once('indexed-db-response', (event, error) => {
+          expect(error).to.equal(`Failed to execute 'open' on 'IDBFactory': access to the Indexed Database API is denied in this context.`)
+          done()
+        })
+        contents.loadURL(`${protocolName}://host/indexedDB`)
+      })
+
+      it('cannot access cookie', (done) => {
+        ipcMain.once('cookie-response', (event, error) => {
+          expect(error).to.equal(`Failed to set the 'cookie' property on 'Document': Access is denied for this document.`)
+          done()
+        })
+        contents.loadURL(`${protocolName}://host/cookie`)
+      })
+    })
+
+    describe('can be accessed', () => {
+      let server: http.Server
+      let serverUrl: string
+      let serverCrossSiteUrl: string
+      before((done) => {
+        server = http.createServer((req, res) => {
+          const respond = () => {
+            if (req.url === '/redirect-cross-site') {
+              res.setHeader('Location', `${serverCrossSiteUrl}/redirected`)
+              res.statusCode = 302
+              res.end()
+            } else if (req.url === '/redirected') {
+              res.end('<html><script>window.localStorage</script></html>')
+            } else {
+              res.end()
+            }
+          }
+          setTimeout(respond, 0)
+        })
+        server.listen(0, '127.0.0.1', () => {
+          serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+          serverCrossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}`
+          done()
+        })
+      })
+
+      after(() => {
+        server.close()
+        server = null as any
+      })
+
+      afterEach(closeAllWindows)
+
+      const testLocalStorageAfterXSiteRedirect = (testTitle: string, extraPreferences = {}) => {
+        it(testTitle, (done) => {
+          const w = new BrowserWindow({
+            show: false,
+            ...extraPreferences
           })
-          window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? "yes" : "no"}")
-        })`)
-        if (openerAccessible) {
-          expect(childOpenerLocation).to.be.a('string')
-        } else {
-          expect(childOpenerLocation).to.be.null()
+          let redirected = false
+          w.webContents.on('crashed', () => {
+            expect.fail('renderer crashed / was killed')
+          })
+          w.webContents.on('did-redirect-navigation', (event, url) => {
+            expect(url).to.equal(`${serverCrossSiteUrl}/redirected`)
+            redirected = true
+          })
+          w.webContents.on('did-finish-load', () => {
+            expect(redirected).to.be.true('didnt redirect')
+            done()
+          })
+          w.loadURL(`${serverUrl}/redirect-cross-site`)
+        })
+      }
+
+      testLocalStorageAfterXSiteRedirect('after a cross-site redirect')
+      testLocalStorageAfterXSiteRedirect('after a cross-site redirect in sandbox mode', { sandbox: true })
+    })
+  })
+
+  ifdescribe(features.isPDFViewerEnabled())('PDF Viewer', () => {
+    const pdfSource = url.format({
+      pathname: path.join(fixturesPath, 'assets', 'cat.pdf').replace(/\\/g, '/'),
+      protocol: 'file',
+      slashes: true
+    })
+    const pdfSourceWithParams = url.format({
+      pathname: path.join(fixturesPath, 'assets', 'cat.pdf').replace(/\\/g, '/'),
+      query: {
+        a: 1,
+        b: 2
+      },
+      protocol: 'file',
+      slashes: true
+    })
+
+    const createBrowserWindow = ({ plugins, preload }: { plugins: boolean, preload: string }) => {
+      return new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(fixturesPath, 'module', preload),
+          plugins: plugins
         }
       })
     }
+
+    const testPDFIsLoadedInSubFrame = (page: string, preloadFile: string, done: Function) => {
+      const pagePath = url.format({
+        pathname: path.join(fixturesPath, 'pages', page).replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      })
+
+      const w = createBrowserWindow({ plugins: true, preload: preloadFile })
+      ipcMain.once('pdf-loaded', (event, state) => {
+        expect(state).to.equal('success')
+        done()
+      })
+      w.webContents.on('page-title-updated', () => {
+        const parsedURL = url.parse(w.webContents.getURL(), true)
+        expect(parsedURL.protocol).to.equal('chrome:')
+        expect(parsedURL.hostname).to.equal('pdf-viewer')
+        expect(parsedURL.query.src).to.equal(pagePath)
+        expect(w.webContents.getTitle()).to.equal('cat.pdf')
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', page))
+    }
+
+    it('opens when loading a pdf resource as top level navigation', (done) => {
+      const w = createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
+      ipcMain.once('pdf-loaded', (event, state) => {
+        expect(state).to.equal('success')
+        done()
+      })
+      w.webContents.on('page-title-updated', () => {
+        const parsedURL = url.parse(w.webContents.getURL(), true)
+        expect(parsedURL.protocol).to.equal('chrome:')
+        expect(parsedURL.hostname).to.equal('pdf-viewer')
+        expect(parsedURL.query.src).to.equal(pdfSource)
+        expect(w.webContents.getTitle()).to.equal('cat.pdf')
+      })
+      w.webContents.loadURL(pdfSource)
+    })
+
+    it('opens a pdf link given params, the query string should be escaped', (done) => {
+      const w = createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
+      ipcMain.once('pdf-loaded', (event, state) => {
+        expect(state).to.equal('success')
+        done()
+      })
+      w.webContents.on('page-title-updated', () => {
+        const parsedURL = url.parse(w.webContents.getURL(), true)
+        expect(parsedURL.protocol).to.equal('chrome:')
+        expect(parsedURL.hostname).to.equal('pdf-viewer')
+        expect(parsedURL.query.src).to.equal(pdfSourceWithParams)
+        expect(parsedURL.query.b).to.be.undefined()
+        expect(parsedURL.search!.endsWith('%3Fa%3D1%26b%3D2')).to.be.true()
+        expect(w.webContents.getTitle()).to.equal('cat.pdf')
+      })
+      w.webContents.loadURL(pdfSourceWithParams)
+    })
+
+    it('should download a pdf when plugins are disabled', async () => {
+      const w = createBrowserWindow({ plugins: false, preload: 'preload-pdf-loaded.js' })
+      w.webContents.loadURL(pdfSource)
+      const [state, filename, mimeType] = await new Promise(resolve => {
+        session.defaultSession.once('will-download', (event, item, webContents) => {
+          item.setSavePath(path.join(fixturesPath, 'mock.pdf'))
+          item.on('done', (e, state) => {
+            resolve([state, item.getFilename(), item.getMimeType()])
+          })
+        })
+      })
+      expect(state).to.equal('completed')
+      expect(filename).to.equal('cat.pdf')
+      expect(mimeType).to.equal('application/pdf')
+      fs.unlinkSync(path.join(fixturesPath, 'mock.pdf'))
+    })
+
+    it('should not open when pdf is requested as sub resource', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL('about:blank')
+      const [status, title] = await w.webContents.executeJavaScript(`fetch(${JSON.stringify(pdfSource)}).then(res => [res.status, document.title])`)
+      expect(status).to.equal(200)
+      expect(title).to.not.equal('cat.pdf')
+    })
+
+    it('opens when loading a pdf resource in a iframe', (done) => {
+      testPDFIsLoadedInSubFrame('pdf-in-iframe.html', 'preload-pdf-loaded-in-subframe.js', done)
+    })
+
+    it('opens when loading a pdf resource in a nested iframe', (done) => {
+      testPDFIsLoadedInSubFrame('pdf-in-nested-iframe.html', 'preload-pdf-loaded-in-nested-subframe.js', done)
+    })
+  })
+
+  describe('window.history', () => {
+    describe('window.history.pushState', () => {
+      it('should push state after calling history.pushState() from the same url', (done) => {
+        const w = new BrowserWindow({ show: false })
+        w.webContents.once('did-finish-load', async () => {
+          // History should have current page by now.
+          expect((w.webContents as any).length()).to.equal(1)
+
+          w.webContents.executeJavaScript('window.history.pushState({}, "")').then(() => {
+            // Initial page + pushed state
+            expect((w.webContents as any).length()).to.equal(2)
+            done()
+          })
+        })
+        w.loadURL('about:blank')
+      })
+    })
+  })
+})
+
+
+describe('font fallback', () => {
+  async function getRenderedFonts (html: string) {
+    const w = new BrowserWindow({ show: false })
+    try {
+      await w.loadURL(`data:text/html,${html}`)
+      w.webContents.debugger.attach()
+      const sendCommand = (method: string, commandParams?: any) => w.webContents.debugger.sendCommand(method, commandParams)
+      const { nodeId } = (await sendCommand('DOM.getDocument')).root.children[0]
+      await sendCommand('CSS.enable')
+      const { fonts } = await sendCommand('CSS.getPlatformFontsForNode', { nodeId })
+      return fonts
+    } finally {
+      w.close()
+    }
+  }
+
+  it('should use Helvetica for sans-serif on Mac, and Arial on Windows and Linux', async () => {
+    const html = `<body style="font-family: sans-serif">test</body>`
+    const fonts = await getRenderedFonts(html)
+    expect(fonts).to.be.an('array')
+    expect(fonts).to.have.length(1)
+    if (process.platform === 'win32')
+      expect(fonts[0].familyName).to.equal('Arial')
+    else if (process.platform === 'darwin')
+      expect(fonts[0].familyName).to.equal('Helvetica')
+    else if (process.platform === 'linux')
+      expect(fonts[0].familyName).to.equal('DejaVu Sans') // I think this depends on the distro? We don't specify a default.
+  })
+
+  ifit(process.platform !== 'linux')('should fall back to Japanese font for sans-serif Japanese script', async function () {
+    const html = `
+    <html lang="ja-JP">
+      <head>
+        <meta charset="utf-8" />
+      </head>
+      <body style="font-family: sans-serif">test 智史</body>
+    </html>
+    `
+    const fonts = await getRenderedFonts(html)
+    expect(fonts).to.be.an('array')
+    expect(fonts).to.have.length(1)
+    if (process.platform === 'win32')
+      expect(fonts[0].familyName).to.be.oneOf(['Meiryo', 'Yu Gothic'])
+    else if (process.platform === 'darwin')
+      expect(fonts[0].familyName).to.equal('Hiragino Kaku Gothic ProN')
   })
 })

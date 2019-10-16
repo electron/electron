@@ -43,6 +43,7 @@ ipcMain.on('message', function (event, ...args) {
 })
 
 ipcMain.handle('get-temp-dir', () => app.getPath('temp'))
+ipcMain.handle('ping', () => null)
 
 // Set productName so getUploadedReports() uses the right directory in specs
 if (process.platform !== 'darwin') {

@@ -6,11 +6,9 @@ const path = require('path')
 const ws = require('ws')
 const url = require('url')
 const ChildProcess = require('child_process')
-const { ipcRenderer, remote } = require('electron')
+const { ipcRenderer } = require('electron')
 const { emittedOnce } = require('./events-helpers')
-const { closeWindow, waitForWebContentsToLoad } = require('./window-helpers')
 const { resolveGetters } = require('./expect-helpers')
-const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
 const features = process.electronBinding('features')
 
 const { expect } = chai
@@ -22,18 +20,12 @@ chai.use(dirtyChai)
 describe('chromium feature', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let listener = null
-  let w = null
 
   afterEach(() => {
     if (listener != null) {
       window.removeEventListener('message', listener)
     }
     listener = null
-  })
-
-  afterEach(async () => {
-    await closeWindow(w)
-    w = null
   })
 
   describe('heap snapshot', () => {
@@ -192,83 +184,6 @@ describe('chromium feature', () => {
       }
       window.addEventListener('message', listener)
       b = window.open(`file://${fixtures}/pages/window-opener.html`, '', 'show=no')
-    })
-  })
-
-  describe('window.opener access from <webview>', () => {
-    const scheme = 'other'
-    const srcPath = `${fixtures}/pages/webview-opener-postMessage.html`
-    const pageURL = `file://${fixtures}/pages/window-opener-location.html`
-    let webview = null
-
-    before((done) => {
-      protocol.registerFileProtocol(scheme, (request, callback) => {
-        callback(srcPath)
-      }, (error) => done(error))
-    })
-
-    after(() => {
-      protocol.unregisterProtocol(scheme)
-    })
-
-    afterEach(() => {
-      if (webview != null) webview.remove()
-    })
-
-    it('fails when origin of webview src URL does not match opener', (done) => {
-      webview = new WebView()
-      webview.addEventListener('console-message', (e) => {
-        expect(e.message).to.equal('null')
-        done()
-      })
-      webview.setAttribute('allowpopups', 'on')
-      webview.src = url.format({
-        pathname: srcPath,
-        protocol: scheme,
-        query: {
-          p: pageURL
-        },
-        slashes: true
-      })
-      document.body.appendChild(webview)
-    })
-
-    it('works when origin matches', (done) => {
-      webview = new WebView()
-      webview.addEventListener('console-message', (e) => {
-        expect(e.message).to.equal(webview.src)
-        done()
-      })
-      webview.setAttribute('allowpopups', 'on')
-      webview.src = url.format({
-        pathname: srcPath,
-        protocol: 'file',
-        query: {
-          p: pageURL
-        },
-        slashes: true
-      })
-      document.body.appendChild(webview)
-    })
-
-    it('works when origin does not match opener but has node integration', (done) => {
-      webview = new WebView()
-      webview.addEventListener('console-message', (e) => {
-        webview.remove()
-        expect(e.message).to.equal(webview.src)
-        done()
-      })
-      webview.setAttribute('allowpopups', 'on')
-      webview.setAttribute('nodeintegration', 'on')
-      webview.src = url.format({
-        pathname: srcPath,
-        protocol: scheme,
-        query: {
-          p: pageURL
-        },
-        slashes: true
-      })
-      document.body.appendChild(webview)
     })
   })
 
@@ -480,137 +395,6 @@ describe('chromium feature', () => {
         done()
       })
     })
-
-    describe('custom non standard schemes', () => {
-      const protocolName = 'storage'
-      let contents = null
-      before((done) => {
-        const handler = (request, callback) => {
-          const parsedUrl = url.parse(request.url)
-          let filename
-          switch (parsedUrl.pathname) {
-            case '/localStorage' : filename = 'local_storage.html'; break
-            case '/sessionStorage' : filename = 'session_storage.html'; break
-            case '/WebSQL' : filename = 'web_sql.html'; break
-            case '/indexedDB' : filename = 'indexed_db.html'; break
-            case '/cookie' : filename = 'cookie.html'; break
-            default : filename = ''
-          }
-          callback({ path: `${fixtures}/pages/storage/${filename}` })
-        }
-        protocol.registerFileProtocol(protocolName, handler, (error) => done(error))
-      })
-
-      after((done) => {
-        protocol.unregisterProtocol(protocolName, () => done())
-      })
-
-      beforeEach(() => {
-        contents = webContents.create({
-          nodeIntegration: true
-        })
-      })
-
-      afterEach(() => {
-        contents.destroy()
-        contents = null
-      })
-
-      it('cannot access localStorage', (done) => {
-        ipcMain.once('local-storage-response', (event, error) => {
-          expect(error).to.equal(`Failed to read the 'localStorage' property from 'Window': Access is denied for this document.`)
-          done()
-        })
-        contents.loadURL(protocolName + '://host/localStorage')
-      })
-
-      it('cannot access sessionStorage', (done) => {
-        ipcMain.once('session-storage-response', (event, error) => {
-          expect(error).to.equal(`Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document.`)
-          done()
-        })
-        contents.loadURL(`${protocolName}://host/sessionStorage`)
-      })
-
-      it('cannot access WebSQL database', (done) => {
-        ipcMain.once('web-sql-response', (event, error) => {
-          expect(error).to.equal(`Failed to execute 'openDatabase' on 'Window': Access to the WebDatabase API is denied in this context.`)
-          done()
-        })
-        contents.loadURL(`${protocolName}://host/WebSQL`)
-      })
-
-      it('cannot access indexedDB', (done) => {
-        ipcMain.once('indexed-db-response', (event, error) => {
-          expect(error).to.equal(`Failed to execute 'open' on 'IDBFactory': access to the Indexed Database API is denied in this context.`)
-          done()
-        })
-        contents.loadURL(`${protocolName}://host/indexedDB`)
-      })
-
-      it('cannot access cookie', (done) => {
-        ipcMain.once('cookie-response', (event, error) => {
-          expect(error).to.equal(`Failed to set the 'cookie' property on 'Document': Access is denied for this document.`)
-          done()
-        })
-        contents.loadURL(`${protocolName}://host/cookie`)
-      })
-    })
-
-    describe('can be accessed', () => {
-      let server = null
-      before((done) => {
-        server = http.createServer((req, res) => {
-          const respond = () => {
-            if (req.url === '/redirect-cross-site') {
-              res.setHeader('Location', `${server.cross_site_url}/redirected`)
-              res.statusCode = 302
-              res.end()
-            } else if (req.url === '/redirected') {
-              res.end('<html><script>window.localStorage</script></html>')
-            } else {
-              res.end()
-            }
-          }
-          setTimeout(respond, 0)
-        })
-        server.listen(0, '127.0.0.1', () => {
-          server.url = `http://127.0.0.1:${server.address().port}`
-          server.cross_site_url = `http://localhost:${server.address().port}`
-          done()
-        })
-      })
-
-      after(() => {
-        server.close()
-        server = null
-      })
-
-      const testLocalStorageAfterXSiteRedirect = (testTitle, extraPreferences = {}) => {
-        it(testTitle, (done) => {
-          w = new BrowserWindow({
-            show: false,
-            ...extraPreferences
-          })
-          let redirected = false
-          w.webContents.on('crashed', () => {
-            expect.fail('renderer crashed / was killed')
-          })
-          w.webContents.on('did-redirect-navigation', (event, url) => {
-            expect(url).to.equal(`${server.cross_site_url}/redirected`)
-            redirected = true
-          })
-          w.webContents.on('did-finish-load', () => {
-            expect(redirected).to.be.true('didnt redirect')
-            done()
-          })
-          w.loadURL(`${server.url}/redirect-cross-site`)
-        })
-      }
-
-      testLocalStorageAfterXSiteRedirect('after a cross-site redirect')
-      testLocalStorageAfterXSiteRedirect('after a cross-site redirect in sandbox mode', { sandbox: true })
-    })
   })
 
   describe('websockets', () => {
@@ -668,7 +452,7 @@ describe('chromium feature', () => {
           }
         })
       })
-      remote.getGlobal('setImmediate')(() => {
+      ipcRenderer.invoke('ping').then(() => {
         let called = false
         Promise.resolve().then(() => {
           done(called ? void 0 : new Error('wrong sequence'))
@@ -698,132 +482,6 @@ describe('chromium feature', () => {
     })
   })
 
-  describe('PDF Viewer', () => {
-    before(function () {
-      if (!features.isPDFViewerEnabled()) {
-        return this.skip()
-      }
-    })
-
-    beforeEach(() => {
-      this.pdfSource = url.format({
-        pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
-        protocol: 'file',
-        slashes: true
-      })
-
-      this.pdfSourceWithParams = url.format({
-        pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
-        query: {
-          a: 1,
-          b: 2
-        },
-        protocol: 'file',
-        slashes: true
-      })
-
-      this.createBrowserWindow = ({ plugins, preload }) => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            preload: path.join(fixtures, 'module', preload),
-            plugins: plugins
-          }
-        })
-      }
-
-      this.testPDFIsLoadedInSubFrame = (page, preloadFile, done) => {
-        const pagePath = url.format({
-          pathname: path.join(fixtures, 'pages', page).replace(/\\/g, '/'),
-          protocol: 'file',
-          slashes: true
-        })
-
-        this.createBrowserWindow({ plugins: true, preload: preloadFile })
-        ipcMain.once('pdf-loaded', (event, state) => {
-          expect(state).to.equal('success')
-          done()
-        })
-        w.webContents.on('page-title-updated', () => {
-          const parsedURL = url.parse(w.webContents.getURL(), true)
-          expect(parsedURL.protocol).to.equal('chrome:')
-          expect(parsedURL.hostname).to.equal('pdf-viewer')
-          expect(parsedURL.query.src).to.equal(pagePath)
-          expect(w.webContents.getTitle()).to.equal('cat.pdf')
-        })
-        w.loadFile(path.join(fixtures, 'pages', page))
-      }
-    })
-
-    it('opens when loading a pdf resource as top level navigation', (done) => {
-      this.createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
-      ipcMain.once('pdf-loaded', (event, state) => {
-        expect(state).to.equal('success')
-        done()
-      })
-      w.webContents.on('page-title-updated', () => {
-        const parsedURL = url.parse(w.webContents.getURL(), true)
-        expect(parsedURL.protocol).to.equal('chrome:')
-        expect(parsedURL.hostname).to.equal('pdf-viewer')
-        expect(parsedURL.query.src).to.equal(this.pdfSource)
-        expect(w.webContents.getTitle()).to.equal('cat.pdf')
-      })
-      w.webContents.loadURL(this.pdfSource)
-    })
-
-    it('opens a pdf link given params, the query string should be escaped', (done) => {
-      this.createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
-      ipcMain.once('pdf-loaded', (event, state) => {
-        expect(state).to.equal('success')
-        done()
-      })
-      w.webContents.on('page-title-updated', () => {
-        const parsedURL = url.parse(w.webContents.getURL(), true)
-        expect(parsedURL.protocol).to.equal('chrome:')
-        expect(parsedURL.hostname).to.equal('pdf-viewer')
-        expect(parsedURL.query.src).to.equal(this.pdfSourceWithParams)
-        expect(parsedURL.query.b).to.be.undefined()
-        expect(parsedURL.search.endsWith('%3Fa%3D1%26b%3D2')).to.be.true()
-        expect(w.webContents.getTitle()).to.equal('cat.pdf')
-      })
-      w.webContents.loadURL(this.pdfSourceWithParams)
-    })
-
-    it('should download a pdf when plugins are disabled', (done) => {
-      this.createBrowserWindow({ plugins: false, preload: 'preload-pdf-loaded.js' })
-      // NOTE(nornagon): this test has been skipped for ages, so there's no way
-      // to refactor it confidently. The 'set-download-option' ipc was removed
-      // around May 2019, so if you're working on the pdf viewer and arrive at
-      // this test and want to know what 'set-download-option' did, look here:
-      // https://github.com/electron/electron/blob/d87b3ead760ae2d20f2401a8dac4ce548f8cd5f5/spec/static/main.js#L164
-      ipcRenderer.sendSync('set-download-option', false, false)
-      ipcRenderer.once('download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) => {
-        expect(state).to.equal('completed')
-        expect(filename).to.equal('cat.pdf')
-        expect(mimeType).to.equal('application/pdf')
-        fs.unlinkSync(path.join(fixtures, 'mock.pdf'))
-        done()
-      })
-      w.webContents.loadURL(this.pdfSource)
-    })
-
-    it('should not open when pdf is requested as sub resource', (done) => {
-      fetch(this.pdfSource).then((res) => {
-        expect(res.status).to.equal(200)
-        expect(document.title).to.not.equal('cat.pdf')
-        done()
-      }).catch((e) => done(e))
-    })
-
-    it('opens when loading a pdf resource in a iframe', (done) => {
-      this.testPDFIsLoadedInSubFrame('pdf-in-iframe.html', 'preload-pdf-loaded-in-subframe.js', done)
-    })
-
-    it('opens when loading a pdf resource in a nested iframe', (done) => {
-      this.testPDFIsLoadedInSubFrame('pdf-in-nested-iframe.html', 'preload-pdf-loaded-in-nested-subframe.js', done)
-    })
-  })
-
   describe('window.alert(message, title)', () => {
     it('throws an exception when the arguments cannot be converted to strings', () => {
       expect(() => {
@@ -846,23 +504,6 @@ describe('chromium feature', () => {
         expect(() => {
           window.history.go({ toString: null })
         }).to.throw('Cannot convert object to primitive value')
-      })
-    })
-
-    describe('window.history.pushState', () => {
-      it('should push state after calling history.pushState() from the same url', (done) => {
-        w = new BrowserWindow({ show: false })
-        w.webContents.once('did-finish-load', async () => {
-          // History should have current page by now.
-          expect(w.webContents.length()).to.equal(1)
-
-          w.webContents.executeJavaScript('window.history.pushState({}, "")').then(() => {
-            // Initial page + pushed state
-            expect(w.webContents.length()).to.equal(2)
-            done()
-          })
-        })
-        w.loadURL('about:blank')
       })
     })
   })
@@ -919,55 +560,5 @@ describe('console functions', () => {
     expect(console.trace, 'trace').to.be.a('function')
     expect(console.time, 'time').to.be.a('function')
     expect(console.timeEnd, 'timeEnd').to.be.a('function')
-  })
-})
-
-describe('font fallback', () => {
-  async function getRenderedFonts (html) {
-    const w = new BrowserWindow({ show: false })
-    try {
-      await w.loadURL(`data:text/html,${html}`)
-      w.webContents.debugger.attach()
-      const sendCommand = (...args) => w.webContents.debugger.sendCommand(...args)
-      const { nodeId } = (await sendCommand('DOM.getDocument')).root.children[0]
-      await sendCommand('CSS.enable')
-      const { fonts } = await sendCommand('CSS.getPlatformFontsForNode', { nodeId })
-      return fonts
-    } finally {
-      w.close()
-    }
-  }
-
-  it('should use Helvetica for sans-serif on Mac, and Arial on Windows and Linux', async () => {
-    const html = `<body style="font-family: sans-serif">test</body>`
-    const fonts = await getRenderedFonts(html)
-    expect(fonts).to.be.an('array')
-    expect(fonts).to.have.length(1)
-    expect(fonts[0].familyName).to.equal({
-      'win32': 'Arial',
-      'darwin': 'Helvetica',
-      'linux': 'DejaVu Sans' // I think this depends on the distro? We don't specify a default.
-    }[process.platform])
-  })
-
-  it('should fall back to Japanese font for sans-serif Japanese script', async function () {
-    if (process.platform === 'linux') {
-      return this.skip()
-    }
-    const html = `
-    <html lang="ja-JP">
-      <head>
-        <meta charset="utf-8" />
-      </head>
-      <body style="font-family: sans-serif">test 智史</body>
-    </html>
-    `
-    const fonts = await getRenderedFonts(html)
-    expect(fonts).to.be.an('array')
-    expect(fonts).to.have.length(1)
-    expect(fonts[0].familyName).to.be.oneOf({
-      'win32': ['Meiryo', 'Yu Gothic'],
-      'darwin': ['Hiragino Kaku Gothic ProN']
-    }[process.platform])
   })
 })
