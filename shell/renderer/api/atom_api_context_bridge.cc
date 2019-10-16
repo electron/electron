@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
 #include "shell/common/api/remote/object_life_monitor.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
@@ -33,15 +34,20 @@ content::RenderFrame* GetRenderFrame(const v8::Local<v8::Object>& value) {
   return content::RenderFrame::FromWebFrame(frame);
 }
 
-std::map<content::RenderFrame*, context_bridge::RenderFramePersistenceStore*>
-    store_map_;
+std::map<content::RenderFrame*, context_bridge::RenderFramePersistenceStore*>&
+GetStoreMap() {
+  static base::NoDestructor<std::map<
+      content::RenderFrame*, context_bridge::RenderFramePersistenceStore*>>
+      store_map;
+  return *store_map;
+}
 
 context_bridge::RenderFramePersistenceStore* GetOrCreateStore(
     content::RenderFrame* render_frame) {
-  auto it = store_map_.find(render_frame);
-  if (it == store_map_.end()) {
+  auto it = GetStoreMap().find(render_frame);
+  if (it == GetStoreMap().end()) {
     auto* store = new context_bridge::RenderFramePersistenceStore(render_frame);
-    store_map_[render_frame] = store;
+    GetStoreMap().emplace(render_frame, store);
     return store;
   }
   return it->second;
@@ -147,7 +153,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
           mate::StringToV8(source_context->GetIsolate(),
                            "Electron contextBridge recursion depth exceeded.  "
                            "Nested objects "
-                           "deeper than 10000 are not supported.")));
+                           "deeper than 1000 are not supported.")));
       return v8::MaybeLocal<v8::Value>();
     }
   }

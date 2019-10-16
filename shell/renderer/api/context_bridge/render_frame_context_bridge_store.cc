@@ -6,11 +6,61 @@
 
 #include <utility>
 
+#include "shell/common/api/remote/object_life_monitor.h"
+
 namespace electron {
 
 namespace api {
 
 namespace context_bridge {
+
+namespace {
+
+class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
+ public:
+  static void BindTo(v8::Isolate* isolate,
+                     v8::Local<v8::Object> target,
+                     RenderFramePersistenceStore* store,
+                     WeakGlobalPairNode* node,
+                     int hash) {
+    new CachedProxyLifeMonitor(isolate, target, store, node, hash);
+  }
+
+ protected:
+  CachedProxyLifeMonitor(v8::Isolate* isolate,
+                         v8::Local<v8::Object> target,
+                         RenderFramePersistenceStore* store,
+                         WeakGlobalPairNode* node,
+                         int hash)
+      : ObjectLifeMonitor(isolate, target),
+        store_(store),
+        node_(node),
+        hash_(hash) {}
+
+  void RunDestructor() override {
+    if (node_->detached) {
+      delete node_;
+    }
+    if (node_->prev) {
+      node_->prev->next = node_->next;
+    }
+    if (node_->next) {
+      node_->next->prev = node_->prev;
+    }
+    if (!node_->prev && !node_->next) {
+      // Must be a single length linked list
+      store_->proxy_map()->erase(hash_);
+    }
+    node_->detached = true;
+  }
+
+ private:
+  RenderFramePersistenceStore* store_;
+  WeakGlobalPairNode* node_;
+  int hash_;
+};
+
+}  // namespace
 
 WeakGlobalPairNode::WeakGlobalPairNode(WeakGlobalPair pair) {
   this->pair = std::move(pair);
@@ -47,6 +97,11 @@ void RenderFramePersistenceStore::CacheProxiedObject(
     auto iter = proxy_map_.find(hash);
     auto* node = new WeakGlobalPairNode(
         std::make_tuple(std::move(global_from), std::move(global_proxy)));
+    CachedProxyLifeMonitor::BindTo(v8::Isolate::GetCurrent(), obj, this, node,
+                                   hash);
+    CachedProxyLifeMonitor::BindTo(v8::Isolate::GetCurrent(),
+                                   v8::Local<v8::Object>::Cast(proxy_value),
+                                   this, node, hash);
     if (iter == proxy_map_.end()) {
       proxy_map_.emplace(hash, node);
     } else {
@@ -55,6 +110,7 @@ void RenderFramePersistenceStore::CacheProxiedObject(
         target = target->next;
       }
       target->next = node;
+      node->prev = target;
     }
   }
 }

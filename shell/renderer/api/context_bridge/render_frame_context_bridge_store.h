@@ -28,6 +28,8 @@ struct WeakGlobalPairNode {
   explicit WeakGlobalPairNode(WeakGlobalPair pair_);
   ~WeakGlobalPairNode();
   WeakGlobalPair pair;
+  bool detached = false;
+  struct WeakGlobalPairNode* prev = nullptr;
   struct WeakGlobalPairNode* next = nullptr;
 };
 

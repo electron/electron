@@ -38,7 +38,7 @@ context isolation and what it affects in the [BrowserWindow](browser-window.md) 
 
 ## Methods
 
-The `contextBridge` module has the following instance methods:
+The `contextBridge` module has the following methods:
 
 ### `contextBridge.exposeInMainWorld(apiKey, api)`
 
