@@ -1303,7 +1303,7 @@ command line arguments that Chromium uses.
 
 ### `app.dock` _macOS_ _Readonly_
 
-A [`Dock`](./dock.md) object that allows you to perform actions on your app icon in the user's
+A [`Dock`](./dock.md) `| undefined` object that allows you to perform actions on your app icon in the user's
 dock on macOS.
 
 ### `app.isPackaged` _Readonly_
