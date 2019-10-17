@@ -141,6 +141,7 @@
   "parallel/test-tls-socket-failed-handshake-emits-error",
   "parallel/test-tls-socket-allow-half-open-option",
   "parallel/test-tls-ticket",
+  "parallel/test-tls-set-sigalgs",
   "parallel/test-tls-write-error",
   "parallel/test-tls-ticket-cluster",
   "parallel/test-trace-events-dynamic-enable",
