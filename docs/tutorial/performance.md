@@ -66,8 +66,8 @@ resource-hungry if you attempt these steps.
 
 Before adding a Node.js module to your application, examine said module. How
 many dependencies does that module include? What kind of resources does
-module need to simply be called in a `require()` statement? You might find
-that the module with the most downloads on `npm` or the most stars on GitHub
+it need to simply be called in a `require()` statement? You might find
+that the module with the most downloads on the NPM package registry or the most stars on GitHub
 is not in fact the leanest or smallest one available.
 
 ### Why?
@@ -101,7 +101,9 @@ connectivity checks included in later versions of Chromium.
 
 ### How?
 
-When considering a module, we recommend that you check 1) the size of dependencies
+When considering a module, we recommend that you check:
+
+1. the size of dependencies included
 2) the resources required to load (`require()`) it
 3. the resources required to perform the action you're interested in
 
