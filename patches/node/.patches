@@ -39,3 +39,4 @@ fix_microtasks.patch
 fsevents-stop-using-fsevents-to-watch-files.patch
 fsevents-regression-in-watching.patch
 fix_enable_worker_threads.patch
+build_bring_back_node_with_ltcg_configuration.patch
