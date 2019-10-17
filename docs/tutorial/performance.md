@@ -103,7 +103,7 @@ connectivity checks included in later versions of Chromium.
 
 When considering a module, we recommend that you check 1) the size of dependencies
 included; 2) resources required to load (`require()`) it; 3) resources required
-to perform the action you're interested in.
+3. the resources required to perform the action you're interested in
 
 Generating a CPU profile and a heap memory profile for loading a module can be done
 with a single command on the command line. In the example below, we're looking at
