@@ -65,7 +65,7 @@ resource-hungry if you attempt these steps.
 ## 1) Carelessly including modules
 
 Before adding a Node.js module to your application, examine said module. How
-many dependencies does that module include? What kind of resources does said
+many dependencies does that module include? What kind of resources does
 module need to simply be called in a `require()` statement? You might find
 that the module with the most downloads on `npm` or the most stars on GitHub
 is not in fact the leanest or smallest one available.
