@@ -44,3 +44,4 @@ http2_fix_tracking_received_data_for_maxsessionmemory.patch
 fix_set_uptime_offset_in_correct_init_method.patch
 fsevents-stop-using-fsevents-to-watch-files.patch
 fsevents-regression-in-watching.patch
+build_bring_back_node_with_ltcg_configuration.patch
