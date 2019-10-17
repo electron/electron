@@ -48,7 +48,7 @@ basis for some older supported lines. All contested decisions around release
 line backports will be resolved by the [Releases Working Group](https://github.com/electron/governance/tree/master/wg-releases) as an agenda item at their weekly meeting the week the backport PR is raised.
 
 ### Currently supported versions
-- 7.x.7
+- 7.x.y
 - 6.x.y
 - 5.x.y
 
