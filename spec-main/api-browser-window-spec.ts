@@ -2506,20 +2506,10 @@ describe('BrowserWindow module', () => {
         // See https://github.com/electron/electron/issues/8664
         await emittedOnce(w, 'show')
       }
-      {
-        const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
-        expect(visibilityState).to.equal('visible')
-      }
       w.hide()
-      {
-        const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
-        expect(visibilityState).to.equal('hidden')
-      }
       w.show()
-      {
-        const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
-        expect(visibilityState).to.equal('visible')
-      }
+      const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
+      expect(visibilityState).to.equal('visible')
     })
 
     ifit(!(isCI && process.platform === 'win32'))('visibilityState changes when window is shown inactive', async () => {
@@ -2535,20 +2525,10 @@ describe('BrowserWindow module', () => {
         // See https://github.com/electron/electron/issues/8664
         await emittedOnce(w, 'show')
       }
-      {
-        const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
-        expect(visibilityState).to.equal('visible')
-      }
       w.hide()
-      {
-        const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
-        expect(visibilityState).to.equal('hidden')
-      }
       w.showInactive()
-      {
-        const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
-        expect(visibilityState).to.equal('visible')
-      }
+      const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
+      expect(visibilityState).to.equal('visible')
     })
 
     ifit(!(isCI && process.platform === 'linux'))('visibilityState changes when window is minimized', async () => {
@@ -2560,7 +2540,6 @@ describe('BrowserWindow module', () => {
         }
       })
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
-      await emittedOnce(w, 'show')
 
       {
         const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
