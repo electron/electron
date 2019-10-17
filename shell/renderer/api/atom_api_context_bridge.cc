@@ -310,8 +310,10 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 
   v8::Context::Scope destination_context_scope(destination_context);
   {
-    return v8::MaybeLocal<v8::Value>(
-        mate::ConvertToV8(destination_context->GetIsolate(), ret));
+    v8::Local<v8::Value> cloned_value =
+        mate::ConvertToV8(destination_context->GetIsolate(), ret);
+    store->CacheProxiedObject(value, cloned_value);
+    return v8::MaybeLocal<v8::Value>(cloned_value);
   }
 }
 
