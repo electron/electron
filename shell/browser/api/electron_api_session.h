@@ -87,6 +87,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   std::vector<base::FilePath::StringType> GetPreloads() const;
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
+  v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options,
@@ -120,6 +121,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;
   v8::Global<v8::Value> net_log_;
+  v8::Global<v8::Value> service_worker_context_;
 
   // Cached object.
   v8::Global<v8::Value> web_request_;
