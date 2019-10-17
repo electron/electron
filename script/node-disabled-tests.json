@@ -175,6 +175,7 @@
   "parallel/test-worker-message-channel",
   "parallel/test-worker-message-port-transfer-duplicate",
   "parallel/test-worker-message-port-transfer-target",
+  "parallel/test-worker-message-port",
   "parallel/test-worker-ref-onexit",
   "parallel/test-worker-sharedarraybuffer-from-worker-thread",
   "parallel/test-worker-stdio",
@@ -274,6 +275,9 @@
   "message/undefined_reference_in_new_context",
   "message/unhandled_promise_trace_warnings",
   "message/util_inspect_error",
+  "message/source_map_throw_catch",
+  "message/source_map_throw_first_tick",
+  "message/source_map_throw_set_immediate",
   "message/v8_warning",
   "message/vm_display_runtime_error",
   "message/vm_display_syntax_error",
@@ -292,6 +296,8 @@
   "pseudo-tty/test-tty-wrap",
   "parallel/test-cluster-master-kill",
   "parallel/test-cluster-master-error",
+  "parallel/test-source-map",
   "sequential/test-timers-block-eventloop",
-  "sequential/test-timers-set-interval-excludes-callback-duration"
+  "sequential/test-timers-set-interval-excludes-callback-duration",
+  "wpt/test-encoding"
 ]
