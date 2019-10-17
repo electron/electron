@@ -365,7 +365,7 @@ the fonts and include them in your app's bundle.
 
 In an ideal world, your application wouldn't need the network to operate at
 all. To get there, you must understand what resources your app is downloading
-- and how large those resources are.
+\- and how large those resources are.
 
 To do so, open up the developer tools. Navigate to the `Network` tab and check
 the `Disable cache` option. Then, reload your renderer. Unless your app
