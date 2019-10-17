@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 17 Oct 2019 15:15:12 -0700
+Subject: fix: don't use node-controlled prepareStackTrace
+
+
+diff --git a/lib/internal/util.js b/lib/internal/util.js
+index 58502f3b7a7a937c896ff6d32a90a45c6912e3b3..e91362cc3a8a6c5d2462a017f177bebfd607a850 100644
+--- a/lib/internal/util.js
++++ b/lib/internal/util.js
+@@ -340,10 +340,10 @@ function isInsideNodeModules() {
+     // the perf implications should be okay.
+     getStructuredStack = runInNewContext(`(function() {
+       Error.stackTraceLimit = Infinity;
++      Error.prepareStackTrace = (err, trace) => trace;
++
+       return function structuredStack() {
+-        const e = new Error();
+-        overrideStackTrace.set(e, (err, trace) => trace);
+-        return e.stack;
++        return new Error().stack;
+       };
+     })()`, { overrideStackTrace }, { filename: 'structured-stack' });
+   }
