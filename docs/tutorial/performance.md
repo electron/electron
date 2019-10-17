@@ -329,8 +329,8 @@ own version of standard web platform features.
 
 Operate under the assumption that polyfills in current versions of Electron
 are unnecessary. If you have doubts, check [caniuse.com][https://caniuse.com/]
-and check if the [version of Chromium used in your Electron version](/docs/api/process#processversionschrome) supports
-the feature you desire.
+and check if the [version of Chromium used in your Electron version](/docs/api/process#processversionschrome-readonly)
+supports the feature you desire.
 
 In addition, carefully examine the libraries you use. Are they really necessary?
 `jQuery`, for example, was such a success that many of its features are now part
