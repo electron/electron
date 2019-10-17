@@ -84,10 +84,9 @@ bool MoveItemToTrash(gin::Arguments* args) {
 
 #if defined(OS_WIN)
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
-                       gin::Arguments* args) {
+                       gin_helper::Arguments* args) {
   base::win::ShortcutOperation operation = base::win::SHORTCUT_CREATE_ALWAYS;
-  if (gin::ConvertFromV8(args->isolate(), args->PeekNext(), &operation))
-    args->Skip();
+  args->GetNext(&operation);
   gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
   if (!args->GetNext(&options)) {
     args->ThrowError();

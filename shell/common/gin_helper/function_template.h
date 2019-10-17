@@ -8,6 +8,7 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "gin/arguments.h"
+#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
@@ -115,6 +116,15 @@ inline bool GetNextArgument(gin::Arguments* args,
                             bool is_first,
                             ErrorThrower* result) {
   *result = ErrorThrower(args->isolate());
+  return true;
+}
+
+// Supports the gin_helper::Arguments.
+inline bool GetNextArgument(gin::Arguments* args,
+                            int create_flags,
+                            bool is_first,
+                            gin_helper::Arguments** result) {
+  *result = static_cast<gin_helper::Arguments*>(args);
   return true;
 }
 
