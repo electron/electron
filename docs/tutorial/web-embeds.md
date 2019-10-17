@@ -15,7 +15,7 @@ They are implemented as an "out-of-process iframe". This means that all communic
 
 Compared to an `<iframe>`, `<webview>` tend to be slightly slower but offer much greater control in loading and communicating with the third party content and handling various events.
 
-## Browserviews
+## BrowserViews
 
 Browserviews are not part of your DOM, but are created in your main process and are overlaid on top of your BrowserWindow content. This means they are completely separate from your own BrowserWindow content and their position is not controlled by the DOM and CSS, but by setting the bounds in the main process.
 
