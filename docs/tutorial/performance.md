@@ -11,7 +11,7 @@ standard for your app's security.
 
 Wisdom and information about how to build performant websites with JavaScript
 generally applies to Electron apps, too. To a certain extent, resources
-discussing how to build performant Node.js applications apply too, but be
+discussing how to build performant Node.js applications also apply, but be
 careful to understand that the term "performance" means different things for
 a Node.js backend than it does for an application running on a client.
 
