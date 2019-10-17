@@ -8,7 +8,7 @@ Iframes in Electron behave like iframes in regular browsers. An `<iframe>` eleme
 
 ## Webviews
 
-[Webviews](https://electronjs.org/docs/api/webview-tag) are based on Chromium's webviews and are not explicitly supported by Electron, in such way that we do not give guarantees that the Webview api will remain available in future versions of Electron. This is why, if you want to use webviews, you will need to set `webviewTag` to `true` in the `webPreferences` of your BrowserWindow.
+[WebViews](https://electronjs.org/docs/api/webview-tag) are based on Chromium's WebViews and are not explicitly supported by Electron. We do not guarantee that the WebView API will remain available in future versions of Electron. This is why, if you want to use `<webview>` tags, you will need to set `webviewTag` to `true` in the `webPreferences` of your BrowserWindow.
 
 Webviews are a custom element(<webview>) that will only work inside Electron.
 They are implemented as an "out-of-process iframe". This means all communication with the webview is done asynchronously using IPC. The webview element has many custom methods and events, similar to webContents, that allow you much greater control over the contents of a webview.
