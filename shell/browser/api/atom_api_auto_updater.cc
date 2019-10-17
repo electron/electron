@@ -108,7 +108,7 @@ void AutoUpdater::OnWindowAllClosed() {
   QuitAndInstall();
 }
 
-void AutoUpdater::SetFeedURL(gin::Arguments* args) {
+void AutoUpdater::SetFeedURL(gin_helper::Arguments* args) {
   auto_updater::AutoUpdater::SetFeedURL(args);
 }
 

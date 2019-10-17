@@ -47,7 +47,7 @@ class AutoUpdater : public mate::EventEmitter<AutoUpdater>,
 
  private:
   std::string GetFeedURL();
-  void SetFeedURL(gin::Arguments* args);
+  void SetFeedURL(gin_helper::Arguments* args);
   void QuitAndInstall();
 
   DISALLOW_COPY_AND_ASSIGN(AutoUpdater);
