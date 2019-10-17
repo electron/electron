@@ -17,6 +17,6 @@ Compared to an `<iframe>`, `<webview>` tend to be slightly slower but offer much
 
 ## BrowserViews
 
-Browserviews are not part of your DOM, but are created in your main process and are overlaid on top of your BrowserWindow content. This means they are completely separate from your own BrowserWindow content and their position is not controlled by the DOM and CSS, but by setting the bounds in the main process.
+Browserviews are not part of the DOM - instead, they are created in and controlled by your main process. They are simply another layer of web content on top of your existing window. This means that they are completely separate from your own BrowserWindow content and that their position is not controlled by the DOM or CSS but by setting the bounds in the main process.
 
 Browserviews offer the greatest control over their contents, since they implement the webContents similarly to how a BrowserWindows implements it. However they are not part of your DOM but are overlaid on top of them, which means you will have to manage their position manually.
