@@ -40,7 +40,7 @@ ifdescribe(features.isDesktopCapturerEnabled() && !process.arch.includes('arm') 
     expect(sources2).to.be.an('array').that.is.not.empty()
   })
 
-  it('responds to subsequent calls of different options', async () => {
+  ifit(process.platform !== 'linux')('responds to subsequent calls of different options', async () => {
     const promise1 = getSources({ types: ['window'] })
     await expect(promise1).to.eventually.be.fulfilled()
 
