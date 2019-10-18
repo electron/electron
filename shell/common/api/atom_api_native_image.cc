@@ -13,13 +13,14 @@
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/threading/thread_restrictions.h"
-#include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/data_url.h"
 #include "shell/common/asar/asar_util.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/skia_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -47,9 +48,9 @@ namespace api {
 namespace {
 
 // Get the scale factor from options object at the first argument
-float GetScaleFactorFromOptions(mate::Arguments* args) {
+float GetScaleFactorFromOptions(gin::Arguments* args) {
   float scale_factor = 1.0f;
-  mate::Dictionary options;
+  gin_helper::Dictionary options;
   if (args->GetNext(&options))
     options.Get("scaleFactor", &scale_factor);
   return scale_factor;
@@ -151,7 +152,7 @@ HICON NativeImage::GetHICON(int size) {
 }
 #endif
 
-v8::Local<v8::Value> NativeImage::ToPNG(mate::Arguments* args) {
+v8::Local<v8::Value> NativeImage::ToPNG(gin::Arguments* args) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
   if (scale_factor == 1.0f) {
@@ -173,7 +174,7 @@ v8::Local<v8::Value> NativeImage::ToPNG(mate::Arguments* args) {
   return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
 }
 
-v8::Local<v8::Value> NativeImage::ToBitmap(mate::Arguments* args) {
+v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
   const SkBitmap bitmap =
@@ -198,7 +199,7 @@ v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
       .ToLocalChecked();
 }
 
-std::string NativeImage::ToDataURL(mate::Arguments* args) {
+std::string NativeImage::ToDataURL(gin::Arguments* args) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
   if (scale_factor == 1.0f) {
@@ -212,7 +213,7 @@ std::string NativeImage::ToDataURL(mate::Arguments* args) {
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap());
 }
 
-v8::Local<v8::Value> NativeImage::GetBitmap(mate::Arguments* args) {
+v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
   const SkBitmap bitmap =
@@ -226,19 +227,19 @@ v8::Local<v8::Value> NativeImage::GetBitmap(mate::Arguments* args) {
       .ToLocalChecked();
 }
 
-v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
-                                                  mate::Arguments* args) {
+v8::Local<v8::Value> NativeImage::GetNativeHandle(
+    gin_helper::ErrorThrower thrower) {
 #if defined(OS_MACOSX)
   if (IsEmpty())
-    return node::Buffer::New(isolate, 0).ToLocalChecked();
+    return node::Buffer::New(thrower.isolate(), 0).ToLocalChecked();
 
   NSImage* ptr = image_.AsNSImage();
-  return node::Buffer::Copy(isolate, reinterpret_cast<char*>(ptr),
+  return node::Buffer::Copy(thrower.isolate(), reinterpret_cast<char*>(ptr),
                             sizeof(void*))
       .ToLocalChecked();
 #else
-  args->ThrowError("Not implemented");
-  return v8::Undefined(isolate);
+  thrower.ThrowError("Not implemented");
+  return v8::Undefined(thrower.isolate());
 #endif
 }
 
@@ -301,7 +302,7 @@ mate::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
                             new NativeImage(isolate, gfx::Image(cropped)));
 }
 
-void NativeImage::AddRepresentation(const mate::Dictionary& options) {
+void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
   int width = 0;
   int height = 0;
   float scale_factor = 1.0f;
@@ -400,11 +401,11 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
 
 // static
 mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
-    mate::Arguments* args,
+    gin_helper::ErrorThrower thrower,
     v8::Local<v8::Value> buffer,
-    const mate::Dictionary& options) {
+    const gin_helper::Dictionary& options) {
   if (!node::Buffer::HasInstance(buffer)) {
-    args->ThrowError("buffer must be a node Buffer");
+    thrower.ThrowError("buffer must be a node Buffer");
     return mate::Handle<NativeImage>();
   }
 
@@ -413,12 +414,12 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
   double scale_factor = 1.;
 
   if (!options.Get("width", &width)) {
-    args->ThrowError("width is required");
+    thrower.ThrowError("width is required");
     return mate::Handle<NativeImage>();
   }
 
   if (!options.Get("height", &height)) {
-    args->ThrowError("height is required");
+    thrower.ThrowError("height is required");
     return mate::Handle<NativeImage>();
   }
 
@@ -426,14 +427,14 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
   auto size_bytes = info.computeMinByteSize();
 
   if (size_bytes != node::Buffer::Length(buffer)) {
-    args->ThrowError("invalid buffer size");
+    thrower.ThrowError("invalid buffer size");
     return mate::Handle<NativeImage>();
   }
 
   options.Get("scaleFactor", &scale_factor);
 
   if (width == 0 || height == 0) {
-    return CreateEmpty(args->isolate());
+    return CreateEmpty(thrower.isolate());
   }
 
   SkBitmap bitmap;
@@ -443,15 +444,16 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
   gfx::ImageSkia image_skia;
   image_skia.AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
 
-  return Create(args->isolate(), gfx::Image(image_skia));
+  return Create(thrower.isolate(), gfx::Image(image_skia));
 }
 
 // static
 mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
-    mate::Arguments* args,
-    v8::Local<v8::Value> buffer) {
+    gin_helper::ErrorThrower thrower,
+    v8::Local<v8::Value> buffer,
+    gin::Arguments* args) {
   if (!node::Buffer::HasInstance(buffer)) {
-    args->ThrowError("buffer must be a node Buffer");
+    thrower.ThrowError("buffer must be a node Buffer");
     return mate::Handle<NativeImage>();
   }
 
@@ -459,7 +461,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
   int height = 0;
   double scale_factor = 1.;
 
-  mate::Dictionary options;
+  gin_helper::Dictionary options;
   if (args->GetNext(&options)) {
     options.Get("width", &width);
     options.Get("height", &height);
@@ -489,7 +491,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
 
 #if !defined(OS_MACOSX)
 mate::Handle<NativeImage> NativeImage::CreateFromNamedImage(
-    mate::Arguments* args,
+    gin::Arguments* args,
     const std::string& name) {
   return CreateEmpty(args->isolate());
 }
@@ -498,8 +500,8 @@ mate::Handle<NativeImage> NativeImage::CreateFromNamedImage(
 // static
 void NativeImage::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "NativeImage"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "NativeImage"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("toPNG", &NativeImage::ToPNG)
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
       .SetMethod("toBitmap", &NativeImage::ToBitmap)
@@ -522,7 +524,7 @@ void NativeImage::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace electron
 
-namespace mate {
+namespace gin {
 
 v8::Local<v8::Value> Converter<mate::Handle<electron::api::NativeImage>>::ToV8(
     v8::Isolate* isolate,
@@ -542,17 +544,17 @@ bool Converter<mate::Handle<electron::api::NativeImage>>::FromV8(
     return !(*out)->image().IsEmpty();
   }
 
-  WrappableBase* wrapper =
-      static_cast<WrappableBase*>(internal::FromV8Impl(isolate, val));
+  auto* wrapper = static_cast<mate::WrappableBase*>(
+      mate::internal::FromV8Impl(isolate, val));
   if (!wrapper)
     return false;
 
-  *out =
-      CreateHandle(isolate, static_cast<electron::api::NativeImage*>(wrapper));
+  *out = mate::CreateHandle(isolate,
+                            static_cast<electron::api::NativeImage*>(wrapper));
   return true;
 }
 
-}  // namespace mate
+}  // namespace gin
 
 namespace {
 
@@ -563,11 +565,11 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("NativeImage", NativeImage::GetConstructor(isolate)
                               ->GetFunction(context)
                               .ToLocalChecked());
-  mate::Dictionary native_image = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary native_image = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("nativeImage", native_image);
 
   native_image.SetMethod("createEmpty", &NativeImage::CreateEmpty);

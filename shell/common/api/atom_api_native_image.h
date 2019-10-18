@@ -9,10 +9,9 @@
 #include <string>
 
 #include "base/values.h"
-#include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
-#include "ui/gfx/geometry/rect.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
@@ -27,11 +26,12 @@ class FilePath;
 }
 
 namespace gfx {
+class Rect;
 class Size;
-}
+}  // namespace gfx
 
-namespace mate {
-class Arguments;
+namespace gin_helper {
+class Dictionary;
 }
 
 namespace electron {
@@ -52,16 +52,17 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   static mate::Handle<NativeImage> CreateFromPath(v8::Isolate* isolate,
                                                   const base::FilePath& path);
   static mate::Handle<NativeImage> CreateFromBitmap(
-      mate::Arguments* args,
+      gin_helper::ErrorThrower thrower,
       v8::Local<v8::Value> buffer,
-      const mate::Dictionary& options);
+      const gin_helper::Dictionary& options);
   static mate::Handle<NativeImage> CreateFromBuffer(
-      mate::Arguments* args,
-      v8::Local<v8::Value> buffer);
+      gin_helper::ErrorThrower thrower,
+      v8::Local<v8::Value> buffer,
+      gin::Arguments* args);
   static mate::Handle<NativeImage> CreateFromDataURL(v8::Isolate* isolate,
                                                      const GURL& url);
   static mate::Handle<NativeImage> CreateFromNamedImage(
-      mate::Arguments* args,
+      gin::Arguments* args,
       const std::string& name);
 
   static void BuildPrototype(v8::Isolate* isolate,
@@ -81,20 +82,19 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   ~NativeImage() override;
 
  private:
-  v8::Local<v8::Value> ToPNG(mate::Arguments* args);
+  v8::Local<v8::Value> ToPNG(gin::Arguments* args);
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
-  v8::Local<v8::Value> ToBitmap(mate::Arguments* args);
-  v8::Local<v8::Value> GetBitmap(mate::Arguments* args);
-  v8::Local<v8::Value> GetNativeHandle(v8::Isolate* isolate,
-                                       mate::Arguments* args);
+  v8::Local<v8::Value> ToBitmap(gin::Arguments* args);
+  v8::Local<v8::Value> GetBitmap(gin::Arguments* args);
+  v8::Local<v8::Value> GetNativeHandle(gin_helper::ErrorThrower thrower);
   mate::Handle<NativeImage> Resize(v8::Isolate* isolate,
                                    const base::DictionaryValue& options);
   mate::Handle<NativeImage> Crop(v8::Isolate* isolate, const gfx::Rect& rect);
-  std::string ToDataURL(mate::Arguments* args);
+  std::string ToDataURL(gin::Arguments* args);
   bool IsEmpty();
   gfx::Size GetSize();
   float GetAspectRatio();
-  void AddRepresentation(const mate::Dictionary& options);
+  void AddRepresentation(const gin_helper::Dictionary& options);
 
   // Mark the image as template image.
   void SetTemplateImage(bool setAsTemplate);
@@ -115,7 +115,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
 
 }  // namespace electron
 
-namespace mate {
+namespace gin {
 
 // A custom converter that allows converting path to NativeImage.
 template <>
@@ -126,6 +126,27 @@ struct Converter<mate::Handle<electron::api::NativeImage>> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      mate::Handle<electron::api::NativeImage>* out);
+};
+
+}  // namespace gin
+
+namespace mate {
+
+// Keep compatibility with native_mate code.
+//
+// TODO(zcbenz): Remove this after removing native_mate.
+template <>
+struct Converter<mate::Handle<electron::api::NativeImage>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const mate::Handle<electron::api::NativeImage>& val) {
+    return gin::ConvertToV8(isolate, val);
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     mate::Handle<electron::api::NativeImage>* out) {
+    return gin::ConvertFromV8(isolate, val, out);
+  }
 };
 
 }  // namespace mate

@@ -1,18 +1,18 @@
-// Copyright (c) 2015 GitHub, Inc.
+// Copyright (c) 2019 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/native_mate_converters/gfx_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 
-#include "native_mate/dictionary.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
+#include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
 
-namespace mate {
+namespace gin {
 
 v8::Local<v8::Value> Converter<gfx::Point>::ToV8(v8::Isolate* isolate,
                                                  const gfx::Point& val) {
@@ -140,9 +140,8 @@ struct Converter<display::Display::TouchSupport> {
 v8::Local<v8::Value> Converter<display::Display>::ToV8(
     v8::Isolate* isolate,
     const display::Display& val) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
-  gin_helper::Dictionary(isolate, dict.GetHandle()).SetHidden("simple", true);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("id", val.id());
   dict.Set("bounds", val.bounds());
   dict.Set("workArea", val.work_area());
@@ -160,4 +159,4 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
   return dict.GetHandle();
 }
 
-}  // namespace mate
+}  // namespace gin

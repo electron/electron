@@ -72,6 +72,7 @@
 #include "shell/browser/web_view_guest_delegate.h"
 #include "shell/common/api/atom_api_native_image.h"
 #include "shell/common/color_util.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/mouse_util.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
 #include "shell/common/native_mate_converters/content_converter.h"
@@ -79,7 +80,6 @@
 #include "shell/common/native_mate_converters/gfx_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/image_converter.h"
-#include "shell/common/native_mate_converters/map_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
 #include "shell/common/native_mate_converters/network_converter.h"
 #include "shell/common/native_mate_converters/once_callback.h"
@@ -130,7 +130,7 @@ template <>
 struct Converter<printing::PrinterBasicInfo> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const printing::PrinterBasicInfo& val) {
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("name", val.printer_name);
     dict.Set("description", val.printer_description);
     dict.Set("status", val.printer_status);
