@@ -6,9 +6,9 @@
 
 #include <utility>
 
-#include "atom/common/api/remote/object_life_monitor.h"
+#include "atom/common/api/object_life_monitor.h"
 
-namespace electron {
+namespace atom {
 
 namespace api {
 
@@ -142,4 +142,4 @@ v8::MaybeLocal<v8::Value> RenderFramePersistenceStore::GetCachedProxiedObject(
 
 }  // namespace api
 
-}  // namespace electron
+}  // namespace atom

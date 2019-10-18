@@ -18,7 +18,7 @@
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
-namespace electron {
+namespace atom {
 
 namespace api {
 
@@ -36,6 +36,6 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
 
 }  // namespace api
 
-}  // namespace electron
+}  // namespace atom
 
 #endif  // ATOM_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
