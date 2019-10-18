@@ -9,7 +9,7 @@ diff --git a/doc/api/crypto.md b/doc/api/crypto.md
 index 8132e2975483b8fda95fe4466910dd42f74866cd..9b7aab3009770bb7816493581d82b63b7e19f2f3 100644
 --- a/doc/api/crypto.md
 +++ b/doc/api/crypto.md
-@@ -1785,10 +1785,6 @@ and description of each available elliptic curve.
+@@ -1845,10 +1845,6 @@ and description of each available elliptic curve.
  ### crypto.createHash(algorithm[, options])
  <!-- YAML
  added: v0.1.92
@@ -18,9 +18,9 @@ index 8132e2975483b8fda95fe4466910dd42f74866cd..9b7aab3009770bb7816493581d82b63b
 -    pr-url: https://github.com/nodejs/node/pull/28805
 -    description: The `outputLength` option was added for XOF hash functions.
  -->
+ 
  * `algorithm` {string}
- * `options` {Object} [`stream.transform` options][]
-@@ -1796,8 +1792,7 @@ changes:
+@@ -1857,8 +1853,7 @@ changes:
  
  Creates and returns a `Hash` object that can be used to generate hash digests
  using the given `algorithm`. Optional `options` argument controls stream
@@ -31,19 +31,22 @@ index 8132e2975483b8fda95fe4466910dd42f74866cd..9b7aab3009770bb7816493581d82b63b
  The `algorithm` is dependent on the available algorithms supported by the
  version of OpenSSL on the platform. Examples are `'sha256'`, `'sha512'`, etc.
 diff --git a/lib/internal/crypto/hash.js b/lib/internal/crypto/hash.js
-index 38b125e5f22c2dd5220a983d8126bef1feb5462b..a58164802124d30ac0fa2c5b472857fa018d2bfa 100644
+index 3812ecfe68..7e81769eee 100644
 --- a/lib/internal/crypto/hash.js
 +++ b/lib/internal/crypto/hash.js
-@@ -25,7 +25,7 @@ const {
+@@ -24,10 +24,7 @@ const {
    ERR_CRYPTO_HASH_UPDATE_FAILED,
    ERR_INVALID_ARG_TYPE
  } = require('internal/errors').codes;
--const { validateString, validateUint32 } = require('internal/validators');
+-const {
+-  validateString,
+-  validateUint32
+-} = require('internal/validators');
 +const { validateString } = require('internal/validators');
- const { normalizeEncoding } = require('internal/util');
  const { isArrayBufferView } = require('internal/util/types');
  const LazyTransform = require('internal/streams/lazy_transform');
-@@ -36,11 +36,7 @@ function Hash(algorithm, options) {
+ const kState = Symbol('kState');
+@@ -37,11 +34,7 @@ function Hash(algorithm, options) {
    if (!(this instanceof Hash))
      return new Hash(algorithm, options);
    validateString(algorithm, 'algorithm');
@@ -84,16 +87,15 @@ index cd09cdb3f2244825f6631891b94e61eeb6bc60bf..177de527c634671c571ebe4c2cfdeedc
    const EVP_MD* md = EVP_get_digestbyname(hash_type);
    if (md == nullptr)
      return false;
-@@ -4586,18 +4580,6 @@ bool Hash::HashInit(const char* hash_type, Maybe<unsigned int> xof_md_len) {
-     mdctx_.reset();
+@@ -4738,17 +4738,6 @@ bool Hash::HashInit(const char* hash_type, Maybe<unsigned int> xof_md_len) {
      return false;
    }
--
+ 
 -  md_len_ = EVP_MD_size(md);
 -  if (xof_md_len.IsJust() && xof_md_len.FromJust() != md_len_) {
 -    // This is a little hack to cause createHash to fail when an incorrect
 -    // hashSize option was passed for a non-XOF hash function.
--    if ((EVP_MD_meth_get_flags(md) & EVP_MD_FLAG_XOF) == 0) {
+-    if ((EVP_MD_flags(md) & EVP_MD_FLAG_XOF) == 0) {
 -      EVPerr(EVP_F_EVP_DIGESTFINALXOF, EVP_R_NOT_XOF_OR_INVALID_LENGTH);
 -      return false;
 -    }
