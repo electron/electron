@@ -192,14 +192,13 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Context::Scope destination_scope(destination_context);
     {
       auto source_promise = v8::Local<v8::Promise>::Cast(value);
-      auto* proxied_promise = new util::Promise(
-          destination_context->GetIsolate());
+      auto* proxied_promise =
+          new util::Promise(destination_context->GetIsolate());
       v8::Local<v8::Promise> proxied_promise_handle =
           proxied_promise->GetHandle();
 
       auto then_cb = base::BindOnce(
-          [](util::Promise* proxied_promise,
-             v8::Isolate* isolate,
+          [](util::Promise* proxied_promise, v8::Isolate* isolate,
              v8::Global<v8::Context> global_source_context,
              v8::Global<v8::Context> global_destination_context,
              context_bridge::RenderFramePersistenceStore* store,
@@ -217,8 +216,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                                   destination_context),
           store);
       auto catch_cb = base::BindOnce(
-          [](util::Promise* proxied_promise,
-             v8::Isolate* isolate,
+          [](util::Promise* proxied_promise, v8::Isolate* isolate,
              v8::Global<v8::Context> global_source_context,
              v8::Global<v8::Context> global_destination_context,
              context_bridge::RenderFramePersistenceStore* store,
