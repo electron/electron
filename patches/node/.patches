@@ -40,3 +40,4 @@ revert_crypto_add_outputlength_option_to_crypto_createhash.patch
 fix_enable_worker_threads.patch
 fsevents-stop-using-fsevents-to-watch-files.patch
 fsevents-regression-in-watching.patch
+build_bring_back_node_with_ltcg_configuration.patch
