@@ -20,10 +20,13 @@ v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate);
 v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
                                         v8::Local<v8::Object> object,
                                         v8::Local<v8::Object> event);
+v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags);
 
 }  // namespace internal
 
 // Provide helperers to emit event in JavaScript.
+//
+// TODO(zcbenz): Inherit from Wrappable directly after removing native_mate.
 template <typename Base>
 class EventEmitter : public Base {
  public:
@@ -45,6 +48,14 @@ class EventEmitter : public Base {
     return EmitWithEvent(
         name, internal::CreateCustomEvent(isolate(), GetWrapper(), event),
         std::forward<Args>(args)...);
+  }
+
+  // this.emit(name, new Event(flags), args...);
+  template <typename... Args>
+  bool EmitWithFlags(base::StringPiece name, int flags, Args&&... args) {
+    return EmitCustomEvent(name,
+                           internal::CreateEventFromFlags(isolate(), flags),
+                           std::forward<Args>(args)...);
   }
 
   // this.emit(name, new Event(), args...);

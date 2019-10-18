@@ -14,10 +14,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-// TODO(zcbenz): Remove this after removing mate::EventEmitter.
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
-
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<base::Time> {
@@ -32,7 +29,7 @@ struct Converter<base::Time> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 

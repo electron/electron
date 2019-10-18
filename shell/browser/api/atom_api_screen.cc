@@ -56,16 +56,14 @@ std::vector<std::string> MetricsToArray(uint32_t metrics) {
 void DelayEmit(Screen* screen,
                base::StringPiece name,
                const display::Display& display) {
-  // TODO(zcbenz): Use implicit convertion after removing mate::EventEmitter.
-  screen->Emit(name, gin::ConvertToV8(screen->isolate(), display));
+  screen->Emit(name, display);
 }
 
 void DelayEmitWithMetrics(Screen* screen,
                           base::StringPiece name,
                           const display::Display& display,
                           const std::vector<std::string>& metrics) {
-  // TODO(zcbenz): Use implicit convertion after removing mate::EventEmitter.
-  screen->Emit(name, gin::ConvertToV8(screen->isolate(), display), metrics);
+  screen->Emit(name, display, metrics);
 }
 
 }  // namespace

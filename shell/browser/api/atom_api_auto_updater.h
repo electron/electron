@@ -8,17 +8,19 @@
 #include <string>
 
 #include "gin/handle.h"
-#include "shell/browser/api/event_emitter_deprecated.h"
+#include "native_mate/wrappable.h"
 #include "shell/browser/auto_updater.h"
 #include "shell/browser/window_list_observer.h"
+#include "shell/common/gin_helper/event_emitter.h"
 
 namespace electron {
 
 namespace api {
 
-class AutoUpdater : public mate::EventEmitter<AutoUpdater>,
-                    public auto_updater::Delegate,
-                    public WindowListObserver {
+class AutoUpdater
+    : public gin_helper::EventEmitter<mate::Wrappable<AutoUpdater>>,
+      public auto_updater::Delegate,
+      public WindowListObserver {
  public:
   static gin::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 

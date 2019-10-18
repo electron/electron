@@ -178,9 +178,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   }
 
   if (!capture_window_ && !capture_screen_)
-    // TODO(zcbenz): Use implicit convertion after removing mate::EventEmitter.
-    Emit("finished", gin::ConvertToV8(isolate(), captured_sources_),
-         fetch_window_icons_);
+    Emit("finished", captured_sources_, fetch_window_icons_);
 }
 
 // static

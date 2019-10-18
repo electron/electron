@@ -54,7 +54,7 @@ namespace electron {
 
 namespace api {
 
-Tray::Tray(mate::Handle<NativeImage> image, gin::Arguments* args)
+Tray::Tray(gin::Handle<NativeImage> image, gin_helper::Arguments* args)
     : tray_icon_(TrayIcon::Create()) {
   SetImage(args->isolate(), image);
   tray_icon_->AddObserver(this);
@@ -66,8 +66,8 @@ Tray::~Tray() = default;
 
 // static
 mate::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
-                               mate::Handle<NativeImage> image,
-                               gin::Arguments* args) {
+                               gin::Handle<NativeImage> image,
+                               gin_helper::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
     return nullptr;
@@ -78,25 +78,15 @@ mate::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
 void Tray::OnClicked(const gfx::Rect& bounds,
                      const gfx::Point& location,
                      int modifiers) {
-  EmitWithFlags("click", modifiers,
-                // TODO(zcbenz): Use implicit convertion after
-                // removing mate::EventEmitter.
-                gin::ConvertToV8(isolate(), bounds),
-                gin::ConvertToV8(isolate(), location));
+  EmitWithFlags("click", modifiers, bounds, location);
 }
 
 void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
-  EmitWithFlags("double-click", modifiers,
-                // TODO(zcbenz): Use implicit convertion after
-                // removing mate::EventEmitter.
-                gin::ConvertToV8(isolate(), bounds));
+  EmitWithFlags("double-click", modifiers, bounds);
 }
 
 void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
-  EmitWithFlags("right-click", modifiers,
-                // TODO(zcbenz): Use implicit convertion after
-                // removing mate::EventEmitter.
-                gin::ConvertToV8(isolate(), bounds));
+  EmitWithFlags("right-click", modifiers, bounds);
 }
 
 void Tray::OnBalloonShow() {
@@ -124,24 +114,15 @@ void Tray::OnDropText(const std::string& text) {
 }
 
 void Tray::OnMouseEntered(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-enter", modifiers,
-                // TODO(zcbenz): Use implicit convertion after
-                // removing mate::EventEmitter.
-                gin::ConvertToV8(isolate(), location));
+  EmitWithFlags("mouse-enter", modifiers, location);
 }
 
 void Tray::OnMouseExited(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-leave", modifiers,
-                // TODO(zcbenz): Use implicit convertion after
-                // removing mate::EventEmitter.
-                gin::ConvertToV8(isolate(), location));
+  EmitWithFlags("mouse-leave", modifiers, location);
 }
 
 void Tray::OnMouseMoved(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-move", modifiers,
-                // TODO(zcbenz): Use implicit convertion after
-                // removing mate::EventEmitter.
-                gin::ConvertToV8(isolate(), location));
+  EmitWithFlags("mouse-move", modifiers, location);
 }
 
 void Tray::OnDragEntered() {
@@ -156,7 +137,7 @@ void Tray::OnDragEnded() {
   Emit("drag-end");
 }
 
-void Tray::SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image) {
+void Tray::SetImage(v8::Isolate* isolate, gin::Handle<NativeImage> image) {
 #if defined(OS_WIN)
   tray_icon_->SetImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
@@ -165,7 +146,7 @@ void Tray::SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image) {
 }
 
 void Tray::SetPressedImage(v8::Isolate* isolate,
-                           mate::Handle<NativeImage> image) {
+                           gin::Handle<NativeImage> image) {
 #if defined(OS_WIN)
   tray_icon_->SetPressedImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
@@ -215,7 +196,7 @@ void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  mate::Handle<NativeImage> icon;
+  gin::Handle<NativeImage> icon;
   options.Get("icon", &icon);
   options.Get("iconType", &balloon_options.icon_type);
   options.Get("largeIcon", &balloon_options.large_icon);
@@ -242,15 +223,15 @@ void Tray::Focus() {
   tray_icon_->Focus();
 }
 
-void Tray::PopUpContextMenu(gin::Arguments* args) {
-  mate::Handle<Menu> menu;
+void Tray::PopUpContextMenu(gin_helper::Arguments* args) {
+  gin::Handle<Menu> menu;
   args->GetNext(&menu);
   gfx::Point pos;
   args->GetNext(&pos);
   tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
 }
 
-void Tray::SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu) {
+void Tray::SetContextMenu(v8::Isolate* isolate, gin::Handle<Menu> menu) {
   menu_.Reset(isolate, menu.ToV8());
   tray_icon_->SetContextMenu(menu.IsEmpty() ? nullptr : menu->model());
 }

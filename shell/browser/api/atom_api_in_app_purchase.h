@@ -8,21 +8,23 @@
 #include <string>
 #include <vector>
 
-#include "native_mate/handle.h"
-#include "shell/browser/api/event_emitter_deprecated.h"
+#include "gin/handle.h"
+#include "native_mate/wrappable.h"
 #include "shell/browser/mac/in_app_purchase.h"
 #include "shell/browser/mac/in_app_purchase_observer.h"
 #include "shell/browser/mac/in_app_purchase_product.h"
+#include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/promise_util.h"
 
 namespace electron {
 
 namespace api {
 
-class InAppPurchase : public mate::EventEmitter<InAppPurchase>,
-                      public in_app_purchase::TransactionObserver {
+class InAppPurchase
+    : public gin_helper::EventEmitter<mate::Wrappable<InAppPurchase>>,
+      public in_app_purchase::TransactionObserver {
  public:
-  static mate::Handle<InAppPurchase> Create(v8::Isolate* isolate);
+  static gin::Handle<InAppPurchase> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -32,10 +34,10 @@ class InAppPurchase : public mate::EventEmitter<InAppPurchase>,
   ~InAppPurchase() override;
 
   v8::Local<v8::Promise> PurchaseProduct(const std::string& product_id,
-                                         mate::Arguments* args);
+                                         gin::Arguments* args);
 
   v8::Local<v8::Promise> GetProducts(const std::vector<std::string>& productIDs,
-                                     mate::Arguments* args);
+                                     gin::Arguments* args);
 
   // TransactionObserver:
   void OnTransactionsUpdated(

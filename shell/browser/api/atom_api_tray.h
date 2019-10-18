@@ -9,11 +9,12 @@
 #include <string>
 #include <vector>
 
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event_emitter.h"
 
 namespace gfx {
 class Image;
@@ -32,17 +33,20 @@ namespace api {
 class Menu;
 class NativeImage;
 
-class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
+class Tray : public mate::TrackableObject<
+                 Tray,
+                 gin_helper::EventEmitter<mate::Wrappable<Tray>>>,
+             public TrayIconObserver {
  public:
   static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
-                                  mate::Handle<NativeImage> image,
-                                  gin::Arguments* args);
+                                  gin::Handle<NativeImage> image,
+                                  gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  Tray(mate::Handle<NativeImage> image, gin::Arguments* args);
+  Tray(gin::Handle<NativeImage> image, gin_helper::Arguments* args);
   ~Tray() override;
 
   // TrayIconObserver:
@@ -64,8 +68,8 @@ class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
   void OnMouseExited(const gfx::Point& location, int modifiers) override;
   void OnMouseMoved(const gfx::Point& location, int modifiers) override;
 
-  void SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image);
-  void SetPressedImage(v8::Isolate* isolate, mate::Handle<NativeImage> image);
+  void SetImage(v8::Isolate* isolate, gin::Handle<NativeImage> image);
+  void SetPressedImage(v8::Isolate* isolate, gin::Handle<NativeImage> image);
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title);
   std::string GetTitle();
@@ -75,12 +79,12 @@ class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
                       const gin_helper::Dictionary& options);
   void RemoveBalloon();
   void Focus();
-  void PopUpContextMenu(gin::Arguments* args);
-  void SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu);
+  void PopUpContextMenu(gin_helper::Arguments* args);
+  void SetContextMenu(v8::Isolate* isolate, gin::Handle<Menu> menu);
   gfx::Rect GetBounds();
 
  private:
-  v8::Global<v8::Object> menu_;
+  v8::Global<v8::Value> menu_;
   std::unique_ptr<TrayIcon> tray_icon_;
 
   DISALLOW_COPY_AND_ASSIGN(Tray);

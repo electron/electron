@@ -6,6 +6,7 @@
 
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "ui/events/event_constants.h"
 
 namespace gin_helper {
 
@@ -44,6 +45,21 @@ v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
   event->SetPrototype(custom_event->CreationContext(), custom_event).IsJust();
   Dictionary(isolate, event).Set("sender", object);
   return event;
+}
+
+v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags) {
+  const int mouse_button_flags =
+      (ui::EF_RIGHT_MOUSE_BUTTON | ui::EF_LEFT_MOUSE_BUTTON |
+       ui::EF_MIDDLE_MOUSE_BUTTON | ui::EF_BACK_MOUSE_BUTTON |
+       ui::EF_FORWARD_MOUSE_BUTTON);
+  const int is_mouse_click = static_cast<bool>(flags & mouse_button_flags);
+  Dictionary obj = gin::Dictionary::CreateEmpty(isolate);
+  obj.Set("shiftKey", static_cast<bool>(flags & ui::EF_SHIFT_DOWN));
+  obj.Set("ctrlKey", static_cast<bool>(flags & ui::EF_CONTROL_DOWN));
+  obj.Set("altKey", static_cast<bool>(flags & ui::EF_ALT_DOWN));
+  obj.Set("metaKey", static_cast<bool>(flags & ui::EF_COMMAND_DOWN));
+  obj.Set("triggeredByAccelerator", !is_mouse_click);
+  return obj.GetHandle();
 }
 
 }  // namespace internal
