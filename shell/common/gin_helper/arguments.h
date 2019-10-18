@@ -25,6 +25,14 @@ class Arguments : public gin::Arguments {
     return true;
   }
 
+  // Throw error with custom error message.
+  void ThrowError(base::StringPiece message) const {
+    isolate()->ThrowException(
+        v8::Exception::Error(gin::StringToV8(isolate(), message)));
+  }
+
+  void ThrowError() const { gin::Arguments::ThrowError(); }
+
  private:
   // MUST NOT ADD ANY DATA MEMBER.
 };
