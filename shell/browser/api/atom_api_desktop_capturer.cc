@@ -94,8 +94,9 @@ void DesktopCapturer::StartHandling(bool capture_window,
           content::DesktopMediaID::TYPE_WINDOW,
           content::desktop_capture::CreateWindowCapturer());
       window_capturer_->SetThumbnailSize(thumbnail_size);
-      window_capturer_->AddObserver(this);
-      window_capturer_->StartUpdating();
+      window_capturer_->Update(base::BindOnce(
+          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
+          window_capturer_.get()));
     }
 
     if (capture_screen) {
@@ -103,32 +104,11 @@ void DesktopCapturer::StartHandling(bool capture_window,
           content::DesktopMediaID::TYPE_SCREEN,
           content::desktop_capture::CreateScreenCapturer());
       screen_capturer_->SetThumbnailSize(thumbnail_size);
-      screen_capturer_->AddObserver(this);
-      screen_capturer_->StartUpdating();
+      screen_capturer_->Update(base::BindOnce(
+          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
+          screen_capturer_.get()));
     }
   }
-}
-
-void DesktopCapturer::OnSourceAdded(DesktopMediaList* list, int index) {}
-
-void DesktopCapturer::OnSourceRemoved(DesktopMediaList* list, int index) {}
-
-void DesktopCapturer::OnSourceMoved(DesktopMediaList* list,
-                                    int old_index,
-                                    int new_index) {}
-
-void DesktopCapturer::OnSourceNameChanged(DesktopMediaList* list, int index) {}
-
-void DesktopCapturer::OnSourceThumbnailChanged(DesktopMediaList* list,
-                                               int index) {}
-
-void DesktopCapturer::OnSourceUnchanged(DesktopMediaList* list) {
-  UpdateSourcesList(list);
-}
-
-bool DesktopCapturer::ShouldScheduleNextRefresh(DesktopMediaList* list) {
-  UpdateSourcesList(list);
-  return false;
 }
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {

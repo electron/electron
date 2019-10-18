@@ -45,6 +45,7 @@ static_library("chrome") {
     "//chrome/browser/predictors/resolve_host_client_impl.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
+    "//chrome/browser/ssl/tls_deprecation_config.cc",
     "//chrome/browser/ui/autofill/popup_view_common.cc",
     "//chrome/browser/ui/autofill/popup_view_common.h",
     "//chrome/browser/win/chrome_process_finder.cc",
@@ -70,6 +71,14 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/extensions/global_shortcut_listener_x11.cc",
       "//chrome/browser/extensions/global_shortcut_listener_x11.h",
+      "//chrome/browser/ui/views/status_icons/concat_menu_model.cc",
+      "//chrome/browser/ui/views/status_icons/concat_menu_model.h",
+      "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc",
+      "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h",
+    ]
+    public_deps += [
+      "//components/dbus/menu",
+      "//components/dbus/thread_linux",
     ]
   }
 

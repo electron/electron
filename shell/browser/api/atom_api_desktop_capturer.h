@@ -18,8 +18,7 @@ namespace electron {
 
 namespace api {
 
-class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
-                        public DesktopMediaListObserver {
+class DesktopCapturer : public mate::TrackableObject<DesktopCapturer> {
  public:
   struct Source {
     DesktopMediaList::Source media_list_source;
@@ -44,17 +43,6 @@ class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
   explicit DesktopCapturer(v8::Isolate* isolate);
   ~DesktopCapturer() override;
 
-  // DesktopMediaListObserver overrides.
-  void OnSourceAdded(DesktopMediaList* list, int index) override;
-  void OnSourceRemoved(DesktopMediaList* list, int index) override;
-  void OnSourceMoved(DesktopMediaList* list,
-                     int old_index,
-                     int new_index) override;
-  void OnSourceNameChanged(DesktopMediaList* list, int index) override;
-  void OnSourceThumbnailChanged(DesktopMediaList* list, int index) override;
-  void OnSourceUnchanged(DesktopMediaList* list) override;
-  bool ShouldScheduleNextRefresh(DesktopMediaList* list) override;
-
  private:
   void UpdateSourcesList(DesktopMediaList* list);
 
@@ -67,6 +55,8 @@ class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
 #if defined(OS_WIN)
   bool using_directx_capturer_ = false;
 #endif  // defined(OS_WIN)
+
+  base::WeakPtrFactory<DesktopCapturer> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };

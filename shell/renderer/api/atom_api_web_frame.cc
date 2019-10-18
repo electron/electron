@@ -21,6 +21,8 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 #include "shell/renderer/api/atom_api_spell_check_client.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
+#include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/platform/web_cache.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/web_custom_element.h"
@@ -249,11 +251,11 @@ double GetZoomLevel(v8::Local<v8::Value> window) {
 }
 
 void SetZoomFactor(v8::Local<v8::Value> window, double factor) {
-  SetZoomLevel(window, blink::WebView::ZoomFactorToZoomLevel(factor));
+  SetZoomLevel(window, blink::PageZoomFactorToZoomLevel(factor));
 }
 
 double GetZoomFactor(v8::Local<v8::Value> window) {
-  return blink::WebView::ZoomLevelToZoomFactor(GetZoomLevel(window));
+  return blink::PageZoomLevelToZoomFactor(GetZoomLevel(window));
 }
 
 void SetVisualZoomLevelLimits(v8::Local<v8::Value> window,
@@ -267,8 +269,12 @@ void SetVisualZoomLevelLimits(v8::Local<v8::Value> window,
 void SetLayoutZoomLevelLimits(v8::Local<v8::Value> window,
                               double min_level,
                               double max_level) {
-  blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
-  web_frame->View()->ZoomLimitsChanged(min_level, max_level);
+  content::RenderFrame* render_frame = GetRenderFrame(window);
+  mojom::ElectronBrowserPtr browser_ptr;
+  render_frame->GetRemoteInterfaces()->GetInterface(
+      mojo::MakeRequest(&browser_ptr));
+
+  browser_ptr->SetZoomLimits(min_level, max_level);
 }
 
 void AllowGuestViewElementDefinition(v8::Isolate* isolate,
@@ -455,8 +461,8 @@ void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
   GetRenderFrame(window)->GetWebFrame()->SetIsolatedWorldInfo(world_id, info);
 }
 
-blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
-  blink::WebCache::ResourceTypeStats stats;
+blink::WebCacheResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
+  blink::WebCacheResourceTypeStats stats;
   blink::WebCache::GetResourceTypeStats(&stats);
   return stats;
 }

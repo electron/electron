@@ -15,6 +15,7 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
 
 namespace electron {
 
@@ -76,7 +77,7 @@ void WebViewGuestDelegate::OnZoomLevelChanged(
       api_web_contents_->GetZoomController()->SetZoomLevel(level);
     }
     // Change the default zoom factor to match the embedders' new zoom level.
-    double zoom_factor = content::ZoomLevelToZoomFactor(level);
+    double zoom_factor = blink::PageZoomFactorToZoomLevel(level);
     api_web_contents_->GetZoomController()->SetDefaultZoomFactor(zoom_factor);
   }
 }

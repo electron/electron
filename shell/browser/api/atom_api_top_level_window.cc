@@ -526,13 +526,9 @@ void TopLevelWindow::SetAlwaysOnTop(bool top, mate::Arguments* args) {
   args->GetNext(&level);
   args->GetNext(&relative_level);
 
-  std::string error;
   ui::ZOrderLevel z_order =
       top ? ui::ZOrderLevel::kFloatingWindow : ui::ZOrderLevel::kNormal;
-  window_->SetAlwaysOnTop(z_order, level, relative_level, &error);
-
-  if (!error.empty())
-    args->ThrowError(error);
+  window_->SetAlwaysOnTop(z_order, level, relative_level);
 }
 
 bool TopLevelWindow::IsAlwaysOnTop() {

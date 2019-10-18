@@ -42,6 +42,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/logging/logging_utils.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 
@@ -122,15 +123,15 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 }
 
 double GetNextZoomLevel(double level, bool out) {
-  double factor = content::ZoomLevelToZoomFactor(level);
+  double factor = blink::PageZoomLevelToZoomFactor(level);
   size_t size = base::size(kPresetZoomFactors);
   for (size_t i = 0; i < size; ++i) {
-    if (!content::ZoomValuesEqual(kPresetZoomFactors[i], factor))
+    if (!blink::PageZoomValuesEqual(kPresetZoomFactors[i], factor))
       continue;
     if (out && i > 0)
-      return content::ZoomFactorToZoomLevel(kPresetZoomFactors[i - 1]);
+      return blink::PageZoomFactorToZoomLevel(kPresetZoomFactors[i - 1]);
     if (!out && i != size - 1)
-      return content::ZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
+      return blink::PageZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
   }
   return level;
 }

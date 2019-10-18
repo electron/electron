@@ -454,9 +454,9 @@ v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
   return mate::ConvertToV8(isolate, dict);
 }
 
-v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStat>::ToV8(
+v8::Local<v8::Value> Converter<blink::WebCacheResourceTypeStat>::ToV8(
     v8::Isolate* isolate,
-    const blink::WebCache::ResourceTypeStat& stat) {
+    const blink::WebCacheResourceTypeStat& stat) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.Set("count", static_cast<uint32_t>(stat.count));
   dict.Set("size", static_cast<double>(stat.size));
@@ -464,9 +464,9 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStat>::ToV8(
   return dict.GetHandle();
 }
 
-v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStats>::ToV8(
+v8::Local<v8::Value> Converter<blink::WebCacheResourceTypeStats>::ToV8(
     v8::Isolate* isolate,
-    const blink::WebCache::ResourceTypeStats& stats) {
+    const blink::WebCacheResourceTypeStats& stats) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.Set("images", stats.images);
   dict.Set("scripts", stats.scripts);
