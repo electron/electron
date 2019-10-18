@@ -553,6 +553,19 @@ describe('node feature', () => {
     })
   })
 
+  describe('fs.mkdir/mkdirSync', () => {
+    it('does not hang with {recursive: true} on invalid names', function (done) {
+      if (process.platform !== 'win32') {
+        return this.skip()
+      }
+      expect(() => fs.mkdirSync('invalid2:', { recursive: true })).to.throw()
+      fs.mkdir('invalid1:', { recursive: true }, (err) => {
+        expect(err).to.not.be.null()
+        done()
+      })
+    })
+  })
+
   it('includes the electron version in process.versions', () => {
     expect(process.versions)
       .to.have.own.property('electron')
