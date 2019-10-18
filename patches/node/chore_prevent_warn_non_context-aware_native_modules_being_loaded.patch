@@ -56,7 +56,8 @@ index c51a892e1bcd3df6ea8af952c8200975c7f4ac7e..9a4a7780f4ac1bcc0855cc9e3eed904d
 -        if (env->options()->force_context_aware) {
 +        if (env->force_context_aware()) {
            dlib->Close();
-           THROW_ERR_NON_CONTEXT_AWARE_DISABLED(env);
+-          THROW_ERR_NON_CONTEXT_AWARE_DISABLED(env);
++          env->ThrowError("Loading non context-aware native modules has been disabled in this process.  This means you have loaded a non context-aware native module with app.allowRendererProcessReuse set to true. See https://github.com/electron/electron/issues/18397 for more information");
            return false;
 +        } else if (env->warn_non_context_aware()) {
 +          ProcessEmitWarningGeneric(env, "Loading non context-aware native modules in the renderer process is deprecated and will stop working at some point in the future, please see https://github.com/electron/electron/issues/18397 for more information", "Electron");
