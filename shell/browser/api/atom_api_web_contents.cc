@@ -2685,9 +2685,8 @@ void Initialize(v8::Local<v8::Object> exports,
                               ->GetFunction(context)
                               .ToLocalChecked());
   dict.SetMethod("create", &WebContents::Create);
-  dict.SetMethod("fromId", &mate::TrackableObject<WebContents>::FromWeakMapID);
-  dict.SetMethod("getAllWebContents",
-                 &mate::TrackableObject<WebContents>::GetAll);
+  dict.SetMethod("fromId", &WebContents::FromWeakMapID);
+  dict.SetMethod("getAllWebContents", &WebContents::GetAll);
 }
 
 }  // namespace

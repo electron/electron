@@ -168,10 +168,8 @@ void Initialize(v8::Local<v8::Object> exports,
                                       BrowserView::GetConstructor(isolate)
                                           ->GetFunction(context)
                                           .ToLocalChecked());
-  browser_view.SetMethod("fromId",
-                         &mate::TrackableObject<BrowserView>::FromWeakMapID);
-  browser_view.SetMethod("getAllViews",
-                         &mate::TrackableObject<BrowserView>::GetAll);
+  browser_view.SetMethod("fromId", &BrowserView::FromWeakMapID);
+  browser_view.SetMethod("getAllViews", &BrowserView::GetAll);
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("BrowserView", browser_view);
 }

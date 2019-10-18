@@ -1249,10 +1249,8 @@ void Initialize(v8::Local<v8::Object> exports,
                                      TopLevelWindow::GetConstructor(isolate)
                                          ->GetFunction(context)
                                          .ToLocalChecked());
-  constructor.SetMethod("fromId",
-                        &mate::TrackableObject<TopLevelWindow>::FromWeakMapID);
-  constructor.SetMethod("getAllWindows",
-                        &mate::TrackableObject<TopLevelWindow>::GetAll);
+  constructor.SetMethod("fromId", &TopLevelWindow::FromWeakMapID);
+  constructor.SetMethod("getAllWindows", &TopLevelWindow::GetAll);
 
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("TopLevelWindow", constructor);
