@@ -21,7 +21,7 @@ async function checkIfDocOnlyChange () {
             pullRequestNumber = prsForBranch.data[0].number
           } else {
             // If there is more than one PR on a branch, just assume that this is more than a doc change
-            console.log('false')
+            process.exit(0)
           }
         } else if (args.prURL) {
           // CircleCI doesn't provide the PR number for branch builds, but it does provide the PR URL
@@ -40,9 +40,9 @@ async function checkIfDocOnlyChange () {
         }
       })
       if (nonDocChange) {
-        console.log('false')
+        process.exit(0)
       } else {
-        console.log('true')
+        process.exit(1)
       }
     } catch (ex) {
       console.error('Error getting list of files changed: ', ex)

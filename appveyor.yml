@@ -53,10 +53,10 @@ build_script:
       } else {
         npx.cmd yarn@1.15.2 install --frozen-lockfile
 
-        node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
-        
-        if($DOC_ONLY_CHANGE -eq "true" ) {
-          Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+        if (node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH) {
+          Write-warning "Skipping build for doc only change1"; Exit-AppveyorBuild
+        } else {
+          Write-warning "Skipping build for doc only change2"; Exit-AppveyorBuild
         }
       }
   - echo "Building $env:GN_CONFIG build"
