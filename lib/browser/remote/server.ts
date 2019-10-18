@@ -263,7 +263,6 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         })
       case 'object': {
         const ret: any = {}
-        Object.defineProperty(ret.constructor, 'name', { value: meta.name })
 
         for (const { name, value } of meta.members) {
           ret[name] = metaToValue(value)
