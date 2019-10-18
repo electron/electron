@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "native_mate/handle.h"
-#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/event_emitter_deprecated.h"
 #include "shell/browser/mac/in_app_purchase.h"
 #include "shell/browser/mac/in_app_purchase_observer.h"
 #include "shell/browser/mac/in_app_purchase_product.h"

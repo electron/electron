@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/event_emitter_deprecated.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "ui/display/display_observer.h"
 #include "ui/display/screen.h"

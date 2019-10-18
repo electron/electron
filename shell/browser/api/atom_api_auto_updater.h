@@ -8,7 +8,7 @@
 #include <string>
 
 #include "gin/handle.h"
-#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/event_emitter_deprecated.h"
 #include "shell/browser/auto_updater.h"
 #include "shell/browser/window_list_observer.h"
 

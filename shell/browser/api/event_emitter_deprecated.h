@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_EVENT_EMITTER_H_
-#define SHELL_BROWSER_API_EVENT_EMITTER_H_
+#ifndef SHELL_BROWSER_API_EVENT_EMITTER_DEPRECATED_H_
+#define SHELL_BROWSER_API_EVENT_EMITTER_DEPRECATED_H_
 
 #include <utility>
 #include <vector>
@@ -126,4 +126,4 @@ class EventEmitter : public Wrappable<T> {
 
 }  // namespace mate
 
-#endif  // SHELL_BROWSER_API_EVENT_EMITTER_H_
+#endif  // SHELL_BROWSER_API_EVENT_EMITTER_DEPRECATED_H_

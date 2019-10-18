@@ -5,7 +5,7 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_NET_H_
 #define SHELL_BROWSER_API_ATOM_API_NET_H_
 
-#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/event_emitter_deprecated.h"
 
 namespace electron {
 
