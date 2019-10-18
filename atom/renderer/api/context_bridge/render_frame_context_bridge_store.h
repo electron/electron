@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_API_CONTEXT_BRIDGE_RENDER_FRAME_CONTEXT_BRIDGE_STORE_H_
-#define SHELL_RENDERER_API_CONTEXT_BRIDGE_RENDER_FRAME_CONTEXT_BRIDGE_STORE_H_
+#ifndef ATOM_RENDERER_API_CONTEXT_BRIDGE_RENDER_FRAME_CONTEXT_BRIDGE_STORE_H_
+#define ATOM_RENDERER_API_CONTEXT_BRIDGE_RENDER_FRAME_CONTEXT_BRIDGE_STORE_H_
 
 #include <map>
 #include <tuple>
 
+#include "atom/renderer/atom_render_frame_observer.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
-#include "shell/renderer/atom_render_frame_observer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
@@ -68,4 +68,4 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_API_CONTEXT_BRIDGE_RENDER_FRAME_CONTEXT_BRIDGE_STORE_H_
+#endif  // ATOM_RENDERER_API_CONTEXT_BRIDGE_RENDER_FRAME_CONTEXT_BRIDGE_STORE_H_

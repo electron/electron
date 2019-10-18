@@ -2,19 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/renderer/api/atom_api_context_bridge.h"
+#include "atom/renderer/api/atom_api_context_bridge.h"
 
 #include <set>
 #include <utility>
 #include <vector>
 
+#include "atom/common/api/remote/object_life_monitor.h"
+#include "atom/common/native_mate_converters/blink_converter.h"
+#include "atom/common/native_mate_converters/callback_converter_deprecated.h"
+#include "atom/common/native_mate_converters/once_callback.h"
+#include "atom/common/promise_util.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
-#include "shell/common/api/remote/object_life_monitor.h"
-#include "shell/common/native_mate_converters/blink_converter.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
-#include "shell/common/native_mate_converters/once_callback.h"
-#include "shell/common/promise_util.h"
 
 namespace electron {
 

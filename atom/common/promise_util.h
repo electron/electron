@@ -110,7 +110,7 @@ class Promise {
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
-     return GetInner()->Reject(GetContext(), exception);
+    return GetInner()->Reject(GetContext(), exception);
   }
 
   // Please note that using Then is effectively the same as calling .then

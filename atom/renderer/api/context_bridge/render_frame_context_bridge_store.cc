@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/renderer/api/context_bridge/render_frame_context_bridge_store.h"
+#include "atom/renderer/api/context_bridge/render_frame_context_bridge_store.h"
 
 #include <utility>
 
-#include "shell/common/api/remote/object_life_monitor.h"
+#include "atom/common/api/remote/object_life_monitor.h"
 
 namespace electron {
 

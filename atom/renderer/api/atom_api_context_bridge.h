@@ -2,20 +2,20 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
-#define SHELL_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
+#ifndef ATOM_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
+#define ATOM_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
 
 #include <map>
 #include <string>
 #include <tuple>
 
+#include "atom/common/node_includes.h"
+#include "atom/renderer/api/context_bridge/render_frame_context_bridge_store.h"
+#include "atom/renderer/atom_render_frame_observer.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
-#include "shell/common/node_includes.h"
-#include "shell/renderer/api/context_bridge/render_frame_context_bridge_store.h"
-#include "shell/renderer/atom_render_frame_observer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
@@ -38,4 +38,4 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
+#endif  // ATOM_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
