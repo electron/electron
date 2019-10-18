@@ -13,7 +13,7 @@
 #include "shell/renderer/atom_render_frame_observer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
-namespace electron {
+namespace atom {
 
 namespace api {
 
@@ -66,6 +66,6 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
 
 }  // namespace api
 
-}  // namespace electron
+}  // namespace atom
 
 #endif  // SHELL_RENDERER_API_CONTEXT_BRIDGE_RENDER_FRAME_CONTEXT_BRIDGE_STORE_H_

@@ -15,7 +15,7 @@
 #include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/promise_util.h"
 
-namespace electron {
+namespace atom {
 
 namespace api {
 
@@ -191,14 +191,13 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Context::Scope destination_scope(destination_context);
     {
       auto source_promise = v8::Local<v8::Promise>::Cast(value);
-      auto* proxied_promise = new util::Promise<v8::Local<v8::Value>>(
-          destination_context->GetIsolate());
+      auto* proxied_promise =
+          new util::Promise(destination_context->GetIsolate());
       v8::Local<v8::Promise> proxied_promise_handle =
           proxied_promise->GetHandle();
 
       auto then_cb = base::BindOnce(
-          [](util::Promise<v8::Local<v8::Value>>* proxied_promise,
-             v8::Isolate* isolate,
+          [](util::Promise* proxied_promise, v8::Isolate* isolate,
              v8::Global<v8::Context> global_source_context,
              v8::Global<v8::Context> global_destination_context,
              context_bridge::RenderFramePersistenceStore* store,
@@ -216,8 +215,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                                   destination_context),
           store);
       auto catch_cb = base::BindOnce(
-          [](util::Promise<v8::Local<v8::Value>>* proxied_promise,
-             v8::Isolate* isolate,
+          [](util::Promise* proxied_promise, v8::Isolate* isolate,
              v8::Global<v8::Context> global_source_context,
              v8::Global<v8::Context> global_destination_context,
              context_bridge::RenderFramePersistenceStore* store,
@@ -475,7 +473,7 @@ void ExposeAPIInMainWorld(const std::string& key,
   }
 
   v8::Local<v8::Context> isolated_context =
-      frame->WorldScriptContext(args->isolate(), World::ISOLATED_WORLD);
+      frame->WorldScriptContext(args->isolate(), atom::World::ISOLATED_WORLD);
 
   v8::Context::Scope main_context_scope(main_context);
   {
@@ -493,7 +491,7 @@ void ExposeAPIInMainWorld(const std::string& key,
 
 }  // namespace api
 
-}  // namespace electron
+}  // namespace atom
 
 namespace {
 
@@ -503,9 +501,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("exposeAPIInMainWorld", &electron::api::ExposeAPIInMainWorld);
+  dict.SetMethod("exposeAPIInMainWorld", &atom::api::ExposeAPIInMainWorld);
 #ifdef DCHECK_IS_ON
-  dict.SetMethod("_debugGCMaps", &electron::api::DebugGC);
+  dict.SetMethod("_debugGCMaps", &atom::api::DebugGC);
 #endif
 }
 
