@@ -49,7 +49,7 @@ The `contextBridge` module has the following methods:
 
 ### API Objects
 
-The `api` object provided to [`exposeInMainWorld`](#contextbridgeexposeinmainworldapikey-api) must be an object
+The `api` object provided to [`exposeInMainWorld`](#contextbridgeexposeinmainworldapikey-api-experimental) must be an object
 whose keys are strings and values are a `Function`, `String`, `Number`, `Array`, `Boolean` or another nested object that meets the same conditions.
 
 `Function` values are proxied to the other context and all other values are **copied** and **frozen**.  I.e. Any data / primitives sent in
