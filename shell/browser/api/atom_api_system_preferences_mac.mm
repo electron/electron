@@ -509,9 +509,11 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   NSColor* sysColor = nil;
   if (color == "alternate-selected-control-text") {
     sysColor = [NSColor alternateSelectedControlTextColor];
-    EmitDeprecationWarning(node::Environment::GetCurrent(thrower.isolate()),
-                           "Use selected-content-background instead.",
-                           "electron");
+    EmitDeprecationWarning(
+        node::Environment::GetCurrent(thrower.isolate()),
+        "'alternate-selected-control-text' is deprecated as an input to "
+        "getColor.  Use 'selected-content-background' instead.",
+        "electron");
   } else if (color == "control-background") {
     sysColor = [NSColor controlBackgroundColor];
   } else if (color == "control") {
@@ -520,9 +522,6 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
     sysColor = [NSColor controlTextColor];
   } else if (color == "disabled-control-text") {
     sysColor = [NSColor disabledControlTextColor];
-    EmitDeprecationWarning(node::Environment::GetCurrent(thrower.isolate()),
-                           "Use a color that matches the semantics being used.",
-                           "electron");
   } else if (color == "find-highlight") {
     if (@available(macOS 10.14, *))
       sysColor = [NSColor findHighlightColor];
