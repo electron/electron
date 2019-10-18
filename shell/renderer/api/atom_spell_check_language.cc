@@ -18,20 +18,14 @@ SpellcheckLanguage::Word::Word(const Word& word) = default;
 
 SpellcheckLanguage::Word::~Word() = default;
 
-SpellcheckLanguage::SpellcheckLanguage() {}
-
-SpellcheckLanguage::~SpellcheckLanguage() {}
-
-void SpellcheckLanguage::Init(const std::string& language) {
+SpellcheckLanguage::SpellcheckLanguage(const std::string& language) {
   character_attributes_.SetDefaultLanguage(language);
   text_iterator_.Reset();
   contraction_iterator_.Reset();
   language_ = language;
 }
 
-bool SpellcheckLanguage::InitializeIfNeeded() {
-  return true;
-}
+SpellcheckLanguage::~SpellcheckLanguage() {}
 
 std::vector<SpellcheckLanguage::Word> SpellcheckLanguage::SpellCheckText(
     const base::string16& text) {
@@ -110,10 +104,6 @@ bool SpellcheckLanguage::IsContraction(
     contraction_words->push_back(word);
   }
   return contraction_words->size() > 1;
-}
-
-bool SpellcheckLanguage::IsEnabled() {
-  return true;
 }
 
 }  // namespace electron

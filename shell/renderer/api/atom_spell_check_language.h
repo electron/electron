@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_API_ATOM_API_SPELL_CHECK_LANGUAGE_H_
-#define SHELL_RENDERER_API_ATOM_API_SPELL_CHECK_LANGUAGE_H_
+#ifndef SHELL_RENDERER_API_ATOM_SPELL_CHECK_LANGUAGE_H_
+#define SHELL_RENDERER_API_ATOM_SPELL_CHECK_LANGUAGE_H_
 
 #include <memory>
 #include <queue>
@@ -30,18 +30,11 @@ class SpellcheckLanguage {
     ~Word();
   };
 
-  explicit SpellcheckLanguage();
+  explicit SpellcheckLanguage(const std::string& language);
   ~SpellcheckLanguage();
-
-  void Init(const std::string& language);
 
   std::vector<Word> SpellCheckText(const base::string16& text);
 
-  // Initialize |spellcheck_| if that hasn't happened yet.
-  bool InitializeIfNeeded();
-
-  // Return true if the underlying spellcheck engine is enabled.
-  bool IsEnabled();
   std::string GetLanguageString() { return language_; }
 
  private:
@@ -69,4 +62,4 @@ class SpellcheckLanguage {
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_API_ATOM_API_SPELL_CHECK_LANGUAGE_H_
+#endif  // SHELL_RENDERER_API_ATOM_SPELL_CHECK_LANGUAGE_H_

@@ -305,12 +305,31 @@ int GetWebFrameId(v8::Local<v8::Value> window,
 
 void SetSpellCheckProvider(mate::Arguments* args,
                            v8::Local<v8::Value> window,
-                           const std::vector<std::string>& languages,
+                           v8::Local<v8::Value> languages,
                            v8::Local<v8::Object> provider) {
   auto context = args->isolate()->GetCurrentContext();
   if (!provider->Has(context, mate::StringToV8(args->isolate(), "spellCheck"))
            .ToChecked()) {
     args->ThrowError("\"spellCheck\" has to be defined");
+    return;
+  }
+
+  std::vector<std::string> language_vector;
+  bool is_multi_lang_spell_check = languages->IsArray();
+  bool is_language_valid = false;
+  if (is_multi_lang_spell_check) {
+    is_language_valid =
+        gin::ConvertFromV8(args->isolate(), languages, &language_vector);
+  } else {
+    std::string language;
+    is_language_valid =
+        gin::ConvertFromV8(args->isolate(), languages, &language);
+    if (is_language_valid)
+      language_vector.push_back(language);
+  }
+
+  if (!is_language_valid) {
+    args->ThrowError();
     return;
   }
 
@@ -322,8 +341,8 @@ void SetSpellCheckProvider(mate::Arguments* args,
 
   // Set spellchecker for all live frames in the same process or
   // in the sandbox mode for all live sub frames to this WebFrame.
-  auto spell_check_client =
-      std::make_unique<SpellCheckClient>(languages, args->isolate(), provider);
+  auto spell_check_client = std::make_unique<SpellCheckClient>(
+      language_vector, args->isolate(), provider, is_multi_lang_spell_check);
   FrameSetSpellChecker spell_checker(spell_check_client.get(), render_frame);
 
   // Attach the spell checker to RenderFrame.

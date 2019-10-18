@@ -5,6 +5,7 @@
 #ifndef SHELL_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 #define SHELL_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -21,11 +22,6 @@
 #include "third_party/blink/public/web/web_text_checking_completion.h"
 #include "third_party/blink/public/web/web_text_checking_result.h"
 
-namespace blink {
-// struct WebTextCheckingResult;
-// class WebTextCheckingCompletion;
-}  // namespace blink
-
 namespace electron {
 
 namespace api {
@@ -36,7 +32,8 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
  public:
   SpellCheckClient(const std::vector<std::string>& languages,
                    v8::Isolate* isolate,
-                   v8::Local<v8::Object> provider);
+                   v8::Local<v8::Object> provider,
+                   bool is_single_language);
   ~SpellCheckClient() override;
 
  private:
@@ -62,8 +59,6 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
     explicit SpellCheckScope(const SpellCheckClient& client);
     ~SpellCheckScope();
   };
-
-  void AddSpellcheckLanguage(const std::string& language);
 
   // Run through the word iterator and send out requests
   // to the JS API for checking spellings of words in the current
@@ -97,6 +92,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   v8::Persistent<v8::Context> context_;
   mate::ScopedPersistent<v8::Object> provider_;
   mate::ScopedPersistent<v8::Function> spell_check_;
+  bool is_multi_lang_spell_check_;
 
   DISALLOW_COPY_AND_ASSIGN(SpellCheckClient);
 };
