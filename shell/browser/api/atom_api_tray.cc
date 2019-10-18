@@ -231,9 +231,18 @@ void Tray::PopUpContextMenu(gin_helper::Arguments* args) {
   tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
 }
 
-void Tray::SetContextMenu(v8::Isolate* isolate, gin::Handle<Menu> menu) {
-  menu_.Reset(isolate, menu.ToV8());
-  tray_icon_->SetContextMenu(menu.IsEmpty() ? nullptr : menu->model());
+void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
+                          v8::Local<v8::Value> arg) {
+  gin::Handle<Menu> menu;
+  if (arg->IsNull()) {
+    menu_.Reset();
+    tray_icon_->SetContextMenu(nullptr);
+  } else if (gin::ConvertFromV8(thrower.isolate(), arg, &menu)) {
+    menu_.Reset(thrower.isolate(), menu.ToV8());
+    tray_icon_->SetContextMenu(menu->model());
+  } else {
+    thrower.ThrowTypeError("Must pass Menu or null");
+  }
 }
 
 gfx::Rect Tray::GetBounds() {

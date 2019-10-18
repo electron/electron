@@ -80,7 +80,8 @@ class Tray : public mate::TrackableObject<
   void RemoveBalloon();
   void Focus();
   void PopUpContextMenu(gin_helper::Arguments* args);
-  void SetContextMenu(v8::Isolate* isolate, gin::Handle<Menu> menu);
+  void SetContextMenu(gin_helper::ErrorThrower thrower,
+                      v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();
 
  private:
