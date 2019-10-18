@@ -43,3 +43,4 @@ revert_crypto_fix_openssl_return_code_handling.patch
 revert_crypto_add_oaeplabel_option.patch
 fix_windows_compilation_on_libuv_setsockopt.patch
 fix_don_t_use_node-controlled_preparestacktrace.patch
+fix_remove_uses_of_node_use_v8_platform.patch
