@@ -29,13 +29,11 @@ firstPRMergeComment: >
 # Users authorized to run manual trop backports
 authorizedUsers:
   - alexeykuzmin
-  - BinaryMuse
   - ckerr
   - codebytere
   - deepak1556
   - jkleinsc
   - MarshallOfSound
   - miniak
-  - nitsakh
   - nornagon
   - zcbenz
