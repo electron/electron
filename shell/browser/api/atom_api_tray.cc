@@ -7,18 +7,17 @@
 #include <string>
 
 #include "base/threading/thread_task_runner_handle.h"
-#include "native_mate/constructor.h"
-#include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_menu.h"
 #include "shell/browser/browser.h"
 #include "shell/common/api/atom_api_native_image.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
-#include "shell/common/native_mate_converters/image_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/gfx/image/image.h"
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<electron::TrayIcon::IconType> {
@@ -49,7 +48,7 @@ struct Converter<electron::TrayIcon::IconType> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -79,15 +78,25 @@ mate::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
 void Tray::OnClicked(const gfx::Rect& bounds,
                      const gfx::Point& location,
                      int modifiers) {
-  EmitWithFlags("click", modifiers, bounds, location);
+  EmitWithFlags("click", modifiers,
+                // TODO(zcbenz): Use implicit convertion after
+                // removing mate::EventEmitter.
+                gin::ConvertToV8(isolate(), bounds),
+                gin::ConvertToV8(isolate(), location));
 }
 
 void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
-  EmitWithFlags("double-click", modifiers, bounds);
+  EmitWithFlags("double-click", modifiers,
+                // TODO(zcbenz): Use implicit convertion after
+                // removing mate::EventEmitter.
+                gin::ConvertToV8(isolate(), bounds));
 }
 
 void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
-  EmitWithFlags("right-click", modifiers, bounds);
+  EmitWithFlags("right-click", modifiers,
+                // TODO(zcbenz): Use implicit convertion after
+                // removing mate::EventEmitter.
+                gin::ConvertToV8(isolate(), bounds));
 }
 
 void Tray::OnBalloonShow() {
@@ -115,15 +124,24 @@ void Tray::OnDropText(const std::string& text) {
 }
 
 void Tray::OnMouseEntered(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-enter", modifiers, location);
+  EmitWithFlags("mouse-enter", modifiers,
+                // TODO(zcbenz): Use implicit convertion after
+                // removing mate::EventEmitter.
+                gin::ConvertToV8(isolate(), location));
 }
 
 void Tray::OnMouseExited(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-leave", modifiers, location);
+  EmitWithFlags("mouse-leave", modifiers,
+                // TODO(zcbenz): Use implicit convertion after
+                // removing mate::EventEmitter.
+                gin::ConvertToV8(isolate(), location));
 }
 
 void Tray::OnMouseMoved(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-move", modifiers, location);
+  EmitWithFlags("mouse-move", modifiers,
+                // TODO(zcbenz): Use implicit convertion after
+                // removing mate::EventEmitter.
+                gin::ConvertToV8(isolate(), location));
 }
 
 void Tray::OnDragEntered() {
@@ -187,13 +205,13 @@ bool Tray::GetIgnoreDoubleClickEvents() {
 #endif
 }
 
-void Tray::DisplayBalloon(mate::Arguments* args,
-                          const mate::Dictionary& options) {
+void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
+                          const gin_helper::Dictionary& options) {
   TrayIcon::BalloonOptions balloon_options;
 
   if (!options.Get("title", &balloon_options.title) ||
       !options.Get("content", &balloon_options.content)) {
-    args->ThrowError("'title' and 'content' must be defined");
+    thrower.ThrowError("'title' and 'content' must be defined");
     return;
   }
 
@@ -224,7 +242,7 @@ void Tray::Focus() {
   tray_icon_->Focus();
 }
 
-void Tray::PopUpContextMenu(mate::Arguments* args) {
+void Tray::PopUpContextMenu(gin::Arguments* args) {
   mate::Handle<Menu> menu;
   args->GetNext(&menu);
   gfx::Point pos;
@@ -244,9 +262,9 @@ gfx::Rect Tray::GetBounds() {
 // static
 void Tray::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Tray"));
+  prototype->SetClassName(gin::StringToV8(isolate, "Tray"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
@@ -279,7 +297,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   Tray::SetConstructor(isolate, base::BindRepeating(&Tray::New));
 
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set(
       "Tray",
       Tray::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());

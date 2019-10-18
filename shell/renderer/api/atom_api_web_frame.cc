@@ -16,7 +16,6 @@
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"

@@ -19,10 +19,9 @@ namespace gfx {
 class Image;
 }
 
-namespace mate {
-class Arguments;
+namespace gin_helper {
 class Dictionary;
-}  // namespace mate
+}
 
 namespace electron {
 
@@ -72,10 +71,11 @@ class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
   std::string GetTitle();
   void SetIgnoreDoubleClickEvents(bool ignore);
   bool GetIgnoreDoubleClickEvents();
-  void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
+  void DisplayBalloon(gin_helper::ErrorThrower thrower,
+                      const gin_helper::Dictionary& options);
   void RemoveBalloon();
   void Focus();
-  void PopUpContextMenu(mate::Arguments* args);
+  void PopUpContextMenu(gin::Arguments* args);
   void SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu);
   gfx::Rect GetBounds();
 

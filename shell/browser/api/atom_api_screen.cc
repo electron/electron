@@ -9,11 +9,12 @@
 
 #include "base/bind.h"
 #include "gin/dictionary.h"
+#include "gin/handle.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
-#include "shell/common/native_mate_converters/native_window_converter.h"
 #include "shell/common/node_includes.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
@@ -55,14 +56,16 @@ std::vector<std::string> MetricsToArray(uint32_t metrics) {
 void DelayEmit(Screen* screen,
                base::StringPiece name,
                const display::Display& display) {
-  screen->Emit(name, display);
+  // TODO(zcbenz): Use implicit convertion after removing mate::EventEmitter.
+  screen->Emit(name, gin::ConvertToV8(screen->isolate(), display));
 }
 
 void DelayEmitWithMetrics(Screen* screen,
                           base::StringPiece name,
                           const display::Display& display,
                           const std::vector<std::string>& metrics) {
-  screen->Emit(name, display, metrics);
+  // TODO(zcbenz): Use implicit convertion after removing mate::EventEmitter.
+  screen->Emit(name, gin::ConvertToV8(screen->isolate(), display), metrics);
 }
 
 }  // namespace
@@ -147,16 +150,16 @@ v8::Local<v8::Value> Screen::Create(gin_helper::ErrorThrower error_thrower) {
     return v8::Null(error_thrower.isolate());
   }
 
-  return mate::CreateHandle(error_thrower.isolate(),
-                            new Screen(error_thrower.isolate(), screen))
+  return gin::CreateHandle(error_thrower.isolate(),
+                           new Screen(error_thrower.isolate(), screen))
       .ToV8();
 }
 
 // static
 void Screen::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Screen"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "Screen"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("getCursorScreenPoint", &Screen::GetCursorScreenPoint)
       .SetMethod("getPrimaryDisplay", &Screen::GetPrimaryDisplay)
       .SetMethod("getAllDisplays", &Screen::GetAllDisplays)
