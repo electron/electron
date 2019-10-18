@@ -31,7 +31,7 @@ class Arguments {
 
   template <typename T>
   bool GetHolder(T* out) {
-    return ConvertFromV8(isolate_, info_->Holder(), out);
+    return mate::ConvertFromV8(isolate_, info_->Holder(), out);
   }
 
   template <typename T>
@@ -57,7 +57,7 @@ class Arguments {
       return false;
     }
     v8::Local<v8::Value> val = (*info_)[next_];
-    bool success = ConvertFromV8(isolate_, val, out);
+    bool success = mate::ConvertFromV8(isolate_, val, out);
     if (success)
       next_++;
     return success;
