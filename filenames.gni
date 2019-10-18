@@ -1,7 +1,6 @@
 filenames = {
   default_app_ts_sources = [
     "default_app/default_app.ts",
-    "default_app/index.ts",
     "default_app/main.ts",
     "default_app/preload.ts",
   ]
@@ -537,6 +536,10 @@ filenames = {
     "shell/common/promise_util.cc",
     "shell/common/skia_util.h",
     "shell/common/skia_util.cc",
+    "shell/renderer/api/context_bridge/render_frame_context_bridge_store.cc",
+    "shell/renderer/api/context_bridge/render_frame_context_bridge_store.h",
+    "shell/renderer/api/atom_api_context_bridge.cc",
+    "shell/renderer/api/atom_api_context_bridge.h",
     "shell/renderer/api/atom_api_renderer_ipc.cc",
     "shell/renderer/api/atom_api_spell_check_client.cc",
     "shell/renderer/api/atom_api_spell_check_client.h",

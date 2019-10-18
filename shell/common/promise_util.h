@@ -119,6 +119,16 @@ class Promise {
     return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
   }
 
+  v8::Maybe<bool> Reject(v8::Local<v8::Value> exception) {
+    v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
+    v8::Context::Scope context_scope(
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
+
+    return GetInner()->Reject(GetContext(), exception);
+  }
+
   // Please note that using Then is effectively the same as calling .then
   // in javascript.  This means (a) it is not type safe and (b) please note
   // it is NOT type safe.
