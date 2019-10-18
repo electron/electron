@@ -529,7 +529,6 @@ handleRemoteCommand('ELECTRON_BROWSER_DEREFERENCE', function (event, contextId, 
 
 handleRemoteCommand('ELECTRON_BROWSER_CONTEXT_RELEASE', (event, contextId) => {
   objectsRegistry.clear(event.sender, contextId)
-  return null
 })
 
 handleRemoteCommand('ELECTRON_BROWSER_GUEST_WEB_CONTENTS', function (event, contextId, guestInstanceId, stack) {
