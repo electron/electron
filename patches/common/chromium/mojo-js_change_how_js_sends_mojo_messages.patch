@@ -1,0 +1,248 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Thu, 20 Jun 2019 01:37:22 +0000
+Subject: [mojo-js] Change how JS sends Mojo messages
+
+This changes how Mojo JS Blink bindings transmit messages produced from
+JS code. Namely, instead of blindly stuffing the JS-provided message
+payload into the pipe, we construct a C++ bindings Message object from
+the data.
+
+This Message object is then immediately pushed into a message pipe
+without incurring any additional copies.
+
+The change is effectively a no-op in terms of functional behavior, but
+this makes it easier for us to manipulate bits on the Message (such as
+header flags) from native code before actually sending it out.
+
+Bug: 976506
+Change-Id: Iee08fb1abb160888bcbb433bec071ae322d30161
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1666271
+Commit-Queue: Ken Rockot <rockot@google.com>
+Reviewed-by: Kinuko Yasuda <kinuko@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#670762}
+
+diff --git a/mojo/public/cpp/bindings/lib/message.cc b/mojo/public/cpp/bindings/lib/message.cc
+index 29b4d3cc38587c9ca3106818cd7463460e1bf35f..87965c8aa0cff1f71c0b1031586b453cce0d309a 100644
+--- a/mojo/public/cpp/bindings/lib/message.cc
++++ b/mojo/public/cpp/bindings/lib/message.cc
+@@ -243,6 +243,35 @@ Message::Message(uint32_t name,
+   serialized_ = true;
+ }
+ 
++Message::Message(base::span<const uint8_t> payload,
++                 base::span<ScopedHandle> handles) {
++  MojoResult rv = mojo::CreateMessage(&handle_);
++  DCHECK_EQ(MOJO_RESULT_OK, rv);
++  DCHECK(handle_.is_valid());
++
++  void* buffer;
++  uint32_t buffer_size;
++  DCHECK(base::IsValueInRangeForNumericType<uint32_t>(payload.size()));
++  DCHECK(base::IsValueInRangeForNumericType<uint32_t>(handles.size()));
++  MojoAppendMessageDataOptions options;
++  options.struct_size = sizeof(options);
++  options.flags = MOJO_APPEND_MESSAGE_DATA_FLAG_COMMIT_SIZE;
++  rv = MojoAppendMessageData(
++      handle_->value(), static_cast<uint32_t>(payload.size()),
++      reinterpret_cast<MojoHandle*>(handles.data()),
++      static_cast<uint32_t>(handles.size()), &options, &buffer, &buffer_size);
++  DCHECK_EQ(MOJO_RESULT_OK, rv);
++  // Handle ownership has been taken by MojoAppendMessageData.
++  for (auto& handle : handles)
++    ignore_result(handle.release());
++
++  payload_buffer_ = internal::Buffer(buffer, payload.size(), payload.size());
++  std::copy(payload.begin(), payload.end(),
++            static_cast<uint8_t*>(payload_buffer_.data()));
++  transferable_ = true;
++  serialized_ = true;
++}
++
+ // static
+ Message Message::CreateFromMessageHandle(ScopedMessageHandle* message_handle) {
+   DCHECK(message_handle);
+diff --git a/mojo/public/cpp/bindings/message.h b/mojo/public/cpp/bindings/message.h
+index 4ff8a6b5e63e1c1e27b299cf292ebcf9d0e9981c..3be96dea09a8c96f4961edd122115d01bf8adaeb 100644
+--- a/mojo/public/cpp/bindings/message.h
++++ b/mojo/public/cpp/bindings/message.h
+@@ -16,6 +16,7 @@
+ #include "base/callback.h"
+ #include "base/compiler_specific.h"
+ #include "base/component_export.h"
++#include "base/containers/span.h"
+ #include "base/logging.h"
+ #include "base/memory/ptr_util.h"
+ #include "mojo/public/cpp/bindings/lib/buffer.h"
+@@ -68,6 +69,14 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS_BASE) Message {
+           size_t payload_interface_id_count,
+           std::vector<ScopedHandle>* handles);
+ 
++  // Constructs a new serialized Message object from a fully populated message
++  // payload (including a well-formed message header) and an optional set of
++  // handle attachments. This Message may not be extended with additional
++  // payload or handles once constructed, but its payload remains mutable as
++  // long as the Message is not moved and neither |Reset()| nor
++  // |TakeMojoMessage()| is called.
++  Message(base::span<const uint8_t> payload, base::span<ScopedHandle> handles);
++
+   // Constructs a new serialized Message object from an existing
+   // ScopedMessageHandle; e.g., one read from a message pipe.
+   //
+diff --git a/mojo/public/cpp/bindings/tests/BUILD.gn b/mojo/public/cpp/bindings/tests/BUILD.gn
+index 73c5ba421b97904f8b5a4001f1166dd3e73751b2..21b0a185dbb6019fdd4220663d5d71d49f7010cf 100644
+--- a/mojo/public/cpp/bindings/tests/BUILD.gn
++++ b/mojo/public/cpp/bindings/tests/BUILD.gn
+@@ -24,6 +24,7 @@ source_set("tests") {
+     "map_unittest.cc",
+     "message_queue.cc",
+     "message_queue.h",
++    "message_unittest.cc",
+     "multiplex_router_unittest.cc",
+     "native_struct_unittest.cc",
+     "new_endpoint_types_unittest.cc",
+diff --git a/mojo/public/cpp/bindings/tests/message_unittest.cc b/mojo/public/cpp/bindings/tests/message_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..6c68fdf634e40ca8b485d67ed477d405eaf91c52
+--- /dev/null
++++ b/mojo/public/cpp/bindings/tests/message_unittest.cc
+@@ -0,0 +1,81 @@
++// Copyright 2019 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include <stdint.h>
++
++#include <algorithm>
++#include <vector>
++
++#include "mojo/public/cpp/bindings/message.h"
++#include "mojo/public/cpp/system/message_pipe.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace mojo {
++namespace test {
++namespace {
++
++constexpr int32_t kTestMessageName = 42;
++constexpr int32_t kTestMessageFlags = 7;
++constexpr uint32_t kTestPayloadSize = 32;
++
++void CreateTestMessagePayload(std::vector<uint8_t>* bytes,
++                              std::vector<ScopedHandle>* handles) {
++  Message message(kTestMessageName, kTestMessageFlags, 0, kTestPayloadSize,
++                  nullptr);
++  message.header()->trace_id = 0;
++  bytes->resize(message.data_num_bytes());
++  std::copy(message.data(), message.data() + message.data_num_bytes(),
++            bytes->begin());
++
++  MessagePipe pipe;
++  handles->resize(2);
++  handles->at(0) = ScopedHandle(std::move(pipe.handle0));
++  handles->at(1) = ScopedHandle(std::move(pipe.handle1));
++}
++
++TEST(BindingsMessageTest, ConstructFromPayload) {
++  // Verifies that Message objects constructed directly from a raw payload look
++  // the same on the wire as raw messages constructed with lower level APIs.
++  MessagePipe pipe;
++
++  // First feed the raw message data directly into the pipe.
++  std::vector<uint8_t> in_bytes1;
++  std::vector<ScopedHandle> in_handles1;
++  CreateTestMessagePayload(&in_bytes1, &in_handles1);
++  WriteMessageRaw(pipe.handle0.get(), in_bytes1.data(), in_bytes1.size(),
++                  reinterpret_cast<const MojoHandle*>(in_handles1.data()),
++                  in_handles1.size(), MOJO_WRITE_MESSAGE_FLAG_NONE);
++  for (auto& handle : in_handles1)
++    ignore_result(handle.release());
++
++  // Now construct a Message object from the same payload and feed that into the
++  // pipe.
++  std::vector<uint8_t> in_bytes2;
++  std::vector<ScopedHandle> in_handles2;
++  CreateTestMessagePayload(&in_bytes2, &in_handles2);
++  Message message(in_bytes2, in_handles2);
++  WriteMessageNew(pipe.handle0.get(), message.TakeMojoMessage(),
++                  MOJO_WRITE_MESSAGE_FLAG_NONE);
++
++  // Now read both messages and ensure that they're identical.
++  // NOTE: The handles themselves cannot be identical, but the same number of
++  // handles should be attached.
++  std::vector<uint8_t> out_bytes1;
++  std::vector<ScopedHandle> out_handles1;
++  ASSERT_EQ(MOJO_RESULT_OK,
++            ReadMessageRaw(pipe.handle1.get(), &out_bytes1, &out_handles1,
++                           MOJO_READ_MESSAGE_FLAG_NONE));
++  std::vector<uint8_t> out_bytes2;
++  std::vector<ScopedHandle> out_handles2;
++  ASSERT_EQ(MOJO_RESULT_OK,
++            ReadMessageRaw(pipe.handle1.get(), &out_bytes2, &out_handles2,
++                           MOJO_READ_MESSAGE_FLAG_NONE));
++
++  EXPECT_EQ(out_bytes1, out_bytes2);
++  EXPECT_EQ(out_handles1.size(), out_handles2.size());
++}
++
++}  // namespace
++}  // namespace test
++}  // namespace mojo
+diff --git a/third_party/blink/renderer/core/mojo/DEPS b/third_party/blink/renderer/core/mojo/DEPS
+index a3ad46964e418e4b11347842cf876678ebe3ff0b..a3bebdc81a825b87c4419f220d46dd34a247ff75 100644
+--- a/third_party/blink/renderer/core/mojo/DEPS
++++ b/third_party/blink/renderer/core/mojo/DEPS
+@@ -1,3 +1,5 @@
+ include_rules = [
+-  "+mojo/public/cpp/system",
++  "+base/numerics/safe_math.h",
++
++  "+mojo/public",
+ ]
+diff --git a/third_party/blink/renderer/core/mojo/mojo_handle.cc b/third_party/blink/renderer/core/mojo/mojo_handle.cc
+index b74bf25779e2f6f72312ddd44ac62cc7b18f23c2..2951ad1b39b09a09f929e10ae8e5634eaea11587 100644
+--- a/third_party/blink/renderer/core/mojo/mojo_handle.cc
++++ b/third_party/blink/renderer/core/mojo/mojo_handle.cc
+@@ -4,6 +4,9 @@
+ 
+ #include "third_party/blink/renderer/core/mojo/mojo_handle.h"
+ 
++#include "base/numerics/safe_math.h"
++#include "mojo/public/c/system/message_pipe.h"
++#include "mojo/public/cpp/bindings/message.h"
+ #include "mojo/public/cpp/system/message_pipe.h"
+ #include "third_party/blink/renderer/bindings/core/v8/array_buffer_or_array_buffer_view.h"
+ #include "third_party/blink/renderer/core/execution_context/execution_context.h"
+@@ -50,11 +53,10 @@ MojoWatcher* MojoHandle::watch(ScriptState* script_state,
+ MojoResult MojoHandle::writeMessage(
+     ArrayBufferOrArrayBufferView& buffer,
+     const HeapVector<Member<MojoHandle>>& handles) {
+-  // mojo::WriteMessageRaw takes ownership of the handles, so release them here.
+-  Vector<::MojoHandle, kHandleVectorInlineCapacity> raw_handles(handles.size());
+-  std::transform(
+-      handles.begin(), handles.end(), raw_handles.begin(),
+-      [](MojoHandle* handle) { return handle->handle_.release().value(); });
++  Vector<mojo::ScopedHandle, kHandleVectorInlineCapacity> scoped_handles(
++      handles.size());
++  std::transform(handles.begin(), handles.end(), scoped_handles.begin(),
++                 [](MojoHandle* handle) { return std::move(handle->handle_); });
+ 
+   const void* bytes = nullptr;
+   size_t num_bytes = 0;
+@@ -68,9 +70,13 @@ MojoResult MojoHandle::writeMessage(
+     num_bytes = view->byteLength();
+   }
+ 
+-  return mojo::WriteMessageRaw(
+-      mojo::MessagePipeHandle(handle_.get().value()), bytes, num_bytes,
+-      raw_handles.data(), raw_handles.size(), MOJO_WRITE_MESSAGE_FLAG_NONE);
++  auto message = mojo::Message(
++      base::make_span(static_cast<const uint8_t*>(bytes), num_bytes),
++      base::make_span(scoped_handles));
++  DCHECK(!message.IsNull());
++  return mojo::WriteMessageNew(mojo::MessagePipeHandle(handle_.get().value()),
++                               message.TakeMojoMessage(),
++                               MOJO_WRITE_MESSAGE_FLAG_NONE);
+ }
+ 
+ MojoReadMessageResult* MojoHandle::readMessage(
