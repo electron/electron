@@ -40,7 +40,7 @@ context isolation and what it affects in the [BrowserWindow](browser-window.md) 
 
 The `contextBridge` module has the following methods:
 
-### `contextBridge.exposeInMainWorld(apiKey, api)`
+### `contextBridge.exposeInMainWorld(apiKey, api)` _Experimental_
 
 * `apiKey` String - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
 * `api` Record<String, any> - Your API object, more information on what this API can be and how it works is available below.
