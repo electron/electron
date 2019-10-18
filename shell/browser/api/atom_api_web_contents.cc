@@ -2133,7 +2133,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
 void WebContents::BeginFrameSubscription(mate::Arguments* mate_args) {
   // TODO(zcbenz): Remove this after converting WebContents to gin.
   gin::Arguments gin_args(mate_args->info());
-  gin::Arguments* args = &gin_args;
+  gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(&gin_args);
 
   bool only_dirty = false;
   FrameSubscriber::FrameCaptureCallback callback;
