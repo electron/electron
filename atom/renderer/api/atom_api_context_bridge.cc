@@ -11,6 +11,7 @@
 #include "atom/common/api/object_life_monitor.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "atom/common/promise_util.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
