@@ -1,0 +1,15 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer, webFrame} = require('electron')
+  webFrame.setSpellCheckProvider(['en-US', 'ko-KR'], {
+    spellCheck: (words, callback) => {
+      const multiLangWords = Object.values(words).reduce((acc, value) => acc.concat(value), [])
+      callback(multiLangWords)
+      ipcRenderer.send('spec-spell-check', multiLangWords, callback != undefined)
+    }
+  })
+</script>
+<input autofocus />
+</body>
+</html>
