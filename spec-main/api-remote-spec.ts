@@ -1,18 +1,21 @@
+import * as path from 'path'
 import { expect } from 'chai'
 import { closeWindow } from './window-helpers'
 import { ifdescribe } from './spec-helpers';
 
-import { BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow } from 'electron'
 
 const features = process.electronBinding('features')
 
 ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
+  const fixtures = path.join(__dirname, 'fixtures')
+
   let w = null as unknown as BrowserWindow
-  before(async () => {
+  beforeEach(async () => {
     w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
     await w.loadURL('about:blank')
   })
-  after(async () => {
+  afterEach(async () => {
     await closeWindow(w)
   })
 
@@ -110,6 +113,27 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         event.preventDefault()
       })
       await expect(remotely(`require('electron').remote.getCurrentWebContents()`)).to.eventually.be.rejected(`Blocked remote.getCurrentWebContents()`)
+    })
+  })
+
+  describe('remote references', () => {
+    it('render-view-deleted is sent when page is destroyed', (done) => {
+      w.webContents.once('render-view-deleted' as any, () => {
+        done()
+      })
+      w.destroy()
+    })
+
+    // The ELECTRON_BROWSER_CONTEXT_RELEASE message relies on this to work.
+    it('message can be sent on exit when page is being navigated', (done) => {
+      after(() => { ipcMain.removeAllListeners('SENT_ON_EXIT') })
+      ipcMain.once('SENT_ON_EXIT', () => {
+        done()
+      })
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.loadURL('about:blank')
+      })
+      w.loadFile(path.join(fixtures, 'api', 'send-on-exit.html'))
     })
   })
 })
