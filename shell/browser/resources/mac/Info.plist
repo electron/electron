@@ -25,7 +25,7 @@
     <key>LSMinimumSystemVersion</key>
     <string>10.10.0</string>
     <key>NSMainNibFile</key>
-	  <string>MainMenu</string>
+    <string>MainMenu</string>
     <key>NSPrincipalClass</key>
     <string>AtomApplication</string>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
