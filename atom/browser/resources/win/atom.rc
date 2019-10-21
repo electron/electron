@@ -68,12 +68,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "GitHub, Inc."
             VALUE "FileDescription", "Electron"
-            VALUE "FileVersion", "6.0.12"
+            VALUE "FileVersion", "6.1.0-beta.0"
             VALUE "InternalName", "electron.exe"
             VALUE "LegalCopyright", "Copyright (C) 2015 GitHub, Inc. All rights reserved."
             VALUE "OriginalFilename", "electron.exe"
             VALUE "ProductName", "Electron"
-            VALUE "ProductVersion", "6.0.12"
+            VALUE "ProductVersion", "6.1.0-beta.0"
             VALUE "SquirrelAwareVersion", "1"
         END
     END
