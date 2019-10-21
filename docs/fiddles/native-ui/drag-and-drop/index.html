@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Drag and drop files</title>
+  </head>
+
+  <body>
+    <div>
+      <h1>Drag and drop files</h1>
+      <div>Supports: Win, macOS, Linux <span>|</span> Process: Both</div>
+      <h3>
+        Electron supports dragging files and content out from web content into
+        the operating system's world.
+      </h3>
+
+      <p>
+        Open the
+        <a href="https://electronjs.org/docs/tutorial/native-file-drag-drop">
+          full API documentation (opens in new window)
+        </a>
+        in your browser.
+      </p>
+    </div>
+
+    <div>
+      <div>
+        <h2>Dragging files</h2>
+        <div>
+          <div>
+            <a href="#" id="drag-file-link">Drag Demo</a>
+          </div>
+          <p>
+            Click and drag the link above to copy the renderer process
+            javascript file on to your machine.
+          </p>
+
+          <p>
+            In this demo, the <code>webContents.startDrag()</code> API is called
+            in response to the <code>ondragstart</code> event.
+          </p>
+          <h5>Renderer Process</h5>
+          <pre><code>
+const {ipcRenderer} = require('electron')
+
+const dragFileLink = document.getElementById('drag-file-link')
+
+dragFileLink.addEventListener('dragstart', (event) => {
+  event.preventDefault()
+  ipcRenderer.send('ondragstart', __filename)
+})
+        </code></pre>
+          <h5>Main Process</h5>
+          <pre>
+            <code>
+const {ipcMain} = require('electron')
+const path = require('path')
+
+ipcMain.on('ondragstart', (event, filepath) => {
+  const iconName = 'codeIcon.png'
+  event.sender.startDrag({
+    file: filepath,
+    icon: path.join(__dirname, iconName)
+  })
+})
+            </code></pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // You can also require other files to run in this process
+      require("./renderer.js");
+    </script>
+  </body>
+</html>
