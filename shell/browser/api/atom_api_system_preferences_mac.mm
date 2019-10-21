@@ -26,6 +26,7 @@
 #include "shell/browser/mac/atom_application.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/ui/cocoa/NSColor+Hex.h"
+#include "shell/common/deprecate_util.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "ui/native_theme/native_theme.h"
@@ -503,18 +504,23 @@ bool SystemPreferences::IsTrustedAccessibilityClient(bool prompt) {
   return AXIsProcessTrustedWithOptions((CFDictionaryRef)options);
 }
 
-std::string SystemPreferences::GetColor(const std::string& color,
-                                        mate::Arguments* args) {
+std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
+                                        const std::string& color) {
   NSColor* sysColor = nil;
   if (color == "alternate-selected-control-text") {
     sysColor = [NSColor alternateSelectedControlTextColor];
+    EmitDeprecationWarning(
+        node::Environment::GetCurrent(thrower.isolate()),
+        "'alternate-selected-control-text' is deprecated as an input to "
+        "getColor.  Use 'selected-content-background' instead.",
+        "electron");
   } else if (color == "control-background") {
     sysColor = [NSColor controlBackgroundColor];
   } else if (color == "control") {
     sysColor = [NSColor controlColor];
   } else if (color == "control-text") {
     sysColor = [NSColor controlTextColor];
-  } else if (color == "disabled-control") {
+  } else if (color == "disabled-control-text") {
     sysColor = [NSColor disabledControlTextColor];
   } else if (color == "find-highlight") {
     if (@available(macOS 10.14, *))
@@ -580,11 +586,12 @@ std::string SystemPreferences::GetColor(const std::string& color,
   } else if (color == "window-frame-text") {
     sysColor = [NSColor windowFrameTextColor];
   } else {
-    args->ThrowError("Unknown color: " + color);
-    return "";
+    thrower.ThrowError("Unknown color: " + color);
   }
 
-  return base::SysNSStringToUTF8([sysColor hexadecimalValue]);
+  if (sysColor)
+    return base::SysNSStringToUTF8([sysColor hexadecimalValue]);
+  return "";
 }
 
 std::string SystemPreferences::GetMediaAccessStatus(
