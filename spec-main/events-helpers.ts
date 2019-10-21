@@ -21,13 +21,13 @@ export const waitForEvent = (target: EventTarget, eventName: string) => {
  * @param {string} eventName
  * @return {!Promise<!Array>} With Event as the first item.
  */
-export const emittedOnce = (emitter: EventEmitter, eventName: string) => {
-  return emittedNTimes(emitter, eventName, 1).then(([result]) => result)
+export const emittedOnce = (emitter: EventEmitter, eventName: string, trigger?: () => void) => {
+  return emittedNTimes(emitter, eventName, 1, trigger).then(([result]) => result)
 }
 
-export const emittedNTimes = (emitter: EventEmitter, eventName: string, times: number) => {
+export const emittedNTimes = async (emitter: EventEmitter, eventName: string, times: number, trigger?: () => void) => {
   const events: any[][] = []
-  return new Promise<any[][]>(resolve => {
+  const p = new Promise<any[][]>(resolve => {
     const handler = (...args: any[]) => {
       events.push(args)
       if (events.length === times) {
@@ -37,4 +37,8 @@ export const emittedNTimes = (emitter: EventEmitter, eventName: string, times: n
     }
     emitter.on(eventName, handler)
   })
+  if (trigger) {
+    await Promise.resolve(trigger())
+  }
+  return p
 }

@@ -80,6 +80,7 @@ filenames = {
     "lib/renderer/web-view/web-view-impl.ts",
     "lib/renderer/web-view/web-view-init.ts",
     "lib/renderer/api/exports/electron.js",
+    "lib/renderer/api/context-bridge.ts",
     "lib/renderer/api/crash-reporter.js",
     "lib/renderer/api/ipc-renderer.js",
     "lib/renderer/api/module-list.js",
@@ -94,7 +95,6 @@ filenames = {
 
   default_app_ts_sources = [
     "default_app/default_app.ts",
-    "default_app/index.ts",
     "default_app/main.ts",
     "default_app/preload.ts",
   ]
@@ -622,6 +622,7 @@ filenames = {
     "atom/common/native_mate_converters/net_converter.h",
     "atom/common/native_mate_converters/network_converter.cc",
     "atom/common/native_mate_converters/network_converter.h",
+    "atom/common/native_mate_converters/once_callback.h",
     "atom/common/native_mate_converters/string16_converter.h",
     "atom/common/native_mate_converters/ui_base_types_converter.h",
     "atom/common/native_mate_converters/v8_value_converter.cc",
@@ -645,6 +646,10 @@ filenames = {
     "atom/common/platform_util_win.cc",
     "atom/common/promise_util.h",
     "atom/common/promise_util.cc",
+    "atom/renderer/api/context_bridge/render_frame_context_bridge_store.cc",
+    "atom/renderer/api/context_bridge/render_frame_context_bridge_store.h",
+    "atom/renderer/api/atom_api_context_bridge.cc",
+    "atom/renderer/api/atom_api_context_bridge.h",
     "atom/renderer/api/atom_api_renderer_ipc.cc",
     "atom/renderer/api/atom_api_spell_check_client.cc",
     "atom/renderer/api/atom_api_spell_check_client.h",

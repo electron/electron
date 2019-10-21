@@ -12,6 +12,7 @@ auto_filenames = {
     "docs/api/client-request.md",
     "docs/api/clipboard.md",
     "docs/api/content-tracing.md",
+    "docs/api/context-bridge.md",
     "docs/api/cookies.md",
     "docs/api/crash-reporter.md",
     "docs/api/debugger.md",
