@@ -11,10 +11,10 @@ Commit-Queue: Robert Sesek <rsesek@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#703739}
 
 diff --git a/AUTHORS b/AUTHORS
-index f13a007d02c6dcadcab95bbe0d2d1b1a2647fd80..bb1c1307ea32f06cbdca835ab16dafd8ff3fb2cc 100644
+index 5fbb21d147f256c21bfee64cf83ed59375ece3f3..d6e0ad7887fe18e827c625b51949ff16094fa0f7 100644
 --- a/AUTHORS
 +++ b/AUTHORS
-@@ -223,6 +223,7 @@ Debashish Samantaray <d.samantaray@samsung.com>
+@@ -224,6 +224,7 @@ Debashish Samantaray <d.samantaray@samsung.com>
  Debug Wang <debugwang@tencent.com>
  Deepak Dilip Borade <deepak.db@samsung.com>
  Deepak Mittal <deepak.m1@samsung.com>
