@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+  </head>
+  <body>
+    <div>
+      <div>
+        <h1>Get system information</h1>
+        <i>Supports: Win, macOS, Linux <span>|</span> Process: Both</i>
+        <div>
+          <div>
+            <button id="system-info">View Demo</button>
+            <span id="got-system-info"></span>
+          </div>
+          <p>The Node.js <code>os</code> module provides useful information about the user's operating system. It's built into Node.js and can be used in both the main and renderer proesses.</p>
+          <p>In the example below we require the module and then return the location of the home directory.</p>
+          <p>See the full <a href="https://nodejs.org/api/os.html">os documentation<span>(opens in new window)</span></a> for more.</p>
+        </div>
+      </div>
+    </div>
+    <script>
+      require('./renderer.js')
+    </script>
+  </body>
+</html>
