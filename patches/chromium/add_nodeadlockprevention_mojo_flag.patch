@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Mon, 21 Oct 2019 12:43:26 -0700
+Subject: add [NoDeadlockPrevention] mojo flag
+
+
+diff --git a/ipc/ipc_mojo_bootstrap.cc b/ipc/ipc_mojo_bootstrap.cc
+index 8817d8e23d72d6a60cdd4ece5809ac0a6d2f59fa..5e45ebe9c763b4ce78d1c5d93621f4822c51d891 100644
+--- a/ipc/ipc_mojo_bootstrap.cc
++++ b/ipc/ipc_mojo_bootstrap.cc
+@@ -857,7 +857,7 @@ class ChannelAssociatedGroupController
+       // runs or else it's programmer error.
+       DCHECK(proxy_task_runner_);
+ 
+-      if (message->has_flag(mojo::Message::kFlagIsSync)) {
++      if (message->has_flag(mojo::Message::kFlagIsSync) && !message->has_flag(mojo::Message::kFlagNoDeadlockPrevention)) {
+         MessageWrapper message_wrapper(this, std::move(*message));
+         // Sync messages may need to be handled by the endpoint if it's blocking
+         // on a sync reply. We pass ownership of the message to the endpoint's
+@@ -913,7 +913,7 @@ class ChannelAssociatedGroupController
+     DCHECK(endpoint->task_runner()->RunsTasksInCurrentSequence());
+ 
+     // Sync messages should never make their way to this method.
+-    DCHECK(!message.has_flag(mojo::Message::kFlagIsSync));
++    DCHECK(!message.has_flag(mojo::Message::kFlagIsSync) || message.has_flag(mojo::Message::kFlagNoDeadlockPrevention));
+ 
+     bool result = false;
+     {
+diff --git a/mojo/public/cpp/bindings/lib/multiplex_router.cc b/mojo/public/cpp/bindings/lib/multiplex_router.cc
+index 9da1f0aa620ff512f40adc224e7e4f8908e72433..82c9c984840f6ae65f02d9f5ebab00816719604d 100644
+--- a/mojo/public/cpp/bindings/lib/multiplex_router.cc
++++ b/mojo/public/cpp/bindings/lib/multiplex_router.cc
+@@ -605,7 +605,7 @@ bool MultiplexRouter::Accept(Message* message) {
+     tasks_.push_back(Task::CreateMessageTask(std::move(message_wrapper)));
+     Task* task = tasks_.back().get();
+ 
+-    if (task->message_wrapper.value().has_flag(Message::kFlagIsSync)) {
++    if (task->message_wrapper.value().has_flag(Message::kFlagIsSync) && !task->message_wrapper.value().has_flag(Message::kFlagNoDeadlockPrevention)) {
+       InterfaceId id = task->message_wrapper.value().interface_id();
+       sync_message_tasks_[id].push_back(task);
+       InterfaceEndpoint* endpoint = FindEndpoint(id);
+@@ -697,7 +697,8 @@ void MultiplexRouter::ProcessTasks(
+     InterfaceId id = kInvalidInterfaceId;
+     bool sync_message =
+         task->IsMessageTask() && !task->message_wrapper.value().IsNull() &&
+-        task->message_wrapper.value().has_flag(Message::kFlagIsSync);
++        task->message_wrapper.value().has_flag(Message::kFlagIsSync) &&
++        !task->message_wrapper.value().has_flag(Message::kFlagNoDeadlockPrevention);
+     if (sync_message) {
+       id = task->message_wrapper.value().interface_id();
+       auto& sync_message_queue = sync_message_tasks_[id];
+@@ -847,7 +848,7 @@ bool MultiplexRouter::ProcessIncomingMessage(
+   }
+ 
+   bool can_direct_call;
+-  if (message->has_flag(Message::kFlagIsSync)) {
++  if (message->has_flag(Message::kFlagIsSync) && !message->has_flag(Message::kFlagNoDeadlockPrevention)) {
+     can_direct_call = client_call_behavior != NO_DIRECT_CLIENT_CALLS &&
+                       endpoint->task_runner()->RunsTasksInCurrentSequence();
+   } else {
+diff --git a/mojo/public/cpp/bindings/message.h b/mojo/public/cpp/bindings/message.h
+index 1d359526357033e2ac95203cb42f417c6b5b345a..95d42788e4f4c4c5f5a3b6b88c9f9831729bc921 100644
+--- a/mojo/public/cpp/bindings/message.h
++++ b/mojo/public/cpp/bindings/message.h
+@@ -42,6 +42,7 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS_BASE) Message {
+   static const uint32_t kFlagExpectsResponse = 1 << 0;
+   static const uint32_t kFlagIsResponse = 1 << 1;
+   static const uint32_t kFlagIsSync = 1 << 2;
++  static const uint32_t kFlagNoDeadlockPrevention = 1 << 3;
+ 
+   // Constructs an uninitialized Message object.
+   Message();
+diff --git a/mojo/public/tools/bindings/generators/cpp_templates/interface_definition.tmpl b/mojo/public/tools/bindings/generators/cpp_templates/interface_definition.tmpl
+index 0d6407f64a96471f3fd4022548952c6a782821c0..7d880a4137b596ea4af6c57901f0bcc027293b2d 100644
+--- a/mojo/public/tools/bindings/generators/cpp_templates/interface_definition.tmpl
++++ b/mojo/public/tools/bindings/generators/cpp_templates/interface_definition.tmpl
+@@ -123,16 +123,21 @@ bool {{proxy_name}}::{{method.name}}(
+ #endif
+   const bool kExpectsResponse = true;
+   const bool kIsSync = true;
++{%-   if method.no_deadlock_prevention %}
++  const bool kNoDeadlockPrevention = true;
++{%-   else %}
++  const bool kNoDeadlockPrevention = false;
++{%-   endif %}
+ {%-   if method|method_supports_lazy_serialization %}
+   const bool kSerialize = receiver_->PrefersSerializedMessages();
+   auto message = {{message_typename}}::Build(
+-      kSerialize, kExpectsResponse, kIsSync
++      kSerialize, kExpectsResponse, kIsSync, kNoDeadlockPrevention
+ {%-     for param in method.parameters -%}
+       , std::move(param_{{param.name}})
+ {%-     endfor %});
+ {%-   else %}
+   {{interface_macros.build_message_flags(False, "kIsSync", "kExpectsResponse",
+-                                         "kFlags")}}
++                                         "kNoDeadlockPrevention", "kFlags")}}
+   {{interface_macros.build_serialized_message(
+       message_name, "param_%s", params_struct, params_description, "kFlags",
+       "message")}}
+@@ -169,13 +174,13 @@ void {{proxy_name}}::{{method.name}}(
+ {%-   if method|method_supports_lazy_serialization %}
+   const bool kSerialize = receiver_->PrefersSerializedMessages();
+   auto message = {{message_typename}}::Build(
+-      kSerialize, kExpectsResponse, kIsSync
++      kSerialize, kExpectsResponse, kIsSync, false /* no_deadlock_prevention */
+ {%-     for param in method.parameters -%}
+       , std::move(in_{{param.name}})
+ {%-     endfor %});
+ {%-   else %}
+   {{interface_macros.build_message_flags(False, "kIsSync", "kExpectsResponse",
+-                                         "kFlags")}}
++                                         "false", "kFlags")}}
+   {{interface_macros.build_serialized_message(
+       message_name, "in_%s", params_struct, params_description, "kFlags",
+       "message")}}
+@@ -314,12 +319,12 @@ void {{class_name}}_{{method.name}}_ProxyToResponder::Run(
+     {{interface_macros.declare_params("in_", method.response_parameters)}}) {
+ {%-   if method|method_supports_lazy_serialization %}
+   const bool kSerialize = responder_->PrefersSerializedMessages();
+-  auto message = {{response_message_typename}}::Build(kSerialize, is_sync_
++  auto message = {{response_message_typename}}::Build(kSerialize, is_sync_, false
+ {%-     for param in method.response_parameters -%}
+       , std::move(in_{{param.name}})
+ {%-     endfor %});
+ {%-   else %}
+-  {{interface_macros.build_message_flags(True, "is_sync_", "false", "kFlags")}}
++  {{interface_macros.build_message_flags(True, "is_sync_", "false", "false", "kFlags")}}
+   {{interface_macros.build_serialized_message(
+       message_name, "in_%s", response_params_struct,
+       response_params_description, "kFlags", "message")}}
+diff --git a/mojo/public/tools/bindings/generators/cpp_templates/interface_macros.tmpl b/mojo/public/tools/bindings/generators/cpp_templates/interface_macros.tmpl
+index 67940021e200adbeaaa658bcf9cf02aba3cce5c2..3f1680c560adec9d07664f4ef4b213ee7c5ddc2e 100644
+--- a/mojo/public/tools/bindings/generators/cpp_templates/interface_macros.tmpl
++++ b/mojo/public/tools/bindings/generators/cpp_templates/interface_macros.tmpl
+@@ -36,14 +36,15 @@ base::OnceCallback<void(
+ {%- endmacro -%}
+ 
+ {%- macro build_message_flags(is_response, is_sync_text, expects_response_text,
+-                              flags_name) %}
++                              is_nodeadlockprevention_text, flags_name) %}
+ {%-   if is_response %}
+   const uint32_t kFlags = mojo::Message::kFlagIsResponse |
+       (({{is_sync_text}}) ? mojo::Message::kFlagIsSync : 0);
+ {%-   else %}
+   const uint32_t kFlags =
+       (({{expects_response_text}}) ? mojo::Message::kFlagExpectsResponse : 0) |
+-      (({{is_sync_text}}) ? mojo::Message::kFlagIsSync : 0);
++      (({{is_sync_text}}) ? mojo::Message::kFlagIsSync : 0) |
++      (({{is_nodeadlockprevention_text}}) ? mojo::Message::kFlagNoDeadlockPrevention : 0);
+ {%-   endif %}
+ {%- endmacro %}
+ 
+@@ -95,14 +96,15 @@ class {{message_typename}}
+ {%-   if not is_response %}
+       bool expects_response,
+ {%-   endif %}
+-      bool is_sync
++      bool is_sync,
++      bool is_nodeadlockprevention
+ {%-   if parameters -%}
+       ,
+       {{declare_params("param_", parameters)}}
+ {%-   endif %}) {
+ 
+-    {{build_message_flags(is_response, "is_sync", "expects_response",
+-                          "kFlags")}}
++    {{build_message_flags(is_response, "is_sync", "is_nodeadlockprevention",
++                          "expects_response", "kFlags")}}
+ 
+     if (!serialize) {
+       return mojo::Message(std::make_unique<{{message_typename}}>(
+diff --git a/mojo/public/tools/bindings/pylib/mojom/generate/module.py b/mojo/public/tools/bindings/pylib/mojom/generate/module.py
+index 5c6cf45d1b4530a6af9c82a8e4e4b5b00cdc2e0e..a4b9748f232ffd8ab5802e614d32d07564741725 100644
+--- a/mojo/public/tools/bindings/pylib/mojom/generate/module.py
++++ b/mojo/public/tools/bindings/pylib/mojom/generate/module.py
+@@ -219,6 +219,7 @@ PRIMITIVES = (
+ ATTRIBUTE_MIN_VERSION = 'MinVersion'
+ ATTRIBUTE_EXTENSIBLE = 'Extensible'
+ ATTRIBUTE_SYNC = 'Sync'
++ATTRIBUTE_NO_DEADLOCK_PREVENTION = 'NoDeadlockPrevention'
+ 
+ 
+ class NamedValue(object):
+@@ -655,6 +656,11 @@ class Method(object):
+     return self.attributes.get(ATTRIBUTE_SYNC) \
+         if self.attributes else None
+ 
++  @property
++  def no_deadlock_prevention(self):
++    return self.attributes.get(ATTRIBUTE_NO_DEADLOCK_PREVENTION) \
++        if self.attributes else None
++
+ 
+ class Interface(ReferenceKind):
+   ReferenceKind.AddSharedProperty('mojom_name')
