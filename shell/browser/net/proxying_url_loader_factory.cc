@@ -664,8 +664,8 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
   target_factory_.Bind(std::move(target_factory_info));
   target_factory_.set_connection_error_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::OnTargetFactoryError, base::Unretained(this)));
-  proxy_bindings_.AddBinding(this, std::move(loader_request));
-  proxy_bindings_.set_connection_error_handler(base::BindRepeating(
+  proxy_receivers_.Add(this, std::move(loader_request));
+  proxy_receivers_.set_disconnect_handler(base::BindRepeating(
       &ProxyingURLLoaderFactory::OnProxyBindingError, base::Unretained(this)));
 
   if (header_client_receiver)
@@ -727,8 +727,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
 }
 
 void ProxyingURLLoaderFactory::Clone(
-    network::mojom::URLLoaderFactoryRequest loader_request) {
-  proxy_bindings_.AddBinding(this, std::move(loader_request));
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> loader_receiver) {
+  proxy_receivers_.AddBinding(this, std::move(loader_receiver));
 }
 
 void ProxyingURLLoaderFactory::OnLoaderCreated(
@@ -750,13 +750,13 @@ bool ProxyingURLLoaderFactory::IsForServiceWorkerScript() const {
 
 void ProxyingURLLoaderFactory::OnTargetFactoryError() {
   target_factory_.reset();
-  proxy_bindings_.CloseAllBindings();
+  proxy_receivers_.Clear();
 
   MaybeDeleteThis();
 }
 
 void ProxyingURLLoaderFactory::OnProxyBindingError() {
-  if (proxy_bindings_.empty())
+  if (proxy_receivers_.empty())
     target_factory_.reset();
 
   MaybeDeleteThis();

@@ -15,6 +15,7 @@
 #include "content/public/common/content_features.h"
 #include "content/public/common/service_names.mojom.h"
 #include "mojo/public/cpp/bindings/associated_interface_ptr.h"
+#include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "net/net_buildflags.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/cross_thread_shared_url_loader_factory_info.h"
@@ -84,10 +85,11 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
         std::move(client), traffic_annotation);
   }
 
-  void Clone(network::mojom::URLLoaderFactoryRequest request) override {
+  void Clone(mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver)
+      override {
     if (!manager_)
       return;
-    manager_->GetURLLoaderFactory()->Clone(std::move(request));
+    manager_->GetURLLoaderFactory()->Clone(std::move(receiver));
   }
 
   // SharedURLLoaderFactory implementation:

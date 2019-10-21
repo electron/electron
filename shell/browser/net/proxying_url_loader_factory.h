@@ -14,7 +14,8 @@
 #include "base/optional.h"
 #include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
-#include "mojo/public/cpp/bindings/receiver.h"
+#include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -218,7 +219,8 @@ class ProxyingURLLoaderFactory
                             network::mojom::URLLoaderClientPtr client,
                             const net::MutableNetworkTrafficAnnotationTag&
                                 traffic_annotation) override;
-  void Clone(network::mojom::URLLoaderFactoryRequest request) override;
+  void Clone(mojo::PendingReceiver<network::mojom::URLLoaderFactory>
+                 loader_receiver) override;
 
   // network::mojom::TrustedURLLoaderHeaderClient:
   void OnLoaderCreated(
@@ -249,7 +251,7 @@ class ProxyingURLLoaderFactory
   const HandlersMap& intercepted_handlers_;
 
   const int render_process_id_;
-  mojo::BindingSet<network::mojom::URLLoaderFactory> proxy_bindings_;
+  mojo::ReceiverSet<network::mojom::URLLoaderFactory> proxy_receivers_;
   network::mojom::URLLoaderFactoryPtr target_factory_;
   mojo::Receiver<network::mojom::TrustedURLLoaderHeaderClient>
       url_loader_header_client_receiver_{this};
