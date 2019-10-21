@@ -11,7 +11,7 @@
 #include "base/callback.h"
 #include "base/values.h"
 #include "native_mate/handle.h"
-#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/event_emitter_deprecated.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/promise_util.h"
 

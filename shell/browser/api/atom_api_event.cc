@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "native_mate/dictionary.h"
-#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/event_emitter_deprecated.h"
 #include "shell/common/node_includes.h"
 
 namespace {

@@ -72,12 +72,13 @@
 #include "shell/browser/web_view_guest_delegate.h"
 #include "shell/common/api/atom_api_native_image.h"
 #include "shell/common/color_util.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/mouse_util.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
 #include "shell/common/native_mate_converters/content_converter.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/image_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
@@ -671,7 +672,8 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& pos) {
-  Emit("move", pos);
+  // TODO(zcbenz): Use implicit convertion after removing mate::EventEmitter.
+  Emit("move", gin::ConvertToV8(isolate(), pos));
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
@@ -801,13 +803,13 @@ void WebContents::FindReply(content::WebContents* web_contents,
 
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  mate::Dictionary result = mate::Dictionary::CreateEmpty(isolate());
+  gin_helper::Dictionary result = gin::Dictionary::CreateEmpty(isolate());
   result.Set("requestId", request_id);
   result.Set("matches", number_of_matches);
   result.Set("selectionArea", selection_rect);
   result.Set("activeMatchOrdinal", active_match_ordinal);
   result.Set("finalUpdate", final_update);  // Deprecate after 2.0
-  Emit("found-in-page", result);
+  Emit("found-in-page", result.GetHandle());
 }
 
 bool WebContents::CheckMediaAccessPermission(
@@ -2128,7 +2130,11 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       v8::Exception::Error(mate::StringToV8(isolate, "Invalid event object")));
 }
 
-void WebContents::BeginFrameSubscription(mate::Arguments* args) {
+void WebContents::BeginFrameSubscription(mate::Arguments* mate_args) {
+  // TODO(zcbenz): Remove this after converting WebContents to gin.
+  gin::Arguments gin_args(mate_args->info());
+  gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(&gin_args);
+
   bool only_dirty = false;
   FrameSubscriber::FrameCaptureCallback callback;
 
@@ -2182,7 +2188,11 @@ void WebContents::StartDrag(const mate::Dictionary& item,
   }
 }
 
-v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
+v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* mate_args) {
+  // TODO(zcbenz): Remove this after converting WebContents to gin.
+  gin::Arguments gin_args(mate_args->info());
+  gin::Arguments* args = &gin_args;
+
   gfx::Rect rect;
   util::Promise<gfx::Image> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -2223,8 +2233,11 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
     Emit("cursor-changed", CursorTypeToString(info),
          gfx::Image::CreateFrom1xBitmap(info.custom_image),
          info.image_scale_factor,
-         gfx::Size(info.custom_image.width(), info.custom_image.height()),
-         info.hotspot);
+         // TODO(zcbenz): Use implicit convertion after removing
+         // mate::EventEmitter.
+         gin::ConvertToV8(isolate(), gfx::Size(info.custom_image.width(),
+                                               info.custom_image.height())),
+         gin::ConvertToV8(isolate(), info.hotspot));
   } else {
     Emit("cursor-changed", CursorTypeToString(info));
   }
@@ -2672,9 +2685,8 @@ void Initialize(v8::Local<v8::Object> exports,
                               ->GetFunction(context)
                               .ToLocalChecked());
   dict.SetMethod("create", &WebContents::Create);
-  dict.SetMethod("fromId", &mate::TrackableObject<WebContents>::FromWeakMapID);
-  dict.SetMethod("getAllWebContents",
-                 &mate::TrackableObject<WebContents>::GetAll);
+  dict.SetMethod("fromId", &WebContents::FromWeakMapID);
+  dict.SetMethod("getAllWebContents", &WebContents::GetAll);
 }
 
 }  // namespace

@@ -5,6 +5,8 @@
 #ifndef SHELL_COMMON_GIN_HELPER_ARGUMENTS_H_
 #define SHELL_COMMON_GIN_HELPER_ARGUMENTS_H_
 
+#include "gin/arguments.h"
+
 namespace gin_helper {
 
 // Provides additional APIs to the gin::Arguments class.
@@ -24,6 +26,21 @@ class Arguments : public gin::Arguments {
     Skip();
     return true;
   }
+
+  // Gin always returns true when converting V8 value to boolean, we do not want
+  // this behavior when parsing parameters.
+  bool GetNext(bool* out) {
+    v8::Local<v8::Value> val = PeekNext();
+    if (val.IsEmpty() || !val->IsBoolean())
+      return false;
+    *out = val->BooleanValue(isolate());
+    Skip();
+    return true;
+  }
+
+  // Throw error with custom error message.
+  void ThrowError() const;
+  void ThrowError(base::StringPiece message) const;
 
  private:
   // MUST NOT ADD ANY DATA MEMBER.

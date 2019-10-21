@@ -11,14 +11,18 @@
 
 #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "shell/browser/api/trackable_object.h"
+#include "shell/common/gin_helper/event_emitter.h"
 
 namespace electron {
 
 namespace api {
 
-class DesktopCapturer : public mate::TrackableObject<DesktopCapturer> {
+class DesktopCapturer
+    : public mate::TrackableObject<
+          DesktopCapturer,
+          gin_helper::EventEmitter<mate::Wrappable<DesktopCapturer>>> {
  public:
   struct Source {
     DesktopMediaList::Source media_list_source;
@@ -29,7 +33,7 @@ class DesktopCapturer : public mate::TrackableObject<DesktopCapturer> {
     bool fetch_icon = false;
   };
 
-  static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
+  static gin::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
