@@ -34,8 +34,6 @@ scroll_bounce_flag.patch
 mas-cfisobjc.patch
 mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
-mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
-ignore_rc_check.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
@@ -68,7 +66,6 @@ crashpad_pid_check.patch
 preconnect_feature.patch
 network_service_allow_remote_certificate_verification_logic.patch
 put_back_deleted_colors_for_autofill.patch
-build_win_disable_zc_twophase.patch
 disable_color_correct_rendering.patch
 add_contentgpuclient_precreatemessageloop_callback.patch
 picture-in-picture.patch
@@ -79,5 +76,4 @@ feat_add_set_theme_source_to_allow_apps_to.patch
 revert_cleanup_remove_menu_subtitles_sublabels.patch
 ui_views_fix_jumbo_build.patch
 export_fetchapi_mojo_traits_to_fix_component_build.patch
-build_fix_when_building_with_enable_plugins_false.patch
 add_zoom_limit_setters_to_webcontents.patch

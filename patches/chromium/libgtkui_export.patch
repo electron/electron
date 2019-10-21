@@ -6,7 +6,7 @@ Subject: libgtkui_export.patch
 Export libgtkui symbols for the GN component build.
 
 diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
-index e0ab34ca088e65b97ea6ce19c765e514acda760f..8c742d93ffabbd9795f9ba021b23c972e66eaec3 100644
+index c9712cd531c0e2114103bdf3f4cba3320b75c331..21d4c2418b0778df982897e675617a6f93f72c50 100644
 --- a/chrome/browser/ui/libgtkui/gtk_util.h
 +++ b/chrome/browser/ui/libgtkui/gtk_util.h
 @@ -11,6 +11,7 @@
@@ -17,20 +17,12 @@ index e0ab34ca088e65b97ea6ce19c765e514acda760f..8c742d93ffabbd9795f9ba021b23c972
  
  typedef union _GdkEvent GdkEvent;
  
-@@ -36,10 +37,10 @@ namespace libgtkui {
+@@ -34,11 +35,11 @@ namespace libgtkui {
  
  extern const color_utils::HSL kDefaultTintFrameIncognito;
  
 -void GtkInitFromCommandLine(const base::CommandLine& command_line);
 +LIBGTKUI_EXPORT void GtkInitFromCommandLine(const base::CommandLine& command_line);
- 
- // Returns the name of the ".desktop" file associated with our running process.
--std::string GetDesktopName(base::Environment* env);
-+LIBGTKUI_EXPORT std::string GetDesktopName(base::Environment* env);
- 
- GdkModifierType GetGdkModifierForAccelerator(
-     const ui::Accelerator& accelerator);
-@@ -52,7 +53,7 @@ void TurnButtonBlue(GtkWidget* button);
  
  // Sets |dialog| as transient for |parent|, which will keep it on top and center
  // it above |parent|. Do nothing if |parent| is nullptr.
@@ -39,7 +31,7 @@ index e0ab34ca088e65b97ea6ce19c765e514acda760f..8c742d93ffabbd9795f9ba021b23c972
  
  // Gets the transient parent aura window for |dialog|.
  aura::Window* GetAuraTransientParent(GtkWidget* dialog);
-@@ -158,7 +159,7 @@ void ApplyCssToContext(GtkStyleContext* context, const std::string& css);
+@@ -143,7 +144,7 @@ void ApplyCssToContext(GtkStyleContext* context, const std::string& css);
  
  // Get the 'color' property from the style context created by
  // GetStyleContextFromCss(|css_selector|).
@@ -48,7 +40,7 @@ index e0ab34ca088e65b97ea6ce19c765e514acda760f..8c742d93ffabbd9795f9ba021b23c972
  
  ScopedCssProvider GetCssProvider(const std::string& css);
  
-@@ -171,7 +172,7 @@ void RenderBackground(const gfx::Size& size,
+@@ -156,7 +157,7 @@ void RenderBackground(const gfx::Size& size,
  // Renders a background from the style context created by
  // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
  // returns the average color.
@@ -57,52 +49,3 @@ index e0ab34ca088e65b97ea6ce19c765e514acda760f..8c742d93ffabbd9795f9ba021b23c972
  
  // Renders the border from the style context created by
  // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
-diff --git a/chrome/browser/ui/libgtkui/skia_utils_gtk.h b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
-index bd6ed68a11b0b6c08962f688c799bd0f6b8a8d0e..b1184475e0ab9f381dc3c78b1092e2e0ec59d60b 100644
---- a/chrome/browser/ui/libgtkui/skia_utils_gtk.h
-+++ b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
-@@ -8,6 +8,7 @@
- #include <gtk/gtk.h>
- #include <stdint.h>
- 
-+#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
- #include "third_party/skia/include/core/SkColor.h"
- 
- #if !GTK_CHECK_VERSION(3, 90, 0)
-@@ -48,7 +49,7 @@ const SkBitmap GdkPixbufToImageSkia(GdkPixbuf* pixbuf);
- // Convert and copy a SkBitmap to a GdkPixbuf. NOTE: this uses BGRAToRGBA, so
- // it is an expensive operation.  The returned GdkPixbuf will have a refcount of
- // 1, and the caller is responsible for unrefing it when done.
--GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap);
-+LIBGTKUI_EXPORT GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap);
- 
- }  // namespace libgtkui
- 
-diff --git a/chrome/browser/ui/libgtkui/unity_service.h b/chrome/browser/ui/libgtkui/unity_service.h
-index 8d67e1460837c7f8adb151adea131cc6440659a3..95fbb27b6a81e4d73d239e94f5105078a936b5af 100644
---- a/chrome/browser/ui/libgtkui/unity_service.h
-+++ b/chrome/browser/ui/libgtkui/unity_service.h
-@@ -5,18 +5,20 @@
- #ifndef CHROME_BROWSER_UI_LIBGTKUI_UNITY_SERVICE_H_
- #define CHROME_BROWSER_UI_LIBGTKUI_UNITY_SERVICE_H_
- 
-+#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
-+
- namespace unity {
- 
- // Returns whether unity is currently running.
--bool IsRunning();
-+LIBGTKUI_EXPORT bool IsRunning();
- 
- // If unity is running, sets the download counter in the dock icon. Any value
- // other than 0 displays the badge.
--void SetDownloadCount(int count);
-+LIBGTKUI_EXPORT void SetDownloadCount(int count);
- 
- // If unity is running, sets the download progress bar in the dock icon. Any
- // value between 0.0 and 1.0 (exclusive) shows the progress bar.
--void SetProgressFraction(float percentage);
-+LIBGTKUI_EXPORT void SetProgressFraction(float percentage);
- 
- }  // namespace unity
- 

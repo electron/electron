@@ -55,10 +55,10 @@ index 5253f6be778cc78571b3df0a33d364a9b1e6ef52..dc5307e6500b0bfb5da83e8d8ff8886b
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index ce997528ce2973b54dbbf965220cc30bcb19a094..e84b0b62d853b044e590a0c764f1b21ad3210886 100644
+index b0c806c9ad092cc5d8e424a3b49b32a24da7f004..810ae64c9a0287102117993674307a8bf3af7ab2 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -138,7 +138,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -139,7 +139,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
  
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
@@ -68,10 +68,10 @@ index ce997528ce2973b54dbbf965220cc30bcb19a094..e84b0b62d853b044e590a0c764f1b21a
          notification_service_remote_.BindNewPipeAndPassReceiver());
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 2a447b73d763b7c91359f1b4550a002ff9e5e715..bd434393cf35605a8cc05d6fb96215cf76b5417a 100644
+index 9ada5345a004a761b6e12ac0259d61e9fd8de5e9..9c13bd9e7d2604ef72b28029a9733153e776754f 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -207,12 +207,13 @@ void PlatformNotificationContextImpl::Shutdown() {
+@@ -208,12 +208,13 @@ void PlatformNotificationContextImpl::Shutdown() {
  }
  
  void PlatformNotificationContextImpl::CreateService(
@@ -108,10 +108,10 @@ index 4bf25bf1fa69f7d3869369172d375e2e489e62a1..f80ef2cecc8b111dc54e109646573a59
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
 diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index 8030fd5e66fab694d3f3a54dcb4688c14dcba473..18f259bdd9b5340a50494311983646d9b9244469 100644
+index 6b584056fa02f82b20abd748254c6400d44ef770..bb037b8f5fac8c4dc223f7c066a57b51261e167b 100644
 --- a/content/browser/renderer_interface_binders.cc
 +++ b/content/browser/renderer_interface_binders.cc
-@@ -135,7 +135,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
+@@ -136,7 +136,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
           RenderProcessHost* host, const url::Origin& origin) {
          static_cast<StoragePartitionImpl*>(host->GetStoragePartition())
              ->GetPlatformNotificationContext()

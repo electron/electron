@@ -6,7 +6,7 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index e971e3506864865d1b05218d42fa5d54a72cc742..a1aa2036c405dbbc310b12ac6c956579cf1aa1d9 100644
+index 9759e2055deb13e72e7a0f0a35513a8dc194f0ce..c9a723500a69782ce9788ce43a0f6f65afcba3ee 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -13,21 +13,25 @@
@@ -72,7 +72,7 @@ index e971e3506864865d1b05218d42fa5d54a72cc742..a1aa2036c405dbbc310b12ac6c956579
  
  SecurityStateTabHelper::SecurityStateTabHelper(
      content::WebContents* web_contents)
-@@ -145,6 +153,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() const {
+@@ -158,6 +166,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
    // information is still being initialized, thus no need to check for that.
    state->malicious_content_status = GetMaliciousContentStatus();
  
@@ -80,15 +80,15 @@ index e971e3506864865d1b05218d42fa5d54a72cc742..a1aa2036c405dbbc310b12ac6c956579
    safety_tips::ReputationWebContentsObserver* reputation_web_contents_observer =
        safety_tips::ReputationWebContentsObserver::FromWebContents(
            web_contents());
-@@ -153,6 +162,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() const {
-           ? reputation_web_contents_observer
-                 ->GetSafetyTipStatusForVisibleNavigation()
-           : security_state::SafetyTipStatus::kUnknown;
+@@ -167,6 +176,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
+                 ->GetSafetyTipInfoForVisibleNavigation()
+           : security_state::SafetyTipInfo(
+                 {security_state::SafetyTipStatus::kUnknown, GURL()});
 +#endif
    return state;
  }
  
-@@ -220,6 +230,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -235,6 +245,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
        web_contents()->GetController().GetVisibleEntry();
    if (!entry)
      return security_state::MALICIOUS_CONTENT_STATUS_NONE;
@@ -96,7 +96,7 @@ index e971e3506864865d1b05218d42fa5d54a72cc742..a1aa2036c405dbbc310b12ac6c956579
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -298,6 +309,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -317,6 +328,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }

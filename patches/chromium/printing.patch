@@ -11,27 +11,29 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 13f9d7af3ae796ecec3a9189aa59f4b20171fd7a..9c35b294340cce070a9f428dac6aa587c93ccc6c 100644
+index ab32d5475a0e269d32f6ab71f7dc82aa9e02035a..9ada750416f02d23c2f9faae0c41e4a7541183f7 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
-@@ -21,12 +21,12 @@
+@@ -21,7 +21,6 @@
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/chrome_notification_types.h"
  #include "chrome/browser/printing/print_job.h"
 -#include "chrome/grit/generated_resources.h"
+ #include "components/crash/core/common/crash_keys.h"
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
- #include "content/public/browser/notification_service.h"
+@@ -29,6 +28,7 @@
  #include "content/public/browser/render_frame_host.h"
  #include "content/public/browser/web_contents.h"
+ #include "printing/backend/print_backend.h"
 +#include "electron/grit/electron_resources.h"
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
-@@ -203,9 +203,14 @@ void PrintJobWorker::SetSettingsFromPOD(
- void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
-                                          SettingsCallback callback) {
-   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+@@ -221,9 +221,14 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
+         print_backend->GetPrinterDriverInfo(printer_name));
+   }
+ 
 -  PrintingContext::Result result =
 -      printing_context_->UpdatePrintSettings(std::move(new_settings));
 -  GetSettingsDone(std::move(callback), result);
@@ -46,7 +48,7 @@ index 13f9d7af3ae796ecec3a9189aa59f4b20171fd7a..9c35b294340cce070a9f428dac6aa587
  }
  
  #if defined(OS_CHROMEOS)
-@@ -221,6 +226,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -239,6 +244,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {
@@ -378,7 +380,7 @@ index 9fbea6d0a2dbe55b1d600fbc217dee5aa8ae8cd5..de9bd267e408c02fd4da7d903523c0e6
    // content::BrowserMessageFilter:
    bool OnMessageReceived(const IPC::Message& message) override;
 diff --git a/components/printing/common/print_messages.h b/components/printing/common/print_messages.h
-index f9f5d1c07e4068d0706770ca81bd92ce166c3822..9f0e079b941296fa27b8cf0a66abfa45a6183b42 100644
+index 200288ee10e3e3dd452d6e9e44ac0af88357ccd3..2403f9a80b3d53c703bd4d63f7656afbe22ecd69 100644
 --- a/components/printing/common/print_messages.h
 +++ b/components/printing/common/print_messages.h
 @@ -365,7 +365,9 @@ IPC_MESSAGE_ROUTED0(PrintMsg_PrintNodeUnderContextMenu)
@@ -389,11 +391,11 @@ index f9f5d1c07e4068d0706770ca81bd92ce166c3822..9f0e079b941296fa27b8cf0a66abfa45
 +IPC_MESSAGE_ROUTED2(PrintMsg_PrintPages,
 +                    bool /* silent print */,
 +                    base::DictionaryValue /* settings */)
+ #endif
  
- // Like PrintMsg_PrintPages, but using the print preview document's frame/node.
- IPC_MESSAGE_ROUTED0(PrintMsg_PrintForSystemDialog)
+ // Print content of an out-of-process subframe.
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a4b449850 100644
+index 656bb69e16d3c4cc9dbc95c3192fa12dee07a4ac..abe11e14993775fe88c6aa8fc6b2e11090afa5e4 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -404,7 +406,7 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
  #include "printing/units.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
  #include "third_party/blink/public/common/frame/frame_owner_element_type.h"
-@@ -1149,7 +1150,8 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1141,7 +1142,8 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
      web_frame->DispatchBeforePrintEvent();
      if (!weak_this)
        return;
@@ -414,9 +416,18 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
      if (weak_this)
        web_frame->DispatchAfterPrintEvent();
    }
-@@ -1224,7 +1226,9 @@ void PrintRenderFrameHelper::InitiatePrintPreview(
- #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
+@@ -1191,7 +1193,7 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
+   }
+   auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   Print(frame, print_preview_context_.source_node(),
+-        PrintRequestType::kRegular);
++        PrintRequestType::kRegular, false, base::DictionaryValue());
+   if (weak_this)
+     frame->DispatchAfterPrintEvent();
+   // WARNING: |this| may be gone at this point. Do not do any more work here and
+@@ -1230,7 +1232,9 @@ void PrintRenderFrameHelper::OnPrintPreviewDialogClosed() {
  }
+ #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
  
 -void PrintRenderFrameHelper::OnPrintPages() {
 +void PrintRenderFrameHelper::OnPrintPages(
@@ -425,7 +436,7 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
    if (ipc_nesting_level_ > 1)
      return;
  
-@@ -1237,7 +1241,8 @@ void PrintRenderFrameHelper::OnPrintPages() {
+@@ -1243,7 +1247,8 @@ void PrintRenderFrameHelper::OnPrintPages() {
    // If we are printing a PDF extension frame, find the plugin node and print
    // that instead.
    auto plugin = delegate_->GetPdfElement(frame);
@@ -435,16 +446,7 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
    if (weak_this)
      frame->DispatchAfterPrintEvent();
    // WARNING: |this| may be gone at this point. Do not do any more work here and
-@@ -1254,7 +1259,7 @@ void PrintRenderFrameHelper::OnPrintForSystemDialog() {
-   }
-   auto weak_this = weak_ptr_factory_.GetWeakPtr();
-   Print(frame, print_preview_context_.source_node(),
--        PrintRequestType::kRegular);
-+        PrintRequestType::kRegular, false, base::DictionaryValue());
-   if (weak_this)
-     frame->DispatchAfterPrintEvent();
-   // WARNING: |this| may be gone at this point. Do not do any more work here and
-@@ -1289,6 +1294,8 @@ void PrintRenderFrameHelper::OnPrintPreview(
+@@ -1278,6 +1283,8 @@ void PrintRenderFrameHelper::OnPrintPreview(
    if (ipc_nesting_level_ > 1)
      return;
  
@@ -453,7 +455,7 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
    print_preview_context_.OnPrintPreview();
  
    UMA_HISTOGRAM_ENUMERATION("PrintPreview.PreviewEvent",
-@@ -1662,7 +1669,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -1645,7 +1652,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
      auto self = weak_ptr_factory_.GetWeakPtr();
      Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
@@ -464,7 +466,7 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -1673,7 +1682,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -1656,7 +1665,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -475,7 +477,7 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
    // If still not finished with earlier print request simply ignore.
    if (prep_frame_view_)
      return;
-@@ -1681,7 +1692,7 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -1664,7 +1675,7 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
    FrameReference frame_ref(frame);
  
    int expected_page_count = 0;
@@ -484,7 +486,7 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
      DidFinishPrinting(FAIL_PRINT_INIT);
      return;  // Failed to init print page settings.
    }
-@@ -1701,8 +1712,11 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -1684,8 +1695,11 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
  
      PrintMsg_PrintPages_Params print_settings;
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -498,7 +500,7 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -1926,10 +1940,23 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -1909,10 +1923,23 @@ void PrintRenderFrameHelper::IPCProcessed() {
      base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, this);
  }
  
@@ -525,7 +527,7 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
    // Check if the printer returned any settings, if the settings is empty, we
    // can safely assume there are no printer drivers configured. So we safely
    // terminate.
-@@ -1949,12 +1976,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -1932,12 +1959,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
@@ -545,20 +547,20 @@ index 27cf579e4ca10661c34c130097783f02e13f3521..e8f1b610fb8fa700ac3de9df268a7b6a
      Send(new PrintHostMsg_ShowInvalidPrinterSettingsError(routing_id()));
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 00b3e4647a192411262bc5e7c1c0cfac3e3f81bb..5bade84672ef9d8b8acb8e8d503760aca6635cb7 100644
+index aca69e7b68ad1fb0f623f729337ff5de54f97584..f9c9c027adfad345954bf7c8484e9534fa3ece8c 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
-@@ -204,7 +204,8 @@ class PrintRenderFrameHelper
-       bool has_selection) override;
+@@ -221,7 +221,8 @@ class PrintRenderFrameHelper
+ #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
  
    // Message handlers ---------------------------------------------------------
 -  void OnPrintPages();
 +  void OnPrintPages(bool silent,
 +                    const base::DictionaryValue& settings);
-   void OnPrintForSystemDialog();
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    void OnPrintPreview(const base::DictionaryValue& settings);
-@@ -253,7 +254,9 @@ class PrintRenderFrameHelper
+ #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
+@@ -268,7 +269,9 @@ class PrintRenderFrameHelper
    // WARNING: |this| may be gone after this method returns.
    void Print(blink::WebLocalFrame* frame,
               const blink::WebNode& node,
@@ -569,7 +571,7 @@ index 00b3e4647a192411262bc5e7c1c0cfac3e3f81bb..5bade84672ef9d8b8acb8e8d503760ac
  
    // Notification when printing is done - signal tear-down/free resources.
    void DidFinishPrinting(PrintingResult result);
-@@ -262,12 +265,14 @@ class PrintRenderFrameHelper
+@@ -277,12 +280,14 @@ class PrintRenderFrameHelper
  
    // Initialize print page settings with default settings.
    // Used only for native printing workflow.
@@ -587,10 +589,10 @@ index 00b3e4647a192411262bc5e7c1c0cfac3e3f81bb..5bade84672ef9d8b8acb8e8d503760ac
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/print_settings_conversion.cc b/printing/print_settings_conversion.cc
-index 7403d3ea6200e2443ca23cb483c2a36fa6ff5027..05fcb8c2ef6d1074cf37b8974830d3fe1dd6e011 100644
+index f844f92e2cc3b094e265ab40d4e47a4ab57b6ce0..fb903c30e68e1baa1a5ccaf0f0424df48c2a6a01 100644
 --- a/printing/print_settings_conversion.cc
 +++ b/printing/print_settings_conversion.cc
-@@ -184,11 +184,12 @@ bool PrintSettingsFromJobSettings(const base::Value& job_settings,
+@@ -182,6 +182,8 @@ bool PrintSettingsFromJobSettings(const base::Value& job_settings,
  
    settings->set_dpi_xy(dpi_horizontal.value(), dpi_vertical.value());
  #endif
@@ -599,16 +601,11 @@ index 7403d3ea6200e2443ca23cb483c2a36fa6ff5027..05fcb8c2ef6d1074cf37b8974830d3fe
  
    settings->set_collate(collate.value());
    settings->set_copies(copies.value());
-   settings->SetOrientation(landscape.value());
--  settings->set_device_name(base::UTF8ToUTF16(*device_name));
-   settings->set_duplex_mode(static_cast<DuplexMode>(duplex_mode.value()));
-   settings->set_color(static_cast<ColorModel>(color.value()));
-   settings->set_scale_factor(static_cast<double>(scale_factor.value()) / 100.0);
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index cd5c27c87df175676504a06b4e1904f6b836dc90..c4f6acf66bc69f1e7db633aa5b3b03a913ffb666 100644
+index 73940192472b1576a701cad3abbb92f2d72aa77e..bc0d39ccd113306691ae532e9fbc5b64c9aa0a33 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -93,8 +93,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
+@@ -90,8 +90,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
  
  PrintingContext::Result PrintingContext::UpdatePrintSettings(
      base::Value job_settings) {
