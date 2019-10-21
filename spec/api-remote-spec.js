@@ -498,17 +498,16 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     it('throws errors from the main process', () => {
       expect(() => {
         throwFunction()
-      }).to.throw()
+      }).to.throw(/undefined/)
     })
 
-    it('throws custom errors from the main process', () => {
-      const err = new Error('error')
-      err.cause = new Error('cause')
-      err.prop = 'error prop'
+    it('tracks error cause', () => {
       try {
-        throwFunction(err)
-      } catch (error) {
-        expect(error.cause).to.deep.equal(...resolveGetters(err))
+        throwFunction(new Error('error from main'))
+        expect.fail()
+      } catch (e) {
+        expect(e.message).to.match(/Could not call remote function/)
+        expect(e.cause.message).to.equal('error from main')
       }
     })
   })

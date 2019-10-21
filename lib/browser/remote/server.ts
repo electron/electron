@@ -245,6 +245,17 @@ type MetaTypeFromRenderer = {
   length: number
 }
 
+const fakeConstructor = (constructor: Function, name: string) =>
+  new Proxy(Object, {
+    get (target, prop, receiver) {
+      if (prop === 'name') {
+        return name
+      } else {
+        return Reflect.get(target, prop, receiver)
+      }
+    }
+  })
+
 // Convert array of meta data from renderer into array of real values.
 const unwrapArgs = function (sender: electron.WebContents, frameId: number, contextId: string, args: any[]) {
   const metaToValue = function (meta: MetaTypeFromRenderer): any {
@@ -262,8 +273,9 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
           then: metaToValue(meta.then)
         })
       case 'object': {
-        const ret: any = {}
-        Object.defineProperty(ret.constructor, 'name', { value: meta.name })
+        const ret: any = meta.name !== 'Object' ? Object.create({
+          constructor: fakeConstructor(Object, meta.name)
+        }) : {}
 
         for (const { name, value } of meta.members) {
           ret[name] = metaToValue(value)
