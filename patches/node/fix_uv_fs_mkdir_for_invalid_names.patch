@@ -1,0 +1,76 @@
+From ecff27857dafe3f5d30a6ab8646ea69a93e4940a Mon Sep 17 00:00:00 2001
+From: Bartosz Sosnowski <bartosz@janeasystems.com>
+Date: Thu, 11 Jul 2019 12:45:38 +0200
+Subject: [PATCH] win, fs: mkdir return UV_EINVAL for invalid names
+
+Makes uv_fs_mkdir return UV_EINVAL for invalid filenames instead of
+UV_ENOENT.
+
+Ref: https://github.com/nodejs/node/issues/28599
+
+PR-URL: https://github.com/libuv/libuv/pull/2375
+Reviewed-By: Anna Henningsen <anna@addaleax.net>
+Reviewed-By: Saúl Ibarra Corretgé <saghul@gmail.com>
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+
+diff --git a/deps/uv/src/win/fs.c b/deps/uv/src/win/fs.c
+index 15094121..31242b51 100644
+--- a/deps/uv/src/win/fs.c
++++ b/deps/uv/src/win/fs.c
+@@ -1180,8 +1180,13 @@ void fs__unlink(uv_fs_t* req) {
+ 
+ void fs__mkdir(uv_fs_t* req) {
+   /* TODO: use req->mode. */
+-  int result = _wmkdir(req->file.pathw);
+-  SET_REQ_RESULT(req, result);
++  req->result = _wmkdir(req->file.pathw);
++  if (req->result == -1) {
++    req->sys_errno_ = _doserrno;
++    req->result = req->sys_errno_ == ERROR_INVALID_NAME
++                ? UV_EINVAL
++                : uv_translate_sys_error(req->sys_errno_);
++  }
+ }
+ 
+ 
+diff --git a/deps/uv/test/test-fs.c b/deps/uv/test/test-fs.c
+index 35a992d8..95f6b5e9 100644
+--- a/deps/uv/test/test-fs.c
++++ b/deps/uv/test/test-fs.c
+@@ -4060,4 +4060,16 @@ TEST_IMPL(fs_fchmod_archive_readonly) {
+ 
+     return 0;
+ }
++
++TEST_IMPL(fs_invalid_mkdir_name) {
++  uv_loop_t* loop;
++  uv_fs_t req;
++  int r;
++
++  loop = uv_default_loop();
++  r = uv_fs_mkdir(loop, &req, "invalid>", 0, NULL);
++  ASSERT(r == UV_EINVAL);
++
++  return 0;
++}
+ #endif
+diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
+index 3c5f21b9..ffa7e545 100644
+--- a/deps/uv/test/test-list.h
++++ b/deps/uv/test/test-list.h
+@@ -380,6 +380,7 @@ TEST_DECLARE   (fs_exclusive_sharing_mode)
+ TEST_DECLARE   (fs_file_flag_no_buffering)
+ TEST_DECLARE   (fs_open_readonly_acl)
+ TEST_DECLARE   (fs_fchmod_archive_readonly)
++TEST_DECLARE   (fs_invalid_mkdir_name)
+ #endif
+ TEST_DECLARE   (strscpy)
+ TEST_DECLARE   (threadpool_queue_work_simple)
+@@ -973,6 +974,7 @@ TASK_LIST_START
+   TEST_ENTRY  (fs_file_flag_no_buffering)
+   TEST_ENTRY  (fs_open_readonly_acl)
+   TEST_ENTRY  (fs_fchmod_archive_readonly)
++  TEST_ENTRY  (fs_invalid_mkdir_name)
+ #endif
+   TEST_ENTRY  (get_osfhandle_valid_handle)
+   TEST_ENTRY  (open_osfhandle_valid_handle)
