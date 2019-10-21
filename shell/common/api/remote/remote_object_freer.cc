@@ -82,8 +82,8 @@ void RemoteObjectFreer::RunDestructor() {
       ref_mapper_.erase(objects_it);
   }
 
-  mojom::ElectronBrowserAssociatedPtr electron_ptr;
-  render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+  mojom::ElectronBrowserPtr electron_ptr;
+  render_frame->GetRemoteInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
   electron_ptr->DereferenceRemoteJSObject(context_id_, object_id_, ref_count);
 }
