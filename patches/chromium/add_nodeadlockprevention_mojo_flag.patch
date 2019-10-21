@@ -5,56 +5,62 @@ Subject: add [NoDeadlockPrevention] mojo flag
 
 
 diff --git a/ipc/ipc_mojo_bootstrap.cc b/ipc/ipc_mojo_bootstrap.cc
-index 8817d8e23d72d6a60cdd4ece5809ac0a6d2f59fa..5e45ebe9c763b4ce78d1c5d93621f4822c51d891 100644
+index 8817d8e23d72d6a60cdd4ece5809ac0a6d2f59fa..fa3322b4698f84d68e81d7e38e4efe73f16c6636 100644
 --- a/ipc/ipc_mojo_bootstrap.cc
 +++ b/ipc/ipc_mojo_bootstrap.cc
-@@ -857,7 +857,7 @@ class ChannelAssociatedGroupController
+@@ -857,7 +857,8 @@ class ChannelAssociatedGroupController
        // runs or else it's programmer error.
        DCHECK(proxy_task_runner_);
  
 -      if (message->has_flag(mojo::Message::kFlagIsSync)) {
-+      if (message->has_flag(mojo::Message::kFlagIsSync) && !message->has_flag(mojo::Message::kFlagNoDeadlockPrevention)) {
++      if (message->has_flag(mojo::Message::kFlagIsSync) &&
++          !message->has_flag(mojo::Message::kFlagNoDeadlockPrevention)) {
          MessageWrapper message_wrapper(this, std::move(*message));
          // Sync messages may need to be handled by the endpoint if it's blocking
          // on a sync reply. We pass ownership of the message to the endpoint's
-@@ -913,7 +913,7 @@ class ChannelAssociatedGroupController
+@@ -913,7 +914,8 @@ class ChannelAssociatedGroupController
      DCHECK(endpoint->task_runner()->RunsTasksInCurrentSequence());
  
      // Sync messages should never make their way to this method.
 -    DCHECK(!message.has_flag(mojo::Message::kFlagIsSync));
-+    DCHECK(!message.has_flag(mojo::Message::kFlagIsSync) || message.has_flag(mojo::Message::kFlagNoDeadlockPrevention));
++    DCHECK(!message.has_flag(mojo::Message::kFlagIsSync) ||
++           message.has_flag(mojo::Message::kFlagNoDeadlockPrevention));
  
      bool result = false;
      {
 diff --git a/mojo/public/cpp/bindings/lib/multiplex_router.cc b/mojo/public/cpp/bindings/lib/multiplex_router.cc
-index 9da1f0aa620ff512f40adc224e7e4f8908e72433..82c9c984840f6ae65f02d9f5ebab00816719604d 100644
+index 9da1f0aa620ff512f40adc224e7e4f8908e72433..83ab3008cf7f5f9d455de2a05977397d09e84f17 100644
 --- a/mojo/public/cpp/bindings/lib/multiplex_router.cc
 +++ b/mojo/public/cpp/bindings/lib/multiplex_router.cc
-@@ -605,7 +605,7 @@ bool MultiplexRouter::Accept(Message* message) {
+@@ -605,7 +605,9 @@ bool MultiplexRouter::Accept(Message* message) {
      tasks_.push_back(Task::CreateMessageTask(std::move(message_wrapper)));
      Task* task = tasks_.back().get();
  
 -    if (task->message_wrapper.value().has_flag(Message::kFlagIsSync)) {
-+    if (task->message_wrapper.value().has_flag(Message::kFlagIsSync) && !task->message_wrapper.value().has_flag(Message::kFlagNoDeadlockPrevention)) {
++    if (task->message_wrapper.value().has_flag(Message::kFlagIsSync) &&
++        !task->message_wrapper.value().has_flag(
++            Message::kFlagNoDeadlockPrevention)) {
        InterfaceId id = task->message_wrapper.value().interface_id();
        sync_message_tasks_[id].push_back(task);
        InterfaceEndpoint* endpoint = FindEndpoint(id);
-@@ -697,7 +697,8 @@ void MultiplexRouter::ProcessTasks(
+@@ -697,7 +699,9 @@ void MultiplexRouter::ProcessTasks(
      InterfaceId id = kInvalidInterfaceId;
      bool sync_message =
          task->IsMessageTask() && !task->message_wrapper.value().IsNull() &&
 -        task->message_wrapper.value().has_flag(Message::kFlagIsSync);
 +        task->message_wrapper.value().has_flag(Message::kFlagIsSync) &&
-+        !task->message_wrapper.value().has_flag(Message::kFlagNoDeadlockPrevention);
++        !task->message_wrapper.value().has_flag(
++            Message::kFlagNoDeadlockPrevention);
      if (sync_message) {
        id = task->message_wrapper.value().interface_id();
        auto& sync_message_queue = sync_message_tasks_[id];
-@@ -847,7 +848,7 @@ bool MultiplexRouter::ProcessIncomingMessage(
+@@ -847,7 +851,8 @@ bool MultiplexRouter::ProcessIncomingMessage(
    }
  
    bool can_direct_call;
 -  if (message->has_flag(Message::kFlagIsSync)) {
-+  if (message->has_flag(Message::kFlagIsSync) && !message->has_flag(Message::kFlagNoDeadlockPrevention)) {
++  if (message->has_flag(Message::kFlagIsSync) &&
++      !message->has_flag(Message::kFlagNoDeadlockPrevention)) {
      can_direct_call = client_call_behavior != NO_DIRECT_CLIENT_CALLS &&
                        endpoint->task_runner()->RunsTasksInCurrentSequence();
    } else {
@@ -130,7 +136,7 @@ index 0d6407f64a96471f3fd4022548952c6a782821c0..7d880a4137b596ea4af6c57901f0bcc0
        message_name, "in_%s", response_params_struct,
        response_params_description, "kFlags", "message")}}
 diff --git a/mojo/public/tools/bindings/generators/cpp_templates/interface_macros.tmpl b/mojo/public/tools/bindings/generators/cpp_templates/interface_macros.tmpl
-index 67940021e200adbeaaa658bcf9cf02aba3cce5c2..3f1680c560adec9d07664f4ef4b213ee7c5ddc2e 100644
+index 67940021e200adbeaaa658bcf9cf02aba3cce5c2..ab6af02ce1ac12becb44b564d4b8e95a343a5121 100644
 --- a/mojo/public/tools/bindings/generators/cpp_templates/interface_macros.tmpl
 +++ b/mojo/public/tools/bindings/generators/cpp_templates/interface_macros.tmpl
 @@ -36,14 +36,15 @@ base::OnceCallback<void(
@@ -163,10 +169,9 @@ index 67940021e200adbeaaa658bcf9cf02aba3cce5c2..3f1680c560adec9d07664f4ef4b213ee
        {{declare_params("param_", parameters)}}
  {%-   endif %}) {
  
--    {{build_message_flags(is_response, "is_sync", "expects_response",
+     {{build_message_flags(is_response, "is_sync", "expects_response",
 -                          "kFlags")}}
-+    {{build_message_flags(is_response, "is_sync", "is_nodeadlockprevention",
-+                          "expects_response", "kFlags")}}
++                          "is_nodeadlockprevention", "kFlags")}}
  
      if (!serialize) {
        return mojo::Message(std::make_unique<{{message_typename}}>(
