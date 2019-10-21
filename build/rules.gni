@@ -5,6 +5,8 @@ import("//build/config/mac/mac_sdk.gni")
 # See https://chromium-review.googlesource.com/c/chromium/src/+/1648695
 import("//build/config/ios/rules.gni")
 
+# Template is copied here from Chromium but was removed in
+# https://chromium-review.googlesource.com/c/chromium/src/+/1637981
 # Template to compile and package Mac XIB files as bundle data.
 # Arguments
 #     sources:
