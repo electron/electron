@@ -15,10 +15,10 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 67202004ea3a765dcbe92385abac8d5bd17e15b0..77b9204e6bd50fd25fdf0edb276489fe67e4fcac 100644
+index 3fd5bd3d395fa14d2b31d374ec2481a952d9a5a3..0e957831c25ccbb27038b9a24587621a825ec5ee 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -331,6 +331,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
+@@ -347,6 +347,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
  
  }  // namespace
  
@@ -29,7 +29,7 @@ index 67202004ea3a765dcbe92385abac8d5bd17e15b0..77b9204e6bd50fd25fdf0edb276489fe
  // A scoping class that prevents a window from being able to redraw in response
  // to invalidations that may occur within it for the lifetime of the object.
  //
-@@ -382,6 +386,7 @@ class HWNDMessageHandler::ScopedRedrawLock {
+@@ -398,6 +402,7 @@ class HWNDMessageHandler::ScopedRedrawLock {
          cancel_unlock_(false),
          should_lock_(owner_->IsVisible() && !owner->HasChildRenderingWindow() &&
                       ::IsWindow(hwnd_) &&
@@ -37,7 +37,7 @@ index 67202004ea3a765dcbe92385abac8d5bd17e15b0..77b9204e6bd50fd25fdf0edb276489fe
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
-@@ -992,6 +997,10 @@ bool HWNDMessageHandler::HasChildRenderingWindow() {
+@@ -1008,6 +1013,10 @@ bool HWNDMessageHandler::HasChildRenderingWindow() {
        hwnd());
  }
  
@@ -45,14 +45,14 @@ index 67202004ea3a765dcbe92385abac8d5bd17e15b0..77b9204e6bd50fd25fdf0edb276489fe
 +  return delegate_->HasNativeFrame();
 +}
 +
- ////////////////////////////////////////////////////////////////////////////////
- // HWNDMessageHandler, gfx::WindowImpl overrides:
- 
+ std::unique_ptr<aura::ScopedEnableUnadjustedMouseEvents>
+ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
+   std::unique_ptr<ScopedEnableUnadjustedMouseEventsWin> scoped_enable =
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index d85486af34da6bcc11c0bc0ccd6349b161b1dac3..c59cd6f26a4ed39cff294316a9771f063712a8c0 100644
+index 74a09495e7aa4cf281efd39947378ce39304b93f..3b30e785e2b628f709cb534b12884f5568e8fdd2 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
-@@ -194,6 +194,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+@@ -202,6 +202,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
    using TouchIDs = std::set<DWORD>;
    enum class DwmFrameState { kOff, kOn };
  
