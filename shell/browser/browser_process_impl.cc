@@ -267,11 +267,6 @@ resource_coordinator::TabManager* BrowserProcessImpl::GetTabManager() {
   return nullptr;
 }
 
-shell_integration::DefaultWebClientState
-BrowserProcessImpl::CachedDefaultWebClientState() {
-  return shell_integration::UNKNOWN_DEFAULT;
-}
-
 void BrowserProcessImpl::SetApplicationLocale(const std::string& locale) {
   locale_ = locale;
 }
