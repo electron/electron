@@ -188,8 +188,7 @@ void AutofillAgent::HidePopup() {
 void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
                               const std::vector<base::string16>& values,
                               const std::vector<base::string16>& labels) {
-  gfx::RectF bounds =
-      render_frame()->GetRenderView()->ElementBoundsInWindow(element);
+  gfx::RectF bounds = render_frame()->ElementBoundsInWindow(element);
   GetAutofillDriver()->ShowAutofillPopup(bounds, values, labels);
 }
 

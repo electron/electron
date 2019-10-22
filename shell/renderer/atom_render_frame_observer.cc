@@ -106,8 +106,7 @@ void AtomRenderFrameObserver::DraggableRegionsChanged() {
   std::vector<mojom::DraggableRegionPtr> regions;
   for (auto& webregion : webregions) {
     auto region = mojom::DraggableRegion::New();
-    render_frame_->GetRenderView()->ConvertViewportToWindowViaWidget(
-        &webregion.bounds);
+    render_frame_->ConvertViewportToWindow(&webregion.bounds);
     region->bounds = webregion.bounds;
     region->draggable = webregion.draggable;
     regions.push_back(std::move(region));
