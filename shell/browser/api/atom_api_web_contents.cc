@@ -1475,9 +1475,7 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   web_contents()->GetMutableRendererPrefs()->webrtc_ip_handling_policy =
       webrtc_ip_handling_policy;
 
-  content::RenderViewHost* host = web_contents()->GetRenderViewHost();
-  if (host)
-    host->SyncRendererPrefs();
+  web_contents()->SyncRendererPrefs();
 }
 
 bool WebContents::IsCrashed() const {
