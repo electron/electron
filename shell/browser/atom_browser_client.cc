@@ -996,10 +996,11 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   if (header_client)
     header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
 
-  new ProxyingURLLoaderFactory(
-      web_request.get(), protocol->intercept_handlers(), render_process_id,
-      std::move(proxied_receiver), std::move(target_factory_remote),
-      std::move(header_client_receiver), type);
+  new ProxyingURLLoaderFactory(web_request.get(),
+                               protocol->intercept_handlers(), browser_context,
+                               render_process_id, std::move(proxied_receiver),
+                               std::move(target_factory_remote),
+                               std::move(header_client_receiver), type);
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
