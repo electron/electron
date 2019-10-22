@@ -14,7 +14,6 @@
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
 #include "base/values.h"
-#include "native_mate/arguments.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
 #include "shell/common/promise_util.h"
@@ -30,6 +29,10 @@ class FilePath;
 
 namespace gfx {
 class Image;
+}
+
+namespace gin_helper {
+class Arguments;
 }
 
 namespace electron {
@@ -48,7 +51,7 @@ class Browser : public WindowListObserver {
   void Quit();
 
   // Exit the application immediately and set exit code.
-  void Exit(mate::Arguments* args);
+  void Exit(gin_helper::Arguments* args);
 
   // Cleanup everything and shutdown the application gracefully.
   void Shutdown();
@@ -79,15 +82,15 @@ class Browser : public WindowListObserver {
 
   // Remove the default protocol handler registry key
   bool RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                     mate::Arguments* args);
+                                     gin_helper::Arguments* args);
 
   // Set as default handler for a protocol.
   bool SetAsDefaultProtocolClient(const std::string& protocol,
-                                  mate::Arguments* args);
+                                  gin_helper::Arguments* args);
 
   // Query the current state of default handler for a protocol.
   bool IsDefaultProtocolClient(const std::string& protocol,
-                               mate::Arguments* args);
+                               gin_helper::Arguments* args);
 
   // Set/Get the badge count.
   bool SetBadgeCount(int count);
@@ -123,7 +126,7 @@ class Browser : public WindowListObserver {
   // Creates an activity and sets it as the one currently in use.
   void SetUserActivity(const std::string& type,
                        const base::DictionaryValue& user_info,
-                       mate::Arguments* args);
+                       gin_helper::Arguments* args);
 
   // Returns the type name of the current user activity.
   std::string GetCurrentActivityType();
@@ -262,7 +265,7 @@ class Browser : public WindowListObserver {
   bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
-  const util::Promise<void*>& WhenReady(v8::Isolate* isolate);
+  v8::Local<v8::Value> WhenReady(v8::Isolate* isolate);
 
  protected:
   // Returns the version of application bundle or executable file.

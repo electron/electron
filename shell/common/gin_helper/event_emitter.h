@@ -86,7 +86,8 @@ class EventEmitter : public Base {
     v8::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
     auto context = isolate->GetCurrentContext();
-    EmitEvent(isolate, GetWrapper(), name, event, std::forward<Args>(args)...);
+    gin_helper::EmitEvent(isolate, GetWrapper(), name, event,
+                          std::forward<Args>(args)...);
     v8::Local<v8::Value> defaultPrevented;
     if (event->Get(context, gin::StringToV8(isolate, "defaultPrevented"))
             .ToLocal(&defaultPrevented)) {

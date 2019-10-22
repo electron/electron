@@ -20,6 +20,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/platform_util.h"
 #include "shell/common/promise_util.h"
 #include "ui/gfx/image/image.h"
@@ -58,7 +59,7 @@ void Browser::ClearRecentDocuments() {
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            mate::Arguments* args) {
+                                            gin_helper::Arguments* args) {
   NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
   if (!identifier)
     return false;
@@ -93,7 +94,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         mate::Arguments* args) {
+                                         gin_helper::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -108,7 +109,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      mate::Arguments* args) {
+                                      gin_helper::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -141,7 +142,7 @@ bool Browser::SetBadgeCount(int count) {
 
 void Browser::SetUserActivity(const std::string& type,
                               const base::DictionaryValue& user_info,
-                              mate::Arguments* args) {
+                              gin_helper::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
 

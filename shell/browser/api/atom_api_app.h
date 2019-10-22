@@ -17,17 +17,18 @@
 #include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "content/public/browser/render_process_host.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
+#include "native_mate/wrappable.h"
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/ssl/client_cert_identity.h"
-#include "shell/browser/api/event_emitter_deprecated.h"
 #include "shell/browser/api/process_metric.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/promise_util.h"
 
 #if defined(USE_NSS_CERTS)
@@ -38,10 +39,6 @@ namespace base {
 class FilePath;
 }
 
-namespace mate {
-class Arguments;
-}  // namespace mate
-
 namespace electron {
 
 #if defined(OS_WIN)
@@ -51,7 +48,7 @@ enum class JumpListResult : int;
 namespace api {
 
 class App : public AtomBrowserClient::Delegate,
-            public mate::EventEmitter<App>,
+            public gin_helper::EventEmitter<mate::Wrappable<App>>,
             public BrowserObserver,
             public content::GpuDataManagerObserver,
             public content::BrowserChildProcessObserver {
@@ -59,7 +56,7 @@ class App : public AtomBrowserClient::Delegate,
   using FileIconCallback =
       base::RepeatingCallback<void(v8::Local<v8::Value>, const gfx::Image&)>;
 
-  static mate::Handle<App> Create(v8::Isolate* isolate);
+  static gin::Handle<App> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -182,21 +179,21 @@ class App : public AtomBrowserClient::Delegate,
   bool HasSingleInstanceLock() const;
   bool RequestSingleInstanceLock();
   void ReleaseSingleInstanceLock();
-  bool Relaunch(mate::Arguments* args);
+  bool Relaunch(gin_helper::Arguments* args);
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
   void DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower);
   bool IsAccessibilitySupportEnabled();
   void SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
                                       bool enabled);
-  Browser::LoginItemSettings GetLoginItemSettings(mate::Arguments* args);
+  Browser::LoginItemSettings GetLoginItemSettings(gin_helper::Arguments* args);
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
                          net::CompletionRepeatingCallback callback);
 #endif
   v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
-                                     mate::Arguments* args);
+                                     gin_helper::Arguments* args);
 
-  std::vector<mate::Dictionary> GetAppMetrics(v8::Isolate* isolate);
+  std::vector<gin_helper::Dictionary> GetAppMetrics(v8::Isolate* isolate);
   v8::Local<v8::Value> GetGPUFeatureStatus(v8::Isolate* isolate);
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
@@ -207,8 +204,7 @@ class App : public AtomBrowserClient::Delegate,
   bool CanBrowserClientUseCustomSiteInstance();
 
 #if defined(OS_MACOSX)
-  bool MoveToApplicationsFolder(gin_helper::ErrorThrower,
-                                mate::Arguments* args);
+  bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
   v8::Global<v8::Value> dock_;
@@ -216,7 +212,7 @@ class App : public AtomBrowserClient::Delegate,
 
 #if defined(MAS_BUILD)
   base::RepeatingCallback<void()> StartAccessingSecurityScopedResource(
-      mate::Arguments* args);
+      gin_helper::Arguments* args);
 #endif
 
 #if defined(OS_WIN)
@@ -224,7 +220,8 @@ class App : public AtomBrowserClient::Delegate,
   v8::Local<v8::Value> GetJumpListSettings();
 
   // Set or remove a custom Jump List for the application.
-  JumpListResult SetJumpList(v8::Local<v8::Value> val, mate::Arguments* args);
+  JumpListResult SetJumpList(v8::Local<v8::Value> val,
+                             gin_helper::Arguments* args);
 #endif  // defined(OS_WIN)
 
   std::unique_ptr<ProcessSingleton> process_singleton_;
