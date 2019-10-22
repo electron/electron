@@ -7,7 +7,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "services/network/public/cpp/features.h"
-#include "shell/browser/api/atom_api_url_request_ns.h"
+#include "shell/browser/api/atom_api_url_request.h"
 
 #include "shell/common/node_includes.h"
 
@@ -36,7 +36,7 @@ void Net::BuildPrototype(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
   v8::Local<v8::FunctionTemplate> constructor;
-  constructor = URLRequestNS::GetConstructor(isolate);
+  constructor = URLRequest::GetConstructor(isolate);
   return constructor->GetFunction(isolate->GetCurrentContext())
       .ToLocalChecked();
 }
@@ -48,7 +48,7 @@ v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
 namespace {
 
 using electron::api::Net;
-using electron::api::URLRequestNS;
+using electron::api::URLRequest;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -56,7 +56,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
 
-  URLRequestNS::SetConstructor(isolate, base::BindRepeating(URLRequestNS::New));
+  URLRequest::SetConstructor(isolate, base::BindRepeating(URLRequest::New));
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("net", Net::Create(isolate));

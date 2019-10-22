@@ -23,7 +23,7 @@ namespace electron {
 
 namespace api {
 
-class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
+class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
  public:
   static gin::WrapperInfo kWrapperInfo;
 
@@ -31,19 +31,18 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   // is no one.
   // Note that the lifetime of WebRequest object is managed by Session, instead
   // of the caller.
-  static gin::Handle<WebRequestNS> FromOrCreate(
+  static gin::Handle<WebRequest> FromOrCreate(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
   // Return a new WebRequest object, this should only be called by Session.
-  static gin::Handle<WebRequestNS> Create(
+  static gin::Handle<WebRequest> Create(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
   // Find the WebRequest object attached to |browser_context|.
-  static gin::Handle<WebRequestNS> From(
-      v8::Isolate* isolate,
-      content::BrowserContext* browser_context);
+  static gin::Handle<WebRequest> From(v8::Isolate* isolate,
+                                      content::BrowserContext* browser_context);
 
   // gin::Wrappable:
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -51,8 +50,8 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   const char* GetTypeName() override;
 
  private:
-  WebRequestNS(v8::Isolate* isolate, content::BrowserContext* browser_context);
-  ~WebRequestNS() override;
+  WebRequest(v8::Isolate* isolate, content::BrowserContext* browser_context);
+  ~WebRequest() override;
 
   // WebRequestAPI:
   bool HasListener() const override;

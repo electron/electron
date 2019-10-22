@@ -45,8 +45,8 @@
 #include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/browser/api/atom_api_download_item.h"
 #include "shell/browser/api/atom_api_net_log.h"
-#include "shell/browser/api/atom_api_protocol_ns.h"
-#include "shell/browser/api/atom_api_web_request_ns.h"
+#include "shell/browser/api/atom_api_protocol.h"
+#include "shell/browser/api/atom_api_web_request.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_permission_manager.h"
@@ -588,7 +588,7 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
   if (protocol_.IsEmpty()) {
     v8::Local<v8::Value> handle;
-    handle = ProtocolNS::Create(isolate, browser_context()).ToV8();
+    handle = Protocol::Create(isolate, browser_context()).ToV8();
     protocol_.Reset(isolate, handle);
   }
   return v8::Local<v8::Value>::New(isolate, protocol_);
@@ -596,7 +596,7 @@ v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmpty()) {
-    auto handle = WebRequestNS::Create(isolate, browser_context());
+    auto handle = WebRequest::Create(isolate, browser_context());
     web_request_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, web_request_);
@@ -732,7 +732,7 @@ namespace {
 
 using electron::api::Cookies;
 using electron::api::NetLog;
-using electron::api::ProtocolNS;
+using electron::api::Protocol;
 using electron::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,
@@ -761,9 +761,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set(
       "NetLog",
       NetLog::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
-  dict.Set("Protocol", ProtocolNS::GetConstructor(isolate)
-                           ->GetFunction(context)
-                           .ToLocalChecked());
+  dict.Set(
+      "Protocol",
+      Protocol::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 

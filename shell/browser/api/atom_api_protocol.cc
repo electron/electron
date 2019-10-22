@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/api/atom_api_protocol_ns.h"
+#include "shell/browser/api/atom_api_protocol.h"
 
 #include <memory>
 #include <utility>
@@ -159,15 +159,14 @@ std::string ErrorCodeToString(ProtocolError error) {
 
 }  // namespace
 
-ProtocolNS::ProtocolNS(v8::Isolate* isolate,
-                       AtomBrowserContext* browser_context) {
+Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context) {
   Init(isolate);
   AttachAsUserData(browser_context);
 }
 
-ProtocolNS::~ProtocolNS() = default;
+Protocol::~Protocol() = default;
 
-void ProtocolNS::RegisterURLLoaderFactories(
+void Protocol::RegisterURLLoaderFactories(
     content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
   for (const auto& it : handlers_) {
     factories->emplace(it.first, std::make_unique<AtomURLLoaderFactory>(
@@ -175,47 +174,47 @@ void ProtocolNS::RegisterURLLoaderFactories(
   }
 }
 
-ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
-                                           const std::string& scheme,
-                                           const ProtocolHandler& handler) {
+ProtocolError Protocol::RegisterProtocol(ProtocolType type,
+                                         const std::string& scheme,
+                                         const ProtocolHandler& handler) {
   const bool added = base::TryEmplace(handlers_, scheme, type, handler).second;
   return added ? ProtocolError::OK : ProtocolError::REGISTERED;
 }
 
-void ProtocolNS::UnregisterProtocol(const std::string& scheme,
-                                    gin::Arguments* args) {
+void Protocol::UnregisterProtocol(const std::string& scheme,
+                                  gin::Arguments* args) {
   const bool removed = handlers_.erase(scheme) != 0;
   const auto error =
       removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED;
   HandleOptionalCallback(args, error);
 }
 
-bool ProtocolNS::IsProtocolRegistered(const std::string& scheme) {
+bool Protocol::IsProtocolRegistered(const std::string& scheme) {
   return base::Contains(handlers_, scheme);
 }
 
-ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
-                                            const std::string& scheme,
-                                            const ProtocolHandler& handler) {
+ProtocolError Protocol::InterceptProtocol(ProtocolType type,
+                                          const std::string& scheme,
+                                          const ProtocolHandler& handler) {
   const bool added =
       base::TryEmplace(intercept_handlers_, scheme, type, handler).second;
   return added ? ProtocolError::OK : ProtocolError::INTERCEPTED;
 }
 
-void ProtocolNS::UninterceptProtocol(const std::string& scheme,
-                                     gin::Arguments* args) {
+void Protocol::UninterceptProtocol(const std::string& scheme,
+                                   gin::Arguments* args) {
   const bool removed = intercept_handlers_.erase(scheme) != 0;
   const auto error =
       removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED;
   HandleOptionalCallback(args, error);
 }
 
-bool ProtocolNS::IsProtocolIntercepted(const std::string& scheme) {
+bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
   return base::Contains(intercept_handlers_, scheme);
 }
 
-v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
-                                                     gin::Arguments* args) {
+v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
+                                                   gin::Arguments* args) {
   node::Environment* env = node::Environment::GetCurrent(args->isolate());
   EmitDeprecationWarning(
       env,
@@ -236,8 +235,8 @@ v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
                      base::Contains(kBuiltinSchemes, scheme));
 }
 
-void ProtocolNS::HandleOptionalCallback(gin::Arguments* args,
-                                        ProtocolError error) {
+void Protocol::HandleOptionalCallback(gin::Arguments* args,
+                                      ProtocolError error) {
   CompletionCallback callback;
   if (args->GetNext(&callback)) {
     node::Environment* env = node::Environment::GetCurrent(args->isolate());
@@ -254,46 +253,45 @@ void ProtocolNS::HandleOptionalCallback(gin::Arguments* args,
 }
 
 // static
-gin::Handle<ProtocolNS> ProtocolNS::Create(
-    v8::Isolate* isolate,
-    AtomBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new ProtocolNS(isolate, browser_context));
+gin::Handle<Protocol> Protocol::Create(v8::Isolate* isolate,
+                                       AtomBrowserContext* browser_context) {
+  return gin::CreateHandle(isolate, new Protocol(isolate, browser_context));
 }
 
 // static
-void ProtocolNS::BuildPrototype(v8::Isolate* isolate,
-                                v8::Local<v8::FunctionTemplate> prototype) {
+void Protocol::BuildPrototype(v8::Isolate* isolate,
+                              v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "Protocol"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("registerStringProtocol",
-                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kString>)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kString>)
       .SetMethod("registerBufferProtocol",
-                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kBuffer>)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kBuffer>)
       .SetMethod("registerFileProtocol",
-                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kFile>)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kFile>)
       .SetMethod("registerHttpProtocol",
-                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kHttp>)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kHttp>)
       .SetMethod("registerStreamProtocol",
-                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kStream>)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kStream>)
       .SetMethod("registerProtocol",
-                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kFree>)
-      .SetMethod("unregisterProtocol", &ProtocolNS::UnregisterProtocol)
-      .SetMethod("isProtocolRegistered", &ProtocolNS::IsProtocolRegistered)
-      .SetMethod("isProtocolHandled", &ProtocolNS::IsProtocolHandled)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kFree>)
+      .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
+      .SetMethod("isProtocolRegistered", &Protocol::IsProtocolRegistered)
+      .SetMethod("isProtocolHandled", &Protocol::IsProtocolHandled)
       .SetMethod("interceptStringProtocol",
-                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kString>)
+                 &Protocol::InterceptProtocolFor<ProtocolType::kString>)
       .SetMethod("interceptBufferProtocol",
-                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kBuffer>)
+                 &Protocol::InterceptProtocolFor<ProtocolType::kBuffer>)
       .SetMethod("interceptFileProtocol",
-                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kFile>)
+                 &Protocol::InterceptProtocolFor<ProtocolType::kFile>)
       .SetMethod("interceptHttpProtocol",
-                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kHttp>)
+                 &Protocol::InterceptProtocolFor<ProtocolType::kHttp>)
       .SetMethod("interceptStreamProtocol",
-                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kStream>)
+                 &Protocol::InterceptProtocolFor<ProtocolType::kStream>)
       .SetMethod("interceptProtocol",
-                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kFree>)
-      .SetMethod("uninterceptProtocol", &ProtocolNS::UninterceptProtocol)
-      .SetMethod("isProtocolIntercepted", &ProtocolNS::IsProtocolIntercepted);
+                 &Protocol::InterceptProtocolFor<ProtocolType::kFree>)
+      .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol)
+      .SetMethod("isProtocolIntercepted", &Protocol::IsProtocolIntercepted);
 }
 
 }  // namespace api

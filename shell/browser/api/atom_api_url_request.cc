@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/api/atom_api_url_request_ns.h"
+#include "shell/browser/api/atom_api_url_request.h"
 
 #include <utility>
 
@@ -84,7 +84,7 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
 // Common class for streaming data.
 class UploadDataPipeGetter {
  public:
-  explicit UploadDataPipeGetter(URLRequestNS* request) : request_(request) {}
+  explicit UploadDataPipeGetter(URLRequest* request) : request_(request) {}
   virtual ~UploadDataPipeGetter() = default;
 
   virtual void AttachToRequestBody(network::ResourceRequestBody* body) = 0;
@@ -101,7 +101,7 @@ class UploadDataPipeGetter {
   }
 
  private:
-  URLRequestNS* request_;
+  URLRequest* request_;
 
   DISALLOW_COPY_AND_ASSIGN(UploadDataPipeGetter);
 };
@@ -110,7 +110,7 @@ class UploadDataPipeGetter {
 class MultipartDataPipeGetter : public UploadDataPipeGetter,
                                 public network::mojom::DataPipeGetter {
  public:
-  explicit MultipartDataPipeGetter(URLRequestNS* request)
+  explicit MultipartDataPipeGetter(URLRequest* request)
       : UploadDataPipeGetter(request) {}
   ~MultipartDataPipeGetter() override = default;
 
@@ -141,7 +141,7 @@ class MultipartDataPipeGetter : public UploadDataPipeGetter,
 class ChunkedDataPipeGetter : public UploadDataPipeGetter,
                               public network::mojom::ChunkedDataPipeGetter {
  public:
-  explicit ChunkedDataPipeGetter(URLRequestNS* request)
+  explicit ChunkedDataPipeGetter(URLRequest* request)
       : UploadDataPipeGetter(request) {}
   ~ChunkedDataPipeGetter() override = default;
 
@@ -166,7 +166,7 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
   mojo::ReceiverSet<network::mojom::ChunkedDataPipeGetter> receiver_set_;
 };
 
-URLRequestNS::URLRequestNS(gin::Arguments* args) : weak_factory_(this) {
+URLRequest::URLRequest(gin::Arguments* args) : weak_factory_(this) {
   request_ = std::make_unique<network::ResourceRequest>();
   gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
@@ -190,17 +190,17 @@ URLRequestNS::URLRequestNS(gin::Arguments* args) : weak_factory_(this) {
   InitWithArgs(args);
 }
 
-URLRequestNS::~URLRequestNS() = default;
+URLRequest::~URLRequest() = default;
 
-bool URLRequestNS::NotStarted() const {
+bool URLRequest::NotStarted() const {
   return request_state_ == 0;
 }
 
-bool URLRequestNS::Finished() const {
+bool URLRequest::Finished() const {
   return request_state_ & STATE_FINISHED;
 }
 
-void URLRequestNS::Cancel() {
+void URLRequest::Cancel() {
   // Cancel only once.
   if (request_state_ & (STATE_CANCELED | STATE_CLOSED))
     return;
@@ -215,7 +215,7 @@ void URLRequestNS::Cancel() {
   Close();
 }
 
-void URLRequestNS::Close() {
+void URLRequest::Close() {
   if (!(request_state_ & STATE_CLOSED)) {
     request_state_ |= STATE_CLOSED;
     if (response_state_ & STATE_STARTED) {
@@ -228,7 +228,7 @@ void URLRequestNS::Close() {
   loader_.reset();
 }
 
-bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
+bool URLRequest::Write(v8::Local<v8::Value> data, bool is_last) {
   if (request_state_ & (STATE_FINISHED | STATE_ERROR))
     return false;
 
@@ -243,12 +243,12 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
     network::ResourceRequest* request_ref = request_.get();
     loader_ = network::SimpleURLLoader::Create(std::move(request_),
                                                kTrafficAnnotation);
-    loader_->SetOnResponseStartedCallback(base::Bind(
-        &URLRequestNS::OnResponseStarted, weak_factory_.GetWeakPtr()));
+    loader_->SetOnResponseStartedCallback(
+        base::Bind(&URLRequest::OnResponseStarted, weak_factory_.GetWeakPtr()));
     loader_->SetOnRedirectCallback(
-        base::Bind(&URLRequestNS::OnRedirect, weak_factory_.GetWeakPtr()));
-    loader_->SetOnUploadProgressCallback(base::Bind(
-        &URLRequestNS::OnUploadProgress, weak_factory_.GetWeakPtr()));
+        base::Bind(&URLRequest::OnRedirect, weak_factory_.GetWeakPtr()));
+    loader_->SetOnUploadProgressCallback(
+        base::Bind(&URLRequest::OnUploadProgress, weak_factory_.GetWeakPtr()));
 
     // Create upload data pipe if we have data to write.
     if (length > 0) {
@@ -286,14 +286,14 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
   return true;
 }
 
-void URLRequestNS::FollowRedirect() {
+void URLRequest::FollowRedirect() {
   if (request_state_ & (STATE_CANCELED | STATE_CLOSED))
     return;
   follow_redirect_ = true;
 }
 
-bool URLRequestNS::SetExtraHeader(const std::string& name,
-                                  const std::string& value) {
+bool URLRequest::SetExtraHeader(const std::string& name,
+                                const std::string& value) {
   if (!request_)
     return false;
   if (!net::HttpUtil::IsValidHeaderName(name))
@@ -304,17 +304,17 @@ bool URLRequestNS::SetExtraHeader(const std::string& name,
   return true;
 }
 
-void URLRequestNS::RemoveExtraHeader(const std::string& name) {
+void URLRequest::RemoveExtraHeader(const std::string& name) {
   if (request_)
     request_->headers.RemoveHeader(name);
 }
 
-void URLRequestNS::SetChunkedUpload(bool is_chunked_upload) {
+void URLRequest::SetChunkedUpload(bool is_chunked_upload) {
   if (request_)
     is_chunked_upload_ = is_chunked_upload;
 }
 
-gin::Dictionary URLRequestNS::GetUploadProgress() {
+gin::Dictionary URLRequest::GetUploadProgress() {
   gin::Dictionary progress = gin::Dictionary::CreateEmpty(isolate());
   if (loader_) {
     if (request_)
@@ -330,36 +330,36 @@ gin::Dictionary URLRequestNS::GetUploadProgress() {
   return progress;
 }
 
-int URLRequestNS::StatusCode() const {
+int URLRequest::StatusCode() const {
   if (response_headers_)
     return response_headers_->response_code();
   return -1;
 }
 
-std::string URLRequestNS::StatusMessage() const {
+std::string URLRequest::StatusMessage() const {
   if (response_headers_)
     return response_headers_->GetStatusText();
   return "";
 }
 
-net::HttpResponseHeaders* URLRequestNS::RawResponseHeaders() const {
+net::HttpResponseHeaders* URLRequest::RawResponseHeaders() const {
   return response_headers_.get();
 }
 
-uint32_t URLRequestNS::ResponseHttpVersionMajor() const {
+uint32_t URLRequest::ResponseHttpVersionMajor() const {
   if (response_headers_)
     return response_headers_->GetHttpVersion().major_value();
   return 0;
 }
 
-uint32_t URLRequestNS::ResponseHttpVersionMinor() const {
+uint32_t URLRequest::ResponseHttpVersionMinor() const {
   if (response_headers_)
     return response_headers_->GetHttpVersion().minor_value();
   return 0;
 }
 
-void URLRequestNS::OnDataReceived(base::StringPiece data,
-                                  base::OnceClosure resume) {
+void URLRequest::OnDataReceived(base::StringPiece data,
+                                base::OnceClosure resume) {
   // In case we received an unexpected event from Chromium net, don't emit any
   // data event after request cancel/error/close.
   if (!(request_state_ & STATE_ERROR) && !(response_state_ & STATE_ERROR)) {
@@ -372,9 +372,9 @@ void URLRequestNS::OnDataReceived(base::StringPiece data,
   std::move(resume).Run();
 }
 
-void URLRequestNS::OnRetry(base::OnceClosure start_retry) {}
+void URLRequest::OnRetry(base::OnceClosure start_retry) {}
 
-void URLRequestNS::OnComplete(bool success) {
+void URLRequest::OnComplete(bool success) {
   if (success) {
     // In case we received an unexpected event from Chromium net, don't emit any
     // data event after request cancel/error/close.
@@ -400,7 +400,7 @@ void URLRequestNS::OnComplete(bool success) {
   Close();
 }
 
-void URLRequestNS::OnResponseStarted(
+void URLRequest::OnResponseStarted(
     const GURL& final_url,
     const network::mojom::URLResponseHead& response_head) {
   // Don't emit any event after request cancel.
@@ -412,7 +412,7 @@ void URLRequestNS::OnResponseStarted(
   Emit("response");
 }
 
-void URLRequestNS::OnRedirect(
+void URLRequest::OnRedirect(
     const net::RedirectInfo& redirect_info,
     const network::mojom::URLResponseHead& response_head,
     std::vector<std::string>* to_be_removed_headers) {
@@ -454,12 +454,12 @@ void URLRequestNS::OnRedirect(
   }
 }
 
-void URLRequestNS::OnUploadProgress(uint64_t position, uint64_t total) {
+void URLRequest::OnUploadProgress(uint64_t position, uint64_t total) {
   upload_position_ = position;
   upload_total_ = total;
 }
 
-void URLRequestNS::OnWrite(MojoResult result) {
+void URLRequest::OnWrite(MojoResult result) {
   if (result != MOJO_RESULT_OK)
     return;
 
@@ -469,17 +469,17 @@ void URLRequestNS::OnWrite(MojoResult result) {
     DoWrite();
 }
 
-void URLRequestNS::DoWrite() {
+void URLRequest::DoWrite() {
   DCHECK(producer_);
   DCHECK(!pending_writes_.empty());
   producer_->Write(
       std::make_unique<mojo::StringDataSource>(
           pending_writes_.front(), mojo::StringDataSource::AsyncWritingMode::
                                        STRING_STAYS_VALID_UNTIL_COMPLETION),
-      base::BindOnce(&URLRequestNS::OnWrite, weak_factory_.GetWeakPtr()));
+      base::BindOnce(&URLRequest::OnWrite, weak_factory_.GetWeakPtr()));
 }
 
-void URLRequestNS::StartWriting() {
+void URLRequest::StartWriting() {
   if (!last_chunk_written_ || size_callback_.is_null())
     return;
 
@@ -490,17 +490,17 @@ void URLRequestNS::StartWriting() {
   DoWrite();
 }
 
-void URLRequestNS::Pin() {
+void URLRequest::Pin() {
   if (wrapper_.IsEmpty()) {
     wrapper_.Reset(isolate(), GetWrapper());
   }
 }
 
-void URLRequestNS::Unpin() {
+void URLRequest::Unpin() {
   wrapper_.Reset();
 }
 
-void URLRequestNS::EmitError(EventType type, base::StringPiece message) {
+void URLRequest::EmitError(EventType type, base::StringPiece message) {
   if (type == EventType::kRequest)
     request_state_ |= STATE_FAILED;
   else
@@ -511,7 +511,7 @@ void URLRequestNS::EmitError(EventType type, base::StringPiece message) {
 }
 
 template <typename... Args>
-void URLRequestNS::EmitEvent(EventType type, Args... args) {
+void URLRequest::EmitEvent(EventType type, Args... args) {
   const char* method =
       type == EventType::kRequest ? "_emitRequestEvent" : "_emitResponseEvent";
   v8::HandleScope handle_scope(isolate());
@@ -519,30 +519,30 @@ void URLRequestNS::EmitEvent(EventType type, Args... args) {
 }
 
 // static
-mate::WrappableBase* URLRequestNS::New(gin::Arguments* args) {
-  return new URLRequestNS(args);
+mate::WrappableBase* URLRequest::New(gin::Arguments* args) {
+  return new URLRequest(args);
 }
 
 // static
-void URLRequestNS::BuildPrototype(v8::Isolate* isolate,
-                                  v8::Local<v8::FunctionTemplate> prototype) {
+void URLRequest::BuildPrototype(v8::Isolate* isolate,
+                                v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "URLRequest"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("write", &URLRequestNS::Write)
-      .SetMethod("cancel", &URLRequestNS::Cancel)
-      .SetMethod("setExtraHeader", &URLRequestNS::SetExtraHeader)
-      .SetMethod("removeExtraHeader", &URLRequestNS::RemoveExtraHeader)
-      .SetMethod("setChunkedUpload", &URLRequestNS::SetChunkedUpload)
-      .SetMethod("followRedirect", &URLRequestNS::FollowRedirect)
-      .SetMethod("getUploadProgress", &URLRequestNS::GetUploadProgress)
-      .SetProperty("notStarted", &URLRequestNS::NotStarted)
-      .SetProperty("finished", &URLRequestNS::Finished)
-      .SetProperty("statusCode", &URLRequestNS::StatusCode)
-      .SetProperty("statusMessage", &URLRequestNS::StatusMessage)
-      .SetProperty("rawResponseHeaders", &URLRequestNS::RawResponseHeaders)
-      .SetProperty("httpVersionMajor", &URLRequestNS::ResponseHttpVersionMajor)
-      .SetProperty("httpVersionMinor", &URLRequestNS::ResponseHttpVersionMinor);
+      .SetMethod("write", &URLRequest::Write)
+      .SetMethod("cancel", &URLRequest::Cancel)
+      .SetMethod("setExtraHeader", &URLRequest::SetExtraHeader)
+      .SetMethod("removeExtraHeader", &URLRequest::RemoveExtraHeader)
+      .SetMethod("setChunkedUpload", &URLRequest::SetChunkedUpload)
+      .SetMethod("followRedirect", &URLRequest::FollowRedirect)
+      .SetMethod("getUploadProgress", &URLRequest::GetUploadProgress)
+      .SetProperty("notStarted", &URLRequest::NotStarted)
+      .SetProperty("finished", &URLRequest::Finished)
+      .SetProperty("statusCode", &URLRequest::StatusCode)
+      .SetProperty("statusMessage", &URLRequest::StatusMessage)
+      .SetProperty("rawResponseHeaders", &URLRequest::RawResponseHeaders)
+      .SetProperty("httpVersionMajor", &URLRequest::ResponseHttpVersionMajor)
+      .SetProperty("httpVersionMinor", &URLRequest::ResponseHttpVersionMinor);
 }
 
 }  // namespace api

@@ -25,8 +25,8 @@ namespace api {
 
 class UploadDataPipeGetter;
 
-class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
-                     public network::SimpleURLLoaderStreamConsumer {
+class URLRequest : public mate::EventEmitter<URLRequest>,
+                   public network::SimpleURLLoaderStreamConsumer {
  public:
   static mate::WrappableBase* New(gin::Arguments* args);
 
@@ -34,8 +34,8 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  explicit URLRequestNS(gin::Arguments* args);
-  ~URLRequestNS() override;
+  explicit URLRequest(gin::Arguments* args);
+  ~URLRequest() override;
 
   bool NotStarted() const;
   bool Finished() const;
@@ -132,9 +132,9 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   // Used by pin/unpin to manage lifetime.
   v8::Global<v8::Object> wrapper_;
 
-  base::WeakPtrFactory<URLRequestNS> weak_factory_;
+  base::WeakPtrFactory<URLRequest> weak_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(URLRequestNS);
+  DISALLOW_COPY_AND_ASSIGN(URLRequest);
 };
 
 }  // namespace api
