@@ -15,7 +15,9 @@
 #include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -204,7 +206,8 @@ class ProxyingURLLoaderFactory
       const HandlersMap& intercepted_handlers,
       int render_process_id,
       network::mojom::URLLoaderFactoryRequest loader_request,
-      network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
+      mojo::PendingRemote<network::mojom::URLLoaderFactory>
+          target_factory_remote,
       mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
           header_client_receiver,
       content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type);
@@ -252,7 +255,7 @@ class ProxyingURLLoaderFactory
 
   const int render_process_id_;
   mojo::ReceiverSet<network::mojom::URLLoaderFactory> proxy_receivers_;
-  network::mojom::URLLoaderFactoryPtr target_factory_;
+  mojo::Remote<network::mojom::URLLoaderFactory> target_factory_;
   mojo::Receiver<network::mojom::TrustedURLLoaderHeaderClient>
       url_loader_header_client_receiver_{this};
   const content::ContentBrowserClient::URLLoaderFactoryType

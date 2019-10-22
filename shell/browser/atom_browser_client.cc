@@ -863,7 +863,7 @@ bool AtomBrowserClient::HandleExternalProtocol(
     bool is_main_frame,
     ui::PageTransition page_transition,
     bool has_user_gesture,
-    network::mojom::URLLoaderFactoryPtr* out_factory) {
+    mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   base::PostTask(FROM_HERE, {BrowserThread::UI},
                  base::BindOnce(&HandleExternalProtocolInUI, url,
                                 web_contents_getter, has_user_gesture));
@@ -997,8 +997,8 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   DCHECK(web_request.get());
 
   auto proxied_receiver = std::move(*factory_receiver);
-  network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
-  *factory_receiver = mojo::MakeRequest(&target_factory_info);
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote;
+  *factory_receiver = target_factory_remote.InitWithNewPipeAndPassReceiver();
 
   mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
       header_client_receiver;
@@ -1007,7 +1007,7 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
 
   new ProxyingURLLoaderFactory(
       web_request.get(), protocol->intercept_handlers(), render_process_id,
-      std::move(proxied_receiver), std::move(target_factory_info),
+      std::move(proxied_receiver), std::move(target_factory_remote),
       std::move(header_client_receiver), type);
 
   if (bypass_redirect_checks)
@@ -1015,7 +1015,7 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   return true;
 }
 
-network::mojom::URLLoaderFactoryPtrInfo
+mojo::PendingRemote<network::mojom::URLLoaderFactory>
 AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
     content::RenderProcessHost* process,
     network::mojom::NetworkContext* network_context,
@@ -1036,12 +1036,12 @@ AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
     params->is_corb_enabled = false;
 
     // Create the URLLoaderFactory.
-    network::mojom::URLLoaderFactoryPtrInfo factory_info;
-    network_context->CreateURLLoaderFactory(mojo::MakeRequest(&factory_info),
-                                            std::move(params));
-    return factory_info;
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> factory_remote;
+    network_context->CreateURLLoaderFactory(
+        factory_remote.InitWithNewPipeAndPassReceiver(), std::move(params));
+    return factory_remote;
   }
-  return network::mojom::URLLoaderFactoryPtrInfo();
+  return mojo::NullRemote();
 }
 
 #if defined(OS_WIN)

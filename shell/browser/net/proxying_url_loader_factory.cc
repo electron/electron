@@ -653,7 +653,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     const HandlersMap& intercepted_handlers,
     int render_process_id,
     network::mojom::URLLoaderFactoryRequest loader_request,
-    network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote,
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
         header_client_receiver,
     content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
@@ -661,8 +661,8 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
       intercepted_handlers_(intercepted_handlers),
       render_process_id_(render_process_id),
       loader_factory_type_(loader_factory_type) {
-  target_factory_.Bind(std::move(target_factory_info));
-  target_factory_.set_connection_error_handler(base::BindOnce(
+  target_factory_.Bind(std::move(target_factory_remote));
+  target_factory_.set_disconnect_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::OnTargetFactoryError, base::Unretained(this)));
   proxy_receivers_.Add(this, std::move(loader_request));
   proxy_receivers_.set_disconnect_handler(base::BindRepeating(
