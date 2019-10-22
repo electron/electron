@@ -44,6 +44,7 @@
 #include "content/public/common/context_menu_params.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "shell/browser/api/atom_api_browser_window.h"
@@ -2031,10 +2032,11 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
   }
 
   for (auto* frame_host : target_hosts) {
-    mojom::ElectronRendererAssociatedPtr electron_ptr;
+    mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-        mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(internal, false, channel, std::move(args), sender_id);
+        &electron_renderer);
+    electron_renderer->Message(internal, false, channel, std::move(args),
+                               sender_id);
   }
   return true;
 }
@@ -2059,11 +2061,10 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   if (!(*iter)->IsRenderFrameLive())
     return false;
 
-  mojom::ElectronRendererAssociatedPtr electron_ptr;
-  (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
-      mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(internal, send_to_all, channel, std::move(message),
-                        0 /* sender_id */);
+  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
+  (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
+  electron_renderer->Message(internal, send_to_all, channel, std::move(message),
+                             0 /* sender_id */);
   return true;
 }
 
@@ -2458,14 +2459,15 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   // This dance with `base::Owned` is to ensure that the interface stays alive
   // until the callback is called. Otherwise it would be closed at the end of
   // this function.
-  auto electron_ptr = std::make_unique<mojom::ElectronRendererAssociatedPtr>();
+  auto electron_renderer =
+      std::make_unique<mojo::AssociatedRemote<mojom::ElectronRenderer>>();
   frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-      mojo::MakeRequest(electron_ptr.get()));
-  auto* raw_ptr = electron_ptr.get();
+      electron_renderer.get());
+  auto* raw_ptr = electron_renderer.get();
   (*raw_ptr)->TakeHeapSnapshot(
       mojo::WrapPlatformFile(file.TakePlatformFile()),
       base::BindOnce(
-          [](mojom::ElectronRendererAssociatedPtr* ep,
+          [](mojo::AssociatedRemote<mojom::ElectronRenderer>* ep,
              util::Promise<void*> promise, bool success) {
             if (success) {
               promise.Resolve();
@@ -2473,7 +2475,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
               promise.RejectWithErrorMessage("takeHeapSnapshot failed");
             }
           },
-          base::Owned(std::move(electron_ptr)), std::move(promise)));
+          base::Owned(std::move(electron_renderer)), std::move(promise)));
   return handle;
 }
 
