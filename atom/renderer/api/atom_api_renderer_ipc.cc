@@ -163,7 +163,6 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
   }
 
   atom::mojom::ElectronBrowserPtr electron_browser_ptr_;
-  atom::mojom::ElectronBrowserPtr worker_thread_electron_browser_ptr_;
 };
 
 void Initialize(v8::Local<v8::Object> exports,
