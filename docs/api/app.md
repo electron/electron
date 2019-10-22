@@ -1304,7 +1304,7 @@ After you enable it, you should disable before application quited.
 
 ```js
 app.on('quit', () => {
-  app.setSecureInputEnabled(false);
+  app.setSecureInputEnabled(false)
 })
 ```
 
