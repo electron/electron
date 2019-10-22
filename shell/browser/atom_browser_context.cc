@@ -332,6 +332,11 @@ AtomBrowserContext::GetClientHintsControllerDelegate() {
   return nullptr;
 }
 
+content::StorageNotificationService*
+AtomBrowserContext::GetStorageNotificationService() {
+  return nullptr;
+}
+
 void AtomBrowserContext::SetCorsOriginAccessListForOrigin(
     const url::Origin& source_origin,
     std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
