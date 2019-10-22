@@ -521,48 +521,53 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
-  if (process_type != ::switches::kRendererProcess)
-    return;
 
-  // Copy following switches to child process.
-  static const char* const kCommonSwitchNames[] = {
-      switches::kStandardSchemes,      switches::kEnableSandbox,
-      switches::kSecureSchemes,        switches::kBypassCSPSchemes,
-      switches::kCORSSchemes,          switches::kFetchSchemes,
-      switches::kServiceWorkerSchemes, switches::kEnableApiFilteringLogging};
-  command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
-                                 kCommonSwitchNames,
-                                 base::size(kCommonSwitchNames));
-
-#if defined(OS_WIN)
-  // Append --app-user-model-id.
-  PWSTR current_app_id;
-  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-    command_line->AppendSwitchNative(switches::kAppUserModelId, current_app_id);
-    CoTaskMemFree(current_app_id);
+  if (process_type == ::switches::kUtilityProcess ||
+      process_type == ::switches::kRendererProcess) {
+    // Copy following switches to child process.
+    static const char* const kCommonSwitchNames[] = {
+        switches::kStandardSchemes,      switches::kEnableSandbox,
+        switches::kSecureSchemes,        switches::kBypassCSPSchemes,
+        switches::kCORSSchemes,          switches::kFetchSchemes,
+        switches::kServiceWorkerSchemes, switches::kEnableApiFilteringLogging};
+    command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
+                                   kCommonSwitchNames,
+                                   base::size(kCommonSwitchNames));
   }
+
+  if (process_type == ::switches::kRendererProcess) {
+#if defined(OS_WIN)
+    // Append --app-user-model-id.
+    PWSTR current_app_id;
+    if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
+      command_line->AppendSwitchNative(switches::kAppUserModelId,
+                                       current_app_id);
+      CoTaskMemFree(current_app_id);
+    }
 #endif
 
-  if (delegate_) {
-    auto app_path = static_cast<api::App*>(delegate_)->GetAppPath();
-    command_line->AppendSwitchPath(switches::kAppPath, app_path);
-  }
+    if (delegate_) {
+      auto app_path = static_cast<api::App*>(delegate_)->GetAppPath();
+      command_line->AppendSwitchPath(switches::kAppPath, app_path);
+    }
 
-  content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
-  if (web_contents) {
-    auto* web_preferences = WebContentsPreferences::From(web_contents);
-    if (web_preferences)
-      web_preferences->AppendCommandLineSwitches(
-          command_line, IsRendererSubFrame(process_id));
-    auto preloads =
-        SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
-    if (!preloads.empty())
-      command_line->AppendSwitchNative(
-          switches::kPreloadScripts,
-          base::JoinString(preloads, kPathDelimiter));
-    if (CanUseCustomSiteInstance()) {
-      command_line->AppendSwitch(
-          switches::kDisableElectronSiteInstanceOverrides);
+    content::WebContents* web_contents =
+        GetWebContentsFromProcessID(process_id);
+    if (web_contents) {
+      auto* web_preferences = WebContentsPreferences::From(web_contents);
+      if (web_preferences)
+        web_preferences->AppendCommandLineSwitches(
+            command_line, IsRendererSubFrame(process_id));
+      auto preloads = SessionPreferences::GetValidPreloads(
+          web_contents->GetBrowserContext());
+      if (!preloads.empty())
+        command_line->AppendSwitchNative(
+            switches::kPreloadScripts,
+            base::JoinString(preloads, kPathDelimiter));
+      if (CanUseCustomSiteInstance()) {
+        command_line->AppendSwitch(
+            switches::kDisableElectronSiteInstanceOverrides);
+      }
     }
   }
 }
@@ -574,16 +579,6 @@ void AtomBrowserClient::AdjustUtilityServiceProcessCommandLine(
   if (identity.name() == audio::mojom::kServiceName)
     command_line->AppendSwitch(::switches::kMessageLoopTypeUi);
 #endif
-  if (identity.name() == content::mojom::kNetworkServiceName) {
-    // Copy following switches to network service process.
-    static const char* const kCommonSwitchNames[] = {
-        switches::kStandardSchemes,  switches::kSecureSchemes,
-        switches::kBypassCSPSchemes, switches::kCORSSchemes,
-        switches::kFetchSchemes,     switches::kServiceWorkerSchemes};
-    command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
-                                   kCommonSwitchNames,
-                                   base::size(kCommonSwitchNames));
-  }
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(content::BrowserPpapiHost* host) {
