@@ -863,6 +863,7 @@ bool AtomBrowserClient::HandleExternalProtocol(
     bool is_main_frame,
     ui::PageTransition page_transition,
     bool has_user_gesture,
+    const base::Optional<url::Origin>& initiating_origin,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   base::PostTask(FROM_HERE, {BrowserThread::UI},
                  base::BindOnce(&HandleExternalProtocolInUI, url,
