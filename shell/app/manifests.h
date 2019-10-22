@@ -11,4 +11,8 @@
 
 const service_manager::Manifest& GetElectronContentBrowserOverlayManifest();
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+const service_manager::Manifest& GetElectronContentRendererOverlayManifest();
+#endif
+
 #endif  // SHELL_APP_MANIFESTS_H_

@@ -9,6 +9,10 @@
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/manifest_builder.h"
 
+#if defined(OS_MACOSX) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "components/spellcheck/common/spellcheck_panel.mojom.h"  // nogncheck
+#endif
+
 const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
   static base::NoDestructor<service_manager::Manifest> manifest{
       service_manager::ManifestBuilder()
@@ -22,3 +26,19 @@ const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
           .Build()};
   return *manifest;
 }
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+const service_manager::Manifest& GetElectronContentRendererOverlayManifest() {
+  static base::NoDestructor<service_manager::Manifest> manifest {
+    service_manager::ManifestBuilder()
+#if defined(OS_MACOSX)
+        .ExposeInterfaceFilterCapability_Deprecated(
+            "navigation:frame", "browser",
+            service_manager::Manifest::InterfaceList<
+                spellcheck::mojom::SpellCheckPanel>())
+#endif
+        .Build()
+  };
+  return *manifest;
+}
+#endif

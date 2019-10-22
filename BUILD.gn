@@ -335,6 +335,44 @@ templated_file("electron_version_header") {
   args_files = get_target_outputs(":electron_version_args")
 }
 
+# This source set is just so we don't have to depend on all of //chrome/browser
+# You may have to add new files here during the upgrade if //chrome/browser/spellchecker
+# gets more files
+source_set("chrome_spellchecker") {
+  sources = [
+    "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
+    "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
+    "//chrome/browser/spellchecker/spell_check_panel_host_impl.cc",
+    "//chrome/browser/spellchecker/spell_check_panel_host_impl.h",
+    "//chrome/browser/spellchecker/spellcheck_custom_dictionary.cc",
+    "//chrome/browser/spellchecker/spellcheck_custom_dictionary.h",
+    "//chrome/browser/spellchecker/spellcheck_factory.cc",
+    "//chrome/browser/spellchecker/spellcheck_factory.h",
+    "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc",
+    "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h",
+    "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.cc",
+    "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.h",
+    "//chrome/browser/spellchecker/spellcheck_language_policy_handler.cc",
+    "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
+    "//chrome/browser/spellchecker/spellcheck_service.cc",
+    "//chrome/browser/spellchecker/spellcheck_service.h",
+    "//chrome/browser/spellchecker/spelling_request.cc",
+    "//chrome/browser/spellchecker/spelling_request.h",
+  ]
+
+  public_configs = [
+    ":branding",
+    ":electron_lib_config",
+  ]
+
+  deps = [
+    "//base:base_static",
+    "//components/spellcheck/browser",
+    "//components/spellcheck/renderer",
+    "//components/sync",
+  ]
+}
+
 source_set("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -476,6 +514,10 @@ source_set("electron_lib") {
       "shell/browser/fake_location_provider.cc",
       "shell/browser/fake_location_provider.h",
     ]
+  }
+
+  if (enable_builtin_spellchecker) {
+    deps += [ ":chrome_spellchecker" ]
   }
 
   if (is_mac) {

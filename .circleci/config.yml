@@ -155,6 +155,9 @@ env-ninja-status: &env-ninja-status
 env-disable-run-as-node: &env-disable-run-as-node
   GN_BUILDFLAG_ARGS: 'enable_run_as_node = false'
 
+env-enable-spellchecker: &env-enable-spellchecker
+  GN_BUILDFLAG_ARGS: 'enable_builtin_spellchecker = true'
+
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
@@ -1330,6 +1333,17 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-ninja-status
       <<: *env-disable-run-as-node
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
+
+  linux-x64-testing-spellchecker-fyi:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-enable-sccache
+      <<: *env-ninja-status
+      <<: *env-enable-spellchecker
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-build-with-inline-checkout-for-tests
 

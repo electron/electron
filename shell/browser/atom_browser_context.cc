@@ -63,6 +63,11 @@
 #include "shell/common/extensions/atom_extensions_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "components/pref_registry/pref_registry_syncable.h"
+#include "components/user_prefs/user_prefs.h"
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -156,7 +161,10 @@ void AtomBrowserContext::InitPrefs() {
       ExtensionPrefValueMapFactory::GetForBrowserContext(this),
       IsOffTheRecord());
   prefs_factory.set_extension_prefs(ext_pref_store);
+#endif
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
+    BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   auto registry = WrapRefCounted(new user_prefs::PrefRegistrySyncable);
 #else
   auto registry = WrapRefCounted(new PrefRegistrySimple);
@@ -177,11 +185,17 @@ void AtomBrowserContext::InitPrefs() {
   extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
 #endif
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  BrowserContextDependencyManager::GetInstance()
+      ->RegisterProfilePrefsForServices(registry.get());
+#endif
+
   prefs_ = prefs_factory.Create(
       registry.get(),
       std::make_unique<PrefStoreDelegate>(weak_factory_.GetWeakPtr()));
   prefs_->UpdateCommandLinePrefStore(new ValueMapPrefStore);
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
+    BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   user_prefs::UserPrefs::Set(this, prefs_.get());
 #endif
 }
