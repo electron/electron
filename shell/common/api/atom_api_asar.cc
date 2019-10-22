@@ -16,8 +16,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
-#include "third_party/electron_node/src/node_native_module_env.h"
-
+#include "shell/common/node_util.h"
 namespace {
 
 class Archive : public mate::Wrappable<Archive> {
@@ -124,9 +123,9 @@ void InitAsarSupport(v8::Isolate* isolate, v8::Local<v8::Value> require) {
   std::vector<v8::Local<v8::String>> asar_init_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "require")};
   std::vector<v8::Local<v8::Value>> asar_init_args = {require};
-  node::native_module::NativeModuleEnv::CompileAndCall(
-      isolate->GetCurrentContext(), "electron/js2c/asar_init",
-      &asar_init_params, &asar_init_args, nullptr);
+  electron::util::CompileAndCall(isolate->GetCurrentContext(),
+                                 "electron/js2c/asar_init", &asar_init_params,
+                                 &asar_init_args, nullptr);
 }
 
 v8::Local<v8::Value> SplitPath(v8::Isolate* isolate,
