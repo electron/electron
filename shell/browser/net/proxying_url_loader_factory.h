@@ -14,6 +14,7 @@
 #include "base/optional.h"
 #include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
+#include "mojo/public/cpp/bindings/binding.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
@@ -125,6 +126,7 @@ class ProxyingURLLoaderFactory
     void OnBeforeSendHeaders(const net::HttpRequestHeaders& headers,
                              OnBeforeSendHeadersCallback callback) override;
     void OnHeadersReceived(const std::string& headers,
+                           const net::IPEndPoint& endpoint,
                            OnHeadersReceivedCallback callback) override;
 
    private:
@@ -230,6 +232,10 @@ class ProxyingURLLoaderFactory
       int32_t request_id,
       mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver)
       override;
+  void OnLoaderForCorsPreflightCreated(
+      const network::ResourceRequest& request,
+      mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver)
+      override {}
 
   WebRequestAPI* web_request_api() { return web_request_api_; }
 

@@ -286,6 +286,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnBeforeSendHeaders(
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
     const std::string& headers,
+    const net::IPEndPoint& endpoint,
     OnHeadersReceivedCallback callback) {
   if (!current_request_uses_header_client_) {
     std::move(callback).Run(net::OK, base::nullopt, GURL());
@@ -728,7 +729,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
 
 void ProxyingURLLoaderFactory::Clone(
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> loader_receiver) {
-  proxy_receivers_.AddBinding(this, std::move(loader_receiver));
+  proxy_receivers_.Add(this, std::move(loader_receiver));
 }
 
 void ProxyingURLLoaderFactory::OnLoaderCreated(

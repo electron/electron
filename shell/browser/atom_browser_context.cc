@@ -31,6 +31,7 @@
 #include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_download_manager_delegate.h"
