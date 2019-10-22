@@ -48,8 +48,6 @@
 #include "shell/common/options_switches.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "components/pref_registry/pref_registry_syncable.h"
-#include "components/user_prefs/user_prefs.h"
 #include "extensions/browser/browser_context_keyed_service_factories.h"
 #include "extensions/browser/extension_pref_store.h"
 #include "extensions/browser/extension_pref_value_map_factory.h"
@@ -63,7 +61,8 @@
 #include "shell/common/extensions/atom_extensions_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
+    BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "components/user_prefs/user_prefs.h"
 #endif
