@@ -427,6 +427,7 @@ void URLRequestNS::OnRedirect(
 
   switch (redirect_mode_) {
     case network::mojom::RedirectMode::kError:
+      Cancel();
       EmitError(
           EventType::kRequest,
           "Request cannot follow redirect with the current redirect mode");
