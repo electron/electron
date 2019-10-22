@@ -45,17 +45,17 @@ index 696db8d4b5f0c6c8e333626fb0fd38d6e15ca1c9..398adadff5c00a4d39d1ea5f2e7eb326
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 73179d6d9e90daf0dd88b62002e6b03de20ac602..858fee141d6e8f53526c0a9d0502cb61177a9ba2 100644
+index 73179d6d9e90daf0dd88b62002e6b03de20ac602..035b885cf12f21817aa1974b0f6a73cee17621fc 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -184,6 +184,7 @@ class RenderFrameHost;
- class RenderProcessHost;
- class RenderViewHost;
- class ResourceContext;
+@@ -134,6 +134,7 @@ class NetworkService;
+ class TrustedURLLoaderHeaderClient;
+ }  // namespace mojom
+ struct ResourceRequest;
 +class ResourceRequestBody;
- class SerialDelegate;
- class SiteInstance;
- class SpeechRecognitionManagerDelegate;
+ }  // namespace network
+ 
+ namespace rappor {
 @@ -812,6 +813,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
