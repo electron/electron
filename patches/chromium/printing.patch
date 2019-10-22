@@ -589,18 +589,26 @@ index aca69e7b68ad1fb0f623f729337ff5de54f97584..f9c9c027adfad345954bf7c8484e9534
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/print_settings_conversion.cc b/printing/print_settings_conversion.cc
-index f844f92e2cc3b094e265ab40d4e47a4ab57b6ce0..fb903c30e68e1baa1a5ccaf0f0424df48c2a6a01 100644
+index f844f92e2cc3b094e265ab40d4e47a4ab57b6ce0..3decdb6a8faa49d6f25b9be9340ff1e3a3b5461b 100644
 --- a/printing/print_settings_conversion.cc
 +++ b/printing/print_settings_conversion.cc
-@@ -182,6 +182,8 @@ bool PrintSettingsFromJobSettings(const base::Value& job_settings,
+@@ -182,12 +182,14 @@ bool PrintSettingsFromJobSettings(const base::Value& job_settings,
  
    settings->set_dpi_xy(dpi_horizontal.value(), dpi_vertical.value());
  #endif
++  const std::string* device_name =
++      job_settings.FindStringKey(kSettingDeviceName);
 +  if (!device_name->empty())
 +    settings->set_device_name(base::UTF8ToUTF16(*device_name));
  
    settings->set_collate(collate.value());
    settings->set_copies(copies.value());
+   settings->SetOrientation(landscape.value());
+-  settings->set_device_name(
+-      base::UTF8ToUTF16(*job_settings.FindStringKey(kSettingDeviceName)));
+   settings->set_duplex_mode(static_cast<DuplexMode>(duplex_mode.value()));
+   settings->set_color(static_cast<ColorModel>(color.value()));
+   settings->set_scale_factor(static_cast<double>(scale_factor.value()) / 100.0);
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
 index 73940192472b1576a701cad3abbb92f2d72aa77e..bc0d39ccd113306691ae532e9fbc5b64c9aa0a33 100644
 --- a/printing/printing_context.cc
