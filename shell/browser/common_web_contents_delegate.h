@@ -95,7 +95,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
       const blink::mojom::FullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
-  blink::WebSecurityStyle GetSecurityStyle(
+  blink::SecurityStyle GetSecurityStyle(
       content::WebContents* web_contents,
       content::SecurityStyleExplanations* explanations) override;
   bool TakeFocus(content::WebContents* source, bool reverse) override;

@@ -352,7 +352,7 @@ bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
   return html_fullscreen_;
 }
 
-blink::WebSecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
+blink::SecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
     content::WebContents* web_contents,
     content::SecurityStyleExplanations* security_style_explanations) {
   SecurityStateTabHelper* helper =
