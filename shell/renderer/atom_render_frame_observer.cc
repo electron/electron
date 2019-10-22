@@ -33,14 +33,12 @@ namespace electron {
 
 namespace {
 
-base::StringPiece NetResourceProvider(int key) {
+scoped_refptr<base::RefCountedMemory> NetResourceProvider(int key) {
   if (key == IDR_DIR_HEADER_HTML) {
-    base::StringPiece html_data =
-        ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
-            IDR_DIR_HEADER_HTML);
-    return html_data;
+    return ui::ResourceBundle::GetSharedInstance().LoadDataResourceBytes(
+        IDR_DIR_HEADER_HTML);
   }
-  return base::StringPiece();
+  return nullptr;
 }
 
 }  // namespace
