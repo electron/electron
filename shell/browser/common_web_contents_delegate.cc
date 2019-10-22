@@ -328,7 +328,7 @@ void CommonWebContentsDelegate::EnumerateDirectory(
 void CommonWebContentsDelegate::EnterFullscreenModeForTab(
     content::WebContents* source,
     const GURL& origin,
-    const blink::WebFullscreenOptions& options) {
+    const blink::mojom::FullscreenOptions& options) {
   if (!owner_window_)
     return;
   if (IsFullscreenForTabOrPending(source)) {

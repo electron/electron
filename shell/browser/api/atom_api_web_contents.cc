@@ -86,6 +86,7 @@
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
+#include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/platform/web_cursor_info.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "ui/display/screen.h"
@@ -728,7 +729,7 @@ void WebContents::ContentsZoomChange(bool zoom_in) {
 void WebContents::EnterFullscreenModeForTab(
     content::WebContents* source,
     const GURL& origin,
-    const blink::WebFullscreenOptions& options) {
+    const blink::mojom::FullscreenOptions& options) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(source);
   auto callback =
@@ -740,7 +741,7 @@ void WebContents::EnterFullscreenModeForTab(
 void WebContents::OnEnterFullscreenModeForTab(
     content::WebContents* source,
     const GURL& origin,
-    const blink::WebFullscreenOptions& options,
+    const blink::mojom::FullscreenOptions& options,
     bool allowed) {
   if (!allowed)
     return;
