@@ -212,7 +212,7 @@ index 398adadff5c00a4d39d1ea5f2e7eb32699e4f736..e026da455790b2131fc8652c8bc298d8
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 858fee141d6e8f53526c0a9d0502cb61177a9ba2..d592fdf267cfe27d1f6fc9811815801272f7efff 100644
+index 035b885cf12f21817aa1974b0f6a73cee17621fc..7463f7ba1e2c42df4a8edd2f3939290d7bffc6aa 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -215,8 +215,45 @@ struct WebPreferences;
