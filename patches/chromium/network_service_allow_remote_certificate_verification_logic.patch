@@ -5,7 +5,7 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 2d553d924c0f6dac454cfd443ee2bfa6328f6ea0..f7998cce9e21e50d2643e1594bad3db4727a30bd 100644
+index 2d553d924c0f6dac454cfd443ee2bfa6328f6ea0..42488b09379836be78f3981fe334ac794c4600d7 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -92,6 +92,11 @@
@@ -122,7 +122,7 @@ index 2d553d924c0f6dac454cfd443ee2bfa6328f6ea0..f7998cce9e21e50d2643e1594bad3db4
 -      cert_verifier = net::CertVerifier::CreateDefault(cert_net_fetcher_);
 +    if (!cert_verifier) {
 +      auto mt_verifier = std::make_unique<net::MultiThreadedCertVerifier>(
-+              net::CertVerifyProc::CreateDefault(std::move(cert_net_fetcher_)));
++              net::CertVerifyProc::CreateSystemVerifyProc(std::move(cert_net_fetcher_)));
 +      auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(mt_verifier));
 +      remote_cert_verifier_ = remote_cert_verifier.get();
 +      cert_verifier = std::make_unique<net::CachingCertVerifier>(std::move(remote_cert_verifier));
