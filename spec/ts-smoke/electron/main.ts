@@ -1055,8 +1055,11 @@ app.on('ready', () => {
 // https://github.com/atom/electron/blob/master/docs/api/shell.md
 
 shell.showItemInFolder('/home/user/Desktop/test.txt')
-shell.openItem('/home/user/Desktop/test.txt')
 shell.moveItemToTrash('/home/user/Desktop/test.txt')
+
+shell.openPath('/home/user/Desktop/test.txt').then(err => {
+  if (err) console.log(err)
+})
 
 shell.openExternal('https://github.com', {
   activate: false
