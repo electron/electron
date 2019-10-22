@@ -65,6 +65,15 @@ Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
 ### `webFrame.setSpellCheckProvider(language, provider)`
 
+* `language` String[]
+* `provider` Object
+  * `spellCheck` Function
+    * `words` Record<String, String[]>
+    * `callback` Function
+      * `misspeltWords` String[]
+
+### `webFrame.setSpellCheckProvider(language, provider)`
+
 * `language` String
 * `provider` Object
   * `spellCheck` Function
@@ -75,7 +84,8 @@ Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 Sets a provider for spell checking in input fields and text areas.
 
 The `provider` must be an object that has a `spellCheck` method that accepts
-an array of individual words for spellchecking.
+an array of individual words for spellchecking for single language,
+or an object for multiple languages.
 The `spellCheck` function runs asynchronously and calls the `callback` function
 with an array of misspelt words when complete.
 
@@ -84,12 +94,26 @@ An example of using [node-spellchecker][spellchecker] as provider:
 ```javascript
 const { webFrame } = require('electron')
 const spellChecker = require('spellchecker')
+
+// check spelling for single language
 webFrame.setSpellCheckProvider('en-US', {
   spellCheck (words, callback) {
     setTimeout(() => {
       const spellchecker = require('spellchecker')
       const misspelled = words.filter(x => spellchecker.isMisspelled(x))
       callback(misspelled)
+    }, 0)
+  }
+})
+
+// check spelling for multiple languages
+webFrame.setSpellCheckProvider(['en-US', 'ko-KR'], {
+  spellCheck (words, callback) {
+    setTimeout(() => {
+      const spellchecker = require('spellchecker')
+      const en = words['en-US'].filter(x => spellchecker.isMisspelled(x))
+      const kr = words['ko-KR'].filter(x => spellchecker.isMisspelled(x))
+      callback(en.concat(kr))
     }, 0)
   }
 })

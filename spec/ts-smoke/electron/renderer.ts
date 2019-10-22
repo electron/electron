@@ -69,6 +69,16 @@ webFrame.setSpellCheckProvider('en-US', {
   }
 })
 
+webFrame.setSpellCheckProvider(['en-US'], {
+  spellCheck (words, callback) {
+    setTimeout(() => {
+      const spellchecker = require('spellchecker')
+      const misspelled = words['en-US'].filter(x => spellchecker.isMisspelled(x))
+      callback(misspelled)
+    }, 0)
+  }
+})
+
 webFrame.insertText('text')
 
 webFrame.executeJavaScript('return true;').then((v: boolean) => console.log(v))
