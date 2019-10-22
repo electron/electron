@@ -240,4 +240,10 @@ void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
   about_panel_options_ = std::move(options);
 }
 
+bool Browser::IsSecureInputEnabled() {
+  return false;
+}
+
+void Browser::SetSecureInputEnabled(bool enabled) {}
+
 }  // namespace electron

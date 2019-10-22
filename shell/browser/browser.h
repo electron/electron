@@ -261,6 +261,11 @@ class Browser : public WindowListObserver {
 
   void RemoveObserver(BrowserObserver* obs) { observers_.RemoveObserver(obs); }
 
+  // Returns whether secure input is enabled
+  bool IsSecureInputEnabled();
+
+  void SetSecureInputEnabled(bool enabled);
+
   bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
@@ -304,6 +309,8 @@ class Browser : public WindowListObserver {
   int badge_count_ = 0;
 
   std::unique_ptr<gin_helper::Promise<void>> ready_promise_;
+
+  int secure_input_count_ = 0;
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   base::Value about_panel_options_;

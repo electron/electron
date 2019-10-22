@@ -1280,6 +1280,34 @@ app.moveToApplicationsFolder({
 
 Would mean that if an app already exists in the user directory, if the user chooses to 'Continue Move' then the function would continue with its default behavior and the existing app will be trashed and the active app moved into its place.
 
+### `app.isSecureInputEnabled()` _macOS_
+
+Returns `Boolean` - whether `Secure Keyboard Entry` is enabled.
+
+This function might return `true` even if you have not called `app.setSecureInputEnabled(true)`
+but other process already called.
+For instance, Terminal.app has a menu item `Secure Keyboard Entry` in `Terminal` menu.
+If you already set enabled it, this method always returns `true`.
+You need to `app.setSecureInputEnabled(true)` to protect from other process listens input events.
+
+For details, see [TN2150](https://developer.apple.com/library/content/technotes/tn2150/_index.html).
+
+### `app.setSecureInputEnabled(enabled)` _macOS_
+
+* `enabled` Boolean - Enable or disable `Secure Keyboard Entry`
+
+Set `Secure Keyboard Entry` is enabled.
+
+This function is protect from other process listens input events.
+
+After you enable it, you should disable before application quited.
+
+```js
+app.on('quit', () => {
+  app.setSecureInputEnabled(false);
+})
+```
+
 ## Properties
 
 ### `app.accessibilitySupportEnabled` _macOS_ _Windows_

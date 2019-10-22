@@ -4,6 +4,7 @@
 
 #include "shell/browser/browser.h"
 
+#include <Carbon/Carbon.h>
 #include <string>
 #include <utility>
 
@@ -428,6 +429,28 @@ void Browser::ShowEmojiPanel() {
 
 bool Browser::IsEmojiPanelSupported() {
   return true;
+}
+
+bool Browser::IsSecureInputEnabled() {
+  // See
+  // https://developer.apple.com/library/content/technotes/tn2150/_index.html
+  return IsSecureEventInputEnabled();
+}
+
+void Browser::SetSecureInputEnabled(bool enabled) {
+  // See
+  // https://developer.apple.com/library/content/technotes/tn2150/_index.html
+  if (enabled) {
+    if (!secure_input_count_) {
+      EnableSecureEventInput();
+      ++secure_input_count_;
+    }
+  } else {
+    if (secure_input_count_) {
+      --secure_input_count_;
+      DisableSecureEventInput();
+    }
+  }
 }
 
 }  // namespace electron
