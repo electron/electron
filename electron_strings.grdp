@@ -72,4 +72,7 @@
   <message name="IDS_SPELLCHECK_DICTIONARY" use_name_for_id="true">
     en-US
   </message>
+  <message name="IDS_ACCEPT_LANGUAGES" use_name_for_id="true">
+    en-US,en
+  </message>
 </grit-part>

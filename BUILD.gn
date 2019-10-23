@@ -383,6 +383,7 @@ source_set("chrome_spellchecker") {
 
   deps = [
     "//base:base_static",
+    "//components/language/core/browser",
     "//components/spellcheck:buildflags",
     "//components/spellcheck/browser",
     "//components/spellcheck/common",
@@ -414,6 +415,7 @@ source_set("electron_lib") {
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
+    "//components/language/core/browser",
     "//components/net_log",
     "//components/network_hints/common",
     "//components/network_hints/renderer",
