@@ -1,0 +1,57 @@
+import("//build/config/mac/mac_sdk.gni")
+
+# This is imported from /ios becuase this functionality was moved
+# after Chromium stopped using xib files for macOS menu functionality
+# See https://chromium-review.googlesource.com/c/chromium/src/+/1648695
+import("//build/config/ios/rules.gni")
+
+# Template is copied here from Chromium but was removed in
+# https://chromium-review.googlesource.com/c/chromium/src/+/1637981
+# Template to compile and package Mac XIB files as bundle data.
+# Arguments
+#     sources:
+#         list of string, sources to comiple
+#     output_path:
+#         (optional) string, the path to use for the outputs list in the
+#         bundle_data step. If unspecified, defaults to bundle_resources_dir.
+template("mac_xib_bundle_data") {
+  _target_name = target_name
+  _compile_target_name = _target_name + "_compile_ibtool"
+
+  compile_ib_files(_compile_target_name) {
+    forward_variables_from(invoker, [ "testonly" ])
+    visibility = [ ":$_target_name" ]
+    sources = invoker.sources
+    output_extension = "nib"
+    ibtool_flags = [
+      "--minimum-deployment-target",
+      mac_deployment_target,
+
+      # TODO(rsesek): Enable this once all the bots are on Xcode 7+.
+      # "--target-device",
+      # "mac",
+    ]
+  }
+
+  bundle_data(_target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "testonly",
+                             "visibility",
+                           ])
+
+    public_deps = [
+      ":$_compile_target_name",
+    ]
+    sources = get_target_outputs(":$_compile_target_name")
+
+    _output_path = "{{bundle_resources_dir}}"
+    if (defined(invoker.output_path)) {
+      _output_path = invoker.output_path
+    }
+
+    outputs = [
+      "$_output_path/{{source_file_part}}",
+    ]
+  }
+}

@@ -55,12 +55,13 @@ class Promise {
 
   static void ResolvePromise(Promise<RT> promise, RT result) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                     base::BindOnce([](Promise<RT> promise,
-                                       RT result) { promise.Resolve(result); },
-                                    std::move(promise), std::move(result)));
+      base::PostTask(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce([](Promise<RT> promise,
+                            RT result) { promise.ResolveWithGin(result); },
+                         std::move(promise), std::move(result)));
     } else {
-      promise.Resolve(result);
+      promise.ResolveWithGin(result);
     }
   }
 

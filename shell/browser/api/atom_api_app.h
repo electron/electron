@@ -22,7 +22,7 @@
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/ssl/client_cert_identity.h"
-#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/event_emitter_deprecated.h"
 #include "shell/browser/api/process_metric.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/browser.h"

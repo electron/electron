@@ -2737,7 +2737,9 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({show: false})
       expect(() => {
         w.webContents.beginFrameSubscription(true, true as any)
-      }).to.throw('Error processing argument at index 1, conversion failure from true')
+        // TODO(zcbenz): gin is weak at guessing parameter types, we should
+        // upstream native_mate's implementation to gin.
+      }).to.throw('Error processing argument at index 1, conversion failure from ')
     })
   })
 

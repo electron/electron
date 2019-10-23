@@ -134,6 +134,58 @@ describe('systemPreferences module', () => {
     })
   })
 
+  ifdescribe(process.platform === 'darwin')('systemPreferences.getColor(color)', () => {
+    it('throws on invalid colors', () => {
+      const color = 'bad-color'
+      expect(() => {
+        systemPreferences.getColor(color as any)
+      }).to.throw(`Unknown color: ${color}`)
+    })
+  
+    it('returns a valid color', () => {
+      const colors = [
+        'alternate-selected-control-text',
+        'control-background',
+        'control',
+        'control-text',
+        'disabled-control-text',
+        'find-highlight',
+        'grid',
+        'header-text',
+        'highlight',
+        'keyboard-focus-indicator',
+        'label',
+        'link',
+        'placeholder-text',
+        'quaternary-label',
+        'scrubber-textured-background',
+        'secondary-label',
+        'selected-content-background',
+        'selected-control',
+        'selected-control-text',
+        'selected-menu-item-text',
+        'selected-text-background',
+        'selected-text',
+        'separator',
+        'shadow',
+        'tertiary-label',
+        'text-background',
+        'text',
+        'under-page-background',
+        'unemphasized-selected-content-background',
+        'unemphasized-selected-text-background',
+        'unemphasized-selected-text',
+        'window-background',
+        'window-frame-text'
+      ]
+      
+      colors.forEach(color => {
+        const sysColor = systemPreferences.getColor(color as any)
+        expect(sysColor).to.be.a('string')
+      })
+    })
+  })
+
   ifdescribe(process.platform === 'darwin')('systemPreferences.appLevelAppearance', () => {
     it('has an appLevelAppearance property', () => {
       expect(systemPreferences).to.have.property('appLevelAppearance')

@@ -10,7 +10,7 @@
 #include "electron/shell/common/api/api.mojom.h"
 #include "electron/shell/common/native_mate_converters/blink_converter.h"
 #include "electron/shell/common/native_mate_converters/value_converter.h"
-#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 using blink::WebLocalFrame;
@@ -82,8 +82,8 @@ void RemoteObjectFreer::RunDestructor() {
       ref_mapper_.erase(objects_it);
   }
 
-  mojom::ElectronBrowserAssociatedPtr electron_ptr;
-  render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+  mojom::ElectronBrowserPtr electron_ptr;
+  render_frame->GetRemoteInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
   electron_ptr->DereferenceRemoteJSObject(context_id_, object_id_, ref_count);
 }

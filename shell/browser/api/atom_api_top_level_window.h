@@ -13,11 +13,11 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "native_mate/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/atom_api_native_image.h"
+#include "shell/common/gin_helper/event_emitter.h"
 
 namespace electron {
 
@@ -25,10 +25,13 @@ namespace api {
 
 class View;
 
-class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
-                       public NativeWindowObserver {
+class TopLevelWindow
+    : public mate::TrackableObject<
+          TopLevelWindow,
+          gin_helper::EventEmitter<mate::Wrappable<TopLevelWindow>>>,
+      public NativeWindowObserver {
  public:
-  static mate::WrappableBase* New(gin::Arguments* args);
+  static mate::WrappableBase* New(gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -43,7 +46,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   // Common constructor.
   TopLevelWindow(v8::Isolate* isolate, const mate::Dictionary& options);
   // Creating independent TopLevelWindow instance.
-  TopLevelWindow(gin::Arguments* args, const mate::Dictionary& options);
+  TopLevelWindow(gin_helper::Arguments* args, const mate::Dictionary& options);
   ~TopLevelWindow() override;
 
   // TrackableObject:
@@ -107,13 +110,13 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   bool IsMinimized();
   void SetFullScreen(bool fullscreen);
   bool IsFullscreen();
-  void SetBounds(const gfx::Rect& bounds, mate::Arguments* args);
+  void SetBounds(const gfx::Rect& bounds, gin_helper::Arguments* args);
   gfx::Rect GetBounds();
-  void SetSize(int width, int height, mate::Arguments* args);
+  void SetSize(int width, int height, gin_helper::Arguments* args);
   std::vector<int> GetSize();
-  void SetContentSize(int width, int height, mate::Arguments* args);
+  void SetContentSize(int width, int height, gin_helper::Arguments* args);
   std::vector<int> GetContentSize();
-  void SetContentBounds(const gfx::Rect& bounds, mate::Arguments* args);
+  void SetContentBounds(const gfx::Rect& bounds, gin_helper::Arguments* args);
   gfx::Rect GetContentBounds();
   bool IsNormal();
   gfx::Rect GetNormalBounds();
@@ -121,11 +124,11 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   std::vector<int> GetMinimumSize();
   void SetMaximumSize(int width, int height);
   std::vector<int> GetMaximumSize();
-  void SetSheetOffset(double offsetY, mate::Arguments* args);
+  void SetSheetOffset(double offsetY, gin_helper::Arguments* args);
   void SetResizable(bool resizable);
   bool IsResizable();
   void SetMovable(bool movable);
-  void MoveAbove(const std::string& sourceId, mate::Arguments* args);
+  void MoveAbove(const std::string& sourceId, gin_helper::Arguments* args);
   void MoveTop();
   bool IsMovable();
   void SetMinimizable(bool minimizable);
@@ -136,10 +139,10 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   bool IsFullScreenable();
   void SetClosable(bool closable);
   bool IsClosable();
-  void SetAlwaysOnTop(bool top, mate::Arguments* args);
+  void SetAlwaysOnTop(bool top, gin_helper::Arguments* args);
   bool IsAlwaysOnTop();
   void Center();
-  void SetPosition(int x, int y, mate::Arguments* args);
+  void SetPosition(int x, int y, gin_helper::Arguments* args);
   std::vector<int> GetPosition();
   void SetTitle(const std::string& title);
   std::string GetTitle();
@@ -163,12 +166,12 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited();
-  void SetIgnoreMouseEvents(bool ignore, mate::Arguments* args);
+  void SetIgnoreMouseEvents(bool ignore, gin_helper::Arguments* args);
   void SetContentProtection(bool enable);
   void SetFocusable(bool focusable);
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void RemoveMenu();
-  void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
+  void SetParentWindow(v8::Local<v8::Value> value, gin_helper::Arguments* args);
   virtual void SetBrowserView(v8::Local<v8::Value> value);
   virtual void AddBrowserView(v8::Local<v8::Value> value);
   virtual void RemoveBrowserView(v8::Local<v8::Value> value);
@@ -176,10 +179,10 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   virtual void ResetBrowserViews();
   std::string GetMediaSourceId() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
-  void SetProgressBar(double progress, mate::Arguments* args);
+  void SetProgressBar(double progress, gin_helper::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
-  void SetVisibleOnAllWorkspaces(bool visible, mate::Arguments* args);
+  void SetVisibleOnAllWorkspaces(bool visible, gin_helper::Arguments* args);
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
@@ -191,14 +194,14 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void MergeAllWindows();
   void MoveTabToNewWindow();
   void ToggleTabBar();
-  void AddTabbedWindow(NativeWindow* window, mate::Arguments* args);
-  void SetWindowButtonVisibility(bool visible, mate::Arguments* args);
+  void AddTabbedWindow(NativeWindow* window, gin_helper::Arguments* args);
+  void SetWindowButtonVisibility(bool visible, gin_helper::Arguments* args);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
-  void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
-  void PreviewFile(const std::string& path, mate::Arguments* args);
+  void SetAspectRatio(double aspect_ratio, gin_helper::Arguments* args);
+  void PreviewFile(const std::string& path, gin_helper::Arguments* args);
   void CloseFilePreview();
   void SetGTKDarkThemeEnabled(bool use_dark_theme);
 
@@ -206,11 +209,11 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   v8::Local<v8::Value> GetContentView() const;
   v8::Local<v8::Value> GetParentWindow() const;
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
-  v8::Local<v8::Value> GetBrowserView(mate::Arguments* args) const;
+  v8::Local<v8::Value> GetBrowserView(gin_helper::Arguments* args) const;
   bool IsModal() const;
 
   // Extra APIs added in JS.
-  bool SetThumbarButtons(mate::Arguments* args);
+  bool SetThumbarButtons(gin_helper::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
   void SetIcon(mate::Handle<NativeImage> icon);
 #endif
@@ -224,7 +227,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void UnhookAllWindowMessages();
   bool SetThumbnailClip(const gfx::Rect& region);
   bool SetThumbnailToolTip(const std::string& tooltip);
-  void SetAppDetails(const mate::Dictionary& options);
+  void SetAppDetails(const gin_helper::Dictionary& options);
 #endif
   int32_t GetID() const;
 

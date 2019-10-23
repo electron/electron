@@ -46,8 +46,8 @@ std::string SystemPreferences::GetAccentColor() {
   return hexColorDWORDToRGBA(color);
 }
 
-std::string SystemPreferences::GetColor(const std::string& color,
-                                        mate::Arguments* args) {
+std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
+                                        const std::string& color) {
   int id;
   if (color == "3d-dark-shadow") {
     id = COLOR_3DDKSHADOW;
@@ -110,7 +110,7 @@ std::string SystemPreferences::GetColor(const std::string& color,
   } else if (color == "window-text") {
     id = COLOR_WINDOWTEXT;
   } else {
-    args->ThrowError("Unknown color: " + color);
+    thrower.ThrowError("Unknown color: " + color);
     return "";
   }
 

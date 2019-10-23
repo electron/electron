@@ -4,6 +4,8 @@ Date: Tue, 15 Oct 2019 11:21:13 -0700
 Subject: Revert "tls: add option to override signature algorithms"
 
 This partially reverts commit 6272f82c07e913a76a316a786c9aadbc09f953ff.
+Upstreamed at https://boringssl-review.googlesource.com/c/boringssl/+/38404
+and can be removed when that is merged and rolled into Chromium.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
 index 870456216983c2685c53580e60c44aa4dd3f7267..63dd6a186366baad660ee8e38401ba842c6ddb17 100644

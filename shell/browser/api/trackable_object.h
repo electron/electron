@@ -10,7 +10,7 @@
 #include "base/bind.h"
 #include "base/memory/weak_ptr.h"
 #include "native_mate/object_template_builder_deprecated.h"
-#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/event_emitter_deprecated.h"
 #include "shell/common/key_weak_map.h"
 
 namespace base {
@@ -51,9 +51,10 @@ class TrackableObjectBase {
 
 // All instances of TrackableObject will be kept in a weak map and can be got
 // from its ID.
-template <typename T>
-class TrackableObject : public TrackableObjectBase,
-                        public mate::EventEmitter<T> {
+//
+// TODO(zcbenz): Remove "typename B" after removing native_mate.
+template <typename T, typename B = mate::EventEmitter<T>>
+class TrackableObject : public TrackableObjectBase, public B {
  public:
   // Mark the JS object as destroyed.
   void MarkDestroyed() {
@@ -126,11 +127,11 @@ class TrackableObject : public TrackableObjectBase,
   DISALLOW_COPY_AND_ASSIGN(TrackableObject);
 };
 
-template <typename T>
-int32_t TrackableObject<T>::next_id_ = 0;
+template <typename T, typename B>
+int32_t TrackableObject<T, B>::next_id_ = 0;
 
-template <typename T>
-electron::KeyWeakMap<int32_t>* TrackableObject<T>::weak_map_ = nullptr;
+template <typename T, typename B>
+electron::KeyWeakMap<int32_t>* TrackableObject<T, B>::weak_map_ = nullptr;
 
 }  // namespace mate
 

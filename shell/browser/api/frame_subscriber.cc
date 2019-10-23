@@ -10,7 +10,6 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "media/capture/mojom/video_capture_types.mojom.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
 #include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/skbitmap_operations.h"

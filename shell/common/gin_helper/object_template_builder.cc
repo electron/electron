@@ -29,4 +29,10 @@ ObjectTemplateBuilder& ObjectTemplateBuilder::SetPropertyImpl(
   return *this;
 }
 
+v8::Local<v8::ObjectTemplate> ObjectTemplateBuilder::Build() {
+  v8::Local<v8::ObjectTemplate> result = template_;
+  template_.Clear();
+  return result;
+}
+
 }  // namespace gin_helper
