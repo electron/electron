@@ -15,14 +15,15 @@
 #include "content/public/browser/storage_partition.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
-#include "native_mate/dictionary.h"
 #include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_store.h"
 #include "net/cookies/cookie_util.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/cookie_change_notifier.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 
 using content::BrowserThread;
 
@@ -175,7 +176,7 @@ Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 
 Cookies::~Cookies() = default;
 
-v8::Local<v8::Promise> Cookies::Get(const mate::Dictionary& filter) {
+v8::Local<v8::Promise> Cookies::Get(const gin_helper::Dictionary& filter) {
   util::Promise<net::CookieList> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -184,7 +185,7 @@ v8::Local<v8::Promise> Cookies::Get(const mate::Dictionary& filter) {
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
   base::DictionaryValue dict;
-  mate::ConvertFromV8(isolate(), filter.GetHandle(), &dict);
+  gin::ConvertFromV8(isolate(), filter.GetHandle(), &dict);
 
   std::string url;
   filter.Get("url", &url);
@@ -339,7 +340,7 @@ gin::Handle<Cookies> Cookies::Create(v8::Isolate* isolate,
 void Cookies::BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "Cookies"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("get", &Cookies::Get)
       .SetMethod("remove", &Cookies::Remove)
       .SetMethod("set", &Cookies::Set)

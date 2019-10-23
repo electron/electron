@@ -13,13 +13,14 @@
 #include "net/cookies/canonical_cookie.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/net/cookie_details.h"
+#include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/promise_util.h"
 
 namespace base {
 class DictionaryValue;
 }
 
-namespace mate {
+namespace gin_helper {
 class Dictionary;
 }
 
@@ -33,7 +34,9 @@ class AtomBrowserContext;
 
 namespace api {
 
-class Cookies : public mate::TrackableObject<Cookies> {
+class Cookies : public mate::TrackableObject<
+                    Cookies,
+                    gin_helper::EventEmitter<mate::Wrappable<Cookies>>> {
  public:
   static gin::Handle<Cookies> Create(v8::Isolate* isolate,
                                      AtomBrowserContext* browser_context);
@@ -46,7 +49,7 @@ class Cookies : public mate::TrackableObject<Cookies> {
   Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~Cookies() override;
 
-  v8::Local<v8::Promise> Get(const mate::Dictionary& filter);
+  v8::Local<v8::Promise> Get(const gin_helper::Dictionary& filter);
   v8::Local<v8::Promise> Set(const base::DictionaryValue& details);
   v8::Local<v8::Promise> Remove(const GURL& url, const std::string& name);
   v8::Local<v8::Promise> FlushStore();
