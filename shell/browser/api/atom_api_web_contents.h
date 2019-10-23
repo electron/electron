@@ -27,8 +27,8 @@
 #include "services/service_manager/public/cpp/binder_registry.h"
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/common_web_contents_delegate.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -77,7 +77,7 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
 };
 
 // Wrapper around the content::WebContents.
-class WebContents : public mate::TrackableObject<WebContents>,
+class WebContents : public gin_helper::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
                     public content::WebContentsObserver,
                     public mojom::ElectronBrowser {

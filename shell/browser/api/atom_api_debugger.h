@@ -13,7 +13,7 @@
 #include "content/public/browser/devtools_agent_host_client.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/handle.h"
-#include "shell/browser/api/trackable_object.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/promise_util.h"
 
 namespace content {
@@ -25,14 +25,14 @@ namespace electron {
 
 namespace api {
 
-class Debugger : public mate::TrackableObject<Debugger>,
+class Debugger : public gin_helper::TrackableObject<Debugger>,
                  public content::DevToolsAgentHostClient,
                  public content::WebContentsObserver {
  public:
   static gin::Handle<Debugger> Create(v8::Isolate* isolate,
                                       content::WebContents* web_contents);
 
-  // mate::TrackableObject:
+  // gin_helper::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 

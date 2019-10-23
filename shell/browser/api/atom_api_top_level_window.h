@@ -14,10 +14,10 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/handle.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/atom_api_native_image.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
 
@@ -25,7 +25,7 @@ namespace api {
 
 class View;
 
-class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
+class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
                        public NativeWindowObserver {
  public:
   static mate::WrappableBase* New(gin_helper::Arguments* args);

@@ -1049,7 +1049,7 @@ void WebContents::MessageTo(bool internal,
                             int32_t web_contents_id,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
-  auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
+  auto* web_contents = gin_helper::TrackableObject<WebContents>::FromWeakMapID(
       isolate(), web_contents_id);
 
   if (web_contents) {

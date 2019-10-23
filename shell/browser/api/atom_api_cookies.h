@@ -11,8 +11,8 @@
 #include "base/callback_list.h"
 #include "gin/handle.h"
 #include "net/cookies/canonical_cookie.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/net/cookie_details.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/promise_util.h"
 
 namespace base {
@@ -33,12 +33,12 @@ class AtomBrowserContext;
 
 namespace api {
 
-class Cookies : public mate::TrackableObject<Cookies> {
+class Cookies : public gin_helper::TrackableObject<Cookies> {
  public:
   static gin::Handle<Cookies> Create(v8::Isolate* isolate,
                                      AtomBrowserContext* browser_context);
 
-  // mate::TrackableObject:
+  // gin_helper::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 

@@ -14,7 +14,7 @@
 #include "base/values.h"
 #include "gin/handle.h"
 #include "services/network/public/mojom/net_log.mojom.h"
-#include "shell/browser/api/trackable_object.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/promise_util.h"
 
 namespace electron {
@@ -23,7 +23,7 @@ class AtomBrowserContext;
 
 namespace api {
 
-class NetLog : public mate::TrackableObject<NetLog> {
+class NetLog : public gin_helper::TrackableObject<NetLog> {
  public:
   static gin::Handle<NetLog> Create(v8::Isolate* isolate,
                                     AtomBrowserContext* browser_context);

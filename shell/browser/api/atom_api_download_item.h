@@ -11,15 +11,15 @@
 #include "base/files/file_path.h"
 #include "components/download/public/common/download_item.h"
 #include "gin/handle.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/ui/file_dialog.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "url/gurl.h"
 
 namespace electron {
 
 namespace api {
 
-class DownloadItem : public mate::TrackableObject<DownloadItem>,
+class DownloadItem : public gin_helper::TrackableObject<DownloadItem>,
                      public download::DownloadItem::Observer {
  public:
   static gin::Handle<DownloadItem> Create(v8::Isolate* isolate,

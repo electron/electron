@@ -11,14 +11,14 @@
 #include "base/callback.h"
 #include "gin/arguments.h"
 #include "shell/browser/api/atom_api_top_level_window.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/ui/atom_menu_model.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
 
 namespace api {
 
-class Menu : public mate::TrackableObject<Menu>,
+class Menu : public gin_helper::TrackableObject<Menu>,
              public AtomMenuModel::Delegate,
              public AtomMenuModel::Observer {
  public:

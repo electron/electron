@@ -12,8 +12,8 @@
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/promise_util.h"
 
 class GURL;
@@ -36,7 +36,7 @@ class AtomBrowserContext;
 
 namespace api {
 
-class Session : public mate::TrackableObject<Session>,
+class Session : public gin_helper::TrackableObject<Session>,
                 public content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
@@ -51,7 +51,7 @@ class Session : public mate::TrackableObject<Session>,
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 
-  // mate::TrackableObject:
+  // gin_helper::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 

@@ -10,9 +10,9 @@
 
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/handle.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/native_browser_view.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace gfx {
 class Rect;
@@ -30,7 +30,7 @@ namespace api {
 
 class WebContents;
 
-class BrowserView : public mate::TrackableObject<BrowserView>,
+class BrowserView : public gin_helper::TrackableObject<BrowserView>,
                     public content::WebContentsObserver {
  public:
   static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
