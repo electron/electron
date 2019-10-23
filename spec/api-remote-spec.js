@@ -571,4 +571,32 @@ describe('remote module', () => {
       w.loadURL('about:blank')
     })
   })
+
+  describe('remote references', () => {
+    it('render-view-deleted is sent when page is destroyed', (done) => {
+      w = new BrowserWindow({ show: false })
+      w.webContents.once('render-view-deleted', () => {
+        done()
+      })
+      w.destroy()
+    })
+
+    // The ELECTRON_BROWSER_CONTEXT_RELEASE message relies on this to work.
+    it('message can be sent on exit when page is being navigated', (done) => {
+      after(() => { ipcMain.removeAllListeners('SENT_ON_EXIT') })
+      ipcMain.once('SENT_ON_EXIT', () => {
+        done()
+      })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.loadURL('about:blank')
+      })
+      w.loadFile(path.join(fixtures, 'api', 'send-on-exit.html'))
+    })
+  })
 })
