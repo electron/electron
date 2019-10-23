@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index fd3e99fad21564f50ca90645a122cfa621e98be9..46010d284602af98d6c91964325044a6c621d20c 100644
+index 3cb20e8f0cc52ceedae0e413a9cc45dee64ccacb..9e0f9da1f550fe35ab6af2828f2d0d8e4765abed 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4354,6 +4354,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4362,6 +4362,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -45,7 +45,7 @@ index 696db8d4b5f0c6c8e333626fb0fd38d6e15ca1c9..398adadff5c00a4d39d1ea5f2e7eb326
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 73179d6d9e90daf0dd88b62002e6b03de20ac602..035b885cf12f21817aa1974b0f6a73cee17621fc 100644
+index 594eea0429ff0e461911becc84cb615fb83f5e1c..4562b4533d7e18dc6d3eac25bd8119939a072a9b 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -134,6 +134,7 @@ class NetworkService;

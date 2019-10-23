@@ -5,7 +5,7 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 2d553d924c0f6dac454cfd443ee2bfa6328f6ea0..42488b09379836be78f3981fe334ac794c4600d7 100644
+index c538b12de4d9dfa6c7a00db2af1d905b8559bdec..97575588220d7d903e2e009fd86c30d212951ee7 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -92,6 +92,11 @@
@@ -114,7 +114,7 @@ index 2d553d924c0f6dac454cfd443ee2bfa6328f6ea0..42488b09379836be78f3981fe334ac79
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1598,12 +1683,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1596,12 +1681,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                              cert_net_fetcher_))));
      }
  #endif
@@ -139,7 +139,7 @@ index 2d553d924c0f6dac454cfd443ee2bfa6328f6ea0..42488b09379836be78f3981fe334ac79
    std::unique_ptr<NetworkServiceNetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 4378529b710fe66adeb4f57c037f75d9b8215dca..db00747c9992b660ef848a37a77eb70bb34d42f8 100644
+index 28dcfb3070f8418f4742bdb785a47160c6a61913..c6e00b834aabcf20c5656ce98154baef0745431c 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -84,6 +84,7 @@ class DomainReliabilityMonitor;
@@ -159,7 +159,7 @@ index 4378529b710fe66adeb4f57c037f75d9b8215dca..db00747c9992b660ef848a37a77eb70b
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -577,6 +580,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -578,6 +581,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::unique_ptr<network::NSSTempCertsCacheChromeOS> nss_temp_certs_cache_;
  #endif
  
@@ -169,7 +169,7 @@ index 4378529b710fe66adeb4f57c037f75d9b8215dca..db00747c9992b660ef848a37a77eb70b
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e014b8c0153ce8da293ebc226b19da393c91e844..e62831485c4f0a36e44759c67c70d9353a02195e 100644
+index dc293ac1d40b5de87ef8ff19467911948a26fc78..80a10441041fc495be5b03f2a3792b280c17c7a5 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -174,6 +174,17 @@ interface TrustedURLLoaderHeaderClient {
