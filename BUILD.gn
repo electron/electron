@@ -303,6 +303,7 @@ source_set("manifests") {
   include_dirs = [ "//electron" ]
 
   deps = [
+    "buildflags",
     "//electron/shell/common/api:mojo",
     "//printing/buildflags",
     "//services/service_manager/public/cpp",
