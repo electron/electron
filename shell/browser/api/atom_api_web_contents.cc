@@ -1795,11 +1795,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
 
   // We don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
-  settings.SetBoolean(printing::kSettingPrintToPDF, false);
-  settings.SetBoolean(printing::kSettingCloudPrintDialog, false);
-  settings.SetBoolean(printing::kSettingPrintWithPrivet, false);
+  settings.SetInteger(printing::kSettingPrinterType, printing::kLocalPrinter);
   settings.SetBoolean(printing::kSettingShouldPrintSelectionOnly, false);
-  settings.SetBoolean(printing::kSettingPrintWithExtension, false);
   settings.SetBoolean(printing::kSettingRasterizePdf, false);
 
   // Set custom page ranges to print
