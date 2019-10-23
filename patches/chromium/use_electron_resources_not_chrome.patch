@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 23 Oct 2019 14:17:18 -0700
+Subject: use electron resources not chrome
+
+
+diff --git a/chrome/browser/spellchecker/spellcheck_factory.cc b/chrome/browser/spellchecker/spellcheck_factory.cc
+index 48ac0a24efde0cb7d3ba71c8b8bdf5178f606e80..e2beefc276098fdc8f1cdab2e0edb8fae4ee67ca 100644
+--- a/chrome/browser/spellchecker/spellcheck_factory.cc
++++ b/chrome/browser/spellchecker/spellcheck_factory.cc
+@@ -6,7 +6,7 @@
+ 
+ #include "chrome/browser/profiles/incognito_helpers.h"
+ #include "chrome/browser/spellchecker/spellcheck_service.h"
+-#include "chrome/grit/locale_settings.h"
++#include "electron/grit/electron_resources.h"
+ #include "components/keyed_service/content/browser_context_dependency_manager.h"
+ #include "components/pref_registry/pref_registry_syncable.h"
+ #include "components/prefs/pref_service.h"
