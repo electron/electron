@@ -70,7 +70,6 @@ int NodeMain(int argc, char* argv[]) {
 
     gin::V8Initializer::LoadV8Snapshot(
         gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
-    gin::V8Initializer::LoadV8Natives();
 
     // V8 requires a task scheduler apparently
     base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");

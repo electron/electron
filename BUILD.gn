@@ -705,7 +705,6 @@ if (is_mac) {
       public_deps += [ "//third_party/icu:icudata" ]
     }
     if (v8_use_external_startup_data) {
-      sources += [ "$root_out_dir/natives_blob.bin" ]
       public_deps += [ "//v8" ]
       if (use_v8_context_snapshot) {
         sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
