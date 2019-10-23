@@ -4,6 +4,7 @@ import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-in
 class WebNavigation {
   private onBeforeNavigate = new Event()
   private onCompleted = new Event()
+  private onCommitted = new Event()
 
   constructor () {
     ipcRendererInternal.on('CHROME_WEBNAVIGATION_ONBEFORENAVIGATE', (event: Electron.IpcRendererEvent, details: any) => {
@@ -12,6 +13,10 @@ class WebNavigation {
 
     ipcRendererInternal.on('CHROME_WEBNAVIGATION_ONCOMPLETED', (event: Electron.IpcRendererEvent, details: any) => {
       this.onCompleted.emit(details)
+    })
+
+    ipcRendererInternal.on('CHROME_WEBNAVIGATION_ONCOMMITTED', (event: Electron.IpcRendererEvent, details: any) => {
+      this.onCommitted.emit(details)
     })
   }
 }
