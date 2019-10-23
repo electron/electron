@@ -39,7 +39,7 @@
 #include "shell/browser/web_dialog_helper.h"
 #include "shell/common/atom_constants.h"
 #include "shell/common/options_switches.h"
-#include "storage/browser/fileapi/isolated_context.h"
+#include "storage/browser/file_system/isolated_context.h"
 
 #if BUILDFLAG(ENABLE_COLOR_CHOOSER)
 #include "chrome/browser/ui/color_chooser.h"
