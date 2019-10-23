@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 22 Oct 2019 11:00:01 -0700
+Subject: fix: call InitializeContextRuntime in InitializeContext
+
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 50886f4a998f1e7f346a6b7fad91ce49c3a7cdff..6ec07527ad7a806f889d884507e9def1cf68b4c8 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -371,8 +371,6 @@ Local<Context> NewContext(Isolate* isolate,
+     return Local<Context>();
+   }
+ 
+-  InitializeContextRuntime(context);
+-
+   return context;
+ }
+ 
+@@ -457,6 +455,11 @@ bool InitializeContext(Local<Context> context) {
+     }
+   }
+ 
++  // This must be called here because embedders don't necessarily run
++  // NewContext, so when InitializeContext is called this might never
++  // otherwise be called
++  InitializeContextRuntime(context);
++
+   return true;
+ }
+ 
