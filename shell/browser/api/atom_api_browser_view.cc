@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/atom_api_browser_view.h"
 
-#include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_browser_view.h"

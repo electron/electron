@@ -30,7 +30,9 @@ namespace api {
 
 class WebContents;
 
-class BrowserView : public mate::TrackableObject<BrowserView>,
+class BrowserView : public mate::TrackableObject<
+                        BrowserView,
+                        gin_helper::EventEmitter<mate::Wrappable<BrowserView>>>,
                     public content::WebContentsObserver {
  public:
   static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,

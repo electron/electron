@@ -25,8 +25,11 @@ namespace electron {
 
 namespace api {
 
-class Notification : public mate::TrackableObject<Notification>,
-                     public NotificationDelegate {
+class Notification
+    : public mate::TrackableObject<
+          Notification,
+          gin_helper::EventEmitter<mate::Wrappable<Notification>>>,
+      public NotificationDelegate {
  public:
   static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
                                   gin::Arguments* args);
