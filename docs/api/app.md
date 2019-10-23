@@ -1280,33 +1280,28 @@ app.moveToApplicationsFolder({
 
 Would mean that if an app already exists in the user directory, if the user chooses to 'Continue Move' then the function would continue with its default behavior and the existing app will be trashed and the active app moved into its place.
 
-### `app.isSecureInputEnabled()` _macOS_
+### `app.isSecureKeyboardEntryEnabled()` _macOS_
 
 Returns `Boolean` - whether `Secure Keyboard Entry` is enabled.
 
-This function might return `true` even if you have not called `app.setSecureInputEnabled(true)`
-but other process already called.
-For instance, Terminal.app has a menu item `Secure Keyboard Entry` in `Terminal` menu.
-If you already set enabled it, this method always returns `true`.
-You need to `app.setSecureInputEnabled(true)` to protect from other process listens input events.
+By default this API will return `false`.
 
-For details, see [TN2150](https://developer.apple.com/library/content/technotes/tn2150/_index.html).
+On _Linux_ and _Windows_, this API will return `false`.
 
-### `app.setSecureInputEnabled(enabled)` _macOS_
+### `app.setSecureKeyboardEntryEnabled(enabled)` _macOS_
 
 * `enabled` Boolean - Enable or disable `Secure Keyboard Entry`
 
-Set `Secure Keyboard Entry` is enabled.
+Set the `Secure Keyboard Entry` is enabled in your application.
 
-This function is protect from other process listens input events.
+By using this API, important information such as password and other sensitive information can be prevented from being intercepted by other processes.
 
-After you enable it, you should disable before application quited.
+See [Apple's documentation](https://developer.apple.com/library/archive/technotes/tn2150/_index.html) for more
+details.
 
-```js
-app.on('quit', () => {
-  app.setSecureInputEnabled(false)
-})
-```
+**Note:** Enable only when it is needed and disable it when it is no longer needed.
+
+On _Linux_ and _Windows_, this API will do nothing.
 
 ## Properties
 

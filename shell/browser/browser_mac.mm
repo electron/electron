@@ -4,7 +4,6 @@
 
 #include "shell/browser/browser.h"
 
-#include <Carbon/Carbon.h>
 #include <string>
 #include <utility>
 
@@ -431,25 +430,16 @@ bool Browser::IsEmojiPanelSupported() {
   return true;
 }
 
-bool Browser::IsSecureInputEnabled() {
-  // See
-  // https://developer.apple.com/library/content/technotes/tn2150/_index.html
-  return IsSecureEventInputEnabled();
+bool Browser::IsSecureKeyboardEntryEnabled() {
+  return password_input_enabler_.get() != nullptr;
 }
 
-void Browser::SetSecureInputEnabled(bool enabled) {
-  // See
-  // https://developer.apple.com/library/content/technotes/tn2150/_index.html
+void Browser::SetSecureKeyboardEntryEnabled(bool enabled) {
   if (enabled) {
-    if (!secure_input_count_) {
-      EnableSecureEventInput();
-      ++secure_input_count_;
-    }
+    password_input_enabler_ =
+        std::make_unique<ui::ScopedPasswordInputEnabler>();
   } else {
-    if (secure_input_count_) {
-      --secure_input_count_;
-      DisableSecureEventInput();
-    }
+    password_input_enabler_.reset();
   }
 }
 

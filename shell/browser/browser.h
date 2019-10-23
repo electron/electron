@@ -23,6 +23,10 @@
 #include "base/files/file_path.h"
 #endif
 
+#if defined(OS_MACOSX)
+#include "ui/base/cocoa/secure_password_input.h"
+#endif
+
 namespace base {
 class FilePath;
 }
@@ -262,9 +266,9 @@ class Browser : public WindowListObserver {
   void RemoveObserver(BrowserObserver* obs) { observers_.RemoveObserver(obs); }
 
   // Returns whether secure input is enabled
-  bool IsSecureInputEnabled();
+  bool IsSecureKeyboardEntryEnabled();
 
-  void SetSecureInputEnabled(bool enabled);
+  void SetSecureKeyboardEntryEnabled(bool enabled);
 
   bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
@@ -310,7 +314,9 @@ class Browser : public WindowListObserver {
 
   std::unique_ptr<gin_helper::Promise<void>> ready_promise_;
 
-  int secure_input_count_ = 0;
+#if defined(OS_MACOSX)
+  std::unique_ptr<ui::ScopedPasswordInputEnabler> password_input_enabler_;
+#endif
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   base::Value about_panel_options_;
