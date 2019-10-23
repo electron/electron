@@ -40,9 +40,9 @@ async function checkIfDocOnlyChange () {
         }
       })
       if (nonDocChange) {
-        process.exit(0)
-      } else {
         process.exit(1)
+      } else {
+        process.exit(0)
       }
     } catch (ex) {
       console.error('Error getting list of files changed: ', ex)
