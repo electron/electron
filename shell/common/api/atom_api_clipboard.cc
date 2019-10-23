@@ -68,9 +68,12 @@ void Clipboard::WriteBuffer(const std::string& format,
   }
 
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
+  base::span<const uint8_t> payload_span(
+      reinterpret_cast<const uint8_t*>(node::Buffer::Data(buffer)),
+      node::Buffer::Length(buffer));
   writer.WriteData(
-      ui::ClipboardFormatType::GetType(format).Serialize(),
-      std::string(node::Buffer::Data(buffer), node::Buffer::Length(buffer)));
+      base::UTF8ToUTF16(ui::ClipboardFormatType::GetType(format).Serialize()),
+      mojo_base::BigBuffer(payload_span));
 }
 
 void Clipboard::Write(const mate::Dictionary& data, mate::Arguments* args) {
