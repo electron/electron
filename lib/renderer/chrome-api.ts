@@ -186,6 +186,15 @@ export function injectTo (extensionId: string, context: any) {
       ipcRendererInternal.invoke('CHROME_TABS_SEND_MESSAGE', tabId, extensionId, message).then(responseCallback)
     },
 
+    // https://developer.chrome.com/extensions/tabs#method-reload
+    reload (
+      tabId: number,
+      reloadProperties: Chrome.Tabs.reloadProperties,
+      responseCallback: Chrome.Tabs.SendMessageCallback = () => {}
+    ) {
+      ipcRendererInternal.invoke('CHROME_TABS_RELOAD', tabId, extensionId, reloadProperties).then(responseCallback)
+    },
+
     onUpdated: new Event(),
     onCreated: new Event(),
     onRemoved: new Event()
