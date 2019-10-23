@@ -13,6 +13,15 @@
 namespace gin {
 
 template <>
+struct Converter<blink::WebKeyboardEvent> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::WebKeyboardEvent* out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+};
+
+template <>
 struct Converter<blink::CloneableMessage> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -22,6 +31,46 @@ struct Converter<blink::CloneableMessage> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const blink::CloneableMessage& val) {
     return mate::ConvertToV8(isolate, val);
+  }
+};
+
+template <>
+struct Converter<blink::WebDeviceEmulationParams> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::WebDeviceEmulationParams* out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+};
+
+template <>
+struct Converter<blink::WebContextMenuData::MediaType> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const blink::WebContextMenuData::MediaType& in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+template <>
+struct Converter<blink::WebContextMenuData::InputFieldType> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const blink::WebContextMenuData::InputFieldType& in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+template <>
+struct Converter<network::mojom::ReferrerPolicy> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const network::mojom::ReferrerPolicy& in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::ReferrerPolicy* out) {
+    return mate::ConvertFromV8(isolate, val, out);
   }
 };
 

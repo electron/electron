@@ -13,6 +13,7 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "gin/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
@@ -44,9 +45,10 @@ class TopLevelWindow
 
  protected:
   // Common constructor.
-  TopLevelWindow(v8::Isolate* isolate, const mate::Dictionary& options);
+  TopLevelWindow(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   // Creating independent TopLevelWindow instance.
-  TopLevelWindow(gin_helper::Arguments* args, const mate::Dictionary& options);
+  TopLevelWindow(gin_helper::Arguments* args,
+                 const gin_helper::Dictionary& options);
   ~TopLevelWindow() override;
 
   // TrackableObject:
@@ -91,7 +93,7 @@ class TopLevelWindow
 #endif
 
   // Public APIs of NativeWindow.
-  void SetContentView(mate::Handle<View> view);
+  void SetContentView(gin::Handle<View> view);
   void Close();
   virtual void Focus();
   virtual void Blur();
@@ -215,7 +217,7 @@ class TopLevelWindow
   // Extra APIs added in JS.
   bool SetThumbarButtons(gin_helper::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
-  void SetIcon(mate::Handle<NativeImage> icon);
+  void SetIcon(gin::Handle<NativeImage> icon);
 #endif
 #if defined(OS_WIN)
   typedef base::RepeatingCallback<void(v8::Local<v8::Value>,

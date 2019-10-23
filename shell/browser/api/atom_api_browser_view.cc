@@ -64,11 +64,8 @@ BrowserView::BrowserView(gin::Arguments* args,
       gin::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
   web_preferences.Set("type", "browserView");
-  mate::Handle<class WebContents> web_contents = WebContents::Create(
-      isolate,
-      // TODO(zcbenz): No need to do convertion after converting constructor
-      // of WebContents to gin.
-      mate::Dictionary(isolate, web_preferences.GetHandle()));
+  gin::Handle<class WebContents> web_contents =
+      WebContents::Create(isolate, web_preferences);
 
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();

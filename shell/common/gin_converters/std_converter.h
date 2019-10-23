@@ -40,6 +40,13 @@ struct Converter<unsigned long> {  // NOLINT(runtime/int)
 #endif
 
 template <>
+struct Converter<std::nullptr_t> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, std::nullptr_t val) {
+    return v8::Null(isolate);
+  }
+};
+
+template <>
 struct Converter<const char*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val) {
     return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal)

@@ -21,10 +21,6 @@ struct WebPoint;
 struct WebSize;
 }  // namespace blink
 
-namespace content {
-struct NativeWebKeyboardEvent;
-}
-
 namespace mate {
 
 blink::WebInputEvent::Type GetWebInputEventType(v8::Isolate* isolate,
@@ -42,15 +38,6 @@ struct Converter<blink::WebKeyboardEvent> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::WebKeyboardEvent* out);
-};
-
-template <>
-struct Converter<content::NativeWebKeyboardEvent> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     content::NativeWebKeyboardEvent* out);
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const content::NativeWebKeyboardEvent& in);
 };
 
 template <>

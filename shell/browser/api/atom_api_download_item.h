@@ -10,20 +10,24 @@
 
 #include "base/files/file_path.h"
 #include "components/download/public/common/download_item.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/ui/file_dialog.h"
+#include "shell/common/gin_helper/event_emitter.h"
 #include "url/gurl.h"
 
 namespace electron {
 
 namespace api {
 
-class DownloadItem : public mate::TrackableObject<DownloadItem>,
-                     public download::DownloadItem::Observer {
+class DownloadItem
+    : public mate::TrackableObject<
+          DownloadItem,
+          gin_helper::EventEmitter<mate::Wrappable<DownloadItem>>>,
+      public download::DownloadItem::Observer {
  public:
-  static mate::Handle<DownloadItem> Create(v8::Isolate* isolate,
-                                           download::DownloadItem* item);
+  static gin::Handle<DownloadItem> Create(v8::Isolate* isolate,
+                                          download::DownloadItem* item);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

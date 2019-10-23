@@ -28,7 +28,7 @@ class RootViewMac;
 
 class NativeWindowMac : public NativeWindow {
  public:
-  NativeWindowMac(const mate::Dictionary& options, NativeWindow* parent);
+  NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
 
   // NativeWindow:

@@ -2,22 +2,22 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/native_mate_converters/content_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
 
 #include <string>
 #include <vector>
 
+#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
-#include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/web_contents_permission_helper.h"
-#include "shell/common/native_mate_converters/blink_converter.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
-#include "shell/common/native_mate_converters/ui_base_types_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "ui/events/keycodes/dom/keycode_converter.h"
+#include "ui/events/keycodes/keyboard_code_conversion.h"
 
 namespace {
 
@@ -38,7 +38,7 @@ v8::Local<v8::Value> MenuItemToV8(
     content::WebContents* web_contents,
     const content::CustomContextMenuContext& context,
     const content::MenuItem& item) {
-  mate::Dictionary v8_item = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary v8_item = gin::Dictionary::CreateEmpty(isolate);
   switch (item.type) {
     case content::MenuItem::CHECKABLE_OPTION:
     case content::MenuItem::GROUP:
@@ -69,12 +69,31 @@ v8::Local<v8::Value> MenuToV8(v8::Isolate* isolate,
   v8_menu.reserve(menu.size());
   for (const auto& menu_item : menu)
     v8_menu.push_back(MenuItemToV8(isolate, web_contents, context, menu_item));
-  return mate::ConvertToV8(isolate, v8_menu);
+  return gin::ConvertToV8(isolate, v8_menu);
 }
 
 }  // namespace
 
-namespace mate {
+namespace gin {
+
+template <>
+struct Converter<ui::MenuSourceType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const ui::MenuSourceType& in) {
+    switch (in) {
+      case ui::MENU_SOURCE_MOUSE:
+        return StringToV8(isolate, "mouse");
+      case ui::MENU_SOURCE_KEYBOARD:
+        return StringToV8(isolate, "keyboard");
+      case ui::MENU_SOURCE_TOUCH:
+        return StringToV8(isolate, "touch");
+      case ui::MENU_SOURCE_TOUCH_EDIT_MENU:
+        return StringToV8(isolate, "touchMenu");
+      default:
+        return StringToV8(isolate, "none");
+    }
+  }
+};
 
 // static
 v8::Local<v8::Value> Converter<content::MenuItem::Type>::ToV8(
@@ -100,7 +119,7 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
     v8::Isolate* isolate,
     const ContextMenuParamsWithWebContents& val) {
   const auto& params = val.first;
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("x", params.x);
   dict.Set("y", params.y);
   dict.Set("linkURL", params.link_url);
@@ -109,13 +128,13 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   dict.Set("frameURL", params.frame_url);
   dict.Set("srcURL", params.src_url);
   dict.Set("mediaType", params.media_type);
-  dict.Set("mediaFlags", MediaFlagsToV8(isolate, params.media_flags));
+  dict.Set("mediaFlags", mate::MediaFlagsToV8(isolate, params.media_flags));
   bool has_image_contents =
       (params.media_type == blink::WebContextMenuData::kMediaTypeImage) &&
       params.has_image_contents;
   dict.Set("hasImageContents", has_image_contents);
   dict.Set("isEditable", params.is_editable);
-  dict.Set("editFlags", EditFlagsToV8(isolate, params.edit_flags));
+  dict.Set("editFlags", mate::EditFlagsToV8(isolate, params.edit_flags));
   dict.Set("selectionText", params.selection_text);
   dict.Set("titleText", params.title_text);
   dict.Set("misspelledWord", params.misspelled_word);
@@ -126,7 +145,7 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   if (params.custom_context.is_pepper_menu)
     dict.Set("menu", MenuToV8(isolate, val.second, params.custom_context,
                               params.custom_items));
-  return mate::ConvertToV8(isolate, dict);
+  return gin::ConvertToV8(isolate, dict);
 }
 
 // static
@@ -215,7 +234,7 @@ bool Converter<content::WebContents*>::FromV8(v8::Isolate* isolate,
                                               v8::Local<v8::Value> val,
                                               content::WebContents** out) {
   electron::api::WebContents* web_contents = nullptr;
-  if (!ConvertFromV8(isolate, val, &web_contents) || !web_contents)
+  if (!gin::ConvertFromV8(isolate, val, &web_contents) || !web_contents)
     return false;
 
   *out = web_contents->web_contents();
@@ -226,17 +245,17 @@ bool Converter<content::WebContents*>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<content::Referrer>::ToV8(
     v8::Isolate* isolate,
     const content::Referrer& val) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("url", ConvertToV8(isolate, val.url));
   dict.Set("policy", ConvertToV8(isolate, val.policy));
-  return mate::ConvertToV8(isolate, dict);
+  return gin::ConvertToV8(isolate, dict);
 }
 
 // static
 bool Converter<content::Referrer>::FromV8(v8::Isolate* isolate,
                                           v8::Local<v8::Value> val,
                                           content::Referrer* out) {
-  mate::Dictionary dict;
+  gin_helper::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
 
@@ -249,4 +268,42 @@ bool Converter<content::Referrer>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
-}  // namespace mate
+// static
+bool Converter<content::NativeWebKeyboardEvent>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    content::NativeWebKeyboardEvent* out) {
+  gin_helper::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+  if (!ConvertFromV8(isolate, val, static_cast<blink::WebKeyboardEvent*>(out)))
+    return false;
+  dict.Get("skipInBrowser", &out->skip_in_browser);
+  return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
+    v8::Isolate* isolate,
+    const content::NativeWebKeyboardEvent& in) {
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+
+  if (in.GetType() == blink::WebInputEvent::Type::kRawKeyDown)
+    dict.Set("type", "keyDown");
+  else if (in.GetType() == blink::WebInputEvent::Type::kKeyUp)
+    dict.Set("type", "keyUp");
+  dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.dom_key));
+  dict.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
+                       static_cast<ui::DomCode>(in.dom_code)));
+
+  using Modifiers = blink::WebInputEvent::Modifiers;
+  dict.Set("isAutoRepeat", (in.GetModifiers() & Modifiers::kIsAutoRepeat) != 0);
+  dict.Set("shift", (in.GetModifiers() & Modifiers::kShiftKey) != 0);
+  dict.Set("control", (in.GetModifiers() & Modifiers::kControlKey) != 0);
+  dict.Set("alt", (in.GetModifiers() & Modifiers::kAltKey) != 0);
+  dict.Set("meta", (in.GetModifiers() & Modifiers::kMetaKey) != 0);
+
+  return dict.GetHandle();
+}
+
+}  // namespace gin

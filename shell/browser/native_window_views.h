@@ -37,7 +37,8 @@ class NativeWindowViews : public NativeWindow,
                           public views::WidgetObserver,
                           public ui::EventHandler {
  public:
-  NativeWindowViews(const mate::Dictionary& options, NativeWindow* parent);
+  NativeWindowViews(const gin_helper::Dictionary& options,
+                    NativeWindow* parent);
   ~NativeWindowViews() override;
 
   // NativeWindow:

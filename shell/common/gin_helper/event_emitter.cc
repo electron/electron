@@ -4,6 +4,8 @@
 
 #include "shell/common/gin_helper/event_emitter.h"
 
+#include "content/public/browser/render_frame_host.h"
+#include "shell/browser/api/event.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "ui/events/event_constants.h"
@@ -60,6 +62,22 @@ v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags) {
   obj.Set("metaKey", static_cast<bool>(flags & ui::EF_COMMAND_DOWN));
   obj.Set("triggeredByAccelerator", !is_mouse_click);
   return obj.GetHandle();
+}
+
+v8::Local<v8::Object> CreateNativeEvent(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> sender,
+    content::RenderFrameHost* frame,
+    base::Optional<electron::mojom::ElectronBrowser::MessageSyncCallback>
+        callback) {
+  mate::Handle<mate::Event> native_event = mate::Event::Create(isolate);
+  native_event->SetCallback(std::move(callback));
+  auto event = v8::Local<v8::Object>::Cast(native_event.ToV8());
+
+  Dictionary dict(isolate, event);
+  dict.Set("sender", sender);
+  dict.Set("frameId", frame->GetRoutingID());
+  return event;
 }
 
 }  // namespace internal

@@ -17,7 +17,6 @@
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/desktop_media_id.h"
-#include "native_mate/dictionary.h"
 #include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/atom_native_widget_mac.h"
 #include "shell/browser/ui/cocoa/atom_ns_window.h"
@@ -29,6 +28,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/deprecate_util.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
@@ -244,7 +244,7 @@
 
 @end
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<electron::NativeWindowMac::TitleBarStyle> {
@@ -268,7 +268,7 @@ struct Converter<electron::NativeWindowMac::TitleBarStyle> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -318,7 +318,7 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
 
 }  // namespace
 
-NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
+NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
   int width = 800, height = 600;
@@ -1659,7 +1659,7 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
 }
 
 // static
-NativeWindow* NativeWindow::Create(const mate::Dictionary& options,
+NativeWindow* NativeWindow::Create(const gin_helper::Dictionary& options,
                                    NativeWindow* parent) {
   return new NativeWindowMac(options, parent);
 }
