@@ -712,11 +712,11 @@ step-check-for-doc-only-change: &step-check-for-doc-only-change
       cd src/electron
       node script/yarn install --frozen-lockfile
       if node script/doc-only-change.js --prNumber=$CIRCLE_PR_NUMBER --prURL=$CIRCLE_PULL_REQUEST; then
-        #PR is not a doc only change; create empty file to indicate check has been done
-        touch .skip-ci-build
-      else
         #PR is doc only change; save file with value true to indicate doc only change
         echo "true" > .skip-ci-build
+      else
+        #PR is not a doc only change; create empty file to indicate check has been done
+        touch .skip-ci-build
       fi
 
 step-persist-doc-only-change: &step-persist-doc-only-change
