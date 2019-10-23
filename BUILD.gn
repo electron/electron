@@ -309,6 +309,10 @@ source_set("manifests") {
     "//printing/buildflags",
     "//services/service_manager/public/cpp",
   ]
+
+  if (enable_builtin_spellchecker) {
+    deps += [ ":chrome_spellchecker" ]
+  }
 }
 
 npm_action("electron_version_args") {
@@ -356,14 +360,19 @@ source_set("chrome_spellchecker") {
     "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
     "//chrome/browser/spellchecker/spellcheck_service.cc",
     "//chrome/browser/spellchecker/spellcheck_service.h",
-    "//chrome/browser/spellchecker/spelling_request.cc",
-    "//chrome/browser/spellchecker/spelling_request.h",
   ]
 
   if (has_spellcheck_panel) {
     sources += [
       "//chrome/browser/spellchecker/spell_check_panel_host_impl.cc",
       "//chrome/browser/spellchecker/spell_check_panel_host_impl.h",
+    ]
+  }
+
+  if (use_browser_spellchecker) {
+    sources += [
+      "//chrome/browser/spellchecker/spelling_request.cc",
+      "//chrome/browser/spellchecker/spelling_request.h",
     ]
   }
 
