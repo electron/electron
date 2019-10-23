@@ -13,7 +13,6 @@
 #include "chrome/browser/extensions/global_shortcut_listener.h"
 #include "gin/handle.h"
 #include "shell/browser/api/trackable_object.h"
-#include "shell/common/gin_helper/event_emitter.h"
 #include "ui/base/accelerators/accelerator.h"
 
 namespace electron {

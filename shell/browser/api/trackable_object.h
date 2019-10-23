@@ -11,6 +11,7 @@
 #include "base/memory/weak_ptr.h"
 #include "native_mate/object_template_builder_deprecated.h"
 #include "shell/browser/api/event_emitter_deprecated.h"
+#include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/key_weak_map.h"
 
 namespace base {

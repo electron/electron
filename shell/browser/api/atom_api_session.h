@@ -14,7 +14,6 @@
 #include "gin/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
-#include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/promise_util.h"
 
 class GURL;

@@ -18,7 +18,6 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/atom_api_native_image.h"
-#include "shell/common/gin_helper/event_emitter.h"
 
 namespace electron {
 

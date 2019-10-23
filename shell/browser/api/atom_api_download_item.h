@@ -13,7 +13,6 @@
 #include "gin/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/ui/file_dialog.h"
-#include "shell/common/gin_helper/event_emitter.h"
 #include "url/gurl.h"
 
 namespace electron {

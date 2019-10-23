@@ -11,6 +11,7 @@
 #include "base/optional.h"
 #include "content/public/browser/browser_thread.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "native_mate/wrappable.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 
 namespace content {

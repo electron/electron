@@ -13,7 +13,6 @@
 #include "net/cookies/canonical_cookie.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/net/cookie_details.h"
-#include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/promise_util.h"
 
 namespace base {

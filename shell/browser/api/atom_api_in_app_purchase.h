@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "gin/handle.h"
-#include "native_mate/wrappable.h"
 #include "shell/browser/mac/in_app_purchase.h"
 #include "shell/browser/mac/in_app_purchase_observer.h"
 #include "shell/browser/mac/in_app_purchase_product.h"

@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
 #define SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
 
-#include "native_mate/wrappable.h"
 #include "shell/common/gin_helper/event_emitter.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"

@@ -8,7 +8,6 @@
 #include "base/compiler_specific.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/lib/power_observer.h"
-#include "shell/common/gin_helper/event_emitter.h"
 #include "ui/base/idle/idle.h"
 
 namespace electron {

@@ -13,7 +13,6 @@
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
 #include "gin/handle.h"
 #include "shell/browser/api/trackable_object.h"
-#include "shell/common/gin_helper/event_emitter.h"
 
 namespace electron {
 

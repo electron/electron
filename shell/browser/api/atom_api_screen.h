@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "native_mate/wrappable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter.h"
 #include "ui/display/display_observer.h"

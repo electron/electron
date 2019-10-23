@@ -29,7 +29,6 @@
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/common_web_contents_delegate.h"
-#include "shell/common/gin_helper/event_emitter.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)

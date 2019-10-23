@@ -8,7 +8,6 @@
 #include <string>
 
 #include "gin/handle.h"
-#include "native_mate/wrappable.h"
 #include "shell/browser/auto_updater.h"
 #include "shell/browser/window_list_observer.h"
 #include "shell/common/gin_helper/event_emitter.h"

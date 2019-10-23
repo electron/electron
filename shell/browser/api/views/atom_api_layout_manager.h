@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "shell/browser/api/trackable_object.h"
-#include "shell/common/gin_helper/event_emitter.h"
 #include "ui/views/layout/layout_manager.h"
 
 namespace electron {

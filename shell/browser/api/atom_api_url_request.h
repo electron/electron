@@ -13,7 +13,6 @@
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
-#include "native_mate/wrappable.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
