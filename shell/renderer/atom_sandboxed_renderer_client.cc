@@ -20,12 +20,12 @@
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/atom_render_frame_observer.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/electron_node/src/node_binding.h"
-#include "third_party/electron_node/src/node_native_module_env.h"
 
 namespace electron {
 
@@ -231,7 +231,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
 
   std::vector<v8::Local<v8::Value>> sandbox_preload_bundle_args = {binding};
 
-  node::native_module::NativeModuleEnv::CompileAndCall(
+  util::CompileAndCall(
       isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",
       &sandbox_preload_bundle_params, &sandbox_preload_bundle_args, nullptr);
 
@@ -259,9 +259,8 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
       process.GetHandle(),
       GetContext(render_frame->GetWebFrame(), isolate)->Global()};
 
-  node::native_module::NativeModuleEnv::CompileAndCall(
-      context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
-      &isolated_bundle_args, nullptr);
+  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
+                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
 }
 
 void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
@@ -286,9 +285,8 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
       GetContext(render_frame->GetWebFrame(), isolate)->Global(),
       v8::Integer::New(isolate, world_id)};
 
-  node::native_module::NativeModuleEnv::CompileAndCall(
-      context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
-      &isolated_bundle_args, nullptr);
+  util::CompileAndCall(context, "electron/js2c/content_script_bundle",
+                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
 #endif
 }
 
