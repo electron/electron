@@ -17,9 +17,7 @@ namespace electron {
 
 namespace api {
 
-class View : public mate::TrackableObject<
-                 View,
-                 gin_helper::EventEmitter<mate::Wrappable<View>>> {
+class View : public mate::TrackableObject<View> {
  public:
   static mate::WrappableBase* New(gin::Arguments* args);
 

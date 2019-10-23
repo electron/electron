@@ -77,9 +77,7 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
 };
 
 // Wrapper around the content::WebContents.
-class WebContents : public mate::TrackableObject<
-                        WebContents,
-                        gin_helper::EventEmitter<mate::Wrappable<WebContents>>>,
+class WebContents : public mate::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
                     public content::WebContentsObserver,
                     public mojom::ElectronBrowser {

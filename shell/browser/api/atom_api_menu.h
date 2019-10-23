@@ -18,9 +18,7 @@ namespace electron {
 
 namespace api {
 
-class Menu : public mate::TrackableObject<
-                 Menu,
-                 gin_helper::EventEmitter<mate::Wrappable<Menu>>>,
+class Menu : public mate::TrackableObject<Menu>,
              public AtomMenuModel::Delegate,
              public AtomMenuModel::Observer {
  public:

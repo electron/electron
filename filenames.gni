@@ -112,8 +112,6 @@ filenames = {
     "shell/browser/api/atom_api_browser_window_views.cc",
     "shell/browser/api/event.cc",
     "shell/browser/api/event.h",
-    "shell/browser/api/event_emitter_deprecated.cc",
-    "shell/browser/api/event_emitter_deprecated.h",
     "shell/browser/api/trackable_object.cc",
     "shell/browser/api/trackable_object.h",
     "shell/browser/api/frame_subscriber.cc",

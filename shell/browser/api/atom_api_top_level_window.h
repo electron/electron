@@ -25,11 +25,8 @@ namespace api {
 
 class View;
 
-class TopLevelWindow
-    : public mate::TrackableObject<
-          TopLevelWindow,
-          gin_helper::EventEmitter<mate::Wrappable<TopLevelWindow>>>,
-      public NativeWindowObserver {
+class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
+                       public NativeWindowObserver {
  public:
   static mate::WrappableBase* New(gin_helper::Arguments* args);
 

@@ -18,10 +18,7 @@ namespace electron {
 
 namespace api {
 
-class DesktopCapturer
-    : public mate::TrackableObject<
-          DesktopCapturer,
-          gin_helper::EventEmitter<mate::Wrappable<DesktopCapturer>>> {
+class DesktopCapturer : public mate::TrackableObject<DesktopCapturer> {
  public:
   struct Source {
     DesktopMediaList::Source media_list_source;

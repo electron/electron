@@ -124,10 +124,7 @@ TopLevelWindow::~TopLevelWindow() {
 void TopLevelWindow::InitWith(v8::Isolate* isolate,
                               v8::Local<v8::Object> wrapper) {
   AttachAsUserData(window_.get());
-  mate::TrackableObject<
-      TopLevelWindow, gin_helper::EventEmitter<
-                          mate::Wrappable<TopLevelWindow>>>::InitWith(isolate,
-                                                                      wrapper);
+  mate::TrackableObject<TopLevelWindow>::InitWith(isolate, wrapper);
 
   // We can only append this window to parent window's child windows after this
   // window's JS wrapper gets initialized.

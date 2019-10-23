@@ -19,11 +19,8 @@ namespace electron {
 
 namespace api {
 
-class GlobalShortcut
-    : public extensions::GlobalShortcutListener::Observer,
-      public mate::TrackableObject<
-          GlobalShortcut,
-          gin_helper::EventEmitter<mate::Wrappable<GlobalShortcut>>> {
+class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
+                       public mate::TrackableObject<GlobalShortcut> {
  public:
   static gin::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 

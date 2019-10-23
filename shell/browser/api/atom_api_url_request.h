@@ -25,7 +25,7 @@ namespace api {
 
 class UploadDataPipeGetter;
 
-class URLRequest : public gin_helper::EventEmitter<mate::Wrappable<URLRequest>>,
+class URLRequest : public gin_helper::EventEmitter<URLRequest>,
                    public network::SimpleURLLoaderStreamConsumer {
  public:
   static mate::WrappableBase* New(gin::Arguments* args);

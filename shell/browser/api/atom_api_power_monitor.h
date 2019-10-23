@@ -14,11 +14,8 @@ namespace electron {
 
 namespace api {
 
-class PowerMonitor
-    : public mate::TrackableObject<
-          PowerMonitor,
-          gin_helper::EventEmitter<mate::Wrappable<PowerMonitor>>>,
-      public PowerObserver {
+class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
+                     public PowerObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 

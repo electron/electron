@@ -1049,9 +1049,8 @@ void WebContents::MessageTo(bool internal,
                             int32_t web_contents_id,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
-  auto* web_contents = mate::TrackableObject<
-      WebContents, gin_helper::EventEmitter<mate::Wrappable<WebContents>>>::
-      FromWeakMapID(isolate(), web_contents_id);
+  auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
+      isolate(), web_contents_id);
 
   if (web_contents) {
     web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,

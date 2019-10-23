@@ -16,10 +16,9 @@ namespace electron {
 
 namespace api {
 
-class AutoUpdater
-    : public gin_helper::EventEmitter<mate::Wrappable<AutoUpdater>>,
-      public auto_updater::Delegate,
-      public WindowListObserver {
+class AutoUpdater : public gin_helper::EventEmitter<AutoUpdater>,
+                    public auto_updater::Delegate,
+                    public WindowListObserver {
  public:
   static gin::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 

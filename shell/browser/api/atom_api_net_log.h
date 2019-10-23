@@ -23,9 +23,7 @@ class AtomBrowserContext;
 
 namespace api {
 
-class NetLog : public mate::TrackableObject<
-                   NetLog,
-                   gin_helper::EventEmitter<mate::Wrappable<NetLog>>> {
+class NetLog : public mate::TrackableObject<NetLog> {
  public:
   static gin::Handle<NetLog> Create(v8::Isolate* isolate,
                                     AtomBrowserContext* browser_context);

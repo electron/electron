@@ -35,12 +35,11 @@ enum NotificationCenterKind {
 };
 #endif
 
-class SystemPreferences
-    : public gin_helper::EventEmitter<mate::Wrappable<SystemPreferences>>
+class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
 #if defined(OS_WIN)
     ,
-      public BrowserObserver,
-      public gfx::SysColorChangeListener
+                          public BrowserObserver,
+                          public gfx::SysColorChangeListener
 #endif
 {
  public:

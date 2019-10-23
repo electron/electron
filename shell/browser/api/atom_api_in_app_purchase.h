@@ -19,9 +19,8 @@ namespace electron {
 
 namespace api {
 
-class InAppPurchase
-    : public gin_helper::EventEmitter<mate::Wrappable<InAppPurchase>>,
-      public in_app_purchase::TransactionObserver {
+class InAppPurchase : public gin_helper::EventEmitter<InAppPurchase>,
+                      public in_app_purchase::TransactionObserver {
  public:
   static gin::Handle<InAppPurchase> Create(v8::Isolate* isolate);
 

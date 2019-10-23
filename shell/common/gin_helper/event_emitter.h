@@ -37,12 +37,11 @@ v8::Local<v8::Object> CreateNativeEvent(
 }  // namespace internal
 
 // Provide helperers to emit event in JavaScript.
-//
-// TODO(zcbenz): Inherit from Wrappable directly after removing native_mate.
-template <typename Base>
-class EventEmitter : public Base {
+template <typename T>
+class EventEmitter : public mate::Wrappable<T> {
  public:
-  typedef std::vector<v8::Local<v8::Value>> ValueArray;
+  using Base = mate::Wrappable<T>;
+  using ValueArray = std::vector<v8::Local<v8::Value>>;
 
   // Make the convinient methods visible:
   // https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members

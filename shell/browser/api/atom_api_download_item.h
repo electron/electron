@@ -19,11 +19,8 @@ namespace electron {
 
 namespace api {
 
-class DownloadItem
-    : public mate::TrackableObject<
-          DownloadItem,
-          gin_helper::EventEmitter<mate::Wrappable<DownloadItem>>>,
-      public download::DownloadItem::Observer {
+class DownloadItem : public mate::TrackableObject<DownloadItem>,
+                     public download::DownloadItem::Observer {
  public:
   static gin::Handle<DownloadItem> Create(v8::Isolate* isolate,
                                           download::DownloadItem* item);

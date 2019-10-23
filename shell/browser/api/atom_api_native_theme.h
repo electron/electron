@@ -13,9 +13,8 @@ namespace electron {
 
 namespace api {
 
-class NativeTheme
-    : public gin_helper::EventEmitter<mate::Wrappable<NativeTheme>>,
-      public ui::NativeThemeObserver {
+class NativeTheme : public gin_helper::EventEmitter<NativeTheme>,
+                    public ui::NativeThemeObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 

@@ -25,9 +25,7 @@ namespace electron {
 
 namespace api {
 
-class Debugger : public mate::TrackableObject<
-                     Debugger,
-                     gin_helper::EventEmitter<mate::Wrappable<Debugger>>>,
+class Debugger : public mate::TrackableObject<Debugger>,
                  public content::DevToolsAgentHostClient,
                  public content::WebContentsObserver {
  public:

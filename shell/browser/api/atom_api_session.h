@@ -36,9 +36,7 @@ class AtomBrowserContext;
 
 namespace api {
 
-class Session : public mate::TrackableObject<
-                    Session,
-                    gin_helper::EventEmitter<mate::Wrappable<Session>>>,
+class Session : public mate::TrackableObject<Session>,
                 public content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.

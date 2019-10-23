@@ -22,7 +22,7 @@ namespace electron {
 
 namespace api {
 
-class Screen : public gin_helper::EventEmitter<mate::Wrappable<Screen>>,
+class Screen : public gin_helper::EventEmitter<Screen>,
                public display::DisplayObserver {
  public:
   static v8::Local<v8::Value> Create(gin_helper::ErrorThrower error_thrower);

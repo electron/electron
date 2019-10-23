@@ -33,9 +33,7 @@ class AtomBrowserContext;
 
 namespace api {
 
-class Cookies : public mate::TrackableObject<
-                    Cookies,
-                    gin_helper::EventEmitter<mate::Wrappable<Cookies>>> {
+class Cookies : public mate::TrackableObject<Cookies> {
  public:
   static gin::Handle<Cookies> Create(v8::Isolate* isolate,
                                      AtomBrowserContext* browser_context);

@@ -32,10 +32,7 @@ namespace api {
 class Menu;
 class NativeImage;
 
-class Tray : public mate::TrackableObject<
-                 Tray,
-                 gin_helper::EventEmitter<mate::Wrappable<Tray>>>,
-             public TrayIconObserver {
+class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
  public:
   static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
                                   gin::Handle<NativeImage> image,
