@@ -1,6 +1,7 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
+import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//pdf/features.gni")
 import("//printing/buildflags/buildflags.gni")
@@ -343,8 +344,6 @@ source_set("chrome_spellchecker") {
   sources = [
     "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
     "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
-    "//chrome/browser/spellchecker/spell_check_panel_host_impl.cc",
-    "//chrome/browser/spellchecker/spell_check_panel_host_impl.h",
     "//chrome/browser/spellchecker/spellcheck_custom_dictionary.cc",
     "//chrome/browser/spellchecker/spellcheck_custom_dictionary.h",
     "//chrome/browser/spellchecker/spellcheck_factory.cc",
@@ -360,6 +359,13 @@ source_set("chrome_spellchecker") {
     "//chrome/browser/spellchecker/spelling_request.cc",
     "//chrome/browser/spellchecker/spelling_request.h",
   ]
+
+  if (has_spellcheck_panel) {
+    sources += [
+      "//chrome/browser/spellchecker/spell_check_panel_host_impl.cc",
+      "//chrome/browser/spellchecker/spell_check_panel_host_impl.h",
+    ]
+  }
 
   public_configs = [
     ":branding",
