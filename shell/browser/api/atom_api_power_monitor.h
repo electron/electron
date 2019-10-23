@@ -6,17 +6,20 @@
 #define SHELL_BROWSER_API_ATOM_API_POWER_MONITOR_H_
 
 #include "base/compiler_specific.h"
-#include "native_mate/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/lib/power_observer.h"
+#include "shell/common/gin_helper/event_emitter.h"
 #include "ui/base/idle/idle.h"
 
 namespace electron {
 
 namespace api {
 
-class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
-                     public PowerObserver {
+class PowerMonitor
+    : public mate::TrackableObject<
+          PowerMonitor,
+          gin_helper::EventEmitter<mate::Wrappable<PowerMonitor>>>,
+      public PowerObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
