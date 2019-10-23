@@ -368,7 +368,9 @@ source_set("chrome_spellchecker") {
 
   deps = [
     "//base:base_static",
+    "//components/spellcheck:buildflags",
     "//components/spellcheck/browser",
+    "//components/spellcheck/common",
     "//components/spellcheck/renderer",
     "//components/sync",
   ]
