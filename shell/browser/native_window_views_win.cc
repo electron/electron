@@ -356,14 +356,18 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
           display::Screen::GetScreen()->GetDisplayNearestPoint(
               last_normal_placement_bounds_.origin());
 
+      const gfx::Size widget_min_size = widget()->GetMinimumSize();
+      const gfx::Size widget_max_size = widget()->GetMaximumSize();
       gfx::Size min_size = gfx::ScaleToCeiledSize(
-          widget()->GetMinimumSize(), display.device_scale_factor());
+          ContentBoundsToWindowBounds(gfx::Rect(widget_min_size)).size(),
+          display.device_scale_factor());
       gfx::Size max_size = gfx::ScaleToCeiledSize(
-          widget()->GetMaximumSize(), display.device_scale_factor());
+          ContentBoundsToWindowBounds(gfx::Rect(widget_max_size)).size(),
+          display.device_scale_factor());
 
       info->ptMinTrackSize.x = min_size.width();
       info->ptMinTrackSize.y = min_size.height();
-      if (max_size.width() || max_size.height()) {
+      if (widget_max_size.width() || widget_max_size.height()) {
         if (!max_size.width())
           max_size.set_width(GetSystemMetrics(SM_CXMAXTRACK));
         if (!max_size.height())

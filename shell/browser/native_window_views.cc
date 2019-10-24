@@ -1204,11 +1204,13 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 
   gfx::Rect window_bounds(bounds);
 #if defined(OS_WIN)
-  HWND hwnd = GetAcceleratedWidget();
-  gfx::Rect dpi_bounds = DIPToScreenRect(hwnd, bounds);
-  window_bounds = ScreenToDIPRect(
-      hwnd,
-      widget()->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
+  if (widget()->non_client_view()) {
+    HWND hwnd = GetAcceleratedWidget();
+    gfx::Rect dpi_bounds = DIPToScreenRect(hwnd, bounds);
+    window_bounds = ScreenToDIPRect(
+        hwnd, widget()->non_client_view()->GetWindowBoundsForClientBounds(
+                  dpi_bounds));
+  }
 #endif
 
   if (root_view_->HasMenu() && root_view_->IsMenuBarVisible()) {
