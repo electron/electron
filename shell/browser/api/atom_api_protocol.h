@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ATOM_API_PROTOCOL_NS_H_
-#define SHELL_BROWSER_API_ATOM_API_PROTOCOL_NS_H_
+#ifndef SHELL_BROWSER_API_ATOM_API_PROTOCOL_H_
+#define SHELL_BROWSER_API_ATOM_API_PROTOCOL_H_
 
 #include <string>
 #include <vector>
@@ -35,10 +35,10 @@ enum class ProtocolError {
 };
 
 // Protocol implementation based on network services.
-class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
+class Protocol : public mate::TrackableObject<Protocol> {
  public:
-  static gin::Handle<ProtocolNS> Create(v8::Isolate* isolate,
-                                        AtomBrowserContext* browser_context);
+  static gin::Handle<Protocol> Create(v8::Isolate* isolate,
+                                      AtomBrowserContext* browser_context);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -50,8 +50,8 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
 
  private:
-  ProtocolNS(v8::Isolate* isolate, AtomBrowserContext* browser_context);
-  ~ProtocolNS() override;
+  Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context);
+  ~Protocol() override;
 
   // Callback types.
   using CompletionCallback =
@@ -99,4 +99,4 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ATOM_API_PROTOCOL_NS_H_
+#endif  // SHELL_BROWSER_API_ATOM_API_PROTOCOL_H_

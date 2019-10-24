@@ -50,10 +50,10 @@
 #include "services/network/public/cpp/resource_request_body.h"
 #include "shell/app/manifests.h"
 #include "shell/browser/api/atom_api_app.h"
-#include "shell/browser/api/atom_api_protocol_ns.h"
+#include "shell/browser/api/atom_api_protocol.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/api/atom_api_web_contents.h"
-#include "shell/browser/api/atom_api_web_request_ns.h"
+#include "shell/browser/api/atom_api_web_request.h"
 #include "shell/browser/atom_autofill_driver_factory.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
@@ -956,7 +956,7 @@ void AtomBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
-  api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
+  api::Protocol* protocol = api::Protocol::FromWrappedClass(
       v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
   if (protocol)
     protocol->RegisterURLLoaderFactories(factories);
@@ -972,7 +972,7 @@ void AtomBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
   if (web_contents) {
-    api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
+    api::Protocol* protocol = api::Protocol::FromWrappedClass(
         v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
     if (protocol)
       protocol->RegisterURLLoaderFactories(factories);
@@ -990,10 +990,10 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
         header_client,
     bool* bypass_redirect_checks) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  api::ProtocolNS* protocol =
-      api::ProtocolNS::FromWrappedClass(isolate, browser_context);
+  api::Protocol* protocol =
+      api::Protocol::FromWrappedClass(isolate, browser_context);
   DCHECK(protocol);
-  auto web_request = api::WebRequestNS::FromOrCreate(isolate, browser_context);
+  auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
   DCHECK(web_request.get());
 
   auto proxied_receiver = std::move(*factory_receiver);

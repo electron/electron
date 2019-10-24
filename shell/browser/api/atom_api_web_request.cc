@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/api/atom_api_web_request_ns.h"
+#include "shell/browser/api/atom_api_web_request.h"
 
 #include <memory>
 #include <string>
@@ -79,12 +79,12 @@ namespace api {
 
 namespace {
 
-const char* kUserDataKey = "WebRequestNS";
+const char* kUserDataKey = "WebRequest";
 
-// BrowserContext <=> WebRequestNS relationship.
+// BrowserContext <=> WebRequest relationship.
 struct UserData : public base::SupportsUserData::Data {
-  explicit UserData(WebRequestNS* data) : data(data) {}
-  WebRequestNS* data;
+  explicit UserData(WebRequest* data) : data(data) {}
+  WebRequest* data;
 };
 
 // Test whether the URL of |request| matches |patterns|.
@@ -212,72 +212,72 @@ void ReadFromResponse(v8::Isolate* isolate,
 
 }  // namespace
 
-gin::WrapperInfo WebRequestNS::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo WebRequest::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-WebRequestNS::SimpleListenerInfo::SimpleListenerInfo(
+WebRequest::SimpleListenerInfo::SimpleListenerInfo(
     std::set<URLPattern> patterns_,
     SimpleListener listener_)
     : url_patterns(std::move(patterns_)), listener(listener_) {}
-WebRequestNS::SimpleListenerInfo::SimpleListenerInfo() = default;
-WebRequestNS::SimpleListenerInfo::~SimpleListenerInfo() = default;
+WebRequest::SimpleListenerInfo::SimpleListenerInfo() = default;
+WebRequest::SimpleListenerInfo::~SimpleListenerInfo() = default;
 
-WebRequestNS::ResponseListenerInfo::ResponseListenerInfo(
+WebRequest::ResponseListenerInfo::ResponseListenerInfo(
     std::set<URLPattern> patterns_,
     ResponseListener listener_)
     : url_patterns(std::move(patterns_)), listener(listener_) {}
-WebRequestNS::ResponseListenerInfo::ResponseListenerInfo() = default;
-WebRequestNS::ResponseListenerInfo::~ResponseListenerInfo() = default;
+WebRequest::ResponseListenerInfo::ResponseListenerInfo() = default;
+WebRequest::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
-WebRequestNS::WebRequestNS(v8::Isolate* isolate,
-                           content::BrowserContext* browser_context)
+WebRequest::WebRequest(v8::Isolate* isolate,
+                       content::BrowserContext* browser_context)
     : browser_context_(browser_context) {
   browser_context_->SetUserData(kUserDataKey, std::make_unique<UserData>(this));
 }
 
-WebRequestNS::~WebRequestNS() {
+WebRequest::~WebRequest() {
   browser_context_->RemoveUserData(kUserDataKey);
 }
 
-gin::ObjectTemplateBuilder WebRequestNS::GetObjectTemplateBuilder(
+gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<WebRequestNS>::GetObjectTemplateBuilder(isolate)
+  return gin::Wrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
       .SetMethod("onBeforeRequest",
-                 &WebRequestNS::SetResponseListener<kOnBeforeRequest>)
+                 &WebRequest::SetResponseListener<kOnBeforeRequest>)
       .SetMethod("onBeforeSendHeaders",
-                 &WebRequestNS::SetResponseListener<kOnBeforeSendHeaders>)
+                 &WebRequest::SetResponseListener<kOnBeforeSendHeaders>)
       .SetMethod("onHeadersReceived",
-                 &WebRequestNS::SetResponseListener<kOnHeadersReceived>)
+                 &WebRequest::SetResponseListener<kOnHeadersReceived>)
       .SetMethod("onSendHeaders",
-                 &WebRequestNS::SetSimpleListener<kOnSendHeaders>)
+                 &WebRequest::SetSimpleListener<kOnSendHeaders>)
       .SetMethod("onBeforeRedirect",
-                 &WebRequestNS::SetSimpleListener<kOnBeforeRedirect>)
+                 &WebRequest::SetSimpleListener<kOnBeforeRedirect>)
       .SetMethod("onResponseStarted",
-                 &WebRequestNS::SetSimpleListener<kOnResponseStarted>)
+                 &WebRequest::SetSimpleListener<kOnResponseStarted>)
       .SetMethod("onErrorOccurred",
-                 &WebRequestNS::SetSimpleListener<kOnErrorOccurred>)
-      .SetMethod("onCompleted", &WebRequestNS::SetSimpleListener<kOnCompleted>);
+                 &WebRequest::SetSimpleListener<kOnErrorOccurred>)
+      .SetMethod("onCompleted", &WebRequest::SetSimpleListener<kOnCompleted>);
 }
 
-const char* WebRequestNS::GetTypeName() {
+const char* WebRequest::GetTypeName() {
   return "WebRequest";
 }
 
-bool WebRequestNS::HasListener() const {
+bool WebRequest::HasListener() const {
   return !(simple_listeners_.empty() && response_listeners_.empty());
 }
 
-int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* info,
-                                  const network::ResourceRequest& request,
-                                  net::CompletionOnceCallback callback,
-                                  GURL* new_url) {
+int WebRequest::OnBeforeRequest(extensions::WebRequestInfo* info,
+                                const network::ResourceRequest& request,
+                                net::CompletionOnceCallback callback,
+                                GURL* new_url) {
   return HandleResponseEvent(kOnBeforeRequest, info, std::move(callback),
                              new_url, request);
 }
 
-int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
-                                      const network::ResourceRequest& request,
-                                      BeforeSendHeadersCallback callback,
-                                      net::HttpRequestHeaders* headers) {
+int WebRequest::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
+                                    const network::ResourceRequest& request,
+                                    BeforeSendHeadersCallback callback,
+                                    net::HttpRequestHeaders* headers) {
   return HandleResponseEvent(
       kOnBeforeSendHeaders, info,
       base::BindOnce(std::move(callback), std::set<std::string>(),
@@ -285,7 +285,7 @@ int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
       headers, request, *headers);
 }
 
-int WebRequestNS::OnHeadersReceived(
+int WebRequest::OnHeadersReceived(
     extensions::WebRequestInfo* info,
     const network::ResourceRequest& request,
     net::CompletionOnceCallback callback,
@@ -299,53 +299,53 @@ int WebRequestNS::OnHeadersReceived(
       request);
 }
 
-void WebRequestNS::OnSendHeaders(extensions::WebRequestInfo* info,
-                                 const network::ResourceRequest& request,
-                                 const net::HttpRequestHeaders& headers) {
+void WebRequest::OnSendHeaders(extensions::WebRequestInfo* info,
+                               const network::ResourceRequest& request,
+                               const net::HttpRequestHeaders& headers) {
   HandleSimpleEvent(kOnSendHeaders, info, request, headers);
 }
 
-void WebRequestNS::OnBeforeRedirect(extensions::WebRequestInfo* info,
-                                    const network::ResourceRequest& request,
-                                    const GURL& new_location) {
+void WebRequest::OnBeforeRedirect(extensions::WebRequestInfo* info,
+                                  const network::ResourceRequest& request,
+                                  const GURL& new_location) {
   HandleSimpleEvent(kOnBeforeRedirect, info, request, new_location);
 }
 
-void WebRequestNS::OnResponseStarted(extensions::WebRequestInfo* info,
-                                     const network::ResourceRequest& request) {
+void WebRequest::OnResponseStarted(extensions::WebRequestInfo* info,
+                                   const network::ResourceRequest& request) {
   HandleSimpleEvent(kOnResponseStarted, info, request);
 }
 
-void WebRequestNS::OnErrorOccurred(extensions::WebRequestInfo* info,
-                                   const network::ResourceRequest& request,
-                                   int net_error) {
+void WebRequest::OnErrorOccurred(extensions::WebRequestInfo* info,
+                                 const network::ResourceRequest& request,
+                                 int net_error) {
   callbacks_.erase(info->id);
 
   HandleSimpleEvent(kOnErrorOccurred, info, request, net_error);
 }
 
-void WebRequestNS::OnCompleted(extensions::WebRequestInfo* info,
-                               const network::ResourceRequest& request,
-                               int net_error) {
+void WebRequest::OnCompleted(extensions::WebRequestInfo* info,
+                             const network::ResourceRequest& request,
+                             int net_error) {
   callbacks_.erase(info->id);
 
   HandleSimpleEvent(kOnCompleted, info, request, net_error);
 }
 
-template <WebRequestNS::SimpleEvent event>
-void WebRequestNS::SetSimpleListener(gin::Arguments* args) {
+template <WebRequest::SimpleEvent event>
+void WebRequest::SetSimpleListener(gin::Arguments* args) {
   SetListener<SimpleListener>(event, &simple_listeners_, args);
 }
 
-template <WebRequestNS::ResponseEvent event>
-void WebRequestNS::SetResponseListener(gin::Arguments* args) {
+template <WebRequest::ResponseEvent event>
+void WebRequest::SetResponseListener(gin::Arguments* args) {
   SetListener<ResponseListener>(event, &response_listeners_, args);
 }
 
 template <typename Listener, typename Listeners, typename Event>
-void WebRequestNS::SetListener(Event event,
-                               Listeners* listeners,
-                               gin::Arguments* args) {
+void WebRequest::SetListener(Event event,
+                             Listeners* listeners,
+                             gin::Arguments* args) {
   v8::Local<v8::Value> arg;
 
   // { urls }.
@@ -393,9 +393,9 @@ void WebRequestNS::SetListener(Event event,
 }
 
 template <typename... Args>
-void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
-                                     extensions::WebRequestInfo* request_info,
-                                     Args... args) {
+void WebRequest::HandleSimpleEvent(SimpleEvent event,
+                                   extensions::WebRequestInfo* request_info,
+                                   Args... args) {
   const auto iter = simple_listeners_.find(event);
   if (iter == std::end(simple_listeners_))
     return;
@@ -412,11 +412,11 @@ void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
 }
 
 template <typename Out, typename... Args>
-int WebRequestNS::HandleResponseEvent(ResponseEvent event,
-                                      extensions::WebRequestInfo* request_info,
-                                      net::CompletionOnceCallback callback,
-                                      Out out,
-                                      Args... args) {
+int WebRequest::HandleResponseEvent(ResponseEvent event,
+                                    extensions::WebRequestInfo* request_info,
+                                    net::CompletionOnceCallback callback,
+                                    Out out,
+                                    Args... args) {
   const auto iter = response_listeners_.find(event);
   if (iter == std::end(response_listeners_))
     return net::OK;
@@ -433,16 +433,16 @@ int WebRequestNS::HandleResponseEvent(ResponseEvent event,
   FillDetails(&details, request_info, args...);
 
   ResponseCallback response =
-      base::BindOnce(&WebRequestNS::OnListenerResult<Out>,
-                     base::Unretained(this), request_info->id, out);
+      base::BindOnce(&WebRequest::OnListenerResult<Out>, base::Unretained(this),
+                     request_info->id, out);
   info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
   return net::ERR_IO_PENDING;
 }
 
 template <typename T>
-void WebRequestNS::OnListenerResult(uint64_t id,
-                                    T out,
-                                    v8::Local<v8::Value> response) {
+void WebRequest::OnListenerResult(uint64_t id,
+                                  T out,
+                                  v8::Local<v8::Value> response) {
   const auto iter = callbacks_.find(id);
   if (iter == std::end(callbacks_))
     return;
@@ -468,10 +468,10 @@ void WebRequestNS::OnListenerResult(uint64_t id,
 }
 
 // static
-gin::Handle<WebRequestNS> WebRequestNS::FromOrCreate(
+gin::Handle<WebRequest> WebRequest::FromOrCreate(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
-  gin::Handle<WebRequestNS> handle = From(isolate, browser_context);
+  gin::Handle<WebRequest> handle = From(isolate, browser_context);
   if (handle.IsEmpty()) {
     // Make sure the |Session| object has the |webRequest| property created.
     v8::Local<v8::Value> web_request =
@@ -485,24 +485,24 @@ gin::Handle<WebRequestNS> WebRequestNS::FromOrCreate(
 }
 
 // static
-gin::Handle<WebRequestNS> WebRequestNS::Create(
+gin::Handle<WebRequest> WebRequest::Create(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
   DCHECK(From(isolate, browser_context).IsEmpty())
-      << "WebRequestNS already created";
-  return gin::CreateHandle(isolate, new WebRequestNS(isolate, browser_context));
+      << "WebRequest already created";
+  return gin::CreateHandle(isolate, new WebRequest(isolate, browser_context));
 }
 
 // static
-gin::Handle<WebRequestNS> WebRequestNS::From(
+gin::Handle<WebRequest> WebRequest::From(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
   if (!browser_context)
-    return gin::Handle<WebRequestNS>();
+    return gin::Handle<WebRequest>();
   auto* user_data =
       static_cast<UserData*>(browser_context->GetUserData(kUserDataKey));
   if (!user_data)
-    return gin::Handle<WebRequestNS>();
+    return gin::Handle<WebRequest>();
   return gin::CreateHandle(isolate, user_data->data);
 }
 
