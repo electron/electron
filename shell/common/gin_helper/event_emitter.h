@@ -88,9 +88,6 @@ class EventEmitter : public mate::Wrappable<T> {
       content::RenderFrameHost* sender,
       base::Optional<electron::mojom::ElectronBrowser::InvokeCallback> callback,
       Args&&... args) {
-    if (!sender || !callback)
-      return Emit(name, args...);
-
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());

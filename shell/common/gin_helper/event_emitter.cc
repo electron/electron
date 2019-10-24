@@ -70,13 +70,21 @@ v8::Local<v8::Object> CreateNativeEvent(
     content::RenderFrameHost* frame,
     base::Optional<electron::mojom::ElectronBrowser::MessageSyncCallback>
         callback) {
-  mate::Handle<mate::Event> native_event = mate::Event::Create(isolate);
-  native_event->SetCallback(std::move(callback));
-  auto event = v8::Local<v8::Object>::Cast(native_event.ToV8());
+  v8::Local<v8::Object> event;
+  if (frame && callback) {
+    mate::Handle<mate::Event> native_event = mate::Event::Create(isolate);
+    native_event->SetCallback(std::move(callback));
+    event = v8::Local<v8::Object>::Cast(native_event.ToV8());
+  } else {
+    // No need to create native event if we do not need to send reply.
+    event = CreateEvent(isolate);
+  }
 
   Dictionary dict(isolate, event);
   dict.Set("sender", sender);
-  dict.Set("frameId", frame->GetRoutingID());
+  // Should always set frameId even when callback is null.
+  if (frame)
+    dict.Set("frameId", frame->GetRoutingID());
   return event;
 }
 
