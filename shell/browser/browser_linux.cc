@@ -76,12 +76,12 @@ void Browser::ClearRecentDocuments() {}
 void Browser::SetAppUserModelID(const base::string16& name) {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         mate::Arguments* args) {
+                                         gin_helper::Arguments* args) {
   return SetDefaultWebClient(protocol);
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      mate::Arguments* args) {
+                                      gin_helper::Arguments* args) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
   if (protocol.empty())
@@ -109,7 +109,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
 // Todo implement
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            mate::Arguments* args) {
+                                            gin_helper::Arguments* args) {
   return false;
 }
 

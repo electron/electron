@@ -5,13 +5,13 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_NET_H_
 #define SHELL_BROWSER_API_ATOM_API_NET_H_
 
-#include "shell/browser/api/event_emitter_deprecated.h"
+#include "native_mate/wrappable.h"
 
 namespace electron {
 
 namespace api {
 
-class Net : public mate::EventEmitter<Net> {
+class Net : public mate::Wrappable<Net> {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 

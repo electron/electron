@@ -22,7 +22,7 @@ void OnStopAccessingSecurityScopedResource(NSURL* bookmarkUrl) {
 
 // Get base64 encoded NSData, create a bookmark for it and start accessing it.
 base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
-    mate::Arguments* args) {
+    gin_helper::Arguments* args) {
   std::string data;
   args->GetNext(&data);
   NSString* base64str = base::SysUTF8ToNSString(data);

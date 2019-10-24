@@ -21,17 +21,17 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
-#include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/atom_application.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/ui/cocoa/NSColor+Hex.h"
 #include "shell/common/deprecate_util.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/value_converter_gin_adapter.h"
 #include "ui/native_theme/native_theme.h"
 
-namespace mate {
+namespace gin {
+
 template <>
 struct Converter<NSAppearance*> {
   static bool FromV8(v8::Isolate* isolate,
@@ -43,7 +43,7 @@ struct Converter<NSAppearance*> {
     }
 
     std::string name;
-    if (!mate::ConvertFromV8(isolate, val, &name)) {
+    if (!gin::ConvertFromV8(isolate, val, &name)) {
       return false;
     }
 
@@ -68,18 +68,19 @@ struct Converter<NSAppearance*> {
     }
 
     if ([val.name isEqualToString:NSAppearanceNameAqua]) {
-      return mate::ConvertToV8(isolate, "light");
+      return gin::ConvertToV8(isolate, "light");
     }
     if (@available(macOS 10.14, *)) {
       if ([val.name isEqualToString:NSAppearanceNameDarkAqua]) {
-        return mate::ConvertToV8(isolate, "dark");
+        return gin::ConvertToV8(isolate, "dark");
       }
     }
 
-    return mate::ConvertToV8(isolate, "unknown");
+    return gin::ConvertToV8(isolate, "unknown");
   }
 };
-}  // namespace mate
+
+}  // namespace gin
 
 namespace electron {
 
@@ -121,7 +122,7 @@ std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
 
 void SystemPreferences::PostNotification(const std::string& name,
                                          const base::DictionaryValue& user_info,
-                                         mate::Arguments* args) {
+                                         gin_helper::Arguments* args) {
   bool immediate = false;
   args->GetNext(&immediate);
 
@@ -261,7 +262,7 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* key = base::SysUTF8ToNSString(name);
   if (type == "string") {
-    return mate::StringToV8(
+    return gin::StringToV8(
         isolate(), base::SysNSStringToUTF8([defaults stringForKey:key]));
   } else if (type == "boolean") {
     return v8::Boolean::New(isolate(), [defaults boolForKey:key]);
@@ -272,26 +273,26 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   } else if (type == "double") {
     return v8::Number::New(isolate(), [defaults doubleForKey:key]);
   } else if (type == "url") {
-    return mate::ConvertToV8(isolate(),
-                             net::GURLWithNSURL([defaults URLForKey:key]));
+    return gin::ConvertToV8(isolate(),
+                            net::GURLWithNSURL([defaults URLForKey:key]));
   } else if (type == "array") {
     std::unique_ptr<base::ListValue> list =
         NSArrayToListValue([defaults arrayForKey:key]);
     if (list == nullptr)
       list.reset(new base::ListValue());
-    return mate::ConvertToV8(isolate(), *list);
+    return gin::ConvertToV8(isolate(), *list);
   } else if (type == "dictionary") {
     std::unique_ptr<base::DictionaryValue> dictionary =
         NSDictionaryToDictionaryValue([defaults dictionaryForKey:key]);
     if (dictionary == nullptr)
       dictionary.reset(new base::DictionaryValue());
-    return mate::ConvertToV8(isolate(), *dictionary);
+    return gin::ConvertToV8(isolate(), *dictionary);
   } else {
     return v8::Undefined(isolate());
   }
 }
 
-void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
+void SystemPreferences::RegisterDefaults(gin_helper::Arguments* args) {
   base::DictionaryValue value;
 
   if (!args->GetNext(&value)) {
@@ -315,7 +316,7 @@ void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
 
 void SystemPreferences::SetUserDefault(const std::string& name,
                                        const std::string& type,
-                                       mate::Arguments* args) {
+                                       gin_helper::Arguments* args) {
   const auto throwConversionError = [&] {
     args->ThrowError("Unable to convert value to: " + type);
   };
@@ -596,7 +597,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
 
 std::string SystemPreferences::GetMediaAccessStatus(
     const std::string& media_type,
-    mate::Arguments* args) {
+    gin_helper::Arguments* args) {
   if (auto type = ParseMediaType(media_type)) {
     if (@available(macOS 10.14, *)) {
       return ConvertAuthorizationStatus(
@@ -658,7 +659,7 @@ bool SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled() {
 v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
     v8::Isolate* isolate) {
   if (@available(macOS 10.14, *)) {
-    return mate::ConvertToV8(
+    return gin::ConvertToV8(
         isolate, [NSApplication sharedApplication].effectiveAppearance);
   }
   return v8::Null(isolate);
@@ -667,13 +668,13 @@ v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
 v8::Local<v8::Value> SystemPreferences::GetAppLevelAppearance(
     v8::Isolate* isolate) {
   if (@available(macOS 10.14, *)) {
-    return mate::ConvertToV8(isolate,
-                             [NSApplication sharedApplication].appearance);
+    return gin::ConvertToV8(isolate,
+                            [NSApplication sharedApplication].appearance);
   }
   return v8::Null(isolate);
 }
 
-void SystemPreferences::SetAppLevelAppearance(mate::Arguments* args) {
+void SystemPreferences::SetAppLevelAppearance(gin_helper::Arguments* args) {
   if (@available(macOS 10.14, *)) {
     NSAppearance* appearance;
     if (args->GetNext(&appearance)) {

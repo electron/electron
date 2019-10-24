@@ -5,8 +5,11 @@
 #ifndef SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 #define SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
+#include <utility>
+
 #include "base/bind.h"
 #include "base/callback.h"
+#include "base/optional.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
@@ -88,6 +91,20 @@ bool GetNextArgument(gin::Arguments* args,
   } else {
     return args->GetNext(result);
   }
+}
+
+// Support base::Optional as output, which would be empty and do not throw error
+// when convertion to T fails.
+template <typename T>
+bool GetNextArgument(gin::Arguments* args,
+                     int create_flags,
+                     bool is_first,
+                     base::Optional<T>* result) {
+  T converted;
+  // Use gin::Arguments::GetNext which always advances |next| counter.
+  if (args->GetNext(&converted))
+    result->emplace(std::move(converted));
+  return true;
 }
 
 // For advanced use cases, we allow callers to request the unparsed Arguments

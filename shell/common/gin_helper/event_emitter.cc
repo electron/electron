@@ -24,7 +24,9 @@ void PreventDefault(gin_helper::Arguments* args) {
 
 }  // namespace
 
-v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
+v8::Local<v8::Object> CreateEvent(v8::Isolate* isolate,
+                                  v8::Local<v8::Object> sender,
+                                  v8::Local<v8::Object> custom_event) {
   if (event_template.IsEmpty()) {
     event_template.Reset(
         isolate,
@@ -33,17 +35,15 @@ v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
             .Build());
   }
 
-  return v8::Local<v8::ObjectTemplate>::New(isolate, event_template)
-      ->NewInstance(isolate->GetCurrentContext())
-      .ToLocalChecked();
-}
-
-v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
-                                        v8::Local<v8::Object> object,
-                                        v8::Local<v8::Object> custom_event) {
-  v8::Local<v8::Object> event = CreateEventObject(isolate);
-  event->SetPrototype(custom_event->CreationContext(), custom_event).IsJust();
-  Dictionary(isolate, event).Set("sender", object);
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Object> event =
+      v8::Local<v8::ObjectTemplate>::New(isolate, event_template)
+          ->NewInstance(context)
+          .ToLocalChecked();
+  if (!sender.IsEmpty())
+    Dictionary(isolate, event).Set("sender", sender);
+  if (!custom_event.IsEmpty())
+    event->SetPrototype(context, custom_event).IsJust();
   return event;
 }
 

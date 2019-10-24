@@ -25,7 +25,7 @@
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/common/application_info.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/skia_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 
@@ -56,7 +56,7 @@ bool GetProcessExecPath(base::string16* exe) {
   return true;
 }
 
-bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
+bool GetProtocolLaunchPath(gin_helper::Arguments* args, base::string16* exe) {
   if (!args->GetNext(exe) && !GetProcessExecPath(exe)) {
     return false;
   }
@@ -153,7 +153,7 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            mate::Arguments* args) {
+                                            gin_helper::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -215,7 +215,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         mate::Arguments* args) {
+                                         gin_helper::Arguments* args) {
   // HKEY_CLASSES_ROOT
   //    $PROTOCOL
   //       (Default) = "URL:$NAME"
@@ -259,7 +259,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      mate::Arguments* args) {
+                                      gin_helper::Arguments* args) {
   if (protocol.empty())
     return false;
 

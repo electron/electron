@@ -228,4 +228,16 @@ struct Converter<electron::util::Promise<T>> {
 
 }  // namespace mate
 
+namespace gin {
+
+template <typename T>
+struct Converter<electron::util::Promise<T>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const electron::util::Promise<T>& val) {
+    return mate::ConvertToV8(isolate, val);
+  }
+};
+
+}  // namespace gin
+
 #endif  // SHELL_COMMON_PROMISE_UTIL_H_
