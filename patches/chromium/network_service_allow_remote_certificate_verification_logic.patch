@@ -5,10 +5,10 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index c538b12de4d9dfa6c7a00db2af1d905b8559bdec..97575588220d7d903e2e009fd86c30d212951ee7 100644
+index f4111b7966324d959ac8fdf4f13acccf7ec3ba12..0c8a3487944e9bbf21b4e92fa9d78b2858a28fd0 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -92,6 +92,11 @@
+@@ -91,6 +91,11 @@
  #include "services/network/url_loader.h"
  #include "services/network/url_request_context_builder_mojo.h"
  
@@ -20,7 +20,7 @@ index c538b12de4d9dfa6c7a00db2af1d905b8559bdec..97575588220d7d903e2e009fd86c30d2
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -326,6 +331,79 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
+@@ -325,6 +330,79 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
  
  }  // namespace
  
@@ -100,7 +100,7 @@ index c538b12de4d9dfa6c7a00db2af1d905b8559bdec..97575588220d7d903e2e009fd86c30d2
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -484,6 +562,13 @@ void NetworkContext::SetClient(
+@@ -477,6 +555,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -114,7 +114,7 @@ index c538b12de4d9dfa6c7a00db2af1d905b8559bdec..97575588220d7d903e2e009fd86c30d2
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1596,12 +1681,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1591,12 +1676,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                              cert_net_fetcher_))));
      }
  #endif
@@ -139,7 +139,7 @@ index c538b12de4d9dfa6c7a00db2af1d905b8559bdec..97575588220d7d903e2e009fd86c30d2
    std::unique_ptr<NetworkServiceNetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 28dcfb3070f8418f4742bdb785a47160c6a61913..c6e00b834aabcf20c5656ce98154baef0745431c 100644
+index 7a51a2ae31c397dd88e30b05bb831d348a60126c..393723b472eb04dc8ee499bb7cc9287127ac3d7c 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -84,6 +84,7 @@ class DomainReliabilityMonitor;
@@ -159,7 +159,7 @@ index 28dcfb3070f8418f4742bdb785a47160c6a61913..c6e00b834aabcf20c5656ce98154baef
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -578,6 +581,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -579,6 +582,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::unique_ptr<network::NSSTempCertsCacheChromeOS> nss_temp_certs_cache_;
  #endif
  
@@ -169,10 +169,10 @@ index 28dcfb3070f8418f4742bdb785a47160c6a61913..c6e00b834aabcf20c5656ce98154baef
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index dc293ac1d40b5de87ef8ff19467911948a26fc78..80a10441041fc495be5b03f2a3792b280c17c7a5 100644
+index 62ee3de0bc6f869f2d6dd0c39bf6ec35ad50e72d..84ee0cfdb18267c2236da86efb7dc1894fcac245 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -174,6 +174,17 @@ interface TrustedURLLoaderHeaderClient {
+@@ -181,6 +181,17 @@ interface TrustedURLLoaderHeaderClient {
        pending_receiver<TrustedHeaderClient> header_client);
  };
  
@@ -190,7 +190,7 @@ index dc293ac1d40b5de87ef8ff19467911948a26fc78..80a10441041fc495be5b03f2a3792b28
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -753,6 +764,9 @@ interface NetworkContext {
+@@ -760,6 +771,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  
