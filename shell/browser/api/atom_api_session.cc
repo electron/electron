@@ -69,7 +69,9 @@
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
 #include "components/spellcheck/browser/pref_names.h"
+#include "components/spellcheck/common/spellcheck_common.h"
 #endif
 
 using content::BrowserThread;
@@ -651,14 +653,24 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-void Session::SetSpellCheckLanguages(
+void Session::SetSpellCheckerLanguages(
+    gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
   base::ListValue language_codes;
   for (const std::string& lang : languages) {
-    language_codes.AppendString(lang);
+    std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
+    if (code.empty()) {
+      thrower.ThrowError("Invalid language code provided: \"" + lang +
+                         "\" is not a valid language code");
+    }
+    language_codes.AppendString(code);
   }
   browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
                                  language_codes);
+}
+
+void SetSpellCheckerDictionaryDownloadURL(const GURL& url) {
+  SpellcheckHunspellDictionary::SetDownloadURLForTesting(url);
 }
 #endif
 
@@ -734,9 +746,11 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("loadChromeExtension", &Session::LoadChromeExtension)
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-      .SetMethod("setSpellCheckLanguages", &Session::SetSpellCheckLanguages)
-      .SetProperty("availableSpellCheckLanguages",
-                   &l10n_util::GetAvailableLocales)
+      .SetMethod("setSpellCheckerLanguages", &Session::SetSpellCheckerLanguages)
+      .SetProperty("availableSpellCheckerLanguages",
+                   &spellcheck::SpellCheckLanguages)
+      .SetMethod("setSpellCheckerDictionaryDownloadURL",
+                 &SetSpellCheckerDictionaryDownloadURL)
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
       .SetProperty("cookies", &Session::Cookies)

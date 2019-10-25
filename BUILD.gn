@@ -423,7 +423,6 @@ source_set("electron_lib") {
     "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
     "//components/prefs",
-    "//components/spellcheck/renderer",
     "//components/viz/host",
     "//components/viz/service",
     "//content/public/browser",
@@ -542,6 +541,8 @@ source_set("electron_lib") {
     deps += [
       ":chrome_spellchecker",
       "//components/spellcheck/browser",
+      "//components/spellcheck/common",
+      "//components/spellcheck/renderer",
     ]
   }
 
