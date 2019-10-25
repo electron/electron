@@ -662,6 +662,7 @@ void Session::SetSpellCheckerLanguages(
     if (code.empty()) {
       thrower.ThrowError("Invalid language code provided: \"" + lang +
                          "\" is not a valid language code");
+      return;
     }
     language_codes.AppendString(code);
   }
@@ -669,7 +670,14 @@ void Session::SetSpellCheckerLanguages(
                                  language_codes);
 }
 
-void SetSpellCheckerDictionaryDownloadURL(const GURL& url) {
+void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
+                                          const GURL& url) {
+  if (!url.is_valid()) {
+    thrower.ThrowError(
+        "The URL you provided to setSpellCheckerDictionaryDownloadURL is not a "
+        "valid URL");
+    return;
+  }
   SpellcheckHunspellDictionary::SetDownloadURLForTesting(url);
 }
 #endif
