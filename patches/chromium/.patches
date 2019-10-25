@@ -78,3 +78,4 @@ ui_views_fix_jumbo_build.patch
 export_fetchapi_mojo_traits_to_fix_component_build.patch
 add_zoom_limit_setters_to_webcontents.patch
 revert_remove_contentrendererclient_shouldfork.patch
+build_win_disable_zc_twophase.patch
