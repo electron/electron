@@ -15,11 +15,11 @@ const licenses = allFiles
   .filter(file => file.startsWith('LICENSE') || file.startsWith('COPYING'))
 
 const content = `hunspell_dictionaries = [
-  ${dictionaries.map(f => `"//${path.posix.join(gclientPath, f)}"`).join(',\n  ')}
+  ${dictionaries.map(f => `"//${path.posix.join(gclientPath, f)}"`).join(',\n  ')},
 ]
 
 hunspell_licenses = [
-  ${licenses.map(f => `"//${path.posix.join(gclientPath, f)}"`).join(',\n  ')}
+  ${licenses.map(f => `"//${path.posix.join(gclientPath, f)}"`).join(',\n  ')},
 ]
 `
 
