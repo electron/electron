@@ -5,7 +5,7 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index f4111b7966324d959ac8fdf4f13acccf7ec3ba12..0c8a3487944e9bbf21b4e92fa9d78b2858a28fd0 100644
+index f4111b7966324d959ac8fdf4f13acccf7ec3ba12..b182593e7060129cb4f2481657879a1e01db011e 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -91,6 +91,11 @@
@@ -114,19 +114,38 @@ index f4111b7966324d959ac8fdf4f13acccf7ec3ba12..0c8a3487944e9bbf21b4e92fa9d78b28
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1591,12 +1676,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1533,6 +1618,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+       base::CommandLine::ForCurrentProcess();
+ 
+   std::unique_ptr<net::CertVerifier> cert_verifier;
++  std::unique_ptr<net::CertVerifier> temp_verifier;
+   if (g_cert_verifier_for_testing) {
+     cert_verifier = std::make_unique<WrappedTestingCertVerifier>();
+   } else {
+@@ -1580,8 +1666,8 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+     }
+ #endif
+ #if BUILDFLAG(BUILTIN_CERT_VERIFIER_FEATURE_SUPPORTED)
+-    if (!cert_verifier) {
+-      cert_verifier = std::make_unique<net::CachingCertVerifier>(
++    if (!temp_verifier) {
++      temp_verifier = std::make_unique<net::CachingCertVerifier>(
+           std::make_unique<net::CoalescingCertVerifier>(
+               std::make_unique<net::MultiThreadedCertVerifier>(
+                   params_->use_builtin_cert_verifier
+@@ -1591,12 +1677,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                              cert_net_fetcher_))));
      }
  #endif
 -    if (!cert_verifier)
 -      cert_verifier = net::CertVerifier::CreateDefault(cert_net_fetcher_);
-+    if (!cert_verifier) {
-+      auto mt_verifier = std::make_unique<net::MultiThreadedCertVerifier>(
-+              net::CertVerifyProc::CreateSystemVerifyProc(std::move(cert_net_fetcher_)));
-+      auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(mt_verifier));
-+      remote_cert_verifier_ = remote_cert_verifier.get();
-+      cert_verifier = std::make_unique<net::CachingCertVerifier>(std::move(remote_cert_verifier));
++    if (!temp_verifier) {
++      temp_verifier = std::make_unique<net::MultiThreadedCertVerifier>(
++          net::CertVerifyProc::CreateSystemVerifyProc(std::move(cert_net_fetcher_)));
 +    }
++    auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(temp_verifier));
++    remote_cert_verifier_ = remote_cert_verifier.get();
++    cert_verifier = std::make_unique<net::CachingCertVerifier>(std::move(remote_cert_verifier));
    }
  
 -  builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
