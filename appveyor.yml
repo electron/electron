@@ -53,8 +53,13 @@ build_script:
       } else {
         node script/yarn.js install --frozen-lockfile
 
+        echo "APPVEYOR PR NUMBER $env:APPVEYOR_PULL_REQUEST_NUMBER"        
+        echo "APPVEYOR BRANCH $env:APPVEYOR_REPO_BRANCH"
+
         if ($(node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH;$LASTEXITCODE -eq 0)) {
           Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+        } else {
+          echo "Change is more than a doc change"
         }
       }
   - echo "Building $env:GN_CONFIG build"

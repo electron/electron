@@ -21,7 +21,8 @@ async function checkIfDocOnlyChange () {
             pullRequestNumber = prsForBranch.data[0].number
           } else {
             // If there is more than one PR on a branch, just assume that this is more than a doc change
-            process.exit(0)
+            console.log(`Exiting with exit code 1 because there are more than one PRs against the ${args.prBranch}`)
+            process.exit(1)
           }
         } else if (args.prURL) {
           // CircleCI doesn't provide the PR number for branch builds, but it does provide the PR URL
@@ -40,8 +41,10 @@ async function checkIfDocOnlyChange () {
         }
       })
       if (nonDocChange) {
+        console.log('Exiting with exit code 1 because this is a non doc change')
         process.exit(1)
       } else {
+        console.log('Exiting with exit code 0 because this is a doc only change')
         process.exit(0)
       }
     } catch (ex) {
