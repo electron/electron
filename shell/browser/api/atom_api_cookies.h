@@ -11,15 +11,15 @@
 #include "base/callback_list.h"
 #include "gin/handle.h"
 #include "net/cookies/canonical_cookie.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/net/cookie_details.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/promise_util.h"
 
 namespace base {
 class DictionaryValue;
 }
 
-namespace mate {
+namespace gin_helper {
 class Dictionary;
 }
 
@@ -33,12 +33,12 @@ class AtomBrowserContext;
 
 namespace api {
 
-class Cookies : public mate::TrackableObject<Cookies> {
+class Cookies : public gin_helper::TrackableObject<Cookies> {
  public:
   static gin::Handle<Cookies> Create(v8::Isolate* isolate,
                                      AtomBrowserContext* browser_context);
 
-  // mate::TrackableObject:
+  // gin_helper::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
@@ -46,7 +46,7 @@ class Cookies : public mate::TrackableObject<Cookies> {
   Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~Cookies() override;
 
-  v8::Local<v8::Promise> Get(const mate::Dictionary& filter);
+  v8::Local<v8::Promise> Get(const gin_helper::Dictionary& filter);
   v8::Local<v8::Promise> Set(const base::DictionaryValue& details);
   v8::Local<v8::Promise> Remove(const GURL& url, const std::string& name);
   v8::Local<v8::Promise> FlushStore();

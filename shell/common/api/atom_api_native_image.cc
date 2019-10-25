@@ -259,7 +259,7 @@ float NativeImage::GetAspectRatio() {
     return static_cast<float>(size.width()) / static_cast<float>(size.height());
 }
 
-mate::Handle<NativeImage> NativeImage::Resize(
+gin::Handle<NativeImage> NativeImage::Resize(
     v8::Isolate* isolate,
     const base::DictionaryValue& options) {
   gfx::Size size = GetSize();
@@ -290,16 +290,16 @@ mate::Handle<NativeImage> NativeImage::Resize(
 
   gfx::ImageSkia resized = gfx::ImageSkiaOperations::CreateResizedImage(
       image_.AsImageSkia(), method, size);
-  return mate::CreateHandle(isolate,
-                            new NativeImage(isolate, gfx::Image(resized)));
+  return gin::CreateHandle(isolate,
+                           new NativeImage(isolate, gfx::Image(resized)));
 }
 
-mate::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
-                                            const gfx::Rect& rect) {
+gin::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
+                                           const gfx::Rect& rect) {
   gfx::ImageSkia cropped =
       gfx::ImageSkiaOperations::ExtractSubset(image_.AsImageSkia(), rect);
-  return mate::CreateHandle(isolate,
-                            new NativeImage(isolate, gfx::Image(cropped)));
+  return gin::CreateHandle(isolate,
+                           new NativeImage(isolate, gfx::Image(cropped)));
 }
 
 void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
@@ -350,48 +350,48 @@ bool NativeImage::IsTemplateImage() {
 #endif
 
 // static
-mate::Handle<NativeImage> NativeImage::CreateEmpty(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new NativeImage(isolate, gfx::Image()));
+gin::Handle<NativeImage> NativeImage::CreateEmpty(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new NativeImage(isolate, gfx::Image()));
 }
 
 // static
-mate::Handle<NativeImage> NativeImage::Create(v8::Isolate* isolate,
-                                              const gfx::Image& image) {
-  return mate::CreateHandle(isolate, new NativeImage(isolate, image));
+gin::Handle<NativeImage> NativeImage::Create(v8::Isolate* isolate,
+                                             const gfx::Image& image) {
+  return gin::CreateHandle(isolate, new NativeImage(isolate, image));
 }
 
 // static
-mate::Handle<NativeImage> NativeImage::CreateFromPNG(v8::Isolate* isolate,
-                                                     const char* buffer,
-                                                     size_t length) {
+gin::Handle<NativeImage> NativeImage::CreateFromPNG(v8::Isolate* isolate,
+                                                    const char* buffer,
+                                                    size_t length) {
   gfx::Image image = gfx::Image::CreateFrom1xPNGBytes(
       reinterpret_cast<const unsigned char*>(buffer), length);
   return Create(isolate, image);
 }
 
 // static
-mate::Handle<NativeImage> NativeImage::CreateFromJPEG(v8::Isolate* isolate,
-                                                      const char* buffer,
-                                                      size_t length) {
+gin::Handle<NativeImage> NativeImage::CreateFromJPEG(v8::Isolate* isolate,
+                                                     const char* buffer,
+                                                     size_t length) {
   gfx::Image image = gfx::ImageFrom1xJPEGEncodedData(
       reinterpret_cast<const unsigned char*>(buffer), length);
   return Create(isolate, image);
 }
 
 // static
-mate::Handle<NativeImage> NativeImage::CreateFromPath(
+gin::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate,
     const base::FilePath& path) {
   base::FilePath image_path = NormalizePath(path);
 #if defined(OS_WIN)
   if (image_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
-    return mate::CreateHandle(isolate, new NativeImage(isolate, image_path));
+    return gin::CreateHandle(isolate, new NativeImage(isolate, image_path));
   }
 #endif
   gfx::ImageSkia image_skia;
   electron::util::PopulateImageSkiaRepsFromPath(&image_skia, image_path);
   gfx::Image image(image_skia);
-  mate::Handle<NativeImage> handle = Create(isolate, image);
+  gin::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)
   if (IsTemplateFilename(image_path))
     handle->SetTemplateImage(true);
@@ -400,13 +400,13 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
 }
 
 // static
-mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
+gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
     gin_helper::ErrorThrower thrower,
     v8::Local<v8::Value> buffer,
     const gin_helper::Dictionary& options) {
   if (!node::Buffer::HasInstance(buffer)) {
     thrower.ThrowError("buffer must be a node Buffer");
-    return mate::Handle<NativeImage>();
+    return gin::Handle<NativeImage>();
   }
 
   unsigned int width = 0;
@@ -415,12 +415,12 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
 
   if (!options.Get("width", &width)) {
     thrower.ThrowError("width is required");
-    return mate::Handle<NativeImage>();
+    return gin::Handle<NativeImage>();
   }
 
   if (!options.Get("height", &height)) {
     thrower.ThrowError("height is required");
-    return mate::Handle<NativeImage>();
+    return gin::Handle<NativeImage>();
   }
 
   auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
@@ -428,7 +428,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
 
   if (size_bytes != node::Buffer::Length(buffer)) {
     thrower.ThrowError("invalid buffer size");
-    return mate::Handle<NativeImage>();
+    return gin::Handle<NativeImage>();
   }
 
   options.Get("scaleFactor", &scale_factor);
@@ -448,13 +448,13 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
 }
 
 // static
-mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
+gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
     gin_helper::ErrorThrower thrower,
     v8::Local<v8::Value> buffer,
     gin::Arguments* args) {
   if (!node::Buffer::HasInstance(buffer)) {
     thrower.ThrowError("buffer must be a node Buffer");
-    return mate::Handle<NativeImage>();
+    return gin::Handle<NativeImage>();
   }
 
   int width = 0;
@@ -476,8 +476,8 @@ mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
 }
 
 // static
-mate::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
-                                                         const GURL& url) {
+gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
+                                                        const GURL& url) {
   std::string mime_type, charset, data;
   if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
     if (mime_type == "image/png")
@@ -490,7 +490,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
 }
 
 #if !defined(OS_MACOSX)
-mate::Handle<NativeImage> NativeImage::CreateFromNamedImage(
+gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(
     gin::Arguments* args,
     const std::string& name) {
   return CreateEmpty(args->isolate());
@@ -526,32 +526,31 @@ void NativeImage::BuildPrototype(v8::Isolate* isolate,
 
 namespace gin {
 
-v8::Local<v8::Value> Converter<mate::Handle<electron::api::NativeImage>>::ToV8(
+v8::Local<v8::Value> Converter<electron::api::NativeImage*>::ToV8(
     v8::Isolate* isolate,
-    const mate::Handle<electron::api::NativeImage>& val) {
-  return val.ToV8();
+    electron::api::NativeImage* val) {
+  if (val)
+    return val->GetWrapper();
+  else
+    return v8::Null(isolate);
 }
 
-bool Converter<mate::Handle<electron::api::NativeImage>>::FromV8(
+bool Converter<electron::api::NativeImage*>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
-    mate::Handle<electron::api::NativeImage>* out) {
+    electron::api::NativeImage** out) {
   // Try converting from file path.
   base::FilePath path;
   if (ConvertFromV8(isolate, val, &path)) {
-    *out = electron::api::NativeImage::CreateFromPath(isolate, path);
+    *out = electron::api::NativeImage::CreateFromPath(isolate, path).get();
     // Should throw when failed to initialize from path.
     return !(*out)->image().IsEmpty();
   }
 
-  auto* wrapper = static_cast<mate::WrappableBase*>(
-      mate::internal::FromV8Impl(isolate, val));
-  if (!wrapper)
-    return false;
-
-  *out = mate::CreateHandle(isolate,
-                            static_cast<electron::api::NativeImage*>(wrapper));
-  return true;
+  *out = static_cast<electron::api::NativeImage*>(
+      static_cast<mate::WrappableBase*>(
+          mate::internal::FromV8Impl(isolate, val)));
+  return *out != nullptr;
 }
 
 }  // namespace gin

@@ -689,13 +689,11 @@ describe('webContents module', () => {
 
       expect(() => {
         w.webContents.startDrag({ file: __filename } as any)
-      }).to.throw(`Must specify 'icon' option`)
+      }).to.throw(`Must specify non-empty 'icon' option`)
 
-      if (process.platform === 'darwin') {
-        expect(() => {
-          w.webContents.startDrag({ file: __filename, icon: __filename })
-        }).to.throw(`Must specify non-empty 'icon' option`)
-      }
+      expect(() => {
+        w.webContents.startDrag({ file: __filename, icon: __filename })
+      }).to.throw(`Must specify non-empty 'icon' option`)
     })
   })
 

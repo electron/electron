@@ -13,11 +13,11 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "shell/browser/api/trackable_object.h"
+#include "gin/handle.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/atom_api_native_image.h"
-#include "shell/common/gin_helper/event_emitter.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
 
@@ -25,11 +25,8 @@ namespace api {
 
 class View;
 
-class TopLevelWindow
-    : public mate::TrackableObject<
-          TopLevelWindow,
-          gin_helper::EventEmitter<mate::Wrappable<TopLevelWindow>>>,
-      public NativeWindowObserver {
+class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
+                       public NativeWindowObserver {
  public:
   static mate::WrappableBase* New(gin_helper::Arguments* args);
 
@@ -44,9 +41,10 @@ class TopLevelWindow
 
  protected:
   // Common constructor.
-  TopLevelWindow(v8::Isolate* isolate, const mate::Dictionary& options);
+  TopLevelWindow(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   // Creating independent TopLevelWindow instance.
-  TopLevelWindow(gin_helper::Arguments* args, const mate::Dictionary& options);
+  TopLevelWindow(gin_helper::Arguments* args,
+                 const gin_helper::Dictionary& options);
   ~TopLevelWindow() override;
 
   // TrackableObject:
@@ -91,7 +89,7 @@ class TopLevelWindow
 #endif
 
   // Public APIs of NativeWindow.
-  void SetContentView(mate::Handle<View> view);
+  void SetContentView(gin::Handle<View> view);
   void Close();
   virtual void Focus();
   virtual void Blur();
@@ -215,7 +213,7 @@ class TopLevelWindow
   // Extra APIs added in JS.
   bool SetThumbarButtons(gin_helper::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
-  void SetIcon(mate::Handle<NativeImage> icon);
+  void SetIcon(gin::Handle<NativeImage> icon);
 #endif
 #if defined(OS_WIN)
   typedef base::RepeatingCallback<void(v8::Local<v8::Value>,

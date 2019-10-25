@@ -9,7 +9,6 @@
 #include <string>
 
 #include "gin/handle.h"
-#include "native_mate/wrappable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/promise_util.h"
@@ -36,12 +35,11 @@ enum NotificationCenterKind {
 };
 #endif
 
-class SystemPreferences
-    : public gin_helper::EventEmitter<mate::Wrappable<SystemPreferences>>
+class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
 #if defined(OS_WIN)
     ,
-      public BrowserObserver,
-      public gfx::SysColorChangeListener
+                          public BrowserObserver,
+                          public gfx::SysColorChangeListener
 #endif
 {
  public:

@@ -45,9 +45,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/system/platform_handle.h"
-#include "native_mate/converter.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder_deprecated.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "shell/browser/api/atom_api_browser_window.h"
 #include "shell/browser/api/atom_api_debugger.h"
@@ -72,20 +69,18 @@
 #include "shell/browser/web_view_guest_delegate.h"
 #include "shell/common/api/atom_api_native_image.h"
 #include "shell/common/color_util.h"
+#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/value_converter_gin_adapter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/mouse_util.h"
-#include "shell/common/native_mate_converters/blink_converter.h"
-#include "shell/common/native_mate_converters/content_converter.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/image_converter.h"
-#include "shell/common/native_mate_converters/net_converter.h"
-#include "shell/common/native_mate_converters/network_converter.h"
-#include "shell/common/native_mate_converters/once_callback.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
@@ -125,7 +120,7 @@
 #include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #endif
 
-namespace mate {
+namespace gin {
 
 #if BUILDFLAG(ENABLE_PRINTING)
 template <>
@@ -221,7 +216,7 @@ struct Converter<WindowOpenDisposition> {
       default:
         break;
     }
-    return mate::ConvertToV8(isolate, disposition);
+    return gin::ConvertToV8(isolate, disposition);
   }
 };
 
@@ -275,7 +270,7 @@ struct Converter<electron::api::WebContents::Type> {
       default:
         break;
     }
-    return mate::ConvertToV8(isolate, type);
+    return gin::ConvertToV8(isolate, type);
   }
 
   static bool FromV8(v8::Isolate* isolate,
@@ -307,14 +302,14 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
       const scoped_refptr<content::DevToolsAgentHost>& val) {
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("id", val->GetId());
     dict.Set("url", val->GetURL().spec());
     return dict.GetHandle();
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -326,7 +321,7 @@ namespace {
 void OnCapturePageDone(util::Promise<gfx::Image> promise,
                        const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
-  promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
+  promise.ResolveWithGin(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
@@ -359,7 +354,7 @@ WebContents::WebContents(v8::Isolate* isolate,
                                      false);
   Init(isolate);
   AttachAsUserData(web_contents);
-  InitZoomController(web_contents, mate::Dictionary::CreateEmpty(isolate));
+  InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
   bindings_.set_connection_error_handler(base::BindRepeating(
@@ -377,10 +372,11 @@ WebContents::WebContents(v8::Isolate* isolate,
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
   InitWithSessionAndOptions(isolate, std::move(web_contents), session,
-                            mate::Dictionary::CreateEmpty(isolate));
+                            gin::Dictionary::CreateEmpty(isolate));
 }
 
-WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
+WebContents::WebContents(v8::Isolate* isolate,
+                         const gin_helper::Dictionary& options)
     : weak_factory_(this) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
@@ -405,7 +401,7 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
 
   // Obtain the session.
   std::string partition;
-  mate::Handle<api::Session> session;
+  gin::Handle<api::Session> session;
   if (options.Get("session", &session) && !session.IsEmpty()) {
   } else if (options.Get("partition", &partition)) {
     session = Session::FromPartition(isolate, partition);
@@ -465,7 +461,7 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
 }
 
 void WebContents::InitZoomController(content::WebContents* web_contents,
-                                     const mate::Dictionary& options) {
+                                     const gin_helper::Dictionary& options) {
   WebContentsZoomController::CreateForWebContents(web_contents);
   zoom_controller_ = WebContentsZoomController::FromWebContents(web_contents);
   double zoom_factor;
@@ -476,8 +472,8 @@ void WebContents::InitZoomController(content::WebContents* web_contents,
 void WebContents::InitWithSessionAndOptions(
     v8::Isolate* isolate,
     std::unique_ptr<content::WebContents> owned_web_contents,
-    mate::Handle<api::Session> session,
-    const mate::Dictionary& options) {
+    gin::Handle<api::Session> session,
+    const gin_helper::Dictionary& options) {
   Observe(owned_web_contents.get());
   // TODO(zcbenz): Make InitWithWebContents take unique_ptr.
   // At the time of writing we are going through a refactoring and I don't want
@@ -672,8 +668,7 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& pos) {
-  // TODO(zcbenz): Use implicit convertion after removing mate::EventEmitter.
-  Emit("move", gin::ConvertToV8(isolate(), pos));
+  Emit("move", pos);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
@@ -1054,7 +1049,7 @@ void WebContents::MessageTo(bool internal,
                             int32_t web_contents_id,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
-  auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
+  auto* web_contents = gin_helper::TrackableObject<WebContents>::FromWeakMapID(
       isolate(), web_contents_id);
 
   if (web_contents) {
@@ -1346,7 +1341,8 @@ bool WebContents::Equal(const WebContents* web_contents) const {
   return ID() == web_contents->ID();
 }
 
-void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
+void WebContents::LoadURL(const GURL& url,
+                          const gin_helper::Dictionary& options) {
   if (!url.is_valid() || url.spec().size() > url::kMaxURLChars) {
     Emit("did-fail-load", static_cast<int>(net::ERR_INVALID_URL),
          net::ErrorToShortString(net::ERR_INVALID_URL),
@@ -1487,7 +1483,7 @@ bool WebContents::IsCrashed() const {
 }
 
 void WebContents::SetUserAgent(const std::string& user_agent,
-                               mate::Arguments* args) {
+                               gin_helper::Arguments* args) {
   web_contents()->SetUserAgentOverride(user_agent, false);
 }
 
@@ -1507,7 +1503,7 @@ v8::Local<v8::Promise> WebContents::SavePage(
   return handle;
 }
 
-void WebContents::OpenDevTools(mate::Arguments* args) {
+void WebContents::OpenDevTools(gin_helper::Arguments* args) {
   if (type_ == Type::REMOTE)
     return;
 
@@ -1520,7 +1516,7 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   }
   bool activate = true;
   if (args && args->Length() == 1) {
-    mate::Dictionary options;
+    gin_helper::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
       options.Get("activate", &activate);
@@ -1693,8 +1689,9 @@ bool WebContents::IsCurrentlyAudible() {
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
-void WebContents::Print(mate::Arguments* args) {
-  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+void WebContents::Print(gin_helper::Arguments* args) {
+  gin_helper::Dictionary options =
+      gin::Dictionary::CreateEmpty(args->isolate());
   base::DictionaryValue settings;
 
   if (args->Length() >= 1 && !args->GetNext(&options)) {
@@ -1719,7 +1716,8 @@ void WebContents::Print(mate::Arguments* args) {
                       print_background);
 
   // Set custom margin settings
-  mate::Dictionary margins = mate::Dictionary::CreateEmpty(args->isolate());
+  gin_helper::Dictionary margins =
+      gin::Dictionary::CreateEmpty(args->isolate());
   if (options.Get("margins", &margins)) {
     printing::MarginType margin_type = printing::DEFAULT_MARGINS;
     margins.Get("marginType", &margin_type);
@@ -1805,7 +1803,7 @@ void WebContents::Print(mate::Arguments* args) {
   settings.SetBoolean(printing::kSettingRasterizePdf, false);
 
   // Set custom page ranges to print
-  std::vector<mate::Dictionary> page_ranges;
+  std::vector<gin_helper::Dictionary> page_ranges;
   if (options.Get("pageRanges", &page_ranges)) {
     std::unique_ptr<base::ListValue> page_range_list(new base::ListValue());
     for (auto& range : page_ranges) {
@@ -1830,7 +1828,7 @@ void WebContents::Print(mate::Arguments* args) {
   settings.SetInteger(printing::kSettingDuplexMode, duplex_mode);
 
   // Set custom dots per inch (dpi)
-  mate::Dictionary dpi_settings;
+  gin_helper::Dictionary dpi_settings;
   int dpi = 72;
   if (options.Get("dpi", &dpi_settings)) {
     int horizontal = 72;
@@ -1878,7 +1876,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(
 }
 #endif
 
-void WebContents::AddWorkSpace(mate::Arguments* args,
+void WebContents::AddWorkSpace(gin_helper::Arguments* args,
                                const base::FilePath& path) {
   if (path.empty()) {
     args->ThrowError("path cannot be empty");
@@ -1887,7 +1885,7 @@ void WebContents::AddWorkSpace(mate::Arguments* args,
   DevToolsAddFileSystem(std::string(), path);
 }
 
-void WebContents::RemoveWorkSpace(mate::Arguments* args,
+void WebContents::RemoveWorkSpace(gin_helper::Arguments* args,
                                   const base::FilePath& path) {
   if (path.empty()) {
     args->ThrowError("path cannot be empty");
@@ -1940,7 +1938,7 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
-uint32_t WebContents::FindInPage(mate::Arguments* args) {
+uint32_t WebContents::FindInPage(gin_helper::Arguments* args) {
   base::string16 search_text;
   if (!args->GetNext(&search_text) || search_text.empty()) {
     args->ThrowError("Must provide a non-empty search content");
@@ -1948,7 +1946,7 @@ uint32_t WebContents::FindInPage(mate::Arguments* args) {
   }
 
   uint32_t request_id = GetNextRequestId();
-  mate::Dictionary dict;
+  gin_helper::Dictionary dict;
   auto options = blink::mojom::FindOptions::New();
   if (args->GetNext(&dict)) {
     dict.Get("forward", &options->forward);
@@ -2007,9 +2005,9 @@ bool WebContents::SendIPCMessage(bool internal,
                                  const std::string& channel,
                                  v8::Local<v8::Value> args) {
   blink::CloneableMessage message;
-  if (!mate::ConvertFromV8(isolate(), args, &message)) {
+  if (!gin::ConvertFromV8(isolate(), args, &message)) {
     isolate()->ThrowException(v8::Exception::Error(
-        mate::StringToV8(isolate(), "Failed to serialize arguments")));
+        gin::StringToV8(isolate(), "Failed to serialize arguments")));
     return false;
   }
   return SendIPCMessageWithSender(internal, send_to_all, channel,
@@ -2046,9 +2044,9 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
                                         const std::string& channel,
                                         v8::Local<v8::Value> args) {
   blink::CloneableMessage message;
-  if (!mate::ConvertFromV8(isolate(), args, &message)) {
+  if (!gin::ConvertFromV8(isolate(), args, &message)) {
     isolate()->ThrowException(v8::Exception::Error(
-        mate::StringToV8(isolate(), "Failed to serialize arguments")));
+        gin::StringToV8(isolate(), "Failed to serialize arguments")));
     return false;
   }
   auto frames = web_contents()->GetAllFrames();
@@ -2094,7 +2092,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     content::NativeWebKeyboardEvent keyboard_event(
         blink::WebKeyboardEvent::kRawKeyDown,
         blink::WebInputEvent::kNoModifiers, ui::EventTimeForNow());
-    if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
+    if (gin::ConvertFromV8(isolate, input_event, &keyboard_event)) {
       rwh->ForwardKeyboardEvent(keyboard_event);
       return;
     }
@@ -2127,14 +2125,10 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   }
 
   isolate->ThrowException(
-      v8::Exception::Error(mate::StringToV8(isolate, "Invalid event object")));
+      v8::Exception::Error(gin::StringToV8(isolate, "Invalid event object")));
 }
 
-void WebContents::BeginFrameSubscription(mate::Arguments* mate_args) {
-  // TODO(zcbenz): Remove this after converting WebContents to gin.
-  gin::Arguments gin_args(mate_args->info());
-  gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(&gin_args);
-
+void WebContents::BeginFrameSubscription(gin_helper::Arguments* args) {
   bool only_dirty = false;
   FrameSubscriber::FrameCaptureCallback callback;
 
@@ -2152,32 +2146,19 @@ void WebContents::EndFrameSubscription() {
   frame_subscriber_.reset();
 }
 
-void WebContents::StartDrag(const mate::Dictionary& item,
-                            mate::Arguments* args) {
+void WebContents::StartDrag(const gin_helper::Dictionary& item,
+                            gin_helper::Arguments* args) {
   base::FilePath file;
   std::vector<base::FilePath> files;
   if (!item.Get("files", &files) && item.Get("file", &file)) {
     files.push_back(file);
   }
 
-  mate::Handle<NativeImage> icon;
-  if (!item.Get("icon", &icon) && !file.empty()) {
-    // TODO(zcbenz): Set default icon from file.
-  }
-
-  // Error checking.
-  if (icon.IsEmpty()) {
-    args->ThrowError("Must specify 'icon' option");
-    return;
-  }
-
-#if defined(OS_MACOSX)
-  // NSWindow.dragImage requires a non-empty NSImage
-  if (icon->image().IsEmpty()) {
+  gin::Handle<NativeImage> icon;
+  if (!item.Get("icon", &icon)) {
     args->ThrowError("Must specify non-empty 'icon' option");
     return;
   }
-#endif
 
   // Start dragging.
   if (!files.empty()) {
@@ -2188,11 +2169,7 @@ void WebContents::StartDrag(const mate::Dictionary& item,
   }
 }
 
-v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* mate_args) {
-  // TODO(zcbenz): Remove this after converting WebContents to gin.
-  gin::Arguments gin_args(mate_args->info());
-  gin::Arguments* args = &gin_args;
-
+v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
   gfx::Rect rect;
   util::Promise<gfx::Image> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -2202,7 +2179,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* mate_args) {
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
-    promise.Resolve(gfx::Image());
+    promise.ResolveWithGin(gfx::Image());
     return handle;
   }
 
@@ -2233,11 +2210,8 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
     Emit("cursor-changed", CursorTypeToString(info),
          gfx::Image::CreateFrom1xBitmap(info.custom_image),
          info.image_scale_factor,
-         // TODO(zcbenz): Use implicit convertion after removing
-         // mate::EventEmitter.
-         gin::ConvertToV8(isolate(), gfx::Size(info.custom_image.width(),
-                                               info.custom_image.height())),
-         gin::ConvertToV8(isolate(), info.hotspot));
+         gfx::Size(info.custom_image.width(), info.custom_image.height()),
+         info.hotspot);
   } else {
     Emit("cursor-changed", CursorTypeToString(info));
   }
@@ -2374,7 +2348,7 @@ v8::Local<v8::Value> WebContents::GetWebPreferences(
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (!web_preferences)
     return v8::Null(isolate);
-  return mate::ConvertToV8(isolate, *web_preferences->preference());
+  return gin::ConvertToV8(isolate, *web_preferences->preference());
 }
 
 v8::Local<v8::Value> WebContents::GetLastWebPreferences(
@@ -2382,7 +2356,7 @@ v8::Local<v8::Value> WebContents::GetLastWebPreferences(
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (!web_preferences)
     return v8::Null(isolate);
-  return mate::ConvertToV8(isolate, *web_preferences->last_preference());
+  return gin::ConvertToV8(isolate, *web_preferences->last_preference());
 }
 
 v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() const {
@@ -2505,9 +2479,9 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
 // static
 void WebContents::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "WebContents"));
+  prototype->SetClassName(gin::StringToV8(isolate, "WebContents"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setBackgroundThrottling",
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
@@ -2631,40 +2605,40 @@ AtomBrowserContext* WebContents::GetBrowserContext() const {
 }
 
 // static
-mate::Handle<WebContents> WebContents::Create(v8::Isolate* isolate,
-                                              const mate::Dictionary& options) {
-  return mate::CreateHandle(isolate, new WebContents(isolate, options));
+gin::Handle<WebContents> WebContents::Create(
+    v8::Isolate* isolate,
+    const gin_helper::Dictionary& options) {
+  return gin::CreateHandle(isolate, new WebContents(isolate, options));
 }
 
 // static
-mate::Handle<WebContents> WebContents::CreateAndTake(
+gin::Handle<WebContents> WebContents::CreateAndTake(
     v8::Isolate* isolate,
     std::unique_ptr<content::WebContents> web_contents,
     Type type) {
-  return mate::CreateHandle(
+  return gin::CreateHandle(
       isolate, new WebContents(isolate, std::move(web_contents), type));
 }
 
 // static
-mate::Handle<WebContents> WebContents::From(
-    v8::Isolate* isolate,
-    content::WebContents* web_contents) {
+gin::Handle<WebContents> WebContents::From(v8::Isolate* isolate,
+                                           content::WebContents* web_contents) {
   auto* existing = TrackableObject::FromWrappedClass(isolate, web_contents);
   if (existing)
-    return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
+    return gin::CreateHandle(isolate, static_cast<WebContents*>(existing));
   else
-    return mate::Handle<WebContents>();
+    return gin::Handle<WebContents>();
 }
 
 // static
-mate::Handle<WebContents> WebContents::FromOrCreate(
+gin::Handle<WebContents> WebContents::FromOrCreate(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
   auto existing = From(isolate, web_contents);
   if (!existing.IsEmpty())
     return existing;
   else
-    return mate::CreateHandle(isolate, new WebContents(isolate, web_contents));
+    return gin::CreateHandle(isolate, new WebContents(isolate, web_contents));
 }
 
 }  // namespace api
@@ -2680,7 +2654,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(isolate)
                               ->GetFunction(context)
                               .ToLocalChecked());

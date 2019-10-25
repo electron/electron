@@ -12,8 +12,9 @@
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
 using content::DevToolsAgentHost;
@@ -93,7 +94,7 @@ void Debugger::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
   }
 }
 
-void Debugger::Attach(mate::Arguments* args) {
+void Debugger::Attach(gin_helper::Arguments* args) {
   std::string protocol_version;
   args->GetNext(&protocol_version);
 
@@ -128,7 +129,7 @@ void Debugger::Detach() {
   AgentHostClosed(agent_host_.get());
 }
 
-v8::Local<v8::Promise> Debugger::SendCommand(mate::Arguments* args) {
+v8::Local<v8::Promise> Debugger::SendCommand(gin_helper::Arguments* args) {
   electron::util::Promise<base::DictionaryValue> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -168,16 +169,16 @@ void Debugger::ClearPendingRequests() {
 }
 
 // static
-mate::Handle<Debugger> Debugger::Create(v8::Isolate* isolate,
-                                        content::WebContents* web_contents) {
-  return mate::CreateHandle(isolate, new Debugger(isolate, web_contents));
+gin::Handle<Debugger> Debugger::Create(v8::Isolate* isolate,
+                                       content::WebContents* web_contents) {
+  return gin::CreateHandle(isolate, new Debugger(isolate, web_contents));
 }
 
 // static
 void Debugger::BuildPrototype(v8::Isolate* isolate,
                               v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Debugger"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "Debugger"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("attach", &Debugger::Attach)
       .SetMethod("isAttached", &Debugger::IsAttached)
       .SetMethod("detach", &Debugger::Detach)
@@ -197,7 +198,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary(isolate, exports)
+  gin_helper::Dictionary(isolate, exports)
       .Set("Debugger", Debugger::GetConstructor(isolate)
                            ->GetFunction(context)
                            .ToLocalChecked());

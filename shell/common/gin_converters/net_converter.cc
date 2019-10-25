@@ -286,6 +286,58 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
 }
 
 // static
+v8::Local<v8::Value>
+Converter<scoped_refptr<network::ResourceRequestBody>>::ToV8(
+    v8::Isolate* isolate,
+    const scoped_refptr<network::ResourceRequestBody>& val) {
+  if (!val)
+    return v8::Null(isolate);
+  return ConvertToV8(isolate, *val);
+}
+
+// static
+bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    scoped_refptr<network::ResourceRequestBody>* out) {
+  auto list = std::make_unique<base::ListValue>();
+  if (!ConvertFromV8(isolate, val, list.get()))
+    return false;
+  *out = new network::ResourceRequestBody();
+  for (size_t i = 0; i < list->GetSize(); ++i) {
+    base::DictionaryValue* dict = nullptr;
+    std::string type;
+    if (!list->GetDictionary(i, &dict))
+      return false;
+    dict->GetString("type", &type);
+    if (type == "rawData") {
+      base::Value* bytes = nullptr;
+      dict->GetBinary("bytes", &bytes);
+      (*out)->AppendBytes(
+          reinterpret_cast<const char*>(bytes->GetBlob().data()),
+          base::checked_cast<int>(bytes->GetBlob().size()));
+    } else if (type == "file") {
+      std::string file;
+      int offset = 0, length = -1;
+      double modification_time = 0.0;
+      dict->GetStringWithoutPathExpansion("filePath", &file);
+      dict->GetInteger("offset", &offset);
+      dict->GetInteger("file", &length);
+      dict->GetDouble("modificationTime", &modification_time);
+      (*out)->AppendFileRange(base::FilePath::FromUTF8Unsafe(file),
+                              static_cast<uint64_t>(offset),
+                              static_cast<uint64_t>(length),
+                              base::Time::FromDoubleT(modification_time));
+    } else if (type == "blob") {
+      std::string uuid;
+      dict->GetString("blobUUID", &uuid);
+      (*out)->AppendBlob(uuid);
+    }
+  }
+  return true;
+}
+
+// static
 v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequest& val) {

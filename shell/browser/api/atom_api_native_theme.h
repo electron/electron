@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
 #define SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
 
-#include "native_mate/wrappable.h"
 #include "shell/common/gin_helper/event_emitter.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
@@ -14,9 +13,8 @@ namespace electron {
 
 namespace api {
 
-class NativeTheme
-    : public gin_helper::EventEmitter<mate::Wrappable<NativeTheme>>,
-      public ui::NativeThemeObserver {
+class NativeTheme : public gin_helper::EventEmitter<NativeTheme>,
+                    public ui::NativeThemeObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 

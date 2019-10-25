@@ -10,11 +10,10 @@
 #include <vector>
 
 #include "gin/handle.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/event_emitter.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace gfx {
 class Image;
@@ -33,10 +32,7 @@ namespace api {
 class Menu;
 class NativeImage;
 
-class Tray : public mate::TrackableObject<
-                 Tray,
-                 gin_helper::EventEmitter<mate::Wrappable<Tray>>>,
-             public TrayIconObserver {
+class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
  public:
   static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
                                   gin::Handle<NativeImage> image,

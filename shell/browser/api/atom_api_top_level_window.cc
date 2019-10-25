@@ -74,10 +74,10 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 }  // namespace
 
 TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
-                               const mate::Dictionary& options)
+                               const gin_helper::Dictionary& options)
     : weak_factory_(this) {
   // The parent window.
-  mate::Handle<TopLevelWindow> parent;
+  gin::Handle<TopLevelWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
@@ -98,14 +98,14 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
 
 #if defined(TOOLKIT_VIEWS)
   // Sets the window icon.
-  mate::Handle<NativeImage> icon;
+  gin::Handle<NativeImage> icon;
   if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
     SetIcon(icon);
 #endif
 }
 
 TopLevelWindow::TopLevelWindow(gin_helper::Arguments* args,
-                               const mate::Dictionary& options)
+                               const gin_helper::Dictionary& options)
     : TopLevelWindow(args->isolate(), options) {
   InitWithArgs(args);
   // Init window after everything has been setup.
@@ -124,15 +124,12 @@ TopLevelWindow::~TopLevelWindow() {
 void TopLevelWindow::InitWith(v8::Isolate* isolate,
                               v8::Local<v8::Object> wrapper) {
   AttachAsUserData(window_.get());
-  mate::TrackableObject<
-      TopLevelWindow, gin_helper::EventEmitter<
-                          mate::Wrappable<TopLevelWindow>>>::InitWith(isolate,
-                                                                      wrapper);
+  gin_helper::TrackableObject<TopLevelWindow>::InitWith(isolate, wrapper);
 
   // We can only append this window to parent window's child windows after this
   // window's JS wrapper gets initialized.
   if (!parent_window_.IsEmpty()) {
-    mate::Handle<TopLevelWindow> parent;
+    gin::Handle<TopLevelWindow> parent;
     gin::ConvertFromV8(isolate, GetParentWindow(), &parent);
     DCHECK(!parent.IsEmpty());
     parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
@@ -299,7 +296,7 @@ void TopLevelWindow::OnWindowMessage(UINT message,
 }
 #endif
 
-void TopLevelWindow::SetContentView(mate::Handle<View> view) {
+void TopLevelWindow::SetContentView(gin::Handle<View> view) {
   ResetBrowserViews();
   content_view_.Reset(isolate(), view.ToV8());
   window_->SetContentView(view->view());
@@ -676,7 +673,7 @@ void TopLevelWindow::SetFocusable(bool focusable) {
 
 void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
-  mate::Handle<Menu> menu;
+  gin::Handle<Menu> menu;
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
       gin::V8ToString(isolate, object->GetConstructorName()) == "Menu" &&
@@ -704,12 +701,12 @@ void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
     return;
   }
 
-  mate::Handle<TopLevelWindow> parent;
+  gin::Handle<TopLevelWindow> parent;
   if (value->IsNull() || value->IsUndefined()) {
     RemoveFromParentChildWindows();
     parent_window_.Reset();
     window_->SetParentWindow(nullptr);
-  } else if (mate::ConvertFromV8(isolate(), value, &parent)) {
+  } else if (gin::ConvertFromV8(isolate(), value, &parent)) {
     RemoveFromParentChildWindows();
     parent_window_.Reset(isolate(), value);
     window_->SetParentWindow(parent->window_.get());
@@ -725,7 +722,7 @@ void TopLevelWindow::SetBrowserView(v8::Local<v8::Value> value) {
 }
 
 void TopLevelWindow::AddBrowserView(v8::Local<v8::Value> value) {
-  mate::Handle<BrowserView> browser_view;
+  gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->weak_map_id());
@@ -738,7 +735,7 @@ void TopLevelWindow::AddBrowserView(v8::Local<v8::Value> value) {
 }
 
 void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
-  mate::Handle<BrowserView> browser_view;
+  gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->weak_map_id());
@@ -960,7 +957,7 @@ bool TopLevelWindow::SetThumbarButtons(gin_helper::Arguments* args) {
 }
 
 #if defined(TOOLKIT_VIEWS)
-void TopLevelWindow::SetIcon(mate::Handle<NativeImage> icon) {
+void TopLevelWindow::SetIcon(gin::Handle<NativeImage> icon) {
 #if defined(OS_WIN)
   static_cast<NativeWindowViews*>(window_.get())
       ->SetIcon(icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
@@ -1028,7 +1025,7 @@ int32_t TopLevelWindow::GetID() const {
 
 void TopLevelWindow::ResetBrowserViews() {
   for (auto& item : browser_views_) {
-    mate::Handle<BrowserView> browser_view;
+    gin::Handle<BrowserView> browser_view;
     if (gin::ConvertFromV8(isolate(),
                            v8::Local<v8::Value>::New(isolate(), item.second),
                            &browser_view) &&
@@ -1047,7 +1044,7 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
   if (parent_window_.IsEmpty())
     return;
 
-  mate::Handle<TopLevelWindow> parent;
+  gin::Handle<TopLevelWindow> parent;
   if (!gin::ConvertFromV8(isolate(), GetParentWindow(), &parent) ||
       parent.IsEmpty()) {
     return;
@@ -1058,7 +1055,8 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
 
 // static
 mate::WrappableBase* TopLevelWindow::New(gin_helper::Arguments* args) {
-  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  gin_helper::Dictionary options =
+      gin::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
   return new TopLevelWindow(args, options);

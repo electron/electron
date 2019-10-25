@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_NATIVE_MATE_CONVERTERS_CONTENT_CONVERTER_H_
-#define SHELL_COMMON_NATIVE_MATE_CONVERTERS_CONTENT_CONVERTER_H_
+#ifndef SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
+#define SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
 
 #include <utility>
 
@@ -11,18 +11,19 @@
 #include "content/public/common/menu_item.h"
 #include "content/public/common/referrer.h"
 #include "content/public/common/stop_find_action.h"
-#include "native_mate/converter.h"
+#include "gin/converter.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 
 namespace content {
 struct ContextMenuParams;
+struct NativeWebKeyboardEvent;
 class WebContents;
 }  // namespace content
 
 using ContextMenuParamsWithWebContents =
     std::pair<content::ContextMenuParams, content::WebContents*>;
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<content::MenuItem::Type> {
@@ -74,6 +75,15 @@ struct Converter<content::Referrer> {
                      content::Referrer* out);
 };
 
-}  // namespace mate
+template <>
+struct Converter<content::NativeWebKeyboardEvent> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     content::NativeWebKeyboardEvent* out);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const content::NativeWebKeyboardEvent& in);
+};
 
-#endif  // SHELL_COMMON_NATIVE_MATE_CONVERTERS_CONTENT_CONVERTER_H_
+}  // namespace gin
+
+#endif  // SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_

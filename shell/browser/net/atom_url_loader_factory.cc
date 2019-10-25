@@ -388,8 +388,8 @@ void AtomURLLoaderFactory::StartLoadingHttp(
     if (value->IsNull()) {
       browser_context = AtomBrowserContext::From(base::GenerateGUID(), true);
     } else {
-      mate::Handle<api::Session> session;
-      if (mate::ConvertFromV8(dict.isolate(), value, &session) &&
+      gin::Handle<api::Session> session;
+      if (gin::ConvertFromV8(dict.isolate(), value, &session) &&
           !session.IsEmpty()) {
         browser_context = session->browser_context();
       }

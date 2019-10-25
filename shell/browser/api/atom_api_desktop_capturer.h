@@ -12,17 +12,13 @@
 #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
 #include "gin/handle.h"
-#include "shell/browser/api/trackable_object.h"
-#include "shell/common/gin_helper/event_emitter.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
 
 namespace api {
 
-class DesktopCapturer
-    : public mate::TrackableObject<
-          DesktopCapturer,
-          gin_helper::EventEmitter<mate::Wrappable<DesktopCapturer>>> {
+class DesktopCapturer : public gin_helper::TrackableObject<DesktopCapturer> {
  public:
   struct Source {
     DesktopMediaList::Source media_list_source;

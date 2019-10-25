@@ -19,12 +19,12 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/common/web_preferences.h"
 #include "electron/buildflags/buildflags.h"
-#include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/web_view_manager.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 
 #if defined(OS_WIN)
@@ -101,16 +101,16 @@ std::vector<WebContentsPreferences*> WebContentsPreferences::instances_;
 
 WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
-    const mate::Dictionary& web_preferences)
+    const gin_helper::Dictionary& web_preferences)
     : web_contents_(web_contents) {
   v8::Isolate* isolate = web_preferences.isolate();
-  mate::Dictionary copied(isolate, web_preferences.GetHandle()->Clone());
+  gin_helper::Dictionary copied(isolate, web_preferences.GetHandle()->Clone());
   // Following fields should not be stored.
   copied.Delete("embedder");
   copied.Delete("session");
   copied.Delete("type");
 
-  mate::ConvertFromV8(isolate, copied.GetHandle(), &preference_);
+  gin::ConvertFromV8(isolate, copied.GetHandle(), &preference_);
   web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
 
   instances_.push_back(this);

@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "native_mate/wrappable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter.h"
 #include "ui/display/display_observer.h"
@@ -23,7 +22,7 @@ namespace electron {
 
 namespace api {
 
-class Screen : public gin_helper::EventEmitter<mate::Wrappable<Screen>>,
+class Screen : public gin_helper::EventEmitter<Screen>,
                public display::DisplayObserver {
  public:
   static v8::Local<v8::Value> Create(gin_helper::ErrorThrower error_thrower);

@@ -12,9 +12,9 @@
 #include "base/callback.h"
 #include "base/optional.h"
 #include "base/values.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "services/network/public/mojom/net_log.mojom.h"
-#include "shell/browser/api/trackable_object.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/promise_util.h"
 
 namespace electron {
@@ -23,17 +23,17 @@ class AtomBrowserContext;
 
 namespace api {
 
-class NetLog : public mate::TrackableObject<NetLog> {
+class NetLog : public gin_helper::TrackableObject<NetLog> {
  public:
-  static mate::Handle<NetLog> Create(v8::Isolate* isolate,
-                                     AtomBrowserContext* browser_context);
+  static gin::Handle<NetLog> Create(v8::Isolate* isolate,
+                                    AtomBrowserContext* browser_context);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   v8::Local<v8::Promise> StartLogging(base::FilePath log_path,
-                                      mate::Arguments* args);
-  v8::Local<v8::Promise> StopLogging(mate::Arguments* args);
+                                      gin_helper::Arguments* args);
+  v8::Local<v8::Promise> StopLogging(gin_helper::Arguments* args);
   bool IsCurrentlyLogging() const;
 
  protected:

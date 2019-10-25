@@ -11,7 +11,6 @@
 
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "content/public/browser/native_web_keyboard_event.h"
 #include "gin/converter.h"
 #include "mojo/public/cpp/base/values_mojom_traits.h"
 #include "mojo/public/mojom/base/values.mojom.h"
@@ -20,6 +19,7 @@
 #include "shell/common/keyboard_util.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "third_party/blink/public/platform/web_input_event.h"
+#include "third_party/blink/public/platform/web_keyboard_event.h"
 #include "third_party/blink/public/platform/web_mouse_event.h"
 #include "third_party/blink/public/platform/web_mouse_wheel_event.h"
 #include "third_party/blink/public/web/web_device_emulation_params.h"
@@ -214,42 +214,6 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
     }
   }
   return true;
-}
-
-bool Converter<content::NativeWebKeyboardEvent>::FromV8(
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> val,
-    content::NativeWebKeyboardEvent* out) {
-  mate::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
-    return false;
-  if (!ConvertFromV8(isolate, val, static_cast<blink::WebKeyboardEvent*>(out)))
-    return false;
-  dict.Get("skipInBrowser", &out->skip_in_browser);
-  return true;
-}
-
-v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
-    v8::Isolate* isolate,
-    const content::NativeWebKeyboardEvent& in) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-
-  if (in.GetType() == blink::WebInputEvent::Type::kRawKeyDown)
-    dict.Set("type", "keyDown");
-  else if (in.GetType() == blink::WebInputEvent::Type::kKeyUp)
-    dict.Set("type", "keyUp");
-  dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.dom_key));
-  dict.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
-                       static_cast<ui::DomCode>(in.dom_code)));
-
-  using Modifiers = blink::WebInputEvent::Modifiers;
-  dict.Set("isAutoRepeat", (in.GetModifiers() & Modifiers::kIsAutoRepeat) != 0);
-  dict.Set("shift", (in.GetModifiers() & Modifiers::kShiftKey) != 0);
-  dict.Set("control", (in.GetModifiers() & Modifiers::kControlKey) != 0);
-  dict.Set("alt", (in.GetModifiers() & Modifiers::kAltKey) != 0);
-  dict.Set("meta", (in.GetModifiers() & Modifiers::kMetaKey) != 0);
-
-  return dict.GetHandle();
 }
 
 bool Converter<blink::WebMouseEvent>::FromV8(v8::Isolate* isolate,

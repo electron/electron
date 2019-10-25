@@ -2,22 +2,21 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_TRACKABLE_OBJECT_H_
-#define SHELL_BROWSER_API_TRACKABLE_OBJECT_H_
+#ifndef SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
+#define SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
 
 #include <vector>
 
 #include "base/bind.h"
 #include "base/memory/weak_ptr.h"
-#include "native_mate/object_template_builder_deprecated.h"
-#include "shell/browser/api/event_emitter_deprecated.h"
+#include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/key_weak_map.h"
 
 namespace base {
 class SupportsUserData;
 }
 
-namespace mate {
+namespace gin_helper {
 
 // Users should use TrackableObject instead.
 class TrackableObjectBase {
@@ -51,21 +50,19 @@ class TrackableObjectBase {
 
 // All instances of TrackableObject will be kept in a weak map and can be got
 // from its ID.
-//
-// TODO(zcbenz): Remove "typename B" after removing native_mate.
-template <typename T, typename B = mate::EventEmitter<T>>
-class TrackableObject : public TrackableObjectBase, public B {
+template <typename T>
+class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
  public:
   // Mark the JS object as destroyed.
   void MarkDestroyed() {
-    v8::Local<v8::Object> wrapper = Wrappable<T>::GetWrapper();
+    v8::Local<v8::Object> wrapper = mate::Wrappable<T>::GetWrapper();
     if (!wrapper.IsEmpty()) {
       wrapper->SetAlignedPointerInInternalField(0, nullptr);
     }
   }
 
   bool IsDestroyed() {
-    v8::Local<v8::Object> wrapper = Wrappable<T>::GetWrapper();
+    v8::Local<v8::Object> wrapper = mate::Wrappable<T>::GetWrapper();
     return wrapper->InternalFieldCount() == 0 ||
            wrapper->GetAlignedPointerFromInternalField(0) == nullptr;
   }
@@ -80,7 +77,7 @@ class TrackableObject : public TrackableObjectBase, public B {
       return nullptr;
 
     T* self = nullptr;
-    mate::ConvertFromV8(isolate, object.ToLocalChecked(), &self);
+    gin::ConvertFromV8(isolate, object.ToLocalChecked(), &self);
     return self;
   }
 
@@ -113,7 +110,7 @@ class TrackableObject : public TrackableObjectBase, public B {
   ~TrackableObject() override { RemoveFromWeakMap(); }
 
   void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override {
-    WrappableBase::InitWith(isolate, wrapper);
+    mate::WrappableBase::InitWith(isolate, wrapper);
     if (!weak_map_) {
       weak_map_ = new electron::KeyWeakMap<int32_t>;
     }
@@ -127,12 +124,12 @@ class TrackableObject : public TrackableObjectBase, public B {
   DISALLOW_COPY_AND_ASSIGN(TrackableObject);
 };
 
-template <typename T, typename B>
-int32_t TrackableObject<T, B>::next_id_ = 0;
+template <typename T>
+int32_t TrackableObject<T>::next_id_ = 0;
 
-template <typename T, typename B>
-electron::KeyWeakMap<int32_t>* TrackableObject<T, B>::weak_map_ = nullptr;
+template <typename T>
+electron::KeyWeakMap<int32_t>* TrackableObject<T>::weak_map_ = nullptr;
 
-}  // namespace mate
+}  // namespace gin_helper
 
-#endif  // SHELL_BROWSER_API_TRACKABLE_OBJECT_H_
+#endif  // SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_

@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/native_mate_converters/accelerator_converter.h"
+#include "shell/common/gin_converters/accelerator_converter.h"
 
 #include <string>
 
 #include "shell/browser/ui/accelerator_util.h"
 
-namespace mate {
+namespace gin {
 
 // static
 bool Converter<ui::Accelerator>::FromV8(v8::Isolate* isolate,
@@ -20,4 +20,4 @@ bool Converter<ui::Accelerator>::FromV8(v8::Isolate* isolate,
   return accelerator_util::StringToAccelerator(keycode, out);
 }
 
-}  // namespace mate
+}  // namespace gin
