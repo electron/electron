@@ -17,30 +17,37 @@ namespace electron {
 // static
 void RemoteCallbackFreer::BindTo(v8::Isolate* isolate,
                                  v8::Local<v8::Object> target,
+                                 int frame_id,
                                  const std::string& context_id,
                                  int object_id,
                                  content::WebContents* web_contents) {
-  new RemoteCallbackFreer(isolate, target, context_id, object_id, web_contents);
+  new RemoteCallbackFreer(isolate, target, frame_id, context_id, object_id,
+                          web_contents);
 }
 
 RemoteCallbackFreer::RemoteCallbackFreer(v8::Isolate* isolate,
                                          v8::Local<v8::Object> target,
+                                         int frame_id,
                                          const std::string& context_id,
                                          int object_id,
                                          content::WebContents* web_contents)
     : ObjectLifeMonitor(isolate, target),
       content::WebContentsObserver(web_contents),
+      frame_id_(frame_id),
       context_id_(context_id),
       object_id_(object_id) {}
 
 RemoteCallbackFreer::~RemoteCallbackFreer() = default;
 
 void RemoteCallbackFreer::RunDestructor() {
-  auto* frame_host = web_contents()->GetMainFrame();
-  if (frame_host) {
+  auto frames = web_contents()->GetAllFrames();
+  auto iter = std::find_if(frames.begin(), frames.end(), [this](auto* f) {
+    return f->GetRoutingID() == frame_id_;
+  });
+
+  if (iter != frames.end() && (*iter)->IsRenderFrameLive()) {
     mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-    frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-        &electron_renderer);
+    (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
     electron_renderer->DereferenceRemoteJSCallback(context_id_, object_id_);
   }
 
