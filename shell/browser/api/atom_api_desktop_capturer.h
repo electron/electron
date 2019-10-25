@@ -18,7 +18,8 @@ namespace electron {
 
 namespace api {
 
-class DesktopCapturer : public gin_helper::TrackableObject<DesktopCapturer> {
+class DesktopCapturer : public gin_helper::TrackableObject<DesktopCapturer>,
+                        public DesktopMediaListObserver {
  public:
   struct Source {
     DesktopMediaList::Source media_list_source;
@@ -42,6 +43,16 @@ class DesktopCapturer : public gin_helper::TrackableObject<DesktopCapturer> {
  protected:
   explicit DesktopCapturer(v8::Isolate* isolate);
   ~DesktopCapturer() override;
+
+  // DesktopMediaListObserver:
+  void OnSourceAdded(DesktopMediaList* list, int index) override {}
+  void OnSourceRemoved(DesktopMediaList* list, int index) override {}
+  void OnSourceMoved(DesktopMediaList* list,
+                     int old_index,
+                     int new_index) override {}
+  void OnSourceNameChanged(DesktopMediaList* list, int index) override {}
+  void OnSourceThumbnailChanged(DesktopMediaList* list, int index) override {}
+  void OnSourceUnchanged(DesktopMediaList* list) override;
 
  private:
   void UpdateSourcesList(DesktopMediaList* list);
