@@ -8,7 +8,7 @@ This is needed by Electron to allow apps to limit how much an app can zoom in
 or out.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a64411310570cf7f814d3ddc2f6c414c9bba06c7..878ee92a6749e20bca705f7a7dab0005e9ddd359 100644
+index 03ae4f288371d85493561f22e2429ade5de32339..9010eba2118c14d2cf3497bf78fb78ffe8f6ecf3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4110,10 +4110,18 @@ bool WebContentsImpl::GetClosedByUserGesture() {
