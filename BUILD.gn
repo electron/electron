@@ -546,6 +546,10 @@ source_set("electron_lib") {
     ]
 
     sources += filenames.lib_sources_nss
+    sources += [
+      "shell/browser/ui/gtk_util.cc",
+      "shell/browser/ui/gtk_util.h",
+    ]
   }
   if (is_win) {
     libs += [ "dwmapi.lib" ]
