@@ -80,3 +80,4 @@ add_zoom_limit_setters_to_webcontents.patch
 revert_remove_contentrendererclient_shouldfork.patch
 build_win_disable_zc_twophase.patch
 ignore_rc_check.patch
+build_win_fix_ambiguous_reference_with_msstl.patch
