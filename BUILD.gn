@@ -382,6 +382,7 @@ source_set("chrome_spellchecker") {
   ]
 
   deps = [
+    ":resources",
     "//base:base_static",
     "//components/language/core/browser",
     "//components/spellcheck:buildflags",

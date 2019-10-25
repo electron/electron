@@ -88,6 +88,9 @@ class Session : public gin_helper::TrackableObject<Session>,
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options,
                   gin_helper::Arguments* args);
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  void SetSpellCheckLanguages(const std::vector<std::string>& languages);
+#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void LoadChromeExtension(const base::FilePath extension_path);

@@ -898,9 +898,14 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
 
   bool succeed = false;
   int key = GetPathConstant(name);
-  if (key >= 0)
+  if (key >= 0) {
     succeed =
         base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
+    if (key == DIR_USER_DATA) {
+      succeed |= base::PathService::OverrideAndCreateIfNeeded(
+          chrome::DIR_USER_DATA, path, true, false);
+    }
+  }
   if (!succeed)
     thrower.ThrowError("Failed to set path");
 }

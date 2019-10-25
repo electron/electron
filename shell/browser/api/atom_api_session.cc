@@ -24,6 +24,7 @@
 #include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
+#include "components/spellcheck/browser/pref_names.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
@@ -646,6 +647,18 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
                      url, num_sockets_to_preconnect));
 }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+void Session::SetSpellCheckLanguages(
+    const std::vector<std::string>& languages) {
+  base::ListValue language_codes;
+  for (const std::string& lang : languages) {
+    language_codes.AppendString(lang);
+  }
+  browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
+                                 language_codes);
+}
+#endif
+
 // static
 gin::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
                                          AtomBrowserContext* browser_context) {
@@ -716,6 +729,11 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getPreloads", &Session::GetPreloads)
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
       .SetMethod("loadChromeExtension", &Session::LoadChromeExtension)
+#endif
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+      .SetMethod("setSpellCheckLanguages", &Session::SetSpellCheckLanguages)
+      .SetProperty("availableSpellCheckLanguages",
+                   &l10n_util::GetAvailableLocales)
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
       .SetProperty("cookies", &Session::Cookies)
