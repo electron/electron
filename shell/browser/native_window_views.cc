@@ -45,8 +45,8 @@
 
 #if defined(USE_X11)
 #include "base/strings/string_util.h"
-#include "chrome/browser/ui/libgtkui/unity_service.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/linux/unity_service.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/views/native_frame_view.h"

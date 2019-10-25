@@ -17,7 +17,7 @@
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
-#include "chrome/browser/ui/libgtkui/unity_service.h"
+#include "shell/browser/linux/unity_service.h"
 #endif
 
 namespace electron {
@@ -52,7 +52,11 @@ bool SetDefaultWebClient(const std::string& protocol) {
     argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
     argv.push_back(protocol);
   }
-  argv.push_back(libgtkui::GetDesktopName(env.get()));
+  std::string desktop_name;
+  if (!env->GetVar("CHROME_DESKTOP", &desktop_name)) {
+    return false;
+  }
+  argv.push_back(desktop_name);
 
   int exit_code;
   bool ran_ok = LaunchXdgUtility(argv, &exit_code);
@@ -92,7 +96,10 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   argv.emplace_back("check");
   argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
   argv.push_back(protocol);
-  argv.push_back(libgtkui::GetDesktopName(env.get()));
+  std::string desktop_name;
+  if (!env->GetVar("CHROME_DESKTOP", &desktop_name))
+    return false;
+  argv.push_back(desktop_name);
 
   std::string reply;
   int success_code;

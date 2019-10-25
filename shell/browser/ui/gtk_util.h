@@ -5,6 +5,8 @@
 #ifndef SHELL_BROWSER_UI_GTK_UTIL_H_
 #define SHELL_BROWSER_UI_GTK_UTIL_H_
 
+#include <gtk/gtk.h>
+
 class SkBitmap;
 
 namespace gtk_util {
