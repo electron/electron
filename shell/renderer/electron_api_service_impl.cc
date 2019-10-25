@@ -22,6 +22,7 @@
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/public/web/web_message_port_converter.h"
 
 namespace electron {
 
@@ -174,6 +175,25 @@ void ElectronApiServiceImpl::Message(bool internal,
         EmitIPCEvent(child_context, internal, channel, args, sender_id);
       }
   }
+}
+
+void ElectronApiServiceImpl::PostMessage(blink::TransferableMessage message) {
+  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
+  if (!frame)
+    return;
+
+  v8::Isolate* isolate = blink::MainThreadIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
+  v8::Context::Scope context_scope(context);
+
+  std::vector<v8::Local<v8::Value>> ports;
+  for (auto& port : message.ports) {
+    LOG(ERROR) << "GOT PORT";
+    ports.emplace_back(blink::WebMessagePortConverter::EntangleAndInjectMessagePortChannel(context, std::move(port)));
+  }
+  EmitIPCEvent(context, false, "foo", gin::ConvertToV8(isolate, ports), 0);
 }
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)

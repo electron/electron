@@ -20,6 +20,19 @@
 #include "shell/common/node_includes.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
+/*
+#include "third_party/blink/renderer/bindings/core/v8/script_value.h"
+#include
+"third_party/blink/renderer/bindings/core/v8/serialization/post_message_helper.h"
+#include
+"third_party/blink/renderer/bindings/core/v8/serialization/serialized_script_value.h"
+#include "third_party/blink/renderer/core/messaging/message_port.h"
+#include "third_party/blink/renderer/core/messaging/post_message_options.h"
+#include "third_party/blink/renderer/platform/bindings/exception_state.h"
+*/
+
+#include "third_party/blink/public/web/web_message_port_converter.h"
+
 using blink::WebLocalFrame;
 using content::RenderFrame;
 
@@ -57,7 +70,8 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
         .SetMethod("sendSync", &IPCRenderer::SendSync)
         .SetMethod("sendTo", &IPCRenderer::SendTo)
         .SetMethod("sendToHost", &IPCRenderer::SendToHost)
-        .SetMethod("invoke", &IPCRenderer::Invoke);
+        .SetMethod("invoke", &IPCRenderer::Invoke)
+        .SetMethod("postMessage", &IPCRenderer::PostMessage);
   }
 
   const char* GetTypeName() override { return "IPCRenderer"; }
@@ -93,6 +107,57 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
             std::move(p)));
 
     return handle;
+  }
+
+  void PostMessage(gin::Arguments* args) {
+    std::vector<blink::MessagePortChannel> ports;
+    std::vector<v8::Local<v8::Object>> objs;
+    if (!args->GetNext(&objs)) {
+      args->ThrowError();
+      return;
+    }
+
+    for (auto& obj : objs) {
+      base::Optional<blink::MessagePortChannel> port =
+          blink::WebMessagePortConverter::
+              DisentangleAndExtractMessagePortChannel(args->isolate(), obj);
+      if (!port.has_value()) {
+        args->ThrowError();
+        return;
+      }
+      ports.emplace_back(port.value());
+    }
+
+    blink::TransferableMessage transferable_message;
+    transferable_message.ports = std::move(ports);
+    electron_browser_ptr_->PostMessage(std::move(transferable_message));
+#if 0
+    blink::ExceptionState exception_state(isolate,
+                                blink::ExceptionState::kExecutionContext,
+                                "ipcRenderer", "postMessage");
+    /*
+    auto serialized_value = blink::SerializedScriptValue::Serialize(
+      isolate, message, blink::SerializedScriptValue::SerializeOptions(),
+      exception_state);
+    */
+    blink::Transferables transferables;
+    auto serialized_value = blink::PostMessageHelper::SerializeMessageByMove(
+        isolate,
+        blink::ScriptValue(isolate, message),
+        blink::PostMessageOptions::Create(),
+        transferables,
+        exception_state);
+    if (exception_state.HadException()) {
+      return;
+    }
+
+    blink::TransferableMessage transferable_message;
+    transferable_message.encoded_message = serialized_value->GetWireData();
+    transferable_message.EnsureDataIsOwned(); // TODO: remove memcpy?
+    transferable_message.ports = blink::MessagePort::DisentanglePorts(
+      nullptr, transferables.message_ports, exception_state);
+    electron_browser_ptr_->get()->PostMessage(std::move(transferable_message));
+#endif
   }
 
   void SendTo(v8::Isolate* isolate,

@@ -1,5 +1,7 @@
 import { expect } from 'chai'
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
+import { closeAllWindows } from './window-helpers'
+import { emittedOnce } from './events-helpers'
 
 describe('ipc module', () => {
   describe('invoke', () => {
@@ -179,6 +181,21 @@ describe('ipc module', () => {
       }
       expect(received).to.have.lengthOf(1000)
       expect(received).to.deep.equal([...received].sort((a, b) => a - b))
+    })
+  })
+
+  describe('MessagePort', () => {
+    afterEach(closeAllWindows)
+    it('can send a message port to the main process', async () => {
+      const w = new BrowserWindow({show: false, webPreferences: { nodeIntegration: true }})
+      w.loadURL('about:blank')
+      const p = emittedOnce(ipcMain, 'port')
+      await w.webContents.executeJavaScript(`(${function() {
+        const channel = new MessageChannel
+        require('electron').ipcRenderer.send('port', channel.port1)
+      }})()`)
+      const [, port] = await p
+      console.log(port)
     })
   })
 })

@@ -25,6 +25,9 @@
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
+#include "third_party/blink/renderer/platform/bindings/wrapper_type_info.h"
+#include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_message_port.h"
 
 namespace {
 
