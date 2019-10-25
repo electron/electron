@@ -24,7 +24,6 @@
 #include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
-#include "components/spellcheck/browser/pref_names.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
@@ -67,6 +66,10 @@
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "shell/browser/extensions/atom_extension_system.h"
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "components/spellcheck/browser/pref_names.h"
 #endif
 
 using content::BrowserThread;

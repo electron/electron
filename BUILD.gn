@@ -22,6 +22,7 @@ import("buildflags/buildflags.gni")
 import("electron_paks.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
+import("filenames.hunspell.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -538,7 +539,10 @@ source_set("electron_lib") {
   }
 
   if (enable_builtin_spellchecker) {
-    deps += [ ":chrome_spellchecker" ]
+    deps += [
+      ":chrome_spellchecker",
+      "//components/spellcheck/browser",
+    ]
   }
 
   if (is_mac) {
@@ -1331,9 +1335,14 @@ template("dist_zip") {
                              "outputs",
                              "testonly",
                            ])
+    flatten = false
+    if (defined(invoker.flatten)) {
+      flatten = invoker.flatten
+    }
     args = rebase_path(outputs + [ _runtime_deps_file ], root_build_dir) + [
              target_cpu,
              target_os,
+             "$flatten",
            ]
   }
 }
@@ -1416,6 +1425,24 @@ dist_zip("electron_mksnapshot_zip") {
   ]
   outputs = [
     "$root_build_dir/mksnapshot.zip",
+  ]
+}
+
+copy("hunspell_dictionaries") {
+  sources = hunspell_dictionaries + hunspell_licenses
+  outputs = [
+    "$target_gen_dir/electron_hunspell/{{source_file_part}}",
+  ]
+}
+
+dist_zip("hunspell_dictionaries_zip") {
+  data_deps = [
+    ":hunspell_dictionaries",
+  ]
+  flatten = true
+
+  outputs = [
+    "$root_build_dir/hunspell_dictionaries.zip",
   ]
 }
 
