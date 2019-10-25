@@ -65,8 +65,8 @@ build_script:
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"
   - ps: >-
-    git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git src\third_party\depot_tools
-    $env:Path += "$pwd\src\\third_party\depot_tools"
+      git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git src\third_party\depot_tools
+      $env:Path += "$pwd\src\\third_party\depot_tools"
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
         $env:GCLIENT_EXTRA_ARGS="$env:GCLIENT_EXTRA_ARGS --custom-var=checkout_boto=True --custom-var=checkout_requests=True"
