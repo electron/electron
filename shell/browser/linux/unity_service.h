@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_UI_LIBGTKUI_UNITY_SERVICE_H_
-#define CHROME_BROWSER_UI_LIBGTKUI_UNITY_SERVICE_H_
+#ifndef SHELL_BROWSER_LINUX_UNITY_SERVICE_H_
+#define SHELL_BROWSER_LINUX_UNITY_SERVICE_H_
 
 namespace unity {
 
@@ -20,4 +20,4 @@ void SetProgressFraction(float percentage);
 
 }  // namespace unity
 
-#endif  // CHROME_BROWSER_UI_LIBGTKUI_UNITY_SERVICE_H_
+#endif  // SHELL_BROWSER_LINUX_UNITY_SERVICE_H_
