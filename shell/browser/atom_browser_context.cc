@@ -68,7 +68,10 @@
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "base/i18n/rtl.h"
 #include "components/language/core/browser/language_prefs.h"
+#include "components/spellcheck/browser/pref_names.h"
+#include "components/spellcheck/common/spellcheck_common.h"
 #endif
 
 using content::BrowserThread;
@@ -203,6 +206,21 @@ void AtomBrowserContext::InitPrefs() {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
     BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   user_prefs::UserPrefs::Set(this, prefs_.get());
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  auto* current_dictionaries =
+      prefs()->Get(spellcheck::prefs::kSpellCheckDictionaries);
+  // No configured dictionaries, the default will be en-US
+  if (current_dictionaries->GetList().size() == 0) {
+    std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
+        base::i18n::GetConfiguredLocale());
+    if (!default_code.empty()) {
+      base::ListValue language_codes;
+      language_codes.AppendString(default_code);
+      prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries, language_codes);
+    }
+  }
 #endif
 }
 

@@ -89,6 +89,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   void Preconnect(const gin_helper::Dictionary& options,
                   gin_helper::Arguments* args);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,
                                 const std::vector<std::string>& languages);
 #endif

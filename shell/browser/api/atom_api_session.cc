@@ -653,6 +653,12 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+base::Value Session::GetSpellCheckerLanguages() {
+  return browser_context_->prefs()
+      ->Get(spellcheck::prefs::kSpellCheckDictionaries)
+      ->Clone();
+}
+
 void Session::SetSpellCheckerLanguages(
     gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
@@ -754,6 +760,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("loadChromeExtension", &Session::LoadChromeExtension)
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+      .SetMethod("getSpellCheckerLanguages", &Session::GetSpellCheckerLanguages)
       .SetMethod("setSpellCheckerLanguages", &Session::SetSpellCheckerLanguages)
       .SetProperty("availableSpellCheckerLanguages",
                    &spellcheck::SpellCheckLanguages)
