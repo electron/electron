@@ -9,6 +9,7 @@
 
 #include "content/public/browser/web_contents_observer.h"
 #include "shell/common/api/remote/object_life_monitor.h"
+#include "third_party/blink/public/common/messaging/cloneable_message.h"
 
 namespace electron {
 
@@ -18,16 +19,16 @@ class RemoteCallbackFreer : public ObjectLifeMonitor,
   static void BindTo(v8::Isolate* isolate,
                      v8::Local<v8::Object> target,
                      int frame_id,
-                     const std::string& context_id,
-                     int object_id,
+                     const std::string& channel,
+                     v8::Local<v8::Value> args,
                      content::WebContents* web_conents);
 
  protected:
   RemoteCallbackFreer(v8::Isolate* isolate,
                       v8::Local<v8::Object> target,
                       int frame_id,
-                      const std::string& context_id,
-                      int object_id,
+                      const std::string& channel,
+                      blink::CloneableMessage args,
                       content::WebContents* web_conents);
   ~RemoteCallbackFreer() override;
 
@@ -38,8 +39,8 @@ class RemoteCallbackFreer : public ObjectLifeMonitor,
 
  private:
   int frame_id_;
-  std::string context_id_;
-  int object_id_;
+  std::string channel_;
+  blink::CloneableMessage args_;
 
   DISALLOW_COPY_AND_ASSIGN(RemoteCallbackFreer);
 };
