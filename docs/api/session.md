@@ -464,6 +464,12 @@ The built in spellchecker does not automatically detect what language a user is 
 spell checker to correctly check their words you must call this API with an array of language codes.  You can
 get the list of supported language codes with the `ses.availableSpellCheckerLanguages` property.
 
+#### `ses.getSpellCheckerLanguages()`
+
+Returns `String[]` asn array of language codes the spellchecker is enabled for.  If this list is empty the spellchecker
+will fallback to using `en-US`.  By default on launch if this setting is an empty list Electron will try to populate this
+setting with the current OS locale.  This setting is persisted across restarts.
+
 #### `ses.setSpellCheckerDictionaryDownloadURL(url)`
 
 * `url` String - A base URL for Electron to download hunspell dictionaries from.
