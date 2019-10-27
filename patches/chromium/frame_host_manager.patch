@@ -42,7 +42,7 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 021df20c2142876fd82fafec7338b5c348222940..2c44b437e19c7fb8b02733a5be49e7980fed128e 100644
+index ef19485423d15cd4c7d1f8bc19391af407f36813..0d7b72cd7ec4002251db939be3a93c5f7c07a885 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2201,6 +2201,21 @@ bool RenderFrameHostManager::InitRenderView(
@@ -212,7 +212,7 @@ index 3fdc443b408c3d8f7ffdabf6b010d5fc1ecd22d5..0d0d0f8f90fd830882558b3358d4a168
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index d0d61e68f7d722de134cbd5125fc895198224c47..f4d26fc68fd125904dc92620bcb3042b3a459530 100644
+index 891b69d65de0e47719af23eb7047d22d10417019..425e7ab657a2de0ff11e6989a0dc34e11f883999 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -215,8 +215,45 @@ struct WebPreferences;

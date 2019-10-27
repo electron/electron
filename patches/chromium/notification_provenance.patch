@@ -55,7 +55,7 @@ index 5253f6be778cc78571b3df0a33d364a9b1e6ef52..dc5307e6500b0bfb5da83e8d8ff8886b
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index b0c806c9ad092cc5d8e424a3b49b32a24da7f004..810ae64c9a0287102117993674307a8bf3af7ab2 100644
+index 09769a0b05e4c0257f290be107d91c96a7936df0..75d5c8bb7433d151841842b297950753d9da0e96 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
 @@ -139,7 +139,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {

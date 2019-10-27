@@ -5,7 +5,7 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index f4111b7966324d959ac8fdf4f13acccf7ec3ba12..b182593e7060129cb4f2481657879a1e01db011e 100644
+index 1a790a06d802947e64ca84a37eb7d671a223a125..f0981821bf55594169a35c2db16d79ea0321b565 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -91,6 +91,11 @@
@@ -114,7 +114,7 @@ index f4111b7966324d959ac8fdf4f13acccf7ec3ba12..b182593e7060129cb4f2481657879a1e
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1533,6 +1618,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1545,6 +1630,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
        base::CommandLine::ForCurrentProcess();
  
    std::unique_ptr<net::CertVerifier> cert_verifier;
@@ -122,7 +122,7 @@ index f4111b7966324d959ac8fdf4f13acccf7ec3ba12..b182593e7060129cb4f2481657879a1e
    if (g_cert_verifier_for_testing) {
      cert_verifier = std::make_unique<WrappedTestingCertVerifier>();
    } else {
-@@ -1580,8 +1666,8 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1592,8 +1678,8 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
      }
  #endif
  #if BUILDFLAG(BUILTIN_CERT_VERIFIER_FEATURE_SUPPORTED)
@@ -133,7 +133,7 @@ index f4111b7966324d959ac8fdf4f13acccf7ec3ba12..b182593e7060129cb4f2481657879a1e
            std::make_unique<net::CoalescingCertVerifier>(
                std::make_unique<net::MultiThreadedCertVerifier>(
                    params_->use_builtin_cert_verifier
-@@ -1591,12 +1677,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1603,12 +1689,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                              cert_net_fetcher_))));
      }
  #endif
@@ -158,7 +158,7 @@ index f4111b7966324d959ac8fdf4f13acccf7ec3ba12..b182593e7060129cb4f2481657879a1e
    std::unique_ptr<NetworkServiceNetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 7a51a2ae31c397dd88e30b05bb831d348a60126c..393723b472eb04dc8ee499bb7cc9287127ac3d7c 100644
+index 1ecf63fe12c63ce43481cb1035bc69829b38c83d..af1fcc847fbfa699d1fa3b8bdc04a6326cb9c3b9 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -84,6 +84,7 @@ class DomainReliabilityMonitor;
@@ -178,7 +178,7 @@ index 7a51a2ae31c397dd88e30b05bb831d348a60126c..393723b472eb04dc8ee499bb7cc92871
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -579,6 +582,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -585,6 +588,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::unique_ptr<network::NSSTempCertsCacheChromeOS> nss_temp_certs_cache_;
  #endif
  
@@ -188,7 +188,7 @@ index 7a51a2ae31c397dd88e30b05bb831d348a60126c..393723b472eb04dc8ee499bb7cc92871
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 62ee3de0bc6f869f2d6dd0c39bf6ec35ad50e72d..84ee0cfdb18267c2236da86efb7dc1894fcac245 100644
+index b5f93999c664fe9c401107989974c3d5dae97209..cab46e7c1730a8886653380d36a6ec0cdddbf302 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -181,6 +181,17 @@ interface TrustedURLLoaderHeaderClient {
