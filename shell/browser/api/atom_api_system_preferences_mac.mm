@@ -210,17 +210,15 @@ int SystemPreferences::DoSubscribeNotification(
                   object:nil
                    queue:nil
               usingBlock:^(NSNotification* notification) {
-                std::unique_ptr<base::DictionaryValue> user_info =
-                    NSDictionaryToDictionaryValue(notification.userInfo);
-
                 std::string object = "";
                 if ([notification.object isKindOfClass:[NSString class]]) {
                   object = base::SysNSStringToUTF8(notification.object);
                 }
 
-                if (user_info) {
+                if (notification.userInfo) {
                   copied_callback.Run(
-                      base::SysNSStringToUTF8(notification.name), *user_info,
+                      base::SysNSStringToUTF8(notification.name),
+                      NSDictionaryToDictionaryValue(notification.userInfo),
                       object);
                 } else {
                   copied_callback.Run(
@@ -275,17 +273,11 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
     return gin::ConvertToV8(isolate(),
                             net::GURLWithNSURL([defaults URLForKey:key]));
   } else if (type == "array") {
-    std::unique_ptr<base::ListValue> list =
-        NSArrayToListValue([defaults arrayForKey:key]);
-    if (list == nullptr)
-      list.reset(new base::ListValue());
-    return gin::ConvertToV8(isolate(), *list);
+    return gin::ConvertToV8(isolate(),
+                            NSArrayToListValue([defaults arrayForKey:key]));
   } else if (type == "dictionary") {
-    std::unique_ptr<base::DictionaryValue> dictionary =
-        NSDictionaryToDictionaryValue([defaults dictionaryForKey:key]);
-    if (dictionary == nullptr)
-      dictionary.reset(new base::DictionaryValue());
-    return gin::ConvertToV8(isolate(), *dictionary);
+    return gin::ConvertToV8(isolate(), NSDictionaryToDictionaryValue(
+                                           [defaults dictionaryForKey:key]));
   } else {
     return v8::Undefined(isolate());
   }
