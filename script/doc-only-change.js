@@ -20,8 +20,8 @@ async function checkIfDocOnlyChange () {
           if (prsForBranch.data.length === 1) {
             pullRequestNumber = prsForBranch.data[0].number
           } else {
-            // If there is more than one PR on a branch, just assume that this is more than a doc change
-            process.exit(0)
+            // If there are 0 PRs or more than one PR on a branch, just assume that this is more than a doc change
+            process.exit(1)
           }
         } else if (args.prURL) {
           // CircleCI doesn't provide the PR number for branch builds, but it does provide the PR URL
