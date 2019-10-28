@@ -54,15 +54,18 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                         int y,
                         int positioning_item,
                         base::Closure callback) {
+  mate::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+
   if (!native_window)
     return;
   NSWindow* nswindow = native_window->GetNativeWindow().GetNativeNSWindow();
 
   auto close_callback = base::Bind(
       &MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
-  popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>([
-      [AtomMenuController alloc] initWithModel:model()
-                         useDefaultAccelerator:NO]);
+  popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>(
+      [[AtomMenuController alloc] initWithModel:model()
+                          useDefaultAccelerator:NO]);
   NSMenu* menu = [popup_controllers_[window_id] menu];
   NSView* view = [nswindow contentView];
 
@@ -136,9 +139,9 @@ void MenuMac::OnClosed(int32_t window_id, base::Closure callback) {
 // static
 void Menu::SetApplicationMenu(Menu* base_menu) {
   MenuMac* menu = static_cast<MenuMac*>(base_menu);
-  base::scoped_nsobject<AtomMenuController> menu_controller([
-      [AtomMenuController alloc] initWithModel:menu->model_.get()
-                         useDefaultAccelerator:YES]);
+  base::scoped_nsobject<AtomMenuController> menu_controller(
+      [[AtomMenuController alloc] initWithModel:menu->model_.get()
+                          useDefaultAccelerator:YES]);
 
   NSRunLoop* currentRunLoop = [NSRunLoop currentRunLoop];
   [currentRunLoop cancelPerformSelector:@selector(setMainMenu:)
