@@ -10,7 +10,7 @@
 
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
-#include "shell/common/api/remote/object_life_monitor.h"
+#include "shell/common/api/object_life_monitor.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
 #include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/once_callback.h"
