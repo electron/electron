@@ -120,7 +120,11 @@ export function injectTo (extensionId: string, context: any) {
       let targetExtensionId = extensionId
       let connectInfo = { name: '' }
       if (args.length === 1) {
-        targetExtensionId = args[0]
+        if (typeof args[0] === 'string') {
+          targetExtensionId = args[0]
+        } else {
+          connectInfo = args[0]
+        }
       } else if (args.length === 2) {
         [targetExtensionId, connectInfo] = args
       }
