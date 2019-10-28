@@ -51,7 +51,8 @@ build_script:
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
         Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
       } else {
-        npm i --global windows-build-tools --vs2015
+        npm i --global node-gyp@^5.0.0
+        npm prefix -g | % {npm config set node_gyp "$_\node_modules\node-gyp\bin\node-gyp.js"}
         node script/yarn.js install --frozen-lockfile
 
         if ($(node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH;$LASTEXITCODE -eq 0)) {
