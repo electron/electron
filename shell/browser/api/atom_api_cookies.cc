@@ -230,7 +230,7 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
   return handle;
 }
 
-v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
+v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
   util::Promise<void*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 

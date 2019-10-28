@@ -5,6 +5,7 @@
 #include "shell/common/native_mate_converters/value_converter.h"
 
 #include <memory>
+#include <utility>
 
 #include "base/values.h"
 #include "shell/common/native_mate_converters/v8_value_converter.h"
@@ -39,7 +40,7 @@ bool Converter<base::Value>::FromV8(v8::Isolate* isolate,
   std::unique_ptr<base::Value> value(
       converter.FromV8Value(val, isolate->GetCurrentContext()));
   if (value) {
-    *out = value->Clone();
+    *out = std::move(*value);
     return true;
   } else {
     return false;

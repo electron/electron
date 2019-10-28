@@ -1863,12 +1863,11 @@ std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   return printers;
 }
 
-v8::Local<v8::Promise> WebContents::PrintToPDF(
-    const base::DictionaryValue& settings) {
+v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
   util::Promise<v8::Local<v8::Value>> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   PrintPreviewMessageHandler::FromWebContents(web_contents())
-      ->PrintToPDF(settings, std::move(promise));
+      ->PrintToPDF(std::move(settings), std::move(promise));
   return handle;
 }
 #endif

@@ -143,7 +143,7 @@ void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
 }
 
 void PrintPreviewMessageHandler::PrintToPDF(
-    const base::DictionaryValue& options,
+    base::DictionaryValue options,
     electron::util::Promise<v8::Local<v8::Value>> promise) {
   int request_id;
   options.GetInteger(printing::kPreviewRequestID, &request_id);

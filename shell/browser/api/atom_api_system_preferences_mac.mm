@@ -121,7 +121,7 @@ std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
 }  // namespace
 
 void SystemPreferences::PostNotification(const std::string& name,
-                                         const base::DictionaryValue& user_info,
+                                         base::DictionaryValue user_info,
                                          gin_helper::Arguments* args) {
   bool immediate = false;
   args->GetNext(&immediate);
@@ -145,9 +145,8 @@ void SystemPreferences::UnsubscribeNotification(int request_id) {
   DoUnsubscribeNotification(request_id, kNSDistributedNotificationCenter);
 }
 
-void SystemPreferences::PostLocalNotification(
-    const std::string& name,
-    const base::DictionaryValue& user_info) {
+void SystemPreferences::PostLocalNotification(const std::string& name,
+                                              base::DictionaryValue user_info) {
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center postNotificationName:base::SysUTF8ToNSString(name)
                         object:nil
@@ -166,7 +165,7 @@ void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
 
 void SystemPreferences::PostWorkspaceNotification(
     const std::string& name,
-    const base::DictionaryValue& user_info) {
+    base::DictionaryValue user_info) {
   NSNotificationCenter* center =
       [[NSWorkspace sharedWorkspace] notificationCenter];
   [center postNotificationName:base::SysUTF8ToNSString(name)
