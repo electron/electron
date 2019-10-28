@@ -146,7 +146,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     afterEach(closeAllWindows)
 
     it('works when created in preload script', async () => {
-      const preload = path.join(__dirname, '..', 'spec', 'fixtures', 'module', 'preload-remote-function.js')
+      const preload = path.join(fixtures, 'module', 'preload-remote-function.js')
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
