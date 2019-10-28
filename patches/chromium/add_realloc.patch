@@ -39,10 +39,10 @@ index 2aef366ac8194aa261cbca6abc051f7da8a988d3..3c7d66c81032636abcca4f1538ce9b7f
  
    GIN_EXPORT static ArrayBufferAllocator* SharedInstance();
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 3b1ced15de47f6b88716db2b79306bb7d98cfdf4..0ed89b4147d98f2239a3504c898666a758cee618 100644
+index f2d49df56a524fd1cc76623ec76fc7059957d476..bcb437fe328ccb95446ed0b8525017118546d41e 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -645,6 +645,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+@@ -648,6 +648,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
          size, WTF::ArrayBufferContents::kDontInitialize);
    }
  
@@ -54,10 +54,10 @@ index 3b1ced15de47f6b88716db2b79306bb7d98cfdf4..0ed89b4147d98f2239a3504c898666a7
      WTF::ArrayBufferContents::FreeMemory(data);
    }
 diff --git a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
-index ac76d127b96b80c8260a7e2cda0b669cd98787ad..dcab64586700a8740262aede8dba2755f652d8e8 100644
+index 8cd9b210bdb16fca7935b44dbc42829e1d193643..5c8ccbcc27a0ed6cc3a3b717f3336ddee4e82c0a 100644
 --- a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
-@@ -130,6 +130,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
+@@ -127,6 +127,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
    return AllocateMemoryWithFlags(size, policy, base::PartitionAllocReturnNull);
  }
  
@@ -70,14 +70,14 @@ index ac76d127b96b80c8260a7e2cda0b669cd98787ad..dcab64586700a8740262aede8dba2755
    Partitions::ArrayBufferPartition()->Free(data);
  }
 diff --git a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
-index ee7c89a4950d6b3c97a810c41a62fee7e372018d..c2b60f20a72cca46d05af369f33d9c19395b34ef 100644
+index 841e87c219e5d3c66bd3394a63bcfa13bf34640a..b47a6794febf699eef36505a2f0540ec542bd155 100644
 --- a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
 +++ b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
-@@ -140,6 +140,7 @@ class WTF_EXPORT ArrayBufferContents {
+@@ -150,6 +150,7 @@ class WTF_EXPORT ArrayBufferContents {
    void CopyTo(ArrayBufferContents& other);
  
    static void* AllocateMemoryOrNull(size_t, InitializationPolicy);
 +  static void* Realloc(void* data, size_t);
    static void FreeMemory(void*);
    static DataHandle CreateDataHandle(size_t, InitializationPolicy);
-   static void Initialize(
+ 

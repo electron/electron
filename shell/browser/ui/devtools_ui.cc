@@ -60,9 +60,10 @@ class BundledDataSource : public content::URLDataSource {
   // content::URLDataSource implementation.
   std::string GetSource() override { return kChromeUIDevToolsHost; }
 
-  void StartDataRequest(const std::string& path,
+  void StartDataRequest(const GURL& url,
                         const content::WebContents::Getter& wc_getter,
                         const GotDataCallback& callback) override {
+    const std::string path = content::URLDataSource::URLToRequestPath(url);
     // Serve request from local bundle.
     std::string bundled_path_prefix(kChromeUIDevToolsBundledPath);
     bundled_path_prefix += "/";

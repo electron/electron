@@ -113,6 +113,7 @@ class AtomBrowserContext
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
   content::ClientHintsControllerDelegate* GetClientHintsControllerDelegate()
       override;
+  content::StorageNotificationService* GetStorageNotificationService() override;
 
   // extensions deps
   void SetCorsOriginAccessListForOrigin(

@@ -13,8 +13,8 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
-#include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "shell/browser/notifications/notification_delegate.h"
+#include "shell/browser/ui/gtk_util.h"
 #include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -111,7 +111,7 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   libnotify_loader_.notify_notification_set_urgency(notification_, urgency);
 
   if (!options.icon.drawsNothing()) {
-    GdkPixbuf* pixbuf = libgtkui::GdkPixbufFromSkBitmap(options.icon);
+    GdkPixbuf* pixbuf = gtk_util::GdkPixbufFromSkBitmap(options.icon);
     libnotify_loader_.notify_notification_set_image_from_pixbuf(notification_,
                                                                 pixbuf);
     g_object_unref(pixbuf);

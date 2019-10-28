@@ -39,7 +39,7 @@
 #include "shell/browser/web_dialog_helper.h"
 #include "shell/common/atom_constants.h"
 #include "shell/common/options_switches.h"
-#include "storage/browser/fileapi/isolated_context.h"
+#include "storage/browser/file_system/isolated_context.h"
 
 #if BUILDFLAG(ENABLE_COLOR_CHOOSER)
 #include "chrome/browser/ui/color_chooser.h"
@@ -328,7 +328,7 @@ void CommonWebContentsDelegate::EnumerateDirectory(
 void CommonWebContentsDelegate::EnterFullscreenModeForTab(
     content::WebContents* source,
     const GURL& origin,
-    const blink::WebFullscreenOptions& options) {
+    const blink::mojom::FullscreenOptions& options) {
   if (!owner_window_)
     return;
   if (IsFullscreenForTabOrPending(source)) {
@@ -352,7 +352,7 @@ bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
   return html_fullscreen_;
 }
 
-blink::WebSecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
+blink::SecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
     content::WebContents* web_contents,
     content::SecurityStyleExplanations* security_style_explanations) {
   SecurityStateTabHelper* helper =

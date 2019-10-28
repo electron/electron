@@ -29,11 +29,11 @@
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/client_certificate_delegate.h"
+#include "content/public/browser/overlay_window.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/site_instance.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/service_names.mojom.h"
@@ -406,11 +406,6 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->picture_in_picture_enabled = false;
 #endif
 
-  ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  prefs->preferred_color_scheme = native_theme->ShouldUseDarkColors()
-                                      ? blink::PreferredColorScheme::kDark
-                                      : blink::PreferredColorScheme::kLight;
-
   SetFontDefaults(prefs);
 
   // Custom preferences of guest page.
@@ -527,48 +522,53 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
-  if (process_type != ::switches::kRendererProcess)
-    return;
 
-  // Copy following switches to child process.
-  static const char* const kCommonSwitchNames[] = {
-      switches::kStandardSchemes,      switches::kEnableSandbox,
-      switches::kSecureSchemes,        switches::kBypassCSPSchemes,
-      switches::kCORSSchemes,          switches::kFetchSchemes,
-      switches::kServiceWorkerSchemes, switches::kEnableApiFilteringLogging};
-  command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
-                                 kCommonSwitchNames,
-                                 base::size(kCommonSwitchNames));
-
-#if defined(OS_WIN)
-  // Append --app-user-model-id.
-  PWSTR current_app_id;
-  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-    command_line->AppendSwitchNative(switches::kAppUserModelId, current_app_id);
-    CoTaskMemFree(current_app_id);
+  if (process_type == ::switches::kUtilityProcess ||
+      process_type == ::switches::kRendererProcess) {
+    // Copy following switches to child process.
+    static const char* const kCommonSwitchNames[] = {
+        switches::kStandardSchemes,      switches::kEnableSandbox,
+        switches::kSecureSchemes,        switches::kBypassCSPSchemes,
+        switches::kCORSSchemes,          switches::kFetchSchemes,
+        switches::kServiceWorkerSchemes, switches::kEnableApiFilteringLogging};
+    command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
+                                   kCommonSwitchNames,
+                                   base::size(kCommonSwitchNames));
   }
+
+  if (process_type == ::switches::kRendererProcess) {
+#if defined(OS_WIN)
+    // Append --app-user-model-id.
+    PWSTR current_app_id;
+    if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
+      command_line->AppendSwitchNative(switches::kAppUserModelId,
+                                       current_app_id);
+      CoTaskMemFree(current_app_id);
+    }
 #endif
 
-  if (delegate_) {
-    auto app_path = static_cast<api::App*>(delegate_)->GetAppPath();
-    command_line->AppendSwitchPath(switches::kAppPath, app_path);
-  }
+    if (delegate_) {
+      auto app_path = static_cast<api::App*>(delegate_)->GetAppPath();
+      command_line->AppendSwitchPath(switches::kAppPath, app_path);
+    }
 
-  content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
-  if (web_contents) {
-    auto* web_preferences = WebContentsPreferences::From(web_contents);
-    if (web_preferences)
-      web_preferences->AppendCommandLineSwitches(
-          command_line, IsRendererSubFrame(process_id));
-    auto preloads =
-        SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
-    if (!preloads.empty())
-      command_line->AppendSwitchNative(
-          switches::kPreloadScripts,
-          base::JoinString(preloads, kPathDelimiter));
-    if (CanUseCustomSiteInstance()) {
-      command_line->AppendSwitch(
-          switches::kDisableElectronSiteInstanceOverrides);
+    content::WebContents* web_contents =
+        GetWebContentsFromProcessID(process_id);
+    if (web_contents) {
+      auto* web_preferences = WebContentsPreferences::From(web_contents);
+      if (web_preferences)
+        web_preferences->AppendCommandLineSwitches(
+            command_line, IsRendererSubFrame(process_id));
+      auto preloads = SessionPreferences::GetValidPreloads(
+          web_contents->GetBrowserContext());
+      if (!preloads.empty())
+        command_line->AppendSwitchNative(
+            switches::kPreloadScripts,
+            base::JoinString(preloads, kPathDelimiter));
+      if (CanUseCustomSiteInstance()) {
+        command_line->AppendSwitch(
+            switches::kDisableElectronSiteInstanceOverrides);
+      }
     }
   }
 }
@@ -580,16 +580,6 @@ void AtomBrowserClient::AdjustUtilityServiceProcessCommandLine(
   if (identity.name() == audio::mojom::kServiceName)
     command_line->AppendSwitch(::switches::kMessageLoopTypeUi);
 #endif
-  if (identity.name() == content::mojom::kNetworkServiceName) {
-    // Copy following switches to network service process.
-    static const char* const kCommonSwitchNames[] = {
-        switches::kStandardSchemes,  switches::kSecureSchemes,
-        switches::kBypassCSPSchemes, switches::kCORSSchemes,
-        switches::kFetchSchemes,     switches::kServiceWorkerSchemes};
-    command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
-                                   kCommonSwitchNames,
-                                   base::size(kCommonSwitchNames));
-  }
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(content::BrowserPpapiHost* host) {
@@ -863,7 +853,8 @@ bool AtomBrowserClient::HandleExternalProtocol(
     bool is_main_frame,
     ui::PageTransition page_transition,
     bool has_user_gesture,
-    network::mojom::URLLoaderFactoryPtr* out_factory) {
+    const base::Optional<url::Origin>& initiating_origin,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   base::PostTask(FROM_HERE, {BrowserThread::UI},
                  base::BindOnce(&HandleExternalProtocolInUI, url,
                                 web_contents_getter, has_user_gesture));
@@ -997,25 +988,26 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   DCHECK(web_request.get());
 
   auto proxied_receiver = std::move(*factory_receiver);
-  network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
-  *factory_receiver = mojo::MakeRequest(&target_factory_info);
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote;
+  *factory_receiver = target_factory_remote.InitWithNewPipeAndPassReceiver();
 
   mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
       header_client_receiver;
   if (header_client)
     header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
 
-  new ProxyingURLLoaderFactory(
-      web_request.get(), protocol->intercept_handlers(), render_process_id,
-      std::move(proxied_receiver), std::move(target_factory_info),
-      std::move(header_client_receiver), type);
+  new ProxyingURLLoaderFactory(web_request.get(),
+                               protocol->intercept_handlers(), browser_context,
+                               render_process_id, std::move(proxied_receiver),
+                               std::move(target_factory_remote),
+                               std::move(header_client_receiver), type);
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
   return true;
 }
 
-network::mojom::URLLoaderFactoryPtrInfo
+mojo::PendingRemote<network::mojom::URLLoaderFactory>
 AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
     content::RenderProcessHost* process,
     network::mojom::NetworkContext* network_context,
@@ -1036,12 +1028,12 @@ AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
     params->is_corb_enabled = false;
 
     // Create the URLLoaderFactory.
-    network::mojom::URLLoaderFactoryPtrInfo factory_info;
-    network_context->CreateURLLoaderFactory(mojo::MakeRequest(&factory_info),
-                                            std::move(params));
-    return factory_info;
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> factory_remote;
+    network_context->CreateURLLoaderFactory(
+        factory_remote.InitWithNewPipeAndPassReceiver(), std::move(params));
+    return factory_remote;
   }
-  return network::mojom::URLLoaderFactoryPtrInfo();
+  return mojo::NullRemote();
 }
 
 #if defined(OS_WIN)
