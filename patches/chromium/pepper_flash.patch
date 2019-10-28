@@ -258,7 +258,7 @@ index b9d2ce7f7f6837ee7b304daac82d21a3147c6faf..4d4b023d62d12b4d119acbfdee64f415
  
    base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_{this};
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index 00db4e2fa2ac89d89ecd31174e192dcb17f3e912..df5a53c162059270ad673fffebbd432f6df0d212 100644
+index 0fa0fa341e93bd089ef2a22f74450af55db69f5b..9a6d8e5740d6ccede998efd3a96496acd9efabfb 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -8,17 +8,21 @@
@@ -285,7 +285,7 @@ index 00db4e2fa2ac89d89ecd31174e192dcb17f3e912..df5a53c162059270ad673fffebbd432f
  #include "ppapi/host/host_message_context.h"
 @@ -27,12 +31,11 @@
  #include "ppapi/shared_impl/file_system_util.h"
- #include "storage/browser/fileapi/isolated_context.h"
+ #include "storage/browser/file_system/isolated_context.h"
  
 -#if BUILDFLAG(ENABLE_EXTENSIONS)
 +#if 0
@@ -358,11 +358,11 @@ index 00db4e2fa2ac89d89ecd31174e192dcb17f3e912..df5a53c162059270ad673fffebbd432f
  int32_t PepperIsolatedFileSystemMessageFilter::OpenPluginPrivateFileSystem(
      ppapi::host::HostMessageContext* context) {
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-index 1d5ff1f6aa14812f2a6552f601900b03f3e3c8e7..5b6d0297c874146c21af37b983b2d8ee387b31ce 100644
+index b36248debee4f5e0503e7611f7d1c47d59650f5b..7af31ee0d2cbb4c8fc7cd41c356305d6476815c5 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 @@ -20,7 +20,9 @@
- #include "storage/browser/fileapi/isolated_context.h"
+ #include "storage/browser/file_system/isolated_context.h"
  #include "url/gurl.h"
  
 +#if 0

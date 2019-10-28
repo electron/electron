@@ -95,6 +95,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
           content::DesktopMediaID::TYPE_WINDOW,
           content::desktop_capture::CreateWindowCapturer());
       window_capturer_->SetThumbnailSize(thumbnail_size);
+      window_capturer_->AddObserver(this);
       window_capturer_->Update(base::BindOnce(
           &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
           window_capturer_.get()));
@@ -105,11 +106,16 @@ void DesktopCapturer::StartHandling(bool capture_window,
           content::DesktopMediaID::TYPE_SCREEN,
           content::desktop_capture::CreateScreenCapturer());
       screen_capturer_->SetThumbnailSize(thumbnail_size);
+      screen_capturer_->AddObserver(this);
       screen_capturer_->Update(base::BindOnce(
           &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
           screen_capturer_.get()));
     }
   }
+}
+
+void DesktopCapturer::OnSourceUnchanged(DesktopMediaList* list) {
+  UpdateSourcesList(list);
 }
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {

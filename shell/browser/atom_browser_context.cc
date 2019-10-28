@@ -31,6 +31,7 @@
 #include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_download_manager_delegate.h"
@@ -270,9 +271,9 @@ AtomBrowserContext::GetURLLoaderFactory() {
   if (url_loader_factory_)
     return url_loader_factory_;
 
-  network::mojom::URLLoaderFactoryPtr network_factory;
-  mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_request =
-      mojo::MakeRequest(&network_factory);
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> network_factory_remote;
+  mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver =
+      network_factory_remote.InitWithNewPipeAndPassReceiver();
 
   // Consult the embedder.
   mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
@@ -281,7 +282,7 @@ AtomBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), &factory_request, &header_client, nullptr);
+          url::Origin(), &factory_receiver, &header_client, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
@@ -296,10 +297,10 @@ AtomBrowserContext::GetURLLoaderFactory() {
   auto* storage_partition =
       content::BrowserContext::GetDefaultStoragePartition(this);
   storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
-      std::move(factory_request), std::move(params));
+      std::move(factory_receiver), std::move(params));
   url_loader_factory_ =
       base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
-          std::move(network_factory));
+          std::move(network_factory_remote));
   return url_loader_factory_;
 }
 
@@ -328,6 +329,11 @@ AtomBrowserContext::GetBrowsingDataRemoverDelegate() {
 
 content::ClientHintsControllerDelegate*
 AtomBrowserContext::GetClientHintsControllerDelegate() {
+  return nullptr;
+}
+
+content::StorageNotificationService*
+AtomBrowserContext::GetStorageNotificationService() {
   return nullptr;
 }
 

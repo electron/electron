@@ -22,10 +22,6 @@
 #include "ui/gfx/sys_color_change_listener.h"
 #endif
 
-namespace base {
-class DictionaryValue;
-}
-
 namespace electron {
 
 namespace api {

@@ -11,6 +11,7 @@
 #include "base/guid.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
+#include "mojo/public/cpp/bindings/binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "net/base/filename_util.h"
@@ -183,8 +184,8 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
 }
 
 void AtomURLLoaderFactory::Clone(
-    network::mojom::URLLoaderFactoryRequest request) {
-  bindings_.AddBinding(this, std::move(request));
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver) {
+  receivers_.Add(this, std::move(receiver));
 }
 
 // static

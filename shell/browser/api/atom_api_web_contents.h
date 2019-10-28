@@ -275,10 +275,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetZoomLimits(double min_zoom, double max_zoom) override;
 
   // Callback triggered on permission response.
-  void OnEnterFullscreenModeForTab(content::WebContents* source,
-                                   const GURL& origin,
-                                   const blink::WebFullscreenOptions& options,
-                                   bool allowed);
+  void OnEnterFullscreenModeForTab(
+      content::WebContents* source,
+      const GURL& origin,
+      const blink::mojom::FullscreenOptions& options,
+      bool allowed);
 
   // Create window with the given disposition.
   void OnCreateWindow(const GURL& target_url,
@@ -383,7 +384,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void EnterFullscreenModeForTab(
       content::WebContents* source,
       const GURL& origin,
-      const blink::WebFullscreenOptions& options) override;
+      const blink::mojom::FullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
       content::WebContents* source,

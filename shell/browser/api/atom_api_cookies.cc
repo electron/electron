@@ -48,21 +48,20 @@ struct Converter<net::CanonicalCookie> {
 };
 
 template <>
-struct Converter<network::mojom::CookieChangeCause> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const network::mojom::CookieChangeCause& val) {
+struct Converter<net::CookieChangeCause> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::CookieChangeCause& val) {
     switch (val) {
-      case network::mojom::CookieChangeCause::INSERTED:
-      case network::mojom::CookieChangeCause::EXPLICIT:
+      case net::CookieChangeCause::INSERTED:
+      case net::CookieChangeCause::EXPLICIT:
         return gin::StringToV8(isolate, "explicit");
-      case network::mojom::CookieChangeCause::OVERWRITE:
+      case net::CookieChangeCause::OVERWRITE:
         return gin::StringToV8(isolate, "overwrite");
-      case network::mojom::CookieChangeCause::EXPIRED:
+      case net::CookieChangeCause::EXPIRED:
         return gin::StringToV8(isolate, "expired");
-      case network::mojom::CookieChangeCause::EVICTED:
+      case net::CookieChangeCause::EVICTED:
         return gin::StringToV8(isolate, "evicted");
-      case network::mojom::CookieChangeCause::EXPIRED_OVERWRITE:
+      case net::CookieChangeCause::EXPIRED_OVERWRITE:
         return gin::StringToV8(isolate, "expired-overwrite");
       default:
         return gin::StringToV8(isolate, "unknown");
@@ -323,10 +322,11 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
   return handle;
 }
 
-void Cookies::OnCookieChanged(const CookieDetails* details) {
-  Emit("changed", gin::ConvertToV8(isolate(), *(details->cookie)),
-       gin::ConvertToV8(isolate(), details->cause),
-       gin::ConvertToV8(isolate(), details->removed));
+void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
+  Emit("changed", gin::ConvertToV8(isolate(), change.cookie),
+       gin::ConvertToV8(isolate(), change.cause),
+       gin::ConvertToV8(isolate(),
+                        change.cause != net::CookieChangeCause::INSERTED));
 }
 
 // static

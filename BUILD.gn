@@ -546,6 +546,10 @@ source_set("electron_lib") {
     ]
 
     sources += filenames.lib_sources_nss
+    sources += [
+      "shell/browser/ui/gtk_util.cc",
+      "shell/browser/ui/gtk_util.h",
+    ]
   }
   if (is_win) {
     libs += [ "dwmapi.lib" ]
@@ -705,7 +709,6 @@ if (is_mac) {
       public_deps += [ "//third_party/icu:icudata" ]
     }
     if (v8_use_external_startup_data) {
-      sources += [ "$root_out_dir/natives_blob.bin" ]
       public_deps += [ "//v8" ]
       if (use_v8_context_snapshot) {
         sources += [ "$root_out_dir/v8_context_snapshot.bin" ]

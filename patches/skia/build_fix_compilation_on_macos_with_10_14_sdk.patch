@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 21 Oct 2019 15:20:20 -0700
+Subject: build: fix compilation on macOS with 10.14 SDK
+
+typename 'B0' is defined in sys/termios.h
+
+Bug: none
+Change-Id: I6a2e6eb1a91f123459087280b70493dab795bbd3
+
+diff --git a/AUTHORS b/AUTHORS
+index 80776a6afc6954e298a00b9403121514e353c2da..7c4d154f8dfcdfaafbec930ba1486f8e0613f1e7 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -17,6 +17,7 @@ Amazon, Inc <*@amazon.com>
+ Anthony Catel <paraboul@gmail.com>
+ ARM <*@arm.com>
+ Dawson Coleman <dawsonmcoleman@gmail.com>
++Deepak Mohan <hop2deep@gmail.com>
+ Ehsan Akhgari <ehsan.akhgari@gmail.com>
+ Facebook, Inc. <*fb.com>
+ George Wright <george@mozilla.com>
+diff --git a/include/private/SkTLogic.h b/include/private/SkTLogic.h
+index f128a462b4a2084b5edb1a58d3485ed4cf465a7f..8cf8c284f1d0d8aaec304f55028d46a7667e8628 100644
+--- a/include/private/SkTLogic.h
++++ b/include/private/SkTLogic.h
+@@ -62,9 +62,9 @@ template<> struct make_index_sequence<1> : skstd::index_sequence<0>{};
+ struct monostate {};
+ 
+ template<typename...> struct conjunction : std::true_type { };
+-template<typename B0> struct conjunction<B0> : B0 { };
+-template<typename B0, typename... Bs>
+-struct conjunction<B0, Bs...> : std::conditional<bool(B0::value), conjunction<Bs...>, B0>::type { };
++template<typename T> struct conjunction<T> : T { };
++template<typename T, typename... Ts>
++struct conjunction<T, Ts...> : std::conditional<bool(T::value), conjunction<Ts...>, T>::type { };
+ }  // namespace skstd
+ 
+ // The sknonstd namespace contains things we would like to be proposed and feel std-ish.
