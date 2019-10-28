@@ -50,6 +50,12 @@ build_script:
   - ps: >-
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
         Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+      } else {
+        node script/yarn.js install --frozen-lockfile
+
+        if ($(node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH;$LASTEXITCODE -eq 0)) {
+          Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+        }
       }
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
