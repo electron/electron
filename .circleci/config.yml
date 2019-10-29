@@ -1178,7 +1178,7 @@ steps-tests: &steps-tests
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
-          (cd electron && node script/yarn test -- --ci --enable-logging)
+          (cd electron && node script/yarn test -- --enable-logging)
     - run:
         name: Check test results existence
         command: |

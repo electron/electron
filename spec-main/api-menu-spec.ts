@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { BrowserWindow, globalShortcut, Menu, MenuItem } from 'electron'
+import { BrowserWindow, Menu, MenuItem } from 'electron'
 import { sortMenuItems } from '../lib/browser/api/menu-utils'
 import { closeWindow } from './window-helpers'
 
