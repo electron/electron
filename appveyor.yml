@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: libcc-20
-image: vs2017-15.9-10.0.18362
+image: vs2019-16.3-10.0.18362
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -50,6 +50,12 @@ build_script:
   - ps: >-
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
         Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+      } else {
+        node script/yarn.js install --frozen-lockfile
+
+        if ($(node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH;$LASTEXITCODE -eq 0)) {
+          Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+        }
       }
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
@@ -83,10 +89,12 @@ build_script:
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
   - ninja -C out/Default electron:electron_dist_zip
+  - ninja -C out/Default shell_browser_ui_unittests
   - ninja -C out/Default electron:electron_mksnapshot_zip
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
   - appveyor PushArtifact out/Default/dist.zip
+  - appveyor PushArtifact out/Default/shell_browser_ui_unittests.exe
   - appveyor PushArtifact out/Default/chromedriver.zip
   - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
   - 7z a node_headers.zip out\Default\gen\node_headers
@@ -103,6 +111,11 @@ build_script:
       if ($env:GN_CONFIG -eq 'release') {
         python electron\script\zip-symbols.py
         appveyor PushArtifact out/Default/symbols.zip
+      } else {
+        # It's useful to have pdb files when debugging testing builds that are
+        # built on CI.
+        7z a pdb.zip out\Default\*.pdb
+        appveyor PushArtifact pdb.zip
       }
   - python electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
 test_script:

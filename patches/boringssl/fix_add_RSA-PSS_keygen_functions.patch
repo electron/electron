@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 23 Oct 2019 12:54:32 -0700
+Subject: fix: add RSA-PSS keygen functions
+
+This adds support for missing RSA_PSS key generation functions.
+Refs https://github.com/nodejs/node/pull/26960.
+
+Upstreamed at https://boringssl-review.googlesource.com/c/boringssl/+/38524.
+
+diff --git a/crypto/evp/p_rsa.c b/crypto/evp/p_rsa.c
+index 865b36af9b830302fb1068c4965133213c1507dc..71b342f13db5f446aa15f070b6e4aef9b8c25939 100644
+--- a/crypto/evp/p_rsa.c
++++ b/crypto/evp/p_rsa.c
+@@ -569,6 +569,19 @@ int EVP_PKEY_CTX_get_rsa_padding(EVP_PKEY_CTX *ctx, int *out_padding) {
+                            0, out_padding);
+ }
+ 
++int EVP_PKEY_CTX_set_rsa_pss_keygen_md(EVP_PKEY_CTX *ctx, const EVP_MD *md) {
++  return 0;
++}
++
++int EVP_PKEY_CTX_set_rsa_pss_keygen_saltlen(EVP_PKEY_CTX *ctx, int salt_len) {
++  return 0;
++}
++
++int EVP_PKEY_CTX_set_rsa_pss_keygen_mgf1_md(EVP_PKEY_CTX *ctx,
++                                            const EVP_MD *md) {
++  return 0;
++}
++
+ int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX *ctx, int salt_len) {
+   return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA,
+                            (EVP_PKEY_OP_SIGN | EVP_PKEY_OP_VERIFY),
+diff --git a/include/openssl/evp.h b/include/openssl/evp.h
+index ad9c05e052756715e3fe67bf9517863ede027d5b..d1729cfc8beefd2cb20abf05043fed43e566a312 100644
+--- a/include/openssl/evp.h
++++ b/include/openssl/evp.h
+@@ -723,6 +723,18 @@ OPENSSL_EXPORT int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int padding);
+ OPENSSL_EXPORT int EVP_PKEY_CTX_get_rsa_padding(EVP_PKEY_CTX *ctx,
+                                                 int *out_padding);
+ 
++// EVP_PKEY_CTX_set_rsa_pss_keygen_md() always returns 0.
++OPENSSL_EXPORT int EVP_PKEY_CTX_set_rsa_pss_keygen_md(EVP_PKEY_CTX *ctx,
++                                                      const EVP_MD *md);
++
++// EVP_PKEY_CTX_set_rsa_pss_keygen_saltlen() always returns 0.
++OPENSSL_EXPORT int EVP_PKEY_CTX_set_rsa_pss_keygen_saltlen(EVP_PKEY_CTX *ctx,
++                                                           int salt_len);
++
++// EVP_PKEY_CTX_set_rsa_pss_keygen_mgf1_md() always returns 0.
++OPENSSL_EXPORT int EVP_PKEY_CTX_set_rsa_pss_keygen_mgf1_md(EVP_PKEY_CTX *ctx,
++                                                           const EVP_MD *md);
++
+ // EVP_PKEY_CTX_set_rsa_pss_saltlen sets the length of the salt in a PSS-padded
+ // signature. A value of -1 cause the salt to be the same length as the digest
+ // in the signature. A value of -2 causes the salt to be the maximum length

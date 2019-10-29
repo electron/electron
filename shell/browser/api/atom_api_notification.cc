@@ -6,25 +6,23 @@
 
 #include "base/guid.h"
 #include "base/strings/utf_string_conversions.h"
-#include "native_mate/constructor.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder_deprecated.h"
 #include "shell/browser/api/atom_api_menu.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/browser.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
-#include "shell/common/native_mate_converters/image_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "url/gurl.h"
 
-namespace mate {
+namespace gin {
+
 template <>
 struct Converter<electron::NotificationAction> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::NotificationAction* out) {
-    mate::Dictionary dict;
+    gin::Dictionary dict(isolate);
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
 
@@ -37,27 +35,26 @@ struct Converter<electron::NotificationAction> {
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::NotificationAction val) {
-    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("text", val.text);
     dict.Set("type", val.type);
-    return dict.GetHandle();
+    return ConvertToV8(isolate, dict);
   }
 };
-}  // namespace mate
+
+}  // namespace gin
 
 namespace electron {
 
 namespace api {
 
-Notification::Notification(v8::Isolate* isolate,
-                           v8::Local<v8::Object> wrapper,
-                           mate::Arguments* args) {
-  InitWith(isolate, wrapper);
+Notification::Notification(gin::Arguments* args) {
+  InitWithArgs(args);
 
   presenter_ = static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
                    ->GetNotificationPresenter();
 
-  mate::Dictionary opts;
+  gin::Dictionary opts(nullptr);
   if (args->GetNext(&opts)) {
     opts.Get("title", &title_);
     opts.Get("subtitle", &subtitle_);
@@ -70,6 +67,7 @@ Notification::Notification(v8::Isolate* isolate,
     opts.Get("replyPlaceholder", &reply_placeholder_);
     opts.Get("urgency", &urgency_);
     opts.Get("hasReply", &has_reply_);
+    opts.Get("timeoutType", &timeout_type_);
     opts.Get("actions", &actions_);
     opts.Get("sound", &sound_);
     opts.Get("closeButtonText", &close_button_text_);
@@ -82,12 +80,13 @@ Notification::~Notification() {
 }
 
 // static
-mate::WrappableBase* Notification::New(mate::Arguments* args) {
+mate::WrappableBase* Notification::New(gin_helper::ErrorThrower thrower,
+                                       gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create Notification before app is ready");
+    thrower.ThrowError("Cannot create Notification before app is ready");
     return nullptr;
   }
-  return new Notification(args->isolate(), args->GetThis(), args);
+  return new Notification(args);
 }
 
 // Getters
@@ -109,6 +108,10 @@ bool Notification::GetSilent() const {
 
 bool Notification::GetHasReply() const {
   return has_reply_;
+}
+
+base::string16 Notification::GetTimeoutType() const {
+  return timeout_type_;
 }
 
 base::string16 Notification::GetReplyPlaceholder() const {
@@ -150,6 +153,10 @@ void Notification::SetSilent(bool new_silent) {
 
 void Notification::SetHasReply(bool new_has_reply) {
   has_reply_ = new_has_reply;
+}
+
+void Notification::SetTimeoutType(const base::string16& new_timeout_type) {
+  timeout_type_ = new_timeout_type;
 }
 
 void Notification::SetReplyPlaceholder(const base::string16& new_placeholder) {
@@ -216,6 +223,7 @@ void Notification::Show() {
       options.icon = icon_.AsBitmap();
       options.silent = silent_;
       options.has_reply = has_reply_;
+      options.timeout_type = timeout_type_;
       options.reply_placeholder = reply_placeholder_;
       options.actions = actions_;
       options.sound = sound_;
@@ -234,9 +242,9 @@ bool Notification::IsSupported() {
 // static
 void Notification::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Notification"));
+  prototype->SetClassName(gin::StringToV8(isolate, "Notification"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
@@ -246,6 +254,8 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("silent", &Notification::GetSilent, &Notification::SetSilent)
       .SetProperty("hasReply", &Notification::GetHasReply,
                    &Notification::SetHasReply)
+      .SetProperty("timeoutType", &Notification::GetTimeoutType,
+                   &Notification::SetTimeoutType)
       .SetProperty("replyPlaceholder", &Notification::GetReplyPlaceholder,
                    &Notification::SetReplyPlaceholder)
       .SetProperty("urgency", &Notification::GetUrgency,
@@ -273,7 +283,7 @@ void Initialize(v8::Local<v8::Object> exports,
   Notification::SetConstructor(isolate,
                                base::BindRepeating(&Notification::New));
 
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("Notification", Notification::GetConstructor(isolate)
                                ->GetFunction(context)
                                .ToLocalChecked());

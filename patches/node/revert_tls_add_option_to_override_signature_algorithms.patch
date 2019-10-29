@@ -1,0 +1,162 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 15 Oct 2019 11:21:13 -0700
+Subject: Revert "tls: add option to override signature algorithms"
+
+This partially reverts commit 6272f82c07e913a76a316a786c9aadbc09f953ff.
+Upstreamed at https://boringssl-review.googlesource.com/c/boringssl/+/38404
+and can be removed when that is merged and rolled into Chromium.
+
+diff --git a/src/node_crypto.cc b/src/node_crypto.cc
+index 870456216983c2685c53580e60c44aa4dd3f7267..63dd6a186366baad660ee8e38401ba842c6ddb17 100644
+--- a/src/node_crypto.cc
++++ b/src/node_crypto.cc
+@@ -470,7 +470,6 @@ void SecureContext::Initialize(Environment* env, Local<Object> target) {
+   env->SetProtoMethod(t, "addRootCerts", AddRootCerts);
+   env->SetProtoMethod(t, "setCipherSuites", SetCipherSuites);
+   env->SetProtoMethod(t, "setCiphers", SetCiphers);
+-  env->SetProtoMethod(t, "setSigalgs", SetSigalgs);
+   env->SetProtoMethod(t, "setECDHCurve", SetECDHCurve);
+   env->SetProtoMethod(t, "setDHParam", SetDHParam);
+   env->SetProtoMethod(t, "setMaxProto", SetMaxProto);
+@@ -739,23 +738,6 @@ void SecureContext::SetKey(const FunctionCallbackInfo<Value>& args) {
+   }
+ }
+ 
+-void SecureContext::SetSigalgs(const FunctionCallbackInfo<Value>& args) {
+-  SecureContext* sc;
+-  ASSIGN_OR_RETURN_UNWRAP(&sc, args.Holder());
+-  Environment* env = sc->env();
+-  ClearErrorOnReturn clear_error_on_return;
+-
+-  CHECK_EQ(args.Length(), 1);
+-  CHECK(args[0]->IsString());
+-
+-  const node::Utf8Value sigalgs(env->isolate(), args[0]);
+-
+-  int rv = SSL_CTX_set1_sigalgs_list(sc->ctx_.get(), *sigalgs);
+-
+-  if (rv == 0) {
+-    return ThrowCryptoError(env, ERR_get_error());
+-  }
+-}
+ 
+ #ifndef OPENSSL_NO_ENGINE
+ // Helpers for the smart pointer.
+@@ -1748,7 +1730,6 @@ void SSLWrap<Base>::AddMethods(Environment* env, Local<FunctionTemplate> t) {
+   env->SetProtoMethodNoSideEffect(t, "isSessionReused", IsSessionReused);
+   env->SetProtoMethodNoSideEffect(t, "verifyError", VerifyError);
+   env->SetProtoMethodNoSideEffect(t, "getCipher", GetCipher);
+-  env->SetProtoMethodNoSideEffect(t, "getSharedSigalgs", GetSharedSigalgs);
+   env->SetProtoMethod(t, "endParser", EndParser);
+   env->SetProtoMethod(t, "certCbDone", CertCbDone);
+   env->SetProtoMethod(t, "renegotiate", Renegotiate);
+@@ -2685,88 +2666,6 @@ void SSLWrap<Base>::GetCipher(const FunctionCallbackInfo<Value>& args) {
+ }
+ 
+ 
+-template <class Base>
+-void SSLWrap<Base>::GetSharedSigalgs(const FunctionCallbackInfo<Value>& args) {
+-  Base* w;
+-  ASSIGN_OR_RETURN_UNWRAP(&w, args.Holder());
+-  Environment* env = w->ssl_env();
+-  std::vector<Local<Value>> ret_arr;
+-
+-  SSL* ssl = w->ssl_.get();
+-  int nsig = SSL_get_shared_sigalgs(ssl, 0, nullptr, nullptr, nullptr, nullptr,
+-                                    nullptr);
+-
+-  for (int i = 0; i < nsig; i++) {
+-    int hash_nid;
+-    int sign_nid;
+-    std::string sig_with_md;
+-
+-    SSL_get_shared_sigalgs(ssl, i, &sign_nid, &hash_nid, nullptr, nullptr,
+-                           nullptr);
+-
+-    switch (sign_nid) {
+-      case EVP_PKEY_RSA:
+-        sig_with_md = "RSA+";
+-        break;
+-
+-      case EVP_PKEY_RSA_PSS:
+-        sig_with_md = "RSA-PSS+";
+-        break;
+-
+-      case EVP_PKEY_DSA:
+-        sig_with_md = "DSA+";
+-        break;
+-
+-      case EVP_PKEY_EC:
+-        sig_with_md = "ECDSA+";
+-        break;
+-
+-      case NID_ED25519:
+-        sig_with_md = "Ed25519+";
+-        break;
+-
+-      case NID_ED448:
+-        sig_with_md = "Ed448+";
+-        break;
+-
+-      case NID_id_GostR3410_2001:
+-        sig_with_md = "gost2001+";
+-        break;
+-
+-      case NID_id_GostR3410_2012_256:
+-        sig_with_md = "gost2012_256+";
+-        break;
+-
+-      case NID_id_GostR3410_2012_512:
+-        sig_with_md = "gost2012_512+";
+-        break;
+-
+-      default:
+-        const char* sn = OBJ_nid2sn(sign_nid);
+-
+-        if (sn != nullptr) {
+-          sig_with_md = std::string(sn) + "+";
+-        } else {
+-          sig_with_md = "UNDEF+";
+-        }
+-        break;
+-    }
+-
+-    const char* sn_hash = OBJ_nid2sn(hash_nid);
+-    if (sn_hash != nullptr) {
+-      sig_with_md += std::string(sn_hash);
+-    } else {
+-      sig_with_md += "UNDEF";
+-    }
+-
+-    ret_arr.push_back(OneByteString(env->isolate(), sig_with_md.c_str()));
+-  }
+-
+-  args.GetReturnValue().Set(
+-                 Array::New(env->isolate(), ret_arr.data(), ret_arr.size()));
+-}
+-
+-
+ template <class Base>
+ void SSLWrap<Base>::GetProtocol(const FunctionCallbackInfo<Value>& args) {
+   Base* w;
+diff --git a/src/node_crypto.h b/src/node_crypto.h
+index fb21077132dec0900118d178605c9b93cc458105..31e7da7da9daf2ecf965dc38df24272f838ba1a0 100644
+--- a/src/node_crypto.h
++++ b/src/node_crypto.h
+@@ -129,7 +129,6 @@ class SecureContext : public BaseObject {
+   static void AddRootCerts(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetCipherSuites(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetCiphers(const v8::FunctionCallbackInfo<v8::Value>& args);
+-  static void SetSigalgs(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetECDHCurve(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetDHParam(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
+@@ -255,7 +254,6 @@ class SSLWrap {
+   static void IsSessionReused(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void VerifyError(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void GetCipher(const v8::FunctionCallbackInfo<v8::Value>& args);
+-  static void GetSharedSigalgs(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void EndParser(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void CertCbDone(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void Renegotiate(const v8::FunctionCallbackInfo<v8::Value>& args);

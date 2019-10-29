@@ -1,0 +1,25 @@
+<html>
+<body>
+<script>
+const { ipcRenderer } = require('electron')
+
+const worker1 = new SharedWorker('./shared-worker1.js')
+const worker2 = new SharedWorker('./shared-worker2.js')
+
+worker1.port.start()
+worker2.port.start()
+
+const promise1 = new Promise(resolve => {
+  worker1.port.onmessage = resolve
+})
+
+const promise2 = new Promise(resolve => {
+  worker2.port.onmessage = resolve
+})
+
+Promise.all([promise1, promise2]).then(() => {
+  ipcRenderer.send('ready')
+})
+</script>
+</body>
+</html>

@@ -57,6 +57,8 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   base::string16 GetToolTipAt(int index);
   void SetRole(int index, const base::string16& role);
   base::string16 GetRoleAt(int index);
+  void SetSublabel(int index, const base::string16& sublabel);
+  base::string16 GetSublabelAt(int index) const override;
   bool GetAcceleratorAtWithParams(int index,
                                   bool use_default_accelerator,
                                   ui::Accelerator* accelerator) const;
@@ -73,8 +75,9 @@ class AtomMenuModel : public ui::SimpleMenuModel {
  private:
   Delegate* delegate_;  // weak ref.
 
-  std::map<int, base::string16> toolTips_;  // command id -> tooltip
-  std::map<int, base::string16> roles_;     // command id -> role
+  std::map<int, base::string16> toolTips_;   // command id -> tooltip
+  std::map<int, base::string16> roles_;      // command id -> role
+  std::map<int, base::string16> sublabels_;  // command id -> sublabel
   base::ObserverList<Observer> observers_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomMenuModel);

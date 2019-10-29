@@ -8,15 +8,16 @@
 
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 #include "shell/browser/atom_browser_main_parts.h"
-#include "shell/common/native_mate_converters/file_dialog_converter.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/gin_converters/file_dialog_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<download::DownloadItem::DownloadState> {
@@ -44,7 +45,7 @@ struct Converter<download::DownloadItem::DownloadState> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -52,7 +53,7 @@ namespace api {
 
 namespace {
 
-std::map<uint32_t, v8::Global<v8::Object>> g_download_item_objects;
+std::map<uint32_t, v8::Global<v8::Value>> g_download_item_objects;
 
 }  // namespace
 
@@ -188,9 +189,9 @@ double DownloadItem::GetStartTime() const {
 // static
 void DownloadItem::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "DownloadItem"));
+  prototype->SetClassName(gin::StringToV8(isolate, "DownloadItem"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("pause", &DownloadItem::Pause)
       .SetMethod("isPaused", &DownloadItem::IsPaused)
       .SetMethod("resume", &DownloadItem::Resume)
@@ -218,17 +219,17 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
 }
 
 // static
-mate::Handle<DownloadItem> DownloadItem::Create(v8::Isolate* isolate,
-                                                download::DownloadItem* item) {
+gin::Handle<DownloadItem> DownloadItem::Create(v8::Isolate* isolate,
+                                               download::DownloadItem* item) {
   auto* existing = TrackableObject::FromWrappedClass(isolate, item);
   if (existing)
-    return mate::CreateHandle(isolate, static_cast<DownloadItem*>(existing));
+    return gin::CreateHandle(isolate, static_cast<DownloadItem*>(existing));
 
-  auto handle = mate::CreateHandle(isolate, new DownloadItem(isolate, item));
+  auto handle = gin::CreateHandle(isolate, new DownloadItem(isolate, item));
 
   // Reference this object in case it got garbage collected.
   g_download_item_objects[handle->weak_map_id()] =
-      v8::Global<v8::Object>(isolate, handle.ToV8());
+      v8::Global<v8::Value>(isolate, handle.ToV8());
   return handle;
 }
 
@@ -243,7 +244,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary(isolate, exports)
+  gin_helper::Dictionary(isolate, exports)
       .Set("DownloadItem", electron::api::DownloadItem::GetConstructor(isolate)
                                ->GetFunction(context)
                                .ToLocalChecked());

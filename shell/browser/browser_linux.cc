@@ -17,7 +17,7 @@
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
-#include "chrome/browser/ui/libgtkui/unity_service.h"
+#include "shell/browser/linux/unity_service.h"
 #endif
 
 namespace electron {
@@ -73,7 +73,11 @@ bool SetDefaultWebClient(const std::string& protocol) {
     argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
     argv.emplace_back(protocol);
   }
-  argv.emplace_back(libgtkui::GetDesktopName(env.get()));
+  std::string desktop_name;
+  if (!env->GetVar("CHROME_DESKTOP", &desktop_name)) {
+    return false;
+  }
+  argv.emplace_back(desktop_name);
 
   int exit_code;
   bool ran_ok = LaunchXdgUtility(argv, &exit_code);
@@ -97,20 +101,23 @@ void Browser::ClearRecentDocuments() {}
 void Browser::SetAppUserModelID(const base::string16& name) {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         mate::Arguments* args) {
+                                         gin_helper::Arguments* args) {
   return SetDefaultWebClient(protocol);
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      mate::Arguments* args) {
+                                      gin_helper::Arguments* args) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
   if (protocol.empty())
     return false;
 
-  const std::vector<std::string> argv = {
-      "check", kXdgSettingsDefaultSchemeHandler, protocol,
-      libgtkui::GetDesktopName(env.get())};
+  std::string desktop_name;
+  if (!env->GetVar("CHROME_DESKTOP", &desktop_name))
+    return false;
+  const std::vector<std::string> argv = {kXdgSettings, "check",
+                                         kXdgSettingsDefaultSchemeHandler,
+                                         protocol, desktop_name};
   const auto output = GetXdgAppOutput(argv);
   if (!output)
     return false;
@@ -121,7 +128,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
 // Todo implement
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            mate::Arguments* args) {
+                                            gin_helper::Arguments* args) {
   return false;
 }
 

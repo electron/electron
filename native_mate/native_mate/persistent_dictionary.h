@@ -34,4 +34,18 @@ struct Converter<PersistentDictionary> {
 
 }  // namespace mate
 
+namespace gin {
+
+// Keep compatibility with gin.
+template <>
+struct Converter<mate::PersistentDictionary> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     mate::PersistentDictionary* out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+};
+
+}  // namespace gin
+
 #endif  // NATIVE_MATE_NATIVE_MATE_PERSISTENT_DICTIONARY_H_

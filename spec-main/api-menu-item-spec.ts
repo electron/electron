@@ -471,9 +471,9 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Alt+Tab' }
       ])
 
-      expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? '⌘⇥\u0000' : 'Ctrl+Tab')
-      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
-      expect(menu.getAcceleratorTextAt(2)).to.equal(isDarwin() ? '⌥⇥\u0000' : 'Alt+Tab')
+      expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? '⌘⇥' : 'Ctrl+Tab')
+      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧⇥' : 'Shift+Tab')
+      expect(menu.getAcceleratorTextAt(2)).to.equal(isDarwin() ? '⌥⇥' : 'Alt+Tab')
     })
 
     it('should not display modifiers twice', () => {
@@ -483,7 +483,7 @@ describe('MenuItems', () => {
       ])
 
       expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? '⇧A' : 'Shift+A')
-      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
+      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧⇥' : 'Shift+Tab')
     })
 
     it('should display correctly for edge cases', () => {

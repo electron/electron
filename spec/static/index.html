@@ -76,8 +76,6 @@
     no_recurse: true
   })
 
-  const crashSpec = 'api-crash-reporter-spec.js'
-
   // This allows you to run specific modules only:
   // npm run test -match=menu
   const moduleMatch = process.env.npm_config_match
@@ -86,8 +84,7 @@
 
   const testFiles = []
   walker.on('file', (file) => {
-    if (/-spec\.js$/.test(file) && !file.includes(crashSpec) &&
-        (!moduleMatch || moduleMatch.test(file))) {
+    if (/-spec\.js$/.test(file) && (!moduleMatch || moduleMatch.test(file))) {
       testFiles.push(file)
     }
   })
@@ -95,9 +92,6 @@
   walker.on('end', () => {
     testFiles.sort()
     testFiles.forEach((file) => mocha.addFile(file))
-    if (!process.env.npm_config_match || new RegExp(process.env.npm_config_match, 'g').test(crashSpec)) {
-      mocha.addFile(path.resolve(__dirname, '..', crashSpec))
-    }
 
     const runner = mocha.run(() => {
       // Ensure the callback is called after runner is defined

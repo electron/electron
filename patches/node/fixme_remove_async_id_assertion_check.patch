@@ -9,7 +9,7 @@ index 52a8da35b671d196331b858ba46be04aecf1e0be..43ccfafd9f2c85e23a9ea6277e88e486
 --- a/src/api/callback.cc
 +++ b/src/api/callback.cc
 @@ -103,12 +103,14 @@ void InternalCallbackScope::Close() {
-     env_->isolate()->RunMicrotasks();
+     MicrotasksScope::PerformCheckpoint(env_->isolate());
    }
  
 +#if 0  // FIXME(codebytere): figure out why this check fails/causes crash

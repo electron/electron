@@ -4,54 +4,15 @@
 
 #include "shell/browser/atom_browser_main_parts.h"
 
+#include "base/mac/bundle_locations.h"
+#include "base/mac/foundation_util.h"
+#include "base/path_service.h"
 #include "shell/browser/atom_paths.h"
+#import "shell/browser/mac/atom_application.h"
 #include "shell/browser/mac/atom_application_delegate.h"
+#include "ui/base/l10n/l10n_util_mac.h"
 
 namespace electron {
-
-namespace {
-
-base::scoped_nsobject<NSMenuItem> CreateMenuItem(NSString* title,
-                                                 SEL action,
-                                                 NSString* key_equivalent) {
-  return base::scoped_nsobject<NSMenuItem>([[NSMenuItem alloc]
-      initWithTitle:title
-             action:action
-      keyEquivalent:key_equivalent]);
-}
-
-// The App Menu refers to the dropdown titled "Electron".
-base::scoped_nsobject<NSMenu> BuildAppMenu() {
-  // The title is not used, as the title will always be the name of the App.
-  base::scoped_nsobject<NSMenu> menu([[NSMenu alloc] initWithTitle:@""]);
-
-  NSString* app_name = [[[NSBundle mainBundle] infoDictionary]
-      objectForKey:(id)kCFBundleNameKey];
-
-  base::scoped_nsobject<NSMenuItem> item =
-      CreateMenuItem([NSString stringWithFormat:@"Quit %@", app_name],
-                     @selector(terminate:), @"q");
-  [menu addItem:item];
-
-  return menu;
-}
-
-base::scoped_nsobject<NSMenu> BuildEmptyMainMenu() {
-  base::scoped_nsobject<NSMenu> main_menu([[NSMenu alloc] initWithTitle:@""]);
-
-  using Builder = base::scoped_nsobject<NSMenu> (*)();
-  static const Builder kBuilderFuncs[] = {&BuildAppMenu};
-  for (auto* builder : kBuilderFuncs) {
-    NSMenuItem* item = [[[NSMenuItem alloc] initWithTitle:@""
-                                                   action:NULL
-                                            keyEquivalent:@""] autorelease];
-    item.submenu = builder();
-    [main_menu addItem:item];
-  }
-  return main_menu;
-}
-
-}  // namespace
 
 void AtomBrowserMainParts::PreMainMessageLoopStart() {
   // Set our own application delegate.
@@ -72,9 +33,41 @@ void AtomBrowserMainParts::FreeAppDelegate() {
   [NSApp setDelegate:nil];
 }
 
-void AtomBrowserMainParts::InitializeEmptyApplicationMenu() {
-  base::scoped_nsobject<NSMenu> main_menu = BuildEmptyMainMenu();
-  [[NSApplication sharedApplication] setMainMenu:main_menu];
+void AtomBrowserMainParts::RegisterURLHandler() {
+  [[AtomApplication sharedApplication] registerURLHandler];
+}
+
+// Replicates NSApplicationMain, but doesn't start a run loop.
+void AtomBrowserMainParts::InitializeMainNib() {
+  auto infoDictionary = base::mac::OuterBundle().infoDictionary;
+
+  auto principalClass =
+      NSClassFromString([infoDictionary objectForKey:@"NSPrincipalClass"]);
+  auto application = [principalClass sharedApplication];
+
+  NSString* mainNibName = [infoDictionary objectForKey:@"NSMainNibFile"];
+
+  NSNib* mainNib;
+
+  @try {
+    mainNib = [[NSNib alloc] initWithNibNamed:mainNibName
+                                       bundle:base::mac::FrameworkBundle()];
+    // Handle failure of initWithNibNamed on SMB shares
+    // TODO(codebytere): Remove when
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=932935 is fixed
+  } @catch (NSException* exception) {
+    NSString* nibPath =
+        [NSString stringWithFormat:@"Resources/%@.nib", mainNibName];
+    nibPath = [base::mac::FrameworkBundle().bundlePath
+        stringByAppendingPathComponent:nibPath];
+
+    NSData* data = [NSData dataWithContentsOfFile:nibPath];
+    mainNib = [[NSNib alloc] initWithNibData:data
+                                      bundle:base::mac::FrameworkBundle()];
+  }
+
+  [mainNib instantiateWithOwner:application topLevelObjects:nil];
+  [mainNib release];
 }
 
 }  // namespace electron

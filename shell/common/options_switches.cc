@@ -220,6 +220,8 @@ const char kAppUserModelId[] = "app-user-model-id";
 // The application path
 const char kAppPath[] = "app-path";
 
+const char kEnableApiFilteringLogging[] = "enable-api-filtering-logging";
+
 // The command line switch versions of the options.
 const char kBackgroundColor[] = "background-color";
 const char kPreloadScript[] = "preload";

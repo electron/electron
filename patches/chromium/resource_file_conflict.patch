@@ -52,10 +52,10 @@ Some alternatives to this patch:
 None of these options seems like a substantial maintainability win over this patch to me (@nornagon).
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 03dcf65c25ddeb6ae6074435f37b24b4b54cfc57..0e33dfbadf723b9a578c79725ad535ad24820db7 100644
+index 88401aecde364267ee572fb93ca1be2ee6501cb7..e11c6bcf61bdc01f005cd79f88493b3fe61ec4dd 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -1599,7 +1599,7 @@ if (is_chrome_branded && !is_android) {
+@@ -1636,7 +1636,7 @@ if (is_chrome_branded && !is_android) {
    }
  }
  
@@ -64,7 +64,7 @@ index 03dcf65c25ddeb6ae6074435f37b24b4b54cfc57..0e33dfbadf723b9a578c79725ad535ad
    chrome_paks("packed_resources") {
      if (is_mac) {
        output_dir = "$root_gen_dir/repack"
-@@ -1623,6 +1623,12 @@ if (!is_android) {
+@@ -1660,6 +1660,12 @@ if (!is_android) {
    }
  }
  

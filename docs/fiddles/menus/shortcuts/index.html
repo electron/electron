@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<title>Keyboard Shortcuts</title>
+</head>
+
+<body>
+	<div>
+		<h1>Keyboard Shortcuts</h1>
+
+		<h3>The <code>globalShortcut</code> and <code>Menu</code> modules can be used to define keyboard shortcuts.</h3>
+
+		<p>
+			In Electron, keyboard shortcuts are called accelerators.
+			They can be assigned to actions in your application's Menu,
+			or they can be assigned globally so they'll be triggered even when
+			your app doesn't have keyboard focus.
+		</p>
+
+		<p>
+			Open the full documentation for the
+			<a href="http://electron.atom.io/docs/api/menu">Menu</a>,
+			<a href="http://electron.atom.io/docs/api/accelerator">Accelerator</a>,
+			and
+			<a href="http://electron.atom.io/docs/api/global-shortcut">globalShortcut</a>
+			APIs in your browser.
+		</p>
+
+	</div>
+
+	<div>
+		<div>
+			<div>
+				<p>
+					To try this demo, press <kbd>CommandOrControl+Alt+K</kbd> on your
+					keyboard.
+				</p>
+
+				<p>
+					Global shortcuts are detected even when the app doesn't have
+					keyboard focus, and they must be registered after the app's
+					`ready` event is emitted.
+				</p>
+
+				<div>
+					<h2>ProTip</h2>
+					<strong>Avoid overriding system-wide keyboard shortcuts.</strong>
+					<p>
+						When registering global shortcuts, it's important to be aware of
+						existing defaults in the target operating system, so as not to
+						override any existing behaviors. For an overview of each
+						operating system's keyboard shortcuts, view these documents:
+					</p>
+
+					<ul>
+						<li><a
+								href="https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/Keyboard.html">macOS</a>
+						</li>
+						<li><a
+								href="http://windows.microsoft.com/en-us/windows-10/keyboard-shortcuts">Windows</a></li>
+						<li><a
+								href="https://developer.gnome.org/hig/stable/keyboard-input.html.en">Linux</a></li>
+					</ul>
+				</div>
+
+			</div>
+		</div>
+	</div>
+</body>
+
+</html>

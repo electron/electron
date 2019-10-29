@@ -6,31 +6,37 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index 887cdd11fbbd9df44edef1548a89891c5cf23cee..12da72449622289ec467d284f616bbf937ff1865 100644
+index bc60f256d9d1a07d04a50ad245a5de6490f5091b..e29f4e910349440cd388227d36bf303c885a651d 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
-@@ -13,16 +13,20 @@
+@@ -13,21 +13,25 @@
  #include "base/strings/pattern.h"
  #include "base/strings/string_util.h"
  #include "build/build_config.h"
 +#if 0
  #include "chrome/browser/browser_process.h"
- #include "chrome/browser/lookalikes/safety_tips/reputation_web_contents_observer.h"
  #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/reputation/reputation_web_contents_observer.h"
  #include "chrome/browser/safe_browsing/safe_browsing_service.h"
  #include "chrome/browser/safe_browsing/ui_manager.h"
 +#endif
+ #include "chrome/browser/ssl/tls_deprecation_config.h"
+ #include "chrome/common/chrome_features.h"
+ #include "chrome/common/chrome_switches.h"
+ #include "chrome/common/pref_names.h"
  #include "chrome/common/secure_origin_whitelist.h"
 +#if 0
  #include "components/omnibox/browser/omnibox_field_trial.h"
  #include "components/omnibox/common/omnibox_features.h"
  #include "components/password_manager/core/browser/password_manager_metrics_util.h"
+-#include "components/prefs/pref_service.h"
  #include "components/safe_browsing/buildflags.h"
 +#endif
++#include "components/prefs/pref_service.h"
  #include "components/security_state/content/content_utils.h"
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/navigation_entry.h"
-@@ -44,7 +48,7 @@
+@@ -50,7 +54,7 @@
  #include "chrome/browser/chromeos/policy/policy_cert_service_factory.h"
  #endif  // defined(OS_CHROMEOS)
  
@@ -39,7 +45,23 @@ index 887cdd11fbbd9df44edef1548a89891c5cf23cee..12da72449622289ec467d284f616bbf9
  #include "chrome/browser/safe_browsing/chrome_password_protection_service.h"
  #endif
  
-@@ -66,8 +70,9 @@ void RecordSecurityLevel(
+@@ -94,9 +98,12 @@ bool IsLegacyTLS(GURL url, int connection_status) {
+   // default we treat TLS < 1.2 as Legacy, unless the "SSLVersionMin" policy is
+   // set.
+   std::string ssl_version_min_str = switches::kSSLVersionTLSv12;
+-  PrefService* local_state = g_browser_process->local_state();
+-  if (local_state && local_state->HasPrefPath(prefs::kSSLVersionMin)) {
+-    ssl_version_min_str = local_state->GetString(prefs::kSSLVersionMin);
++
++  // Read directly from the command line, since our pref store is not the same
++  // as Chrome's.
++  auto* cmd_line = base::CommandLine::ForCurrentProcess();
++  if (cmd_line->HasSwitch(::switches::kSSLVersionMin)) {
++    ssl_version_min_str = cmd_line->GetSwitchValueASCII(::switches::kSSLVersionMin);
+   }
+ 
+   // Convert the pref string to an SSLVersion, if it is valid. Otherwise use the
+@@ -113,8 +120,9 @@ bool IsLegacyTLS(GURL url, int connection_status) {
  
  }  // namespace
  
@@ -50,23 +72,23 @@ index 887cdd11fbbd9df44edef1548a89891c5cf23cee..12da72449622289ec467d284f616bbf9
  
  SecurityStateTabHelper::SecurityStateTabHelper(
      content::WebContents* web_contents)
-@@ -89,6 +94,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() const {
+@@ -158,6 +166,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
    // information is still being initialized, thus no need to check for that.
    state->malicious_content_status = GetMaliciousContentStatus();
  
 +#if 0
-   safety_tips::ReputationWebContentsObserver* reputation_web_contents_observer =
-       safety_tips::ReputationWebContentsObserver::FromWebContents(
-           web_contents());
-@@ -97,6 +103,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() const {
-           ? reputation_web_contents_observer
-                 ->GetSafetyTipStatusForVisibleNavigation()
-           : security_state::SafetyTipStatus::kUnknown;
+   ReputationWebContentsObserver* reputation_web_contents_observer =
+       ReputationWebContentsObserver::FromWebContents(web_contents());
+   state->safety_tip_info =
+@@ -166,6 +175,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
+                 ->GetSafetyTipInfoForVisibleNavigation()
+           : security_state::SafetyTipInfo(
+                 {security_state::SafetyTipStatus::kUnknown, GURL()});
 +#endif
    return state;
  }
  
-@@ -164,6 +171,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -237,6 +247,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
        web_contents()->GetController().GetVisibleEntry();
    if (!entry)
      return security_state::MALICIOUS_CONTENT_STATUS_NONE;
@@ -74,7 +96,7 @@ index 887cdd11fbbd9df44edef1548a89891c5cf23cee..12da72449622289ec467d284f616bbf9
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -242,6 +250,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -319,6 +330,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }

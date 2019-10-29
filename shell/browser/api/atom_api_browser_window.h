@@ -12,6 +12,7 @@
 #include "base/cancelable_callback.h"
 #include "shell/browser/api/atom_api_top_level_window.h"
 #include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/common/gin_helper/error_thrower.h"
 
 namespace electron {
 
@@ -22,7 +23,8 @@ class BrowserWindow : public TopLevelWindow,
                       public content::WebContentsObserver,
                       public ExtendedWebContentsObserver {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args);
+  static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
+                                  gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -36,9 +38,7 @@ class BrowserWindow : public TopLevelWindow,
   }
 
  protected:
-  BrowserWindow(v8::Isolate* isolate,
-                v8::Local<v8::Object> wrapper,
-                const mate::Dictionary& options);
+  BrowserWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BrowserWindow() override;
 
   // content::RenderWidgetHost::InputEventObserver:

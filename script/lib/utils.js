@@ -27,7 +27,7 @@ function getOutDir (shouldLog) {
   if (process.env.ELECTRON_OUT_DIR) {
     return process.env.ELECTRON_OUT_DIR
   } else {
-    for (const buildType of ['Debug', 'Testing', 'Release']) {
+    for (const buildType of ['Debug', 'Testing', 'Release', 'Default']) {
       const outPath = path.resolve(SRC_DIR, 'out', buildType)
       if (fs.existsSync(outPath)) {
         if (shouldLog) console.log(`OUT_DIR is: ${buildType}`)
@@ -54,7 +54,7 @@ async function handleGitCall (args, gitDir) {
 
 async function getCurrentBranch (gitDir) {
   let branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir)
-  if (branch !== 'master' && !branch.match(/[0-9]+-[0-9]+-x/)) {
+  if (branch !== 'master' && !branch.match(/[0-9]+-[0-9]+-x$/) && !branch.match(/[0-9]+-x-y$/)) {
     const lastCommit = await handleGitCall(['rev-parse', 'HEAD'], gitDir)
     const branches = (await handleGitCall([
       'branch',
@@ -63,7 +63,7 @@ async function getCurrentBranch (gitDir) {
       '--remote'
     ], gitDir)).split('\n')
 
-    branch = branches.filter(b => b.trim() === 'master' || b.match(/[0-9]+-[0-9]+-x/))[0]
+    branch = branches.filter(b => b.trim() === 'master' || b.trim().match(/^[0-9]+-[0-9]+-x$/) || b.trim().match(/^[0-9]+-x-y$/))[0]
     if (!branch) {
       console.log(`${fail} no release branch exists for this ref`)
       process.exit(1)

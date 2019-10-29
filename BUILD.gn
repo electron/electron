@@ -4,6 +4,7 @@ import("//build/config/win/manifest.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//pdf/features.gni")
 import("//printing/buildflags/buildflags.gni")
+import("//testing/test.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -26,6 +27,7 @@ if (is_mac) {
   import("//third_party/icu/config.gni")
   import("//ui/gl/features.gni")
   import("//v8/gni/v8.gni")
+  import("build/rules.gni")
 }
 
 if (is_linux) {
@@ -58,6 +60,10 @@ config("branding") {
     "ELECTRON_PRODUCT_NAME=\"$electron_product_name\"",
     "ELECTRON_PROJECT_NAME=\"$electron_project_name\"",
   ]
+}
+
+config("electron_lib_config") {
+  include_dirs = [ "." ]
 }
 
 # We geneate the definitions twice here, once in //electron/electron.d.ts
@@ -333,7 +339,10 @@ source_set("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
 
-  public_configs = [ ":branding" ]
+  public_configs = [
+    ":branding",
+    ":electron_lib_config",
+  ]
 
   deps = [
     ":atom_js2c",
@@ -475,6 +484,19 @@ source_set("electron_lib") {
       "//content/common:mac_helpers",
       "//ui/accelerated_widget_mac",
     ]
+
+    libs = [
+      "AVFoundation.framework",
+      "Carbon.framework",
+      "LocalAuthentication.framework",
+      "QuartzCore.framework",
+      "Quartz.framework",
+      "Security.framework",
+      "SecurityInterface.framework",
+      "ServiceManagement.framework",
+      "StoreKit.framework",
+    ]
+
     sources += [
       "shell/browser/ui/views/autofill_popup_view.cc",
       "shell/browser/ui/views/autofill_popup_view.h",
@@ -524,6 +546,10 @@ source_set("electron_lib") {
     ]
 
     sources += filenames.lib_sources_nss
+    sources += [
+      "shell/browser/ui/gtk_util.cc",
+      "shell/browser/ui/gtk_util.h",
+    ]
   }
   if (is_win) {
     libs += [ "dwmapi.lib" ]
@@ -667,6 +693,12 @@ if (is_mac) {
   electron_framework_version = "A"
   electron_version = read_file("ELECTRON_VERSION", "trim string")
 
+  mac_xib_bundle_data("electron_xibs") {
+    sources = [
+      "shell/common/resources/mac/MainMenu.xib",
+    ]
+  }
+
   bundle_data("electron_framework_resources") {
     public_deps = [
       ":packed_resources",
@@ -677,7 +709,6 @@ if (is_mac) {
       public_deps += [ "//third_party/icu:icudata" ]
     }
     if (v8_use_external_startup_data) {
-      sources += [ "$root_out_dir/natives_blob.bin" ]
       public_deps += [ "//v8" ]
       if (use_v8_context_snapshot) {
         sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
@@ -774,6 +805,7 @@ if (is_mac) {
       "Libraries",
     ]
     public_deps = [
+      ":electron_framework_libraries",
       ":electron_lib",
     ]
     deps = [
@@ -781,6 +813,7 @@ if (is_mac) {
       ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_swiftshader_library",
+      ":electron_xibs",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
@@ -794,18 +827,6 @@ if (is_mac) {
 
     include_dirs = [ "." ]
     sources = filenames.framework_sources
-
-    libs = [
-      "AVFoundation.framework",
-      "Carbon.framework",
-      "LocalAuthentication.framework",
-      "QuartzCore.framework",
-      "Quartz.framework",
-      "Security.framework",
-      "SecurityInterface.framework",
-      "ServiceManagement.framework",
-      "StoreKit.framework",
-    ]
 
     if (enable_osr) {
       libs += [ "IOSurface.framework" ]
@@ -1186,6 +1207,37 @@ if (is_mac) {
         ":swiftshader_gles_symbols",
       ]
     }
+  }
+}
+
+test("shell_browser_ui_unittests") {
+  sources = [
+    "//electron/shell/browser/ui/accelerator_util_unittests.cc",
+    "//electron/shell/browser/ui/run_all_unittests.cc",
+  ]
+
+  configs += [ ":electron_lib_config" ]
+
+  deps = [
+    ":electron_lib",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+    "//ui/base",
+    "//ui/strings",
+  ]
+
+  if (is_mac) {
+    # Resolve paths owing to different test executable locations
+    ldflags = [
+      "-F",
+      rebase_path("external_binaries", root_build_dir),
+      "-rpath",
+      "@loader_path",
+      "-rpath",
+      "@executable_path/" + rebase_path("external_binaries", root_build_dir),
+    ]
   }
 }
 

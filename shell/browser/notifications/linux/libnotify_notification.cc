@@ -13,8 +13,8 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
-#include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "shell/browser/notifications/notification_delegate.h"
+#include "shell/browser/ui/gtk_util.h"
 #include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -111,13 +111,16 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   libnotify_loader_.notify_notification_set_urgency(notification_, urgency);
 
   if (!options.icon.drawsNothing()) {
-    GdkPixbuf* pixbuf = libgtkui::GdkPixbufFromSkBitmap(options.icon);
+    GdkPixbuf* pixbuf = gtk_util::GdkPixbufFromSkBitmap(options.icon);
     libnotify_loader_.notify_notification_set_image_from_pixbuf(notification_,
                                                                 pixbuf);
-    libnotify_loader_.notify_notification_set_timeout(notification_,
-                                                      NOTIFY_EXPIRES_DEFAULT);
     g_object_unref(pixbuf);
   }
+
+  // Set the timeout duration for the notification
+  bool neverTimeout = options.timeout_type == base::ASCIIToUTF16("never");
+  int timeout = (neverTimeout) ? NOTIFY_EXPIRES_NEVER : NOTIFY_EXPIRES_DEFAULT;
+  libnotify_loader_.notify_notification_set_timeout(notification_, timeout);
 
   if (!options.tag.empty()) {
     GQuark id = g_quark_from_string(options.tag.c_str());

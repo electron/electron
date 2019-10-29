@@ -10,10 +10,13 @@
 
 #include "base/macros.h"
 #include "build/build_config.h"
-#include "native_mate/arguments.h"
 
 namespace base {
 class Time;
+}
+
+namespace gin_helper {
+class Arguments;
 }
 
 namespace auto_updater {
@@ -55,7 +58,10 @@ class AutoUpdater {
   static void SetDelegate(Delegate* delegate);
 
   static std::string GetFeedURL();
-  static void SetFeedURL(mate::Arguments* args);
+  // FIXME(zcbenz): We should not do V8 in this file, this method should only
+  // accept C++ struct as parameter, and atom_api_auto_updater.cc is responsible
+  // for parsing the parameter from JavaScript.
+  static void SetFeedURL(gin_helper::Arguments* args);
   static void CheckForUpdates();
   static void QuitAndInstall();
 

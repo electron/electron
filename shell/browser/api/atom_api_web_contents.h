@@ -13,6 +13,7 @@
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "content/common/cursors/webcursor.h"
+#include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
@@ -21,13 +22,13 @@
 #include "content/public/common/favicon_url.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/binder_registry.h"
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/common_web_contents_delegate.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -39,10 +40,9 @@ namespace blink {
 struct WebDeviceEmulationParams;
 }
 
-namespace mate {
-class Arguments;
+namespace gin_helper {
 class Dictionary;
-}  // namespace mate
+}
 
 namespace network {
 class ResourceRequestBody;
@@ -77,7 +77,7 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
 };
 
 // Wrapper around the content::WebContents.
-class WebContents : public mate::TrackableObject<WebContents>,
+class WebContents : public gin_helper::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
                     public content::WebContentsObserver,
                     public mojom::ElectronBrowser {
@@ -92,26 +92,26 @@ class WebContents : public mate::TrackableObject<WebContents>,
   };
 
   // Create a new WebContents and return the V8 wrapper of it.
-  static mate::Handle<WebContents> Create(v8::Isolate* isolate,
-                                          const mate::Dictionary& options);
+  static gin::Handle<WebContents> Create(v8::Isolate* isolate,
+                                         const gin_helper::Dictionary& options);
 
   // Create a new V8 wrapper for an existing |web_content|.
   //
   // The lifetime of |web_contents| will be managed by this class.
-  static mate::Handle<WebContents> CreateAndTake(
+  static gin::Handle<WebContents> CreateAndTake(
       v8::Isolate* isolate,
       std::unique_ptr<content::WebContents> web_contents,
       Type type);
 
   // Get the V8 wrapper of |web_content|, return empty handle if not wrapped.
-  static mate::Handle<WebContents> From(v8::Isolate* isolate,
-                                        content::WebContents* web_content);
+  static gin::Handle<WebContents> From(v8::Isolate* isolate,
+                                       content::WebContents* web_content);
 
   // Get the V8 wrapper of the |web_contents|, or create one if not existed.
   //
   // The lifetime of |web_contents| is NOT managed by this class, and the type
   // of this wrapper is always REMOTE.
-  static mate::Handle<WebContents> FromOrCreate(
+  static gin::Handle<WebContents> FromOrCreate(
       v8::Isolate* isolate,
       content::WebContents* web_contents);
 
@@ -142,7 +142,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                                          const std::string& document_url) const;
   Type GetType() const;
   bool Equal(const WebContents* web_contents) const;
-  void LoadURL(const GURL& url, const mate::Dictionary& options);
+  void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void DownloadURL(const GURL& url);
   GURL GetURL() const;
   base::string16 GetTitle() const;
@@ -157,12 +157,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
   bool IsCrashed() const;
-  void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
+  void SetUserAgent(const std::string& user_agent, gin_helper::Arguments* args);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
   v8::Local<v8::Promise> SavePage(const base::FilePath& full_file_path,
                                   const content::SavePageType& save_type);
-  void OpenDevTools(mate::Arguments* args);
+  void OpenDevTools(gin_helper::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
   bool IsDevToolsFocused();
@@ -171,6 +171,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectSharedWorker();
+  void InspectSharedWorkerById(const std::string& workerId);
+  std::vector<scoped_refptr<content::DevToolsAgentHost>> GetAllSharedWorkers();
   void InspectServiceWorker();
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);
@@ -181,15 +183,15 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetNativeView() const;
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  void Print(mate::Arguments* args);
+  void Print(gin_helper::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(const base::DictionaryValue& settings);
 #endif
 
   // DevTools workspace api.
-  void AddWorkSpace(mate::Arguments* args, const base::FilePath& path);
-  void RemoveWorkSpace(mate::Arguments* args, const base::FilePath& path);
+  void AddWorkSpace(gin_helper::Arguments* args, const base::FilePath& path);
+  void RemoveWorkSpace(gin_helper::Arguments* args, const base::FilePath& path);
 
   // Editing commands.
   void Undo();
@@ -203,7 +205,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Unselect();
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
-  uint32_t FindInPage(mate::Arguments* args);
+  uint32_t FindInPage(gin_helper::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
   void ShowDefinitionForSelection();
   void CopyImageAt(int x, int y);
@@ -217,33 +219,34 @@ class WebContents : public mate::TrackableObject<WebContents>,
   bool SendIPCMessage(bool internal,
                       bool send_to_all,
                       const std::string& channel,
-                      const base::ListValue& args);
+                      v8::Local<v8::Value> args);
 
   bool SendIPCMessageWithSender(bool internal,
                                 bool send_to_all,
                                 const std::string& channel,
-                                const base::ListValue& args,
+                                blink::CloneableMessage args,
                                 int32_t sender_id = 0);
 
   bool SendIPCMessageToFrame(bool internal,
                              bool send_to_all,
                              int32_t frame_id,
                              const std::string& channel,
-                             const base::ListValue& args);
+                             v8::Local<v8::Value> args);
 
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
 
   // Subscribe to the frame updates.
-  void BeginFrameSubscription(mate::Arguments* args);
+  void BeginFrameSubscription(gin_helper::Arguments* args);
   void EndFrameSubscription();
 
   // Dragging native items.
-  void StartDrag(const mate::Dictionary& item, mate::Arguments* args);
+  void StartDrag(const gin_helper::Dictionary& item,
+                 gin_helper::Arguments* args);
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
-  v8::Local<v8::Promise> CapturePage(mate::Arguments* args);
+  v8::Local<v8::Promise> CapturePage(gin_helper::Arguments* args);
 
   // Methods for creating <webview>.
   bool IsGuest() const;
@@ -269,12 +272,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
   double GetZoomLevel() const;
   void SetZoomFactor(double factor);
   double GetZoomFactor() const;
+  void SetZoomLimits(double min_zoom, double max_zoom) override;
 
   // Callback triggered on permission response.
-  void OnEnterFullscreenModeForTab(content::WebContents* source,
-                                   const GURL& origin,
-                                   const blink::WebFullscreenOptions& options,
-                                   bool allowed);
+  void OnEnterFullscreenModeForTab(
+      content::WebContents* source,
+      const GURL& origin,
+      const blink::mojom::FullscreenOptions& options,
+      bool allowed);
 
   // Create window with the given disposition.
   void OnCreateWindow(const GURL& target_url,
@@ -331,14 +336,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
               std::unique_ptr<content::WebContents> web_contents,
               Type type);
   // Creates a new content::WebContents.
-  WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
+  WebContents(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   ~WebContents() override;
 
   void InitWithSessionAndOptions(
       v8::Isolate* isolate,
       std::unique_ptr<content::WebContents> web_contents,
-      mate::Handle<class Session> session,
-      const mate::Dictionary& options);
+      gin::Handle<class Session> session,
+      const gin_helper::Dictionary& options);
 
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
@@ -379,7 +384,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void EnterFullscreenModeForTab(
       content::WebContents* source,
       const GURL& origin,
-      const blink::WebFullscreenOptions& options) override;
+      const blink::mojom::FullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
       content::WebContents* source,
@@ -423,8 +428,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
-  void DocumentLoadedInFrame(
-      content::RenderFrameHost* render_frame_host) override;
+  void DOMContentLoaded(content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
   void DidFailLoad(content::RenderFrameHost* render_frame_host,
@@ -488,21 +492,27 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // mojom::ElectronBrowser
   void Message(bool internal,
                const std::string& channel,
-               base::Value arguments) override;
+               blink::CloneableMessage arguments) override;
   void Invoke(bool internal,
               const std::string& channel,
-              base::Value arguments,
+              blink::CloneableMessage arguments,
               InvokeCallback callback) override;
   void MessageSync(bool internal,
                    const std::string& channel,
-                   base::Value arguments,
+                   blink::CloneableMessage arguments,
                    MessageSyncCallback callback) override;
   void MessageTo(bool internal,
                  bool send_to_all,
                  int32_t web_contents_id,
                  const std::string& channel,
-                 base::Value arguments) override;
-  void MessageHost(const std::string& channel, base::Value arguments) override;
+                 blink::CloneableMessage arguments) override;
+  void MessageHost(const std::string& channel,
+                   blink::CloneableMessage arguments) override;
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+  void DereferenceRemoteJSObject(const std::string& context_id,
+                                 int object_id,
+                                 int ref_count) override;
+#endif
   void UpdateDraggableRegions(
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
@@ -517,7 +527,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       IPC::Message* reply_msg);
 
   void InitZoomController(content::WebContents* web_contents,
-                          const mate::Dictionary& options);
+                          const gin_helper::Dictionary& options);
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
@@ -565,23 +575,5 @@ class WebContents : public mate::TrackableObject<WebContents>,
 }  // namespace api
 
 }  // namespace electron
-
-namespace gin {
-
-// TODO(zcbenz): Remove this after converting WebContents to gin::Wrapper.
-template <>
-struct Converter<electron::api::WebContents*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::WebContents** out) {
-    return mate::ConvertFromV8(isolate, val, out);
-  }
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::api::WebContents* in) {
-    return mate::ConvertToV8(isolate, in);
-  }
-};
-
-}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_WEB_CONTENTS_H_

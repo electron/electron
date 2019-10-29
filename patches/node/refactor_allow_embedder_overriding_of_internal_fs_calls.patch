@@ -51,12 +51,12 @@ index ffc7fb6fd5857b807198d4d26b7b899e63cde4a1..2a7ffbff213f23536b94664c3ecffa18
    if (statCache !== null) statCache.set(filename, result);
    return result;
  }
-@@ -205,7 +200,7 @@ const packageExportsCache = new SafeMap();
+@@ -233,7 +233,7 @@ function readPackage(requestPath) {
+   const existing = packageJsonCache.get(jsonPath);
+   if (existing !== undefined) return existing;
  
- function readPackageRaw(requestPath) {
-   const jsonPath = path.resolve(requestPath, 'package.json');
 -  const json = internalModuleReadJSON(path.toNamespacedPath(jsonPath));
 +  const json = internalFsBinding.internalModuleReadJSON(path.toNamespacedPath(jsonPath));
- 
    if (json === undefined) {
+     packageJsonCache.set(jsonPath, false);
      return false;

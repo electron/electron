@@ -37,7 +37,8 @@ class NativeWindowViews : public NativeWindow,
                           public views::WidgetObserver,
                           public ui::EventHandler {
  public:
-  NativeWindowViews(const mate::Dictionary& options, NativeWindow* parent);
+  NativeWindowViews(const gin_helper::Dictionary& options,
+                    NativeWindow* parent);
   ~NativeWindowViews() override;
 
   // NativeWindow:
@@ -83,8 +84,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsClosable() override;
   void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
-                      int relativeLevel,
-                      std::string* error) override;
+                      int relativeLevel) override;
   ui::ZOrderLevel GetZOrderLevel() override;
   void Center() override;
   void Invalidate() override;

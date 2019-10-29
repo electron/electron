@@ -6,7 +6,8 @@
 #define SHELL_COMMON_NATIVE_MATE_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "native_mate/converter.h"
-#include "third_party/blink/public/platform/web_cache.h"
+#include "third_party/blink/public/common/messaging/cloneable_message.h"
+#include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/web/web_context_menu_data.h"
 
@@ -19,10 +20,6 @@ struct WebFloatPoint;
 struct WebPoint;
 struct WebSize;
 }  // namespace blink
-
-namespace content {
-struct NativeWebKeyboardEvent;
-}
 
 namespace mate {
 
@@ -41,15 +38,6 @@ struct Converter<blink::WebKeyboardEvent> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::WebKeyboardEvent* out);
-};
-
-template <>
-struct Converter<content::NativeWebKeyboardEvent> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     content::NativeWebKeyboardEvent* out);
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const content::NativeWebKeyboardEvent& in);
 };
 
 template <>
@@ -109,17 +97,16 @@ struct Converter<blink::WebContextMenuData::InputFieldType> {
 };
 
 template <>
-struct Converter<blink::WebCache::ResourceTypeStat> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const blink::WebCache::ResourceTypeStat& stat);
+struct Converter<blink::WebCacheResourceTypeStat> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::WebCacheResourceTypeStat& stat);
 };
 
 template <>
-struct Converter<blink::WebCache::ResourceTypeStats> {
+struct Converter<blink::WebCacheResourceTypeStats> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const blink::WebCache::ResourceTypeStats& stats);
+      const blink::WebCacheResourceTypeStats& stats);
 };
 
 template <>
@@ -129,6 +116,15 @@ struct Converter<network::mojom::ReferrerPolicy> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      network::mojom::ReferrerPolicy* out);
+};
+
+template <>
+struct Converter<blink::CloneableMessage> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::CloneableMessage& in);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::CloneableMessage* out);
 };
 
 v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags);

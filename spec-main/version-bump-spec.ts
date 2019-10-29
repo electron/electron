@@ -100,6 +100,12 @@ describe('version-bumper', () => {
       expect(next).to.equal('2.0.1')
     })
 
+    it('bumps to minor from stable', async () => {
+      const version = 'v2.0.0'
+      const next = await nextVersion('minor', version)
+      expect(next).to.equal('2.1.0')
+    })
+
     it('bumps to stable from nightly', async () => {
       const version = 'v2.0.0-nightly.19950901'
       const next = await nextVersion('stable', version)

@@ -12,7 +12,8 @@ const pass = '✓'.green
 const fail = '✗'.red
 
 const args = require('minimist')(process.argv, {
-  string: ['runners'],
+  string: ['runners', 'target'],
+  boolean: ['buildNativeTests'],
   unknown: arg => unknownFlags.push(arg)
 })
 
@@ -34,7 +35,8 @@ const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
 
 const runners = new Map([
   ['main', { description: 'Main process specs', run: runMainProcessElectronTests }],
-  ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }]
+  ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }],
+  ['native', { description: 'Native specs', run: runNativeElectronTests }]
 ])
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
@@ -48,7 +50,7 @@ if (args.runners) {
   }
   console.log('Only running:', runnersToRun)
 } else {
-  console.log(`Triggering both ${[...runners.keys()].join(' and ')} runners`)
+  console.log(`Triggering runners: ${[...runners.keys()].join(', ')}`)
 }
 
 async function main () {
@@ -58,7 +60,8 @@ async function main () {
       (lastSpecInstallHash !== currentSpecInstallHash)
 
   if (somethingChanged) {
-    await installSpecModules()
+    await installSpecModules(path.resolve(__dirname, '..', 'spec'))
+    await installSpecModules(path.resolve(__dirname, '..', 'spec-main'))
     await getSpecHash().then(saveSpecHash)
   }
 
@@ -141,6 +144,57 @@ async function runRemoteBasedElectronTests () {
   console.log(`${pass} Electron remote process tests passed.`)
 }
 
+async function runNativeElectronTests () {
+  let testTargets = require('./native-test-targets.json')
+  const outDir = `out/${utils.getOutDir(false)}`
+
+  // If native tests are being run, only one arg would be relevant
+  if (args.target && !testTargets.includes(args.target)) {
+    console.log(`${fail} ${args.target} must be a subset of [${[testTargets].join(', ')}]`)
+    process.exit(1)
+  }
+
+  // Optionally build all native test targets
+  if (args.buildNativeTests) {
+    for (const target of testTargets) {
+      const build = childProcess.spawnSync('ninja', ['-C', outDir, target], {
+        cwd: path.resolve(__dirname, '../..'),
+        stdio: 'inherit'
+      })
+
+      // Exit if test target failed to build
+      if (build.status !== 0) {
+        console.log(`${fail} ${target} failed to build.`)
+        process.exit(1)
+      }
+    }
+  }
+
+  // If a specific target was passed, only build and run that target
+  if (args.target) testTargets = [args.target]
+
+  // Run test targets
+  const failures = []
+  for (const target of testTargets) {
+    console.info('\nRunning native test for target:', target)
+    const testRun = childProcess.spawnSync(`./${outDir}/${target}`, {
+      cwd: path.resolve(__dirname, '../..'),
+      stdio: 'inherit'
+    })
+
+    // Collect failures and log at end
+    if (testRun.status !== 0) failures.push({ target })
+  }
+
+  // Exit if any failures
+  if (failures.length > 0) {
+    console.log(`${fail} Electron native tests failed for the following targets: `, failures)
+    process.exit(1)
+  }
+
+  console.log(`${pass} Electron native tests passed.`)
+}
+
 async function runMainProcessElectronTests () {
   let exe = path.resolve(BASE, utils.getElectronExec())
   const runnerArgs = ['electron/spec-main', ...unknownArgs.slice(2)]
@@ -161,19 +215,19 @@ async function runMainProcessElectronTests () {
   console.log(`${pass} Electron main process tests passed.`)
 }
 
-async function installSpecModules () {
+async function installSpecModules (dir) {
   const nodeDir = path.resolve(BASE, `out/${utils.getOutDir(true)}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
-    npm_config_msvs_version: '2017'
+    npm_config_msvs_version: '2019'
   })
   const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
     env,
-    cwd: path.resolve(__dirname, '../spec'),
+    cwd: dir,
     stdio: 'inherit'
   })
   if (status !== 0 && !process.env.IGNORE_YARN_INSTALL_ERROR) {
-    console.log(`${fail} Failed to yarn install in the spec folder`)
+    console.log(`${fail} Failed to yarn install in '${dir}'`)
     process.exit(1)
   }
 }
@@ -183,7 +237,9 @@ function getSpecHash () {
     (async () => {
       const hasher = crypto.createHash('SHA256')
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package.json')))
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/package.json')))
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/yarn.lock')))
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/yarn.lock')))
       return hasher.digest('hex')
     })(),
     (async () => {

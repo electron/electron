@@ -55,12 +55,13 @@ class Promise {
 
   static void ResolvePromise(Promise<RT> promise, RT result) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                     base::BindOnce([](Promise<RT> promise,
-                                       RT result) { promise.Resolve(result); },
-                                    std::move(promise), std::move(result)));
+      base::PostTask(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce([](Promise<RT> promise,
+                            RT result) { promise.ResolveWithGin(result); },
+                         std::move(promise), std::move(result)));
     } else {
-      promise.Resolve(result);
+      promise.ResolveWithGin(result);
     }
   }
 
@@ -124,6 +125,16 @@ class Promise {
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
     return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
+  }
+
+  v8::Maybe<bool> Reject(v8::Local<v8::Value> exception) {
+    v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
+    v8::Context::Scope context_scope(
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
+
+    return GetInner()->Reject(GetContext(), exception);
   }
 
   template <typename... ResolveType>
@@ -216,5 +227,17 @@ struct Converter<electron::util::Promise<T>> {
 };
 
 }  // namespace mate
+
+namespace gin {
+
+template <typename T>
+struct Converter<electron::util::Promise<T>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const electron::util::Promise<T>& val) {
+    return mate::ConvertToV8(isolate, val);
+  }
+};
+
+}  // namespace gin
 
 #endif  // SHELL_COMMON_PROMISE_UTIL_H_

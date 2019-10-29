@@ -105,7 +105,8 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(OS_MACOSX)
   void FreeAppDelegate();
-  void InitializeEmptyApplicationMenu();
+  void RegisterURLHandler();
+  void InitializeMainNib();
 #endif
 
 #if defined(OS_MACOSX)

@@ -41,6 +41,17 @@ base::string16 AtomMenuModel::GetRoleAt(int index) {
   return iter == std::end(roles_) ? base::string16() : iter->second;
 }
 
+void AtomMenuModel::SetSublabel(int index, const base::string16& sublabel) {
+  int command_id = GetCommandIdAt(index);
+  sublabels_[command_id] = sublabel;
+}
+
+base::string16 AtomMenuModel::GetSublabelAt(int index) const {
+  int command_id = GetCommandIdAt(index);
+  const auto iter = sublabels_.find(command_id);
+  return iter == std::end(sublabels_) ? base::string16() : iter->second;
+}
+
 bool AtomMenuModel::GetAcceleratorAtWithParams(
     int index,
     bool use_default_accelerator,

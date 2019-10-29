@@ -81,7 +81,7 @@ describe('node feature', () => {
       }
       function errorDataListener (data: Buffer) {
         output += data
-        if (output.trim().startsWith('Debugger listening on ws://')) {
+        if (/^Debugger listening on ws:/m.test(output)) {
           cleanup()
           done()
         }
@@ -109,7 +109,7 @@ describe('node feature', () => {
       }
       function errorDataListener (data: Buffer) {
         output += data
-        if (output.trim().startsWith('Debugger listening on ws://')) {
+        if (/^Debugger listening on ws:/m.test(output)) {
           expect(output.trim()).to.contain(':17364', 'should be listening on port 17364')
           cleanup()
           done()

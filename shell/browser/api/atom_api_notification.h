@@ -10,21 +10,26 @@
 #include <vector>
 
 #include "base/strings/utf_string_conversions.h"
-#include "native_mate/handle.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
+#include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "ui/gfx/image/image.h"
+
+namespace gin {
+class Arguments;
+}
 
 namespace electron {
 
 namespace api {
 
-class Notification : public mate::TrackableObject<Notification>,
+class Notification : public gin_helper::TrackableObject<Notification>,
                      public NotificationDelegate {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args);
+  static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
+                                  gin::Arguments* args);
   static bool IsSupported();
 
   static void BuildPrototype(v8::Isolate* isolate,
@@ -39,9 +44,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void NotificationClosed() override;
 
  protected:
-  Notification(v8::Isolate* isolate,
-               v8::Local<v8::Object> wrapper,
-               mate::Arguments* args);
+  explicit Notification(gin::Arguments* args);
   ~Notification() override;
 
   void Show();
@@ -53,6 +56,7 @@ class Notification : public mate::TrackableObject<Notification>,
   base::string16 GetBody() const;
   bool GetSilent() const;
   bool GetHasReply() const;
+  base::string16 GetTimeoutType() const;
   base::string16 GetReplyPlaceholder() const;
   base::string16 GetUrgency() const;
   base::string16 GetSound() const;
@@ -66,6 +70,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void SetSilent(bool new_silent);
   void SetHasReply(bool new_has_reply);
   void SetUrgency(const base::string16& new_urgency);
+  void SetTimeoutType(const base::string16& new_timeout_type);
   void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
   void SetSound(const base::string16& sound);
   void SetActions(const std::vector<electron::NotificationAction>& actions);
@@ -80,6 +85,7 @@ class Notification : public mate::TrackableObject<Notification>,
   bool has_icon_ = false;
   bool silent_ = false;
   bool has_reply_ = false;
+  base::string16 timeout_type_;
   base::string16 reply_placeholder_;
   base::string16 sound_;
   base::string16 urgency_;

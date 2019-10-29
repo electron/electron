@@ -9,9 +9,8 @@
 #include "gin/data_object_builder.h"
 #include "shell/common/crash_reporter/crash_reporter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/map_converter.h"
 
 #include "shell/common/node_includes.h"
 

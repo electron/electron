@@ -32,8 +32,6 @@
 #include "content/public/browser/storage_partition.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_auth_handler_factory.h"
@@ -45,8 +43,8 @@
 #include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/browser/api/atom_api_download_item.h"
 #include "shell/browser/api/atom_api_net_log.h"
-#include "shell/browser/api/atom_api_protocol_ns.h"
-#include "shell/browser/api/atom_api_web_request_ns.h"
+#include "shell/browser/api/atom_api_protocol.h"
+#include "shell/browser/api/atom_api_web_request.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_permission_manager.h"
@@ -54,13 +52,14 @@
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/session_preferences.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
-#include "shell/common/native_mate_converters/content_converter.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/net_converter.h"
-#include "shell/common/native_mate_converters/once_callback.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -122,14 +121,14 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
 
 }  // namespace
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<ClearStorageDataOptions> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      ClearStorageDataOptions* out) {
-    mate::Dictionary options;
+    gin_helper::Dictionary options;
     if (!ConvertFromV8(isolate, val, &options))
       return false;
     options.Get("origin", &out->origin);
@@ -142,7 +141,7 @@ struct Converter<ClearStorageDataOptions> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -153,7 +152,7 @@ namespace {
 const char kPersistPrefix[] = "persist:";
 
 // Referenced session objects.
-std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
+std::map<uint32_t, v8::Global<v8::Value>> g_sessions;
 
 void DownloadIdCallback(content::DownloadManager* download_manager,
                         const base::FilePath& path,
@@ -239,7 +238,7 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   }
 }
 
-v8::Local<v8::Promise> Session::ResolveProxy(mate::Arguments* args) {
+v8::Local<v8::Promise> Session::ResolveProxy(gin_helper::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
   util::Promise<std::string> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -292,7 +291,7 @@ v8::Local<v8::Promise> Session::ClearCache() {
   return handle;
 }
 
-v8::Local<v8::Promise> Session::ClearStorageData(mate::Arguments* args) {
+v8::Local<v8::Promise> Session::ClearStorageData(gin_helper::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
   util::Promise<void*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -322,12 +321,12 @@ void Session::FlushStorageData() {
   storage_partition->Flush();
 }
 
-v8::Local<v8::Promise> Session::SetProxy(mate::Arguments* args) {
+v8::Local<v8::Promise> Session::SetProxy(gin_helper::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
   util::Promise<void*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  mate::Dictionary options;
+  gin_helper::Dictionary options;
   args->GetNext(&options);
 
   if (!browser_context_->in_memory_pref_store()) {
@@ -368,7 +367,7 @@ void Session::SetDownloadPath(const base::FilePath& path) {
                                          path);
 }
 
-void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
+void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   auto conditions = network::mojom::NetworkConditions::New();
 
   options.Get("offline", &conditions->offline);
@@ -395,9 +394,9 @@ void Session::DisableNetworkEmulation() {
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
-                                mate::Arguments* args) {
+                                gin_helper::Arguments* args) {
   CertVerifierClient::CertVerifyProc proc;
-  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &proc))) {
     args->ThrowError("Must pass null or function");
     return;
   }
@@ -418,7 +417,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
-                                          mate::Arguments* args) {
+                                          gin_helper::Arguments* args) {
   auto* permission_manager = static_cast<AtomPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   if (val->IsNull()) {
@@ -427,7 +426,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
     return;
   }
   auto handler = std::make_unique<AtomPermissionManager::RequestHandler>();
-  if (!mate::ConvertFromV8(args->isolate(), val, handler.get())) {
+  if (!gin::ConvertFromV8(args->isolate(), val, handler.get())) {
     args->ThrowError("Must pass null or function");
     return;
   }
@@ -445,9 +444,9 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
 }
 
 void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
-                                        mate::Arguments* args) {
+                                        gin_helper::Arguments* args) {
   AtomPermissionManager::CheckHandler handler;
-  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
     args->ThrowError("Must pass null or function");
     return;
   }
@@ -456,7 +455,8 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionCheckHandler(handler);
 }
 
-v8::Local<v8::Promise> Session::ClearHostResolverCache(mate::Arguments* args) {
+v8::Local<v8::Promise> Session::ClearHostResolverCache(
+    gin_helper::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
   util::Promise<void*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -494,7 +494,7 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
 }
 
 void Session::SetUserAgent(const std::string& user_agent,
-                           mate::Arguments* args) {
+                           gin_helper::Arguments* args) {
   browser_context_->SetUserAgent(user_agent);
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
@@ -525,7 +525,7 @@ void Session::DownloadURL(const GURL& url) {
   download_manager->DownloadUrl(std::move(download_params));
 }
 
-void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
+void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
   int64_t offset = 0, length = 0;
   double start_time = base::Time::Now().ToDoubleT();
   std::string mime_type, last_modified, etag;
@@ -540,12 +540,12 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
   options.Get("eTag", &etag);
   options.Get("startTime", &start_time);
   if (path.empty() || url_chain.empty() || length == 0) {
-    isolate()->ThrowException(v8::Exception::Error(mate::StringToV8(
+    isolate()->ThrowException(v8::Exception::Error(gin::StringToV8(
         isolate(), "Must pass non-empty path, urlChain and length.")));
     return;
   }
   if (offset >= length) {
-    isolate()->ThrowException(v8::Exception::Error(mate::StringToV8(
+    isolate()->ThrowException(v8::Exception::Error(gin::StringToV8(
         isolate(), "Must pass an offset value less than length.")));
     return;
   }
@@ -588,7 +588,7 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
   if (protocol_.IsEmpty()) {
     v8::Local<v8::Value> handle;
-    handle = ProtocolNS::Create(isolate, browser_context()).ToV8();
+    handle = Protocol::Create(isolate, browser_context()).ToV8();
     protocol_.Reset(isolate, handle);
   }
   return v8::Local<v8::Value>::New(isolate, protocol_);
@@ -596,7 +596,7 @@ v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmpty()) {
-    auto handle = WebRequestNS::Create(isolate, browser_context());
+    auto handle = WebRequest::Create(isolate, browser_context());
     web_request_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, web_request_);
@@ -619,8 +619,8 @@ static void StartPreconnectOnUI(
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
-void Session::Preconnect(const mate::Dictionary& options,
-                         mate::Arguments* args) {
+void Session::Preconnect(const gin_helper::Dictionary& options,
+                         gin_helper::Arguments* args) {
   GURL url;
   if (!options.Get("url", &url) || !url.is_valid()) {
     args->ThrowError("Must pass non-empty valid url to session.preconnect.");
@@ -647,25 +647,25 @@ void Session::Preconnect(const mate::Dictionary& options,
 }
 
 // static
-mate::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
-                                          AtomBrowserContext* browser_context) {
+gin::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
+                                         AtomBrowserContext* browser_context) {
   auto* existing = TrackableObject::FromWrappedClass(isolate, browser_context);
   if (existing)
-    return mate::CreateHandle(isolate, static_cast<Session*>(existing));
+    return gin::CreateHandle(isolate, static_cast<Session*>(existing));
 
   auto handle =
-      mate::CreateHandle(isolate, new Session(isolate, browser_context));
+      gin::CreateHandle(isolate, new Session(isolate, browser_context));
 
   // The Sessions should never be garbage collected, since the common pattern is
   // to use partition strings, instead of using the Session object directly.
   g_sessions[handle->weak_map_id()] =
-      v8::Global<v8::Object>(isolate, handle.ToV8());
+      v8::Global<v8::Value>(isolate, handle.ToV8());
 
   return handle;
 }
 
 // static
-mate::Handle<Session> Session::FromPartition(
+gin::Handle<Session> Session::FromPartition(
     v8::Isolate* isolate,
     const std::string& partition,
     const base::DictionaryValue& options) {
@@ -685,9 +685,9 @@ mate::Handle<Session> Session::FromPartition(
 // static
 void Session::BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Session"));
+  prototype->SetClassName(gin::StringToV8(isolate, "Session"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
       .SetMethod("clearCache", &Session::ClearCache)
@@ -732,11 +732,11 @@ namespace {
 
 using electron::api::Cookies;
 using electron::api::NetLog;
-using electron::api::ProtocolNS;
+using electron::api::Protocol;
 using electron::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,
-                                   mate::Arguments* args) {
+                                   gin_helper::Arguments* args) {
   if (!electron::Browser::Get()->is_ready()) {
     args->ThrowError("Session can only be received when app is ready");
     return v8::Null(args->isolate());
@@ -751,7 +751,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set(
       "Session",
       Session::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
@@ -761,9 +761,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set(
       "NetLog",
       NetLog::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
-  dict.Set("Protocol", ProtocolNS::GetConstructor(isolate)
-                           ->GetFunction(context)
-                           .ToLocalChecked());
+  dict.Set(
+      "Protocol",
+      Protocol::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 

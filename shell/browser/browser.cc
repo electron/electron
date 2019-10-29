@@ -22,6 +22,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_helper/arguments.h"
 
 namespace electron {
 
@@ -57,7 +58,7 @@ void Browser::Quit() {
     electron::WindowList::CloseAllWindows();
 }
 
-void Browser::Exit(mate::Arguments* args) {
+void Browser::Exit(gin_helper::Arguments* args) {
   int code = 0;
   args->GetNext(&code);
 
@@ -165,14 +166,14 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
     observer.OnFinishLaunching(launch_info);
 }
 
-const util::Promise<void*>& Browser::WhenReady(v8::Isolate* isolate) {
+v8::Local<v8::Value> Browser::WhenReady(v8::Isolate* isolate) {
   if (!ready_promise_) {
     ready_promise_ = std::make_unique<util::Promise<void*>>(isolate);
     if (is_ready()) {
       ready_promise_->Resolve();
     }
   }
-  return *ready_promise_;
+  return ready_promise_->GetHandle();
 }
 
 void Browser::OnAccessibilitySupportChanged() {

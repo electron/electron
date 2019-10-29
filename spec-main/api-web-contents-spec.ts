@@ -2,8 +2,10 @@ import * as chai from 'chai'
 import { AddressInfo } from 'net'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
+import * as fs from 'fs'
 import * as http from 'http'
-import { BrowserWindow, ipcMain, webContents, session, clipboard } from 'electron'
+import * as ChildProcess from 'child_process'
+import { BrowserWindow, ipcMain, webContents, session, WebContents, app, clipboard } from 'electron'
 import { emittedOnce } from './events-helpers'
 import { closeAllWindows } from './window-helpers'
 import { ifdescribe, ifit } from './spec-helpers'
@@ -13,6 +15,7 @@ const { expect } = chai
 chai.use(chaiAsPromised)
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
+const features = process.electronBinding('features')
 
 describe('webContents module', () => {
   describe('getAllWebContents() API', () => {
@@ -100,7 +103,7 @@ describe('webContents module', () => {
     })
   })
 
-  describe('webContents.print()', () => {
+  ifdescribe(features.isPrintingEnabled())('webContents.print()', () => {
     afterEach(closeAllWindows)
     it('throws when invalid settings are passed', () => {
       const w = new BrowserWindow({ show: false })
@@ -196,6 +199,7 @@ describe('webContents module', () => {
             var iframe = document.createElement('iframe')
             iframe.src = '${serverUrl}/slow'
             document.body.appendChild(iframe)
+            null // don't return the iframe
           `).then(() => {
             w.webContents.executeJavaScript('console.log(\'hello\')').then(() => {
               done()
@@ -208,15 +212,6 @@ describe('webContents module', () => {
       it('executes after page load', (done) => {
         w.webContents.executeJavaScript(`(() => "test")()`).then(result => {
           expect(result).to.equal("test")
-          done()
-        })
-        w.loadURL(serverUrl)
-      })
-
-      it('works with result objects that have DOM class prototypes', (done) => {
-        w.webContents.executeJavaScript('document.location').then(result => {
-          expect(result.origin).to.equal(serverUrl)
-          expect(result.protocol).to.equal('http:')
           done()
         })
         w.loadURL(serverUrl)
@@ -359,7 +354,6 @@ describe('webContents module', () => {
 
       // For some reason we have to wait for two focused events...?
       await emittedOnce(w.webContents, 'devtools-focused')
-      await emittedOnce(w.webContents, 'devtools-focused')
 
       expect(() => { webContents.getFocusedWebContents() }).to.not.throw()
 
@@ -444,9 +438,10 @@ describe('webContents module', () => {
       await focused
       expect(w.isFocused()).to.be.true()
       w.webContents.openDevTools({ mode: 'detach', activate: true })
-      await emittedOnce(w.webContents, 'devtools-focused')
-      await emittedOnce(w.webContents, 'devtools-focused')
-      await emittedOnce(w.webContents, 'devtools-opened')
+      await Promise.all([
+        emittedOnce(w.webContents, 'devtools-opened'),
+        emittedOnce(w.webContents, 'devtools-focused'),
+      ])
       await new Promise(resolve => setTimeout(resolve, 0))
       expect(w.isFocused()).to.be.false()
     })
@@ -572,8 +567,6 @@ describe('webContents module', () => {
 
         const [, zoomDirection] = await emittedOnce(w.webContents, 'zoom-changed')
         expect(zoomDirection).to.equal(zoomingIn ? 'in' : 'out')
-        // Apparently we get two zoom-changed events??
-        await emittedOnce(w.webContents, 'zoom-changed')
       }
 
       await testZoomChanged({ zoomingIn: true })
@@ -696,13 +689,11 @@ describe('webContents module', () => {
 
       expect(() => {
         w.webContents.startDrag({ file: __filename } as any)
-      }).to.throw(`Must specify 'icon' option`)
+      }).to.throw(`Must specify non-empty 'icon' option`)
 
-      if (process.platform === 'darwin') {
-        expect(() => {
-          w.webContents.startDrag({ file: __filename, icon: __filename })
-        }).to.throw(`Must specify non-empty 'icon' option`)
-      }
+      expect(() => {
+        w.webContents.startDrag({ file: __filename, icon: __filename })
+      }).to.throw(`Must specify non-empty 'icon' option`)
     })
   })
 
@@ -952,6 +943,492 @@ describe('webContents module', () => {
     })
   })
 
+  describe('webrtc ip policy api', () => {
+    afterEach(closeAllWindows)
+    it('can set and get webrtc ip policies', () => {
+      const w = new BrowserWindow({ show: false })
+      const policies = [
+        'default',
+        'default_public_interface_only',
+        'default_public_and_private_interfaces',
+        'disable_non_proxied_udp'
+      ]
+      policies.forEach((policy) => {
+        w.webContents.setWebRTCIPHandlingPolicy(policy as any)
+        expect(w.webContents.getWebRTCIPHandlingPolicy()).to.equal(policy)
+      })
+    })
+  })
+
+  describe('render view deleted events', () => {
+    let server: http.Server
+    let serverUrl: string
+    let crossSiteUrl: string
+
+    before((done) => {
+      server = http.createServer((req, res) => {
+        const respond = () => {
+          if (req.url === '/redirect-cross-site') {
+            res.setHeader('Location', `${crossSiteUrl}/redirected`)
+            res.statusCode = 302
+            res.end()
+          } else if (req.url === '/redirected') {
+            res.end('<html><script>window.localStorage</script></html>')
+          } else {
+            res.end()
+          }
+        }
+        setTimeout(respond, 0)
+      })
+      server.listen(0, '127.0.0.1', () => {
+        serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+        crossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}`
+        done()
+      })
+    })
+
+    after(() => {
+      server.close()
+    })
+
+    afterEach(closeAllWindows)
+
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted', (done) => {
+      const w = new BrowserWindow({ show: false })
+      let currentRenderViewDeletedEmitted = false
+      w.webContents.once('destroyed', () => {
+        expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted')
+        done()
+      })
+      const renderViewDeletedHandler = () => {
+        currentRenderViewDeletedEmitted = true
+      }
+      w.webContents.on('current-render-view-deleted' as any, renderViewDeletedHandler)
+      w.webContents.on('did-finish-load', () => {
+        w.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler)
+        w.close()
+      })
+      w.loadURL(`${serverUrl}/redirect-cross-site`)
+    })
+
+    it('emits current-render-view-deleted if the current RVHs are deleted', (done) => {
+      const w = new BrowserWindow({ show: false })
+      let currentRenderViewDeletedEmitted = false
+      w.webContents.once('destroyed', () => {
+        expect(currentRenderViewDeletedEmitted).to.be.true('current-render-view-deleted wasn\'t emitted')
+        done()
+      })
+      w.webContents.on('current-render-view-deleted' as any, () => {
+        currentRenderViewDeletedEmitted = true
+      })
+      w.webContents.on('did-finish-load', () => {
+        w.close()
+      })
+      w.loadURL(`${serverUrl}/redirect-cross-site`)
+    })
+
+    it('emits render-view-deleted if any RVHs are deleted', (done) => {
+      const w = new BrowserWindow({ show: false })
+      let rvhDeletedCount = 0
+      w.webContents.once('destroyed', () => {
+        const expectedRenderViewDeletedEventCount = 3 // 1 speculative upon redirection + 2 upon window close.
+        expect(rvhDeletedCount).to.equal(expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times')
+        done()
+      })
+      w.webContents.on('render-view-deleted' as any, () => {
+        rvhDeletedCount++
+      })
+      w.webContents.on('did-finish-load', () => {
+        w.close()
+      })
+      w.loadURL(`${serverUrl}/redirect-cross-site`)
+    })
+  })
+
+  describe('setIgnoreMenuShortcuts(ignore)', () => {
+    afterEach(closeAllWindows)
+    it('does not throw', () => {
+      const w = new BrowserWindow({ show: false })
+      expect(() => {
+        w.webContents.setIgnoreMenuShortcuts(true)
+        w.webContents.setIgnoreMenuShortcuts(false)
+      }).to.not.throw()
+    })
+  })
+
+  describe('create()', () => {
+    it('does not crash on exit', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'leak-exit-webcontents.js')
+      const electronPath = process.execPath
+      const appProcess = ChildProcess.spawn(electronPath, [appPath])
+      const [code] = await emittedOnce(appProcess, 'close')
+      expect(code).to.equal(0)
+    })
+  })
+
+  // Destroying webContents in its event listener is going to crash when
+  // Electron is built in Debug mode.
+  describe('destroy()', () => {
+    let server: http.Server
+    let serverUrl: string
+
+    before((done) => {
+      server = http.createServer((request, response) => {
+        switch (request.url) {
+          case '/net-error':
+            response.destroy()
+            break
+          case '/200':
+            response.end()
+            break
+          default:
+            done('unsupported endpoint')
+        }
+      }).listen(0, '127.0.0.1', () => {
+        serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port
+        done()
+      })
+    })
+
+    after(() => {
+      server.close()
+    })
+
+    const events = [
+      { name: 'did-start-loading', url: '/200' },
+      { name: 'dom-ready', url: '/200' },
+      { name: 'did-stop-loading', url: '/200' },
+      { name: 'did-finish-load', url: '/200' },
+      // FIXME: Multiple Emit calls inside an observer assume that object
+      // will be alive till end of the observer. Synchronous `destroy` api
+      // violates this contract and crashes.
+      { name: 'did-frame-finish-load', url: '/200' },
+      { name: 'did-fail-load', url: '/net-error' }
+    ]
+    for (const e of events) {
+      it(`should not crash when invoked synchronously inside ${e.name} handler`, async () => {
+        const contents = (webContents as any).create() as WebContents
+        const originalEmit = contents.emit.bind(contents)
+        contents.emit = (...args) => { return originalEmit(...args) }
+        contents.once(e.name as any, () => (contents as any).destroy())
+        const destroyed = emittedOnce(contents, 'destroyed')
+        contents.loadURL(serverUrl + e.url)
+        await destroyed
+      })
+    }
+  })
+
+  describe('did-change-theme-color event', () => {
+    afterEach(closeAllWindows)
+    it('is triggered with correct theme color', (done) => {
+      const w = new BrowserWindow({ show: true })
+      let count = 0
+      w.webContents.on('did-change-theme-color', (e, color) => {
+        if (count === 0) {
+          count += 1
+          expect(color).to.equal('#FFEEDD')
+          w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))
+        } else if (count === 1) {
+          expect(color).to.be.null()
+          done()
+        }
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html'))
+    })
+  })
+
+  describe('console-message event', () => {
+    afterEach(closeAllWindows)
+    it('is triggered with correct log message', (done) => {
+      const w = new BrowserWindow({ show: true })
+      w.webContents.on('console-message', (e, level, message) => {
+        // Don't just assert as Chromium might emit other logs that we should ignore.
+        if (message === 'a') {
+          done()
+        }
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', 'a.html'))
+    })
+  })
+
+  describe('ipc-message event', () => {
+    afterEach(closeAllWindows)
+    it('emits when the renderer process sends an asynchronous message', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } })
+      await w.webContents.loadURL('about:blank')
+      w.webContents.executeJavaScript(`
+        require('electron').ipcRenderer.send('message', 'Hello World!')
+      `)
+
+      const [, channel, message] = await emittedOnce(w.webContents, 'ipc-message')
+      expect(channel).to.equal('message')
+      expect(message).to.equal('Hello World!')
+    })
+  })
+
+  describe('ipc-message-sync event', () => {
+    afterEach(closeAllWindows)
+    it('emits when the renderer process sends a synchronous message', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } })
+      await w.webContents.loadURL('about:blank')
+      const promise: Promise<[string, string]> = new Promise(resolve => {
+        w.webContents.once('ipc-message-sync', (event, channel, arg) => {
+          event.returnValue = 'foobar' as any
+          resolve([channel, arg])
+        })
+      })
+      const result = await w.webContents.executeJavaScript(`
+        require('electron').ipcRenderer.sendSync('message', 'Hello World!')
+      `)
+
+      const [channel, message] = await promise
+      expect(channel).to.equal('message')
+      expect(message).to.equal('Hello World!')
+      expect(result).to.equal('foobar')
+    })
+  })
+
+  describe('referrer', () => {
+    afterEach(closeAllWindows)
+    it('propagates referrer information to new target=_blank windows', (done) => {
+      const w = new BrowserWindow({ show: false })
+      const server = http.createServer((req, res) => {
+        if (req.url === '/should_have_referrer') {
+          expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`)
+          server.close()
+          return done()
+        }
+        res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>')
+      })
+      server.listen(0, '127.0.0.1', () => {
+        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/'
+        w.webContents.once('did-finish-load', () => {
+          w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
+            expect(referrer.url).to.equal(url)
+            expect(referrer.policy).to.equal('no-referrer-when-downgrade')
+          })
+          w.webContents.executeJavaScript('a.click()')
+        })
+        w.loadURL(url)
+      })
+    })
+
+    // TODO(jeremy): window.open() in a real browser passes the referrer, but
+    // our hacked-up window.open() shim doesn't. It should.
+    xit('propagates referrer information to windows opened with window.open', (done) => {
+      const w = new BrowserWindow({ show: false })
+      const server = http.createServer((req, res) => {
+        if (req.url === '/should_have_referrer') {
+          expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`)
+          return done()
+        }
+        res.end('')
+      })
+      server.listen(0, '127.0.0.1', () => {
+        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/'
+        w.webContents.once('did-finish-load', () => {
+          w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
+            expect(referrer.url).to.equal(url)
+            expect(referrer.policy).to.equal('no-referrer-when-downgrade')
+          })
+          w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")')
+        })
+        w.loadURL(url)
+      })
+    })
+  })
+
+  describe('webframe messages in sandboxed contents', () => {
+    afterEach(closeAllWindows)
+    it('responds to executeJavaScript', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+      await w.loadURL('about:blank')
+      const result = await w.webContents.executeJavaScript('37 + 5')
+      expect(result).to.equal(42)
+    })
+  })
+
+  describe('preload-error event', () => {
+    afterEach(closeAllWindows)
+    const generateSpecs = (description: string, sandbox: boolean) => {
+      describe(description, () => {
+        it('is triggered when unhandled exception is thrown', async () => {
+          const preload = path.join(fixturesPath, 'module', 'preload-error-exception.js')
+
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox,
+              preload
+            }
+          })
+
+          const promise = emittedOnce(w.webContents, 'preload-error')
+          w.loadURL('about:blank')
+
+          const [, preloadPath, error] = await promise
+          expect(preloadPath).to.equal(preload)
+          expect(error.message).to.equal('Hello World!')
+        })
+
+        it('is triggered on syntax errors', async () => {
+          const preload = path.join(fixturesPath, 'module', 'preload-error-syntax.js')
+
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox,
+              preload
+            }
+          })
+
+          const promise = emittedOnce(w.webContents, 'preload-error')
+          w.loadURL('about:blank')
+
+          const [, preloadPath, error] = await promise
+          expect(preloadPath).to.equal(preload)
+          expect(error.message).to.equal('foobar is not defined')
+        })
+
+        it('is triggered when preload script loading fails', async () => {
+          const preload = path.join(fixturesPath, 'module', 'preload-invalid.js')
+
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox,
+              preload
+            }
+          })
+
+          const promise = emittedOnce(w.webContents, 'preload-error')
+          w.loadURL('about:blank')
+
+          const [, preloadPath, error] = await promise
+          expect(preloadPath).to.equal(preload)
+          expect(error.message).to.contain('preload-invalid.js')
+        })
+      })
+    }
+
+    generateSpecs('without sandbox', false)
+    generateSpecs('with sandbox', true)
+  })
+
+  describe('takeHeapSnapshot()', () => {
+    afterEach(closeAllWindows)
+
+    it('works with sandboxed renderers', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+
+      await w.loadURL('about:blank')
+
+      const filePath = path.join(app.getPath('temp'), 'test.heapsnapshot')
+
+      const cleanup = () => {
+        try {
+          fs.unlinkSync(filePath)
+        } catch (e) {
+          // ignore error
+        }
+      }
+
+      try {
+        await w.webContents.takeHeapSnapshot(filePath)
+        const stats = fs.statSync(filePath)
+        expect(stats.size).not.to.be.equal(0)
+      } finally {
+        cleanup()
+      }
+    })
+
+    it('fails with invalid file path', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+
+      await w.loadURL('about:blank')
+
+      const promise = w.webContents.takeHeapSnapshot('')
+      return expect(promise).to.be.eventually.rejectedWith(Error, 'takeHeapSnapshot failed')
+    })
+  })
+
+  describe('setBackgroundThrottling()', () => {
+    afterEach(closeAllWindows)
+    it('does not crash when allowing', () => {
+      const w = new BrowserWindow({ show: false })
+      w.webContents.setBackgroundThrottling(true)
+    })
+
+    it('does not crash when called via BrowserWindow', () => {
+      const w = new BrowserWindow({ show: false });
+
+      (w as any).setBackgroundThrottling(true)
+    })
+
+    it('does not crash when disallowing', () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { backgroundThrottling: true } })
+
+      w.webContents.setBackgroundThrottling(false)
+    })
+  })
+
+  ifdescribe(features.isPrintingEnabled())('getPrinters()', () => {
+    afterEach(closeAllWindows)
+    it('can get printer list', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+      await w.loadURL('about:blank')
+      const printers = w.webContents.getPrinters()
+      expect(printers).to.be.an('array')
+    })
+  })
+
+  ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
+    afterEach(closeAllWindows)
+    it('can print to PDF', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
+      const data = await w.webContents.printToPDF({})
+      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
+    })
+
+    it('does not crash when called multiple times', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
+      const promises = []
+      for (let i = 0; i < 2; i++) {
+        promises.push(w.webContents.printToPDF({}))
+      }
+      const results = await Promise.all(promises)
+      for (const data of results) {
+        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
+      }
+    })
+  })
+
+  describe('PictureInPicture video', () => {
+    afterEach(closeAllWindows)
+    it('works as expected', (done) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+      w.webContents.once('did-finish-load', async () => {
+        const result = await w.webContents.executeJavaScript(
+          `runTest(${features.isPictureInPictureEnabled()})`, true)
+        expect(result).to.be.true()
+        done()
+      })
+      w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'))
+    })
+  })
+
   describe('devtools window', () => {
     let hasRobotJS = false
     try {
@@ -1003,6 +1480,42 @@ describe('webContents module', () => {
 
       // Once we're done expect the paste to have been successful
       expect(val).to.equal('test value', 'value should eventually become the pasted value')
+    })
+  })
+
+  describe('Shared Workers', () => {
+    afterEach(closeAllWindows)
+
+    it('can get multiple shared workers', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+
+      const ready = emittedOnce(ipcMain, 'ready')
+      w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'))
+      await ready
+
+      const sharedWorkers = w.webContents.getAllSharedWorkers()
+
+      expect(sharedWorkers).to.have.lengthOf(2)
+      expect(sharedWorkers[0].url).to.contain('shared-worker')
+      expect(sharedWorkers[1].url).to.contain('shared-worker')
+    })
+
+    it('can inspect a specific shared worker', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+
+      const ready = emittedOnce(ipcMain, 'ready')
+      w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'))
+      await ready
+
+      const sharedWorkers = w.webContents.getAllSharedWorkers()
+
+      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
+      w.webContents.inspectSharedWorkerById(sharedWorkers[0].id)
+      await devtoolsOpened
+
+      const devtoolsClosed = emittedOnce(w.webContents, 'devtools-closed')
+      w.webContents.closeDevTools()
+      await devtoolsClosed
     })
   })
 })

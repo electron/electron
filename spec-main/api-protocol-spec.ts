@@ -195,7 +195,7 @@ describe('protocol module', () => {
   })
 
   describe('protocol.registerFileProtocol', () => {
-    const filePath = path.join(fixturesPath, 'asar', 'a.asar', 'file1')
+    const filePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'file1')
     const fileContent = fs.readFileSync(filePath)
     const normalPath = path.join(fixturesPath, 'pages', 'a.html')
     const normalContent = fs.readFileSync(normalPath)
@@ -248,7 +248,7 @@ describe('protocol module', () => {
     })
 
     it('fails when sending unexist-file', async () => {
-      const fakeFilePath = path.join(fixturesPath, 'asar', 'a.asar', 'not-exist')
+      const fakeFilePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'not-exist')
       await registerFileProtocol(protocolName, (request, callback) => callback(fakeFilePath))
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
@@ -461,6 +461,18 @@ describe('protocol module', () => {
       await interceptStringProtocol('http', (request, callback) => {
         callback({
           mimeType: 'application/json',
+          data: '{"value": 1}'
+        })
+      })
+      const r = await ajax('http://fake-host')
+      expect(r.data).to.be.an('object')
+      expect(r.data).to.have.property('value').that.is.equal(1)
+    })
+
+    it('can set content-type with charset', async () => {
+      await interceptStringProtocol('http', (request, callback) => {
+        callback({
+          mimeType: 'application/json; charset=UTF-8',
           data: '{"value": 1}'
         })
       })

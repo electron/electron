@@ -9,10 +9,11 @@
 
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_system_preferences.h"
-#include "shell/common/native_mate_converters/accelerator_converter.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
+#include "shell/common/gin_converters/accelerator_converter.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
 #if defined(OS_MACOSX)
@@ -131,15 +132,15 @@ void GlobalShortcut::UnregisterAll() {
 }
 
 // static
-mate::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new GlobalShortcut(isolate));
+gin::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new GlobalShortcut(isolate));
 }
 
 // static
 void GlobalShortcut::BuildPrototype(v8::Isolate* isolate,
                                     v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "GlobalShortcut"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "GlobalShortcut"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("registerAll", &GlobalShortcut::RegisterAll)
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
@@ -158,7 +159,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("globalShortcut", electron::api::GlobalShortcut::Create(isolate));
 }
 

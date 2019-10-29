@@ -93,7 +93,6 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/network_interfaces.h"
-#include "ui/base/l10n/l10n_util.h"
 
 #if defined(TOOLKIT_VIEWS) && defined(OS_LINUX) && !defined(OS_CHROMEOS)
 #include "ui/views/linux_ui/linux_ui.h"
