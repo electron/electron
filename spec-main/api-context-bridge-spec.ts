@@ -184,7 +184,7 @@ describe('contextBridge', () => {
             return err
           }
         })
-        expect(result).to.be.an.instanceOf(Error).with.property('message', 'i-rejected')
+        expect(result).to.be.an.instanceOf(Error).with.property('message', 'Uncaught Error: i-rejected')
       })
 
       it('should proxy promises and resolve with the correct value if it resolves later', async () => {

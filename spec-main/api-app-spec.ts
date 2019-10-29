@@ -5,7 +5,6 @@ import * as https from 'https'
 import * as net from 'net'
 import * as fs from 'fs'
 import * as path from 'path'
-import { homedir } from 'os'
 import { app, BrowserWindow, Menu } from 'electron'
 import { emittedOnce } from './events-helpers'
 import { closeWindow } from './window-helpers'
@@ -675,30 +674,6 @@ describe('app module', () => {
     it('works for files', async () => {
       const { appPath } = await runTestApp('app-path/lib/index.js')
       expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
-    })
-  })
-
-  describe('getPath("logs")', () => {
-    const logsPaths = {
-      'darwin': path.resolve(homedir(), 'Library', 'Logs'),
-      'linux': path.resolve(homedir(), 'AppData', app.name),
-      'win32': path.resolve(homedir(), 'AppData', app.name)
-    }
-
-    it('has no logs directory by default', () => {
-      // this won't be deterministic except on CI since
-      // users may or may not have this dir
-      if (!isCI) return
-
-      const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.false()
-    })
-
-    it('creates a new logs directory if one does not exist', () => {
-      expect(() => { app.getPath('logs') }).to.not.throw()
-
-      const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.true()
     })
   })
 
