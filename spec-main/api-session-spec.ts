@@ -449,8 +449,8 @@ describe('session module', () => {
 
     it('accepts the request when the callback is called with 0', async () => {
       session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult, errorCode }, callback) => {
-        expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true
-        expect([-202, -200].includes(errorCode)).to.be.true
+        expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true()
+        expect([-202, -200].includes(errorCode)).to.be.true()
         callback(0)
       })
 
@@ -471,7 +471,7 @@ describe('session module', () => {
         expect(certificate.issuerCert.issuerCert.issuer.commonName).to.equal('Root CA')
         expect(certificate.issuerCert.issuerCert.subject.commonName).to.equal('Root CA')
         expect(certificate.issuerCert.issuerCert.issuerCert).to.equal(undefined)
-        expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true
+        expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true()
         callback(-2)
       })
 

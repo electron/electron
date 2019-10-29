@@ -720,9 +720,9 @@ describe('app module', () => {
     it('does not create a new directory by default', () => {
       const badPath = path.join(__dirname, 'music')
 
-      expect(fs.existsSync(badPath)).to.be.false
+      expect(fs.existsSync(badPath)).to.be.false()
       app.setPath('music', badPath)
-      expect(fs.existsSync(badPath)).to.be.false
+      expect(fs.existsSync(badPath)).to.be.false()
 
       expect(() => { app.getPath(badPath as any) }).to.throw()
     })
