@@ -430,8 +430,6 @@ filenames = {
     "shell/common/api/electron_bindings.cc",
     "shell/common/api/electron_bindings.h",
     "shell/common/api/constructor.h",
-    "shell/common/api/event_emitter_caller_deprecated.cc",
-    "shell/common/api/event_emitter_caller_deprecated.h",
     "shell/common/api/features.cc",
     "shell/common/asar/archive.cc",
     "shell/common/asar/archive.h",
