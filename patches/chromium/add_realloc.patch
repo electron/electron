@@ -39,7 +39,7 @@ index 2aef366ac8194aa261cbca6abc051f7da8a988d3..3c7d66c81032636abcca4f1538ce9b7f
  
    GIN_EXPORT static ArrayBufferAllocator* SharedInstance();
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 7fb51da7c03f9bd6bfcb8724710edf72dc81c79e..32516f714f3337979ac46f16443e1bfe174b0939 100644
+index 7fb51da7c03f9bd6bfcb8724710edf72dc81c79e..138a6fca7e85db767dea0e06be735fff81fe9c49 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -647,6 +647,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
@@ -47,14 +47,14 @@ index 7fb51da7c03f9bd6bfcb8724710edf72dc81c79e..32516f714f3337979ac46f16443e1bfe
    }
  
 +  void* Realloc(void* data, size_t size) override {
-+    return WTF::ArrayBufferContents::Realloc(data, size);
++    return ArrayBufferContents::Realloc(data, size);
 +  }
 +
    void Free(void* data, size_t size) override {
      ArrayBufferContents::FreeMemory(data);
    }
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-index ac525b62a1282839bc906b1ee59837211a83476c..0e813c32f9c0c47f08dd21a0f0c3ff43f41f0bbc 100644
+index ac525b62a1282839bc906b1ee59837211a83476c..5e6c54b87e88ea2741bc7986bf76ddaa48723e56 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 @@ -126,6 +126,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
@@ -62,7 +62,7 @@ index ac525b62a1282839bc906b1ee59837211a83476c..0e813c32f9c0c47f08dd21a0f0c3ff43
  }
  
 +void* ArrayBufferContents::Realloc(void* data, size_t size) {
-+  return Partitions::ArrayBufferPartition()->Realloc(data, size,
++  return WTF::Partitions::ArrayBufferPartition()->Realloc(data, size,
 +      WTF_HEAP_PROFILER_TYPE_NAME(ArrayBufferContents));
 +}
 +
