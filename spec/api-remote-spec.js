@@ -3,7 +3,6 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const path = require('path')
-const { closeWindow } = require('./window-helpers')
 const { resolveGetters } = require('./expect-helpers')
 const { ifdescribe } = require('./spec-helpers')
 
@@ -512,68 +511,10 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     })
   })
 
-  describe('remote function in renderer', () => {
-    let w = null
-
-    afterEach(() => closeWindow(w).then(() => { w = null }))
-    afterEach(() => {
-      ipcMain.removeAllListeners('done')
-    })
-
-    it('works when created in preload script', (done) => {
-      ipcMain.once('done', () => w.close())
-      const preload = path.join(fixtures, 'module', 'preload-remote-function.js')
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          preload
-        }
-      })
-      w.once('closed', () => done())
-      w.loadURL('about:blank')
-    })
-  })
-
   describe('constructing a Uint8Array', () => {
     it('does not crash', () => {
       const RUint8Array = remote.getGlobal('Uint8Array')
       const arr = new RUint8Array()
-    })
-  })
-
-  describe('remote listeners', () => {
-    let w = null
-    afterEach(() => closeWindow(w).then(() => { w = null }))
-
-    it('detaches listeners subscribed to destroyed renderers, and shows a warning', (done) => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      })
-
-      w.webContents.once('did-finish-load', () => {
-        w.webContents.once('did-finish-load', () => {
-          const expectedMessage = [
-            'Attempting to call a function in a renderer window that has been closed or released.',
-            'Function provided here: remote-event-handler.html:11:33',
-            'Remote event names: remote-handler, other-remote-handler'
-          ].join('\n')
-
-          const results = ipcRenderer.sendSync('try-emit-web-contents-event', w.webContents.id, 'remote-handler')
-
-          expect(results).to.deep.equal({
-            warningMessage: expectedMessage,
-            listenerCountBefore: 2,
-            listenerCountAfter: 1
-          })
-          done()
-        })
-
-        w.webContents.reload()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'remote-event-handler.html'))
     })
   })
 })
