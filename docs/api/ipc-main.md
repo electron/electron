@@ -77,6 +77,7 @@ only the next time a message is sent to `channel`, after which it is removed.
 
 * `channel` String
 * `listener` Function
+  * `...args` any[]
 
 Removes the specified `listener` from the listener array for the specified
 `channel`.
