@@ -11,6 +11,7 @@
 #include "atom/browser/api/atom_api_top_level_window.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/atom_menu_model.h"
+#include "atom/common/api/locker.h"
 #include "base/callback.h"
 
 namespace atom {
