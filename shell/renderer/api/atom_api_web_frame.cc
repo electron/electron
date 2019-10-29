@@ -14,7 +14,7 @@
 #include "content/public/renderer/render_view.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
-#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
+#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"

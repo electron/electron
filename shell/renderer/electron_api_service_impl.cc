@@ -13,7 +13,7 @@
 #include "base/threading/thread_restrictions.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/atom_constants.h"
-#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
+#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter_gin_adapter.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"

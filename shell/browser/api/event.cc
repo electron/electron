@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "gin/object_template_builder.h"
-#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
+#include "shell/common/gin_converters/blink_converter.h"
 
 namespace gin_helper {
 

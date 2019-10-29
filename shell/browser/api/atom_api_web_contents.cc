@@ -70,7 +70,7 @@
 #include "shell/browser/web_view_guest_delegate.h"
 #include "shell/common/api/atom_api_native_image.h"
 #include "shell/common/color_util.h"
-#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
+#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -2071,10 +2071,10 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
 
   content::RenderWidgetHost* rwh = view->GetRenderWidgetHost();
   blink::WebInputEvent::Type type =
-      mate::GetWebInputEventType(isolate, input_event);
+      gin::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
-    if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
+    if (gin::ConvertFromV8(isolate, input_event, &mouse_event)) {
       if (IsOffScreen()) {
 #if BUILDFLAG(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
@@ -2094,7 +2094,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     }
   } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
-    if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
+    if (gin::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
       if (IsOffScreen()) {
 #if BUILDFLAG(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseWheelEvent(
