@@ -673,27 +673,6 @@ describe('app module', () => {
     })
   })
 
-  // On non-CI, this directory probably already exists.
-  ifdescribe(process.env.CI != null)('getPath("logs")', () => {
-    const logsPaths = {
-      'darwin': path.resolve(homedir(), 'Library', 'Logs'),
-      'linux': path.resolve(homedir(), 'AppData', app.name),
-      'win32': path.resolve(homedir(), 'AppData', app.name),
-    }
-
-    it('has no logs directory by default', () => {
-      const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.false()
-    })
-
-    it('creates a new logs directory if one does not exist', () => {
-      expect(() => { app.getPath('logs') }).to.not.throw()
-
-      const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.true()
-    })
-  })
-
   describe('getPath(name)', () => {
     it('returns paths that exist', () => {
       const paths = [
