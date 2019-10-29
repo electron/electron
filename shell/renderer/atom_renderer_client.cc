@@ -121,7 +121,9 @@ void AtomRendererClient::DidCreateScriptContext(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
-  DCHECK(node::InitializeContext(renderer_context));
+  bool initialized = node::InitializeContext(renderer_context);
+  CHECK(initialized);
+
   node::Environment* env =
       node_bindings_->CreateEnvironment(renderer_context, nullptr, true);
 
