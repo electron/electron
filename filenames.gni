@@ -515,7 +515,6 @@ filenames = {
     "shell/common/mac/main_application_bundle.h",
     "shell/common/mac/main_application_bundle.mm",
     "shell/common/native_mate_converters/file_path_converter.h",
-    "shell/common/native_mate_converters/gurl_converter.h",
     "shell/common/native_mate_converters/image_converter.h",
     "shell/common/native_mate_converters/string16_converter.h",
     "shell/common/native_mate_converters/v8_value_converter.cc",
