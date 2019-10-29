@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index ef19485423d15cd4c7d1f8bc19391af407f36813..0d7b72cd7ec4002251db939be3a93c5f7c07a885 100644
+index d847c6dd1cad8077276a2097c86944780b16ff76..fb28bdc68cdc7b8b9561351ff833b9352024b8ac 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2201,6 +2201,21 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2130,6 +2130,21 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -67,10 +67,39 @@ index ef19485423d15cd4c7d1f8bc19391af407f36813..0d7b72cd7ec4002251db939be3a93c5f
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2244,6 +2259,59 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
-                                               request->common_params().url);
-     no_renderer_swap_allowed |=
-         request->from_begin_navigation() && !can_renderer_initiate_transfer;
+@@ -2147,21 +2162,121 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+   // Compute the SiteInstance that the navigation should use, which will be
+   // either the current SiteInstance or a new one.
+   //
++  // First, check if the navigation can switch SiteInstances. If not, the
++  // navigation should use the current SiteInstance.
++  bool no_renderer_swap_allowed = false;
++  bool should_swap_for_error_isolation = false;
++  bool was_server_redirect = request->WasServerRedirect();
++
++  // When error page isolation is enabled, each navigation that crosses
++  // from a success to failure and vice versa needs to do a process swap.
++  if (SiteIsolationPolicy::IsErrorPageIsolationEnabled(
++          frame_tree_node_->IsMainFrame())) {
++    should_swap_for_error_isolation =
++        (request->state() == NavigationRequest::FAILED) !=
++        (current_site_instance->GetSiteURL() == GURL(kUnreachableWebDataURL));
++  }
++
++  if (frame_tree_node_->IsMainFrame()) {
++    // Renderer-initiated main frame navigations that may require a
++    // SiteInstance swap are sent to the browser via the OpenURL IPC and are
++    // afterwards treated as browser-initiated navigations. NavigationRequests
++    // marked as renderer-initiated are created by receiving a BeginNavigation
++    // IPC, and will then proceed in the same renderer. In site-per-process
++    // mode, it is possible for renderer-intiated navigations to be allowed to
++    // go cross-process. Check it first.
++    bool can_renderer_initiate_transfer =
++        IsURLHandledByNetworkStack(request->common_params().url) &&
++        IsRendererTransferNeededForNavigation(render_frame_host_.get(),
++                                              request->common_params().url);
++    no_renderer_swap_allowed |=
++        request->from_begin_navigation() && !can_renderer_initiate_transfer;
 +
 +    if (!GetContentClient()->browser()->CanUseCustomSiteInstance()) {
 +      bool has_navigation_started = request->state() != NavigationRequest::NOT_STARTED;
@@ -124,16 +153,20 @@ index ef19485423d15cd4c7d1f8bc19391af407f36813..0d7b72cd7ec4002251db939be3a93c5f
 +        return overriden_site_instance;
 +      }
 +    }
-   } else {
-     // Subframe navigations will use the current renderer, unless specifically
-     // allowed to swap processes.
-@@ -2255,23 +2323,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
-   if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
-     return scoped_refptr<SiteInstance>(current_site_instance);
- 
++  } else {
++    // Subframe navigations will use the current renderer, unless specifically
++    // allowed to swap processes.
++    no_renderer_swap_allowed |= !CanSubframeSwapProcess(
++        request->common_params().url, request->GetSourceSiteInstance(),
++        request->dest_site_instance());
++  }
++
++  if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
++    return scoped_refptr<SiteInstance>(current_site_instance);
++
 +  if (GetContentClient()->browser()->CanUseCustomSiteInstance()) {
-   // If the navigation can swap SiteInstances, compute the SiteInstance it
-   // should use.
++  // If the navigation can swap SiteInstances, compute the SiteInstance it
++  // should use.
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
 -  SiteInstanceImpl* candidate_site_instance =
@@ -150,7 +183,7 @@ index ef19485423d15cd4c7d1f8bc19391af407f36813..0d7b72cd7ec4002251db939be3a93c5f
        request->common_params().transition,
        request->state() == NavigationRequest::FAILED,
        request->GetRestoreType() != RestoreType::NONE, request->is_view_source(),
-       was_server_redirect);
+       request->WasServerRedirect());
  
 +  GetContentClient()->browser()->RegisterPendingSiteInstance(
 +      render_frame_host_.get(), dest_site_instance.get());
