@@ -322,6 +322,24 @@ describe('webContents module', () => {
     })
   })
 
+  describe('reload() API', () => {
+    afterEach(closeAllWindows)
+    it('does not crash when called in crashed event handler', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+      await w.loadURL('about:blank')
+      w.webContents.once('crashed', () => {
+        w.webContents.reload()
+      })
+      w.webContents.executeJavaScript('process.crash()')
+      await emittedOnce(w.webContents, 'did-finish-load')
+    })
+  })
+
   describe('getFocusedWebContents() API', () => {
     afterEach(closeAllWindows)
 
