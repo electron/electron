@@ -62,6 +62,14 @@ struct Converter<blink::WebContextMenuData::InputFieldType> {
 };
 
 template <>
+struct Converter<blink::WebCacheResourceTypeStats> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::WebCacheResourceTypeStats& in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+};
+
+template <>
 struct Converter<network::mojom::ReferrerPolicy> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const network::mojom::ReferrerPolicy& in) {
