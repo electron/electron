@@ -418,7 +418,6 @@ As of writing this article, the popular choices include [Webpack][webpack],
 [performance-cpu-prof]: ../images/performance-cpu-prof.png
 [performance-heap-prof]: ../images/performance-heap-prof.png
 [chrome-devtools-tutorial]: https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/
-[chrome-tracing-tutorial]:
 [worker-threads]: https://nodejs.org/api/worker_threads.html
 [web-workers]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
 [request-idle-callback]: https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback
