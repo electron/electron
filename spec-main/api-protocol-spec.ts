@@ -41,8 +41,8 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
   const body = new stream.PassThrough()
 
   async function sendChunks () {
-    await delay(0)  // the stream protocol API breaks if you send data immediately.
-    let buf = Buffer.from(data as any)  // nodejs typings are wrong, Buffer.from can take a Buffer
+    await delay(0) // the stream protocol API breaks if you send data immediately.
+    let buf = Buffer.from(data as any) // nodejs typings are wrong, Buffer.from can take a Buffer
     for (;;) {
       body.push(buf.slice(0, chunkSize))
       buf = buf.slice(chunkSize)
@@ -60,7 +60,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
 }
 
 // A promise that can be resolved externally.
-function defer(): Promise<any> & {resolve: Function, reject: Function} {
+function defer (): Promise<any> & {resolve: Function, reject: Function} {
   let promiseResolve: Function = null as unknown as Function
   let promiseReject: Function = null as unknown as Function
   const promise: any = new Promise((resolve, reject) => {
@@ -75,7 +75,7 @@ function defer(): Promise<any> & {resolve: Function, reject: Function} {
 describe('protocol module', () => {
   let contents: WebContents = null as unknown as WebContents
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
-  before(() => contents = (webContents as any).create({sandbox: true}))
+  before(() => { contents = (webContents as any).create({ sandbox: true }) })
   after(() => (contents as any).destroy())
 
   async function ajax (url: string, options = {}) {
@@ -706,7 +706,7 @@ describe('protocol module', () => {
     const standardScheme = (global as any).standardScheme
     let w: BrowserWindow = null as unknown as BrowserWindow
     beforeEach(async () => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({ show: false })
     })
 
     afterEach(async () => {
@@ -728,10 +728,10 @@ describe('protocol module', () => {
 
     it('allows CORS requests by default', async () => {
       await allowsCORSRequests('cors', 200, new RegExp(''), () => {
-        const {ipcRenderer} = require('electron')
+        const { ipcRenderer } = require('electron')
         fetch('cors://myhost').then(function (response) {
           ipcRenderer.send('response', response.status)
-        }).catch(function (response) {
+        }).catch(function () {
           ipcRenderer.send('response', 'failed')
         })
       })
@@ -739,7 +739,7 @@ describe('protocol module', () => {
 
     it('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
       await allowsCORSRequests('no-cors', ['failed xhr', 'failed fetch'], /has been blocked by CORS policy/, () => {
-        const {ipcRenderer} = require('electron')
+        const { ipcRenderer } = require('electron')
         Promise.all([
           new Promise(resolve => {
             const req = new XMLHttpRequest()
@@ -759,7 +759,7 @@ describe('protocol module', () => {
 
     it('allows CORS, but disallows fetch requests, when specified', async () => {
       await allowsCORSRequests('no-fetch', ['loaded xhr', 'failed fetch'], /Fetch API cannot load/, () => {
-        const {ipcRenderer} = require('electron')
+        const { ipcRenderer } = require('electron')
         Promise.all([
           new Promise(resolve => {
             const req = new XMLHttpRequest()
@@ -787,7 +787,7 @@ describe('protocol module', () => {
 
       const newContents: WebContents = (webContents as any).create({ nodeIntegration: true })
       const consoleMessages: string[] = []
-      newContents.on('console-message', (e, level, message, line, sourceId) => consoleMessages.push(message))
+      newContents.on('console-message', (e, level, message) => consoleMessages.push(message))
       try {
         newContents.loadURL(standardScheme + '://fake-host')
         const [, response] = await emittedOnce(ipcMain, 'response')

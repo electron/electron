@@ -1,5 +1,4 @@
 import * as chai from 'chai'
-import { expect } from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
 import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron'
 import { emittedOnce } from './events-helpers'
@@ -15,6 +14,8 @@ import { promisify } from 'util'
 import { ifit, ifdescribe } from './spec-helpers'
 import { AddressInfo } from 'net'
 
+const { expect } = chai
+
 const features = process.electronBinding('features')
 
 chai.use(chaiAsPromised)
@@ -22,7 +23,7 @@ const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
 describe('reporting api', () => {
   it('sends a report for a deprecation', async () => {
-    const reports = new EventEmitter
+    const reports = new EventEmitter()
 
     // The Reporting API only works on https with valid certs. To dodge having
     // to set up a trusted certificate, hack the validator.
@@ -44,7 +45,7 @@ describe('reporting api', () => {
     const server = https.createServer(options, (req, res) => {
       if (req.url === '/report') {
         let data = ''
-        req.on('data', (d) => data += d.toString('utf-8'))
+        req.on('data', (d) => { data += d.toString('utf-8') })
         req.on('end', () => {
           reports.emit('report', JSON.parse(data))
         })
@@ -52,16 +53,16 @@ describe('reporting api', () => {
       res.setHeader('Report-To', JSON.stringify({
         group: 'default',
         max_age: 120,
-        endpoints: [ {url: `https://localhost:${(server.address() as any).port}/report`} ],
+        endpoints: [ { url: `https://localhost:${(server.address() as any).port}/report` } ]
       }))
       res.setHeader('Content-Type', 'text/html')
       // using the deprecated `webkitRequestAnimationFrame` will trigger a
       // "deprecation" report.
       res.end('<script>webkitRequestAnimationFrame(() => {})</script>')
     })
-    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
     const bw = new BrowserWindow({
-      show: false,
+      show: false
     })
     try {
       const reportGenerated = emittedOnce(reports, 'report')
@@ -85,7 +86,7 @@ describe('window.postMessage', () => {
   })
 
   it('sets the source and origin correctly', async () => {
-    const w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
     w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`)
     const [, message] = await emittedOnce(ipcMain, 'complete')
     expect(message.data).to.equal('testing')
@@ -604,7 +605,7 @@ describe('chromium features', () => {
     })
 
     it('can return labels of enumerated devices', async () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'))
       const labels = await w.webContents.executeJavaScript(`navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))`)
       expect(labels.some((l: any) => l)).to.be.true()
@@ -612,7 +613,7 @@ describe('chromium features', () => {
 
     it('does not return labels of enumerated devices when permission denied', async () => {
       session.defaultSession.setPermissionCheckHandler(() => false)
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'))
       const labels = await w.webContents.executeJavaScript(`navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))`)
       expect(labels.some((l: any) => l)).to.be.false()
@@ -646,31 +647,31 @@ describe('chromium features', () => {
     const httpBlank = `${scheme}://origin1/blank`
 
     const table = [
-      {parent: fileBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
-      {parent: fileBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false},
-      {parent: fileBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: fileBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false},
+      { parent: fileBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false },
+      { parent: fileBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false },
+      { parent: fileBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true },
+      { parent: fileBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false },
 
-      {parent: httpBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
-      //{parent: httpBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
-      {parent: httpBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      //{parent: httpBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
+      { parent: httpBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false },
+      // {parent: httpBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
+      { parent: httpBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true },
+      // {parent: httpBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
 
       // NB. this is different from Chrome's behavior, which isolates file: urls from each other
-      {parent: fileBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true},
-      {parent: fileBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true},
-      {parent: fileBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: fileBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true},
+      { parent: fileBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true },
+      { parent: fileBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true },
+      { parent: fileBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true },
+      { parent: fileBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true },
 
-      {parent: httpBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true},
-      {parent: httpBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true},
-      {parent: httpBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: httpBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true},
+      { parent: httpBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true },
+      { parent: httpBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true },
+      { parent: httpBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true },
+      { parent: httpBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true },
 
-      {parent: httpBlank, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false},
-      {parent: httpBlank, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false},
-      {parent: httpBlank, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true},
-      {parent: httpBlank, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false},
+      { parent: httpBlank, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false },
+      { parent: httpBlank, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false },
+      { parent: httpBlank, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true },
+      { parent: httpBlank, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false }
     ]
     const s = (url: string) => url.startsWith('file') ? 'file://...' : url
 
@@ -689,16 +690,16 @@ describe('chromium features', () => {
     afterEach(closeAllWindows)
 
     describe('when opened from main window', () => {
-      for (const {parent, child, nodeIntegration, nativeWindowOpen, openerAccessible} of table) {
+      for (const { parent, child, nodeIntegration, nativeWindowOpen, openerAccessible } of table) {
         const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen}, child should ${openerAccessible ? '' : 'not '}be able to access opener`
         it(description, async () => {
-          const w = new BrowserWindow({show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen }})
+          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen } })
           await w.loadURL(parent)
           const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
             window.addEventListener('message', function f(e) {
               resolve(e.data)
             })
-            window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? "yes" : "no"}")
+            window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}")
           })`)
           if (openerAccessible) {
             expect(childOpenerLocation).to.be.a('string')
@@ -710,7 +711,7 @@ describe('chromium features', () => {
     })
 
     describe('when opened from <webview>', () => {
-      for (const {parent, child, nodeIntegration, nativeWindowOpen, openerAccessible} of table) {
+      for (const { parent, child, nodeIntegration, nativeWindowOpen, openerAccessible } of table) {
         const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen}, child should ${openerAccessible ? '' : 'not '}be able to access opener`
         // WebView erroneously allows access to the parent window when nativeWindowOpen is false.
         const skip = !nativeWindowOpen && !openerAccessible
@@ -722,7 +723,7 @@ describe('chromium features', () => {
           // We are testing whether context (3) can access context (2) under various conditions.
 
           // This is context (1), the base window for the test.
-          const w = new BrowserWindow({show: false, webPreferences: { nodeIntegration: true, webviewTag: true }})
+          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true } })
           await w.loadURL('about:blank')
 
           const parentCode = `new Promise((resolve) => {
@@ -735,8 +736,8 @@ describe('chromium features', () => {
           const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
             // This is context (2), a WebView which will call window.open()
             const webview = new WebView()
-            webview.setAttribute('nodeintegration', '${nodeIntegration ? "on" : "off"}')
-            webview.setAttribute('webpreferences', 'nativeWindowOpen=${nativeWindowOpen ? "yes" : "no"}')
+            webview.setAttribute('nodeintegration', '${nodeIntegration ? 'on' : 'off'}')
+            webview.setAttribute('webpreferences', 'nativeWindowOpen=${nativeWindowOpen ? 'yes' : 'no'}')
             webview.setAttribute('allowpopups', 'on')
             webview.src = ${JSON.stringify(parent + '?p=' + encodeURIComponent(child))}
             webview.addEventListener('dom-ready', async () => {
@@ -976,7 +977,7 @@ describe('chromium features', () => {
       const w = createBrowserWindow({ plugins: false, preload: 'preload-pdf-loaded.js' })
       w.webContents.loadURL(pdfSource)
       const [state, filename, mimeType] = await new Promise(resolve => {
-        session.defaultSession.once('will-download', (event, item, webContents) => {
+        session.defaultSession.once('will-download', (event, item) => {
           item.setSavePath(path.join(fixturesPath, 'mock.pdf'))
           item.on('done', (e, state) => {
             resolve([state, item.getFilename(), item.getMimeType()])
@@ -1026,7 +1027,6 @@ describe('chromium features', () => {
   })
 })
 
-
 describe('font fallback', () => {
   async function getRenderedFonts (html: string) {
     const w = new BrowserWindow({ show: false })
@@ -1048,12 +1048,7 @@ describe('font fallback', () => {
     const fonts = await getRenderedFonts(html)
     expect(fonts).to.be.an('array')
     expect(fonts).to.have.length(1)
-    if (process.platform === 'win32')
-      expect(fonts[0].familyName).to.equal('Arial')
-    else if (process.platform === 'darwin')
-      expect(fonts[0].familyName).to.equal('Helvetica')
-    else if (process.platform === 'linux')
-      expect(fonts[0].familyName).to.equal('DejaVu Sans') // I think this depends on the distro? We don't specify a default.
+    if (process.platform === 'win32') { expect(fonts[0].familyName).to.equal('Arial') } else if (process.platform === 'darwin') { expect(fonts[0].familyName).to.equal('Helvetica') } else if (process.platform === 'linux') { expect(fonts[0].familyName).to.equal('DejaVu Sans') } // I think this depends on the distro? We don't specify a default.
   })
 
   ifit(process.platform !== 'linux')('should fall back to Japanese font for sans-serif Japanese script', async function () {
@@ -1068,9 +1063,6 @@ describe('font fallback', () => {
     const fonts = await getRenderedFonts(html)
     expect(fonts).to.be.an('array')
     expect(fonts).to.have.length(1)
-    if (process.platform === 'win32')
-      expect(fonts[0].familyName).to.be.oneOf(['Meiryo', 'Yu Gothic'])
-    else if (process.platform === 'darwin')
-      expect(fonts[0].familyName).to.equal('Hiragino Kaku Gothic ProN')
+    if (process.platform === 'win32') { expect(fonts[0].familyName).to.be.oneOf(['Meiryo', 'Yu Gothic']) } else if (process.platform === 'darwin') { expect(fonts[0].familyName).to.equal('Hiragino Kaku Gothic ProN') }
   })
 })

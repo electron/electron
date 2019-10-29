@@ -1,5 +1,5 @@
-declare var isCI: boolean;
-declare var standardScheme: string;
+declare let isCI: boolean
+declare let standardScheme: string
 
 declare namespace Electron {
   interface Menu {

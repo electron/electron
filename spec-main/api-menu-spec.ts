@@ -919,7 +919,7 @@ describe('Menu module', function () {
             {
               label: 'Test Item',
               accelerator: 'T',
-              click: (a, b, event) => {
+              click: () => {
                 hasBeenClicked = true
               },
               id: 'test'

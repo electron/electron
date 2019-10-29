@@ -1,10 +1,10 @@
 import * as path from 'path'
 import { expect } from 'chai'
 import { closeWindow, closeAllWindows } from './window-helpers'
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe } from './spec-helpers'
 
 import { ipcMain, BrowserWindow } from 'electron'
-import { emittedOnce } from './events-helpers';
+import { emittedOnce } from './events-helpers'
 
 const features = process.electronBinding('features')
 
@@ -21,7 +21,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       await closeWindow(w)
     })
 
-    async function remotely(script: string) {
+    async function remotely (script: string) {
       // executeJavaScript never returns if the script throws an error, so catch
       // any errors manually.
       const assembledScript = `(function() {
@@ -47,7 +47,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       })
 
       it('throws when no returnValue set', async () => {
-        w.webContents.once('remote-get-global', (event, name) => {
+        w.webContents.once('remote-get-global', (event) => {
           event.preventDefault()
         })
         await expect(remotely(`require('electron').remote.getGlobal('test')`)).to.eventually.be.rejected(`Blocked remote.getGlobal('test')`)
@@ -63,7 +63,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       })
 
       it('throws when no returnValue set', async () => {
-        w.webContents.once('remote-get-builtin', (event, name) => {
+        w.webContents.once('remote-get-builtin', (event) => {
           event.preventDefault()
         })
         await expect(remotely(`require('electron').remote.getBuiltin('test')`)).to.eventually.be.rejected(`Blocked remote.getGlobal('test')`)
@@ -79,7 +79,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       })
 
       it('throws when no returnValue set', async () => {
-        w.webContents.once('remote-require', (event, name) => {
+        w.webContents.once('remote-require', (event) => {
           event.preventDefault()
         })
         await expect(remotely(`require('electron').remote.require('test')`)).to.eventually.be.rejected(`Blocked remote.require('test')`)
@@ -180,9 +180,9 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
 
       expect(w.webContents.listenerCount('remote-handler')).to.equal(2)
       let warnMessage: string | null = null
-      let originalWarn = console.warn
+      const originalWarn = console.warn
       try {
-        console.warn = (message: string) => warnMessage = message
+        console.warn = (message: string) => { warnMessage = message }
         w.webContents.emit('remote-handler', { sender: w.webContents })
       } finally {
         console.warn = originalWarn
