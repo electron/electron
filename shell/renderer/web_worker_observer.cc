@@ -48,7 +48,8 @@ void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> worker_context) {
   node_bindings_->PrepareMessageLoop();
 
   // Setup node environment for each window.
-  DCHECK(node::InitializeContext(worker_context));
+  bool initialized = node::InitializeContext(worker_context);
+  CHECK(initialized);
   node::Environment* env =
       node_bindings_->CreateEnvironment(worker_context, nullptr, true);
 
