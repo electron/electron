@@ -220,10 +220,10 @@ index cf811dcdec761ce6825cb1bffb83249b5e144cae..6303a6b2ab37548e580abe946be33ae7
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index e42a2f780170f01edce84753d60b1fba3a429aeb..3cb62924adf93c4d437c8fa81529efc5188d7f77 100644
+index 6deb2a50ff258ce3b1f892abccd6be2f9cf4e255..ab723f93e259453689ece2b2f447cbed1854e4c1 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -196,6 +196,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -186,6 +186,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {

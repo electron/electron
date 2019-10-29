@@ -8,10 +8,10 @@ This is needed by Electron to allow apps to limit how much an app can zoom in
 or out.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 03ae4f288371d85493561f22e2429ade5de32339..9010eba2118c14d2cf3497bf78fb78ffe8f6ecf3 100644
+index 09c40ef119c90513a8f4782aa1a55117bb4a472d..cd824e67f49062cd1afc1dc0d855ce2b605a78b5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4110,10 +4110,18 @@ bool WebContentsImpl::GetClosedByUserGesture() {
+@@ -4124,10 +4124,18 @@ bool WebContentsImpl::GetClosedByUserGesture() {
    return closed_by_user_gesture_;
  }
  
@@ -31,10 +31,10 @@ index 03ae4f288371d85493561f22e2429ade5de32339..9010eba2118c14d2cf3497bf78fb78ff
    return maximum_zoom_percent_;
  }
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 37d4d79ea76db037fc95d3b15a96e70f320d3d55..060a16bd4f378bf0316e5af168a53ae3a734310a 100644
+index 07eb7cba6c3d1a38c20bee7b38854c521fd1e187..4fd9a261f1c890639e4390939e17a214dac0bd57 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -448,7 +448,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -447,7 +447,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SystemDragEnded(RenderWidgetHost* source_rwh) override;
    void SetClosedByUserGesture(bool value) override;
    bool GetClosedByUserGesture() override;
@@ -44,7 +44,7 @@ index 37d4d79ea76db037fc95d3b15a96e70f320d3d55..060a16bd4f378bf0316e5af168a53ae3
    int GetMaximumZoomPercent() override;
    void SetPageScale(float page_scale_factor) override;
    gfx::Size GetPreferredSize() override;
-@@ -1699,8 +1701,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1698,8 +1700,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    bool closed_by_user_gesture_;
  
    // Minimum/maximum zoom percent.
