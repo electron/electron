@@ -56,7 +56,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                         int y,
                         int positioning_item,
                         base::Closure callback) {
-  mate::Locker locker(isolate());
+  gin_helper::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
   if (!native_window)

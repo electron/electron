@@ -4,7 +4,7 @@
 
 #include "shell/common/api/event_emitter_caller_deprecated.h"
 
-#include "shell/common/api/locker.h"
+#include "shell/common/gin_helper/locker.h"
 #include "shell/common/node_includes.h"
 
 namespace mate {

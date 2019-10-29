@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef SHELL_COMMON_API_LOCKER_H_
-#define SHELL_COMMON_API_LOCKER_H_
+#ifndef SHELL_COMMON_GIN_HELPER_LOCKER_H_
+#define SHELL_COMMON_GIN_HELPER_LOCKER_H_
 
 #include <memory>
 
 #include "base/macros.h"
 #include "v8/include/v8.h"
 
-namespace mate {
+namespace gin_helper {
 
 // Only lock when lockers are used in current thread.
 class Locker {
@@ -31,6 +31,6 @@ class Locker {
   DISALLOW_COPY_AND_ASSIGN(Locker);
 };
 
-}  // namespace mate
+}  // namespace gin_helper
 
-#endif  // SHELL_COMMON_API_LOCKER_H_
+#endif  // SHELL_COMMON_GIN_HELPER_LOCKER_H_

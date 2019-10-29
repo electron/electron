@@ -9,7 +9,7 @@
 #include "base/bind.h"
 #include "base/supports_user_data.h"
 #include "shell/browser/atom_browser_main_parts.h"
-#include "shell/common/api/locker.h"
+#include "shell/common/gin_helper/locker.h"
 
 namespace gin_helper {
 
@@ -33,7 +33,7 @@ class IDUserData : public base::SupportsUserData::Data {
 
 TrackableObjectBase::TrackableObjectBase() : weak_factory_(this) {
   // TODO(zcbenz): Make TrackedObject work in renderer process.
-  DCHECK(mate::Locker::IsBrowserProcess())
+  DCHECK(gin_helper::Locker::IsBrowserProcess())
       << "This class only works for browser process";
 
   electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(

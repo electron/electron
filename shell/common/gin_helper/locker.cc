@@ -2,11 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#include "shell/common/api/locker.h"
+#include "shell/common/gin_helper/locker.h"
 
-#include <memory>
-
-namespace mate {
+namespace gin_helper {
 
 Locker::Locker(v8::Isolate* isolate) {
   if (IsBrowserProcess())
@@ -15,4 +13,4 @@ Locker::Locker(v8::Isolate* isolate) {
 
 Locker::~Locker() = default;
 
-}  // namespace mate
+}  // namespace gin_helper

@@ -14,7 +14,7 @@
 #include "base/message_loop/message_loop.h"
 #include "native_mate/function_template.h"
 #include "native_mate/scoped_persistent.h"
-#include "shell/common/api/locker.h"
+#include "shell/common/gin_helper/locker.h"
 
 // =============================== NOTICE ===============================
 // Do not add code here, native_mate is being removed. Any new code
@@ -50,7 +50,7 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
   static v8::Local<v8::Value> Go(v8::Isolate* isolate,
                                  const SafeV8Function& function,
                                  ArgTypes... raw) {
-    Locker locker(isolate);
+    gin_helper::Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return v8::Null(isolate);
@@ -75,7 +75,7 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
   static void Go(v8::Isolate* isolate,
                  const SafeV8Function& function,
                  ArgTypes... raw) {
-    Locker locker(isolate);
+    gin_helper::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return;
@@ -98,7 +98,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
   static ReturnType Go(v8::Isolate* isolate,
                        const SafeV8Function& function,
                        ArgTypes... raw) {
-    Locker locker(isolate);
+    gin_helper::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
     ReturnType ret = ReturnType();
     if (!function.IsAlive())
