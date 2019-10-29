@@ -107,6 +107,16 @@ void NativeBrowserViewViews::SetBackgroundColor(SkColor color) {
   view->SchedulePaint();
 }
 
+bool NativeBrowserView::GetVisible() {
+  auto* view = GetInspectableWebContentsView()->GetView();
+  return view->GetVisible();
+}
+
+void NativeBrowserView::SetVisible(bool visible) {
+  auto* view = GetInspectableWebContentsView()->GetView();
+  view->SetVisible(visible);
+}
+
 // static
 NativeBrowserView* NativeBrowserView::Create(
     InspectableWebContents* inspectable_web_contents) {

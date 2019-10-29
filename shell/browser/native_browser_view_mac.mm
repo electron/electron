@@ -219,6 +219,18 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
   view.layer.backgroundColor = skia::CGColorCreateFromSkColor(color);
 }
 
+bool NativeBrowserViewMac::GetVisible() {
+  auto* view =
+      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  return !view.hidden;
+}
+
+void NativeBrowserViewMac::SetVisible(bool visible) {
+  auto* view =
+      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  view.hidden = !visible;
+}
+
 void NativeBrowserViewMac::UpdateDraggableRegions(
     const std::vector<gfx::Rect>& drag_exclude_rects) {
   NSView* web_view = GetWebContents()->GetNativeView().GetNativeNSView();

@@ -105,6 +105,15 @@ describe('BrowserView module', () => {
     })
   })
 
+  describe('BrowserView.visible', () => {
+    it('returns correct value', () => {
+      view = new BrowserView()
+      expect(view.visible).to.be.true('view is visible')
+      view.visible = false
+      expect(view.visible).to.be.false('view is hidden')
+    })
+  })
+
   describe('BrowserWindow.setBrowserView()', () => {
     it('does not throw for valid args', () => {
       view = new BrowserView()

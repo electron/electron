@@ -57,6 +57,9 @@ class BrowserView : public gin_helper::TrackableObject<BrowserView>,
   gfx::Rect GetBounds();
   void SetBackgroundColor(const std::string& color_name);
 
+  bool GetVisible();
+  void SetVisible(bool visible);
+
   v8::Local<v8::Value> GetWebContents();
 
   v8::Global<v8::Value> web_contents_;

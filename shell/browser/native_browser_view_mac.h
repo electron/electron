@@ -24,6 +24,9 @@ class NativeBrowserViewMac : public NativeBrowserView {
   gfx::Rect GetBounds() override;
   void SetBackgroundColor(SkColor color) override;
 
+  bool GetVisible() override;
+  void SetVisible(bool visible) override;
+
   void UpdateDraggableRegions(
       const std::vector<gfx::Rect>& system_drag_exclude_areas) override;
 
