@@ -1023,7 +1023,7 @@ void WebContents::Message(bool internal,
                           blink::CloneableMessage arguments) {
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
-  EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
+  EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
                  internal, channel, std::move(arguments));
 }
 
@@ -1064,7 +1064,7 @@ void WebContents::MessageHost(const std::string& channel,
                               blink::CloneableMessage arguments) {
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
-                 base::nullopt, channel, std::move(arguments));
+                 InvokeCallback(), channel, std::move(arguments));
 }
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
@@ -1075,7 +1075,7 @@ void WebContents::DereferenceRemoteJSObject(const std::string& context_id,
   args.Append(context_id);
   args.Append(object_id);
   args.Append(ref_count);
-  EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
+  EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
                  /* internal */ true, "ELECTRON_BROWSER_DEREFERENCE",
                  std::move(args));
 }
