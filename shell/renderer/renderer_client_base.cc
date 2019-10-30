@@ -234,11 +234,13 @@ void RendererClientBase::RenderFrameCreated(
       base::BindRepeating(&ElectronApiServiceImpl::BindTo,
                           service->GetWeakPtr()));
 
+  /*
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
   blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
       GURL(kPdfViewerUIOrigin), "file", "", true);
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+*/
 
   content::RenderView* render_view = render_frame->GetRenderView();
   if (render_frame->IsMainFrame() && render_view) {

@@ -8,6 +8,7 @@
 
 #include "electron/buildflags/buildflags.h"
 
+/*
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
@@ -15,6 +16,7 @@
 #include "shell/browser/ui/webui/pdf_viewer_ui.h"
 #include "shell/common/atom_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+*/
 
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/ui/devtools_ui.h"
@@ -39,11 +41,13 @@ AtomWebUIControllerFactory::~AtomWebUIControllerFactory() = default;
 content::WebUI::TypeID AtomWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,
     const GURL& url) {
+  /*
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (url.host() == kPdfViewerUIHost) {
     return const_cast<AtomWebUIControllerFactory*>(this);
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+*/
   if (url.host() == kChromeUIDevToolsBundledHost) {
     return const_cast<AtomWebUIControllerFactory*>(this);
   }
@@ -66,6 +70,7 @@ bool AtomWebUIControllerFactory::UseWebUIBindingsForURL(
 std::unique_ptr<content::WebUIController>
 AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
                                                         const GURL& url) {
+  /*
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (url.host() == kPdfViewerUIHost) {
     base::StringPairs toplevel_params;
@@ -89,6 +94,7 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
     return new PdfViewerUI(browser_context, web_ui, src);
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+*/
   if (url.host() == kChromeUIDevToolsBundledHost) {
     auto* browser_context = web_ui->GetWebContents()->GetBrowserContext();
     return std::make_unique<DevToolsUI>(browser_context, web_ui);
