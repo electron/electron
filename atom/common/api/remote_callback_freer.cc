@@ -15,19 +15,23 @@ namespace atom {
 // static
 void RemoteCallbackFreer::BindTo(v8::Isolate* isolate,
                                  v8::Local<v8::Object> target,
+                                 int frame_id,
                                  const std::string& context_id,
                                  int object_id,
                                  content::WebContents* web_contents) {
-  new RemoteCallbackFreer(isolate, target, context_id, object_id, web_contents);
+  new RemoteCallbackFreer(isolate, target, frame_id, context_id, object_id,
+                          web_contents);
 }
 
 RemoteCallbackFreer::RemoteCallbackFreer(v8::Isolate* isolate,
                                          v8::Local<v8::Object> target,
+                                         int frame_id,
                                          const std::string& context_id,
                                          int object_id,
                                          content::WebContents* web_contents)
     : ObjectLifeMonitor(isolate, target),
       content::WebContentsObserver(web_contents),
+      frame_id_(frame_id),
       context_id_(context_id),
       object_id_(object_id) {}
 
@@ -39,10 +43,15 @@ void RemoteCallbackFreer::RunDestructor() {
   int32_t sender_id = 0;
   args.AppendString(context_id_);
   args.AppendInteger(object_id_);
-  auto* frame_host = web_contents()->GetMainFrame();
-  if (frame_host) {
-    frame_host->Send(new AtomFrameMsg_Message(frame_host->GetRoutingID(), true,
-                                              false, channel, args, sender_id));
+  auto frames = web_contents()->GetAllFrames();
+  auto iter = std::find_if(frames.begin(), frames.end(), [this](auto* f) {
+    return f->GetRoutingID() == frame_id_;
+  });
+
+  if (iter != frames.end() && (*iter)->IsRenderFrameLive()) {
+    (*iter)->Send(new AtomFrameMsg_Message(frame_id_, true /* internal */,
+                                           false /* send_to_all */, channel,
+                                           args, sender_id));
   }
 
   Observe(nullptr);
