@@ -7,7 +7,7 @@ This tweaks Chrome's pepper flash and PDF plugin support to make it
 usable from Electron.
 
 diff --git a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
-index 37245c48cacbc5db164c61e4499f34ee83e0fce7..0fef12892e965e319e45f5dd1a9c5c9fc606aa9a 100644
+index 4bb88c55a82a83cef8330ec8157b49d5adb097ce..48f4e385a57eb0e00c90488fbf052900b6884775 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 @@ -7,10 +7,12 @@
@@ -31,8 +31,8 @@ index 37245c48cacbc5db164c61e4499f34ee83e0fce7..0fef12892e965e319e45f5dd1a9c5c9f
    Profile* profile =
        Profile::FromBrowserContext(render_process_host->GetBrowserContext());
    HostContentSettingsMap* content_settings =
-@@ -70,5 +73,6 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
-                                           std::string());
+@@ -68,5 +71,6 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
+       std::string());
    if (setting == CONTENT_SETTING_ALLOW)
      return PP_OK;
 -  return PP_ERROR_FAILED;

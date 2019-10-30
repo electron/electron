@@ -8,7 +8,7 @@ This is needed by Electron to allow apps to limit how much an app can zoom in
 or out.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 09c40ef119c90513a8f4782aa1a55117bb4a472d..cd824e67f49062cd1afc1dc0d855ce2b605a78b5 100644
+index c13511e26189e68376e29f38c4ae2e1cc8fd3c57..a5c4162b3c69b534f843e1b6737392c867fc88ea 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4124,10 +4124,18 @@ bool WebContentsImpl::GetClosedByUserGesture() {
@@ -31,7 +31,7 @@ index 09c40ef119c90513a8f4782aa1a55117bb4a472d..cd824e67f49062cd1afc1dc0d855ce2b
    return maximum_zoom_percent_;
  }
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 07eb7cba6c3d1a38c20bee7b38854c521fd1e187..4fd9a261f1c890639e4390939e17a214dac0bd57 100644
+index ea1b3581ead984ac084fc9a2b9daf85f6756ea5c..b967e02b4052426855a2af88abbced2076b3e04a 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -447,7 +447,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -44,7 +44,7 @@ index 07eb7cba6c3d1a38c20bee7b38854c521fd1e187..4fd9a261f1c890639e4390939e17a214
    int GetMaximumZoomPercent() override;
    void SetPageScale(float page_scale_factor) override;
    gfx::Size GetPreferredSize() override;
-@@ -1698,8 +1700,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1690,8 +1692,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    bool closed_by_user_gesture_;
  
    // Minimum/maximum zoom percent.

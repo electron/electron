@@ -6,10 +6,10 @@ Subject: Revert "Remove ContentRendererClient::ShouldFork."
 This reverts commit 6b068eb8ca4a3c7350bdafa22fc0cf0636ef8b74.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index ac9f74c68c0b954d606fce17456a7fbfba0c9e08..53f124514e2e60bf85161861060ab128af9f038b 100644
+index feea878036d61c2ed128b8e0397cfd6979eed04a..e53f7ea3d5d0fb0e02ca526042d7937a3b627936 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1227,6 +1227,25 @@ bool ChromeContentRendererClient::AllowPopup() {
+@@ -1225,6 +1225,25 @@ bool ChromeContentRendererClient::AllowPopup() {
  #endif
  }
  
@@ -36,10 +36,10 @@ index ac9f74c68c0b954d606fce17456a7fbfba0c9e08..53f124514e2e60bf85161861060ab128
      WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/chrome_content_renderer_client.h
-index 63be9235f7f6c66f49698ec05fed8581caaddac5..d306846f872ee27a07a67f80fc4dd8740458e47c 100644
+index 43000eb90bab005dcc058f38a5d791a3eee1cef2..de98288514c95f703d6ab3a70c6daad9943cf4f8 100644
 --- a/chrome/renderer/chrome_content_renderer_client.h
 +++ b/chrome/renderer/chrome_content_renderer_client.h
-@@ -137,6 +137,11 @@ class ChromeContentRendererClient
+@@ -136,6 +136,11 @@ class ChromeContentRendererClient
        base::SingleThreadTaskRunner* compositor_thread_task_runner) override;
    bool RunIdleHandlerWhenWidgetsHidden() override;
    bool AllowPopup() override;
@@ -89,10 +89,10 @@ index a05cef66facd477057fedb388e4000475bc76830..906920393c34043d19183064a2a4506c
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |attach_same_site_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index fb8061d229e29fb6ab028bbb4ea6f7c906869f9d..3f21a13c6a93e8005423a7d0ef8beae9e2dda86f 100644
+index 303365d0a682e548325da470eadc2ffefe954945..48cde344844d2792612d4a7b2c797d9ef6fec9f7 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6186,6 +6186,15 @@ void RenderFrameImpl::BeginNavigation(
+@@ -6184,6 +6184,15 @@ void RenderFrameImpl::BeginNavigation(
      int cumulative_bindings = RenderProcess::current()->GetEnabledBindings();
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (cumulative_bindings & kWebUIBindingsPolicyMask);
