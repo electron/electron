@@ -180,7 +180,7 @@ export const windowSetup = (
   if (guestInstanceId == null) {
     // Override default window.close.
     window.close = function () {
-      ipcRendererInternal.sendSync('ELECTRON_BROWSER_WINDOW_CLOSE')
+      ipcRendererInternal.send('ELECTRON_BROWSER_WINDOW_CLOSE')
     }
   }
 
