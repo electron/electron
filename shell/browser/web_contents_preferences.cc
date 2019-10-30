@@ -144,6 +144,9 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SetDefaultBoolIfUndefined(options::kSpellcheck, true);
+#endif
 
   // If this is a <webview> tag, and the embedder is offscreen-rendered, then
   // this WebContents is also offscreen-rendered.
@@ -413,6 +416,12 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
   if (IsEnabled(options::kNodeIntegrationInSubFrames))
     command_line->AppendSwitch(switches::kNodeIntegrationInSubFrames);
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  if (IsEnabled(options::kSpellcheck)) {
+    command_line->AppendSwitch(switches::kEnableSpellcheck);
+  }
+#endif
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
