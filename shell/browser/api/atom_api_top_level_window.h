@@ -184,9 +184,9 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
-  void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);
+  void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
   void RefreshTouchBarItem(const std::string& item_id);
-  void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
+  void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item);
   void SelectPreviousTab();
   void SelectNextTab();
   void MergeAllWindows();

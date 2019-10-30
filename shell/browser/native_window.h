@@ -39,11 +39,8 @@ class Size;
 
 namespace gin_helper {
 class Dictionary;
-}
-
-namespace mate {
 class PersistentDictionary;
-}
+}  // namespace gin_helper
 
 namespace electron {
 
@@ -198,10 +195,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVibrancy(const std::string& type);
 
   // Touchbar API
-  virtual void SetTouchBar(
-      const std::vector<mate::PersistentDictionary>& items);
+  virtual void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
   virtual void RefreshTouchBarItem(const std::string& item_id);
-  virtual void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
+  virtual void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item);
 
   // Native Tab API
   virtual void SelectPreviousTab();
