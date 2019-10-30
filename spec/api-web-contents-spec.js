@@ -1275,6 +1275,25 @@ describe('webContents module', () => {
       const data = await w.webContents.printToPDF({})
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
     })
+
+    it('does not crash when called multiple times', async () => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+      await w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
+      const promises = []
+      for (let i = 0; i < 2; i++) {
+        promises.push(w.webContents.printToPDF({}))
+      }
+      const results = await Promise.all(promises)
+      for (const data of results) {
+        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
+      }
+    })
   })
 
   describe('PictureInPicture video', () => {
