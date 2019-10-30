@@ -1,6 +1,6 @@
 {
   "baseUrl": "https://github.com/electron/electron-frameworks/releases/download",
-  "version": "v1.4.0",
+  "version": "v1.4.1",
   "binaries": [
     {
       "url": "Mantle.zip",
@@ -33,7 +33,7 @@
       "platform": "linux"
     },
     {
-      "url": "sccache-win32-x64-v2.zip",
+      "url": "sccache-win32-x64.zip",
       "platform": "win32"
     }
   ]
