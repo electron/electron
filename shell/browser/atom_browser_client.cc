@@ -11,6 +11,9 @@
 #include <memory>
 #include <utility>
 
+#include "components/network_hints/common/network_hints.mojom.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
+
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
@@ -71,7 +74,6 @@
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
-#include "shell/browser/renderer_host/electron_render_message_filter.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
@@ -367,8 +369,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     prefs.web_security = web_preferences->IsEnabled(options::kWebSecurity,
                                                     true /* default value */);
   }
-
-  host->AddFilter(new ElectronRenderMessageFilter(host->GetBrowserContext()));
 
   AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later
@@ -1096,6 +1096,42 @@ base::FilePath AtomBrowserClient::GetFontLookupTableCacheDir() {
 bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {
   // Enable site isolation. It is off by default in Chromium <= 69.
   return true;
+}
+
+class NetworkHintsHandlerImpl
+    : public network_hints::mojom::NetworkHintsHandler {
+ public:
+  ~NetworkHintsHandlerImpl() override {}
+
+  static void Create(
+      mojo::PendingReceiver<network_hints::mojom::NetworkHintsHandler>
+          receiver);
+
+  // network_hints::mojom::NetworkHintsHandler:
+  void PrefetchDNS(const std::vector<std::string>& names) override {}
+  void Preconnect(int32_t render_frame_id,
+                  const GURL& url,
+                  bool allow_credentials) override {}
+
+ private:
+  NetworkHintsHandlerImpl() {}
+  // base::WeakPtr<PreconnectManager> preconnect_manager_;
+};
+
+void NetworkHintsHandlerImpl::Create(
+    mojo::PendingReceiver<network_hints::mojom::NetworkHintsHandler> receiver) {
+  mojo::MakeSelfOwnedReceiver(base::WrapUnique(new NetworkHintsHandlerImpl()),
+                              std::move(receiver));
+}
+
+void AtomBrowserClient::BindHostReceiverForRenderer(
+    content::RenderProcessHost* render_process_host,
+    mojo::GenericPendingReceiver receiver) {
+  if (auto host_receiver =
+          receiver.As<network_hints::mojom::NetworkHintsHandler>()) {
+    NetworkHintsHandlerImpl::Create(std::move(host_receiver));
+    return;
+  }
 }
 
 }  // namespace electron

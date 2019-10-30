@@ -276,8 +276,6 @@ filenames = {
     "shell/browser/relauncher_win.cc",
     "shell/browser/relauncher.cc",
     "shell/browser/relauncher.h",
-    "shell/browser/renderer_host/electron_render_message_filter.cc",
-    "shell/browser/renderer_host/electron_render_message_filter.h",
     "shell/browser/session_preferences.cc",
     "shell/browser/session_preferences.h",
     "shell/browser/special_storage_policy.cc",
