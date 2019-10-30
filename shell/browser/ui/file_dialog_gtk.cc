@@ -54,9 +54,9 @@ class FileChooserDialog {
     if (!settings.button_label.empty())
       confirm_text = settings.button_label.c_str();
     else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
-      confirm_text = gtk_util::kOpenLabel;
-    else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
       confirm_text = gtk_util::kSaveLabel;
+    else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
+      confirm_text = gtk_util::kOpenLabel;
 
     dialog_ = gtk_file_chooser_dialog_new(
         settings.title.c_str(), nullptr, action, gtk_util::kCancelLabel,
