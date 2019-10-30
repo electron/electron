@@ -35,7 +35,11 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
       context_(isolate_, node::NewContext(isolate_)),
       context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {}
 
-JavascriptEnvironment::~JavascriptEnvironment() = default;
+JavascriptEnvironment::~JavascriptEnvironment() {
+  isolate_->Exit();
+  isolate_->Dispose();
+  isolate_ = nullptr;
+}
 
 v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* cmd = base::CommandLine::ForCurrentProcess();
@@ -75,6 +79,7 @@ void JavascriptEnvironment::OnMessageLoopCreated() {
 void JavascriptEnvironment::OnMessageLoopDestroying() {
   DCHECK(microtasks_runner_);
   base::MessageLoopCurrent::Get()->RemoveTaskObserver(microtasks_runner_.get());
+
   platform_->DrainTasks(isolate_);
   platform_->UnregisterIsolate(isolate_);
 }
