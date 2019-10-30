@@ -15,7 +15,7 @@
 
   const path = require('path')
   const electron = require('electron')
-  const { remote, ipcRenderer } = electron
+  const { ipcRenderer } = electron
 
   // Set up chai-as-promised here first to avoid conflicts
   // It must be loaded first or really strange things happen inside
@@ -23,32 +23,16 @@
   // DO NOT MOVE, REMOVE OR EDIT THIS LINE
   require('chai').use(require('chai-as-promised'))
 
-  // Check if we are running in CI.
-  const isCi = remote.getGlobal('isCi')
-
-  if (!isCi) {
-    const win = remote.getCurrentWindow()
-    win.show()
-    win.focus()
-  }
-
-  // Show DevTools.
-  document.oncontextmenu = (e) => {
-    remote.getCurrentWindow().inspectElement(e.clientX, e.clientY)
-  }
-
   // Rediret all output to browser.
-  if (isCi) {
-    const fakeConsole = {}
-    for (const k in console) {
-      if (console.hasOwnProperty(k) && k !== 'assert') {
-        fakeConsole[k] = (...args) => ipcRenderer.send('console-call', k, args)
-      }
+  const fakeConsole = {}
+  for (const k in console) {
+    if (console.hasOwnProperty(k) && k !== 'assert') {
+      fakeConsole[k] = (...args) => ipcRenderer.send('console-call', k, args)
     }
-    global.__defineGetter__('console', function () {
-      return fakeConsole
-    })
   }
+  global.__defineGetter__('console', function () {
+    return fakeConsole
+  })
 
   const Mocha = require('mocha')
   const mochaOptions = {}
@@ -63,9 +47,9 @@
   const mocha = new Mocha(mochaOptions)
 
   if (!process.env.MOCHA_REPORTER) {
-    mocha.ui('bdd').reporter(isCi ? 'tap' : 'html')
+    mocha.ui('bdd').reporter('tap')
   }
-  mocha.timeout(isCi ? 30000 : 10000)
+  mocha.timeout(30000)
 
   const query = Mocha.utils.parseQuery(window.location.search || '')
   if (query.grep) mocha.grep(query.grep)
@@ -97,7 +81,7 @@
       // Ensure the callback is called after runner is defined
       setTimeout(() => {
         Mocha.utils.highlightTags('code')
-        if (isCi) ipcRenderer.send('process.exit', runner.failures)
+        ipcRenderer.send('process.exit', runner.failures)
       }, 0)
     })
   })

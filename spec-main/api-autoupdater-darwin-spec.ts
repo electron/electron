@@ -24,7 +24,7 @@ describeFn('autoUpdater behavior', function () {
     if (result.status !== 0 || result.stdout.toString().trim().length === 0)  {
       // Per https://circleci.com/docs/2.0/env-vars:
       // CIRCLE_PR_NUMBER is only present on forked PRs
-      if (isCI && !process.env.CIRCLE_PR_NUMBER) {
+      if (process.env.CI && !process.env.CIRCLE_PR_NUMBER) {
         throw new Error('No valid signing identity available to run autoUpdater specs')
       }
       this.skip()
