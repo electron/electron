@@ -59,6 +59,11 @@
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "components/pdf/browser/pdf_web_contents_helper.h"         // nogncheck
+#include "components/pdf/browser/pdf_web_contents_helper_client.h"  // nogncheck
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -184,6 +189,24 @@ CommonWebContentsDelegate::CommonWebContentsDelegate()
 
 CommonWebContentsDelegate::~CommonWebContentsDelegate() = default;
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+class ElectronPDFWebContentsHelperClient
+    : public pdf::PDFWebContentsHelperClient {
+ public:
+  ElectronPDFWebContentsHelperClient() {}
+  ~ElectronPDFWebContentsHelperClient() override = default;
+
+ private:
+  // pdf::PDFWebContentsHelperClient
+  void UpdateContentRestrictions(content::WebContents* contents,
+                                 int content_restrictions) override {}
+  void OnPDFHasUnsupportedFeature(content::WebContents* contents) override {}
+  void OnSaveURL(content::WebContents* contents) override {}
+  void SetPluginCanSave(content::WebContents* contents,
+                        bool can_save) override {}
+};
+#endif
+
 void CommonWebContentsDelegate::InitWithWebContents(
     content::WebContents* web_contents,
     AtomBrowserContext* browser_context,
@@ -196,6 +219,11 @@ void CommonWebContentsDelegate::InitWithWebContents(
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
   printing::CreateCompositeClientIfNeeded(web_contents,
                                           browser_context->GetUserAgent());
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  pdf::PDFWebContentsHelper::CreateForWebContentsWithClient(
+      web_contents, std::make_unique<ElectronPDFWebContentsHelperClient>());
 #endif
 
   // Determien whether the WebContents is offscreen.
