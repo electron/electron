@@ -5,8 +5,8 @@
 #include "shell/common/api/atom_api_clipboard.h"
 
 #include "base/strings/utf_string_conversions.h"
-#include "shell/common/native_mate_converters/image_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
@@ -18,7 +18,7 @@ namespace electron {
 
 namespace api {
 
-ui::ClipboardBuffer Clipboard::GetClipboardBuffer(mate::Arguments* args) {
+ui::ClipboardBuffer Clipboard::GetClipboardBuffer(gin_helper::Arguments* args) {
   std::string type;
   if (args->GetNext(&type) && type == "selection")
     return ui::ClipboardBuffer::kSelection;
@@ -26,7 +26,8 @@ ui::ClipboardBuffer Clipboard::GetClipboardBuffer(mate::Arguments* args) {
     return ui::ClipboardBuffer::kCopyPaste;
 }
 
-std::vector<base::string16> Clipboard::AvailableFormats(mate::Arguments* args) {
+std::vector<base::string16> Clipboard::AvailableFormats(
+    gin_helper::Arguments* args) {
   std::vector<base::string16> format_types;
   bool ignore;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
@@ -35,7 +36,8 @@ std::vector<base::string16> Clipboard::AvailableFormats(mate::Arguments* args) {
   return format_types;
 }
 
-bool Clipboard::Has(const std::string& format_string, mate::Arguments* args) {
+bool Clipboard::Has(const std::string& format_string,
+                    gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::ClipboardFormatType format(
       ui::ClipboardFormatType::GetType(format_string));
@@ -53,7 +55,7 @@ std::string Clipboard::Read(const std::string& format_string) {
 }
 
 v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
-                                           mate::Arguments* args) {
+                                           gin_helper::Arguments* args) {
   std::string data = Read(format_string);
   return node::Buffer::Copy(args->isolate(), data.data(), data.length())
       .ToLocalChecked();
@@ -61,7 +63,7 @@ v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
 
 void Clipboard::WriteBuffer(const std::string& format,
                             const v8::Local<v8::Value> buffer,
-                            mate::Arguments* args) {
+                            gin_helper::Arguments* args) {
   if (!node::Buffer::HasInstance(buffer)) {
     args->ThrowError("buffer must be a node Buffer");
     return;
@@ -76,7 +78,8 @@ void Clipboard::WriteBuffer(const std::string& format,
       mojo_base::BigBuffer(payload_span));
 }
 
-void Clipboard::Write(const mate::Dictionary& data, mate::Arguments* args) {
+void Clipboard::Write(const gin_helper::Dictionary& data,
+                      gin_helper::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
   base::string16 text, html, bookmark;
   gfx::Image image;
@@ -100,7 +103,7 @@ void Clipboard::Write(const mate::Dictionary& data, mate::Arguments* args) {
     writer.WriteImage(image.AsBitmap());
 }
 
-base::string16 Clipboard::ReadText(mate::Arguments* args) {
+base::string16 Clipboard::ReadText(gin_helper::Arguments* args) {
   base::string16 data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   auto type = GetClipboardBuffer(args);
@@ -116,24 +119,25 @@ base::string16 Clipboard::ReadText(mate::Arguments* args) {
   return data;
 }
 
-void Clipboard::WriteText(const base::string16& text, mate::Arguments* args) {
+void Clipboard::WriteText(const base::string16& text,
+                          gin_helper::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
   writer.WriteText(text);
 }
 
-base::string16 Clipboard::ReadRTF(mate::Arguments* args) {
+base::string16 Clipboard::ReadRTF(gin_helper::Arguments* args) {
   std::string data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   clipboard->ReadRTF(GetClipboardBuffer(args), &data);
   return base::UTF8ToUTF16(data);
 }
 
-void Clipboard::WriteRTF(const std::string& text, mate::Arguments* args) {
+void Clipboard::WriteRTF(const std::string& text, gin_helper::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
   writer.WriteRTF(text);
 }
 
-base::string16 Clipboard::ReadHTML(mate::Arguments* args) {
+base::string16 Clipboard::ReadHTML(gin_helper::Arguments* args) {
   base::string16 data;
   base::string16 html;
   std::string url;
@@ -145,15 +149,17 @@ base::string16 Clipboard::ReadHTML(mate::Arguments* args) {
   return data;
 }
 
-void Clipboard::WriteHTML(const base::string16& html, mate::Arguments* args) {
+void Clipboard::WriteHTML(const base::string16& html,
+                          gin_helper::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
   writer.WriteHTML(html, std::string());
 }
 
-v8::Local<v8::Value> Clipboard::ReadBookmark(mate::Arguments* args) {
+v8::Local<v8::Value> Clipboard::ReadBookmark(gin_helper::Arguments* args) {
   base::string16 title;
   std::string url;
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(args->isolate());
+  gin_helper::Dictionary dict =
+      gin_helper::Dictionary::CreateEmpty(args->isolate());
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   clipboard->ReadBookmark(&title, &url);
   dict.Set("title", title);
@@ -163,18 +169,19 @@ v8::Local<v8::Value> Clipboard::ReadBookmark(mate::Arguments* args) {
 
 void Clipboard::WriteBookmark(const base::string16& title,
                               const std::string& url,
-                              mate::Arguments* args) {
+                              gin_helper::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
   writer.WriteBookmark(title, url);
 }
 
-gfx::Image Clipboard::ReadImage(mate::Arguments* args) {
+gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   SkBitmap bitmap = clipboard->ReadImage(GetClipboardBuffer(args));
   return gfx::Image::CreateFrom1xBitmap(bitmap);
 }
 
-void Clipboard::WriteImage(const gfx::Image& image, mate::Arguments* args) {
+void Clipboard::WriteImage(const gfx::Image& image,
+                           gin_helper::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
   SkBitmap orig = image.AsBitmap();
   SkBitmap bmp;
@@ -192,7 +199,7 @@ base::string16 Clipboard::ReadFindText() {
 }
 #endif
 
-void Clipboard::Clear(mate::Arguments* args) {
+void Clipboard::Clear(gin_helper::Arguments* args) {
   ui::Clipboard::GetForCurrentThread()->Clear(GetClipboardBuffer(args));
 }
 
@@ -206,7 +213,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("availableFormats",
                  &electron::api::Clipboard::AvailableFormats);
   dict.SetMethod("has", &electron::api::Clipboard::Has);

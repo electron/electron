@@ -18,16 +18,14 @@
 #include "base/threading/thread_restrictions.h"
 #include "chrome/common/chrome_version.h"
 #include "electron/electron_version.h"
-#include "native_mate/dictionary.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "shell/browser/browser.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/heap_snapshot.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
@@ -57,7 +55,7 @@ ElectronBindings::~ElectronBindings() {
 
 // static
 void ElectronBindings::BindProcess(v8::Isolate* isolate,
-                                   mate::Dictionary* process,
+                                   gin_helper::Dictionary* process,
                                    base::ProcessMetrics* metrics) {
   // These bindings are shared between sandboxed & unsandboxed renderers
   process->SetMethod("crash", &Crash);
@@ -89,7 +87,7 @@ void ElectronBindings::BindTo(v8::Isolate* isolate,
                               v8::Local<v8::Object> process) {
   isolate->SetFatalErrorHandler(FatalErrorCallback);
 
-  mate::Dictionary dict(isolate, process);
+  gin_helper::Dictionary dict(isolate, process);
   BindProcess(isolate, &dict, metrics_.get());
 
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
@@ -100,7 +98,7 @@ void ElectronBindings::BindTo(v8::Isolate* isolate,
                  base::BindRepeating(&ElectronBindings::ActivateUVLoop,
                                      base::Unretained(this)));
 
-  mate::Dictionary versions;
+  gin_helper::Dictionary versions;
   if (dict.Get("versions", &versions)) {
     versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
     versions.SetReadOnly("chrome", CHROME_VERSION_STRING);
@@ -201,7 +199,7 @@ v8::Local<v8::Value> ElectronBindings::GetCreationTime(v8::Isolate* isolate) {
 // static
 v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
     v8::Isolate* isolate,
-    mate::Arguments* args) {
+    gin_helper::Arguments* args) {
   base::SystemMemoryInfoKB mem_info;
   if (!base::GetSystemMemoryInfo(&mem_info)) {
     args->ThrowError("Unable to retrieve system memory information");
@@ -233,7 +231,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 // static
 v8::Local<v8::Promise> ElectronBindings::GetProcessMemoryInfo(
     v8::Isolate* isolate) {
-  util::Promise<mate::Dictionary> promise(isolate);
+  util::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (gin_helper::Locker::IsBrowserProcess() && !Browser::Get()->is_ready()) {
@@ -267,7 +265,7 @@ v8::Local<v8::Value> ElectronBindings::GetBlinkMemoryInfo(
 // static
 void ElectronBindings::DidReceiveMemoryDump(
     v8::Global<v8::Context> context,
-    util::Promise<mate::Dictionary> promise,
+    util::Promise<gin_helper::Dictionary> promise,
     bool success,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
   v8::Isolate* isolate = promise.isolate();
@@ -287,14 +285,14 @@ void ElectronBindings::DidReceiveMemoryDump(
   for (const memory_instrumentation::GlobalMemoryDump::ProcessDump& dump :
        global_dump->process_dumps()) {
     if (base::GetCurrentProcId() == dump.pid()) {
-      mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+      gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
       const auto& osdump = dump.os_dump();
 #if defined(OS_LINUX) || defined(OS_WIN)
       dict.Set("residentSet", osdump.resident_set_kb);
 #endif
       dict.Set("private", osdump.private_footprint_kb);
       dict.Set("shared", osdump.shared_footprint_kb);
-      promise.Resolve(dict);
+      promise.ResolveWithGin(dict);
       resolved = true;
       break;
     }
