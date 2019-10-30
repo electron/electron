@@ -13,9 +13,10 @@
 #include "shell/common/api/object_life_monitor.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
 #include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/once_callback.h"
 #include "shell/common/promise_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -472,8 +473,8 @@ void ExposeAPIInMainWorld(const std::string& key,
     return;
   }
 
-  v8::Local<v8::Context> isolated_context =
-      frame->WorldScriptContext(args->isolate(), atom::World::ISOLATED_WORLD);
+  v8::Local<v8::Context> isolated_context = frame->WorldScriptContext(
+      args->isolate(), electron::World::ISOLATED_WORLD);
 
   v8::Context::Scope main_context_scope(main_context);
   {
@@ -491,7 +492,7 @@ void ExposeAPIInMainWorld(const std::string& key,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -501,9 +502,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("exposeAPIInMainWorld", &atom::api::ExposeAPIInMainWorld);
+  dict.SetMethod("exposeAPIInMainWorld", &electron::api::ExposeAPIInMainWorld);
 #ifdef DCHECK_IS_ON
-  dict.SetMethod("_debugGCMaps", &atom::api::DebugGC);
+  dict.SetMethod("_debugGCMaps", &electron::api::DebugGC);
 #endif
 }
 

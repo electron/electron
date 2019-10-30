@@ -8,7 +8,7 @@
 
 #include "shell/common/api/object_life_monitor.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -142,4 +142,4 @@ v8::MaybeLocal<v8::Value> RenderFramePersistenceStore::GetCachedProxiedObject(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
