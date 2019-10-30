@@ -378,10 +378,9 @@ void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
 
   for (auto& pair : options) {
     std::string& key = pair.first;
-    std::unique_ptr<base::Value>& val = pair.second;
-    if (!key.empty() && val->is_string()) {
+    if (!key.empty() && pair.second->is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
-      about_panel_options_.Set(key, std::move(val));
+      about_panel_options_.Set(key, std::move(pair.second));
     }
   }
 }
