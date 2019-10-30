@@ -47,7 +47,7 @@ class Cookies : public gin_helper::TrackableObject<Cookies> {
   ~Cookies() override;
 
   v8::Local<v8::Promise> Get(const gin_helper::Dictionary& filter);
-  v8::Local<v8::Promise> Set(const base::DictionaryValue& details);
+  v8::Local<v8::Promise> Set(base::DictionaryValue details);
   v8::Local<v8::Promise> Remove(const GURL& url, const std::string& name);
   v8::Local<v8::Promise> FlushStore();
 

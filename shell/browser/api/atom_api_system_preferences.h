@@ -62,24 +62,22 @@ class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
   void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
 
 #elif defined(OS_MACOSX)
-  using NotificationCallback =
-      base::RepeatingCallback<void(const std::string&,
-                                   const base::DictionaryValue&,
-                                   const std::string&)>;
+  using NotificationCallback = base::RepeatingCallback<
+      void(const std::string&, base::DictionaryValue, const std::string&)>;
 
   void PostNotification(const std::string& name,
-                        const base::DictionaryValue& user_info,
+                        base::DictionaryValue user_info,
                         gin_helper::Arguments* args);
   int SubscribeNotification(const std::string& name,
                             const NotificationCallback& callback);
   void UnsubscribeNotification(int id);
   void PostLocalNotification(const std::string& name,
-                             const base::DictionaryValue& user_info);
+                             base::DictionaryValue user_info);
   int SubscribeLocalNotification(const std::string& name,
                                  const NotificationCallback& callback);
   void UnsubscribeLocalNotification(int request_id);
   void PostWorkspaceNotification(const std::string& name,
-                                 const base::DictionaryValue& user_info);
+                                 base::DictionaryValue user_info);
   int SubscribeWorkspaceNotification(const std::string& name,
                                      const NotificationCallback& callback);
   void UnsubscribeWorkspaceNotification(int request_id);

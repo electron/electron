@@ -259,9 +259,8 @@ float NativeImage::GetAspectRatio() {
     return static_cast<float>(size.width()) / static_cast<float>(size.height());
 }
 
-gin::Handle<NativeImage> NativeImage::Resize(
-    v8::Isolate* isolate,
-    const base::DictionaryValue& options) {
+gin::Handle<NativeImage> NativeImage::Resize(v8::Isolate* isolate,
+                                             base::DictionaryValue options) {
   gfx::Size size = GetSize();
   int width = size.width();
   int height = size.height();

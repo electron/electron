@@ -81,7 +81,7 @@ AtomBrowserContext::BrowserContextMap AtomBrowserContext::browser_context_map_;
 
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory,
-                                       const base::DictionaryValue& options)
+                                       base::DictionaryValue options)
     : base::RefCountedDeleteOnSequence<AtomBrowserContext>(
           base::ThreadTaskRunnerHandle::Get()),
       in_memory_pref_store_(nullptr),
@@ -358,13 +358,14 @@ ResolveProxyHelper* AtomBrowserContext::GetResolveProxyHelper() {
 scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
     const std::string& partition,
     bool in_memory,
-    const base::DictionaryValue& options) {
+    base::DictionaryValue options) {
   PartitionKey key(partition, in_memory);
   auto* browser_context = browser_context_map_[key].get();
   if (browser_context)
     return scoped_refptr<AtomBrowserContext>(browser_context);
 
-  auto* new_context = new AtomBrowserContext(partition, in_memory, options);
+  auto* new_context =
+      new AtomBrowserContext(partition, in_memory, std::move(options));
   browser_context_map_[key] = new_context->GetWeakPtr();
   return scoped_refptr<AtomBrowserContext>(new_context);
 }
