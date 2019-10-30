@@ -18,6 +18,7 @@
 #include "shell/common/deprecate_util.h"
 #include "shell/common/keyboard_util.h"
 #include "shell/common/native_mate_converters/value_converter.h"
+#include "third_party/blink/public/common/context_menu_data/edit_flags.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/platform/web_keyboard_event.h"
 #include "third_party/blink/public/platform/web_mouse_event.h"
@@ -345,21 +346,21 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<blink::WebContextMenuData::MediaType>::ToV8(
+v8::Local<v8::Value> Converter<blink::ContextMenuDataMediaType>::ToV8(
     v8::Isolate* isolate,
-    const blink::WebContextMenuData::MediaType& in) {
+    const blink::ContextMenuDataMediaType& in) {
   switch (in) {
-    case blink::WebContextMenuData::kMediaTypeImage:
+    case blink::ContextMenuDataMediaType::kImage:
       return mate::StringToV8(isolate, "image");
-    case blink::WebContextMenuData::kMediaTypeVideo:
+    case blink::ContextMenuDataMediaType::kVideo:
       return mate::StringToV8(isolate, "video");
-    case blink::WebContextMenuData::kMediaTypeAudio:
+    case blink::ContextMenuDataMediaType::kAudio:
       return mate::StringToV8(isolate, "audio");
-    case blink::WebContextMenuData::kMediaTypeCanvas:
+    case blink::ContextMenuDataMediaType::kCanvas:
       return mate::StringToV8(isolate, "canvas");
-    case blink::WebContextMenuData::kMediaTypeFile:
+    case blink::ContextMenuDataMediaType::kFile:
       return mate::StringToV8(isolate, "file");
-    case blink::WebContextMenuData::kMediaTypePlugin:
+    case blink::ContextMenuDataMediaType::kPlugin:
       return mate::StringToV8(isolate, "plugin");
     default:
       return mate::StringToV8(isolate, "none");
@@ -367,15 +368,15 @@ v8::Local<v8::Value> Converter<blink::WebContextMenuData::MediaType>::ToV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<blink::WebContextMenuData::InputFieldType>::ToV8(
+v8::Local<v8::Value> Converter<blink::ContextMenuDataInputFieldType>::ToV8(
     v8::Isolate* isolate,
-    const blink::WebContextMenuData::InputFieldType& in) {
+    const blink::ContextMenuDataInputFieldType& in) {
   switch (in) {
-    case blink::WebContextMenuData::kInputFieldTypePlainText:
+    case blink::ContextMenuDataInputFieldType::kPlainText:
       return mate::StringToV8(isolate, "plainText");
-    case blink::WebContextMenuData::kInputFieldTypePassword:
+    case blink::ContextMenuDataInputFieldType::kPassword:
       return mate::StringToV8(isolate, "password");
-    case blink::WebContextMenuData::kInputFieldTypeOther:
+    case blink::ContextMenuDataInputFieldType::kOther:
       return mate::StringToV8(isolate, "other");
     default:
       return mate::StringToV8(isolate, "none");
@@ -384,13 +385,16 @@ v8::Local<v8::Value> Converter<blink::WebContextMenuData::InputFieldType>::ToV8(
 
 v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.Set("canUndo", !!(editFlags & blink::WebContextMenuData::kCanUndo));
-  dict.Set("canRedo", !!(editFlags & blink::WebContextMenuData::kCanRedo));
-  dict.Set("canCut", !!(editFlags & blink::WebContextMenuData::kCanCut));
-  dict.Set("canCopy", !!(editFlags & blink::WebContextMenuData::kCanCopy));
+  dict.Set("canUndo",
+           !!(editFlags & blink::ContextMenuDataEditFlags::kCanUndo));
+  dict.Set("canRedo",
+           !!(editFlags & blink::ContextMenuDataEditFlags::kCanRedo));
+  dict.Set("canCut", !!(editFlags & blink::ContextMenuDataEditFlags::kCanCut));
+  dict.Set("canCopy",
+           !!(editFlags & blink::ContextMenuDataEditFlags::kCanCopy));
 
   bool pasteFlag = false;
-  if (editFlags & blink::WebContextMenuData::kCanPaste) {
+  if (editFlags & blink::ContextMenuDataEditFlags::kCanPaste) {
     std::vector<base::string16> types;
     bool ignore;
     ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
@@ -399,9 +403,10 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
   }
   dict.Set("canPaste", pasteFlag);
 
-  dict.Set("canDelete", !!(editFlags & blink::WebContextMenuData::kCanDelete));
+  dict.Set("canDelete",
+           !!(editFlags & blink::ContextMenuDataEditFlags::kCanDelete));
   dict.Set("canSelectAll",
-           !!(editFlags & blink::WebContextMenuData::kCanSelectAll));
+           !!(editFlags & blink::ContextMenuDataEditFlags::kCanSelectAll));
 
   return mate::ConvertToV8(isolate, dict);
 }

@@ -44,19 +44,18 @@ struct Converter<blink::WebDeviceEmulationParams> {
 };
 
 template <>
-struct Converter<blink::WebContextMenuData::MediaType> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const blink::WebContextMenuData::MediaType& in) {
+struct Converter<blink::ContextMenuDataMediaType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::ContextMenuDataMediaType& in) {
     return mate::ConvertToV8(isolate, in);
   }
 };
 
 template <>
-struct Converter<blink::WebContextMenuData::InputFieldType> {
+struct Converter<blink::ContextMenuDataInputFieldType> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const blink::WebContextMenuData::InputFieldType& in) {
+      const blink::ContextMenuDataInputFieldType& in) {
     return mate::ConvertToV8(isolate, in);
   }
 };
