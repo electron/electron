@@ -3,6 +3,7 @@ if (!process.env.CI) require('dotenv-safe').load()
 const assert = require('assert')
 const request = require('request')
 const buildAppVeyorURL = 'https://ci.appveyor.com/api/builds'
+const circleCIPipelineURL = 'https://circleci.com/api/v2/project/gh/electron/electron/pipeline'
 const vstsURL = 'https://github.visualstudio.com/electron/_apis/build'
 
 const appVeyorJobs = {
@@ -55,30 +56,87 @@ async function makeRequest (requestOptions, parseResponse) {
   })
 }
 
-async function circleCIcall (buildUrl, targetBranch, job, options) {
+async function circleCIcall (targetBranch, job, options) {
   console.log(`Triggering CircleCI to run build job: ${job} on branch: ${targetBranch} with release flag.`)
   const buildRequest = {
-    'build_parameters': {
-      'CIRCLE_JOB': job
+    'branch': targetBranch,
+    'parameters': {
+      'run-lint': false,
+      'run-build-linux': false,
+      'run-build-mac': false
     }
   }
-
-  if (!options.ghRelease) {
-    buildRequest.build_parameters.UPLOAD_TO_S3 = 1
+  if (options.ghRelease) {
+    buildRequest.parameters['upload-to-s3'] = '0'
+  } else {
+    buildRequest.parameters['upload-to-s3'] = '1'
   }
+  buildRequest.parameters[`run-${job}`] = true
   jobRequestedCount++
-  const circleResponse = await makeRequest({
-    method: 'POST',
-    url: buildUrl,
+  // The logic below expects that the CircleCI workflows for releases each
+  // contain only one job in order to maintain compatibility with sudowoodo.
+  // If the workflows are changed in the CircleCI config.yml, this logic will
+  // also need to be changed as well as possibly changing sudowoodo.
+  try {
+    const circleResponse = await circleCIRequest(circleCIPipelineURL, 'POST', buildRequest)
+    console.log(`CircleCI release build pipeline ${circleResponse.id} for ${job} triggered.`)
+    const pipelineInfoUrl = `https://circleci.com/api/v2/pipeline/${circleResponse.id}`
+    const workflowId = await getCircleCIWorkflowId(circleResponse.id)
+    if (workflowId === -1) {
+      return
+    }
+    console.log(`CircleCI release build workflow running at https://circleci.com/workflow-run/${workflowId} for ${job}.`)
+    const jobInfoUrl = `https://circleci.com/api/v2/workflow/${workflowId}/jobs`
+    const jobInfo = await circleCIRequest(jobInfoUrl, 'GET')
+    if (!jobInfo.items || jobInfo.items.length !== 1) {
+      console.log('Error retrieving job for workflow, response was:', jobInfo)
+      return
+    }
+    const jobUrl = `https://circleci.com/gh/electron/electron/${jobInfo.items[0].job_number}`
+    console.log(`CircleCI release build request for ${job} successful.  Check ${jobUrl} for status.`)
+  } catch (err) {
+    console.log('Error calling CircleCI: ', err)
+  }
+}
+
+async function getCircleCIWorkflowId (pipelineId) {
+  const pipelineInfoUrl = `https://circleci.com/api/v2/pipeline/${pipelineId}`
+  for (let i = 0; i < 5; i++) {
+    const pipelineInfo = await circleCIRequest(pipelineInfoUrl, 'GET')
+    switch (pipelineInfo.state) {
+      case 'created': {
+        if (pipelineInfo.workflows.length === 1) {
+          return pipelineInfo.workflows[0].id
+        }
+        console.log('Unxpected number of workflows, response was:', pipelineInfo)
+        return -1
+      }
+      case 'error': {
+        console.log('Error retrieving workflows, response was:', pipelineInfo)
+        return -1
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, 5000))
+  }
+  return -1
+}
+
+async function circleCIRequest (url, method, requestBody) {
+  return makeRequest({
+    auth: {
+      username: process.env.CIRCLE_TOKEN,
+      password: ''
+    },
+    method,
+    url,
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
-    body: JSON.stringify(buildRequest)
+    body: requestBody ? JSON.stringify(requestBody) : null
   }, true).catch(err => {
     console.log('Error calling CircleCI:', err)
   })
-  console.log(`CircleCI release build request for ${job} successful.  Check ${circleResponse.build_url} for status.`)
 }
 
 function buildAppVeyor (targetBranch, options) {
@@ -126,12 +184,11 @@ async function callAppVeyor (targetBranch, job, options) {
 }
 
 function buildCircleCI (targetBranch, options) {
-  const circleBuildUrl = `https://circleci.com/api/v1.1/project/github/electron/electron/tree/${targetBranch}?circle-token=${process.env.CIRCLE_TOKEN}`
   if (options.job) {
     assert(circleCIJobs.includes(options.job), `Unknown CircleCI job name: ${options.job}. Valid values are: ${circleCIJobs}.`)
-    circleCIcall(circleBuildUrl, targetBranch, options.job, options)
+    circleCIcall(targetBranch, options.job, options)
   } else {
-    circleCIJobs.forEach((job) => circleCIcall(circleBuildUrl, targetBranch, job, options))
+    circleCIJobs.forEach((job) => circleCIcall(targetBranch, job, options))
   }
 }
 
