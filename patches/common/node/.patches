@@ -45,3 +45,4 @@ fix_set_uptime_offset_in_correct_init_method.patch
 fsevents-stop-using-fsevents-to-watch-files.patch
 fsevents-regression-in-watching.patch
 build_bring_back_node_with_ltcg_configuration.patch
+fix_uv_fs_mkdir_for_invalid_names.patch

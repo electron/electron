@@ -188,6 +188,7 @@ step-install-nodejs-on-mac: &step-install-nodejs-on-mac
     name: Install Node.js 10 on MacOS
     command: |
       if [ "`uname`" == "Darwin" ]; then
+        set +e
         brew update
         brew install node@10
         echo 'export PATH="/usr/local/opt/node@10/bin:$PATH"' >> $BASH_ENV
