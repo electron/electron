@@ -466,7 +466,7 @@ get the list of supported language codes with the `ses.availableSpellCheckerLang
 
 #### `ses.getSpellCheckerLanguages()`
 
-Returns `String[]` asn array of language codes the spellchecker is enabled for.  If this list is empty the spellchecker
+Returns `String[]` - An array of language codes the spellchecker is enabled for.  If this list is empty the spellchecker
 will fallback to using `en-US`.  By default on launch if this setting is an empty list Electron will try to populate this
 setting with the current OS locale.  This setting is persisted across restarts.
 
