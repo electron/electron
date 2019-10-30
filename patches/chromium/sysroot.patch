@@ -20,7 +20,7 @@ index 165551a2948b74c024459be42d1a9a3d96878a10..5c9272a512e22dfe2e90f6665083f53f
 -URL_PREFIX = 'https://commondatastorage.googleapis.com'
 -URL_PATH = 'chrome-linux-sysroot/toolchain'
 +URL_PREFIX = 'http://s3.amazonaws.com'
-+URL_PATH = 'gh-contractor-zcbenz/toolchain'
++URL_PATH = 'electronjs-sysroots/toolchain'
  
  VALID_ARCHS = ('arm', 'arm64', 'i386', 'amd64', 'mips', 'mips64el')
  
