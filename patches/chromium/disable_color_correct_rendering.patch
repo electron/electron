@@ -266,10 +266,18 @@ index 84af6512284655c8781fd839fc50cd3a75395889..d51198f40580d023d2bfcb6a131b7e5a
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 1aedba288aed698fd1b7ac6a4ef1a67fc892f84a..df2b5b120483225c2bd21a337e6085dbceca4ec4 100644
+index 1aedba288aed698fd1b7ac6a4ef1a67fc892f84a..0113b09e2f2bb85b4ec43a90503b9ed98e42fd0f 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-@@ -12,6 +12,7 @@
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/platform/graphics/canvas_color_params.h"
+ 
++#include "base/command_line.h"
+ #include "cc/paint/skia_paint_canvas.h"
+ #include "components/viz/common/resources/resource_format_utils.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+@@ -12,6 +13,7 @@
  #include "third_party/khronos/GLES3/gl3.h"
  #include "third_party/skia/include/core/SkSurfaceProps.h"
  #include "ui/gfx/color_space.h"
@@ -277,7 +285,7 @@ index 1aedba288aed698fd1b7ac6a4ef1a67fc892f84a..df2b5b120483225c2bd21a337e6085db
  
  namespace blink {
  
-@@ -89,6 +90,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
+@@ -89,6 +91,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
@@ -289,7 +297,7 @@ index 1aedba288aed698fd1b7ac6a4ef1a67fc892f84a..df2b5b120483225c2bd21a337e6085db
    gfx::ColorSpace::PrimaryID primary_id = GetPrimaryID(color_space_);
  
    // TODO(ccameron): This needs to take into account whether or not this texture
-@@ -102,6 +108,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
+@@ -102,6 +109,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {
