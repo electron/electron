@@ -1284,5 +1284,30 @@ describe('webContents module', () => {
       })
       w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
     })
+
+    it('does not crash when called multiple times', (done) => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+      w.webContents.once('did-finish-load', () => {
+        const count = 2
+        let current = 0
+        for (let i = 0; i < count; i++) {
+          w.webContents.printToPDF({}, function (error, data) {
+            assert.strictEqual(error, null)
+            assert.strictEqual(data instanceof Buffer, true)
+            assert.notStrictEqual(data.length, 0)
+            if (++current === count) {
+              done()
+            }
+          })
+        }
+      })
+      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
+    })
   })
 })
