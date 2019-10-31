@@ -312,7 +312,7 @@ source_set("manifests") {
   ]
 
   if (enable_builtin_spellchecker) {
-    deps += [ ":chrome_spellchecker" ]
+    deps += [ "//components/spellcheck/common:interfaces" ]
   }
 }
 
@@ -340,58 +340,6 @@ templated_file("electron_version_header") {
   output = "$target_gen_dir/electron_version.h"
 
   args_files = get_target_outputs(":electron_version_args")
-}
-
-# This source set is just so we don't have to depend on all of //chrome/browser
-# You may have to add new files here during the upgrade if //chrome/browser/spellchecker
-# gets more files
-source_set("chrome_spellchecker") {
-  sources = [
-    "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
-    "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
-    "//chrome/browser/spellchecker/spellcheck_custom_dictionary.cc",
-    "//chrome/browser/spellchecker/spellcheck_custom_dictionary.h",
-    "//chrome/browser/spellchecker/spellcheck_factory.cc",
-    "//chrome/browser/spellchecker/spellcheck_factory.h",
-    "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc",
-    "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h",
-    "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.cc",
-    "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.h",
-    "//chrome/browser/spellchecker/spellcheck_language_policy_handler.cc",
-    "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
-    "//chrome/browser/spellchecker/spellcheck_service.cc",
-    "//chrome/browser/spellchecker/spellcheck_service.h",
-  ]
-
-  if (has_spellcheck_panel) {
-    sources += [
-      "//chrome/browser/spellchecker/spell_check_panel_host_impl.cc",
-      "//chrome/browser/spellchecker/spell_check_panel_host_impl.h",
-    ]
-  }
-
-  if (use_browser_spellchecker) {
-    sources += [
-      "//chrome/browser/spellchecker/spelling_request.cc",
-      "//chrome/browser/spellchecker/spelling_request.h",
-    ]
-  }
-
-  public_configs = [
-    ":branding",
-    ":electron_lib_config",
-  ]
-
-  deps = [
-    ":resources",
-    "//base:base_static",
-    "//components/language/core/browser",
-    "//components/spellcheck:buildflags",
-    "//components/spellcheck/browser",
-    "//components/spellcheck/common",
-    "//components/spellcheck/renderer",
-    "//components/sync",
-  ]
 }
 
 source_set("electron_lib") {
@@ -538,12 +486,7 @@ source_set("electron_lib") {
   }
 
   if (enable_builtin_spellchecker) {
-    deps += [
-      ":chrome_spellchecker",
-      "//components/spellcheck/browser",
-      "//components/spellcheck/common",
-      "//components/spellcheck/renderer",
-    ]
+    deps += [ "chromium_src:chrome_spellchecker" ]
   }
 
   if (is_mac) {

@@ -538,7 +538,7 @@ step-mksnapshot-store: &step-mksnapshot-store
 
 step-hunspell-build: &step-hunspell-build
   run:
-    name: mksnapshot build
+    name: hunspell build
     command: |
       cd src
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
