@@ -69,6 +69,35 @@ v8::Local<v8::Promise::Resolver> PromiseBase::GetInner() const {
   return resolver_.Get(isolate());
 }
 
+// static
+void Promise<void*>::ResolveEmptyPromise(Promise<void*> promise) {
+  if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+    base::PostTask(
+        FROM_HERE, {content::BrowserThread::UI},
+        base::BindOnce([](Promise<void*> promise) { promise.Resolve(); },
+                       std::move(promise)));
+  } else {
+    promise.Resolve();
+  }
+}
+
+// static
+v8::Local<v8::Promise> Promise<void*>::ResolvedPromise(v8::Isolate* isolate) {
+  Promise<void*> resolved(isolate);
+  resolved.Resolve();
+  return resolved.GetHandle();
+}
+
+v8::Maybe<bool> Promise<void*>::Resolve() {
+  v8::HandleScope handle_scope(isolate());
+  v8::MicrotasksScope script_scope(isolate(),
+                                   v8::MicrotasksScope::kRunMicrotasks);
+  v8::Context::Scope context_scope(
+      v8::Local<v8::Context>::New(isolate(), GetContext()));
+
+  return GetInner()->Resolve(GetContext(), v8::Undefined(isolate()));
+}
+
 }  // namespace util
 
 }  // namespace electron

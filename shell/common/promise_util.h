@@ -19,7 +19,13 @@ namespace electron {
 
 namespace util {
 
-// Non-template base class to share code between templates instances.
+// A wrapper around the v8::Promise.
+//
+// This is the non-template base class to share code between templates
+// instances.
+//
+// This is a move-only type that should always be `std::move`d when passed to
+// callbacks, and it should be destroyed on the same thread of creation.
 class PromiseBase {
  public:
   explicit PromiseBase(v8::Isolate* isolate);
@@ -29,6 +35,20 @@ class PromiseBase {
   // Support moving.
   PromiseBase(PromiseBase&&);
   PromiseBase& operator=(PromiseBase&&);
+
+  // Helpers for promise resolution and rejection.
+  static void RejectPromise(PromiseBase&& promise, base::StringPiece errmsg) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                     base::BindOnce(
+                         [](PromiseBase&& promise, base::StringPiece err) {
+                           promise.RejectWithErrorMessage(err);
+                         },
+                         std::move(promise), std::move(errmsg)));
+    } else {
+      promise.RejectWithErrorMessage(errmsg);
+    }
+  }
 
   v8::Maybe<bool> Reject();
   v8::Maybe<bool> Reject(v8::Local<v8::Value> except);
@@ -50,19 +70,11 @@ class PromiseBase {
   DISALLOW_COPY_AND_ASSIGN(PromiseBase);
 };
 
-// A wrapper around the v8::Promise.
-//
-// This is a move-only type that should always be `std::move`d when passed to
-// callbacks, and it should be destroyed on the same thread of creation.
+// Template implementation that returns values.
 template <typename RT>
 class Promise : public PromiseBase {
  public:
-  // Create a new promise.
-  explicit Promise(v8::Isolate* isolate) : PromiseBase(isolate) {}
-
-  // Wrap an existing v8 promise.
-  Promise(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle)
-      : PromiseBase(isolate, handle) {}
+  using PromiseBase::PromiseBase;
 
   // Helpers for promise resolution and rejection.
   static void ResolvePromise(Promise<RT> promise, RT result) {
@@ -76,30 +88,6 @@ class Promise : public PromiseBase {
     }
   }
 
-  static void ResolveEmptyPromise(Promise<RT> promise) {
-    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTask(
-          FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce([](Promise<RT> promise) { promise.Resolve(); },
-                         std::move(promise)));
-    } else {
-      promise.Resolve();
-    }
-  }
-
-  static void RejectPromise(Promise<RT> promise, base::StringPiece errmsg) {
-    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                     base::BindOnce(
-                         [](Promise<RT> promise, base::StringPiece err) {
-                           promise.RejectWithErrorMessage(err);
-                         },
-                         std::move(promise), std::move(errmsg)));
-    } else {
-      promise.RejectWithErrorMessage(errmsg);
-    }
-  }
-
   // Returns an already-resolved promise.
   static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate,
                                                 RT result) {
@@ -108,29 +96,9 @@ class Promise : public PromiseBase {
     return resolved.GetHandle();
   }
 
-  static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate) {
-    Promise<void*> resolved(isolate);
-    resolved.Resolve();
-    return resolved.GetHandle();
-  }
-
-  v8::Maybe<bool> Resolve() {
-    static_assert(std::is_same<void*, RT>(),
-                  "Can only resolve void* promises with no value");
-    v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
-    v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), GetContext()));
-
-    return GetInner()->Resolve(GetContext(), v8::Undefined(isolate()));
-  }
-
   // Promise resolution is a microtask
   // We use the MicrotasksRunner to trigger the running of pending microtasks
   v8::Maybe<bool> Resolve(const RT& value) {
-    static_assert(!std::is_same<void*, RT>(),
-                  "void* promises can not be resolved with a value");
     v8::HandleScope handle_scope(isolate());
     v8::MicrotasksScope script_scope(isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
@@ -160,6 +128,18 @@ class Promise : public PromiseBase {
 
     return GetHandle()->Then(GetContext(), handler);
   }
+};
+
+// Template implementation that returns nothing.
+template <>
+class Promise<void*> : public PromiseBase {
+ public:
+  using PromiseBase::PromiseBase;
+
+  static void ResolveEmptyPromise(Promise<void*> promise);
+  static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate);
+
+  v8::Maybe<bool> Resolve();
 };
 
 }  // namespace util
