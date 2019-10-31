@@ -13,8 +13,8 @@
 #include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
-#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
@@ -75,7 +75,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
             const std::string& channel,
             v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!mate::ConvertFromV8(isolate, arguments, &message)) {
+    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
       return;
     }
     electron_browser_ptr_->get()->Message(internal, channel,
@@ -87,7 +87,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
                                 const std::string& channel,
                                 v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!mate::ConvertFromV8(isolate, arguments, &message)) {
+    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
       return v8::Local<v8::Promise>();
     }
     electron::util::Promise<blink::CloneableMessage> p(isolate);
@@ -110,7 +110,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
               const std::string& channel,
               v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!mate::ConvertFromV8(isolate, arguments, &message)) {
+    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
       return;
     }
     electron_browser_ptr_->get()->MessageTo(
@@ -121,7 +121,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
                   const std::string& channel,
                   v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!mate::ConvertFromV8(isolate, arguments, &message)) {
+    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
       return;
     }
     electron_browser_ptr_->get()->MessageHost(channel, std::move(message));
@@ -132,7 +132,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
                                    const std::string& channel,
                                    v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!mate::ConvertFromV8(isolate, arguments, &message)) {
+    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
       return blink::CloneableMessage();
     }
     // We aren't using a true synchronous mojo call here. We're calling an

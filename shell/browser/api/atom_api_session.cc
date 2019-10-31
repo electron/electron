@@ -57,7 +57,7 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -665,19 +665,19 @@ gin::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
 }
 
 // static
-gin::Handle<Session> Session::FromPartition(
-    v8::Isolate* isolate,
-    const std::string& partition,
-    const base::DictionaryValue& options) {
+gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
+                                            const std::string& partition,
+                                            base::DictionaryValue options) {
   scoped_refptr<AtomBrowserContext> browser_context;
   if (partition.empty()) {
-    browser_context = AtomBrowserContext::From("", false, options);
+    browser_context = AtomBrowserContext::From("", false, std::move(options));
   } else if (base::StartsWith(partition, kPersistPrefix,
                               base::CompareCase::SENSITIVE)) {
     std::string name = partition.substr(8);
-    browser_context = AtomBrowserContext::From(name, false, options);
+    browser_context = AtomBrowserContext::From(name, false, std::move(options));
   } else {
-    browser_context = AtomBrowserContext::From(partition, true, options);
+    browser_context =
+        AtomBrowserContext::From(partition, true, std::move(options));
   }
   return CreateFrom(isolate, browser_context.get());
 }
@@ -743,7 +743,8 @@ v8::Local<v8::Value> FromPartition(const std::string& partition,
   }
   base::DictionaryValue options;
   args->GetNext(&options);
-  return Session::FromPartition(args->isolate(), partition, options).ToV8();
+  return Session::FromPartition(args->isolate(), partition, std::move(options))
+      .ToV8();
 }
 
 void Initialize(v8::Local<v8::Object> exports,

@@ -47,7 +47,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   static gin::Handle<Session> FromPartition(
       v8::Isolate* isolate,
       const std::string& partition,
-      const base::DictionaryValue& options = base::DictionaryValue());
+      base::DictionaryValue options = base::DictionaryValue());
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 

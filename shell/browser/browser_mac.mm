@@ -141,7 +141,7 @@ bool Browser::SetBadgeCount(int count) {
 }
 
 void Browser::SetUserActivity(const std::string& type,
-                              const base::DictionaryValue& user_info,
+                              base::DictionaryValue user_info,
                               gin_helper::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
@@ -167,7 +167,7 @@ void Browser::ResignCurrentActivity() {
 }
 
 void Browser::UpdateCurrentActivity(const std::string& type,
-                                    const base::DictionaryValue& user_info) {
+                                    base::DictionaryValue user_info) {
   [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
                withUserInfo:DictionaryValueToNSDictionary(user_info)];
@@ -187,7 +187,7 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   const base::DictionaryValue& user_info) {
+                                   base::DictionaryValue user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnContinueUserActivity(&prevent_default, type, user_info);
@@ -195,13 +195,13 @@ bool Browser::ContinueUserActivity(const std::string& type,
 }
 
 void Browser::UserActivityWasContinued(const std::string& type,
-                                       const base::DictionaryValue& user_info) {
+                                       base::DictionaryValue user_info) {
   for (BrowserObserver& observer : observers_)
     observer.OnUserActivityWasContinued(type, user_info);
 }
 
 bool Browser::UpdateUserActivityState(const std::string& type,
-                                      const base::DictionaryValue& user_info) {
+                                      base::DictionaryValue user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnUpdateUserActivityState(&prevent_default, type, user_info);
@@ -373,15 +373,14 @@ void Browser::ShowAboutPanel() {
       orderFrontStandardAboutPanelWithOptions:options];
 }
 
-void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
+void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
   about_panel_options_.Clear();
 
-  for (const auto& pair : options) {
-    std::string key = pair.first;
-    const auto& val = pair.second;
-    if (!key.empty() && val->is_string()) {
+  for (auto& pair : options) {
+    std::string& key = pair.first;
+    if (!key.empty() && pair.second->is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
-      about_panel_options_.SetString(key, val->GetString());
+      about_panel_options_.Set(key, std::move(pair.second));
     }
   }
 }

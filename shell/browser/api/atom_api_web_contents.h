@@ -186,7 +186,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   void Print(gin_helper::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   // Print current page as PDF.
-  v8::Local<v8::Promise> PrintToPDF(const base::DictionaryValue& settings);
+  v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
 #endif
 
   // DevTools workspace api.

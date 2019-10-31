@@ -5,7 +5,7 @@
 #include "shell/browser/api/atom_api_system_preferences.h"
 
 #include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"

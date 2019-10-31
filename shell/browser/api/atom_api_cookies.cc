@@ -21,7 +21,7 @@
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/common/gin_converters/gurl_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 
@@ -230,7 +230,7 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
   return handle;
 }
 
-v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
+v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
   util::Promise<void*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 

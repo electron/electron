@@ -27,7 +27,7 @@
 #include "shell/browser/ui/cocoa/NSColor+Hex.h"
 #include "shell/common/deprecate_util.h"
 #include "shell/common/gin_converters/gurl_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "ui/native_theme/native_theme.h"
 
 namespace gin {
@@ -121,7 +121,7 @@ std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
 }  // namespace
 
 void SystemPreferences::PostNotification(const std::string& name,
-                                         const base::DictionaryValue& user_info,
+                                         base::DictionaryValue user_info,
                                          gin_helper::Arguments* args) {
   bool immediate = false;
   args->GetNext(&immediate);
@@ -145,9 +145,8 @@ void SystemPreferences::UnsubscribeNotification(int request_id) {
   DoUnsubscribeNotification(request_id, kNSDistributedNotificationCenter);
 }
 
-void SystemPreferences::PostLocalNotification(
-    const std::string& name,
-    const base::DictionaryValue& user_info) {
+void SystemPreferences::PostLocalNotification(const std::string& name,
+                                              base::DictionaryValue user_info) {
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center postNotificationName:base::SysUTF8ToNSString(name)
                         object:nil
@@ -166,7 +165,7 @@ void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
 
 void SystemPreferences::PostWorkspaceNotification(
     const std::string& name,
-    const base::DictionaryValue& user_info) {
+    base::DictionaryValue user_info) {
   NSNotificationCenter* center =
       [[NSWorkspace sharedWorkspace] notificationCenter];
   [center postNotificationName:base::SysUTF8ToNSString(name)
@@ -211,17 +210,15 @@ int SystemPreferences::DoSubscribeNotification(
                   object:nil
                    queue:nil
               usingBlock:^(NSNotification* notification) {
-                std::unique_ptr<base::DictionaryValue> user_info =
-                    NSDictionaryToDictionaryValue(notification.userInfo);
-
                 std::string object = "";
                 if ([notification.object isKindOfClass:[NSString class]]) {
                   object = base::SysNSStringToUTF8(notification.object);
                 }
 
-                if (user_info) {
+                if (notification.userInfo) {
                   copied_callback.Run(
-                      base::SysNSStringToUTF8(notification.name), *user_info,
+                      base::SysNSStringToUTF8(notification.name),
+                      NSDictionaryToDictionaryValue(notification.userInfo),
                       object);
                 } else {
                   copied_callback.Run(
@@ -276,17 +273,11 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
     return gin::ConvertToV8(isolate(),
                             net::GURLWithNSURL([defaults URLForKey:key]));
   } else if (type == "array") {
-    std::unique_ptr<base::ListValue> list =
-        NSArrayToListValue([defaults arrayForKey:key]);
-    if (list == nullptr)
-      list.reset(new base::ListValue());
-    return gin::ConvertToV8(isolate(), *list);
+    return gin::ConvertToV8(isolate(),
+                            NSArrayToListValue([defaults arrayForKey:key]));
   } else if (type == "dictionary") {
-    std::unique_ptr<base::DictionaryValue> dictionary =
-        NSDictionaryToDictionaryValue([defaults dictionaryForKey:key]);
-    if (dictionary == nullptr)
-      dictionary.reset(new base::DictionaryValue());
-    return gin::ConvertToV8(isolate(), *dictionary);
+    return gin::ConvertToV8(isolate(), NSDictionaryToDictionaryValue(
+                                           [defaults dictionaryForKey:key]));
   } else {
     return v8::Undefined(isolate());
   }

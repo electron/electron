@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Save Dialog</title>
+  </head>
+
+  <body>
+    <div>
+      <h1>Use system dialogs</h1>
+
+      <h3>
+        The <code>dialog</code> module in Electron allows you to use native
+        system dialogs for opening files or directories, saving a file or
+        displaying informational messages.
+      </h3>
+
+      <p>
+        This is a main process module because this process is more efficient
+        with native utilities and it allows the call to happen without
+        interrupting the visible elements in your page's renderer process.
+      </p>
+
+      <p>
+        Open the
+        <a href="http://electron.atom.io/docs/api/dialog/">
+          full API documentation (opens in new window)
+        </a>
+        in your browser.
+      </p>
+    </div>
+
+    <div>
+      <div>
+        <h2>Save Dialog</h2>
+        <div>
+          <div>
+            <button button id="save-dialog">View Demo</button>
+            <span id="file-saved"></span>
+          </div>
+          <p>
+            In this demo, the <code>ipc</code> module is used to send a message
+            from the renderer process instructing the main process to launch the
+            save dialog. It returns the path selected by the user which can be
+            relayed back to the renderer process.
+          </p>
+          <h5>Renderer Process</h5>
+          <pre>
+            <code>
+const {ipcRenderer} = require('electron')
+
+const saveBtn = document.getElementById('save-dialog')
+
+saveBtn.addEventListener('click', (event) => {
+  ipcRenderer.send('save-dialog')
+})
+
+ipcRenderer.on('saved-file', (event, path) => {
+  if (!path) path = 'No path'
+  document.getElementById('file-saved').innerHTML = `Path selected: ${path}`
+})
+            </code>
+          </pre>
+          <h5>Main Process</h5>
+          <pre>
+            <code>
+const {ipcMain, dialog} = require('electron')
+
+ipcMain.on('save-dialog', (event) => {
+  const options = {
+    title: 'Save an Image',
+    filters: [
+      { name: 'Images', extensions: ['jpg', 'png', 'gif'] }
+    ]
+  }
+  dialog.showSaveDialog(options, (filename) => {
+    event.sender.send('saved-file', filename)
+  })
+})
+            </code>
+          </pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // You can also require other files to run in this process
+      require("./renderer.js");
+    </script>
+  </body>
+</html>

@@ -69,7 +69,7 @@ void CallTranslater(v8::Local<v8::External> external,
 struct DeleteOnUIThread {
   template <typename T>
   static void Destruct(const T* x) {
-    if (mate::Locker::IsBrowserProcess() &&
+    if (gin_helper::Locker::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
                                          x);

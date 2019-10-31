@@ -2,14 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 
 #include <memory>
+#include <utility>
 
 #include "base/values.h"
-#include "shell/common/native_mate_converters/v8_value_converter.h"
+#include "shell/common/v8_value_converter.h"
 
-namespace mate {
+namespace gin {
 
 bool Converter<base::DictionaryValue>::FromV8(v8::Isolate* isolate,
                                               v8::Local<v8::Value> val,
@@ -39,7 +40,7 @@ bool Converter<base::Value>::FromV8(v8::Isolate* isolate,
   std::unique_ptr<base::Value> value(
       converter.FromV8Value(val, isolate->GetCurrentContext()));
   if (value) {
-    *out = value->Clone();
+    *out = std::move(*value);
     return true;
   } else {
     return false;
@@ -73,4 +74,4 @@ v8::Local<v8::Value> Converter<base::ListValue>::ToV8(
   return converter.ToV8Value(&val, isolate->GetCurrentContext());
 }
 
-}  // namespace mate
+}  // namespace gin

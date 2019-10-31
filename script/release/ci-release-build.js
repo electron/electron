@@ -311,7 +311,6 @@ function runRelease (targetBranch, options) {
   } else {
     buildCircleCI(targetBranch, options)
     buildAppVeyor(targetBranch, options)
-    buildVSTS(targetBranch, options)
   }
   console.log(`${jobRequestedCount} jobs were requested.`)
 }

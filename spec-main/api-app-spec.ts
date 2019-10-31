@@ -128,7 +128,7 @@ describe('app module', () => {
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
       let expectedLength = 2
-      if (isCI && process.platform === 'linux') {
+      if (process.platform === 'linux') {
         // Linux CI machines have no locale.
         expectedLength = 0
       }
@@ -142,13 +142,7 @@ describe('app module', () => {
     })
   })
 
-  describe('app.isInApplicationsFolder()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  ifdescribe(process.platform === 'darwin')('app.isInApplicationsFolder()', () => {
     it('should be false during tests', () => {
       expect(app.isInApplicationsFolder()).to.equal(false)
     })
@@ -897,22 +891,14 @@ describe('app module', () => {
     })
   })
 
-  describe('getFileIcon() API', () => {
+  // FIXME Get these specs running on Linux CI
+  ifdescribe(process.platform !== 'linux')('getFileIcon() API', () => {
     const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
     const sizes = {
       small: 16,
       normal: 32,
       large: process.platform === 'win32' ? 32 : 48
     }
-
-    // (alexeykuzmin): `.skip()` called in `before`
-    // doesn't affect nested `describe`s.
-    beforeEach(function () {
-      // FIXME Get these specs running on Linux CI
-      if (process.platform === 'linux' && isCI) {
-        this.skip()
-      }
-    })
 
     it('fetches a non-empty icon', async () => {
       const icon = await app.getFileIcon(iconPath)

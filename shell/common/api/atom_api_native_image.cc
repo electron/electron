@@ -18,7 +18,7 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -259,9 +259,8 @@ float NativeImage::GetAspectRatio() {
     return static_cast<float>(size.width()) / static_cast<float>(size.height());
 }
 
-gin::Handle<NativeImage> NativeImage::Resize(
-    v8::Isolate* isolate,
-    const base::DictionaryValue& options) {
+gin::Handle<NativeImage> NativeImage::Resize(v8::Isolate* isolate,
+                                             base::DictionaryValue options) {
   gfx::Size size = GetSize();
   int width = size.width();
   int height = size.height();

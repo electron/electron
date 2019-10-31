@@ -5,8 +5,6 @@
 #ifndef SHELL_BROWSER_MAC_DICT_UTIL_H_
 #define SHELL_BROWSER_MAC_DICT_UTIL_H_
 
-#include <memory>
-
 #import <Foundation/Foundation.h>
 
 namespace base {
@@ -17,13 +15,9 @@ class DictionaryValue;
 namespace electron {
 
 NSArray* ListValueToNSArray(const base::ListValue& value);
-
-std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr);
-
+base::ListValue NSArrayToListValue(NSArray* arr);
 NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value);
-
-std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
-    NSDictionary* dict);
+base::DictionaryValue NSDictionaryToDictionaryValue(NSDictionary* dict);
 
 }  // namespace electron
 

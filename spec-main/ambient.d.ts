@@ -1,4 +1,3 @@
-declare let isCI: boolean
 declare let standardScheme: string
 
 declare namespace Electron {

@@ -5,11 +5,11 @@
 #include "shell/browser/api/atom_api_top_level_window.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
-#include "native_mate/persistent_dictionary.h"
 #include "shell/browser/api/atom_api_browser_view.h"
 #include "shell/browser/api/atom_api_menu.h"
 #include "shell/browser/api/atom_api_view.h"
@@ -20,9 +20,10 @@
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 
@@ -809,8 +810,8 @@ void TopLevelWindow::SetVibrancy(v8::Isolate* isolate,
 }
 
 void TopLevelWindow::SetTouchBar(
-    const std::vector<mate::PersistentDictionary>& items) {
-  window_->SetTouchBar(items);
+    std::vector<gin_helper::PersistentDictionary> items) {
+  window_->SetTouchBar(std::move(items));
 }
 
 void TopLevelWindow::RefreshTouchBarItem(const std::string& item_id) {
@@ -818,8 +819,8 @@ void TopLevelWindow::RefreshTouchBarItem(const std::string& item_id) {
 }
 
 void TopLevelWindow::SetEscapeTouchBarItem(
-    const mate::PersistentDictionary& item) {
-  window_->SetEscapeTouchBarItem(item);
+    gin_helper::PersistentDictionary item) {
+  window_->SetEscapeTouchBarItem(std::move(item));
 }
 
 void TopLevelWindow::SelectPreviousTab() {

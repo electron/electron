@@ -31,7 +31,7 @@ class PrintPreviewMessageHandler
  public:
   ~PrintPreviewMessageHandler() override;
 
-  void PrintToPDF(const base::DictionaryValue& options,
+  void PrintToPDF(base::DictionaryValue options,
                   util::Promise<v8::Local<v8::Value>> promise);
 
  protected:

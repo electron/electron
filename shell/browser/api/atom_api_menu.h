@@ -12,7 +12,7 @@
 #include "gin/arguments.h"
 #include "shell/browser/api/atom_api_top_level_window.h"
 #include "shell/browser/ui/atom_menu_model.h"
-#include "shell/common/api/locker.h"
+#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
