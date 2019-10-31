@@ -4,6 +4,8 @@
 
 #include "shell/browser/network_hints_handler_impl.h"
 
+#include <utility>
+
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"

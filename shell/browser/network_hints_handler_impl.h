@@ -23,7 +23,7 @@ class NetworkHintsHandlerImpl
                   bool allow_credentials) override;
 
  private:
-  NetworkHintsHandlerImpl(int32_t render_process_id);
+  explicit NetworkHintsHandlerImpl(int32_t render_process_id);
 
   int32_t render_process_id_;
 };
