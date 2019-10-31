@@ -762,18 +762,6 @@ network::mojom::NetworkContext* AtomBrowserClient::GetSystemNetworkContext() {
   return g_browser_process->system_network_context_manager()->GetContext();
 }
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-void AtomBrowserClient::BindHostReceiverForRenderer(
-    content::RenderProcessHost* render_process_host,
-    mojo::GenericPendingReceiver receiver) {
-  if (auto host_receiver = receiver.As<spellcheck::mojom::SpellCheckHost>()) {
-    SpellCheckHostChromeImpl::Create(render_process_host->GetID(),
-                                     std::move(host_receiver));
-    return;
-  }
-}
-#endif
-
 base::Optional<service_manager::Manifest>
 AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
   if (name == content::mojom::kBrowserServiceName)
@@ -1106,6 +1094,14 @@ void AtomBrowserClient::BindHostReceiverForRenderer(
                                     std::move(host_receiver));
     return;
   }
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  if (auto host_receiver = receiver.As<spellcheck::mojom::SpellCheckHost>()) {
+    SpellCheckHostChromeImpl::Create(render_process_host->GetID(),
+                                     std::move(host_receiver));
+    return;
+  }
+#endif
 }
 
 }  // namespace electron
