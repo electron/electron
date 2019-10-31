@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 31 Oct 2019 14:22:50 -0700
+Subject: backport: fix MSSTL compat in ui/events
+
+Upstream: https://chromium-review.googlesource.com/c/chromium/src/+/1893754
+
+diff --git a/ui/events/blink/prediction/linear_resampling.cc b/ui/events/blink/prediction/linear_resampling.cc
+index e2a8757b779ba270cd3ae8f1735543be3cc324e0..2b2efe7f132055dfc1f650707a9cbb7a5842ca1a 100644
+--- a/ui/events/blink/prediction/linear_resampling.cc
++++ b/ui/events/blink/prediction/linear_resampling.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "ui/events/blink/prediction/linear_resampling.h"
+ 
++#include <algorithm>
++
+ #include "ui/events/blink/prediction/predictor_factory.h"
+ 
+ namespace ui {
