@@ -36,7 +36,10 @@ class PromiseBase {
   PromiseBase(PromiseBase&&);
   PromiseBase& operator=(PromiseBase&&);
 
-  // Helpers for promise resolution and rejection.
+  // Helper for rejecting promise with error message.
+  //
+  // Note: The parameter type is PromiseBase&& so it can take the instances of
+  // Promise<T> type.
   static void RejectPromise(PromiseBase&& promise, base::StringPiece errmsg) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       base::PostTask(FROM_HERE, {content::BrowserThread::UI},
@@ -76,7 +79,7 @@ class Promise : public PromiseBase {
  public:
   using PromiseBase::PromiseBase;
 
-  // Helpers for promise resolution and rejection.
+  // Helper for resolving the promise with |result|.
   static void ResolvePromise(Promise<RT> promise, RT result) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       base::PostTask(FROM_HERE, {content::BrowserThread::UI},
@@ -132,11 +135,14 @@ class Promise : public PromiseBase {
 
 // Template implementation that returns nothing.
 template <>
-class Promise<void*> : public PromiseBase {
+class Promise<void> : public PromiseBase {
  public:
   using PromiseBase::PromiseBase;
 
-  static void ResolveEmptyPromise(Promise<void*> promise);
+  // Helper for resolving the empty promise.
+  static void ResolveEmptyPromise(Promise<void> promise);
+
+  // Returns an already-resolved promise.
   static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate);
 
   v8::Maybe<bool> Resolve();

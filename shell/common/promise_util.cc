@@ -70,11 +70,11 @@ v8::Local<v8::Promise::Resolver> PromiseBase::GetInner() const {
 }
 
 // static
-void Promise<void*>::ResolveEmptyPromise(Promise<void*> promise) {
+void Promise<void>::ResolveEmptyPromise(Promise<void> promise) {
   if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
     base::PostTask(
         FROM_HERE, {content::BrowserThread::UI},
-        base::BindOnce([](Promise<void*> promise) { promise.Resolve(); },
+        base::BindOnce([](Promise<void> promise) { promise.Resolve(); },
                        std::move(promise)));
   } else {
     promise.Resolve();
@@ -82,13 +82,13 @@ void Promise<void*>::ResolveEmptyPromise(Promise<void*> promise) {
 }
 
 // static
-v8::Local<v8::Promise> Promise<void*>::ResolvedPromise(v8::Isolate* isolate) {
-  Promise<void*> resolved(isolate);
+v8::Local<v8::Promise> Promise<void>::ResolvedPromise(v8::Isolate* isolate) {
+  Promise<void> resolved(isolate);
   resolved.Resolve();
   return resolved.GetHandle();
 }
 
-v8::Maybe<bool> Promise<void*>::Resolve() {
+v8::Maybe<bool> Promise<void>::Resolve() {
   v8::HandleScope handle_scope(isolate());
   v8::MicrotasksScope script_scope(isolate(),
                                    v8::MicrotasksScope::kRunMicrotasks);

@@ -208,7 +208,7 @@ v8::Local<v8::Promise> Cookies::Get(const gin_helper::Dictionary& filter) {
 
 v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
                                        const std::string& name) {
-  util::Promise<void*> promise(isolate());
+  util::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto cookie_deletion_filter = network::mojom::CookieDeletionFilter::New();
@@ -222,8 +222,8 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
   manager->DeleteCookies(
       std::move(cookie_deletion_filter),
       base::BindOnce(
-          [](util::Promise<void*> promise, uint32_t num_deleted) {
-            util::Promise<void*>::ResolveEmptyPromise(std::move(promise));
+          [](util::Promise<void> promise, uint32_t num_deleted) {
+            util::Promise<void>::ResolveEmptyPromise(std::move(promise));
           },
           std::move(promise)));
 
@@ -231,7 +231,7 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
 }
 
 v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
-  util::Promise<void*> promise(isolate());
+  util::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   const std::string* url_string = details.FindStringKey("url");
@@ -296,7 +296,7 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
   manager->SetCanonicalCookie(
       *canonical_cookie, url.scheme(), options,
       base::BindOnce(
-          [](util::Promise<void*> promise,
+          [](util::Promise<void> promise,
              net::CanonicalCookie::CookieInclusionStatus status) {
             if (status.IsInclude()) {
               promise.Resolve();
@@ -310,7 +310,7 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
 }
 
 v8::Local<v8::Promise> Cookies::FlushStore() {
-  util::Promise<void*> promise(isolate());
+  util::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
@@ -318,7 +318,7 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
   manager->FlushCookieStore(base::BindOnce(
-      util::Promise<void*>::ResolveEmptyPromise, std::move(promise)));
+      util::Promise<void>::ResolveEmptyPromise, std::move(promise)));
 
   return handle;
 }

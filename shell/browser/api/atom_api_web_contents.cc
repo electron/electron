@@ -1494,7 +1494,7 @@ std::string WebContents::GetUserAgent() {
 v8::Local<v8::Promise> WebContents::SavePage(
     const base::FilePath& full_file_path,
     const content::SavePageType& save_type) {
-  util::Promise<void*> promise(isolate());
+  util::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* handler = new SavePageHandler(web_contents(), std::move(promise));
@@ -2433,7 +2433,7 @@ void WebContents::GrantOriginAccess(const GURL& url) {
 
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     const base::FilePath& file_path) {
-  util::Promise<void*> promise(isolate());
+  util::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::ThreadRestrictions::ScopedAllowIO allow_io;
@@ -2462,7 +2462,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
       mojo::WrapPlatformFile(file.TakePlatformFile()),
       base::BindOnce(
           [](mojo::AssociatedRemote<mojom::ElectronRenderer>* ep,
-             util::Promise<void*> promise, bool success) {
+             util::Promise<void> promise, bool success) {
             if (success) {
               promise.Resolve();
             } else {

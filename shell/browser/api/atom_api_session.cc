@@ -279,13 +279,13 @@ v8::Local<v8::Promise> Session::GetCacheSize() {
 
 v8::Local<v8::Promise> Session::ClearCache() {
   auto* isolate = v8::Isolate::GetCurrent();
-  util::Promise<void*> promise(isolate);
+  util::Promise<void> promise(isolate);
   auto handle = promise.GetHandle();
 
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
       ->ClearHttpCache(base::Time(), base::Time::Max(), nullptr,
-                       base::BindOnce(util::Promise<void*>::ResolveEmptyPromise,
+                       base::BindOnce(util::Promise<void>::ResolveEmptyPromise,
                                       std::move(promise)));
 
   return handle;
@@ -293,7 +293,7 @@ v8::Local<v8::Promise> Session::ClearCache() {
 
 v8::Local<v8::Promise> Session::ClearStorageData(gin_helper::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise<void*> promise(isolate);
+  util::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   ClearStorageDataOptions options;
@@ -310,7 +310,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin_helper::Arguments* args) {
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin, base::Time(),
       base::Time::Max(),
-      base::BindOnce(util::Promise<void*>::ResolveEmptyPromise,
+      base::BindOnce(util::Promise<void>::ResolveEmptyPromise,
                      std::move(promise)));
   return handle;
 }
@@ -323,7 +323,7 @@ void Session::FlushStorageData() {
 
 v8::Local<v8::Promise> Session::SetProxy(gin_helper::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise<void*> promise(isolate);
+  util::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   gin_helper::Dictionary options;
@@ -356,7 +356,7 @@ v8::Local<v8::Promise> Session::SetProxy(gin_helper::Arguments* args) {
   }
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::BindOnce(util::Promise<void*>::ResolveEmptyPromise,
+      FROM_HERE, base::BindOnce(util::Promise<void>::ResolveEmptyPromise,
                                 std::move(promise)));
 
   return handle;
@@ -458,13 +458,13 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
 v8::Local<v8::Promise> Session::ClearHostResolverCache(
     gin_helper::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise<void*> promise(isolate);
+  util::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
       ->ClearHostCache(nullptr,
-                       base::BindOnce(util::Promise<void*>::ResolveEmptyPromise,
+                       base::BindOnce(util::Promise<void>::ResolveEmptyPromise,
                                       std::move(promise)));
 
   return handle;
@@ -472,15 +472,14 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(
 
 v8::Local<v8::Promise> Session::ClearAuthCache() {
   auto* isolate = v8::Isolate::GetCurrent();
-  util::Promise<void*> promise(isolate);
+  util::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
       ->ClearHttpAuthCache(
-          base::Time(),
-          base::BindOnce(util::Promise<void*>::ResolveEmptyPromise,
-                         std::move(promise)));
+          base::Time(), base::BindOnce(util::Promise<void>::ResolveEmptyPromise,
+                                       std::move(promise)));
 
   return handle;
 }

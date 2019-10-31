@@ -62,7 +62,7 @@ base::File OpenFileForWriting(base::FilePath path) {
                     base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
 }
 
-void ResolvePromiseWithNetError(util::Promise<void*> promise, int32_t error) {
+void ResolvePromiseWithNetError(util::Promise<void> promise, int32_t error) {
   if (error == net::OK) {
     promise.Resolve();
   } else {
@@ -117,7 +117,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
     return v8::Local<v8::Promise>();
   }
 
-  pending_start_promise_ = base::make_optional<util::Promise<void*>>(isolate());
+  pending_start_promise_ = base::make_optional<util::Promise<void>>(isolate());
   v8::Local<v8::Promise> handle = pending_start_promise_->GetHandle();
 
   auto command_line_string =
@@ -187,7 +187,7 @@ bool NetLog::IsCurrentlyLogging() const {
 }
 
 v8::Local<v8::Promise> NetLog::StopLogging(gin_helper::Arguments* args) {
-  util::Promise<void*> promise(isolate());
+  util::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (net_log_exporter_) {
@@ -197,7 +197,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(gin_helper::Arguments* args) {
     net_log_exporter_->Stop(
         base::Value(base::Value::Type::DICTIONARY),
         base::BindOnce(
-            [](network::mojom::NetLogExporterPtr, util::Promise<void*> promise,
+            [](network::mojom::NetLogExporterPtr, util::Promise<void> promise,
                int32_t error) {
               ResolvePromiseWithNetError(std::move(promise), error);
             },

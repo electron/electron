@@ -113,18 +113,18 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
 v8::Local<v8::Promise> StartTracing(
     v8::Isolate* isolate,
     const base::trace_event::TraceConfig& trace_config) {
-  electron::util::Promise<void*> promise(isolate);
+  electron::util::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!TracingController::GetInstance()->StartTracing(
           trace_config,
-          base::BindOnce(electron::util::Promise<void*>::ResolveEmptyPromise,
+          base::BindOnce(electron::util::Promise<void>::ResolveEmptyPromise,
                          std::move(promise)))) {
     // If StartTracing returns false, that means it didn't invoke its callback.
     // Return an already-resolved promise and abandon the previous promise (it
     // was std::move()d into the StartTracing callback and has been deleted by
     // this point).
-    return electron::util::Promise<void*>::ResolvedPromise(isolate);
+    return electron::util::Promise<void>::ResolvedPromise(isolate);
   }
   return handle;
 }

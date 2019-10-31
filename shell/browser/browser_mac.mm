@@ -314,7 +314,7 @@ bool Browser::DockIsVisible() {
 }
 
 v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
-  util::Promise<void*> promise(isolate);
+  util::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   BOOL active = [[NSRunningApplication currentApplication] isActive];
@@ -328,7 +328,7 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
       [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
       break;
     }
-    __block util::Promise<void*> p = std::move(promise);
+    __block util::Promise<void> p = std::move(promise);
     dispatch_time_t one_ms = dispatch_time(DISPATCH_TIME_NOW, USEC_PER_SEC);
     dispatch_after(one_ms, dispatch_get_main_queue(), ^{
       TransformProcessType(&psn, kProcessTransformToForegroundApplication);

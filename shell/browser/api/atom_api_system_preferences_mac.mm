@@ -444,7 +444,7 @@ bool SystemPreferences::CanPromptTouchID() {
 v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     v8::Isolate* isolate,
     const std::string& reason) {
-  util::Promise<void*> promise(isolate);
+  util::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (@available(macOS 10.12.2, *)) {
@@ -461,7 +461,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     scoped_refptr<base::SequencedTaskRunner> runner =
         base::SequencedTaskRunnerHandle::Get();
 
-    __block util::Promise<void*> p = std::move(promise);
+    __block util::Promise<void> p = std::move(promise);
     [context
         evaluateAccessControl:access_control
                     operation:LAAccessControlOperationUseKeySign
@@ -473,13 +473,13 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
                             runner->PostTask(
                                 FROM_HERE,
                                 base::BindOnce(
-                                    util::Promise<void*>::RejectPromise,
+                                    util::Promise<void>::RejectPromise,
                                     std::move(p), std::move(err_msg)));
                           } else {
                             runner->PostTask(
                                 FROM_HERE,
                                 base::BindOnce(
-                                    util::Promise<void*>::ResolveEmptyPromise,
+                                    util::Promise<void>::ResolveEmptyPromise,
                                     std::move(p)));
                           }
                         }];

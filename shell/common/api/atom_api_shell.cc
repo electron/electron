@@ -44,7 +44,7 @@ struct Converter<base::win::ShortcutOperation> {
 
 namespace {
 
-void OnOpenExternalFinished(electron::util::Promise<void*> promise,
+void OnOpenExternalFinished(electron::util::Promise<void> promise,
                             const std::string& error) {
   if (error.empty())
     promise.Resolve();
@@ -53,7 +53,7 @@ void OnOpenExternalFinished(electron::util::Promise<void*> promise,
 }
 
 v8::Local<v8::Promise> OpenExternal(const GURL& url, gin::Arguments* args) {
-  electron::util::Promise<void*> promise(args->isolate());
+  electron::util::Promise<void> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   platform_util::OpenExternalOptions options;
