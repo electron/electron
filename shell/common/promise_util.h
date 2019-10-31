@@ -14,6 +14,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/gin_converters/std_converter.h"
+#include "shell/common/gin_helper/locker.h"
 
 namespace electron {
 
@@ -41,7 +42,8 @@ class PromiseBase {
   // Note: The parameter type is PromiseBase&& so it can take the instances of
   // Promise<T> type.
   static void RejectPromise(PromiseBase&& promise, base::StringPiece errmsg) {
-    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+    if (gin_helper::Locker::IsBrowserProcess() &&
+        !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       base::PostTask(FROM_HERE, {content::BrowserThread::UI},
                      base::BindOnce(
                          [](PromiseBase&& promise, base::StringPiece err) {
@@ -81,7 +83,8 @@ class Promise : public PromiseBase {
 
   // Helper for resolving the promise with |result|.
   static void ResolvePromise(Promise<RT> promise, RT result) {
-    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+    if (gin_helper::Locker::IsBrowserProcess() &&
+        !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       base::PostTask(FROM_HERE, {content::BrowserThread::UI},
                      base::BindOnce([](Promise<RT> promise,
                                        RT result) { promise.Resolve(result); },
@@ -102,11 +105,11 @@ class Promise : public PromiseBase {
   // Promise resolution is a microtask
   // We use the MicrotasksRunner to trigger the running of pending microtasks
   v8::Maybe<bool> Resolve(const RT& value) {
+    gin_helper::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
     v8::MicrotasksScope script_scope(isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
-    v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), GetContext()));
+    v8::Context::Scope context_scope(GetContext());
 
     return GetInner()->Resolve(GetContext(),
                                gin::ConvertToV8(isolate(), value));
@@ -122,9 +125,9 @@ class Promise : public PromiseBase {
         std::is_same<RT, std::tuple_element_t<0, std::tuple<ResolveType...>>>(),
         "A promises's 'Then' callback must handle the same type as the "
         "promises resolve type");
+    gin_helper::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
-    v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), GetContext()));
+    v8::Context::Scope context_scope(GetContext());
 
     v8::Local<v8::Value> value = gin::ConvertToV8(isolate(), std::move(cb));
     v8::Local<v8::Function> handler = v8::Local<v8::Function>::Cast(value);

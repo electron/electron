@@ -26,31 +26,31 @@ PromiseBase::~PromiseBase() = default;
 PromiseBase& PromiseBase::operator=(PromiseBase&&) = default;
 
 v8::Maybe<bool> PromiseBase::Reject() {
+  gin_helper::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   v8::MicrotasksScope script_scope(isolate(),
                                    v8::MicrotasksScope::kRunMicrotasks);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate(), GetContext()));
+  v8::Context::Scope context_scope(GetContext());
 
   return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
 }
 
 v8::Maybe<bool> PromiseBase::Reject(v8::Local<v8::Value> except) {
+  gin_helper::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   v8::MicrotasksScope script_scope(isolate(),
                                    v8::MicrotasksScope::kRunMicrotasks);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate(), GetContext()));
+  v8::Context::Scope context_scope(GetContext());
 
   return GetInner()->Reject(GetContext(), except);
 }
 
 v8::Maybe<bool> PromiseBase::RejectWithErrorMessage(base::StringPiece message) {
+  gin_helper::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   v8::MicrotasksScope script_scope(isolate(),
                                    v8::MicrotasksScope::kRunMicrotasks);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate(), GetContext()));
+  v8::Context::Scope context_scope(GetContext());
 
   v8::Local<v8::Value> error =
       v8::Exception::Error(gin::StringToV8(isolate(), message));
@@ -71,7 +71,8 @@ v8::Local<v8::Promise::Resolver> PromiseBase::GetInner() const {
 
 // static
 void Promise<void>::ResolveEmptyPromise(Promise<void> promise) {
-  if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+  if (gin_helper::Locker::IsBrowserProcess() &&
+      !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
     base::PostTask(
         FROM_HERE, {content::BrowserThread::UI},
         base::BindOnce([](Promise<void> promise) { promise.Resolve(); },
@@ -89,11 +90,11 @@ v8::Local<v8::Promise> Promise<void>::ResolvedPromise(v8::Isolate* isolate) {
 }
 
 v8::Maybe<bool> Promise<void>::Resolve() {
+  gin_helper::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   v8::MicrotasksScope script_scope(isolate(),
                                    v8::MicrotasksScope::kRunMicrotasks);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate(), GetContext()));
+  v8::Context::Scope context_scope(GetContext());
 
   return GetInner()->Resolve(GetContext(), v8::Undefined(isolate()));
 }
