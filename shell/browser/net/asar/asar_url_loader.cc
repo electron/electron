@@ -12,6 +12,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/file_url_loader.h"
+#include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/file_data_source.h"
@@ -79,20 +80,17 @@ class AsarURLLoader : public network::mojom::URLLoader {
   void ResumeReadingBodyFromNet() override {}
 
  private:
-  AsarURLLoader() : binding_(this) {}
+  AsarURLLoader() {}
   ~AsarURLLoader() override = default;
 
   void Start(const network::ResourceRequest& request,
-             network::mojom::URLLoaderRequest loader,
+             mojo::PendingReceiver<network::mojom::URLLoader> loader,
              network::mojom::URLLoaderClientPtrInfo client_info,
              scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
     network::ResourceResponseHead head;
     head.request_start = base::TimeTicks::Now();
     head.response_start = base::TimeTicks::Now();
     head.headers = extra_response_headers;
-    binding_.Bind(std::move(loader));
-    binding_.set_connection_error_handler(base::BindOnce(
-        &AsarURLLoader::OnConnectionError, base::Unretained(this)));
 
     client_.Bind(std::move(client_info));
 
@@ -111,6 +109,10 @@ class AsarURLLoader : public network::mojom::URLLoader {
       MaybeDeleteSelf();
       return;
     }
+
+    receiver_.Bind(std::move(loader));
+    receiver_.set_disconnect_handler(base::BindOnce(
+        &AsarURLLoader::OnConnectionError, base::Unretained(this)));
 
     // Parse asar archive.
     std::shared_ptr<Archive> archive = GetOrCreateAsarArchive(asar_path);
@@ -245,7 +247,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
   }
 
   void OnConnectionError() {
-    binding_.Close();
+    receiver_.reset();
     MaybeDeleteSelf();
   }
 
@@ -256,7 +258,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
   }
 
   void MaybeDeleteSelf() {
-    if (!binding_.is_bound() && !client_.is_bound())
+    if (!receiver_.is_bound() && !client_.is_bound())
       delete this;
   }
 
@@ -279,7 +281,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
   }
 
   std::unique_ptr<mojo::DataPipeProducer> data_producer_;
-  mojo::Binding<network::mojom::URLLoader> binding_;
+  mojo::Receiver<network::mojom::URLLoader> receiver_{this};
   network::mojom::URLLoaderClientPtr client_;
 
   // In case of successful loads, this holds the total number of bytes written
