@@ -6,8 +6,8 @@ const request = require('request')
 const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds'
 const CIRCLECI_PIPELINE_URL = 'https://circleci.com/api/v2/project/gh/electron/electron/pipeline'
 const VSTS_URL = 'https://github.visualstudio.com/electron/_apis/build'
-const CIRCLECI_RETRY_LIMIT = 10
-const CIRCLECI_WAIT_TIME = 10000
+const CIRCLECI_RETRY_LIMIT = process.env.CIRCLECI_RETRY_LIMIT || 10
+const CIRCLECI_WAIT_TIME = process.env.CIRCLECI_WAIT_TIME || 30000
 
 const appVeyorJobs = {
   'electron-x64': 'electron-x64-release',
