@@ -12,35 +12,34 @@
 #include <vector>
 
 #include "base/mac/scoped_nsobject.h"
-#include "native_mate/constructor.h"
-#include "native_mate/persistent_dictionary.h"
 #include "shell/browser/native_window.h"
+#include "shell/common/gin_helper/persistent_dictionary.h"
 
 @interface AtomTouchBar : NSObject <NSScrubberDelegate,
                                     NSScrubberDataSource,
                                     NSScrubberFlowLayoutDelegate> {
  @protected
-  std::vector<mate::PersistentDictionary> ordered_settings_;
-  std::map<std::string, mate::PersistentDictionary> settings_;
+  std::vector<gin_helper::PersistentDictionary> ordered_settings_;
+  std::map<std::string, gin_helper::PersistentDictionary> settings_;
   id<NSTouchBarDelegate> delegate_;
   electron::NativeWindow* window_;
 }
 
 - (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
                 window:(electron::NativeWindow*)window
-              settings:(const std::vector<mate::PersistentDictionary>&)settings;
+              settings:(std::vector<gin_helper::PersistentDictionary>)settings;
 
 - (NSTouchBar*)makeTouchBar API_AVAILABLE(macosx(10.12.2));
 - (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items
     API_AVAILABLE(macosx(10.12.2));
 - (NSMutableArray*)identifiersFromSettings:
-    (const std::vector<mate::PersistentDictionary>&)settings;
+    (const std::vector<gin_helper::PersistentDictionary>&)settings;
 - (void)refreshTouchBarItem:(NSTouchBar*)touchBar
                          id:(const std::string&)item_id
     API_AVAILABLE(macosx(10.12.2));
 - (void)addNonDefaultTouchBarItems:
-    (const std::vector<mate::PersistentDictionary>&)items;
-- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item
+    (const std::vector<gin_helper::PersistentDictionary>&)items;
+- (void)setEscapeTouchBarItem:(gin_helper::PersistentDictionary)item
                   forTouchBar:(NSTouchBar*)touchBar
     API_AVAILABLE(macosx(10.12.2));
 
@@ -80,19 +79,19 @@
 
 // Helpers to update touch bar items
 - (void)updateButton:(NSCustomTouchBarItem*)item
-        withSettings:(const mate::PersistentDictionary&)settings
+        withSettings:(const gin_helper::PersistentDictionary&)settings
     API_AVAILABLE(macosx(10.12.2));
 - (void)updateLabel:(NSCustomTouchBarItem*)item
-       withSettings:(const mate::PersistentDictionary&)settings
+       withSettings:(const gin_helper::PersistentDictionary&)settings
     API_AVAILABLE(macosx(10.12.2));
 - (void)updateColorPicker:(NSColorPickerTouchBarItem*)item
-             withSettings:(const mate::PersistentDictionary&)settings
+             withSettings:(const gin_helper::PersistentDictionary&)settings
     API_AVAILABLE(macosx(10.12.2));
 - (void)updateSlider:(NSSliderTouchBarItem*)item
-        withSettings:(const mate::PersistentDictionary&)settings
+        withSettings:(const gin_helper::PersistentDictionary&)settings
     API_AVAILABLE(macosx(10.12.2));
 - (void)updatePopover:(NSPopoverTouchBarItem*)item
-         withSettings:(const mate::PersistentDictionary&)settings
+         withSettings:(const gin_helper::PersistentDictionary&)settings
     API_AVAILABLE(macosx(10.12.2));
 
 @end

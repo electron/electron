@@ -48,7 +48,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -898,9 +898,14 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
 
   bool succeed = false;
   int key = GetPathConstant(name);
-  if (key >= 0)
+  if (key >= 0) {
     succeed =
         base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
+    if (key == DIR_USER_DATA) {
+      succeed |= base::PathService::OverrideAndCreateIfNeeded(
+          chrome::DIR_USER_DATA, path, true, false);
+    }
+  }
   if (!succeed)
     thrower.ThrowError("Failed to set path");
 }

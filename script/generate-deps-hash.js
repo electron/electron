@@ -29,6 +29,7 @@ addAllFiles(path.resolve(__dirname, '../patches'))
 
 // Create Hash
 const hasher = crypto.createHash('SHA256')
+hasher.update(`HASH_VERSION:${HASH_VERSION}`)
 for (const file of filesToHash) {
   hasher.update(fs.readFileSync(file))
 }

@@ -11,13 +11,9 @@
 #include "base/process/process_handle.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
-#include "gin/converter.h"
-#include "native_mate/dictionary.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -60,10 +56,10 @@ v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
 // adapted from node.cc
 v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
                                 v8::Local<v8::String> key,
-                                mate::Arguments* margs) {
+                                gin_helper::Arguments* margs) {
   v8::Local<v8::Object> exports;
   std::string module_key = gin::V8ToString(isolate, key);
-  mate::Dictionary cache(isolate, GetModuleCache(isolate));
+  gin_helper::Dictionary cache(isolate, GetModuleCache(isolate));
 
   if (cache.Get(module_key.c_str(), &exports)) {
     return exports;
@@ -97,9 +93,8 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
                           const std::string& hidden_key,
                           const std::string& callback_name) {
   auto* isolate = context->GetIsolate();
-  auto binding_key = mate::ConvertToV8(isolate, hidden_key)
-                         ->ToString(context)
-                         .ToLocalChecked();
+  auto binding_key =
+      gin::ConvertToV8(isolate, hidden_key)->ToString(context).ToLocalChecked();
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();
   v8::Local<v8::Value> value;
@@ -108,7 +103,7 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
   if (value.IsEmpty() || !value->IsObject())
     return;
   auto binding = value->ToObject(context).ToLocalChecked();
-  auto callback_key = mate::ConvertToV8(isolate, callback_name)
+  auto callback_key = gin::ConvertToV8(isolate, callback_name)
                           ->ToString(context)
                           .ToLocalChecked();
   auto callback_value = binding->Get(context, callback_key).ToLocalChecked();
@@ -132,11 +127,11 @@ void AtomSandboxedRendererClient::InitializeBindings(
     v8::Local<v8::Context> context,
     bool is_main_frame) {
   auto* isolate = context->GetIsolate();
-  mate::Dictionary b(isolate, binding);
+  gin_helper::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
   b.SetMethod("createPreloadScript", CreatePreloadScript);
 
-  mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
 
   ElectronBindings::BindProcess(isolate, &process, metrics_.get());
@@ -248,7 +243,7 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
   // an argument.
   auto* isolate = context->GetIsolate();
 
-  mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
   process.SetMethod("_linkedBinding", GetBinding);
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
@@ -272,7 +267,7 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
 #else
   auto* isolate = context->GetIsolate();
 
-  mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
   process.SetMethod("_linkedBinding", GetBinding);
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {

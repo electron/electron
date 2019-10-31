@@ -82,3 +82,5 @@ build_win_disable_zc_twophase.patch
 ignore_rc_check.patch
 build_win_fix_ambiguous_reference_with_msstl.patch
 build_win_iwyu_for_smil_time.patch
+remove_usage_of_incognito_apis_in_the_spellchecker.patch
+chore_use_electron_resources_not_chrome_for_spellchecker.patch

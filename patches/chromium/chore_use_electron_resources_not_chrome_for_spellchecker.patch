@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 23 Oct 2019 14:17:18 -0700
+Subject: chore: use electron resources not chrome for spellchecker
+
+spellchecker uses a few IDS_ resources.  We need to load these from
+Electrons grit header instead of Chromes
+
+diff --git a/chrome/browser/spellchecker/spellcheck_factory.cc b/chrome/browser/spellchecker/spellcheck_factory.cc
+index 48ac0a24efde0cb7d3ba71c8b8bdf5178f606e80..e2beefc276098fdc8f1cdab2e0edb8fae4ee67ca 100644
+--- a/chrome/browser/spellchecker/spellcheck_factory.cc
++++ b/chrome/browser/spellchecker/spellcheck_factory.cc
+@@ -6,7 +6,7 @@
+ 
+ #include "chrome/browser/profiles/incognito_helpers.h"
+ #include "chrome/browser/spellchecker/spellcheck_service.h"
+-#include "chrome/grit/locale_settings.h"
++#include "electron/grit/electron_resources.h"
+ #include "components/keyed_service/content/browser_context_dependency_manager.h"
+ #include "components/pref_registry/pref_registry_syncable.h"
+ #include "components/prefs/pref_service.h"
+diff --git a/components/language/core/browser/language_prefs.cc b/components/language/core/browser/language_prefs.cc
+index d5e4c09e1722232df44b112ce39cdacea03a4710..c6caf7eacd9eed439ab5167e51b9fcce5d6af664 100644
+--- a/components/language/core/browser/language_prefs.cc
++++ b/components/language/core/browser/language_prefs.cc
+@@ -21,7 +21,7 @@
+ #include "components/pref_registry/pref_registry_syncable.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/prefs/scoped_user_pref_update.h"
+-#include "components/strings/grit/components_locale_settings.h"
++#include "electron/grit/electron_resources.h"
+ #include "ui/base/l10n/l10n_util.h"
+ 
+ namespace language {

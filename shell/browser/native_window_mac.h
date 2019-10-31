@@ -133,9 +133,9 @@ class NativeWindowMac : public NativeWindow {
 
   void SetVibrancy(const std::string& type) override;
   void SetTouchBar(
-      const std::vector<mate::PersistentDictionary>& items) override;
+      std::vector<gin_helper::PersistentDictionary> items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
-  void SetEscapeTouchBarItem(const mate::PersistentDictionary& item) override;
+  void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) override;
   void SetGTKDarkThemeEnabled(bool use_dark_theme) override {}
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;

@@ -6,6 +6,8 @@ import * as path from 'path'
 import * as ChildProcess from 'child_process'
 import { session, net } from 'electron'
 import { Socket, AddressInfo } from 'net';
+import { ifit } from './spec-helpers'
+import { emittedOnce } from './events-helpers'
 
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log')
 const dumpFile = path.join(os.tmpdir(), 'net_log.json')
@@ -121,12 +123,7 @@ describe('netLog module', () => {
     expect(JSON.parse(dump).events.some((x: any) => x.params && x.params.bytes && Buffer.from(x.params.bytes, 'base64').includes(unique))).to.be.true('uuid present in dump')
   })
 
-  it('should begin and end logging automatically when --log-net-log is passed', done => {
-    if (isCI && process.platform === 'linux') {
-      done()
-      return
-    }
-
+  ifit(process.platform !== 'linux')('should begin and end logging automatically when --log-net-log is passed', async () => {
     const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
@@ -135,18 +132,11 @@ describe('netLog module', () => {
         }
       })
 
-    appProcess.once('exit', () => {
-      expect(fs.existsSync(dumpFile)).to.be.true('dump file exists')
-      done()
-    })
+    await emittedOnce(appProcess, 'exit')
+    expect(fs.existsSync(dumpFile)).to.be.true('dump file exists')
   })
 
-  it('should begin and end logging automtically when --log-net-log is passed, and behave correctly when .startLogging() and .stopLogging() is called', done => {
-    if (isCI && process.platform === 'linux') {
-      done()
-      return
-    }
-
+  ifit(process.platform !== 'linux')('should begin and end logging automtically when --log-net-log is passed, and behave correctly when .startLogging() and .stopLogging() is called', async () => {
     const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
@@ -157,19 +147,12 @@ describe('netLog module', () => {
         }
       })
 
-    appProcess.once('exit', () => {
-      expect(fs.existsSync(dumpFile)).to.be.true('dump file exists')
-      expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists')
-      done()
-    })
+    await emittedOnce(appProcess, 'exit')
+    expect(fs.existsSync(dumpFile)).to.be.true('dump file exists')
+    expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists')
   })
 
-  it('should end logging automatically when only .startLogging() is called', done => {
-    if (isCI && process.platform === 'linux') {
-      done()
-      return
-    }
-
+  ifit(process.platform !== 'linux')('should end logging automatically when only .startLogging() is called', async () => {
     const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
@@ -178,9 +161,7 @@ describe('netLog module', () => {
         }
       })
 
-    appProcess.once('close', () => {
-      expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists')
-      done()
-    })
+    await emittedOnce(appProcess, 'close')
+    expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists')
   })
 })

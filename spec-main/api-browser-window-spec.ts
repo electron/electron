@@ -535,14 +535,7 @@ describe('BrowserWindow module', () => {
     describe('BrowserWindow.show()', () => {
       it('should focus on window', () => {
         w.show()
-        if (process.platform === 'darwin' && !isCI) {
-          // on CI, the Electron window will be the only one open, so it'll get
-          // focus. on not-CI, some other window will have focus, and we don't
-          // steal focus any more, so we expect isFocused to be false.
-          expect(w.isFocused()).to.equal(false)
-        } else {
-          expect(w.isFocused()).to.equal(true)
-        }
+        expect(w.isFocused()).to.equal(true)
       })
       it('should make the window visible', () => {
         w.show()
@@ -2514,7 +2507,7 @@ describe('BrowserWindow module', () => {
       expect(visibilityState).to.equal('visible')
     })
 
-    ifit(!(isCI && process.platform === 'win32'))('visibilityState changes when window is shown inactive', async () => {
+    ifit(process.platform !== 'win32')('visibilityState changes when window is shown inactive', async () => {
       const w = new BrowserWindow({
         width: 100,
         height: 100,

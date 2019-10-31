@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "shell/browser/net/cert_verifier_client.h"
-#include "shell/common/native_mate_converters/net_converter.h"
 
 namespace electron {
 

@@ -7,10 +7,8 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
-#include "electron/shell/common/api/api.mojom.h"
-#include "electron/shell/common/native_mate_converters/blink_converter.h"
-#include "electron/shell/common/native_mate_converters/value_converter.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 using blink::WebLocalFrame;

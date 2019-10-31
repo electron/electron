@@ -12,7 +12,6 @@
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
-#include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/promise_util.h"
 
 namespace electron {

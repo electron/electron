@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/command_line.h"
@@ -22,7 +23,6 @@
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/atom_autofill_agent.h"
 #include "shell/renderer/atom_render_frame_observer.h"
@@ -44,6 +44,11 @@
 
 #if defined(OS_WIN)
 #include <shlobj.h>
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "components/spellcheck/renderer/spellcheck.h"
+#include "components/spellcheck/renderer/spellcheck_provider.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -147,6 +152,11 @@ void RendererClientBase::RenderThreadStarted() {
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  if (command_line->HasSwitch(switches::kEnableSpellcheck))
+    spellcheck_ = std::make_unique<SpellCheck>(&registry_, this);
 #endif
 
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
@@ -263,7 +273,36 @@ void RendererClientBase::RenderFrameCreated(
 
   dispatcher->OnRenderFrameCreated(render_frame);
 #endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kEnableSpellcheck))
+    new SpellCheckProvider(render_frame, spellcheck_.get(), this);
+#endif
 }
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+void RendererClientBase::BindReceiverOnMainThread(
+    mojo::GenericPendingReceiver receiver) {
+  // TODO(crbug.com/977637): Get rid of the use of BinderRegistry here. This is
+  // only used to bind a spellcheck interface.
+  std::string interface_name = *receiver.interface_name();
+  auto pipe = receiver.PassPipe();
+  registry_.TryBindInterface(interface_name, &pipe);
+}
+
+void RendererClientBase::GetInterface(
+    const std::string& interface_name,
+    mojo::ScopedMessagePipeHandle interface_pipe) {
+  // TODO(crbug.com/977637): Get rid of the use of this implementation of
+  // |service_manager::LocalInterfaceProvider|. This was done only to avoid
+  // churning spellcheck code while eliminating the "chrome" and
+  // "chrome_renderer" services. Spellcheck is (and should remain) the only
+  // consumer of this implementation.
+  content::RenderThread::Get()->BindHostReceiver(
+      mojo::GenericPendingReceiver(interface_name, std::move(interface_pipe)));
+}
+#endif
 
 void RendererClientBase::DidClearWindowObject(
     content::RenderFrame* render_frame) {

@@ -108,6 +108,26 @@ class Dictionary : public gin::Dictionary {
     return !result.IsNothing() && result.FromJust();
   }
 
+  // Note: If we plan to add more Set methods, consider adding an option instead
+  // of copying code.
+  template <typename T>
+  bool SetReadOnlyNonConfigurable(base::StringPiece key, T val) {
+    v8::Local<v8::Value> v8_value;
+    if (!gin::TryConvertToV8(isolate(), val, &v8_value))
+      return false;
+    v8::Maybe<bool> result = GetHandle()->DefineOwnProperty(
+        isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key),
+        v8_value,
+        static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete));
+    return !result.IsNothing() && result.FromJust();
+  }
+
+  bool Has(base::StringPiece key) const {
+    v8::Maybe<bool> result = GetHandle()->Has(isolate()->GetCurrentContext(),
+                                              gin::StringToV8(isolate(), key));
+    return !result.IsNothing() && result.FromJust();
+  }
+
   bool Delete(base::StringPiece key) {
     v8::Maybe<bool> result = GetHandle()->Delete(
         isolate()->GetCurrentContext(), gin::StringToV8(isolate(), key));
