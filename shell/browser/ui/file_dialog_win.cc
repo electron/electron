@@ -80,7 +80,7 @@ bool CreateDialogThread(RunState* run_state) {
   return true;
 }
 
-void OnDialogOpened(electron::util::Promise<gin_helper::Dictionary> promise,
+void OnDialogOpened(gin_helper::Promise<gin_helper::Dictionary> promise,
                     bool canceled,
                     std::vector<base::FilePath> paths) {
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
@@ -92,7 +92,7 @@ void OnDialogOpened(electron::util::Promise<gin_helper::Dictionary> promise,
 void RunOpenDialogInNewThread(
     const RunState& run_state,
     const DialogSettings& settings,
-    electron::util::Promise<gin_helper::Dictionary> promise) {
+    gin_helper::Promise<gin_helper::Dictionary> promise) {
   std::vector<base::FilePath> paths;
   bool result = ShowOpenDialogSync(settings, &paths);
   run_state.ui_task_runner->PostTask(
@@ -101,7 +101,7 @@ void RunOpenDialogInNewThread(
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
 }
 
-void OnSaveDialogDone(electron::util::Promise<gin_helper::Dictionary> promise,
+void OnSaveDialogDone(gin_helper::Promise<gin_helper::Dictionary> promise,
                       bool canceled,
                       const base::FilePath path) {
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
@@ -113,7 +113,7 @@ void OnSaveDialogDone(electron::util::Promise<gin_helper::Dictionary> promise,
 void RunSaveDialogInNewThread(
     const RunState& run_state,
     const DialogSettings& settings,
-    electron::util::Promise<gin_helper::Dictionary> promise) {
+    gin_helper::Promise<gin_helper::Dictionary> promise) {
   base::FilePath path;
   bool result = ShowSaveDialogSync(settings, &path);
   run_state.ui_task_runner->PostTask(
@@ -275,7 +275,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise<gin_helper::Dictionary> promise) {
+                    gin_helper::Promise<gin_helper::Dictionary> promise) {
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   RunState run_state;
   if (!CreateDialogThread(&run_state)) {
@@ -325,7 +325,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise<gin_helper::Dictionary> promise) {
+                    gin_helper::Promise<gin_helper::Dictionary> promise) {
   RunState run_state;
   if (!CreateDialogThread(&run_state)) {
     gin_helper::Dictionary dict =

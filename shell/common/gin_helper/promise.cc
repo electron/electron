@@ -2,11 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/promise_util.h"
+#include "shell/common/gin_helper/promise.h"
 
-namespace electron {
-
-namespace util {
+namespace gin_helper {
 
 PromiseBase::PromiseBase(v8::Isolate* isolate)
     : PromiseBase(isolate,
@@ -99,6 +97,4 @@ v8::Maybe<bool> Promise<void>::Resolve() {
   return GetInner()->Resolve(GetContext(), v8::Undefined(isolate()));
 }
 
-}  // namespace util
-
-}  // namespace electron
+}  // namespace gin_helper

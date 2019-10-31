@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_PROMISE_UTIL_H_
-#define SHELL_COMMON_PROMISE_UTIL_H_
+#ifndef SHELL_COMMON_GIN_HELPER_PROMISE_H_
+#define SHELL_COMMON_GIN_HELPER_PROMISE_H_
 
 #include <string>
 #include <tuple>
@@ -17,9 +17,7 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/locker.h"
 
-namespace electron {
-
-namespace util {
+namespace gin_helper {
 
 // A wrapper around the v8::Promise.
 //
@@ -156,16 +154,14 @@ class Promise<void> : public PromiseBase {
   v8::Maybe<bool> Resolve();
 };
 
-}  // namespace util
-
-}  // namespace electron
+}  // namespace gin_helper
 
 namespace gin {
 
 template <typename T>
-struct Converter<electron::util::Promise<T>> {
+struct Converter<gin_helper::Promise<T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const electron::util::Promise<T>& val) {
+                                   const gin_helper::Promise<T>& val) {
     return val.GetHandle();
   }
   // TODO(MarshallOfSound): Implement FromV8 to allow promise chaining
@@ -177,4 +173,4 @@ struct Converter<electron::util::Promise<T>> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_PROMISE_UTIL_H_
+#endif  // SHELL_COMMON_GIN_HELPER_PROMISE_H_

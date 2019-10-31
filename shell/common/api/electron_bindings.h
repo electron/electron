@@ -13,7 +13,7 @@
 #include "base/memory/scoped_refptr.h"
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
-#include "shell/common/promise_util.h"
+#include "shell/common/gin_helper/promise.h"
 #include "uv.h"  // NOLINT(build/include)
 
 namespace gin_helper {
@@ -70,7 +70,7 @@ class ElectronBindings {
 
   static void DidReceiveMemoryDump(
       v8::Global<v8::Context> context,
-      util::Promise<gin_helper::Dictionary> promise,
+      gin_helper::Promise<gin_helper::Dictionary> promise,
       bool success,
       std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump);
 

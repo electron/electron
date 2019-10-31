@@ -13,7 +13,7 @@
 #include "shell/browser/mac/in_app_purchase_observer.h"
 #include "shell/browser/mac/in_app_purchase_product.h"
 #include "shell/common/gin_helper/event_emitter.h"
-#include "shell/common/promise_util.h"
+#include "shell/common/gin_helper/promise.h"
 
 namespace electron {
 

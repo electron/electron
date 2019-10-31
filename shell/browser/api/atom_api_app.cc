@@ -532,7 +532,8 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 }
 #endif
 
-void OnIconDataAvailable(util::Promise<gfx::Image> promise, gfx::Image icon) {
+void OnIconDataAvailable(gin_helper::Promise<gfx::Image> promise,
+                         gfx::Image icon) {
   if (!icon.IsEmpty()) {
     promise.Resolve(icon);
   } else {
@@ -1170,7 +1171,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 
 v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
                                         gin_helper::Arguments* args) {
-  util::Promise<gfx::Image> promise(isolate());
+  gin_helper::Promise<gfx::Image> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   base::FilePath normalized_path = path.NormalizePathSeparators();
 
@@ -1280,7 +1281,7 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
                                        const std::string& info_type) {
   auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
-  util::Promise<base::DictionaryValue> promise(isolate);
+  gin_helper::Promise<base::DictionaryValue> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   if (info_type != "basic" && info_type != "complete") {
     promise.RejectWithErrorMessage(
