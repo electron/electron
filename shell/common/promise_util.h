@@ -5,6 +5,7 @@
 #ifndef SHELL_COMMON_PROMISE_UTIL_H_
 #define SHELL_COMMON_PROMISE_UTIL_H_
 
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -44,12 +45,16 @@ class PromiseBase {
   static void RejectPromise(PromiseBase&& promise, base::StringPiece errmsg) {
     if (gin_helper::Locker::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                     base::BindOnce(
-                         [](PromiseBase&& promise, base::StringPiece err) {
-                           promise.RejectWithErrorMessage(err);
-                         },
-                         std::move(promise), std::move(errmsg)));
+      base::PostTask(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce(
+              // Note that this callback can not take StringPiece,
+              // as StringPiece only references string internally and
+              // will blow when a temporary string is passed.
+              [](PromiseBase&& promise, std::string str) {
+                promise.RejectWithErrorMessage(str);
+              },
+              std::move(promise), std::string(errmsg.data(), errmsg.size())));
     } else {
       promise.RejectWithErrorMessage(errmsg);
     }
