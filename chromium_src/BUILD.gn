@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import("//build/config/ui.gni")
+import("//components/spellcheck/spellcheck_build_features.gni")
 import("//electron/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//third_party/widevine/cdm/widevine.gni")
@@ -224,4 +225,53 @@ static_library("chrome") {
       "//components/vector_icons:vector_icons",
     ]
   }
+}
+
+# This source set is just so we don't have to depend on all of //chrome/browser
+# You may have to add new files here during the upgrade if //chrome/browser/spellchecker
+# gets more files
+source_set("chrome_spellchecker") {
+  sources = [
+    "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
+    "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
+    "//chrome/browser/spellchecker/spellcheck_custom_dictionary.cc",
+    "//chrome/browser/spellchecker/spellcheck_custom_dictionary.h",
+    "//chrome/browser/spellchecker/spellcheck_factory.cc",
+    "//chrome/browser/spellchecker/spellcheck_factory.h",
+    "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc",
+    "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h",
+    "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.cc",
+    "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.h",
+    "//chrome/browser/spellchecker/spellcheck_language_policy_handler.cc",
+    "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
+    "//chrome/browser/spellchecker/spellcheck_service.cc",
+    "//chrome/browser/spellchecker/spellcheck_service.h",
+  ]
+
+  if (has_spellcheck_panel) {
+    sources += [
+      "//chrome/browser/spellchecker/spell_check_panel_host_impl.cc",
+      "//chrome/browser/spellchecker/spell_check_panel_host_impl.h",
+    ]
+  }
+
+  if (use_browser_spellchecker) {
+    sources += [
+      "//chrome/browser/spellchecker/spelling_request.cc",
+      "//chrome/browser/spellchecker/spelling_request.h",
+    ]
+  }
+
+  deps = [
+    "//base:base_static",
+    "//components/language/core/browser",
+    "//components/spellcheck:buildflags",
+    "//components/sync",
+  ]
+
+  public_deps = [
+    "//components/spellcheck/browser",
+    "//components/spellcheck/common",
+    "//components/spellcheck/renderer",
+  ]
 }

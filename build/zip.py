@@ -46,13 +46,14 @@ def execute(argv):
     raise e
 
 def main(argv):
-  dist_zip, runtime_deps, target_cpu, target_os = argv
+  dist_zip, runtime_deps, target_cpu, target_os, flatten_val = argv
+  should_flatten = flatten_val == "true"
   dist_files = set()
   with open(runtime_deps) as f:
     for dep in f.readlines():
       dep = dep.strip()
       dist_files.add(dep)
-  if sys.platform == 'darwin':
+  if sys.platform == 'darwin' and not should_flatten:
     execute(['zip', '-r', '-y', dist_zip] + list(dist_files))
   else:
     with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as z:
@@ -67,7 +68,7 @@ def main(argv):
           basename = os.path.basename(dep)
           dirname = os.path.dirname(dep)
           arcname = os.path.join(dirname, 'chrome-sandbox') if basename == 'chrome_sandbox' else dep
-          z.write(dep, arcname)
+          z.write(dep, os.path.basename(arcname) if should_flatten else arcname)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))

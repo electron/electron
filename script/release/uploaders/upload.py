@@ -106,6 +106,11 @@ def main():
   shutil.copy2(os.path.join(OUT_DIR, 'mksnapshot.zip'), mksnapshot_zip)
   upload_electron(release, mksnapshot_zip, args)
 
+  if PLATFORM == 'linux' and get_target_arch() == 'x64':
+    # Upload the hunspell dictionaries only from the linux x64 build
+    hunspell_dictionaries_zip = os.path.join(OUT_DIR, 'hunspell_dictionaries.zip')
+    upload_electron(release, hunspell_dictionaries_zip, args)
+
   if not tag_exists and not args.upload_to_s3:
     # Upload symbols to symbol server.
     run_python_upload_script('upload-symbols.py')
