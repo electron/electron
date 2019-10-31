@@ -8,7 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/optional.h"
 #include "content/public/browser/browser_thread.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "native_mate/wrappable.h"
@@ -31,8 +30,7 @@ v8::Local<v8::Object> CreateNativeEvent(
     v8::Isolate* isolate,
     v8::Local<v8::Object> sender,
     content::RenderFrameHost* frame,
-    base::Optional<electron::mojom::ElectronBrowser::MessageSyncCallback>
-        callback);
+    electron::mojom::ElectronBrowser::MessageSyncCallback callback);
 
 }  // namespace internal
 
@@ -83,11 +81,10 @@ class EventEmitter : public mate::Wrappable<T> {
 
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>
-  bool EmitWithSender(
-      base::StringPiece name,
-      content::RenderFrameHost* sender,
-      base::Optional<electron::mojom::ElectronBrowser::InvokeCallback> callback,
-      Args&&... args) {
+  bool EmitWithSender(base::StringPiece name,
+                      content::RenderFrameHost* sender,
+                      electron::mojom::ElectronBrowser::InvokeCallback callback,
+                      Args&&... args) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());

@@ -6,21 +6,20 @@
 #include <string>
 #include <utility>
 
-#include "base/bind.h"
 #include "base/files/file_util.h"
 #include "base/optional.h"
 #include "base/threading/thread_restrictions.h"
 #include "content/public/browser/tracing_controller.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 
 using content::TracingController;
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<base::trace_event::TraceConfig> {
@@ -31,7 +30,7 @@ struct Converter<base::trace_event::TraceConfig> {
     // has to be checked first because none of the fields
     // in the `memory_dump_config` dict below are mandatory
     // and we cannot check the config format.
-    Dictionary options;
+    gin_helper::Dictionary options;
     if (ConvertFromV8(isolate, val, &options)) {
       std::string category_filter, trace_options;
       if (options.Get("categoryFilter", &category_filter) &&
@@ -51,7 +50,7 @@ struct Converter<base::trace_event::TraceConfig> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace {
 
@@ -79,7 +78,7 @@ void StopTracing(electron::util::Promise<base::FilePath> promise,
   }
 }
 
-v8::Local<v8::Promise> StopRecording(mate::Arguments* args) {
+v8::Local<v8::Promise> StopRecording(gin_helper::Arguments* args) {
   electron::util::Promise<base::FilePath> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -131,18 +130,18 @@ v8::Local<v8::Promise> StartTracing(
 }
 
 void OnTraceBufferUsageAvailable(
-    electron::util::Promise<mate::Dictionary> promise,
+    electron::util::Promise<gin_helper::Dictionary> promise,
     float percent_full,
     size_t approximate_count) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("percentage", percent_full);
   dict.Set("value", approximate_count);
 
-  promise.Resolve(dict);
+  promise.ResolveWithGin(dict);
 }
 
 v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {
-  electron::util::Promise<mate::Dictionary> promise(isolate);
+  electron::util::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Note: This method always succeeds.
@@ -155,7 +154,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getCategories", &GetCategories);
   dict.SetMethod("startRecording", &StartTracing);
   dict.SetMethod("stopRecording", &StopRecording);

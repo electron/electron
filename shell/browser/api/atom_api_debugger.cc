@@ -12,7 +12,7 @@
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -80,7 +80,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
       if (dict->GetDictionary("result", &result_body)) {
         result.Swap(result_body);
       }
-      promise.Resolve(result);
+      promise.ResolveWithGin(result);
     }
   }
 }

@@ -4,17 +4,25 @@
 
 #include "shell/renderer/api/atom_api_context_bridge.h"
 
+#include <map>
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
+#include "content/public/renderer/render_frame.h"
+#include "content/public/renderer/render_frame_observer.h"
 #include "shell/common/api/remote/object_life_monitor.h"
-#include "shell/common/native_mate_converters/blink_converter.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
-#include "shell/common/native_mate_converters/once_callback.h"
+#include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
+#include "shell/renderer/api/context_bridge/render_frame_context_bridge_store.h"
+#include "shell/renderer/atom_render_frame_observer.h"
+#include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
 
@@ -23,6 +31,11 @@ namespace api {
 namespace {
 
 static int kMaxRecursion = 1000;
+
+// Returns true if |maybe| is both a value, and that value is true.
+inline bool IsTrue(v8::Maybe<bool> maybe) {
+  return maybe.IsJust() && maybe.FromJust();
+}
 
 content::RenderFrame* GetRenderFrame(const v8::Local<v8::Object>& value) {
   v8::Local<v8::Context> context = value->CreationContext();
@@ -74,7 +87,7 @@ bool DeepFreeze(const v8::Local<v8::Object>& object,
         return false;
     }
   }
-  return mate::internal::IsTrue(
+  return IsTrue(
       object->SetIntegrityLevel(context, v8::IntegrityLevel::kFrozen));
 }
 
@@ -130,16 +143,6 @@ class FunctionLifeMonitor final : public ObjectLifeMonitor {
 
 }  // namespace
 
-template <typename Sig>
-v8::Local<v8::Value> BindRepeatingFunctionToV8(
-    v8::Isolate* isolate,
-    const base::RepeatingCallback<Sig>& val) {
-  auto translater =
-      base::BindRepeating(&mate::internal::NativeFunctionInvoker<Sig>::Go, val);
-  return mate::internal::CreateFunctionFromTranslater(isolate, translater,
-                                                      false);
-}
-
 v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Context> source_context,
     v8::Local<v8::Context> destination_context,
@@ -176,7 +179,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
         std::make_tuple(std::move(global_func), std::move(global_source));
     v8::Context::Scope destination_scope(destination_context);
     {
-      v8::Local<v8::Value> proxy_func = BindRepeatingFunctionToV8(
+      v8::Local<v8::Value> proxy_func = gin_helper::CallbackToV8Leaked(
           destination_context->GetIsolate(),
           base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
       FunctionLifeMonitor::BindTo(destination_context->GetIsolate(),
@@ -239,9 +242,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
       ignore_result(source_promise->Then(
           source_context,
           v8::Local<v8::Function>::Cast(
-              mate::ConvertToV8(destination_context->GetIsolate(), then_cb)),
+              gin::ConvertToV8(destination_context->GetIsolate(), then_cb)),
           v8::Local<v8::Function>::Cast(
-              mate::ConvertToV8(destination_context->GetIsolate(), catch_cb))));
+              gin::ConvertToV8(destination_context->GetIsolate(), catch_cb))));
 
       store->CacheProxiedObject(value, proxied_promise_handle);
       return v8::MaybeLocal<v8::Value>(proxied_promise_handle);
@@ -275,9 +278,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
         if (value_for_array.IsEmpty())
           return v8::MaybeLocal<v8::Value>();
 
-        if (!mate::internal::IsTrue(
-                cloned_arr->Set(destination_context, static_cast<int>(i),
-                                value_for_array.ToLocalChecked()))) {
+        if (!IsTrue(cloned_arr->Set(destination_context, static_cast<int>(i),
+                                    value_for_array.ToLocalChecked()))) {
           return v8::MaybeLocal<v8::Value>();
         }
       }
@@ -303,7 +305,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Context::Scope source_context_scope(source_context);
     {
       // V8 serializer will throw an error if required
-      if (!mate::ConvertFromV8(source_context->GetIsolate(), value, &ret))
+      if (!gin::ConvertFromV8(source_context->GetIsolate(), value, &ret))
         return v8::MaybeLocal<v8::Value>();
     }
   }
@@ -311,7 +313,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   v8::Context::Scope destination_context_scope(destination_context);
   {
     v8::Local<v8::Value> cloned_value =
-        mate::ConvertToV8(destination_context->GetIsolate(), ret);
+        gin::ConvertToV8(destination_context->GetIsolate(), ret);
     store->CacheProxiedObject(value, cloned_value);
     return v8::MaybeLocal<v8::Value>(cloned_value);
   }
@@ -320,7 +322,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 v8::Local<v8::Value> ProxyFunctionWrapper(
     context_bridge::RenderFramePersistenceStore* store,
     size_t func_id,
-    mate::Arguments* args) {
+    gin_helper::Arguments* args) {
   // Context the proxy function was called from
   v8::Local<v8::Context> calling_context = args->isolate()->GetCurrentContext();
   // Context the function was created in
@@ -356,8 +358,8 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
         auto message = try_catch.Message();
 
         if (message.IsEmpty() ||
-            !mate::ConvertFromV8(args->isolate(), message->Get(),
-                                 &error_message)) {
+            !gin::ConvertFromV8(args->isolate(), message->Get(),
+                                &error_message)) {
           error_message =
               "An unknown exception occurred in the isolated context, an error "
               "occurred but a valid exception was not thrown.";
@@ -391,9 +393,9 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Context>& destination_context,
     context_bridge::RenderFramePersistenceStore* store,
     int recursion_depth) {
-  mate::Dictionary api(source_context->GetIsolate(), api_object);
-  mate::Dictionary proxy =
-      mate::Dictionary::CreateEmpty(destination_context->GetIsolate());
+  gin_helper::Dictionary api(source_context->GetIsolate(), api_object);
+  gin_helper::Dictionary proxy =
+      gin::Dictionary::CreateEmpty(destination_context->GetIsolate());
   store->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
   auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
       source_context,
@@ -411,7 +413,7 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
       v8::Local<v8::Value> key =
           keys->Get(destination_context, i).ToLocalChecked();
       // Try get the key as a string
-      if (!mate::ConvertFromV8(api.isolate(), key, &key_str)) {
+      if (!gin::ConvertFromV8(api.isolate(), key, &key_str)) {
         continue;
       }
       v8::Local<v8::Value> value;
@@ -431,10 +433,10 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
 }
 
 #ifdef DCHECK_IS_ON
-mate::Dictionary DebugGC(mate::Dictionary empty) {
+gin_helper::Dictionary DebugGC(gin_helper::Dictionary empty) {
   auto* render_frame = GetRenderFrame(empty.GetHandle());
   auto* store = GetOrCreateStore(render_frame);
-  mate::Dictionary ret = mate::Dictionary::CreateEmpty(empty.isolate());
+  gin_helper::Dictionary ret = gin::Dictionary::CreateEmpty(empty.isolate());
   ret.Set("functionCount", store->functions().size());
   auto* proxy_map = store->proxy_map();
   ret.Set("objectCount", proxy_map->size() * 2);
@@ -458,7 +460,7 @@ mate::Dictionary DebugGC(mate::Dictionary empty) {
 
 void ExposeAPIInMainWorld(const std::string& key,
                           v8::Local<v8::Object> api_object,
-                          mate::Arguments* args) {
+                          gin_helper::Arguments* args) {
   auto* render_frame = GetRenderFrame(api_object);
   CHECK(render_frame);
   context_bridge::RenderFramePersistenceStore* store =
@@ -466,7 +468,8 @@ void ExposeAPIInMainWorld(const std::string& key,
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  mate::Dictionary global(main_context->GetIsolate(), main_context->Global());
+  gin_helper::Dictionary global(main_context->GetIsolate(),
+                                main_context->Global());
 
   if (global.Has(key)) {
     args->ThrowError(
@@ -503,7 +506,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("exposeAPIInMainWorld", &electron::api::ExposeAPIInMainWorld);
 #ifdef DCHECK_IS_ON
   dict.SetMethod("_debugGCMaps", &electron::api::DebugGC);

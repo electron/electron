@@ -14,10 +14,6 @@
 #include "base/values.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
-#include "net/base/upload_bytes_element_reader.h"
-#include "net/base/upload_data_stream.h"
-#include "net/base/upload_element_reader.h"
-#include "net/base/upload_file_element_reader.h"
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
@@ -25,7 +21,7 @@
 #include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
@@ -364,57 +360,3 @@ v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
 }
 
 }  // namespace gin
-
-namespace electron {
-
-void FillRequestDetails(base::DictionaryValue* details,
-                        const net::URLRequest* request) {
-  details->SetString("method", request->method());
-  std::string url;
-  if (!request->url_chain().empty())
-    url = request->url().spec();
-  details->SetKey("url", base::Value(url));
-  details->SetString("referrer", request->referrer());
-  auto list = std::make_unique<base::ListValue>();
-  GetUploadData(list.get(), request);
-  if (!list->empty())
-    details->Set("uploadData", std::move(list));
-  auto headers_value = std::make_unique<base::DictionaryValue>();
-  for (net::HttpRequestHeaders::Iterator it(request->extra_request_headers());
-       it.GetNext();) {
-    headers_value->SetString(it.name(), it.value());
-  }
-  details->Set("headers", std::move(headers_value));
-}
-
-void GetUploadData(base::ListValue* upload_data_list,
-                   const net::URLRequest* request) {
-  const net::UploadDataStream* upload_data = request->get_upload_for_testing();
-  if (!upload_data)
-    return;
-  const std::vector<std::unique_ptr<net::UploadElementReader>>* readers =
-      upload_data->GetElementReaders();
-  for (const auto& reader : *readers) {
-    auto upload_data_dict = std::make_unique<base::DictionaryValue>();
-    if (reader->AsBytesReader()) {
-      const net::UploadBytesElementReader* bytes_reader =
-          reader->AsBytesReader();
-      auto bytes = std::make_unique<base::Value>(
-          std::vector<char>(bytes_reader->bytes(),
-                            bytes_reader->bytes() + bytes_reader->length()));
-      upload_data_dict->Set("bytes", std::move(bytes));
-    } else if (reader->AsFileReader()) {
-      const net::UploadFileElementReader* file_reader = reader->AsFileReader();
-      auto file_path = file_reader->path().AsUTF8Unsafe();
-      upload_data_dict->SetKey("file", base::Value(file_path));
-    }
-    // else {
-    //   const storage::UploadBlobElementReader* blob_reader =
-    //       static_cast<storage::UploadBlobElementReader*>(reader.get());
-    //   upload_data_dict->SetString("blobUUID", blob_reader->uuid());
-    // }
-    upload_data_list->Append(std::move(upload_data_dict));
-  }
-}
-
-}  // namespace electron

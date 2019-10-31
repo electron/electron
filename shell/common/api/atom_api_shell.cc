@@ -6,10 +6,9 @@
 
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/platform_util.h"
 #include "shell/common/promise_util.h"

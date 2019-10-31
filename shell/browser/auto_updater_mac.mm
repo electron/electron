@@ -16,7 +16,7 @@
 #include "base/time/time.h"
 #include "gin/arguments.h"
 #include "shell/browser/browser.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 

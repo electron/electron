@@ -12,7 +12,7 @@
 #include "content/public/common/context_menu_params.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/web_contents_permission_helper.h"
-#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
+#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -128,13 +128,13 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   dict.Set("frameURL", params.frame_url);
   dict.Set("srcURL", params.src_url);
   dict.Set("mediaType", params.media_type);
-  dict.Set("mediaFlags", mate::MediaFlagsToV8(isolate, params.media_flags));
+  dict.Set("mediaFlags", MediaFlagsToV8(isolate, params.media_flags));
   bool has_image_contents =
       (params.media_type == blink::WebContextMenuData::kMediaTypeImage) &&
       params.has_image_contents;
   dict.Set("hasImageContents", has_image_contents);
   dict.Set("isEditable", params.is_editable);
-  dict.Set("editFlags", mate::EditFlagsToV8(isolate, params.edit_flags));
+  dict.Set("editFlags", EditFlagsToV8(isolate, params.edit_flags));
   dict.Set("selectionText", params.selection_text);
   dict.Set("titleText", params.title_text);
   dict.Set("misspelledWord", params.misspelled_word);

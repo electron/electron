@@ -4,7 +4,7 @@
 
 #include "shell/common/gin_helper/event_emitter_caller.h"
 
-#include "shell/common/api/locker.h"
+#include "shell/common/gin_helper/locker.h"
 #include "shell/common/node_includes.h"
 
 namespace gin_helper {

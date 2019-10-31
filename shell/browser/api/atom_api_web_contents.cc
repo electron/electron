@@ -70,7 +70,7 @@
 #include "shell/browser/web_view_guest_delegate.h"
 #include "shell/common/api/atom_api_native_image.h"
 #include "shell/common/color_util.h"
-#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
+#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -78,7 +78,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/mouse_util.h"
@@ -1023,7 +1023,7 @@ void WebContents::Message(bool internal,
                           blink::CloneableMessage arguments) {
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
-  EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
+  EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
                  internal, channel, std::move(arguments));
 }
 
@@ -1064,7 +1064,7 @@ void WebContents::MessageHost(const std::string& channel,
                               blink::CloneableMessage arguments) {
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
-                 base::nullopt, channel, std::move(arguments));
+                 InvokeCallback(), channel, std::move(arguments));
 }
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
@@ -1075,7 +1075,7 @@ void WebContents::DereferenceRemoteJSObject(const std::string& context_id,
   args.Append(context_id);
   args.Append(object_id);
   args.Append(ref_count);
-  EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
+  EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
                  /* internal */ true, "ELECTRON_BROWSER_DEREFERENCE",
                  std::move(args));
 }
@@ -2071,10 +2071,10 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
 
   content::RenderWidgetHost* rwh = view->GetRenderWidgetHost();
   blink::WebInputEvent::Type type =
-      mate::GetWebInputEventType(isolate, input_event);
+      gin::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
-    if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
+    if (gin::ConvertFromV8(isolate, input_event, &mouse_event)) {
       if (IsOffScreen()) {
 #if BUILDFLAG(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
@@ -2094,7 +2094,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     }
   } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
-    if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
+    if (gin::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
       if (IsOffScreen()) {
 #if BUILDFLAG(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseWheelEvent(

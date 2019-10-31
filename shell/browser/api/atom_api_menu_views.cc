@@ -25,7 +25,7 @@ void MenuViews::PopupAt(TopLevelWindow* window,
                         int y,
                         int positioning_item,
                         const base::Closure& callback) {
-  mate::Locker locker(isolate());
+  gin_helper::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
   auto* native_window = static_cast<NativeWindowViews*>(window->window());

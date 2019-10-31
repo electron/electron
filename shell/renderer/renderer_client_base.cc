@@ -22,7 +22,6 @@
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/atom_autofill_agent.h"
 #include "shell/renderer/atom_render_frame_observer.h"
