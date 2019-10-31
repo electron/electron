@@ -10,13 +10,16 @@ you want to show Notifications in the main process please check out the
 [Notification](../api/notification.md) module.
 
 ```javascript
-let myNotification = new Notification('Title', {
+let myNotification = new Notification({
+  title: 'Title',
   body: 'Lorem Ipsum Dolor Sit Amet'
 })
 
 myNotification.onclick = () => {
   console.log('Notification clicked')
 }
+
+myNotification.show();
 ```
 
 While code and user experience across operating systems are similar, there
