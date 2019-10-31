@@ -68,6 +68,12 @@
 #include "shell/browser/extensions/atom_extension_system.h"
 #endif
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
+#include "components/spellcheck/browser/pref_names.h"
+#include "components/spellcheck/common/spellcheck_common.h"
+#endif
+
 using content::BrowserThread;
 using content::StoragePartition;
 
@@ -646,6 +652,42 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
                      url, num_sockets_to_preconnect));
 }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+base::Value Session::GetSpellCheckerLanguages() {
+  return browser_context_->prefs()
+      ->Get(spellcheck::prefs::kSpellCheckDictionaries)
+      ->Clone();
+}
+
+void Session::SetSpellCheckerLanguages(
+    gin_helper::ErrorThrower thrower,
+    const std::vector<std::string>& languages) {
+  base::ListValue language_codes;
+  for (const std::string& lang : languages) {
+    std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
+    if (code.empty()) {
+      thrower.ThrowError("Invalid language code provided: \"" + lang +
+                         "\" is not a valid language code");
+      return;
+    }
+    language_codes.AppendString(code);
+  }
+  browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
+                                 language_codes);
+}
+
+void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
+                                          const GURL& url) {
+  if (!url.is_valid()) {
+    thrower.ThrowError(
+        "The URL you provided to setSpellCheckerDictionaryDownloadURL is not a "
+        "valid URL");
+    return;
+  }
+  SpellcheckHunspellDictionary::SetDownloadURLForTesting(url);
+}
+#endif
+
 // static
 gin::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
                                          AtomBrowserContext* browser_context) {
@@ -716,6 +758,14 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getPreloads", &Session::GetPreloads)
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
       .SetMethod("loadChromeExtension", &Session::LoadChromeExtension)
+#endif
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+      .SetMethod("getSpellCheckerLanguages", &Session::GetSpellCheckerLanguages)
+      .SetMethod("setSpellCheckerLanguages", &Session::SetSpellCheckerLanguages)
+      .SetProperty("availableSpellCheckerLanguages",
+                   &spellcheck::SpellCheckLanguages)
+      .SetMethod("setSpellCheckerDictionaryDownloadURL",
+                 &SetSpellCheckerDictionaryDownloadURL)
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
       .SetProperty("cookies", &Session::Cookies)

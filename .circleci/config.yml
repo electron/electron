@@ -319,6 +319,8 @@ step-gn-check: &step-gn-check
       gn check out/Default //electron:electron_app
       gn check out/Default //electron:manifests
       gn check out/Default //electron/shell/common/api:mojo
+      # Check the hunspell filenames
+      node electron/script/gen-hunspell-filenames.js --check
 
 step-electron-build: &step-electron-build
   run:
@@ -534,6 +536,20 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
+step-hunspell-build: &step-hunspell-build
+  run:
+    name: hunspell build
+    command: |
+      cd src
+      if [ "$SKIP_DIST_ZIP" != "1" ]; then
+        ninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+      fi
+
+step-hunspell-store: &step-hunspell-store
+  store_artifacts:
+    path: src/out/Default/hunspell_dictionaries.zip
+    destination: hunspell_dictionaries.zip
+
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
     name: Generate breakpad symbols
@@ -693,7 +709,6 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
       rm -rf src/ios
       rm -rf src/third_party/blink/web_tests
       rm -rf src/third_party/blink/perf_tests
-      rm -rf src/third_party/hunspell_dictionaries
       rm -rf src/third_party/WebKit/LayoutTests
 
 # Save the src cache based on the deps hash
@@ -912,6 +927,10 @@ steps-electron-build: &steps-electron-build
     - *step-ffmpeg-build
     - *step-ffmpeg-store
 
+    # hunspell
+    - *step-hunspell-build
+    - *step-hunspell-store
+
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
@@ -989,6 +1008,10 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
     - *step-ffmpeg-store
+
+    # hunspell
+    - *step-hunspell-build
+    - *step-hunspell-store
 
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
@@ -1078,6 +1101,10 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
     - *step-ffmpeg-store
+
+    # hunspell
+    - *step-hunspell-build
+    - *step-hunspell-store
 
     # typescript defs
     - *step-maybe-generate-typescript-defs

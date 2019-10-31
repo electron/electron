@@ -138,6 +138,9 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   dict.Set("selectionText", params.selection_text);
   dict.Set("titleText", params.title_text);
   dict.Set("misspelledWord", params.misspelled_word);
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  dict.Set("dictionarySuggestions", params.dictionary_suggestions);
+#endif
   dict.Set("frameCharset", params.frame_charset);
   dict.Set("inputFieldType", params.input_field_type);
   dict.Set("menuSourceType", params.source_type);
