@@ -148,7 +148,7 @@ class Promise<void> : public PromiseBase {
   using PromiseBase::PromiseBase;
 
   // Helper for resolving the empty promise.
-  static void ResolveEmptyPromise(Promise<void> promise);
+  static void ResolvePromise(Promise<void> promise);
 
   // Returns an already-resolved promise.
   static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate);

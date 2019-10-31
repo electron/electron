@@ -479,7 +479,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
                             runner->PostTask(
                                 FROM_HERE,
                                 base::BindOnce(
-                                    util::Promise<void>::ResolveEmptyPromise,
+                                    util::Promise<void>::ResolvePromise,
                                     std::move(p)));
                           }
                         }];

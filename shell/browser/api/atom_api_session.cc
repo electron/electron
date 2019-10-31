@@ -285,7 +285,7 @@ v8::Local<v8::Promise> Session::ClearCache() {
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
       ->ClearHttpCache(base::Time(), base::Time::Max(), nullptr,
-                       base::BindOnce(util::Promise<void>::ResolveEmptyPromise,
+                       base::BindOnce(util::Promise<void>::ResolvePromise,
                                       std::move(promise)));
 
   return handle;
@@ -310,8 +310,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin_helper::Arguments* args) {
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin, base::Time(),
       base::Time::Max(),
-      base::BindOnce(util::Promise<void>::ResolveEmptyPromise,
-                     std::move(promise)));
+      base::BindOnce(util::Promise<void>::ResolvePromise, std::move(promise)));
   return handle;
 }
 
@@ -356,8 +355,8 @@ v8::Local<v8::Promise> Session::SetProxy(gin_helper::Arguments* args) {
   }
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::BindOnce(util::Promise<void>::ResolveEmptyPromise,
-                                std::move(promise)));
+      FROM_HERE,
+      base::BindOnce(util::Promise<void>::ResolvePromise, std::move(promise)));
 
   return handle;
 }
@@ -464,7 +463,7 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
       ->ClearHostCache(nullptr,
-                       base::BindOnce(util::Promise<void>::ResolveEmptyPromise,
+                       base::BindOnce(util::Promise<void>::ResolvePromise,
                                       std::move(promise)));
 
   return handle;
@@ -477,9 +476,9 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
 
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
-      ->ClearHttpAuthCache(
-          base::Time(), base::BindOnce(util::Promise<void>::ResolveEmptyPromise,
-                                       std::move(promise)));
+      ->ClearHttpAuthCache(base::Time(),
+                           base::BindOnce(util::Promise<void>::ResolvePromise,
+                                          std::move(promise)));
 
   return handle;
 }

@@ -118,7 +118,7 @@ v8::Local<v8::Promise> StartTracing(
 
   if (!TracingController::GetInstance()->StartTracing(
           trace_config,
-          base::BindOnce(electron::util::Promise<void>::ResolveEmptyPromise,
+          base::BindOnce(electron::util::Promise<void>::ResolvePromise,
                          std::move(promise)))) {
     // If StartTracing returns false, that means it didn't invoke its callback.
     // Return an already-resolved promise and abandon the previous promise (it

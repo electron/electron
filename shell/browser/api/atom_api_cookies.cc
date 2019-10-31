@@ -223,7 +223,7 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
       std::move(cookie_deletion_filter),
       base::BindOnce(
           [](util::Promise<void> promise, uint32_t num_deleted) {
-            util::Promise<void>::ResolveEmptyPromise(std::move(promise));
+            util::Promise<void>::ResolvePromise(std::move(promise));
           },
           std::move(promise)));
 
@@ -317,8 +317,8 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
       browser_context_.get());
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
-  manager->FlushCookieStore(base::BindOnce(
-      util::Promise<void>::ResolveEmptyPromise, std::move(promise)));
+  manager->FlushCookieStore(
+      base::BindOnce(util::Promise<void>::ResolvePromise, std::move(promise)));
 
   return handle;
 }
