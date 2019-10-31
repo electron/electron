@@ -6,9 +6,18 @@ Subject: fix ambiguous reference to 'data'
 Upstreamed: https://chromium-review.googlesource.com/c/chromium/src/+/1891762
 
 diff --git a/base/containers/span.h b/base/containers/span.h
-index 2c402495a960f348275b7f925ca5dcdbf691ff7a..1d7c20e2c48d7fb5f7299f19c9048dd6ad8c2aa3 100644
+index 2c402495a960f348275b7f925ca5dcdbf691ff7a..0faa4ad502d3982293f4faa50525a2340dbf2abd 100644
 --- a/base/containers/span.h
 +++ b/base/containers/span.h
+@@ -498,7 +498,7 @@ template <size_t N,
+               decltype(base::data(std::declval<Container&>()))>,
+           typename = internal::EnableIfSpanCompatibleContainer<Container&, T>>
+ constexpr span<T, N> make_span(Container& container) noexcept {
+-  return span<T, N>(data(container), size(container));
++  return span<T, N>(base::data(container), base::size(container));
+ }
+ 
+ template <
 @@ -509,7 +509,7 @@ template <
          decltype(base::data(std::declval<const Container&>()))>,
      typename = internal::EnableIfSpanCompatibleContainer<const Container&, T>>
