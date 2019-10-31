@@ -225,3 +225,75 @@ static_library("chrome") {
     ]
   }
 }
+source_set("plugins") {
+  sources = []
+  deps = []
+  libs = []
+
+  # browser side
+  sources += [
+    "//chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.cc",
+    "//chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h",
+    "//chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc",
+    "//chrome/browser/renderer_host/pepper/pepper_broker_message_filter.h",
+    "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc",
+    "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h",
+  ]
+  deps += [
+    "//media:media_buildflags",
+    "//ppapi/buildflags",
+    "//ppapi/proxy:ipc",
+    "//services/device/public/mojom",
+  ]
+  if (enable_pepper_flash) {
+    sources += [
+      "//chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc",
+      "//chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h",
+      "//chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.cc",
+      "//chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.h",
+      "//chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc",
+      "//chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h",
+    ]
+    if (is_mac) {
+      sources += [
+        "//chrome/browser/renderer_host/pepper/monitor_finder_mac.h",
+        "//chrome/browser/renderer_host/pepper/monitor_finder_mac.mm",
+      ]
+      libs += [ "CoreGraphics.framework" ]
+    }
+    if (is_linux) {
+      deps += [ "//components/services/font/public/cpp" ]
+    }
+  }
+
+  # renderer side
+  sources += [
+    "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc",
+    "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.h",
+    "//chrome/renderer/pepper/pepper_shared_memory_message_filter.cc",
+    "//chrome/renderer/pepper/pepper_shared_memory_message_filter.h",
+  ]
+  if (enable_pepper_flash) {
+    sources += [
+      "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.cc",
+      "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.h",
+      "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
+      "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
+      "//chrome/renderer/pepper/pepper_flash_fullscreen_host.cc",
+      "//chrome/renderer/pepper/pepper_flash_fullscreen_host.h",
+      "//chrome/renderer/pepper/pepper_flash_menu_host.cc",
+      "//chrome/renderer/pepper/pepper_flash_menu_host.h",
+      "//chrome/renderer/pepper/pepper_flash_renderer_host.cc",
+      "//chrome/renderer/pepper/pepper_flash_renderer_host.h",
+    ]
+  }
+  deps += [
+    "//components/strings",
+    "//media:media_buildflags",
+    "//ppapi/host",
+    "//ppapi/proxy",
+    "//ppapi/proxy:ipc",
+    "//ppapi/shared_impl",
+    "//skia",
+  ]
+}
