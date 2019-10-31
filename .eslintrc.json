@@ -25,7 +25,6 @@
     "sourceType": "module"
   },
   "globals": {
-    "isCI": "readonly",
     "standardScheme": "readonly"
   },
   "overrides": [
