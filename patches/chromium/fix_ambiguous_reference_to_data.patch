@@ -6,7 +6,7 @@ Subject: fix ambiguous reference to 'data'
 Upstreamed: https://chromium-review.googlesource.com/c/chromium/src/+/1891762
 
 diff --git a/base/containers/span.h b/base/containers/span.h
-index 2c402495a960f348275b7f925ca5dcdbf691ff7a..4aacb4373ec6be54923ea1f5bf9e6bf9d267814e 100644
+index 2c402495a960f348275b7f925ca5dcdbf691ff7a..1d7c20e2c48d7fb5f7299f19c9048dd6ad8c2aa3 100644
 --- a/base/containers/span.h
 +++ b/base/containers/span.h
 @@ -509,7 +509,7 @@ template <
@@ -14,7 +14,7 @@ index 2c402495a960f348275b7f925ca5dcdbf691ff7a..4aacb4373ec6be54923ea1f5bf9e6bf9
      typename = internal::EnableIfSpanCompatibleContainer<const Container&, T>>
  constexpr span<T, N> make_span(const Container& container) noexcept {
 -  return span<T, N>(data(container), size(container));
-+  return span<T, N>(base::data(container), size(container));
++  return span<T, N>(base::data(container), base::size(container));
  }
  
  template <int&... ExplicitArgumentBarrier, typename T, size_t X>
