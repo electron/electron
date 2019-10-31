@@ -8,7 +8,6 @@ blink_world_context.patch
 can_create_window.patch
 disable_hidden.patch
 dom_storage_limits.patch
-out_of_process_instance.patch
 render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
 thread_capabilities.patch
@@ -21,7 +20,7 @@ blink-worker-enable-csp-in-file-scheme.patch
 disable-redraw-lock.patch
 v8_context_snapshot_generator.patch
 boringssl_build_gn.patch
-pepper_flash.patch
+pepper_plugin_support.patch
 no_cache_storage_check.patch
 blink_fix_prototype_assert.patch
 libgtkui_export.patch

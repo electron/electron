@@ -1,9 +1,10 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
-Date: Thu, 20 Sep 2018 17:48:09 -0700
-Subject: pepper_flash.patch
+Date: Thu, 20 Sep 2018 17:46:17 -0700
+Subject: pepper plugin support
 
-Allows building chrome pepper flash integration for Electron.
+This tweaks Chrome's pepper flash and PDF plugin support to make it
+usable from Electron.
 
 diff --git a/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h b/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h
 index 735da93c3cabb8c6139971295740ba14a30d1b69..533f53fbc42397608e3762e370cc935c045ce3f1 100644
@@ -405,28 +406,27 @@ index b36248debee4f5e0503e7611f7d1c47d59650f5b..7af31ee0d2cbb4c8fc7cd41c356305d6
    DISALLOW_COPY_AND_ASSIGN(PepperIsolatedFileSystemMessageFilter);
  };
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index d63e90b6c5079ab3237c4bad3d5e63ce2f99c657..c98a7bd07ddd9527fc67b05b24463ed4b05ec316 100644
+index d63e90b6c5079ab3237c4bad3d5e63ce2f99c657..57954fab286dc3d4b4039895b6e844b619bc31df 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-@@ -10,8 +10,10 @@
+@@ -10,7 +10,9 @@
  #include "chrome/renderer/pepper/pepper_flash_fullscreen_host.h"
  #include "chrome/renderer/pepper/pepper_flash_menu_host.h"
  #include "chrome/renderer/pepper/pepper_flash_renderer_host.h"
 +#if 0
  #include "chrome/renderer/pepper/pepper_uma_host.h"
- #include "components/pdf/renderer/pepper_pdf_host.h"
 +#endif
+ #include "components/pdf/renderer/pepper_pdf_host.h"
  #include "content/public/renderer/renderer_ppapi_host.h"
  #include "ppapi/host/ppapi_host.h"
- #include "ppapi/host/resource_host.h"
-@@ -86,6 +88,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -95,6 +97,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
      }
    }
  
 +#if 0
-   if (host_->GetPpapiHost()->permissions().HasPermission(
-           ppapi::PERMISSION_PDF)) {
-     switch (message.type()) {
+   // Permissions for the following interfaces will be checked at the
+   // time of the corresponding instance's method calls.  Currently these
+   // interfaces are available only for whitelisted apps which may not have
 @@ -104,6 +107,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
        return std::make_unique<PepperUMAHost>(host_, instance, resource);
      }
