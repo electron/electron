@@ -570,6 +570,9 @@ Returns:
   * `titleText` String - Title or alt text of the selection that the context
     was invoked on.
   * `misspelledWord` String - The misspelled word under the cursor, if any.
+  * `dictionarySuggestions` String[] - An array of suggested words to show the
+    user to replace the `misspelledWord`.  Only available if there is a misspelled
+    word and spellchecker is enabled.
   * `frameCharset` String - The character encoding of the frame on which the
     menu was invoked.
   * `inputFieldType` String - If the context menu was invoked on an input

@@ -129,6 +129,9 @@
       "node script/gen-filenames.js",
       "python script/check-trailing-whitespace.py --fix",
       "git add filenames.auto.gni"
+    ],
+    "DEPS": [
+      "node script/gen-hunspell-filenames.js"
     ]
   },
   "dependencies": {
