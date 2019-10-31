@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Wed, 30 Oct 2019 16:26:29 -0700
+Subject: fix ambiguous reference to 'data'
+
+Upstreamed: https://chromium-review.googlesource.com/c/chromium/src/+/1891762
+
+diff --git a/base/containers/span.h b/base/containers/span.h
+index 2c402495a960f348275b7f925ca5dcdbf691ff7a..4aacb4373ec6be54923ea1f5bf9e6bf9d267814e 100644
+--- a/base/containers/span.h
++++ b/base/containers/span.h
+@@ -509,7 +509,7 @@ template <
+         decltype(base::data(std::declval<const Container&>()))>,
+     typename = internal::EnableIfSpanCompatibleContainer<const Container&, T>>
+ constexpr span<T, N> make_span(const Container& container) noexcept {
+-  return span<T, N>(data(container), size(container));
++  return span<T, N>(base::data(container), size(container));
+ }
+ 
+ template <int&... ExplicitArgumentBarrier, typename T, size_t X>
