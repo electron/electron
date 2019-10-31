@@ -145,7 +145,7 @@ WebContentsPreferences::WebContentsPreferences(
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  SetDefaultBoolIfUndefined(options::kSpellcheck, true);
+  SetDefaultBoolIfUndefined(options::kSpellcheck, false);
 #endif
 
   // If this is a <webview> tag, and the embedder is offscreen-rendered, then

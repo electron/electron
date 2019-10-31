@@ -386,7 +386,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       to accessibility tools such as screen readers. This string is not directly
       visible to users.
     * `spellcheck` Boolean (optional) - Whether to enable the builtin spellchecker.
-      Default is `true`.
+      Default is `false`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
