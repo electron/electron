@@ -60,8 +60,8 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "components/pdf/browser/pdf_web_contents_helper.h"         // nogncheck
-#include "components/pdf/browser/pdf_web_contents_helper_client.h"  // nogncheck
+#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
+#include "shell/browser/electron_pdf_web_contents_helper_client.h"
 #endif
 
 using content::BrowserThread;
@@ -188,24 +188,6 @@ CommonWebContentsDelegate::CommonWebContentsDelegate()
       weak_factory_(this) {}
 
 CommonWebContentsDelegate::~CommonWebContentsDelegate() = default;
-
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-class ElectronPDFWebContentsHelperClient
-    : public pdf::PDFWebContentsHelperClient {
- public:
-  ElectronPDFWebContentsHelperClient() {}
-  ~ElectronPDFWebContentsHelperClient() override = default;
-
- private:
-  // pdf::PDFWebContentsHelperClient
-  void UpdateContentRestrictions(content::WebContents* contents,
-                                 int content_restrictions) override {}
-  void OnPDFHasUnsupportedFeature(content::WebContents* contents) override {}
-  void OnSaveURL(content::WebContents* contents) override {}
-  void SetPluginCanSave(content::WebContents* contents,
-                        bool can_save) override {}
-};
-#endif
 
 void CommonWebContentsDelegate::InitWithWebContents(
     content::WebContents* web_contents,

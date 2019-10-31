@@ -683,6 +683,10 @@ source_set("electron_lib") {
       "//components/pdf/renderer",
       "//pdf",
     ]
+    sources += [
+      "shell/browser/electron_pdf_web_contents_helper_client.cc",
+      "shell/browser/electron_pdf_web_contents_helper_client.h",
+    ]
   }
 }
 
