@@ -310,7 +310,7 @@ void OpenDialogCompletion(
 #if defined(MAS_BUILD)
     dict.Set("bookmarks", std::vector<std::string>());
 #endif
-    promise.ResolveWithGin(dict);
+    promise.Resolve(dict);
   } else {
     std::vector<base::FilePath> paths;
     dict.Set("canceled", false);
@@ -326,7 +326,7 @@ void OpenDialogCompletion(
     ReadDialogPaths(dialog, &paths);
     dict.Set("filePaths", paths);
 #endif
-    promise.ResolveWithGin(dict);
+    promise.Resolve(dict);
   }
 }
 
@@ -401,7 +401,7 @@ void SaveDialogCompletion(
     }
 #endif
   }
-  promise.ResolveWithGin(dict);
+  promise.Resolve(dict);
 }
 
 void ShowSaveDialog(const DialogSettings& settings,

@@ -128,7 +128,7 @@ void FilterCookies(const base::Value& filter,
     if (MatchesCookie(filter, cookie))
       result.push_back(cookie);
   }
-  promise.ResolveWithGin(result);
+  promise.Resolve(result);
 }
 
 void FilterCookieWithStatuses(const base::Value& filter,

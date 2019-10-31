@@ -137,7 +137,7 @@ void OnTraceBufferUsageAvailable(
   dict.Set("percentage", percent_full);
   dict.Set("value", approximate_count);
 
-  promise.ResolveWithGin(dict);
+  promise.Resolve(dict);
 }
 
 v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {

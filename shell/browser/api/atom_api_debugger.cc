@@ -80,7 +80,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
       if (dict->GetDictionary("result", &result_body)) {
         result.Swap(result_body);
       }
-      promise.ResolveWithGin(result);
+      promise.Resolve(result);
     }
   }
 }

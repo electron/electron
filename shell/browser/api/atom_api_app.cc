@@ -534,7 +534,7 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 
 void OnIconDataAvailable(util::Promise<gfx::Image> promise, gfx::Image icon) {
   if (!icon.IsEmpty()) {
-    promise.ResolveWithGin(icon);
+    promise.Resolve(icon);
   } else {
     promise.RejectWithErrorMessage("Failed to get file icon.");
   }
@@ -1188,7 +1188,7 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
-    promise.ResolveWithGin(*icon);
+    promise.Resolve(*icon);
   } else {
     icon_manager->LoadIcon(
         normalized_path, icon_size,

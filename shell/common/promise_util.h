@@ -5,7 +5,6 @@
 #ifndef SHELL_COMMON_PROMISE_UTIL_H_
 #define SHELL_COMMON_PROMISE_UTIL_H_
 
-#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -14,54 +13,66 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "native_mate/converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 
 namespace electron {
 
 namespace util {
 
+// Non-template base class to share code between templates instances.
+class PromiseBase {
+ public:
+  explicit PromiseBase(v8::Isolate* isolate);
+  PromiseBase(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle);
+  ~PromiseBase();
+
+  // Support moving.
+  PromiseBase(PromiseBase&&);
+  PromiseBase& operator=(PromiseBase&&);
+
+  v8::Maybe<bool> Reject();
+  v8::Maybe<bool> Reject(v8::Local<v8::Value> except);
+  v8::Maybe<bool> RejectWithErrorMessage(base::StringPiece message);
+
+  v8::Local<v8::Context> GetContext() const;
+  v8::Local<v8::Promise> GetHandle() const;
+
+  v8::Isolate* isolate() const { return isolate_; }
+
+ protected:
+  v8::Local<v8::Promise::Resolver> GetInner() const;
+
+ private:
+  v8::Isolate* isolate_;
+  v8::Global<v8::Context> context_;
+  v8::Global<v8::Promise::Resolver> resolver_;
+
+  DISALLOW_COPY_AND_ASSIGN(PromiseBase);
+};
+
 // A wrapper around the v8::Promise.
 //
 // This is a move-only type that should always be `std::move`d when passed to
 // callbacks, and it should be destroyed on the same thread of creation.
 template <typename RT>
-class Promise {
+class Promise : public PromiseBase {
  public:
   // Create a new promise.
-  explicit Promise(v8::Isolate* isolate)
-      : Promise(isolate,
-                v8::Promise::Resolver::New(isolate->GetCurrentContext())
-                    .ToLocalChecked()) {}
+  explicit Promise(v8::Isolate* isolate) : PromiseBase(isolate) {}
 
   // Wrap an existing v8 promise.
   Promise(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle)
-      : isolate_(isolate),
-        context_(isolate, isolate->GetCurrentContext()),
-        resolver_(isolate, handle) {}
+      : PromiseBase(isolate, handle) {}
 
-  ~Promise() = default;
-
-  // Support moving.
-  Promise(Promise&&) = default;
-  Promise& operator=(Promise&&) = default;
-
-  v8::Isolate* isolate() const { return isolate_; }
-  v8::Local<v8::Context> GetContext() {
-    return v8::Local<v8::Context>::New(isolate_, context_);
-  }
-
-  // helpers for promise resolution and rejection
-
+  // Helpers for promise resolution and rejection.
   static void ResolvePromise(Promise<RT> promise, RT result) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTask(
-          FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce([](Promise<RT> promise,
-                            RT result) { promise.ResolveWithGin(result); },
-                         std::move(promise), std::move(result)));
+      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                     base::BindOnce([](Promise<RT> promise,
+                                       RT result) { promise.Resolve(result); },
+                                    std::move(promise), std::move(result)));
     } else {
-      promise.ResolveWithGin(result);
+      promise.Resolve(result);
     }
   }
 
@@ -103,8 +114,6 @@ class Promise {
     return resolved.GetHandle();
   }
 
-  v8::Local<v8::Promise> GetHandle() const { return GetInner()->GetPromise(); }
-
   v8::Maybe<bool> Resolve() {
     static_assert(std::is_same<void*, RT>(),
                   "Can only resolve void* promises with no value");
@@ -117,24 +126,19 @@ class Promise {
     return GetInner()->Resolve(GetContext(), v8::Undefined(isolate()));
   }
 
-  v8::Maybe<bool> Reject() {
+  // Promise resolution is a microtask
+  // We use the MicrotasksRunner to trigger the running of pending microtasks
+  v8::Maybe<bool> Resolve(const RT& value) {
+    static_assert(!std::is_same<void*, RT>(),
+                  "void* promises can not be resolved with a value");
     v8::HandleScope handle_scope(isolate());
     v8::MicrotasksScope script_scope(isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
-    return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
-  }
-
-  v8::Maybe<bool> Reject(v8::Local<v8::Value> exception) {
-    v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
-    v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), GetContext()));
-
-    return GetInner()->Reject(GetContext(), exception);
+    return GetInner()->Resolve(GetContext(),
+                               gin::ConvertToV8(isolate(), value));
   }
 
   template <typename... ResolveType>
@@ -156,77 +160,11 @@ class Promise {
 
     return GetHandle()->Then(GetContext(), handler);
   }
-
-  // Promise resolution is a microtask
-  // We use the MicrotasksRunner to trigger the running of pending microtasks
-  v8::Maybe<bool> Resolve(const RT& value) {
-    static_assert(!std::is_same<void*, RT>(),
-                  "void* promises can not be resolved with a value");
-    v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
-    v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), GetContext()));
-
-    return GetInner()->Resolve(GetContext(),
-                               mate::ConvertToV8(isolate(), value));
-  }
-
-  v8::Maybe<bool> ResolveWithGin(const RT& value) {
-    static_assert(!std::is_same<void*, RT>(),
-                  "void* promises can not be resolved with a value");
-    v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
-    v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), GetContext()));
-
-    return GetInner()->Resolve(GetContext(),
-                               gin::ConvertToV8(isolate(), value));
-  }
-
-  v8::Maybe<bool> RejectWithErrorMessage(base::StringPiece string) {
-    v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
-    v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), GetContext()));
-
-    v8::Local<v8::Value> error =
-        v8::Exception::Error(gin::StringToV8(isolate(), string));
-    return GetInner()->Reject(GetContext(), (error));
-  }
-
- private:
-  v8::Local<v8::Promise::Resolver> GetInner() const {
-    return resolver_.Get(isolate());
-  }
-
-  v8::Isolate* isolate_;
-  v8::Global<v8::Context> context_;
-  v8::Global<v8::Promise::Resolver> resolver_;
-
-  DISALLOW_COPY_AND_ASSIGN(Promise);
 };
 
 }  // namespace util
 
 }  // namespace electron
-
-namespace mate {
-
-template <typename T>
-struct Converter<electron::util::Promise<T>> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const electron::util::Promise<T>& val);
-  // TODO(MarshallOfSound): Implement FromV8 to allow promise chaining
-  //                        in native land
-  // static bool FromV8(v8::Isolate* isolate,
-  //                    v8::Local<v8::Value> val,
-  //                    Promise* out);
-};
-
-}  // namespace mate
 
 namespace gin {
 
@@ -234,8 +172,13 @@ template <typename T>
 struct Converter<electron::util::Promise<T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const electron::util::Promise<T>& val) {
-    return mate::ConvertToV8(isolate, val);
+    return val.GetHandle();
   }
+  // TODO(MarshallOfSound): Implement FromV8 to allow promise chaining
+  //                        in native land
+  // static bool FromV8(v8::Isolate* isolate,
+  //                    v8::Local<v8::Value> val,
+  //                    Promise* out);
 };
 
 }  // namespace gin

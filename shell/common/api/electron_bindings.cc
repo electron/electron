@@ -292,7 +292,7 @@ void ElectronBindings::DidReceiveMemoryDump(
 #endif
       dict.Set("private", osdump.private_footprint_kb);
       dict.Set("shared", osdump.shared_footprint_kb);
-      promise.ResolveWithGin(dict);
+      promise.Resolve(dict);
       resolved = true;
       break;
     }

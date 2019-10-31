@@ -35,7 +35,7 @@ void ResolvePromiseObject(
   dict.Set("response", result);
   dict.Set("checkboxChecked", checkbox_checked);
 
-  promise.ResolveWithGin(dict);
+  promise.Resolve(dict);
 }
 
 v8::Local<v8::Promise> ShowMessageBox(

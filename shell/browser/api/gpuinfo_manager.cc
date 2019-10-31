@@ -47,7 +47,7 @@ void GPUInfoManager::ProcessCompleteInfo() {
   // We have received the complete information, resolve all promises that
   // were waiting for this info.
   for (auto& promise : complete_info_promise_set_) {
-    promise.ResolveWithGin(*result);
+    promise.Resolve(*result);
   }
   complete_info_promise_set_.clear();
 }
@@ -87,7 +87,7 @@ void GPUInfoManager::FetchBasicInfo(
     util::Promise<base::DictionaryValue> promise) {
   gpu::GPUInfo gpu_info;
   CollectBasicGraphicsInfo(&gpu_info);
-  promise.ResolveWithGin(*EnumerateGPUInfo(gpu_info));
+  promise.Resolve(*EnumerateGPUInfo(gpu_info));
 }
 
 std::unique_ptr<base::DictionaryValue> GPUInfoManager::EnumerateGPUInfo(

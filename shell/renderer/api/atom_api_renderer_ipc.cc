@@ -97,7 +97,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
         internal, channel, std::move(message),
         base::BindOnce(
             [](electron::util::Promise<blink::CloneableMessage> p,
-               blink::CloneableMessage result) { p.ResolveWithGin(result); },
+               blink::CloneableMessage result) { p.Resolve(result); },
             std::move(p)));
 
     return handle;

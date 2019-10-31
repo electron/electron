@@ -216,7 +216,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
       dict.Set("canceled", true);
       dict.Set("filePath", base::FilePath());
     }
-    save_promise_->ResolveWithGin(dict);
+    save_promise_->Resolve(dict);
   } else if (open_promise_) {
     gin_helper::Dictionary dict =
         gin::Dictionary::CreateEmpty(open_promise_->isolate());
@@ -227,7 +227,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
       dict.Set("canceled", true);
       dict.Set("filePaths", std::vector<base::FilePath>());
     }
-    open_promise_->ResolveWithGin(dict);
+    open_promise_->Resolve(dict);
   }
   delete this;
 }

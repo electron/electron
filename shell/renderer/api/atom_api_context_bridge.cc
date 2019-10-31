@@ -153,10 +153,10 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Context::Scope source_scope(source_context);
     {
       source_context->GetIsolate()->ThrowException(v8::Exception::TypeError(
-          mate::StringToV8(source_context->GetIsolate(),
-                           "Electron contextBridge recursion depth exceeded.  "
-                           "Nested objects "
-                           "deeper than 1000 are not supported.")));
+          gin::StringToV8(source_context->GetIsolate(),
+                          "Electron contextBridge recursion depth exceeded.  "
+                          "Nested objects "
+                          "deeper than 1000 are not supported.")));
       return v8::MaybeLocal<v8::Value>();
     }
   }

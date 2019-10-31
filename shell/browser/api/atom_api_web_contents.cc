@@ -323,7 +323,7 @@ namespace {
 void OnCapturePageDone(util::Promise<gfx::Image> promise,
                        const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
-  promise.ResolveWithGin(gfx::Image::CreateFrom1xBitmap(bitmap));
+  promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
@@ -2175,7 +2175,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
-    promise.ResolveWithGin(gfx::Image());
+    promise.Resolve(gfx::Image());
     return handle;
   }
 

@@ -86,7 +86,7 @@ void OnDialogOpened(electron::util::Promise<gin_helper::Dictionary> promise,
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("canceled", canceled);
   dict.Set("filePaths", paths);
-  promise.ResolveWithGin(dict);
+  promise.Resolve(dict);
 }
 
 void RunOpenDialogInNewThread(
@@ -107,7 +107,7 @@ void OnSaveDialogDone(electron::util::Promise<gin_helper::Dictionary> promise,
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("canceled", canceled);
   dict.Set("filePath", path);
-  promise.ResolveWithGin(dict);
+  promise.Resolve(dict);
 }
 
 void RunSaveDialogInNewThread(
@@ -281,7 +281,7 @@ void ShowOpenDialog(const DialogSettings& settings,
   if (!CreateDialogThread(&run_state)) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
-    promise.ResolveWithGin(dict);
+    promise.Resolve(dict);
   } else {
     run_state.dialog_thread->task_runner()->PostTask(
         FROM_HERE, base::BindOnce(&RunOpenDialogInNewThread, run_state,
@@ -332,7 +332,7 @@ void ShowSaveDialog(const DialogSettings& settings,
         gin::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
-    promise.ResolveWithGin(dict);
+    promise.Resolve(dict);
   } else {
     run_state.dialog_thread->task_runner()->PostTask(
         FROM_HERE, base::BindOnce(&RunSaveDialogInNewThread, run_state,
