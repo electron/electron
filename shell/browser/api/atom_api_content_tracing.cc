@@ -12,7 +12,7 @@
 #include "content/public/browser/tracing_controller.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"

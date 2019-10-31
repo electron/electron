@@ -23,7 +23,7 @@
 #include "services/service_manager/sandbox/switches.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/web_view_manager.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 

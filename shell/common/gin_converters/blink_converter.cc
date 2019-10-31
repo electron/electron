@@ -15,7 +15,7 @@
 #include "mojo/public/cpp/base/values_mojom_traits.h"
 #include "mojo/public/mojom/base/values.mojom.h"
 #include "shell/common/deprecate_util.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/keyboard_util.h"
 #include "third_party/blink/public/platform/web_input_event.h"

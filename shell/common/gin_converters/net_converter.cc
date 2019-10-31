@@ -21,7 +21,7 @@
 #include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
