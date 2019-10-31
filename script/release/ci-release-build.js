@@ -27,6 +27,9 @@ const vstsArmJobs = [
   'electron-woa-testing'
 ]
 
+const circleCIRetryLimit = 10
+const circleCIWait = 10000
+
 let jobRequestedCount = 0
 
 async function makeRequest (requestOptions, parseResponse) {
@@ -99,7 +102,7 @@ async function circleCIcall (targetBranch, job, options) {
 
 async function getCircleCIWorkflowId (pipelineId) {
   const pipelineInfoUrl = `https://circleci.com/api/v2/pipeline/${pipelineId}`
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < circleCIRetryLimit; i++) {
     const pipelineInfo = await circleCIRequest(pipelineInfoUrl, 'GET')
     switch (pipelineInfo.state) {
       case 'created': {
@@ -114,14 +117,15 @@ async function getCircleCIWorkflowId (pipelineId) {
         return -1
       }
     }
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise(resolve => setTimeout(resolve, circleCIWait))
   }
+  console.log(`Error: could not get CircleCI WorkflowId for ${pipelineId} after ${circleCIRetryLimit} times.`)
   return -1
 }
 
 async function getCircleCIJobNumber (workflowId) {
   const jobInfoUrl = `https://circleci.com/api/v2/workflow/${workflowId}/jobs`
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < circleCIRetryLimit; i++) {
     const jobInfo = await circleCIRequest(jobInfoUrl, 'GET')
     if (!jobInfo.items) {
       continue
@@ -145,8 +149,9 @@ async function getCircleCIJobNumber (workflowId) {
         return -1
       }
     }
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise(resolve => setTimeout(resolve, circleCIWait))
   }
+  console.log(`Error: could not get CircleCI Job Number for ${workflowId} after ${circleCIRetryLimit} times.`)
   return -1
 }
 
