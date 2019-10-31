@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "electron/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/manifest.h"
 
 const service_manager::Manifest& GetElectronContentBrowserOverlayManifest();
