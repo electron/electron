@@ -137,7 +137,7 @@ const LINTERS = [ {
   key: 'patches',
   roots: ['patches'],
   test: () => true,
-  run: () => {
+  run: (opts, filenames) => {
     const patchesDir = path.resolve(__dirname, '../patches')
     for (const patchTarget of fs.readdirSync(patchesDir)) {
       const targetDir = path.resolve(patchesDir, patchTarget)
@@ -179,6 +179,18 @@ const LINTERS = [ {
           throw new Error(`Expected all the patch files listed in the .patches file at "${dotPatchesPath}" to exist but some did not:\n${JSON.stringify([...patchFileSet.values()], null, 2)}`)
         }
       }
+    }
+
+    let ok = true
+    filenames.filter(f => f.endsWith('.patch')).forEach(f => {
+      const patchText = fs.readFileSync(f, 'utf8')
+      if (/^Subject: .*$\s+^diff/.test(patchText)) {
+        console.warn(`Patch file '${f}' has no description. Every patch must contain a justification for why the patch exists and the plan for its removal.`)
+        ok = false
+      }
+    })
+    if (!ok) {
+      process.exit(1)
     }
   }
 }]
