@@ -46,8 +46,6 @@ static_library("chrome") {
     "//chrome/browser/predictors/proxy_lookup_client_impl.h",
     "//chrome/browser/predictors/resolve_host_client_impl.cc",
     "//chrome/browser/predictors/resolve_host_client_impl.h",
-    "//chrome/browser/predictors/resource_prefetch_predictor.cc",
-    "//chrome/browser/predictors/resource_prefetch_predictor.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
     "//chrome/browser/ssl/tls_deprecation_config.cc",
