@@ -683,11 +683,15 @@ source_set("electron_lib") {
     sources += filenames.lib_sources_extensions
   }
 
+  if (enable_pdf) {
+    # Printing depends on some //pdf code, so it needs to be built even if the
+    # pdf viewer isn't enabled.
+    deps += [ "//pdf" ]
+  }
   if (enable_pdf_viewer) {
     deps += [
       "//components/pdf/browser",
       "//components/pdf/renderer",
-      "//pdf",
     ]
     sources += [
       "shell/browser/electron_pdf_web_contents_helper_client.cc",
