@@ -176,8 +176,12 @@ void AtomRendererClient::WillReleaseScriptContext(
   // avoid memory leaks
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kNodeIntegrationInSubFrames) ||
-      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
+      command_line->HasSwitch(
+          switches::kDisableElectronSiteInstanceOverrides)) {
     node::FreeEnvironment(env);
+    if (env == node_bindings_->uv_env())
+      node::FreeIsolateData(node_bindings_->isolate_data());
+  }
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);
