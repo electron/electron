@@ -1,7 +1,7 @@
 const {ipcRenderer} = require('electron')
 
 const appInfoBtn = document.getElementById('app-info')
-const links = document.querySelectorAll('a[href]')
+const electron_doc_link = document.querySelectorAll('a[href]')
 
 appInfoBtn.addEventListener('click', () => {
   ipcRenderer.send('get-app-path')
@@ -12,12 +12,7 @@ ipcRenderer.on('got-app-path', (event, path) => {
   document.getElementById('got-app-info').innerHTML = message
 })
 
-Array.prototype.forEach.call(links, (link) => {
-  const url = link.getAttribute('href')
-  if (url.indexOf('http') === 0) {
-    link.addEventListener('click', (e) => {
-      e.preventDefault()
-      shell.openExternal(url)
-    })
-  }
+electron_doc_link.addEventListener('click', (e) => {
+  e.preventDefault()
+  shell.openExternal(url)
 })
