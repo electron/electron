@@ -5,6 +5,8 @@
 #ifndef SHELL_RENDERER_ELECTRON_RENDERER_PEPPER_HOST_FACTORY_H_
 #define SHELL_RENDERER_ELECTRON_RENDERER_PEPPER_HOST_FACTORY_H_
 
+#include <memory>
+
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "ppapi/host/host_factory.h"
