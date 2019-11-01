@@ -123,10 +123,10 @@ describe('systemPreferences module', () => {
         systemPreferences.getSystemColor(color as any)
       }).to.throw(`Unknown system color: ${color}`)
     })
-  
+
     it('returns a valid system color', () => {
       const colors = ['blue', 'brown', 'gray', 'green', 'orange', 'pink', 'purple', 'red', 'yellow']
-      
+
       colors.forEach(color => {
         const sysColor = systemPreferences.getSystemColor(color as any)
         expect(sysColor).to.be.a('string')
@@ -141,7 +141,7 @@ describe('systemPreferences module', () => {
         systemPreferences.getColor(color as any)
       }).to.throw(`Unknown color: ${color}`)
     })
-  
+
     it('returns a valid color', () => {
       const colors = [
         'alternate-selected-control-text',
@@ -178,7 +178,7 @@ describe('systemPreferences module', () => {
         'window-background',
         'window-frame-text'
       ]
-      
+
       colors.forEach(color => {
         const sysColor = systemPreferences.getColor(color as any)
         expect(sysColor).to.be.a('string')
@@ -236,7 +236,7 @@ describe('systemPreferences module', () => {
 
   ifdescribe(process.platform === 'darwin')('systemPreferences.getMediaAccessStatus(mediaType)', () => {
     const statuses = ['not-determined', 'granted', 'denied', 'restricted', 'unknown']
-    
+
     it('returns an access status for a camera access request', () => {
       const cameraStatus = systemPreferences.getMediaAccessStatus('camera')
       expect(statuses).to.include(cameraStatus)

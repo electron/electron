@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { nextVersion } from '../script/release/version-bumper'
 import * as utils from '../script/release/version-utils'
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe } from './spec-helpers'
 
 describe('version-bumper', () => {
   describe('makeVersion', () => {

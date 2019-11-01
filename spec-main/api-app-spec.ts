@@ -5,11 +5,11 @@ import * as https from 'https'
 import * as net from 'net'
 import * as fs from 'fs'
 import * as path from 'path'
-import split = require('split')
 import { app, BrowserWindow, Menu } from 'electron'
-import { emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
-import { ifdescribe } from './spec-helpers';
+import { emittedOnce } from './events-helpers'
+import { closeWindow } from './window-helpers'
+import { ifdescribe } from './spec-helpers'
+import split = require('split')
 
 const features = process.electronBinding('features')
 
@@ -196,7 +196,7 @@ describe('app module', () => {
       // Singleton will send us greeting data to let us know it's running.
       // After that, ask it to exit gracefully and confirm that it does.
       if (appProcess && appProcess.stdout) {
-        appProcess.stdout.on('data', data => appProcess!.kill())
+        appProcess.stdout.on('data', () => appProcess!.kill())
       }
       const [code, signal] = await emittedOnce(appProcess, 'close')
 
@@ -403,10 +403,9 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false })
     })
 
-    it('should emit renderer-process-crashed event when renderer crashes', async function() {
+    it('should emit renderer-process-crashed event when renderer crashes', async function () {
       // FIXME: re-enable this test on win32.
-      if (process.platform === 'win32')
-        return this.skip()
+      if (process.platform === 'win32') { return this.skip() }
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -644,7 +643,7 @@ describe('app module', () => {
     it('returns whether the Chrome has accessibility APIs enabled', () => {
       expect(app.accessibilitySupportEnabled).to.be.a('boolean')
 
-      //TODO(codebytere): remove when propertyification is complete
+      // TODO(codebytere): remove when propertyification is complete
       expect(app.isAccessibilitySupportEnabled).to.be.a('function')
       expect(app.setAccessibilitySupportEnabled).to.be.a('function')
     })

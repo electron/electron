@@ -5,7 +5,7 @@ import * as os from 'os'
 import * as path from 'path'
 import * as ChildProcess from 'child_process'
 import { session, net } from 'electron'
-import { Socket, AddressInfo } from 'net';
+import { Socket, AddressInfo } from 'net'
 import { ifit } from './spec-helpers'
 import { emittedOnce } from './events-helpers'
 
@@ -84,18 +84,18 @@ describe('netLog module', () => {
     expect(() => testNetLog().startLogging('')).to.throw()
     expect(() => testNetLog().startLogging(null as any)).to.throw()
     expect(() => testNetLog().startLogging([] as any)).to.throw()
-    expect(() => testNetLog().startLogging('aoeu', {captureMode: 'aoeu' as any})).to.throw()
-    expect(() => testNetLog().startLogging('aoeu', {maxFileSize: null as any})).to.throw()
+    expect(() => testNetLog().startLogging('aoeu', { captureMode: 'aoeu' as any })).to.throw()
+    expect(() => testNetLog().startLogging('aoeu', { maxFileSize: null as any })).to.throw()
   })
 
   it('should include cookies when requested', async () => {
-    await testNetLog().startLogging(dumpFileDynamic, {captureMode: "includeSensitive"})
+    await testNetLog().startLogging(dumpFileDynamic, { captureMode: 'includeSensitive' })
     const unique = require('uuid').v4()
     await new Promise((resolve) => {
       const req = net.request(serverUrl)
       req.setHeader('Cookie', `foo=${unique}`)
       req.on('response', (response) => {
-        response.on('data', () => {})  // https://github.com/electron/electron/issues/19214
+        response.on('data', () => {}) // https://github.com/electron/electron/issues/19214
         response.on('end', () => resolve())
       })
       req.end()
@@ -107,12 +107,12 @@ describe('netLog module', () => {
   })
 
   it('should include socket bytes when requested', async () => {
-    await testNetLog().startLogging(dumpFileDynamic, {captureMode: "everything"})
+    await testNetLog().startLogging(dumpFileDynamic, { captureMode: 'everything' })
     const unique = require('uuid').v4()
     await new Promise((resolve) => {
-      const req = net.request({method: 'POST', url: serverUrl})
+      const req = net.request({ method: 'POST', url: serverUrl })
       req.on('response', (response) => {
-        response.on('data', () => {})  // https://github.com/electron/electron/issues/19214
+        response.on('data', () => {}) // https://github.com/electron/electron/issues/19214
         response.on('end', () => resolve())
       })
       req.end(Buffer.from(unique))

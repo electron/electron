@@ -2,9 +2,9 @@ import { expect } from 'chai'
 import * as childProcess from 'child_process'
 import * as path from 'path'
 import * as util from 'util'
-import { emittedOnce } from './events-helpers';
-import { ifdescribe, ifit } from './spec-helpers';
-import { webContents, WebContents } from 'electron';
+import { emittedOnce } from './events-helpers'
+import { ifdescribe, ifit } from './spec-helpers'
+import { webContents, WebContents } from 'electron'
 
 const features = process.electronBinding('features')
 
