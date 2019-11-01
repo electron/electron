@@ -6,8 +6,7 @@ const request = require('request')
 const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds'
 const CIRCLECI_PIPELINE_URL = 'https://circleci.com/api/v2/project/gh/electron/electron/pipeline'
 const VSTS_URL = 'https://github.visualstudio.com/electron/_apis/build'
-const CIRCLECI_RETRY_LIMIT = 10
-const CIRCLECI_WAIT_TIME = 10000
+const CIRCLECI_WAIT_TIME = process.env.CIRCLECI_WAIT_TIME || 30000
 
 const appVeyorJobs = {
   'electron-x64': 'electron-x64-release',
@@ -102,37 +101,42 @@ async function circleCIcall (targetBranch, job, options) {
 
 async function getCircleCIWorkflowId (pipelineId) {
   const pipelineInfoUrl = `https://circleci.com/api/v2/pipeline/${pipelineId}`
-  for (let i = 0; i < CIRCLECI_RETRY_LIMIT; i++) {
+  let workflowId = 0
+  while (workflowId === 0) {
     const pipelineInfo = await circleCIRequest(pipelineInfoUrl, 'GET')
     switch (pipelineInfo.state) {
       case 'created': {
         if (pipelineInfo.workflows.length === 1) {
-          return pipelineInfo.workflows[0].id
+          workflowId = pipelineInfo.workflows[0].id
+          break
         }
         console.log('Unxpected number of workflows, response was:', pipelineInfo)
-        return -1
+        workflowId = -1
+        break
       }
       case 'error': {
         console.log('Error retrieving workflows, response was:', pipelineInfo)
-        return -1
+        workflowId = -1
+        break
       }
     }
     await new Promise(resolve => setTimeout(resolve, CIRCLECI_WAIT_TIME))
   }
-  console.log(`Error: could not get CircleCI WorkflowId for ${pipelineId} after ${CIRCLECI_RETRY_LIMIT} times.`)
-  return -1
+  return workflowId
 }
 
 async function getCircleCIJobNumber (workflowId) {
   const jobInfoUrl = `https://circleci.com/api/v2/workflow/${workflowId}/jobs`
-  for (let i = 0; i < CIRCLECI_RETRY_LIMIT; i++) {
+  let jobNumber = 0
+  while (jobNumber === 0) {
     const jobInfo = await circleCIRequest(jobInfoUrl, 'GET')
     if (!jobInfo.items) {
       continue
     }
     if (jobInfo.items.length !== 1) {
       console.log('Unxpected number of jobs, response was:', jobInfo)
-      return -1
+      jobNumber = -1
+      break
     }
 
     switch (jobInfo.items[0].status) {
@@ -140,19 +144,24 @@ async function getCircleCIJobNumber (workflowId) {
       case 'queued':
       case 'running': {
         if (jobInfo.items[0].job_number && !isNaN(jobInfo.items[0].job_number)) {
-          return jobInfo.items[0].job_number
+          jobNumber = jobInfo.items[0].job_number
         }
         break
       }
-      case 'error': {
-        console.log('Error retrieving jobs, response was:', jobInfo)
-        return -1
+      case 'canceled':
+      case 'error':
+      case 'infrastructure_fail':
+      case 'timedout':
+      case 'not_run':
+      case 'failed': {
+        console.log(`Error job returned a status of ${jobInfo.items[0].status}, response was:`, jobInfo)
+        jobNumber = -1
+        break
       }
     }
     await new Promise(resolve => setTimeout(resolve, CIRCLECI_WAIT_TIME))
   }
-  console.log(`Error: could not get CircleCI Job Number for ${workflowId} after ${CIRCLECI_RETRY_LIMIT} times.`)
-  return -1
+  return jobNumber
 }
 
 async function circleCIRequest (url, method, requestBody) {
