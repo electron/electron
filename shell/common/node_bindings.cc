@@ -126,12 +126,13 @@ bool g_is_initialized = false;
 bool IsPackagedApp() {
   base::FilePath exe_path;
   base::PathService::Get(base::FILE_EXE, &exe_path);
-  base::FilePath::StringType path = base::ToLowerASCII(exe_path.value());
+  base::FilePath::StringType base_name =
+      base::ToLowerASCII(exe_path.BaseName().value());
 
 #if defined(OS_WIN)
-  return path == FILE_PATH_LITERAL("electron.exe");
+  return base_name != FILE_PATH_LITERAL("electron.exe");
 #else
-  return path == FILE_PATH_LITERAL("electron");
+  return base_name != FILE_PATH_LITERAL("electron");
 #endif
 }
 
@@ -151,11 +152,13 @@ void SetNodeOptions(base::Environment* env) {
     std::vector<std::string> parts = base::SplitString(
         options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
+    bool is_packaged_app = IsPackagedApp();
+
     for (const auto& part : parts) {
       // Strip off values passed to individual NODE_OPTIONs
       std::string option = part.substr(0, part.find("="));
 
-      if (IsPackagedApp() &&
+      if (is_packaged_app &&
           allowed_in_packaged.find(option) == allowed_in_packaged.end()) {
         // Explicitly disallow majority of NODE_OPTIONS in packaged apps
         LOG(ERROR) << "Most NODE_OPTIONs are not supported in packaged apps."

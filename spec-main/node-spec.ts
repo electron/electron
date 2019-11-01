@@ -90,7 +90,7 @@ describe('node feature', () => {
 
     it('disallows crypto-related options', (done) => {
       const env = Object.assign({}, process.env, { NODE_OPTIONS: '--use-openssl-ca' });
-      child = childProcess.spawn(process.execPath, { env })
+      child = childProcess.spawn(process.execPath, ['--enable-logging'], { env })
 
       function cleanup () {
         child.stderr.removeListener('data', listener)
