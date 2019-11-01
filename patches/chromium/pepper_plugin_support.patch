@@ -6,28 +6,6 @@ Subject: pepper plugin support
 This tweaks Chrome's pepper flash and PDF plugin support to make it
 usable from Electron.
 
-diff --git a/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h b/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h
-index 735da93c3cabb8c6139971295740ba14a30d1b69..533f53fbc42397608e3762e370cc935c045ce3f1 100644
---- a/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h
-+++ b/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h
-@@ -5,6 +5,7 @@
- #ifndef CHROME_BROWSER_RENDERER_HOST_PEPPER_CHROME_BROWSER_PEPPER_HOST_FACTORY_H_
- #define CHROME_BROWSER_RENDERER_HOST_PEPPER_CHROME_BROWSER_PEPPER_HOST_FACTORY_H_
- 
-+#include "base/component_export.h"
- #include "base/macros.h"
- #include "ppapi/host/host_factory.h"
- 
-@@ -12,7 +13,8 @@ namespace content {
- class BrowserPpapiHost;
- }  // namespace content
- 
--class ChromeBrowserPepperHostFactory : public ppapi::host::HostFactory {
-+class COMPONENT_EXPORT(PEPPER_FLASH) ChromeBrowserPepperHostFactory
-+    : public ppapi::host::HostFactory {
-  public:
-   // Non-owning pointer to the filter must outlive this class.
-   explicit ChromeBrowserPepperHostFactory(content::BrowserPpapiHost* host);
 diff --git a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 index 37245c48cacbc5db164c61e4499f34ee83e0fce7..0fef12892e965e319e45f5dd1a9c5c9fc606aa9a 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
