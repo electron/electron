@@ -86,11 +86,13 @@ async function circleCIcall (targetBranch, job, options) {
       return
     }
     console.log(`CircleCI release build workflow running at https://circleci.com/workflow-run/${workflowId} for ${job}.`)
-    const jobNumber = await getCircleCIJobNumber(workflowId)
-    if (jobNumber === -1) {
+    const jobInfoUrl = `https://circleci.com/api/v2/workflow/${workflowId}/jobs`
+    const jobInfo = await circleCIRequest(jobInfoUrl, 'GET')
+    if (!jobInfo.items || jobInfo.items.length !== 1) {
+      console.log('Error retrieving job for workflow, response was:', jobInfo)
       return
     }
-    const jobUrl = `https://circleci.com/gh/electron/electron/${jobNumber}`
+    const jobUrl = `https://circleci.com/gh/electron/electron/${jobInfo.items[0].job_number}`
     console.log(`CircleCI release build request for ${job} successful.  Check ${jobUrl} for status.`)
   } catch (err) {
     console.log('Error calling CircleCI: ', err)
@@ -114,44 +116,6 @@ async function getCircleCIWorkflowId (pipelineId) {
       case 'error': {
         console.log('Error retrieving workflows, response was:', pipelineInfo)
         workflowId = -1
-        break
-      }
-    }
-    await new Promise(resolve => setTimeout(resolve, 5000))
-  }
-  return -1
-}
-
-async function getCircleCIJobNumber (workflowId) {
-  const jobInfoUrl = `https://circleci.com/api/v2/workflow/${workflowId}/jobs`
-  for (let i = 0; i < 5; i++) {
-    const jobInfo = await circleCIRequest(jobInfoUrl, 'GET')
-    if (!jobInfo.items) {
-      continue
-    }
-    if (jobInfo.items.length !== 1) {
-      console.log('Unxpected number of jobs, response was:', jobInfo)
-      jobNumber = -1
-      break
-    }
-
-    switch (jobInfo.items[0].status) {
-      case 'not_running':
-      case 'queued':
-      case 'running': {
-        if (jobInfo.items[0].job_number && !isNaN(jobInfo.items[0].job_number)) {
-          jobNumber = jobInfo.items[0].job_number
-        }
-        break
-      }
-      case 'canceled':
-      case 'error':
-      case 'infrastructure_fail':
-      case 'timedout':
-      case 'not_run':
-      case 'failed': {
-        console.log(`Error job returned a status of ${jobInfo.items[0].status}, response was:`, jobInfo)
-        jobNumber = -1
         break
       }
     }
