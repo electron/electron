@@ -171,7 +171,7 @@ step-setup-env-for-build: &step-setup-env-for-build
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
         if [ "$CIRCLE_PR_NUMBER" != "" ]; then
           #if building a fork set readonly access to sccache
-          echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
+          echo 'export SCCACHE_BUCKET="electronjs-sccache-ci"' >> $BASH_ENV
           echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
         fi
       fi
