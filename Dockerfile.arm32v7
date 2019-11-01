@@ -43,7 +43,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
+RUN curl -sL https://deb.nodesource.com/setup_13.x | bash - \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs \
   && rm -rf /var/lib/apt/lists/*
 
