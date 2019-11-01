@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Thu, 20 Jun 2019 01:37:22 +0000
-Subject: [mojo-js] Change how JS sends Mojo messages
+Subject: Change how JS sends Mojo messages
 
 This changes how Mojo JS Blink bindings transmit messages produced from
 JS code. Namely, instead of blindly stuffing the JS-provided message
