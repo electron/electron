@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/logging.h"
-#include "components/pdf/renderer/pepper_pdf_host.h"  // nogncheck
 #include "content/public/renderer/renderer_ppapi_host.h"
 #include "ppapi/host/dispatch_host_message.h"
 #include "ppapi/host/ppapi_host.h"
