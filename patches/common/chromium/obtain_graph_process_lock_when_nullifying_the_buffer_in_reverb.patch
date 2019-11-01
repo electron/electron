@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Wed, 30 Oct 2019 02:47:57 +0000
+Subject: Obtain graph/process lock when nullifying the buffer in Reverb
+
+When the buffer is set to `null` while there is an active buffer
+within a reverb object, SetBuffer() function can prematurely
+nullify the `reverb_` and `shared_buffer_` while it is still
+being accessed by the rendering thread.
+
+This CL adds two locks (graph lock and process lock) when the
+buffer gets nullified to ensure the synchronization between
+two threads.
+
+Change-Id: I8f501b6a16b3c7e16db767e0b279a1a53d6eb290
+Bug: 1019226
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1888103
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#710627}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/convolver_node.cc b/third_party/blink/renderer/modules/webaudio/convolver_node.cc
+index 913134333ab48adc1be2a5614b2f26e309cb243e..158434d1d7450a176ed71d3f466b05fceaf54957 100644
+--- a/third_party/blink/renderer/modules/webaudio/convolver_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/convolver_node.cc
+@@ -95,6 +95,8 @@ void ConvolverHandler::SetBuffer(AudioBuffer* buffer,
+   DCHECK(IsMainThread());
+ 
+   if (!buffer) {
++    BaseAudioContext::GraphAutoLocker context_locker(Context());
++    MutexLocker locker(process_lock_);
+     reverb_.reset();
+     shared_buffer_ = nullptr;
+     return;
