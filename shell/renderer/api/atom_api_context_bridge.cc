@@ -18,8 +18,8 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/promise_util.h"
 #include "shell/renderer/api/context_bridge/render_frame_context_bridge_store.h"
 #include "shell/renderer/atom_render_frame_observer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -153,10 +153,10 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Context::Scope source_scope(source_context);
     {
       source_context->GetIsolate()->ThrowException(v8::Exception::TypeError(
-          mate::StringToV8(source_context->GetIsolate(),
-                           "Electron contextBridge recursion depth exceeded.  "
-                           "Nested objects "
-                           "deeper than 1000 are not supported.")));
+          gin::StringToV8(source_context->GetIsolate(),
+                          "Electron contextBridge recursion depth exceeded.  "
+                          "Nested objects "
+                          "deeper than 1000 are not supported.")));
       return v8::MaybeLocal<v8::Value>();
     }
   }
@@ -195,13 +195,13 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Context::Scope destination_scope(destination_context);
     {
       auto source_promise = v8::Local<v8::Promise>::Cast(value);
-      auto* proxied_promise = new util::Promise<v8::Local<v8::Value>>(
+      auto* proxied_promise = new gin_helper::Promise<v8::Local<v8::Value>>(
           destination_context->GetIsolate());
       v8::Local<v8::Promise> proxied_promise_handle =
           proxied_promise->GetHandle();
 
       auto then_cb = base::BindOnce(
-          [](util::Promise<v8::Local<v8::Value>>* proxied_promise,
+          [](gin_helper::Promise<v8::Local<v8::Value>>* proxied_promise,
              v8::Isolate* isolate,
              v8::Global<v8::Context> global_source_context,
              v8::Global<v8::Context> global_destination_context,
@@ -220,7 +220,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                                   destination_context),
           store);
       auto catch_cb = base::BindOnce(
-          [](util::Promise<v8::Local<v8::Value>>* proxied_promise,
+          [](gin_helper::Promise<v8::Local<v8::Value>>* proxied_promise,
              v8::Isolate* isolate,
              v8::Global<v8::Context> global_source_context,
              v8::Global<v8::Context> global_destination_context,

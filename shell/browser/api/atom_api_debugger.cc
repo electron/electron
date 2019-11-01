@@ -65,8 +65,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
     if (it == pending_requests_.end())
       return;
 
-    electron::util::Promise<base::DictionaryValue> promise =
-        std::move(it->second);
+    gin_helper::Promise<base::DictionaryValue> promise = std::move(it->second);
     pending_requests_.erase(it);
 
     base::DictionaryValue* error = nullptr;
@@ -80,7 +79,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
       if (dict->GetDictionary("result", &result_body)) {
         result.Swap(result_body);
       }
-      promise.ResolveWithGin(result);
+      promise.Resolve(result);
     }
   }
 }
@@ -130,7 +129,7 @@ void Debugger::Detach() {
 }
 
 v8::Local<v8::Promise> Debugger::SendCommand(gin_helper::Arguments* args) {
-  electron::util::Promise<base::DictionaryValue> promise(isolate());
+  gin_helper::Promise<base::DictionaryValue> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!agent_host_) {

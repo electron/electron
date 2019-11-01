@@ -104,7 +104,7 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
     const std::string& product_id,
     gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  electron::util::Promise<bool> promise(isolate);
+  gin_helper::Promise<bool> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   int quantity = 1;
@@ -112,7 +112,8 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
 
   in_app_purchase::PurchaseProduct(
       product_id, quantity,
-      base::BindOnce(util::Promise<bool>::ResolvePromise, std::move(promise)));
+      base::BindOnce(gin_helper::Promise<bool>::ResolvePromise,
+                     std::move(promise)));
 
   return handle;
 }
@@ -121,15 +122,14 @@ v8::Local<v8::Promise> InAppPurchase::GetProducts(
     const std::vector<std::string>& productIDs,
     gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  electron::util::Promise<std::vector<in_app_purchase::Product>> promise(
-      isolate);
+  gin_helper::Promise<std::vector<in_app_purchase::Product>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   in_app_purchase::GetProducts(
       productIDs,
-      base::BindOnce(
-          util::Promise<std::vector<in_app_purchase::Product>>::ResolvePromise,
-          std::move(promise)));
+      base::BindOnce(gin_helper::Promise<
+                         std::vector<in_app_purchase::Product>>::ResolvePromise,
+                     std::move(promise)));
 
   return handle;
 }

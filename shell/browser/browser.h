@@ -16,7 +16,7 @@
 #include "base/values.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
-#include "shell/common/promise_util.h"
+#include "shell/common/gin_helper/promise.h"
 
 #if defined(OS_WIN)
 #include <windows.h>
@@ -304,7 +304,7 @@ class Browser : public WindowListObserver {
 
   int badge_count_ = 0;
 
-  std::unique_ptr<util::Promise<void*>> ready_promise_;
+  std::unique_ptr<gin_helper::Promise<void>> ready_promise_;
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   base::Value about_panel_options_;

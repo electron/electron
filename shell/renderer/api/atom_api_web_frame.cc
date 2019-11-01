@@ -16,8 +16,8 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/promise_util.h"
 #include "shell/renderer/api/atom_api_spell_check_client.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
@@ -111,7 +111,7 @@ class RenderFrameStatus final : public content::RenderFrameObserver {
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
   explicit ScriptExecutionCallback(
-      electron::util::Promise<v8::Local<v8::Value>> promise)
+      gin_helper::Promise<v8::Local<v8::Value>> promise)
       : promise_(std::move(promise)) {}
   ~ScriptExecutionCallback() override = default;
 
@@ -135,7 +135,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
   }
 
  private:
-  electron::util::Promise<v8::Local<v8::Value>> promise_;
+  gin_helper::Promise<v8::Local<v8::Value>> promise_;
 
   DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
@@ -378,7 +378,7 @@ v8::Local<v8::Promise> ExecuteJavaScript(gin_helper::Arguments* args,
                                          v8::Local<v8::Value> window,
                                          const base::string16& code) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise<v8::Local<v8::Value>> promise(isolate);
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   bool has_user_gesture = false;
@@ -397,7 +397,7 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
     int world_id,
     const std::vector<gin_helper::Dictionary>& scripts) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise<v8::Local<v8::Value>> promise(isolate);
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   std::vector<blink::WebScriptSource> sources;

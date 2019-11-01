@@ -121,18 +121,18 @@ bool MatchesCookie(const base::Value& filter,
 
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
 void FilterCookies(const base::Value& filter,
-                   util::Promise<net::CookieList> promise,
+                   gin_helper::Promise<net::CookieList> promise,
                    const net::CookieList& cookies) {
   net::CookieList result;
   for (const auto& cookie : cookies) {
     if (MatchesCookie(filter, cookie))
       result.push_back(cookie);
   }
-  promise.ResolveWithGin(result);
+  promise.Resolve(result);
 }
 
 void FilterCookieWithStatuses(const base::Value& filter,
-                              util::Promise<net::CookieList> promise,
+                              gin_helper::Promise<net::CookieList> promise,
                               const net::CookieStatusList& list,
                               const net::CookieStatusList& excluded_list) {
   FilterCookies(filter, std::move(promise),
@@ -176,7 +176,7 @@ Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 Cookies::~Cookies() = default;
 
 v8::Local<v8::Promise> Cookies::Get(const gin_helper::Dictionary& filter) {
-  util::Promise<net::CookieList> promise(isolate());
+  gin_helper::Promise<net::CookieList> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
@@ -208,7 +208,7 @@ v8::Local<v8::Promise> Cookies::Get(const gin_helper::Dictionary& filter) {
 
 v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
                                        const std::string& name) {
-  util::Promise<void*> promise(isolate());
+  gin_helper::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto cookie_deletion_filter = network::mojom::CookieDeletionFilter::New();
@@ -222,8 +222,8 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
   manager->DeleteCookies(
       std::move(cookie_deletion_filter),
       base::BindOnce(
-          [](util::Promise<void*> promise, uint32_t num_deleted) {
-            util::Promise<void*>::ResolveEmptyPromise(std::move(promise));
+          [](gin_helper::Promise<void> promise, uint32_t num_deleted) {
+            gin_helper::Promise<void>::ResolvePromise(std::move(promise));
           },
           std::move(promise)));
 
@@ -231,7 +231,7 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
 }
 
 v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
-  util::Promise<void*> promise(isolate());
+  gin_helper::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   const std::string* url_string = details.FindStringKey("url");
@@ -296,7 +296,7 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
   manager->SetCanonicalCookie(
       *canonical_cookie, url.scheme(), options,
       base::BindOnce(
-          [](util::Promise<void*> promise,
+          [](gin_helper::Promise<void> promise,
              net::CanonicalCookie::CookieInclusionStatus status) {
             if (status.IsInclude()) {
               promise.Resolve();
@@ -310,7 +310,7 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
 }
 
 v8::Local<v8::Promise> Cookies::FlushStore() {
-  util::Promise<void*> promise(isolate());
+  gin_helper::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
@@ -318,7 +318,7 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
   manager->FlushCookieStore(base::BindOnce(
-      util::Promise<void*>::ResolveEmptyPromise, std::move(promise)));
+      gin_helper::Promise<void>::ResolvePromise, std::move(promise)));
 
   return handle;
 }

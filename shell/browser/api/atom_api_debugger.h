@@ -13,8 +13,8 @@
 #include "content/public/browser/devtools_agent_host_client.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/handle.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/trackable_object.h"
-#include "shell/common/promise_util.h"
 
 namespace content {
 class DevToolsAgentHost;
@@ -51,7 +51,7 @@ class Debugger : public gin_helper::TrackableObject<Debugger>,
 
  private:
   using PendingRequestMap =
-      std::map<int, electron::util::Promise<base::DictionaryValue>>;
+      std::map<int, gin_helper::Promise<base::DictionaryValue>>;
 
   void Attach(gin_helper::Arguments* args);
   bool IsAttached();

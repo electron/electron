@@ -12,8 +12,8 @@
 #include "gin/handle.h"
 #include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_change_dispatcher.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/trackable_object.h"
-#include "shell/common/promise_util.h"
 
 namespace base {
 class DictionaryValue;

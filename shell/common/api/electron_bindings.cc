@@ -25,9 +25,9 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/locker.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/promise_util.h"
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
 namespace electron {
@@ -231,7 +231,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 // static
 v8::Local<v8::Promise> ElectronBindings::GetProcessMemoryInfo(
     v8::Isolate* isolate) {
-  util::Promise<gin_helper::Dictionary> promise(isolate);
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (gin_helper::Locker::IsBrowserProcess() && !Browser::Get()->is_ready()) {
@@ -265,7 +265,7 @@ v8::Local<v8::Value> ElectronBindings::GetBlinkMemoryInfo(
 // static
 void ElectronBindings::DidReceiveMemoryDump(
     v8::Global<v8::Context> context,
-    util::Promise<gin_helper::Dictionary> promise,
+    gin_helper::Promise<gin_helper::Dictionary> promise,
     bool success,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
   v8::Isolate* isolate = promise.isolate();
@@ -292,7 +292,7 @@ void ElectronBindings::DidReceiveMemoryDump(
 #endif
       dict.Set("private", osdump.private_footprint_kb);
       dict.Set("shared", osdump.shared_footprint_kb);
-      promise.ResolveWithGin(dict);
+      promise.Resolve(dict);
       resolved = true;
       break;
     }

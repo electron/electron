@@ -320,10 +320,10 @@ namespace api {
 namespace {
 
 // Called when CapturePage is done.
-void OnCapturePageDone(util::Promise<gfx::Image> promise,
+void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
-  promise.ResolveWithGin(gfx::Image::CreateFrom1xBitmap(bitmap));
+  promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
@@ -1494,7 +1494,7 @@ std::string WebContents::GetUserAgent() {
 v8::Local<v8::Promise> WebContents::SavePage(
     const base::FilePath& full_file_path,
     const content::SavePageType& save_type) {
-  util::Promise<void*> promise(isolate());
+  gin_helper::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* handler = new SavePageHandler(web_contents(), std::move(promise));
@@ -1864,7 +1864,7 @@ std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
 }
 
 v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
-  util::Promise<v8::Local<v8::Value>> promise(isolate());
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   PrintPreviewMessageHandler::FromWebContents(web_contents())
       ->PrintToPDF(std::move(settings), std::move(promise));
@@ -2167,7 +2167,7 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
 
 v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
   gfx::Rect rect;
-  util::Promise<gfx::Image> promise(isolate());
+  gin_helper::Promise<gfx::Image> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // get rect arguments if they exist
@@ -2175,7 +2175,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
-    promise.ResolveWithGin(gfx::Image());
+    promise.Resolve(gfx::Image());
     return handle;
   }
 
@@ -2433,7 +2433,7 @@ void WebContents::GrantOriginAccess(const GURL& url) {
 
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     const base::FilePath& file_path) {
-  util::Promise<void*> promise(isolate());
+  gin_helper::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::ThreadRestrictions::ScopedAllowIO allow_io;
@@ -2462,7 +2462,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
       mojo::WrapPlatformFile(file.TakePlatformFile()),
       base::BindOnce(
           [](mojo::AssociatedRemote<mojom::ElectronRenderer>* ep,
-             util::Promise<void*> promise, bool success) {
+             gin_helper::Promise<void> promise, bool success) {
             if (success) {
               promise.Resolve();
             } else {

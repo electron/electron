@@ -12,7 +12,7 @@
 #include "gin/handle.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter.h"
-#include "shell/common/promise_util.h"
+#include "shell/common/gin_helper/promise.h"
 
 #if defined(OS_WIN)
 #include "shell/browser/browser.h"

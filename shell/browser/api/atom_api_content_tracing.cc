@@ -14,8 +14,8 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/promise_util.h"
 
 using content::TracingController;
 
@@ -63,14 +63,13 @@ base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
   return base::make_optional(std::move(temp_file_path));
 }
 
-void StopTracing(electron::util::Promise<base::FilePath> promise,
+void StopTracing(gin_helper::Promise<base::FilePath> promise,
                  base::Optional<base::FilePath> file_path) {
   if (file_path) {
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path,
-        base::AdaptCallbackForRepeating(base::BindOnce(
-            &electron::util::Promise<base::FilePath>::ResolvePromise,
-            std::move(promise), *file_path)));
+        *file_path, base::AdaptCallbackForRepeating(base::BindOnce(
+                        &gin_helper::Promise<base::FilePath>::ResolvePromise,
+                        std::move(promise), *file_path)));
     TracingController::GetInstance()->StopTracing(endpoint);
   } else {
     promise.RejectWithErrorMessage(
@@ -79,7 +78,7 @@ void StopTracing(electron::util::Promise<base::FilePath> promise,
 }
 
 v8::Local<v8::Promise> StopRecording(gin_helper::Arguments* args) {
-  electron::util::Promise<base::FilePath> promise(args->isolate());
+  gin_helper::Promise<base::FilePath> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::FilePath path;
@@ -99,12 +98,12 @@ v8::Local<v8::Promise> StopRecording(gin_helper::Arguments* args) {
 }
 
 v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
-  electron::util::Promise<const std::set<std::string>&> promise(isolate);
+  gin_helper::Promise<const std::set<std::string>&> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Note: This method always succeeds.
   TracingController::GetInstance()->GetCategories(base::BindOnce(
-      electron::util::Promise<const std::set<std::string>&>::ResolvePromise,
+      gin_helper::Promise<const std::set<std::string>&>::ResolvePromise,
       std::move(promise)));
 
   return handle;
@@ -113,35 +112,35 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
 v8::Local<v8::Promise> StartTracing(
     v8::Isolate* isolate,
     const base::trace_event::TraceConfig& trace_config) {
-  electron::util::Promise<void*> promise(isolate);
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!TracingController::GetInstance()->StartTracing(
           trace_config,
-          base::BindOnce(electron::util::Promise<void*>::ResolveEmptyPromise,
+          base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                          std::move(promise)))) {
     // If StartTracing returns false, that means it didn't invoke its callback.
     // Return an already-resolved promise and abandon the previous promise (it
     // was std::move()d into the StartTracing callback and has been deleted by
     // this point).
-    return electron::util::Promise<void*>::ResolvedPromise(isolate);
+    return gin_helper::Promise<void>::ResolvedPromise(isolate);
   }
   return handle;
 }
 
 void OnTraceBufferUsageAvailable(
-    electron::util::Promise<gin_helper::Dictionary> promise,
+    gin_helper::Promise<gin_helper::Dictionary> promise,
     float percent_full,
     size_t approximate_count) {
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("percentage", percent_full);
   dict.Set("value", approximate_count);
 
-  promise.ResolveWithGin(dict);
+  promise.Resolve(dict);
 }
 
 v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {
-  electron::util::Promise<gin_helper::Dictionary> promise(isolate);
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Note: This method always succeeds.

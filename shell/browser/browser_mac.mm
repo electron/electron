@@ -21,8 +21,8 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/arguments.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/platform_util.h"
-#include "shell/common/promise_util.h"
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 
@@ -314,7 +314,7 @@ bool Browser::DockIsVisible() {
 }
 
 v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
-  util::Promise<void*> promise(isolate);
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   BOOL active = [[NSRunningApplication currentApplication] isActive];
@@ -328,7 +328,7 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
       [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
       break;
     }
-    __block util::Promise<void*> p = std::move(promise);
+    __block gin_helper::Promise<void> p = std::move(promise);
     dispatch_time_t one_ms = dispatch_time(DISPATCH_TIME_NOW, USEC_PER_SEC);
     dispatch_after(one_ms, dispatch_get_main_queue(), ^{
       TransformProcessType(&psn, kProcessTransformToForegroundApplication);
