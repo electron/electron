@@ -18,6 +18,19 @@ index b43fe1893134992937fc7d97ce335344683bfa6b..8a95e17d0835afebd7594c206438cb54
  namespace ui {
  
  namespace {
+diff --git a/ui/events/blink/prediction/linear_predictor.cc b/ui/events/blink/prediction/linear_predictor.cc
+index e97f579d80573a1f801986c724bb33cd8bc52e8a..190fa1b3894ef5f7828e2f265566e16ce10e84c5 100644
+--- a/ui/events/blink/prediction/linear_predictor.cc
++++ b/ui/events/blink/prediction/linear_predictor.cc
+@@ -5,6 +5,8 @@
+ #include "ui/events/blink/prediction/linear_predictor.h"
+ #include "ui/events/blink/prediction/predictor_factory.h"
+ 
++#include <algorithm>
++
+ namespace ui {
+ 
+ LinearPredictor::LinearPredictor(EquationOrder order) {
 diff --git a/ui/events/blink/prediction/linear_resampling.cc b/ui/events/blink/prediction/linear_resampling.cc
 index e2a8757b779ba270cd3ae8f1735543be3cc324e0..2b2efe7f132055dfc1f650707a9cbb7a5842ca1a 100644
 --- a/ui/events/blink/prediction/linear_resampling.cc
