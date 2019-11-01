@@ -14,8 +14,8 @@
 #include "base/values.h"
 #include "gin/handle.h"
 #include "services/network/public/mojom/net_log.mojom.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/trackable_object.h"
-#include "shell/common/promise_util.h"
 
 namespace electron {
 
@@ -53,7 +53,7 @@ class NetLog : public gin_helper::TrackableObject<NetLog> {
 
   network::mojom::NetLogExporterPtr net_log_exporter_;
 
-  base::Optional<util::Promise<void*>> pending_start_promise_;
+  base::Optional<gin_helper::Promise<void>> pending_start_promise_;
 
   scoped_refptr<base::TaskRunner> file_task_runner_;
 

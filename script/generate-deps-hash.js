@@ -8,7 +8,9 @@ const HASH_VERSION = 1
 // Base files to hash
 const filesToHash = [
   path.resolve(__dirname, '../DEPS'),
-  path.resolve(__dirname, '../yarn.lock')
+  path.resolve(__dirname, '../yarn.lock'),
+  path.resolve(__dirname, '../script/external-binaries.json'),
+  path.resolve(__dirname, '../script/sysroots.json')
 ]
 
 const addAllFiles = (dir) => {
@@ -27,6 +29,7 @@ addAllFiles(path.resolve(__dirname, '../patches'))
 
 // Create Hash
 const hasher = crypto.createHash('SHA256')
+hasher.update(`HASH_VERSION:${HASH_VERSION}`)
 for (const file of filesToHash) {
   hasher.update(fs.readFileSync(file))
 }

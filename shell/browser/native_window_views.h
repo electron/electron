@@ -72,6 +72,8 @@ class NativeWindowViews : public NativeWindow,
   bool MoveAbove(const std::string& sourceId) override;
   void MoveTop() override;
   bool IsResizable() override;
+  void SetAspectRatio(double aspect_ratio,
+                      const gfx::Size& extra_size) override;
   void SetMovable(bool movable) override;
   bool IsMovable() override;
   void SetMinimizable(bool minimizable) override;

@@ -70,7 +70,7 @@
 #include "shell/browser/web_view_guest_delegate.h"
 #include "shell/common/api/atom_api_native_image.h"
 #include "shell/common/color_util.h"
-#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
+#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -78,7 +78,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/mouse_util.h"
@@ -320,10 +320,10 @@ namespace api {
 namespace {
 
 // Called when CapturePage is done.
-void OnCapturePageDone(util::Promise<gfx::Image> promise,
+void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
-  promise.ResolveWithGin(gfx::Image::CreateFrom1xBitmap(bitmap));
+  promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
@@ -1023,7 +1023,7 @@ void WebContents::Message(bool internal,
                           blink::CloneableMessage arguments) {
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
-  EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
+  EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
                  internal, channel, std::move(arguments));
 }
 
@@ -1064,7 +1064,7 @@ void WebContents::MessageHost(const std::string& channel,
                               blink::CloneableMessage arguments) {
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
-                 base::nullopt, channel, std::move(arguments));
+                 InvokeCallback(), channel, std::move(arguments));
 }
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
@@ -1075,7 +1075,7 @@ void WebContents::DereferenceRemoteJSObject(const std::string& context_id,
   args.Append(context_id);
   args.Append(object_id);
   args.Append(ref_count);
-  EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
+  EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
                  /* internal */ true, "ELECTRON_BROWSER_DEREFERENCE",
                  std::move(args));
 }
@@ -1494,7 +1494,7 @@ std::string WebContents::GetUserAgent() {
 v8::Local<v8::Promise> WebContents::SavePage(
     const base::FilePath& full_file_path,
     const content::SavePageType& save_type) {
-  util::Promise<void*> promise(isolate());
+  gin_helper::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* handler = new SavePageHandler(web_contents(), std::move(promise));
@@ -1863,12 +1863,11 @@ std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   return printers;
 }
 
-v8::Local<v8::Promise> WebContents::PrintToPDF(
-    const base::DictionaryValue& settings) {
-  util::Promise<v8::Local<v8::Value>> promise(isolate());
+v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   PrintPreviewMessageHandler::FromWebContents(web_contents())
-      ->PrintToPDF(settings, std::move(promise));
+      ->PrintToPDF(std::move(settings), std::move(promise));
   return handle;
 }
 #endif
@@ -2072,10 +2071,10 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
 
   content::RenderWidgetHost* rwh = view->GetRenderWidgetHost();
   blink::WebInputEvent::Type type =
-      mate::GetWebInputEventType(isolate, input_event);
+      gin::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
-    if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
+    if (gin::ConvertFromV8(isolate, input_event, &mouse_event)) {
       if (IsOffScreen()) {
 #if BUILDFLAG(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
@@ -2095,7 +2094,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     }
   } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
-    if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
+    if (gin::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
       if (IsOffScreen()) {
 #if BUILDFLAG(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseWheelEvent(
@@ -2168,7 +2167,7 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
 
 v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
   gfx::Rect rect;
-  util::Promise<gfx::Image> promise(isolate());
+  gin_helper::Promise<gfx::Image> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // get rect arguments if they exist
@@ -2176,7 +2175,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
-    promise.ResolveWithGin(gfx::Image());
+    promise.Resolve(gfx::Image());
     return handle;
   }
 
@@ -2434,7 +2433,7 @@ void WebContents::GrantOriginAccess(const GURL& url) {
 
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     const base::FilePath& file_path) {
-  util::Promise<void*> promise(isolate());
+  gin_helper::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::ThreadRestrictions::ScopedAllowIO allow_io;
@@ -2463,7 +2462,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
       mojo::WrapPlatformFile(file.TakePlatformFile()),
       base::BindOnce(
           [](mojo::AssociatedRemote<mojom::ElectronRenderer>* ep,
-             util::Promise<void*> promise, bool success) {
+             gin_helper::Promise<void> promise, bool success) {
             if (success) {
               promise.Resolve();
             } else {

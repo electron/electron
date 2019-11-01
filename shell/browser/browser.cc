@@ -151,7 +151,7 @@ void Browser::WillFinishLaunching() {
     observer.OnWillFinishLaunching();
 }
 
-void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
+void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::FilePath user_data;
@@ -168,7 +168,7 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
 
 v8::Local<v8::Value> Browser::WhenReady(v8::Isolate* isolate) {
   if (!ready_promise_) {
-    ready_promise_ = std::make_unique<util::Promise<void*>>(isolate);
+    ready_promise_ = std::make_unique<gin_helper::Promise<void>>(isolate);
     if (is_ready()) {
       ready_promise_->Resolve();
     }

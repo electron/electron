@@ -20,7 +20,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createWithSender", &CreateWithSender);
-  dict.SetMethod("createEmpty", &mate::Event::Create);
+  dict.SetMethod("createEmpty", &gin_helper::Event::Create);
 }
 
 }  // namespace

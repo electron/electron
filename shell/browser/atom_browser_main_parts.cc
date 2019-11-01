@@ -103,6 +103,10 @@
 #include "shell/common/extensions/atom_extensions_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_factory.h"  // nogncheck
+#endif
+
 namespace electron {
 
 namespace {
@@ -440,6 +444,10 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 
   extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
   extensions::electron::EnsureBrowserContextKeyedServiceFactoriesBuilt();
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SpellcheckServiceFactory::GetInstance();
 #endif
 
   // url::Add*Scheme are not threadsafe, this helps prevent data races.

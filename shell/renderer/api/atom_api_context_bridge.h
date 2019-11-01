@@ -5,27 +5,24 @@
 #ifndef SHELL_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
 #define SHELL_RENDERER_API_ATOM_API_CONTEXT_BRIDGE_H_
 
-#include <map>
-#include <string>
-#include <tuple>
+#include "v8/include/v8.h"
 
-#include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_frame_observer.h"
-#include "native_mate/converter.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/node_includes.h"
-#include "shell/renderer/api/context_bridge/render_frame_context_bridge_store.h"
-#include "shell/renderer/atom_render_frame_observer.h"
-#include "third_party/blink/public/web/web_local_frame.h"
+namespace gin_helper {
+class Arguments;
+}
 
 namespace electron {
 
 namespace api {
 
+namespace context_bridge {
+class RenderFramePersistenceStore;
+}
+
 v8::Local<v8::Value> ProxyFunctionWrapper(
     context_bridge::RenderFramePersistenceStore* store,
     size_t func_id,
-    mate::Arguments* args);
+    gin_helper::Arguments* args);
 
 v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Object>& api_object,

@@ -1,4 +1,3 @@
-declare var isCI: boolean;
 declare var standardScheme: string;
 
 declare namespace Electron {

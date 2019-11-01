@@ -12,8 +12,7 @@
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
-#include "shell/common/native_mate_converters/value_converter.h"
-#include "shell/common/promise_util.h"
+#include "shell/common/gin_helper/promise.h"
 
 namespace electron {
 
@@ -25,8 +24,8 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   GPUInfoManager();
   ~GPUInfoManager() override;
   bool NeedsCompleteGpuInfoCollection() const;
-  void FetchCompleteInfo(util::Promise<base::DictionaryValue> promise);
-  void FetchBasicInfo(util::Promise<base::DictionaryValue> promise);
+  void FetchCompleteInfo(gin_helper::Promise<base::DictionaryValue> promise);
+  void FetchBasicInfo(gin_helper::Promise<base::DictionaryValue> promise);
   void OnGpuInfoUpdate() override;
 
  private:
@@ -34,12 +33,13 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
       gpu::GPUInfo gpu_info) const;
 
   // These should be posted to the task queue
-  void CompleteInfoFetcher(util::Promise<base::DictionaryValue> promise);
+  void CompleteInfoFetcher(gin_helper::Promise<base::DictionaryValue> promise);
   void ProcessCompleteInfo();
 
   // This set maintains all the promises that should be fulfilled
   // once we have the complete information data
-  std::vector<util::Promise<base::DictionaryValue>> complete_info_promise_set_;
+  std::vector<gin_helper::Promise<base::DictionaryValue>>
+      complete_info_promise_set_;
   content::GpuDataManager* gpu_data_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(GPUInfoManager);

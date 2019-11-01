@@ -6,26 +6,26 @@
 
 #include <utility>
 
-#include "native_mate/object_template_builder_deprecated.h"
-#include "shell/common/native_mate_converters/blink_converter.h"
+#include "gin/object_template_builder.h"
+#include "shell/common/gin_converters/blink_converter.h"
 
-namespace mate {
+namespace gin_helper {
 
-Event::Event(v8::Isolate* isolate) {
-  Init(isolate);
-}
+gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
+
+Event::Event() {}
 
 Event::~Event() = default;
 
-void Event::SetCallback(base::Optional<InvokeCallback> callback) {
+void Event::SetCallback(InvokeCallback callback) {
   DCHECK(!callback_);
   callback_ = std::move(callback);
 }
 
 void Event::PreventDefault(v8::Isolate* isolate) {
-  GetWrapper()
-      ->Set(isolate->GetCurrentContext(),
-            StringToV8(isolate, "defaultPrevented"), v8::True(isolate))
+  v8::Local<v8::Object> self = GetWrapper(isolate).ToLocalChecked();
+  self->Set(isolate->GetCurrentContext(),
+            gin::StringToV8(isolate, "defaultPrevented"), v8::True(isolate))
       .Check();
 }
 
@@ -34,27 +34,28 @@ bool Event::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> result) {
     return false;
 
   blink::CloneableMessage message;
-  if (!ConvertFromV8(isolate, result, &message)) {
+  if (!gin::ConvertFromV8(isolate, result, &message)) {
     return false;
   }
 
-  std::move(*callback_).Run(std::move(message));
-  callback_.reset();
+  std::move(callback_).Run(std::move(message));
   return true;
 }
 
-// static
-Handle<Event> Event::Create(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new Event(isolate));
-}
-
-// static
-void Event::BuildPrototype(v8::Isolate* isolate,
-                           v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Event"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder Event::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::Wrappable<Event>::GetObjectTemplateBuilder(isolate)
       .SetMethod("preventDefault", &Event::PreventDefault)
       .SetMethod("sendReply", &Event::SendReply);
 }
 
-}  // namespace mate
+const char* Event::GetTypeName() {
+  return "WebRequest";
+}
+
+// static
+gin::Handle<Event> Event::Create(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new Event());
+}
+
+}  // namespace gin_helper

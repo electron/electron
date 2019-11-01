@@ -19,7 +19,7 @@
 #include "content/public/browser/browser_context.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/atom_browser_context.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 
 using content::BrowserThread;
 

@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Erick Zhao <erickzhao@github.com>
+Date: Thu, 1 Aug 2019 13:40:17 -0700
+Subject: feat: unset window aspect ratio on linux
+
+
+diff --git a/ui/base/x/x11_window.cc b/ui/base/x/x11_window.cc
+index 7df0a3a8ed268e9b2ca1bad8ac5fd35115b98f77..a895defd2b695e2d5b2b4324551adcaac487f588 100644
+--- a/ui/base/x/x11_window.cc
++++ b/ui/base/x/x11_window.cc
+@@ -676,9 +676,14 @@ void XWindow::SetAspectRatio(const gfx::SizeF& aspect_ratio) {
+   long supplied_return;
+ 
+   XGetWMNormalHints(xdisplay_, xwindow_, &size_hints, &supplied_return);
+-  size_hints.flags |= PAspect;
+-  size_hints.min_aspect.x = size_hints.max_aspect.x = aspect_ratio.width();
+-  size_hints.min_aspect.y = size_hints.max_aspect.y = aspect_ratio.height();
++  // if ratio parameter has length 0, unforce the aspect ratio
++  if (aspect_ratio.IsEmpty()) {
++    size_hints.flags &= ~PAspect;
++  } else {
++    size_hints.flags |= PAspect;
++    size_hints.min_aspect.x = size_hints.max_aspect.x = aspect_ratio.width();
++    size_hints.min_aspect.y = size_hints.max_aspect.y = aspect_ratio.height();
++  }
+   XSetWMNormalHints(xdisplay_, xwindow_, &size_hints);
+ }
+ 

@@ -13,8 +13,8 @@
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/trackable_object.h"
-#include "shell/common/promise_util.h"
 
 class GURL;
 
@@ -47,7 +47,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   static gin::Handle<Session> FromPartition(
       v8::Isolate* isolate,
       const std::string& partition,
-      const base::DictionaryValue& options = base::DictionaryValue());
+      base::DictionaryValue options = base::DictionaryValue());
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 
@@ -88,6 +88,11 @@ class Session : public gin_helper::TrackableObject<Session>,
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options,
                   gin_helper::Arguments* args);
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  base::Value GetSpellCheckerLanguages();
+  void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,
+                                const std::vector<std::string>& languages);
+#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void LoadChromeExtension(const base::FilePath extension_path);

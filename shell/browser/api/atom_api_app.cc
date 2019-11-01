@@ -48,7 +48,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -532,9 +532,10 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 }
 #endif
 
-void OnIconDataAvailable(util::Promise<gfx::Image> promise, gfx::Image icon) {
+void OnIconDataAvailable(gin_helper::Promise<gfx::Image> promise,
+                         gfx::Image icon) {
   if (!icon.IsEmpty()) {
-    promise.ResolveWithGin(icon);
+    promise.Resolve(icon);
   } else {
     promise.RejectWithErrorMessage("Failed to get file icon.");
   }
@@ -898,9 +899,14 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
 
   bool succeed = false;
   int key = GetPathConstant(name);
-  if (key >= 0)
+  if (key >= 0) {
     succeed =
         base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
+    if (key == DIR_USER_DATA) {
+      succeed |= base::PathService::OverrideAndCreateIfNeeded(
+          chrome::DIR_USER_DATA, path, true, false);
+    }
+  }
   if (!succeed)
     thrower.ThrowError("Failed to set path");
 }
@@ -1170,7 +1176,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 
 v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
                                         gin_helper::Arguments* args) {
-  util::Promise<gfx::Image> promise(isolate());
+  gin_helper::Promise<gfx::Image> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   base::FilePath normalized_path = path.NormalizePathSeparators();
 
@@ -1188,7 +1194,7 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
-    promise.ResolveWithGin(*icon);
+    promise.Resolve(*icon);
   } else {
     icon_manager->LoadIcon(
         normalized_path, icon_size,
@@ -1280,7 +1286,7 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
                                        const std::string& info_type) {
   auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
-  util::Promise<base::DictionaryValue> promise(isolate);
+  gin_helper::Promise<base::DictionaryValue> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   if (info_type != "basic" && info_type != "complete") {
     promise.RejectWithErrorMessage(

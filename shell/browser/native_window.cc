@@ -15,6 +15,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
 #include "ui/views/widget/widget.h"
 
@@ -346,12 +347,12 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
 void NativeWindow::SetVibrancy(const std::string& filename) {}
 
 void NativeWindow::SetTouchBar(
-    const std::vector<mate::PersistentDictionary>& items) {}
+    std::vector<gin_helper::PersistentDictionary> items) {}
 
 void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {}
 
 void NativeWindow::SetEscapeTouchBarItem(
-    const mate::PersistentDictionary& item) {}
+    gin_helper::PersistentDictionary item) {}
 
 void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {}
 
