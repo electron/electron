@@ -38,6 +38,7 @@ WebWorkerObserver::WebWorkerObserver()
 WebWorkerObserver::~WebWorkerObserver() {
   lazy_tls.Pointer()->Set(nullptr);
   node::FreeEnvironment(node_bindings_->uv_env());
+  node::FreeIsolateData(node_bindings_->isolate_data());
   asar::ClearArchives();
 }
 

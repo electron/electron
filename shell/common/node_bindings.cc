@@ -336,9 +336,11 @@ node::Environment* NodeBindings::CreateEnvironment(
   args.insert(args.begin() + 1, init_script);
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
-  node::Environment* env = node::CreateEnvironment(
-      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
-      context, args.size(), c_argv.get(), 0, nullptr, bootstrap_env);
+  isolate_data_ =
+      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
+  node::Environment* env =
+      node::CreateEnvironment(isolate_data_, context, args.size(), c_argv.get(),
+                              0, nullptr, bootstrap_env);
   DCHECK(env);
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
