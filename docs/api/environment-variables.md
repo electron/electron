@@ -44,7 +44,11 @@ Unsupported options are:
 --use-openssl-ca
 ```
 
-`NODE_OPTIONS` are explicitly disallowed in packaged apps.
+`NODE_OPTIONS` are explicitly disallowed in packaged apps, except for the following:
+
+```sh
+--max-http-header-size
+```
 
 ### `GOOGLE_API_KEY`
 

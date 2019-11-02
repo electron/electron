@@ -53,6 +53,63 @@ describe('node feature', () => {
     })
   })
 
+  describe('NODE_OPTIONS', () => {
+    let child: childProcess.ChildProcessWithoutNullStreams
+    let exitPromise: Promise<any[]>
+
+    afterEach(async () => {
+      if (child && exitPromise) {
+        const [code, signal] = await exitPromise
+        expect(signal).to.equal(null)
+        expect(code).to.equal(0)
+      } else if (child) {
+        child.kill()
+      }
+    })
+
+    it('fails for options disallowed by Node.js itself', (done) => {
+      const env = Object.assign({}, process.env, { NODE_OPTIONS: '--v8-options' });
+      child = childProcess.spawn(process.execPath, { env })
+
+      function cleanup () {
+        child.stderr.removeListener('data', listener)
+        child.stdout.removeListener('data', listener)
+      }
+
+      let output = ''
+      function listener (data: Buffer) {
+        output += data
+        if (/electron: --v8-options is not allowed in NODE_OPTIONS/m.test(output)) {
+          cleanup()
+          done()
+        }
+      }
+      child.stderr.on('data', listener)
+      child.stdout.on('data', listener)
+    })
+
+    it('disallows crypto-related options', (done) => {
+      const env = Object.assign({}, process.env, { NODE_OPTIONS: '--use-openssl-ca' });
+      child = childProcess.spawn(process.execPath, ['--enable-logging'], { env })
+
+      function cleanup () {
+        child.stderr.removeListener('data', listener)
+        child.stdout.removeListener('data', listener)
+      }
+
+      let output = ''
+      function listener (data: Buffer) {
+        output += data
+        if (/The NODE_OPTION --use-openssl-ca is not supported in Electron/m.test(output)) {
+          cleanup()
+          done()
+        }
+      }
+      child.stderr.on('data', listener)
+      child.stdout.on('data', listener)
+    })
+  })
+
   ifdescribe(features.isRunAsNodeEnabled())('inspector', () => {
     let child: childProcess.ChildProcessWithoutNullStreams
     let exitPromise: Promise<any[]>
