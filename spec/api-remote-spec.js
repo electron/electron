@@ -517,4 +517,22 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       const arr = new RUint8Array()
     })
   })
+
+  describe('with an overriden global Promise constrctor', () => {
+    let original
+
+    before(() => {
+      original = Promise
+    })
+
+    it('using a promise based method  resolves correctly', async () => {
+      expect(await remote.getGlobal('returnAPromise')(123)).to.equal(123)
+      global.Promise = { resolve: () => ({}) }
+      expect(await remote.getGlobal('returnAPromise')(456)).to.equal(456)
+    })
+
+    after(() => {
+      global.Promise = original
+    })
+  })
 })
