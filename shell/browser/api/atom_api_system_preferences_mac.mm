@@ -103,21 +103,6 @@ AVMediaType ParseMediaType(const std::string& media_type) {
   }
 }
 
-std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
-  switch (status) {
-    case AVAuthorizationStatusNotDeterminedMac:
-      return "not-determined";
-    case AVAuthorizationStatusRestrictedMac:
-      return "restricted";
-    case AVAuthorizationStatusDeniedMac:
-      return "denied";
-    case AVAuthorizationStatusAuthorizedMac:
-      return "granted";
-    default:
-      return "unknown";
-  }
-}
-
 }  // namespace
 
 void SystemPreferences::PostNotification(const std::string& name,
@@ -591,11 +576,21 @@ std::string SystemPreferences::GetMediaAccessStatus(
     gin_helper::Arguments* args) {
   if (auto type = ParseMediaType(media_type)) {
     if (@available(macOS 10.14, *)) {
-      return ConvertAuthorizationStatus(
-          [AVCaptureDevice authorizationStatusForMediaType:type]);
+      switch ([AVCaptureDevice authorizationStatusForMediaType:type]) {
+        case AVAuthorizationStatusNotDetermined:
+          return "not-determined";
+        case AVAuthorizationStatusRestricted:
+          return "restricted";
+        case AVAuthorizationStatusDenied:
+          return "denied";
+        case AVAuthorizationStatusAuthorized:
+          return "granted";
+        default:
+          return "unknown";
+      }
     } else {
       // access always allowed pre-10.14 Mojave
-      return ConvertAuthorizationStatus(AVAuthorizationStatusAuthorizedMac);
+      return "granted";
     }
   } else {
     args->ThrowError("Invalid media type");
