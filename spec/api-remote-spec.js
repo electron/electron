@@ -156,10 +156,10 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   })
 
   describe('remote modules', () => {
-    it('includes browser process modules as properties', () => {
-      expect(remote.app.getPath).to.be.a('function')
-      expect(remote.webContents.getFocusedWebContents).to.be.a('function')
-      expect(remote.clipboard.readText).to.be.a('function')
+    it('includes browser process modules as properties', async () => {
+      const mainModules = await ipcRenderer.invoke('get-modules')
+      const remoteModules = mainModules.filter(name => remote[name])
+      expect(remoteModules).to.be.deep.equal(mainModules)
     })
 
     it('returns toString() of original function via toString()', () => {

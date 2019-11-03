@@ -42,6 +42,7 @@ ipcMain.on('message', function (event, ...args) {
   event.sender.send('message', ...args)
 })
 
+ipcMain.handle('get-modules', () => Object.keys(electron))
 ipcMain.handle('get-temp-dir', () => app.getPath('temp'))
 ipcMain.handle('ping', () => null)
 
