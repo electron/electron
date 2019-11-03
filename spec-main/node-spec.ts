@@ -68,7 +68,7 @@ describe('node feature', () => {
     })
 
     it('fails for options disallowed by Node.js itself', (done) => {
-      const env = Object.assign({}, process.env, { NODE_OPTIONS: '--v8-options' });
+      const env = Object.assign({}, process.env, { NODE_OPTIONS: '--v8-options' })
       child = childProcess.spawn(process.execPath, { env })
 
       function cleanup () {
@@ -89,7 +89,7 @@ describe('node feature', () => {
     })
 
     it('disallows crypto-related options', (done) => {
-      const env = Object.assign({}, process.env, { NODE_OPTIONS: '--use-openssl-ca' });
+      const env = Object.assign({}, process.env, { NODE_OPTIONS: '--use-openssl-ca' })
       child = childProcess.spawn(process.execPath, ['--enable-logging'], { env })
 
       function cleanup () {
