@@ -32,6 +32,7 @@ scroll_bounce_flag.patch
 mas-cfisobjc.patch
 mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
+mas_disable_remote_accessibility.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
