@@ -128,9 +128,11 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
   // Locate & retain the recent documents menu item
   if (!recentDocumentsMenuItem_) {
-    recentDocumentsMenuItem_.reset(
-        [[[[[NSApp mainMenu] itemWithTitle:@"Electron"] submenu]
-            itemWithTitle:@"Open Recent"] retain]);
+    base::string16 title = base::ASCIIToUTF16("Open Recent");
+    NSString* openTitle = l10n_util::FixUpWindowsStyleLabel(title);
+
+    recentDocumentsMenuItem_.reset([[[[[NSApp mainMenu]
+        itemWithTitle:@"Electron"] submenu] itemWithTitle:openTitle] retain]);
   }
 
   model_ = model;
