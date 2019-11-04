@@ -38,6 +38,7 @@ mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
 ignore_rc_check.patch
 mas_disable_remote_layer.patch
 mas_disable_remote_accessibility.patch
+mas_disable_custom_window_frame.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
