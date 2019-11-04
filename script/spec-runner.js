@@ -219,7 +219,7 @@ async function installSpecModules (dir) {
   const nodeDir = path.resolve(BASE, `out/${utils.getOutDir(true)}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
-    npm_config_msvs_version: '2017'
+    npm_config_msvs_version: '2019'
   })
   const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
     env,

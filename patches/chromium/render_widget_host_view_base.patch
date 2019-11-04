@@ -5,7 +5,7 @@ Subject: render_widget_host_view_base.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index dbfcd1da5c853a396b6a44c1a2968cc317d10125..3dc776ac982fdd5d4d15bd3afdf208810340db4e 100644
+index 50aad3c8d627ab4e65c1438266c2c1c68113dccf..4a708fdfacfb8fcc2ad07d5f10b475e2169b62ee 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -631,6 +631,15 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
@@ -25,7 +25,7 @@ index dbfcd1da5c853a396b6a44c1a2968cc317d10125..3dc776ac982fdd5d4d15bd3afdf20881
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 2bd5d56bc37daa97e32cb2be20f9d1b49abd91a2..77674ba193fa3fee3ff0dc5c83cc36c50fbcba68 100644
+index add7df1a4432d8a6e4ebec892ab2708ba6650af5..d681d70e8ca9b2c228295336484d9b68240ce26b 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -24,9 +24,11 @@
@@ -40,7 +40,7 @@ index 2bd5d56bc37daa97e32cb2be20f9d1b49abd91a2..77674ba193fa3fee3ff0dc5c83cc36c5
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/input_event_ack_state.h"
  #include "content/public/common/screen_info.h"
-@@ -71,9 +73,11 @@ class CursorManager;
+@@ -72,9 +74,11 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;
@@ -52,7 +52,7 @@ index 2bd5d56bc37daa97e32cb2be20f9d1b49abd91a2..77674ba193fa3fee3ff0dc5c83cc36c5
  class WebCursor;
  class DelegatedFrameHost;
  struct TextInputState;
-@@ -132,6 +136,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -133,6 +137,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
                                       bool destination_is_loaded,
                                       bool destination_is_frozen) final;
  
@@ -62,7 +62,7 @@ index 2bd5d56bc37daa97e32cb2be20f9d1b49abd91a2..77674ba193fa3fee3ff0dc5c83cc36c5
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -349,6 +356,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -350,6 +357,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

@@ -5,7 +5,6 @@
 #ifndef SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 #define SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 
-#include "base/memory/ref_counted.h"
 #include "gin/converter.h"
 #include "shell/browser/net/cert_verifier_client.h"
 
@@ -76,6 +75,16 @@ struct Converter<network::ResourceRequestBody> {
 };
 
 template <>
+struct Converter<scoped_refptr<network::ResourceRequestBody>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const scoped_refptr<network::ResourceRequestBody>& val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     scoped_refptr<network::ResourceRequestBody>* out);
+};
+
+template <>
 struct Converter<network::ResourceRequest> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const network::ResourceRequest& val);
@@ -88,15 +97,5 @@ struct Converter<electron::VerifyRequestParams> {
 };
 
 }  // namespace gin
-
-namespace electron {
-
-void FillRequestDetails(base::DictionaryValue* details,
-                        const net::URLRequest* request);
-
-void GetUploadData(base::ListValue* upload_data_list,
-                   const net::URLRequest* request);
-
-}  // namespace electron
 
 #endif  // SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_

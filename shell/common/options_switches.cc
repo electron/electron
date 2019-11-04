@@ -173,6 +173,10 @@ const char kWebGL[] = "webgl";
 // navigation.
 const char kNavigateOnDragDrop[] = "navigateOnDragDrop";
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+const char kSpellcheck[] = "spellcheck";
+#endif
+
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
 const char kEnableRemoteModule[] = "enableRemoteModule";
 #endif
@@ -266,6 +270,10 @@ const char kAuthNegotiateDelegateWhitelist[] =
 
 // If set, include the port in generated Kerberos SPNs.
 const char kEnableAuthNegotiatePort[] = "enable-auth-negotiate-port";
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+const char kEnableSpellcheck[] = "enable-spellcheck";
+#endif
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
 const char kEnableRemoteModule[] = "enable-remote-module";

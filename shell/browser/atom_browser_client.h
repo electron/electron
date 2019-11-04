@@ -15,12 +15,13 @@
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
+#include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 
 namespace content {
-class QuotaPermissionContext;
 class ClientCertificateDelegate;
+class QuotaPermissionContext;
 }  // namespace content
 
 namespace net {
@@ -148,6 +149,11 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool in_memory,
       const base::FilePath& relative_partition_path) override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  void BindHostReceiverForRenderer(
+      content::RenderProcessHost* render_process_host,
+      mojo::GenericPendingReceiver receiver) override;
+#endif
   base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
   content::MediaObserver* GetMediaObserver() override;
@@ -180,13 +186,15 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,
       bool* bypass_redirect_checks) override;
-  network::mojom::URLLoaderFactoryPtrInfo
+  mojo::PendingRemote<network::mojom::URLLoaderFactory>
   CreateURLLoaderFactoryForNetworkRequests(
       content::RenderProcessHost* process,
       network::mojom::NetworkContext* network_context,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,
-      const url::Origin& request_initiator) override;
+      const url::Origin& request_initiator,
+      const base::Optional<net::NetworkIsolationKey>& network_isolation_key)
+      override;
 #if defined(OS_WIN)
   bool PreSpawnRenderer(sandbox::TargetPolicy* policy,
                         RendererSpawnFlags flags) override;
@@ -204,7 +212,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool is_main_frame,
       ui::PageTransition page_transition,
       bool has_user_gesture,
-      network::mojom::URLLoaderFactoryPtr* out_factory) override;
+      const base::Optional<url::Origin>& initiating_origin,
+      mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory)
+      override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

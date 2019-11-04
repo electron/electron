@@ -18,7 +18,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
-#include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/native_browser_view_views.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -28,7 +27,8 @@
 #include "shell/browser/web_view_manager.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/atom_constants.h"
-#include "shell/common/native_mate_converters/image_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
@@ -45,8 +45,8 @@
 
 #if defined(USE_X11)
 #include "base/strings/string_util.h"
-#include "chrome/browser/ui/libgtkui/unity_service.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/linux/unity_service.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/views/native_frame_view.h"
@@ -126,7 +126,7 @@ class NativeWindowClientView : public views::ClientView {
 
 }  // namespace
 
-NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
+NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent),
       root_view_(new RootView(this)),
@@ -179,7 +179,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   // The given window is most likely not rectangular since it uses
   // transparency and has no standard frame, don't show a shadow for it.
   if (transparent() && !has_frame())
-    params.shadow_type = views::Widget::InitParams::SHADOW_TYPE_NONE;
+    params.shadow_type = views::Widget::InitParams::ShadowType::kNone;
 
   bool focusable;
   if (options.Get(options::kFocusable, &focusable) && !focusable)
@@ -471,8 +471,9 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 #if defined(OS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
 #elif defined(USE_X11)
-  views::DesktopWindowTreeHostX11* tree_host =
-      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
+  views::DesktopWindowTreeHostLinux* tree_host =
+      views::DesktopWindowTreeHostLinux::GetHostForWidget(
+          GetAcceleratedWidget());
   if (enable) {
     tree_host->RemoveEventRewriter(event_disabler_.get());
     event_disabler_.reset();
@@ -708,6 +709,18 @@ bool NativeWindowViews::IsResizable() {
   return CanResize();
 }
 
+void NativeWindowViews::SetAspectRatio(double aspect_ratio,
+                                       const gfx::Size& extra_size) {
+  NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
+#if defined(OS_LINUX)
+  gfx::SizeF aspect(aspect_ratio, 1.0);
+  // Scale up because SetAspectRatio() truncates aspect value to int
+  aspect.Scale(100);
+
+  widget()->SetAspectRatio(aspect);
+#endif
+}
+
 void NativeWindowViews::SetMovable(bool movable) {
   movable_ = movable;
 }
@@ -794,8 +807,7 @@ bool NativeWindowViews::IsClosable() {
 
 void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
                                        const std::string& level,
-                                       int relativeLevel,
-                                       std::string* error) {
+                                       int relativeLevel) {
   bool level_changed = z_order != widget()->GetZOrderLevel();
   widget()->SetZOrderLevel(z_order);
 
@@ -1205,11 +1217,13 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 
   gfx::Rect window_bounds(bounds);
 #if defined(OS_WIN)
-  HWND hwnd = GetAcceleratedWidget();
-  gfx::Rect dpi_bounds = DIPToScreenRect(hwnd, bounds);
-  window_bounds = ScreenToDIPRect(
-      hwnd,
-      widget()->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
+  if (widget()->non_client_view()) {
+    HWND hwnd = GetAcceleratedWidget();
+    gfx::Rect dpi_bounds = DIPToScreenRect(hwnd, bounds);
+    window_bounds = ScreenToDIPRect(
+        hwnd, widget()->non_client_view()->GetWindowBoundsForClientBounds(
+                  dpi_bounds));
+  }
 #endif
 
   if (root_view_->HasMenu() && root_view_->IsMenuBarVisible()) {
@@ -1266,8 +1280,8 @@ void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
 }
 #elif defined(USE_X11)
 void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
-  auto* tree_host = static_cast<views::DesktopWindowTreeHost*>(
-      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget()));
+  auto* tree_host = views::DesktopWindowTreeHostLinux::GetHostForWidget(
+      GetAcceleratedWidget());
   tree_host->SetWindowIcons(icon, icon);
 }
 #endif
@@ -1453,7 +1467,7 @@ void NativeWindowViews::MoveBehindTaskBarIfNeeded() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(const mate::Dictionary& options,
+NativeWindow* NativeWindow::Create(const gin_helper::Dictionary& options,
                                    NativeWindow* parent) {
   return new NativeWindowViews(options, parent);
 }

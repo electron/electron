@@ -90,6 +90,9 @@ async function nextVersion (bumpType, version) {
         break
       case 'beta':
         throw new Error('Cannot bump to beta from stable.')
+      case 'minor':
+        version = semver.inc(version, 'minor')
+        break
       case 'stable':
         version = semver.inc(version, 'patch')
         break

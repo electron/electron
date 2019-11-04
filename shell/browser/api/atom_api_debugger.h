@@ -12,31 +12,27 @@
 #include "base/values.h"
 #include "content/public/browser/devtools_agent_host_client.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "native_mate/handle.h"
-#include "shell/browser/api/trackable_object.h"
-#include "shell/common/promise_util.h"
+#include "gin/handle.h"
+#include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace content {
 class DevToolsAgentHost;
 class WebContents;
 }  // namespace content
 
-namespace mate {
-class Arguments;
-}
-
 namespace electron {
 
 namespace api {
 
-class Debugger : public mate::TrackableObject<Debugger>,
+class Debugger : public gin_helper::TrackableObject<Debugger>,
                  public content::DevToolsAgentHostClient,
                  public content::WebContentsObserver {
  public:
-  static mate::Handle<Debugger> Create(v8::Isolate* isolate,
-                                       content::WebContents* web_contents);
+  static gin::Handle<Debugger> Create(v8::Isolate* isolate,
+                                      content::WebContents* web_contents);
 
-  // mate::TrackableObject:
+  // gin_helper::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
@@ -55,12 +51,12 @@ class Debugger : public mate::TrackableObject<Debugger>,
 
  private:
   using PendingRequestMap =
-      std::map<int, electron::util::Promise<base::DictionaryValue>>;
+      std::map<int, gin_helper::Promise<base::DictionaryValue>>;
 
-  void Attach(mate::Arguments* args);
+  void Attach(gin_helper::Arguments* args);
   bool IsAttached();
   void Detach();
-  v8::Local<v8::Promise> SendCommand(mate::Arguments* args);
+  v8::Local<v8::Promise> SendCommand(gin_helper::Arguments* args);
   void ClearPendingRequests();
 
   content::WebContents* web_contents_;  // Weak Reference.

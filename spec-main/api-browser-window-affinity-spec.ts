@@ -81,7 +81,7 @@ describe('BrowserWindow with affinity module', () => {
     const affinityWithNodeFalse = 'affinityWithNodeFalse'
 
     function testNodeIntegration (present: boolean) {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         ipcMain.once('answer', (event, typeofProcess, typeofBuffer) => {
           if (present) {
             expect(typeofProcess).to.not.equal('undefined')

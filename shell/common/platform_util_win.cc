@@ -238,14 +238,11 @@ std::string OpenExternalOnWorkerThread(
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
-  std::string escaped_url = url.spec();
-  escaped_url.insert(0, "\"");
-  escaped_url += "\"";
-
-  std::string working_dir = options.working_dir.AsUTF8Unsafe();
+  base::string16 escaped_url = L"\"" + base::UTF8ToUTF16(url.spec()) + L"\"";
+  base::string16 working_dir = options.working_dir.value();
 
   if (reinterpret_cast<ULONG_PTR>(
-          ShellExecuteA(nullptr, "open", escaped_url.c_str(), nullptr,
+          ShellExecuteW(nullptr, L"open", escaped_url.c_str(), nullptr,
                         working_dir.empty() ? nullptr : working_dir.c_str(),
                         SW_SHOWNORMAL)) <= 32) {
     return "Failed to open";

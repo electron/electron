@@ -33,14 +33,12 @@ namespace electron {
 
 namespace {
 
-base::StringPiece NetResourceProvider(int key) {
+scoped_refptr<base::RefCountedMemory> NetResourceProvider(int key) {
   if (key == IDR_DIR_HEADER_HTML) {
-    base::StringPiece html_data =
-        ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
-            IDR_DIR_HEADER_HTML);
-    return html_data;
+    return ui::ResourceBundle::GetSharedInstance().LoadDataResourceBytes(
+        IDR_DIR_HEADER_HTML);
   }
-  return base::StringPiece();
+  return nullptr;
 }
 
 }  // namespace
@@ -106,8 +104,7 @@ void AtomRenderFrameObserver::DraggableRegionsChanged() {
   std::vector<mojom::DraggableRegionPtr> regions;
   for (auto& webregion : webregions) {
     auto region = mojom::DraggableRegion::New();
-    render_frame_->GetRenderView()->ConvertViewportToWindowViaWidget(
-        &webregion.bounds);
+    render_frame_->ConvertViewportToWindow(&webregion.bounds);
     region->bounds = webregion.bounds;
     region->draggable = webregion.draggable;
     regions.push_back(std::move(region));

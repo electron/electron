@@ -4,7 +4,7 @@ import * as os from 'os'
 import * as semver from 'semver'
 
 import { delay, ifdescribe } from './spec-helpers'
-import { emittedOnce } from './events-helpers';
+import { emittedOnce } from './events-helpers'
 
 describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {

@@ -9,6 +9,7 @@
 #include "gin/converter.h"
 
 namespace gin {
+
 template <>
 struct Converter<base::FilePath> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,

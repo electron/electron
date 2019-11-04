@@ -6,21 +6,20 @@
 #include <string>
 #include <utility>
 
-#include "base/bind.h"
 #include "base/files/file_util.h"
 #include "base/optional.h"
 #include "base/threading/thread_restrictions.h"
 #include "content/public/browser/tracing_controller.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/promise_util.h"
 
 using content::TracingController;
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<base::trace_event::TraceConfig> {
@@ -31,7 +30,7 @@ struct Converter<base::trace_event::TraceConfig> {
     // has to be checked first because none of the fields
     // in the `memory_dump_config` dict below are mandatory
     // and we cannot check the config format.
-    Dictionary options;
+    gin_helper::Dictionary options;
     if (ConvertFromV8(isolate, val, &options)) {
       std::string category_filter, trace_options;
       if (options.Get("categoryFilter", &category_filter) &&
@@ -51,7 +50,7 @@ struct Converter<base::trace_event::TraceConfig> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace {
 
@@ -64,14 +63,13 @@ base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
   return base::make_optional(std::move(temp_file_path));
 }
 
-void StopTracing(electron::util::Promise<base::FilePath> promise,
+void StopTracing(gin_helper::Promise<base::FilePath> promise,
                  base::Optional<base::FilePath> file_path) {
   if (file_path) {
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path,
-        base::AdaptCallbackForRepeating(base::BindOnce(
-            &electron::util::Promise<base::FilePath>::ResolvePromise,
-            std::move(promise), *file_path)));
+        *file_path, base::AdaptCallbackForRepeating(base::BindOnce(
+                        &gin_helper::Promise<base::FilePath>::ResolvePromise,
+                        std::move(promise), *file_path)));
     TracingController::GetInstance()->StopTracing(endpoint);
   } else {
     promise.RejectWithErrorMessage(
@@ -79,8 +77,8 @@ void StopTracing(electron::util::Promise<base::FilePath> promise,
   }
 }
 
-v8::Local<v8::Promise> StopRecording(mate::Arguments* args) {
-  electron::util::Promise<base::FilePath> promise(args->isolate());
+v8::Local<v8::Promise> StopRecording(gin_helper::Arguments* args) {
+  gin_helper::Promise<base::FilePath> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::FilePath path;
@@ -100,12 +98,12 @@ v8::Local<v8::Promise> StopRecording(mate::Arguments* args) {
 }
 
 v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
-  electron::util::Promise<const std::set<std::string>&> promise(isolate);
+  gin_helper::Promise<const std::set<std::string>&> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Note: This method always succeeds.
   TracingController::GetInstance()->GetCategories(base::BindOnce(
-      electron::util::Promise<const std::set<std::string>&>::ResolvePromise,
+      gin_helper::Promise<const std::set<std::string>&>::ResolvePromise,
       std::move(promise)));
 
   return handle;
@@ -114,27 +112,27 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
 v8::Local<v8::Promise> StartTracing(
     v8::Isolate* isolate,
     const base::trace_event::TraceConfig& trace_config) {
-  electron::util::Promise<void*> promise(isolate);
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!TracingController::GetInstance()->StartTracing(
           trace_config,
-          base::BindOnce(electron::util::Promise<void*>::ResolveEmptyPromise,
+          base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                          std::move(promise)))) {
     // If StartTracing returns false, that means it didn't invoke its callback.
     // Return an already-resolved promise and abandon the previous promise (it
     // was std::move()d into the StartTracing callback and has been deleted by
     // this point).
-    return electron::util::Promise<void*>::ResolvedPromise(isolate);
+    return gin_helper::Promise<void>::ResolvedPromise(isolate);
   }
   return handle;
 }
 
 void OnTraceBufferUsageAvailable(
-    electron::util::Promise<mate::Dictionary> promise,
+    gin_helper::Promise<gin_helper::Dictionary> promise,
     float percent_full,
     size_t approximate_count) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("percentage", percent_full);
   dict.Set("value", approximate_count);
 
@@ -142,7 +140,7 @@ void OnTraceBufferUsageAvailable(
 }
 
 v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {
-  electron::util::Promise<mate::Dictionary> promise(isolate);
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Note: This method always succeeds.
@@ -155,7 +153,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getCategories", &GetCategories);
   dict.SetMethod("startRecording", &StartTracing);
   dict.SetMethod("stopRecording", &StopRecording);

@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 30 Oct 2019 18:21:45 -0700
+Subject: build,[win]: IWYU for //third_party/breakpad
+
+
+diff --git a/src/common/windows/guid_string.h b/src/common/windows/guid_string.h
+index 48a5c1d3708f9398fffbe5f5cda29b4ab2408e70..c3043bcb8817ae5be8682e22985bad2d7a498f43 100644
+--- a/src/common/windows/guid_string.h
++++ b/src/common/windows/guid_string.h
+@@ -34,6 +34,7 @@
+ 
+ #include <guiddef.h>
+ 
++#include <memory>
+ #include <string>
+ 
+ namespace google_breakpad {
+diff --git a/src/tools/windows/dump_syms/dump_syms.cc b/src/tools/windows/dump_syms/dump_syms.cc
+index 5b7d1777538cd3cfefd0bef45558f900798d6c51..1f22cfc2d14b2523c7ae133c1ba6fe2d66333d47 100644
+--- a/src/tools/windows/dump_syms/dump_syms.cc
++++ b/src/tools/windows/dump_syms/dump_syms.cc
+@@ -33,6 +33,7 @@
+ #include <stdio.h>
+ #include <wchar.h>
+ 
++#include <memory>
+ #include <string>
+ 
+ #include "common/windows/pdb_source_line_writer.h"

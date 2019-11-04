@@ -11,6 +11,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "gpu/config/gpu_info_collector.h"
 #include "shell/browser/api/gpu_info_enumerator.h"
+#include "shell/common/gin_converters/value_converter.h"
 
 namespace electron {
 
@@ -62,11 +63,11 @@ void GPUInfoManager::OnGpuInfoUpdate() {
 
 // Should be posted to the task runner
 void GPUInfoManager::CompleteInfoFetcher(
-    util::Promise<base::DictionaryValue> promise) {
+    gin_helper::Promise<base::DictionaryValue> promise) {
   complete_info_promise_set_.emplace_back(std::move(promise));
 
   if (NeedsCompleteGpuInfoCollection()) {
-    gpu_data_manager_->RequestCompleteGpuInfoIfNeeded(
+    gpu_data_manager_->RequestDxdiagDx12VulkanGpuInfoIfNeeded(
         content::kGpuInfoRequestAll, /* delayed */ false);
   } else {
     GPUInfoManager::OnGpuInfoUpdate();
@@ -74,7 +75,7 @@ void GPUInfoManager::CompleteInfoFetcher(
 }
 
 void GPUInfoManager::FetchCompleteInfo(
-    util::Promise<base::DictionaryValue> promise) {
+    gin_helper::Promise<base::DictionaryValue> promise) {
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(&GPUInfoManager::CompleteInfoFetcher,
                                 base::Unretained(this), std::move(promise)));
@@ -83,7 +84,7 @@ void GPUInfoManager::FetchCompleteInfo(
 // This fetches the info synchronously, so no need to post to the task queue.
 // There cannot be multiple promises as they are resolved synchronously.
 void GPUInfoManager::FetchBasicInfo(
-    util::Promise<base::DictionaryValue> promise) {
+    gin_helper::Promise<base::DictionaryValue> promise) {
   gpu::GPUInfo gpu_info;
   CollectBasicGraphicsInfo(&gpu_info);
   promise.Resolve(*EnumerateGPUInfo(gpu_info));

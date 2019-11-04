@@ -97,7 +97,7 @@ class SystemNetworkContextManager {
   // URLLoaderFactory backed by the NetworkContext returned by GetContext(), so
   // consumers don't all need to create their own factory.
   scoped_refptr<URLLoaderFactoryForSystem> shared_url_loader_factory_;
-  network::mojom::URLLoaderFactoryPtr url_loader_factory_;
+  mojo::Remote<network::mojom::URLLoaderFactory> url_loader_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(SystemNetworkContextManager);
 };

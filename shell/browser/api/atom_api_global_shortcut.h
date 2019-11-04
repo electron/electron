@@ -11,8 +11,8 @@
 
 #include "base/callback.h"
 #include "chrome/browser/extensions/global_shortcut_listener.h"
-#include "native_mate/handle.h"
-#include "shell/browser/api/trackable_object.h"
+#include "gin/handle.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "ui/base/accelerators/accelerator.h"
 
 namespace electron {
@@ -20,9 +20,9 @@ namespace electron {
 namespace api {
 
 class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
-                       public mate::TrackableObject<GlobalShortcut> {
+                       public gin_helper::TrackableObject<GlobalShortcut> {
  public:
-  static mate::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
+  static gin::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

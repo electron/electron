@@ -82,7 +82,7 @@ describe('debugger module', () => {
       w.webContents.once('devtools-opened', () => {
         w.webContents.debugger.detach()
       })
-      w.webContents.debugger.on('detach', (e, reason) => {
+      w.webContents.debugger.on('detach', () => {
         expect(w.webContents.debugger.isAttached()).to.be.false()
         expect((w as any).devToolsWebContents.isDestroyed()).to.be.false()
         done()
@@ -201,7 +201,7 @@ describe('debugger module', () => {
         done(`unexpected error : ${err}`)
       }
 
-      w.webContents.debugger.on('message', (event, method, params) => {
+      w.webContents.debugger.on('message', (event, method) => {
         // loadingFinished indicates that page has been loaded and it did not
         // crash because of invalid UTF-8 data
         if (method === 'Network.loadingFinished') {

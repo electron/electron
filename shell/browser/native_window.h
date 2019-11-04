@@ -37,10 +37,10 @@ class RectF;
 class Size;
 }  // namespace gfx
 
-namespace mate {
+namespace gin_helper {
 class Dictionary;
 class PersistentDictionary;
-}  // namespace mate
+}  // namespace gin_helper
 
 namespace electron {
 
@@ -60,10 +60,10 @@ class NativeWindow : public base::SupportsUserData,
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
-  static NativeWindow* Create(const mate::Dictionary& options,
+  static NativeWindow* Create(const gin_helper::Dictionary& options,
                               NativeWindow* parent = nullptr);
 
-  void InitFromOptions(const mate::Dictionary& options);
+  void InitFromOptions(const gin_helper::Dictionary& options);
 
   virtual void SetContentView(views::View* view) = 0;
 
@@ -129,8 +129,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsClosable() = 0;
   virtual void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                               const std::string& level = "floating",
-                              int relativeLevel = 0,
-                              std::string* error = nullptr) = 0;
+                              int relativeLevel = 0) = 0;
   virtual ui::ZOrderLevel GetZOrderLevel() = 0;
   virtual void Center() = 0;
   virtual void Invalidate() = 0;
@@ -196,10 +195,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVibrancy(const std::string& type);
 
   // Touchbar API
-  virtual void SetTouchBar(
-      const std::vector<mate::PersistentDictionary>& items);
+  virtual void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
   virtual void RefreshTouchBarItem(const std::string& item_id);
-  virtual void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
+  virtual void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item);
 
   // Native Tab API
   virtual void SelectPreviousTab();
@@ -305,7 +303,7 @@ class NativeWindow : public base::SupportsUserData,
   std::list<NativeBrowserView*> browser_views() const { return browser_views_; }
 
  protected:
-  NativeWindow(const mate::Dictionary& options, NativeWindow* parent);
+  NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;

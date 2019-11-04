@@ -10,7 +10,7 @@ import { expect } from 'chai'
 import * as dbus from 'dbus-native'
 import { app } from 'electron'
 import { ifdescribe } from './spec-helpers'
-import { promisify } from 'util';
+import { promisify } from 'util'
 
 const skip = process.platform !== 'linux' ||
              process.arch === 'ia32' ||
@@ -28,11 +28,12 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
     // init app
     app.name = appName
     app.setDesktopName(`${appName}.desktop`)
-    // init dbus
+
+    // init DBus
     const path = '/org/freedesktop/Notifications'
     const iface = 'org.freedesktop.DBus.Mock'
-    const bus = dbus.sessionBus()
     console.log(`session bus: ${process.env.DBUS_SESSION_BUS_ADDRESS}`)
+    const bus = dbus.sessionBus()
     const service = bus.getService(serviceName)
     const getInterface = promisify(service.getInterface.bind(service))
     mock = await getInterface(path, iface)
@@ -42,7 +43,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
 
   after(async () => {
     // cleanup dbus
-    await reset()
+    if (reset) await reset()
     // cleanup app
     app.setName(realAppName)
     app.setVersion(realAppVersion)

@@ -2,9 +2,11 @@ if (!process.env.CI) require('dotenv-safe').load()
 
 const assert = require('assert')
 const request = require('request')
-const buildAppVeyorURL = 'https://ci.appveyor.com/api/builds'
-const circleCIPipelineURL = 'https://circleci.com/api/v2/project/gh/electron/electron/pipeline'
-const vstsURL = 'https://github.visualstudio.com/electron/_apis/build'
+
+const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds'
+const CIRCLECI_PIPELINE_URL = 'https://circleci.com/api/v2/project/gh/electron/electron/pipeline'
+const VSTS_URL = 'https://github.visualstudio.com/electron/_apis/build'
+const CIRCLECI_WAIT_TIME = process.env.CIRCLECI_WAIT_TIME || 30000
 
 const appVeyorJobs = {
   'electron-x64': 'electron-x64-release',
@@ -78,7 +80,7 @@ async function circleCIcall (targetBranch, job, options) {
   // If the workflows are changed in the CircleCI config.yml, this logic will
   // also need to be changed as well as possibly changing sudowoodo.
   try {
-    const circleResponse = await circleCIRequest(circleCIPipelineURL, 'POST', buildRequest)
+    const circleResponse = await circleCIRequest(CIRCLECI_PIPELINE_URL, 'POST', buildRequest)
     console.log(`CircleCI release build pipeline ${circleResponse.id} for ${job} triggered.`)
     const pipelineInfoUrl = `https://circleci.com/api/v2/pipeline/${circleResponse.id}`
     const workflowId = await getCircleCIWorkflowId(circleResponse.id)
@@ -99,36 +101,42 @@ async function circleCIcall (targetBranch, job, options) {
 
 async function getCircleCIWorkflowId (pipelineId) {
   const pipelineInfoUrl = `https://circleci.com/api/v2/pipeline/${pipelineId}`
-  for (let i = 0; i < 5; i++) {
+  let workflowId = 0
+  while (workflowId === 0) {
     const pipelineInfo = await circleCIRequest(pipelineInfoUrl, 'GET')
     switch (pipelineInfo.state) {
       case 'created': {
         if (pipelineInfo.workflows.length === 1) {
-          return pipelineInfo.workflows[0].id
+          workflowId = pipelineInfo.workflows[0].id
+          break
         }
         console.log('Unxpected number of workflows, response was:', pipelineInfo)
-        return -1
+        workflowId = -1
+        break
       }
       case 'error': {
         console.log('Error retrieving workflows, response was:', pipelineInfo)
-        return -1
+        workflowId = -1
+        break
       }
     }
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise(resolve => setTimeout(resolve, CIRCLECI_WAIT_TIME))
   }
-  return -1
+  return workflowId
 }
 
 async function getCircleCIJobNumber (workflowId) {
   const jobInfoUrl = `https://circleci.com/api/v2/workflow/${workflowId}/jobs`
-  for (let i = 0; i < 5; i++) {
+  let jobNumber = 0
+  while (jobNumber === 0) {
     const jobInfo = await circleCIRequest(jobInfoUrl, 'GET')
     if (!jobInfo.items) {
       continue
     }
     if (jobInfo.items.length !== 1) {
       console.log('Unxpected number of jobs, response was:', jobInfo)
-      return -1
+      jobNumber = -1
+      break
     }
 
     switch (jobInfo.items[0].status) {
@@ -136,18 +144,24 @@ async function getCircleCIJobNumber (workflowId) {
       case 'queued':
       case 'running': {
         if (jobInfo.items[0].job_number && !isNaN(jobInfo.items[0].job_number)) {
-          return jobInfo.items[0].job_number
+          jobNumber = jobInfo.items[0].job_number
         }
         break
       }
-      case 'error': {
-        console.log('Error retrieving jobs, response was:', jobInfo)
-        return -1
+      case 'canceled':
+      case 'error':
+      case 'infrastructure_fail':
+      case 'timedout':
+      case 'not_run':
+      case 'failed': {
+        console.log(`Error job returned a status of ${jobInfo.items[0].status}, response was:`, jobInfo)
+        jobNumber = -1
+        break
       }
     }
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise(resolve => setTimeout(resolve, CIRCLECI_WAIT_TIME))
   }
-  return -1
+  return jobNumber
 }
 
 async function circleCIRequest (url, method, requestBody) {
@@ -189,7 +203,7 @@ async function callAppVeyor (targetBranch, job, options) {
   }
 
   const requestOpts = {
-    url: buildAppVeyorURL,
+    url: BUILD_APPVEYOR_URL,
     auth: {
       bearer: process.env.APPVEYOR_CLOUD_TOKEN
     },
@@ -244,7 +258,7 @@ async function buildVSTS (targetBranch, options) {
   }
 
   const requestOpts = {
-    url: `${vstsURL}/definitions?api-version=4.1`,
+    url: `${VSTS_URL}/definitions?api-version=4.1`,
     auth: {
       user: '',
       password: process.env.VSTS_TOKEN
@@ -270,7 +284,7 @@ async function callVSTSBuild (build, targetBranch, environmentVariables) {
     buildBody.parameters = JSON.stringify(environmentVariables)
   }
   const requestOpts = {
-    url: `${vstsURL}/builds?api-version=4.1`,
+    url: `${VSTS_URL}/builds?api-version=4.1`,
     auth: {
       user: '',
       password: process.env.VSTS_TOKEN
@@ -311,7 +325,6 @@ function runRelease (targetBranch, options) {
   } else {
     buildCircleCI(targetBranch, options)
     buildAppVeyor(targetBranch, options)
-    buildVSTS(targetBranch, options)
   }
   console.log(`${jobRequestedCount} jobs were requested.`)
 }

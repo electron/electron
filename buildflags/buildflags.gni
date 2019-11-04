@@ -33,4 +33,7 @@ declare_args() {
 
   # Enable Chrome extensions support.
   enable_electron_extensions = false
+
+  # Enable Spellchecker support
+  enable_builtin_spellchecker = true
 }

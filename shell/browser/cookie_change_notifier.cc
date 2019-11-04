@@ -11,7 +11,6 @@
 #include "content/public/browser/storage_partition.h"
 #include "net/cookies/canonical_cookie.h"
 #include "shell/browser/atom_browser_context.h"
-#include "shell/browser/net/cookie_details.h"
 
 using content::BrowserThread;
 
@@ -24,9 +23,10 @@ CookieChangeNotifier::CookieChangeNotifier(AtomBrowserContext* browser_context)
 
 CookieChangeNotifier::~CookieChangeNotifier() = default;
 
-std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+std::unique_ptr<
+    base::CallbackList<void(const net::CookieChangeInfo& change)>::Subscription>
 CookieChangeNotifier::RegisterCookieChangeCallback(
-    const base::Callback<void(const CookieDetails*)>& cb) {
+    const base::Callback<void(const net::CookieChangeInfo& change)>& cb) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   return cookie_change_sub_list_.Add(cb);
@@ -57,14 +57,10 @@ void CookieChangeNotifier::OnConnectionError() {
   StartListening();
 }
 
-void CookieChangeNotifier::OnCookieChange(
-    const net::CanonicalCookie& cookie,
-    network::mojom::CookieChangeCause cause) {
+void CookieChangeNotifier::OnCookieChange(const net::CookieChangeInfo& change) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  CookieDetails cookie_details(
-      &cookie, cause != network::mojom::CookieChangeCause::INSERTED, cause);
-  cookie_change_sub_list_.Notify(&cookie_details);
+  cookie_change_sub_list_.Notify(change);
 }
 
 }  // namespace electron

@@ -11,6 +11,7 @@
 #include "base/guid.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
+#include "mojo/public/cpp/bindings/binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "net/base/filename_util.h"
@@ -26,7 +27,7 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 
 #include "shell/common/node_includes.h"
 
@@ -183,8 +184,8 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
 }
 
 void AtomURLLoaderFactory::Clone(
-    network::mojom::URLLoaderFactoryRequest request) {
-  bindings_.AddBinding(this, std::move(request));
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver) {
+  receivers_.Add(this, std::move(receiver));
 }
 
 // static
@@ -388,8 +389,8 @@ void AtomURLLoaderFactory::StartLoadingHttp(
     if (value->IsNull()) {
       browser_context = AtomBrowserContext::From(base::GenerateGUID(), true);
     } else {
-      mate::Handle<api::Session> session;
-      if (mate::ConvertFromV8(dict.isolate(), value, &session) &&
+      gin::Handle<api::Session> session;
+      if (gin::ConvertFromV8(dict.isolate(), value, &session) &&
           !session.IsEmpty()) {
         browser_context = session->browser_context();
       }

@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "ui/views/linux_ui/status_icon_linux.h"
 
@@ -38,10 +39,10 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
   void OnImplInitializationFailed() override;
 
  private:
-  std::unique_ptr<views::StatusIconLinux> icon_;
-
-  gfx::ImageSkia dummy_image_;
-  base::string16 dummy_string_;
+  scoped_refptr<StatusIconLinuxDbus> icon_;
+  gfx::ImageSkia image_;
+  base::string16 tool_tip_;
+  ui::MenuModel* menu_model_;
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconGtk);
 };

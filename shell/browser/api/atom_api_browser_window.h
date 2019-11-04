@@ -38,7 +38,7 @@ class BrowserWindow : public TopLevelWindow,
   }
 
  protected:
-  BrowserWindow(gin::Arguments* args, const mate::Dictionary& options);
+  BrowserWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BrowserWindow() override;
 
   // content::RenderWidgetHost::InputEventObserver:

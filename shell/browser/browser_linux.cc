@@ -17,7 +17,7 @@
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
-#include "chrome/browser/ui/libgtkui/unity_service.h"
+#include "shell/browser/linux/unity_service.h"
 #endif
 
 namespace electron {
@@ -52,7 +52,11 @@ bool SetDefaultWebClient(const std::string& protocol) {
     argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
     argv.push_back(protocol);
   }
-  argv.push_back(libgtkui::GetDesktopName(env.get()));
+  std::string desktop_name;
+  if (!env->GetVar("CHROME_DESKTOP", &desktop_name)) {
+    return false;
+  }
+  argv.push_back(desktop_name);
 
   int exit_code;
   bool ran_ok = LaunchXdgUtility(argv, &exit_code);
@@ -76,12 +80,12 @@ void Browser::ClearRecentDocuments() {}
 void Browser::SetAppUserModelID(const base::string16& name) {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         mate::Arguments* args) {
+                                         gin_helper::Arguments* args) {
   return SetDefaultWebClient(protocol);
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      mate::Arguments* args) {
+                                      gin_helper::Arguments* args) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
   if (protocol.empty())
@@ -92,7 +96,10 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   argv.emplace_back("check");
   argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
   argv.push_back(protocol);
-  argv.push_back(libgtkui::GetDesktopName(env.get()));
+  std::string desktop_name;
+  if (!env->GetVar("CHROME_DESKTOP", &desktop_name))
+    return false;
+  argv.push_back(desktop_name);
 
   std::string reply;
   int success_code;
@@ -109,7 +116,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
 // Todo implement
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            mate::Arguments* args) {
+                                            gin_helper::Arguments* args) {
   return false;
 }
 
@@ -209,8 +216,8 @@ void Browser::ShowAboutPanel() {
   gtk_widget_destroy(dialogWidget);
 }
 
-void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
-  about_panel_options_ = options.Clone();
+void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
+  about_panel_options_ = std::move(options);
 }
 
 }  // namespace electron

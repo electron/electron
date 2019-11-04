@@ -5,7 +5,6 @@
 #include "base/path_service.h"
 #include "shell/browser/api/atom_api_app.h"
 #include "shell/browser/atom_paths.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
 
 #import <Cocoa/Cocoa.h>
 

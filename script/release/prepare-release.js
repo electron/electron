@@ -23,7 +23,7 @@ const pass = '✓'.green
 const fail = '✗'.red
 
 if (!bumpType && !args.notesOnly) {
-  console.log(`Usage: prepare-release [stable | beta | nightly]` +
+  console.log(`Usage: prepare-release [stable | minor | beta | nightly]` +
      ` (--stable) (--notesOnly) (--automaticRelease) (--branch)`)
   process.exit(1)
 }

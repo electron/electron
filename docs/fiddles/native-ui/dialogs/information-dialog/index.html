@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Information Dialog</title>
+  </head>
+
+  <body>
+    <div class="section-wrapper">
+      <h1>Use system dialogs</h1>
+
+      <h3>
+        The <code>dialog</code> module in Electron allows you to use native
+        system dialogs for opening files or directories, saving a file or
+        displaying informational messages.
+      </h3>
+
+      <p>
+        This is a main process module because this process is more efficient
+        with native utilities and it allows the call to happen without
+        interrupting the visible elements in your page's renderer process.
+      </p>
+
+      <p>
+        Open the
+        <a href="http://electron.atom.io/docs/api/dialog/">
+          full API documentation (opens in new window)
+        </a>
+        in your browser.
+      </p>
+    </div>
+
+    <div>
+      <div>
+        <h2>Information Dialog</h2>
+        <div>
+          <div>
+            <button id="information-dialog">
+              View Demo
+            </button>
+            <span id="info-selection"></span>
+          </div>
+          <p>
+            In this demo, the <code>ipc</code> module is used to send a message
+            from the renderer process instructing the main process to launch the
+            information dialog. Options may be provided for responses which can
+            then be relayed back to the renderer process.
+          </p>
+
+          <p>
+            Note: The <code>title</code> property is not displayed in macOS.
+          </p>
+
+          <p>
+            An information dialog can contain an icon, your choice of buttons,
+            title and message.
+          </p>
+          <h5>Renderer Process</h5>
+          <pre>
+            <code>
+const {ipcRenderer} = require('electron')
+
+const informationBtn = document.getElementById('information-dialog')
+
+informationBtn.addEventListener('click', (event) => {
+  ipcRenderer.send('open-information-dialog')
+})
+
+ipcRenderer.on('information-dialog-selection', (event, index) => {
+  let message = 'You selected '
+  if (index === 0) message += 'yes.'
+  else message += 'no.'
+  document.getElementById('info-selection').innerHTML = message
+})
+            </code>
+          </pre>
+          <h5>Main Process</h5>
+          <pre>
+            <code>
+const {ipcMain, dialog} = require('electron')
+
+ipcMain.on('open-information-dialog', (event) => {
+  const options = {
+    type: 'info',
+    title: 'Information',
+    message: "This is an information dialog. Isn't it nice?",
+    buttons: ['Yes', 'No']
+  }
+  dialog.showMessageBox(options, (index) => {
+    event.sender.send('information-dialog-selection', index)
+  })
+})
+            </code>
+          </pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // You can also require other files to run in this process
+      require("./renderer.js");
+    </script>
+  </body>
+</html>
