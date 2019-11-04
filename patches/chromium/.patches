@@ -36,6 +36,7 @@ mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
 mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
 ignore_rc_check.patch
+mas_disable_remote_layer.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
