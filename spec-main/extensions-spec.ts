@@ -88,6 +88,17 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       }
     })
   })
+
+  describe('devtools extensions', () => {
+    it('loads a devtools extension', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      // (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'devtools-extension'))
+      const w = new BrowserWindow({ show: true, webPreferences: { session: customSession, nodeIntegration: true } })
+      await w.loadURL('data:text/html,hello')
+      w.webContents.openDevTools()
+      await emittedOnce(ipcMain, 'winning')
+    })
+  })
 })
 
 ifdescribe(!process.electronBinding('features').isExtensionsEnabled())('chrome extensions', () => {
