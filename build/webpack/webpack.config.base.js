@@ -74,7 +74,10 @@ module.exports = ({
           global: ['@electron/internal/renderer/webpack-provider', '_global'],
           Buffer: ['@electron/internal/renderer/webpack-provider', 'Buffer'],
         })
-      ] : [])
+      ] : []),
+      new webpack.ProvidePlugin({
+        Promise: ['@electron/internal/common/webpack-globals-provider', 'Promise'],
+      }),
     ]
   })
 }
