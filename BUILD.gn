@@ -4,6 +4,7 @@ import("//build/config/win/manifest.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//pdf/features.gni")
+import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//testing/test.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
@@ -579,8 +580,12 @@ source_set("electron_lib") {
     deps += [ "//third_party/crashpad/crashpad/client" ]
   }
 
-  if (enable_pdf) {
-    deps += [ "//pdf" ]
+  if (enable_plugins) {
+    deps += [ "chromium_src:plugins" ]
+    sources += [
+      "shell/renderer/pepper_helper.cc",
+      "shell/renderer/pepper_helper.h",
+    ]
   }
 
   if (enable_run_as_node) {
@@ -664,10 +669,6 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_pepper_flash) {
-    deps += [ "components/pepper_flash" ]
-  }
-
   public_deps += [ "shell/common/extensions/api:extensions_features" ]
   deps += [
     "//components/pref_registry",
@@ -680,6 +681,22 @@ source_set("electron_lib") {
   ]
   if (enable_electron_extensions) {
     sources += filenames.lib_sources_extensions
+  }
+
+  if (enable_pdf) {
+    # Printing depends on some //pdf code, so it needs to be built even if the
+    # pdf viewer isn't enabled.
+    deps += [ "//pdf" ]
+  }
+  if (enable_pdf_viewer) {
+    deps += [
+      "//components/pdf/browser",
+      "//components/pdf/renderer",
+    ]
+    sources += [
+      "shell/browser/electron_pdf_web_contents_helper_client.cc",
+      "shell/browser/electron_pdf_web_contents_helper_client.h",
+    ]
   }
 }
 

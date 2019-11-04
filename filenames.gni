@@ -558,6 +558,8 @@ filenames = {
     "shell/renderer/content_settings_observer.h",
     "shell/renderer/electron_api_service_impl.cc",
     "shell/renderer/electron_api_service_impl.h",
+    "shell/renderer/electron_renderer_pepper_host_factory.cc",
+    "shell/renderer/electron_renderer_pepper_host_factory.h",
     "shell/renderer/atom_sandboxed_renderer_client.cc",
     "shell/renderer/atom_sandboxed_renderer_client.h",
     "shell/renderer/guest_view_container.cc",

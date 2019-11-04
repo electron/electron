@@ -1,32 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
-Date: Thu, 20 Sep 2018 17:48:09 -0700
-Subject: pepper_flash.patch
+Date: Thu, 20 Sep 2018 17:46:17 -0700
+Subject: pepper plugin support
 
-Allows building chrome pepper flash integration for Electron.
+This tweaks Chrome's pepper flash and PDF plugin support to make it
+usable from Electron.
 
-diff --git a/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h b/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h
-index 735da93c3cabb8c6139971295740ba14a30d1b69..533f53fbc42397608e3762e370cc935c045ce3f1 100644
---- a/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h
-+++ b/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h
-@@ -5,6 +5,7 @@
- #ifndef CHROME_BROWSER_RENDERER_HOST_PEPPER_CHROME_BROWSER_PEPPER_HOST_FACTORY_H_
- #define CHROME_BROWSER_RENDERER_HOST_PEPPER_CHROME_BROWSER_PEPPER_HOST_FACTORY_H_
- 
-+#include "base/component_export.h"
- #include "base/macros.h"
- #include "ppapi/host/host_factory.h"
- 
-@@ -12,7 +13,8 @@ namespace content {
- class BrowserPpapiHost;
- }  // namespace content
- 
--class ChromeBrowserPepperHostFactory : public ppapi::host::HostFactory {
-+class COMPONENT_EXPORT(PEPPER_FLASH) ChromeBrowserPepperHostFactory
-+    : public ppapi::host::HostFactory {
-  public:
-   // Non-owning pointer to the filter must outlive this class.
-   explicit ChromeBrowserPepperHostFactory(content::BrowserPpapiHost* host);
 diff --git a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 index 37245c48cacbc5db164c61e4499f34ee83e0fce7..0fef12892e965e319e45f5dd1a9c5c9fc606aa9a 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
@@ -405,29 +384,42 @@ index b36248debee4f5e0503e7611f7d1c47d59650f5b..7af31ee0d2cbb4c8fc7cd41c356305d6
    DISALLOW_COPY_AND_ASSIGN(PepperIsolatedFileSystemMessageFilter);
  };
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index d63e90b6c5079ab3237c4bad3d5e63ce2f99c657..c98a7bd07ddd9527fc67b05b24463ed4b05ec316 100644
+index d63e90b6c5079ab3237c4bad3d5e63ce2f99c657..f1d4503d1f72df67ffcc73000a8a2ad3e2c93327 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-@@ -10,8 +10,10 @@
+@@ -10,8 +10,13 @@
  #include "chrome/renderer/pepper/pepper_flash_fullscreen_host.h"
  #include "chrome/renderer/pepper/pepper_flash_menu_host.h"
  #include "chrome/renderer/pepper/pepper_flash_renderer_host.h"
 +#if 0
  #include "chrome/renderer/pepper/pepper_uma_host.h"
++#endif
++#include "electron/buildflags/buildflags.h"
++#if BUILDFLAG(ENABLE_PDF_VIEWER)
  #include "components/pdf/renderer/pepper_pdf_host.h"
 +#endif
  #include "content/public/renderer/renderer_ppapi_host.h"
  #include "ppapi/host/ppapi_host.h"
  #include "ppapi/host/resource_host.h"
-@@ -86,6 +88,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -86,6 +91,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
      }
    }
  
-+#if 0
++#if BUILDFLAG(ENABLE_PDF_VIEWER)
    if (host_->GetPpapiHost()->permissions().HasPermission(
            ppapi::PERMISSION_PDF)) {
      switch (message.type()) {
-@@ -104,6 +107,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -94,7 +100,9 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+       }
+     }
+   }
++#endif
+ 
++#if 0
+   // Permissions for the following interfaces will be checked at the
+   // time of the corresponding instance's method calls.  Currently these
+   // interfaces are available only for whitelisted apps which may not have
+@@ -104,6 +112,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
        return std::make_unique<PepperUMAHost>(host_, instance, resource);
      }
    }

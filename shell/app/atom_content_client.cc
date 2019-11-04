@@ -32,9 +32,10 @@
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "pdf/pdf.h"
-#include "shell/common/atom_constants.h"
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "pdf/pdf.h"                      // nogncheck
+#include "pdf/pdf_ppapi.h"                // nogncheck
+#include "shell/common/atom_constants.h"  // nogncheck
+#endif                                    // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
 #include "content/public/common/pepper_plugin_info.h"
@@ -153,7 +154,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   pdf_info.is_out_of_process = true;
   pdf_info.name = "Chromium PDF Viewer";
   pdf_info.description = "Portable Document Format";
-  pdf_info.path = base::FilePath::FromUTF8Unsafe(kPdfPluginPath);
+  pdf_info.path = base::FilePath(FILE_PATH_LITERAL("internal-pdf-viewer"));
   content::WebPluginMimeType pdf_mime_type(kPdfPluginMimeType, "pdf",
                                            "Portable Document Format");
   pdf_info.mime_types.push_back(pdf_mime_type);
@@ -162,7 +163,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
       chrome_pdf::PPP_InitializeModule;
   pdf_info.internal_entry_points.shutdown_module =
       chrome_pdf::PPP_ShutdownModule;
-  pdf_info.permissions = ppapi::PERMISSION_PRIVATE | ppapi::PERMISSION_DEV;
+  pdf_info.permissions = ppapi::PERMISSION_PDF | ppapi::PERMISSION_DEV;
   plugins->push_back(pdf_info);
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
