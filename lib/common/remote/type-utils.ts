@@ -16,6 +16,7 @@ const serializableTypes = [
   Number,
   String,
   Date,
+  Error,
   RegExp,
   ArrayBuffer
 ]
