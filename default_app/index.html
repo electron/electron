@@ -2,10 +2,9 @@
 
 <head>
   <title>Electron</title>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6PH54BfkNq/EMMhUY7nhHf3c+AxloOwfy7hWyT01CM8='; style-src 'self'; img-src 'self'; connect-src 'self'" />
   <link href="./styles.css" type="text/css" rel="stylesheet" />
   <link href="./octicon/build.css" type="text/css" rel="stylesheet" />
-  <script defer src="./index.js"></script>
 </head>
 
 <body>
@@ -84,6 +83,9 @@
       </div>
     </div>
   </nav>
+  <script>
+    window.electronDefaultApp.initialize()
+  </script>
 </body>
 
 </html>
