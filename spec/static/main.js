@@ -75,6 +75,7 @@ ipcMain.on('echo', function (event, msg) {
 })
 
 global.setTimeoutPromisified = util.promisify(setTimeout)
+global.returnAPromise = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 100))
 
 global.isCi = !!argv.ci
 if (global.isCi) {
