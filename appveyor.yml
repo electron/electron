@@ -86,12 +86,16 @@ build_script:
         $zipfile = "Z:\$depshash.7z"
         cd ..\..
         if (Test-Path -Path $zipfile) {
-          #file exists, unzip and then gclient sync
+          # file exists, unzip and then gclient sync
           7z x -y $zipfile -mmt=30 -aoa
         } else {    
-          #file does not exist, gclient sync, then zip
+          # file does not exist, gclient sync, then zip
           gclient sync --with_branch_heads --with_tags --reset
-          7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party/WebKit/LayoutTests! -xr!third_party_blink\web_tests -xr!third_party_blink\perf_tests -slp -t7z -mmt=30
+          if ($env:TARGET_ARCH -ne 'ia32') {
+            # archive current source for future use 
+            # only run on x64/woa to avoid contention saving
+            7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party/WebKit/LayoutTests! -xr!third_party_blink\web_tests -xr!third_party_blink\perf_tests -slp -t7z -mmt=30
+          }
         }
       }
   - cd src
