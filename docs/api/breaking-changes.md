@@ -132,7 +132,7 @@ the folder, similarly to Chrome, Firefox, and Edge
 ([link to MDN docs](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/webkitdirectory)).
 
 As an illustration, take a folder with this structure:
-```
+```console
 folder
 ├── file1
 ├── file2
@@ -140,12 +140,12 @@ folder
 ```
 
 In Electron <=6, this would return a `FileList` with a `File` object for:
-```
+```console
 path/to/folder
 ```
 
 In Electron 7, this now returns a `FileList` with a `File` object for:
-```
+```console
 /path/to/folder/file3
 /path/to/folder/file2
 /path/to/folder/file1
