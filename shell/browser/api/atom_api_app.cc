@@ -495,15 +495,6 @@ void OnClientCertificateSelected(
   }
 }
 
-void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
-                          gin_helper::Arguments* args) {
-  base::string16 username, password;
-  if (args->GetNext(&username) && args->GetNext(&password))
-    login_handler->Login(username, password);
-  else
-    login_handler->CancelAuth();
-}
-
 #if defined(USE_NSS_CERTS)
 int ImportIntoCertStore(CertificateManagerModel* model,
                         const base::DictionaryValue& options) {
@@ -666,25 +657,6 @@ void App::OnNewWindowForTab() {
   Emit("new-window-for-tab");
 }
 #endif
-
-void App::OnLogin(scoped_refptr<LoginHandler> login_handler,
-                  const base::DictionaryValue& request_details) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  bool prevent_default = false;
-  content::WebContents* web_contents = login_handler->GetWebContents();
-  if (web_contents) {
-    prevent_default =
-        Emit("login", WebContents::FromOrCreate(isolate(), web_contents),
-             request_details, *login_handler->auth_info(),
-             base::BindOnce(&PassLoginInformation,
-                            base::RetainedRef(login_handler)));
-  }
-
-  // Default behavior is to always cancel the auth.
-  if (!prevent_default)
-    login_handler->CancelAuth();
-}
 
 bool App::CanCreateWindow(
     content::RenderFrameHost* opener,

@@ -1518,4 +1518,37 @@ describe('webContents module', () => {
       await devtoolsClosed
     })
   })
+
+  describe('login event', () => {
+    let server: http.Server
+    let serverUrl: string
+
+    before((done) => {
+      server = http.createServer((request, response) => {
+        if (request.headers.authorization) {
+          return response.end('ok')
+        }
+        response
+          .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
+          .end()
+      }).listen(0, '127.0.0.1', () => {
+        serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port
+        done()
+      })
+    })
+
+    after(() => {
+      server.close()
+    })
+
+    it('receives login event on webcontents', (done) => {
+      const w = new BrowserWindow({ show: false })
+      w.webContents.on('login', (event, request, authInfo, cb) => {
+        event.preventDefault()
+        cb('a', 'b')
+        done()
+      })
+      w.loadURL(serverUrl)
+    })
+  })
 })

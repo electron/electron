@@ -105,9 +105,9 @@ if (process.platform === 'linux') {
 }
 
 // Routes the events to webContents.
-const events = ['login', 'certificate-error', 'select-client-certificate']
+const events = ['certificate-error', 'select-client-certificate']
 for (const name of events) {
-  app.on(name as 'login', (event, webContents, ...args: any[]) => {
+  app.on(name as 'certificate-error', (event, webContents, ...args: any[]) => {
     webContents.emit(name, event, ...args)
   })
 }
