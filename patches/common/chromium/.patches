@@ -43,6 +43,7 @@ enable_widevine.patch
 mas_disable_remote_layer.patch
 mas_disable_remote_accessibility.patch
 mas_disable_custom_window_frame.patch
+mas_disable_spi_file_type_mappings.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
