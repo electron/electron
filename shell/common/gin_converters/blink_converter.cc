@@ -351,17 +351,17 @@ v8::Local<v8::Value> Converter<blink::ContextMenuDataMediaType>::ToV8(
     const blink::ContextMenuDataMediaType& in) {
   switch (in) {
     case blink::ContextMenuDataMediaType::kImage:
-      return blink::StringToV8(isolate, "image");
+      return StringToV8(isolate, "image");
     case blink::ContextMenuDataMediaType::kVideo:
-      return blink::StringToV8(isolate, "video");
+      return StringToV8(isolate, "video");
     case blink::ContextMenuDataMediaType::kAudio:
-      return blink::StringToV8(isolate, "audio");
+      return StringToV8(isolate, "audio");
     case blink::ContextMenuDataMediaType::kCanvas:
-      return blink::StringToV8(isolate, "canvas");
+      return StringToV8(isolate, "canvas");
     case blink::ContextMenuDataMediaType::kFile:
-      return blink::StringToV8(isolate, "file");
+      return StringToV8(isolate, "file");
     case blink::ContextMenuDataMediaType::kPlugin:
-      return blink::StringToV8(isolate, "plugin");
+      return StringToV8(isolate, "plugin");
     default:
       return StringToV8(isolate, "none");
   }
