@@ -44,7 +44,7 @@ struct Converter<base::Optional<T>> {
       return true;
     }
     T converted;
-    if (Converter<T>::FromV8(isolate, val, &converted)) {
+    if (!Converter<T>::FromV8(isolate, val, &converted)) {
       return true;
     }
     out->emplace(converted);
