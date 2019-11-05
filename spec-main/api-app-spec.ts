@@ -8,7 +8,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { app, BrowserWindow, Menu } from 'electron'
 import { emittedOnce } from './events-helpers'
-import { closeWindow } from './window-helpers'
+import { closeWindow, closeAllWindows } from './window-helpers'
 import { ifdescribe } from './spec-helpers'
 import split = require('split')
 
@@ -1389,6 +1389,7 @@ describe('default behavior', () => {
   })
 
   describe('login event', () => {
+    afterEach(closeAllWindows)
     let server: http.Server
     let serverUrl: string
 
