@@ -314,7 +314,7 @@ Returns:
 
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
-* `details` Object
+* `authenticationResponseDetails` Object
   * `url` URL
 * `authInfo` Object
   * `isProxy` Boolean

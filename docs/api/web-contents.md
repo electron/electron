@@ -454,7 +454,7 @@ The usage is the same with [the `select-client-certificate` event of
 Returns:
 
 * `event` Event
-* `details` Object
+* `authenticationResponseDetails` Object
   * `url` URL
 * `authInfo` Object
   * `isProxy` Boolean
