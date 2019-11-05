@@ -31,10 +31,12 @@ class LoginHandler : public content::LoginDelegate,
   ~LoginHandler() override;
 
  private:
-  void EmitEvent(base::DictionaryValue details);
+  void EmitEvent(net::AuthChallengeInfo auth_info,
+                 bool is_main_frame,
+                 const GURL& url,
+                 scoped_refptr<net::HttpResponseHeaders> response_headers,
+                 bool first_auth_attempt);
   void CallbackFromJS(base::string16 username, base::string16 password);
-
-  net::AuthChallengeInfo auth_info_;
 
   LoginAuthRequiredCallback auth_required_callback_;
 

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "gin/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -29,11 +30,33 @@ LoginHandler::LoginHandler(
     LoginAuthRequiredCallback auth_required_callback)
 
     : WebContentsObserver(web_contents),
-      auth_info_(auth_info),
       auth_required_callback_(std::move(auth_required_callback)) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  base::DictionaryValue details;
+  base::PostTask(
+      FROM_HERE, {base::CurrentThread()},
+      base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(),
+                     auth_info, is_main_frame, url, response_headers,
+                     first_auth_attempt));
+}
+
+void LoginHandler::EmitEvent(
+    net::AuthChallengeInfo auth_info,
+    bool is_main_frame,
+    const GURL& url,
+    scoped_refptr<net::HttpResponseHeaders> response_headers,
+    bool first_auth_attempt) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+
+  auto api_web_contents = api::WebContents::From(isolate, web_contents());
+  if (api_web_contents.IsEmpty()) {
+    std::move(auth_required_callback_).Run(base::nullopt);
+    return;
+  }
+
+  v8::HandleScope scope(isolate);
+
+  auto details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("url", url.spec());
 
   // These parameters aren't documented, and I'm not sure that they're useful,
@@ -43,22 +66,8 @@ LoginHandler::LoginHandler(
   details.Set("firstAuthAttempt", first_auth_attempt);
   details.Set("responseHeaders", response_headers.get());
 
-  base::PostTask(
-      FROM_HERE, {base::CurrentThread()},
-      base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(),
-                     std::move(details)));
-}
-
-void LoginHandler::EmitEvent(base::DictionaryValue details) {
-  auto api_web_contents =
-      api::WebContents::From(v8::Isolate::GetCurrent(), web_contents());
-  if (api_web_contents.IsEmpty()) {
-    std::move(auth_required_callback_).Run(base::nullopt);
-    return;
-  }
-
   bool default_prevented =
-      api_web_contents->Emit("login", std::move(details), auth_info_,
+      api_web_contents->Emit("login", std::move(details), auth_info,
                              base::BindOnce(&LoginHandler::CallbackFromJS,
                                             weak_factory_.GetWeakPtr()));
   if (!default_prevented) {

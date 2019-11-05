@@ -1110,7 +1110,7 @@ std::unique_ptr<content::LoginDelegate> AtomBrowserClient::CreateLoginDelegate(
     LoginAuthRequiredCallback auth_required_callback) {
   return std::make_unique<LoginHandler>(
       auth_info, web_contents, is_main_frame, url, response_headers,
-      bool first_auth_attempt, std::move(auth_required_callback));
+      first_auth_attempt, std::move(auth_required_callback));
 }
 
 }  // namespace electron
