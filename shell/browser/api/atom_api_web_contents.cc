@@ -1847,10 +1847,7 @@ void WebContents::Print(mate::Arguments* args) {
   auto* rfh = focused_frame && focused_frame->HasSelection()
                   ? focused_frame
                   : web_contents()->GetMainFrame();
-  print_view_manager->PrintNow(rfh,
-                               std::make_unique<PrintMsg_PrintPages>(
-                                   rfh->GetRoutingID(), silent, settings),
-                               std::move(callback));
+  print_view_manager->PrintNow(rfh, std::move(callback));
 }
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {

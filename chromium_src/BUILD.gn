@@ -39,6 +39,8 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_service_factory.h",
     "//chrome/browser/predictors/preconnect_manager.cc",
     "//chrome/browser/predictors/preconnect_manager.h",
+    "//chrome/browser/predictors/predictors_features.cc",
+    "//chrome/browser/predictors/predictors_features.h",
     "//chrome/browser/predictors/proxy_lookup_client_impl.cc",
     "//chrome/browser/predictors/proxy_lookup_client_impl.h",
     "//chrome/browser/predictors/resolve_host_client_impl.cc",

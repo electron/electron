@@ -77,6 +77,10 @@ env-debug-build: &env-debug-build
   GN_CONFIG: //electron/build/args/debug.gn
   SKIP_DIST_ZIP: '1'
 
+env-mac-debug-build: &env-mac-debug-build
+  # Set symbol level to 1 so that debug builds do not run out of disk space
+  GN_BUILDFLAG_ARGS: 'symbol_level = 1'  
+
 env-testing-build: &env-testing-build
   GN_CONFIG: //electron/build/args/testing.gn
   CHECK_DIST_MANIFEST: '1'
@@ -246,6 +250,12 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         sudo rm -rf /Library/Developer/CoreSimulator
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/AppleTVOS.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/AppleTVSimulator.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform
       fi
 
 step-delete-git-directories: &step-delete-git-directories
@@ -1563,6 +1573,7 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-debug-build
+      <<: *env-mac-debug-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
     <<: *steps-electron-build
@@ -1625,6 +1636,7 @@ jobs:
       <<: *env-mac-large
       <<: *env-mas
       <<: *env-debug-build
+      <<: *env-mac-debug-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
     <<: *steps-electron-build

@@ -63,9 +63,10 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
   base::FilePath GetFontLookupTableCacheDir() override;
-
-  // content::ContentBrowserClient:
   bool ShouldEnableStrictSiteIsolation() override;
+  void BindHostReceiverForRenderer(
+      content::RenderProcessHost* render_process_host,
+      mojo::GenericPendingReceiver receiver) override;
 
   std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);
