@@ -313,11 +313,6 @@ describe('session module', () => {
 
     beforeEach(async () => {
       customSession = session.fromPartition('proxyconfig')
-      // FIXME(deepak1556): This is just a hack to force
-      // creation of request context which in turn initializes
-      // the network context, can be removed with network
-      // service enabled.
-      await customSession.clearHostResolverCache()
     })
 
     afterEach(() => {
