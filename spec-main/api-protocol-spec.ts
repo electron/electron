@@ -529,12 +529,12 @@ describe('protocol module', () => {
       const port = (server.address() as AddressInfo).port
       const url = `http://127.0.0.1:${port}`
       await interceptHttpProtocol('http', (request, callback) => {
-        const data = {
+        const data: Electron.RedirectRequest = {
           url: url,
           method: 'POST',
           uploadData: {
             contentType: 'application/x-www-form-urlencoded',
-            bytes: request.uploadData[0].bytes
+            data: request.uploadData[0].bytes
           },
           session: null
         }
