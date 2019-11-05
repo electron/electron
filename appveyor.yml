@@ -96,7 +96,7 @@ build_script:
           if ($env:TARGET_ARCH -ne 'ia32') {
             # archive current source for future use 
             # only run on x64/woa to avoid contention saving
-            7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party/WebKit/LayoutTests! -xr!third_party_blink\web_tests -xr!third_party_blink\perf_tests -slp -t7z -mmt=30
+            7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party/WebKit/LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30
           }
         }
       }
