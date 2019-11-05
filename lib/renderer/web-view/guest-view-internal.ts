@@ -1,6 +1,5 @@
 import { webFrame, IpcMessageEvent } from 'electron'
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
-import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 
 import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl'
 
@@ -96,10 +95,6 @@ export function createGuest (params: Record<string, any>): Promise<number> {
   return ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CREATE_GUEST', params)
 }
 
-export function createGuestSync (params: Record<string, any>): number {
-  return ipcRendererUtils.invokeSync('ELECTRON_GUEST_VIEW_MANAGER_CREATE_GUEST', params)
-}
-
 export function attachGuest (
   elementInstanceId: number, guestInstanceId: number, params: Record<string, any>, contentWindow: Window
 ) {
@@ -113,6 +108,5 @@ export function attachGuest (
 export const guestViewInternalModule = {
   deregisterEvents,
   createGuest,
-  createGuestSync,
   attachGuest
 }
