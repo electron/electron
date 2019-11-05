@@ -1522,6 +1522,7 @@ describe('webContents module', () => {
   describe('login event', () => {
     let server: http.Server
     let serverUrl: string
+    let serverPort: number
 
     before((done) => {
       server = http.createServer((request, response) => {
@@ -1533,7 +1534,8 @@ describe('webContents module', () => {
           .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
           .end()
       }).listen(0, '127.0.0.1', () => {
-        serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port
+        serverPort = (server.address() as AddressInfo).port
+        serverUrl = `http://127.0.0.1:${serverPort}/`
         done()
       })
     })
@@ -1542,15 +1544,26 @@ describe('webContents module', () => {
       server.close()
     })
 
-    it('receives login event on webcontents', async () => {
+    it('is emitted when navigating', async () => {
+      const [user, pass] = ['user', 'pass']
       const w = new BrowserWindow({ show: false })
+      let eventRequest: any
+      let eventAuthInfo: any
       w.webContents.on('login', (event, request, authInfo, cb) => {
+        eventRequest = request
+        eventAuthInfo = authInfo
         event.preventDefault()
-        cb('a', 'b')
+        cb(user, pass)
       })
       await w.loadURL(serverUrl)
       const body = await w.webContents.executeJavaScript(`document.documentElement.textContent`)
-      expect(body).to.equal(`Basic ${Buffer.from('a:b').toString('base64')}`)
+      expect(body).to.equal(`Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`)
+      expect(eventRequest.url).to.equal(serverUrl)
+      expect(eventAuthInfo.isProxy).to.be.false()
+      expect(eventAuthInfo.scheme).to.equal('basic')
+      expect(eventAuthInfo.host).to.equal('127.0.0.1')
+      expect(eventAuthInfo.port).to.equal(serverPort)
+      expect(eventAuthInfo.realm).to.equal('Foo')
     })
   })
 })
