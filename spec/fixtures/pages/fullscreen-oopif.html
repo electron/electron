@@ -1,0 +1,19 @@
+<script>
+    const { webFrame, ipcRenderer } = require('electron')
+
+    document.addEventListener('fullscreenchange', () => {
+        ipcRenderer.send('fullscreenChange', webFrame.routingId)
+    });
+
+    window.addEventListener('message', ({ data }) => {
+        if (data === 'exitFullscreen') {
+            document.exitFullscreen()
+        }
+    })
+
+    window.addEventListener('load', () => {
+        window.focus()
+        webFrame.executeJavaScript('document.querySelector("video").requestFullscreen()', true)
+    });
+</script>
+<video></video>
