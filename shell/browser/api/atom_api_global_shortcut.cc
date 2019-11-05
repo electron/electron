@@ -74,19 +74,13 @@ bool GlobalShortcut::RegisterAll(
   std::vector<ui::Accelerator> registered;
 
   for (auto& accelerator : accelerators) {
-#if defined(OS_MACOSX)
-    if (RegisteringMediaKeyForUntrustedClient(accelerator))
-      return false;
-
-    GlobalShortcutListener* listener = GlobalShortcutListener::GetInstance();
-    if (!listener->RegisterAccelerator(accelerator, this)) {
+    if (!Register(accelerator, callback)) {
       // unregister all shortcuts if any failed
       UnregisterSome(registered);
       return false;
     }
-#endif
+
     registered.push_back(accelerator);
-    accelerator_callback_map_[accelerator] = callback;
   }
   return true;
 }
