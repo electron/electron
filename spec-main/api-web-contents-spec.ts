@@ -1526,7 +1526,8 @@ describe('webContents module', () => {
     before((done) => {
       server = http.createServer((request, response) => {
         if (request.headers.authorization) {
-          return response.end('ok')
+          response.writeHead(200, { 'Content-type': 'text/plain' })
+          return response.end(request.headers.authorization)
         }
         response
           .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
@@ -1541,14 +1542,15 @@ describe('webContents module', () => {
       server.close()
     })
 
-    it('receives login event on webcontents', (done) => {
+    it('receives login event on webcontents', async () => {
       const w = new BrowserWindow({ show: false })
       w.webContents.on('login', (event, request, authInfo, cb) => {
         event.preventDefault()
         cb('a', 'b')
-        done()
       })
-      w.loadURL(serverUrl)
+      await w.loadURL(serverUrl)
+      const body = await w.webContents.executeJavaScript(`document.documentElement.textContent`)
+      expect(body).to.equal(`Basic ${Buffer.from('a:b').toString('base64')}`)
     })
   })
 })
