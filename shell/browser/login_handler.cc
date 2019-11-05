@@ -19,20 +19,37 @@ using content::BrowserThread;
 
 namespace electron {
 
-LoginHandler::LoginHandler(const net::AuthChallengeInfo& auth_info,
-                           content::WebContents* web_contents,
-                           LoginAuthRequiredCallback auth_required_callback)
+LoginHandler::LoginHandler(
+    const net::AuthChallengeInfo& auth_info,
+    content::WebContents* web_contents,
+    bool is_main_frame,
+    const GURL& url,
+    scoped_refptr<net::HttpResponseHeaders> response_headers,
+    bool first_auth_attempt,
+    LoginAuthRequiredCallback auth_required_callback)
+
     : WebContentsObserver(web_contents),
       auth_info_(auth_info),
       auth_required_callback_(std::move(auth_required_callback)) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
+  base::DictionaryValue details;
+  details.Set("url", url.spec());
+
+  // These parameters aren't documented, and I'm not sure that they're useful,
+  // but we might as well stick 'em on the details object. If it turns out they
+  // are useful, we can add them to the docs :)
+  details.Set("isMainFrame", is_main_frame);
+  details.Set("firstAuthAttempt", first_auth_attempt);
+  details.Set("responseHeaders", response_headers.get());
+
   base::PostTask(
       FROM_HERE, {base::CurrentThread()},
-      base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr()));
+      base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(),
+                     std::move(details)));
 }
 
-void LoginHandler::EmitEvent() {
+void LoginHandler::EmitEvent(base::DictionaryValue details) {
   auto api_web_contents =
       api::WebContents::From(v8::Isolate::GetCurrent(), web_contents());
   if (api_web_contents.IsEmpty()) {
@@ -40,9 +57,8 @@ void LoginHandler::EmitEvent() {
     return;
   }
 
-  base::DictionaryValue request_details;
   bool default_prevented =
-      api_web_contents->Emit("login", std::move(request_details), auth_info_,
+      api_web_contents->Emit("login", std::move(details), auth_info_,
                              base::BindOnce(&LoginHandler::CallbackFromJS,
                                             weak_factory_.GetWeakPtr()));
   if (!default_prevented) {

@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_LOGIN_HANDLER_H_
 
 #include "base/strings/string16.h"
+#include "base/values.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/login_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -22,11 +23,15 @@ class LoginHandler : public content::LoginDelegate,
  public:
   LoginHandler(const net::AuthChallengeInfo& auth_info,
                content::WebContents* web_contents,
+               bool is_main_frame,
+               const GURL& url,
+               scoped_refptr<net::HttpResponseHeaders> response_headers,
+               bool first_auth_attempt,
                LoginAuthRequiredCallback auth_required_callback);
   ~LoginHandler() override;
 
  private:
-  void EmitEvent();
+  void EmitEvent(base::DictionaryValue details);
   void CallbackFromJS(base::string16 username, base::string16 password);
 
   net::AuthChallengeInfo auth_info_;
