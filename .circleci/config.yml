@@ -78,7 +78,7 @@ env-debug-build: &env-debug-build
   SKIP_DIST_ZIP: '1'
 
 env-mac-debug-build: &env-mac-debug-build
-  GN_EXTRA_ARGS: 'symbol_level = 1'  
+  GN_EXTRA_ARGS: 'symbol_level = 0'  
 
 env-testing-build: &env-testing-build
   GN_CONFIG: //electron/build/args/testing.gn
