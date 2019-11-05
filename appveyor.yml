@@ -88,6 +88,8 @@ build_script:
         if (Test-Path -Path $zipfile) {
           # file exists, unzip and then gclient sync
           7z x -y $zipfile -mmt=30 -aoa
+          # update external binaries
+          python src/electron/script/update-external-binaries.py
         } else {    
           # file does not exist, gclient sync, then zip
           gclient sync --with_branch_heads --with_tags --reset
