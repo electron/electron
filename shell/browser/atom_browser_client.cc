@@ -26,6 +26,7 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
+#include "components/network_hints/common/network_hints.mojom.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -69,9 +70,9 @@
 #include "shell/browser/net/network_context_service_factory.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/net/system_network_context_manager.h"
+#include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
-#include "shell/browser/renderer_host/electron_render_message_filter.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
@@ -367,8 +368,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     prefs.web_security = web_preferences->IsEnabled(options::kWebSecurity,
                                                     true /* default value */);
   }
-
-  host->AddFilter(new ElectronRenderMessageFilter(host->GetBrowserContext()));
 
   AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later
@@ -763,18 +762,6 @@ network::mojom::NetworkContext* AtomBrowserClient::GetSystemNetworkContext() {
   return g_browser_process->system_network_context_manager()->GetContext();
 }
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-void AtomBrowserClient::BindHostReceiverForRenderer(
-    content::RenderProcessHost* render_process_host,
-    mojo::GenericPendingReceiver receiver) {
-  if (auto host_receiver = receiver.As<spellcheck::mojom::SpellCheckHost>()) {
-    SpellCheckHostChromeImpl::Create(render_process_host->GetID(),
-                                     std::move(host_receiver));
-    return;
-  }
-}
-#endif
-
 base::Optional<service_manager::Manifest>
 AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
   if (name == content::mojom::kBrowserServiceName)
@@ -1096,6 +1083,25 @@ base::FilePath AtomBrowserClient::GetFontLookupTableCacheDir() {
 bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {
   // Enable site isolation. It is off by default in Chromium <= 69.
   return true;
+}
+
+void AtomBrowserClient::BindHostReceiverForRenderer(
+    content::RenderProcessHost* render_process_host,
+    mojo::GenericPendingReceiver receiver) {
+  if (auto host_receiver =
+          receiver.As<network_hints::mojom::NetworkHintsHandler>()) {
+    NetworkHintsHandlerImpl::Create(render_process_host->GetID(),
+                                    std::move(host_receiver));
+    return;
+  }
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  if (auto host_receiver = receiver.As<spellcheck::mojom::SpellCheckHost>()) {
+    SpellCheckHostChromeImpl::Create(render_process_host->GetID(),
+                                     std::move(host_receiver));
+    return;
+  }
+#endif
 }
 
 }  // namespace electron

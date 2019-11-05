@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Deepak Mohan <hop2deep@gmail.com>
+Date: Fri, 1 Nov 2019 15:13:55 -0700
+Subject: build,[win]: fix msstl compatibility for //pdf
+
+
+diff --git a/pdf/document_layout.cc b/pdf/document_layout.cc
+index 51064a3496f8d9354d00db6085cc9c5d23f7ec0c..b53da54e153b2078a2e18c9af38cfbbbae8da5b8 100644
+--- a/pdf/document_layout.cc
++++ b/pdf/document_layout.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "pdf/document_layout.h"
+ 
++#include <algorithm>
++
+ #include "base/logging.h"
+ #include "ppapi/cpp/rect.h"
+ #include "ppapi/cpp/size.h"
+diff --git a/pdf/draw_utils/coordinates.cc b/pdf/draw_utils/coordinates.cc
+index 49c272f269ce312a72921506bd0abeeea283050f..11b7cca86116940810da374dd64ec437986ccccc 100644
+--- a/pdf/draw_utils/coordinates.cc
++++ b/pdf/draw_utils/coordinates.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "pdf/draw_utils/coordinates.h"
+ 
++#include <algorithm>
+ #include <math.h>
+ 
+ #include "base/logging.h"

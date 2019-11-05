@@ -63,9 +63,10 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
   base::FilePath GetFontLookupTableCacheDir() override;
-
-  // content::ContentBrowserClient:
   bool ShouldEnableStrictSiteIsolation() override;
+  void BindHostReceiverForRenderer(
+      content::RenderProcessHost* render_process_host,
+      mojo::GenericPendingReceiver receiver) override;
 
   std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);
@@ -149,11 +150,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool in_memory,
       const base::FilePath& relative_partition_path) override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  void BindHostReceiverForRenderer(
-      content::RenderProcessHost* render_process_host,
-      mojo::GenericPendingReceiver receiver) override;
-#endif
   base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
   content::MediaObserver* GetMediaObserver() override;
