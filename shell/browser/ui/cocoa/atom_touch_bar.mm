@@ -384,6 +384,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
       button.imagePosition = NSImageOverlaps;
     }
   }
+
+  bool enabled = true;
+  settings.Get("enabled", &enabled);
+  [button setEnabled:enabled];
 }
 
 - (NSTouchBarItem*)makeLabelForID:(NSString*)id
