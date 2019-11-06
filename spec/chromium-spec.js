@@ -1,5 +1,4 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+const { expect } = require('chai')
 const fs = require('fs')
 const http = require('http')
 const path = require('path')
@@ -10,9 +9,6 @@ const { ipcRenderer } = require('electron')
 const { emittedOnce } = require('./events-helpers')
 const { resolveGetters } = require('./expect-helpers')
 const features = process.electronBinding('features')
-
-const { expect } = chai
-chai.use(dirtyChai)
 
 /* Most of the APIs here don't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */

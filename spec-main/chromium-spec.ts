@@ -1,5 +1,4 @@
-import * as chai from 'chai'
-import * as chaiAsPromised from 'chai-as-promised'
+import { expect } from 'chai'
 import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron'
 import { emittedOnce } from './events-helpers'
 import { closeAllWindows } from './window-helpers'
@@ -14,11 +13,8 @@ import { promisify } from 'util'
 import { ifit, ifdescribe } from './spec-helpers'
 import { AddressInfo } from 'net'
 
-const { expect } = chai
-
 const features = process.electronBinding('features')
 
-chai.use(chaiAsPromised)
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
 describe('reporting api', () => {

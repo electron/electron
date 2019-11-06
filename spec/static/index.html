@@ -85,6 +85,11 @@
       }
     })
 
+    // Set up chai in the correct order
+    const chai = require('chai')
+    chai.use(require('chai-as-promised'))
+    chai.use(require('dirty-chai'))
+
     const runner = mocha.run(() => {
       // Ensure the callback is called after runner is defined
       setTimeout(() => {

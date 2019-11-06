@@ -1,5 +1,4 @@
-import * as chai from 'chai'
-import * as chaiAsPromised from 'chai-as-promised'
+import { expect } from 'chai'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -11,12 +10,6 @@ import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDe
 import { emittedOnce } from './events-helpers'
 import { ifit, ifdescribe } from './spec-helpers'
 import { closeWindow } from './window-helpers'
-import dirtyChai = require('dirty-chai')
-
-const { expect } = chai
-
-chai.use(chaiAsPromised)
-chai.use(dirtyChai)
 
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
 

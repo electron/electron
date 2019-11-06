@@ -102,6 +102,12 @@ app.whenReady().then(() => {
         process.exit(runner.failures)
       })
     }
+
+    // Set up chai in the correct order
+    const chai = require('chai')
+    chai.use(require('chai-as-promised'))
+    chai.use(require('dirty-chai'))
+
     const runner = mocha.run(cb)
   })
 })

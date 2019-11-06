@@ -1761,7 +1761,7 @@ jobs:
       <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
-    parallelism: 2
+    parallelism: 3
     <<: *steps-tests
 
   linux-x64-testing-nan:
@@ -1811,7 +1811,7 @@ jobs:
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-stack-dumping
-    parallelism: 2
+    parallelism: 3
     <<: *steps-tests
 
   linux-ia32-testing-nan:

@@ -1,10 +1,5 @@
-import * as chai from 'chai'
-import * as chaiAsPromised from 'chai-as-promised'
+import { expect } from 'chai'
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
-
-const { expect } = chai
-
-chai.use(chaiAsPromised)
 
 describe('ipc module', () => {
   describe('invoke', () => {
