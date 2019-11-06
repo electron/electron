@@ -16,7 +16,7 @@
 #include "base/values.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
-#include "shell/common/promise_util.h"
+#include "shell/common/gin_helper/promise.h"
 
 #if defined(OS_WIN)
 #include <windows.h>
@@ -127,7 +127,7 @@ class Browser : public WindowListObserver {
 
   // Creates an activity and sets it as the one currently in use.
   void SetUserActivity(const std::string& type,
-                       const base::DictionaryValue& user_info,
+                       base::DictionaryValue user_info,
                        gin_helper::Arguments* args);
 
   // Returns the type name of the current user activity.
@@ -142,7 +142,7 @@ class Browser : public WindowListObserver {
 
   // Updates the current user activity
   void UpdateCurrentActivity(const std::string& type,
-                             const base::DictionaryValue& user_info);
+                             base::DictionaryValue user_info);
 
   // Indicates that an user activity is about to be resumed.
   bool WillContinueUserActivity(const std::string& type);
@@ -153,15 +153,15 @@ class Browser : public WindowListObserver {
 
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
-                            const base::DictionaryValue& user_info);
+                            base::DictionaryValue user_info);
 
   // Indicates that an activity was continued on another device.
   void UserActivityWasContinued(const std::string& type,
-                                const base::DictionaryValue& user_info);
+                                base::DictionaryValue user_info);
 
   // Gives an oportunity to update the Handoff payload.
   bool UpdateUserActivityState(const std::string& type,
-                               const base::DictionaryValue& user_info);
+                               base::DictionaryValue user_info);
 
   // Bounce the dock icon.
   enum class BounceType{
@@ -192,7 +192,7 @@ class Browser : public WindowListObserver {
 #endif  // defined(OS_MACOSX)
 
   void ShowAboutPanel();
-  void SetAboutPanelOptions(const base::DictionaryValue& options);
+  void SetAboutPanelOptions(base::DictionaryValue options);
 
 #if defined(OS_MACOSX) || defined(OS_WIN)
   void ShowEmojiPanel();
@@ -246,7 +246,7 @@ class Browser : public WindowListObserver {
 
   // Tell the application the loading has been done.
   void WillFinishLaunching();
-  void DidFinishLaunching(const base::DictionaryValue& launch_info);
+  void DidFinishLaunching(base::DictionaryValue launch_info);
 
   void OnAccessibilitySupportChanged();
 
@@ -306,7 +306,7 @@ class Browser : public WindowListObserver {
 
   int badge_count_ = 0;
 
-  std::unique_ptr<util::Promise<void*>> ready_promise_;
+  std::unique_ptr<gin_helper::Promise<void>> ready_promise_;
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   base::Value about_panel_options_;

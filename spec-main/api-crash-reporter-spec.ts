@@ -15,11 +15,10 @@ import { EventEmitter } from 'events'
 temp.track()
 
 const afterTest: ((() => void) | (() => Promise<void>))[] = []
-async function cleanup() {
+async function cleanup () {
   for (const cleanup of afterTest) {
     const r = cleanup()
-    if (r instanceof Promise)
-      await r
+    if (r instanceof Promise) { await r }
   }
   afterTest.length = 0
 }
@@ -131,7 +130,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
           })
 
           const dumpFileCreated = async () => {
-            async function getDumps() {
+            async function getDumps () {
               const files = await fs.promises.readdir(crashesDir)
               return files.filter((file) => /\.dmp$/.test(file) && !existingDumpFiles.has(file))
             }
@@ -351,7 +350,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
 type CrashInfo = {
   prod: string
   ver: string
-  process_type: string
+  process_type: string // eslint-disable-line camelcase
   platform: string
   extra1: string
   extra2: string
@@ -361,7 +360,7 @@ type CrashInfo = {
   _version: string
 }
 
-async function waitForCrashReport() {
+async function waitForCrashReport () {
   for (let times = 0; times < 10; times++) {
     if (crashReporter.getLastCrashReport() != null) {
       return
@@ -371,14 +370,14 @@ async function waitForCrashReport() {
   throw new Error('No crash report available')
 }
 
-async function checkReport(reportId: string) {
+async function checkReport (reportId: string) {
   await waitForCrashReport()
   expect(crashReporter.getLastCrashReport().id).to.equal(reportId)
   expect(crashReporter.getUploadedReports()).to.be.an('array').that.is.not.empty()
   expect(crashReporter.getUploadedReports()[0].id).to.equal(reportId)
 }
 
-function checkCrash(expectedProcessType: string, fields: CrashInfo) {
+function checkCrash (expectedProcessType: string, fields: CrashInfo) {
   expect(String(fields.prod)).to.equal('Electron')
   expect(String(fields.ver)).to.equal(process.versions.electron)
   expect(String(fields.process_type)).to.equal(expectedProcessType)
@@ -394,9 +393,9 @@ function checkCrash(expectedProcessType: string, fields: CrashInfo) {
 let crashReporterPort = 0
 const startServer = async () => {
   const crashes: CrashInfo[] = []
-  function getCrashes() { return crashes }
-  const emitter = new EventEmitter
-  function waitForCrash(): Promise<CrashInfo> {
+  function getCrashes () { return crashes }
+  const emitter = new EventEmitter()
+  function waitForCrash (): Promise<CrashInfo> {
     return new Promise(resolve => {
       emitter.once('crash', (crash) => {
         resolve(crash)

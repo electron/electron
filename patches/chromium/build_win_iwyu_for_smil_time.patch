@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 30 Oct 2019 12:23:00 -0700
+Subject: build,[win]: IWYU for //third_party/blink/renderer/core/svg/animation
+
+Only affects windows release builds, identify the cause and remove this patch.
+
+diff --git a/third_party/blink/renderer/core/svg/animation/smil_time.h b/third_party/blink/renderer/core/svg/animation/smil_time.h
+index b4fec36d9ef15c5492ce6bbe544c11bdfc01ec10..7433a3a1c8578dbeb388628f1050629133c94f83 100644
+--- a/third_party/blink/renderer/core/svg/animation/smil_time.h
++++ b/third_party/blink/renderer/core/svg/animation/smil_time.h
+@@ -26,6 +26,7 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_SVG_ANIMATION_SMIL_TIME_H_
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_SVG_ANIMATION_SMIL_TIME_H_
+ 
++#include <algorithm>
+ #include <ostream>
+ 
+ #include "base/time/time.h"

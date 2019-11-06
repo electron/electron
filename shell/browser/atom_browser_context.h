@@ -79,7 +79,7 @@ class AtomBrowserContext
   static scoped_refptr<AtomBrowserContext> From(
       const std::string& partition,
       bool in_memory,
-      const base::DictionaryValue& options = base::DictionaryValue());
+      base::DictionaryValue options = base::DictionaryValue());
 
   static BrowserContextMap browser_context_map() {
     return browser_context_map_;
@@ -142,7 +142,7 @@ class AtomBrowserContext
  protected:
   AtomBrowserContext(const std::string& partition,
                      bool in_memory,
-                     const base::DictionaryValue& options);
+                     base::DictionaryValue options);
   ~AtomBrowserContext() override;
 
  private:

@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 import { desktopCapturer, screen, BrowserWindow, SourcesOptions } from 'electron'
 import { emittedOnce } from './events-helpers'
-import { ifdescribe, ifit } from './spec-helpers';
-import { closeAllWindows } from './window-helpers';
+import { ifdescribe, ifit } from './spec-helpers'
+import { closeAllWindows } from './window-helpers'
 
 const features = process.electronBinding('features')
 

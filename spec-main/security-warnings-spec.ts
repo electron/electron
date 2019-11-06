@@ -7,8 +7,8 @@ import * as url from 'url'
 import { BrowserWindow, WebPreferences } from 'electron'
 
 import { closeWindow } from './window-helpers'
-import { AddressInfo } from 'net';
-import { emittedUntil } from './events-helpers';
+import { AddressInfo } from 'net'
+import { emittedUntil } from './events-helpers'
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
   return message.indexOf('Electron Security Warning') > -1
@@ -200,7 +200,7 @@ describe('security warnings', () => {
         })
 
         w.loadURL(`${serverUrl}/insecure-resources.html`)
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)        
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning)
         expect(message).to.not.include('insecure-resources.html')
       })
 

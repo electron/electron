@@ -19,7 +19,7 @@
 
 @interface TrustDelegate : NSObject {
  @private
-  std::unique_ptr<electron::util::Promise<void*>> promise_;
+  std::unique_ptr<gin_helper::Promise<void>> promise_;
   SFCertificateTrustPanel* panel_;
   scoped_refptr<net::X509Certificate> cert_;
   SecTrustRef trust_;
@@ -27,7 +27,7 @@
   SecPolicyRef sec_policy_;
 }
 
-- (id)initWithPromise:(electron::util::Promise<void*>)promise
+- (id)initWithPromise:(gin_helper::Promise<void>)promise
                 panel:(SFCertificateTrustPanel*)panel
                  cert:(const scoped_refptr<net::X509Certificate>&)cert
                 trust:(SecTrustRef)trust
@@ -51,14 +51,14 @@
   [super dealloc];
 }
 
-- (id)initWithPromise:(electron::util::Promise<void*>)promise
+- (id)initWithPromise:(gin_helper::Promise<void>)promise
                 panel:(SFCertificateTrustPanel*)panel
                  cert:(const scoped_refptr<net::X509Certificate>&)cert
                 trust:(SecTrustRef)trust
             certChain:(CFArrayRef)certChain
             secPolicy:(SecPolicyRef)secPolicy {
   if ((self = [super init])) {
-    promise_.reset(new electron::util::Promise<void*>(std::move(promise)));
+    promise_.reset(new gin_helper::Promise<void>(std::move(promise)));
     panel_ = panel;
     cert_ = cert;
     trust_ = trust;
@@ -90,7 +90,7 @@ v8::Local<v8::Promise> ShowCertificateTrust(
     const scoped_refptr<net::X509Certificate>& cert,
     const std::string& message) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  electron::util::Promise<void*> promise(isolate);
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* sec_policy = SecPolicyCreateBasicX509();

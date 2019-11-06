@@ -385,6 +385,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `accessibleTitle` String (optional) - An alternative title string provided only
       to accessibility tools such as screen readers. This string is not directly
       visible to users.
+    * `spellcheck` Boolean (optional) - Whether to enable the builtin spellchecker.
+      Default is `true`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -944,11 +946,11 @@ Returns `Boolean` - Whether the window is in simple (pre-Lion) fullscreen mode.
 
 Returns `Boolean` - Whether the window is in normal state (not maximized, not minimized, not in fullscreen mode).
 
-#### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
+#### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_ _Linux_
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
-* `extraSize` [Size](structures/size.md) (optional) - The extra size not to be included while
+ * `extraSize` [Size](structures/size.md) (optional) _macOS_ - The extra size not to be included while
 maintaining the aspect ratio.
 
 This will make a window maintain an aspect ratio. The extra size allows a
@@ -1579,7 +1581,7 @@ Same as `webContents.showDefinitionForSelection()`.
 
 #### `win.setIcon(icon)` _Windows_ _Linux_
 
-* `icon` [NativeImage](native-image.md)
+* `icon` [NativeImage](native-image.md) | String
 
 Changes window icon.
 

@@ -208,7 +208,7 @@ describe('deprecate', () => {
       deprecate.setHandler(null)
       process.throwDeprecation = true
 
-      promiseFunc = param => new Promise((resolve, reject) => resolve(param))
+      promiseFunc = param => new Promise((resolve) => resolve(param))
     })
 
     it('acts as a pass-through for promise-based invocations', async () => {
@@ -233,13 +233,13 @@ describe('deprecate', () => {
           (erringPromiseFunc as any)((err: Error | undefined, data: any) => {
             resolve([err, data])
           }).catch(() => { /* silence deprecation warning */ })
-        });
+        })
         expect(data).to.be.undefined()
         expect(err).to.be.an.instanceOf(Error).with.property('message', 'fail')
       }
       {
         const data = await new Promise(resolve => {
-          (erringPromiseFunc as any)(((data: any) => { resolve(data) }))
+          (erringPromiseFunc as any)((data: any) => { resolve(data) })
             .catch(() => { /* silence deprecation warning */ })
         })
         expect(data).to.be.undefined()

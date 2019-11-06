@@ -13,10 +13,10 @@
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
-#include "native_mate/scoped_persistent.h"
 #include "third_party/blink/public/platform/web_spell_check_panel_host_client.h"
 #include "third_party/blink/public/platform/web_vector.h"
 #include "third_party/blink/public/web/web_text_check_client.h"
+#include "v8/include/v8.h"
 
 namespace blink {
 struct WebTextCheckingResult;
@@ -100,9 +100,9 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   std::unique_ptr<SpellcheckRequest> pending_request_param_;
 
   v8::Isolate* isolate_;
-  v8::Persistent<v8::Context> context_;
-  mate::ScopedPersistent<v8::Object> provider_;
-  mate::ScopedPersistent<v8::Function> spell_check_;
+  v8::Global<v8::Context> context_;
+  v8::Global<v8::Object> provider_;
+  v8::Global<v8::Function> spell_check_;
 
   DISALLOW_COPY_AND_ASSIGN(SpellCheckClient);
 };

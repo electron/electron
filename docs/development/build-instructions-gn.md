@@ -236,7 +236,7 @@ the Electron binary:
 
 ```sh
 $ ./out/Debug/Electron.app/Contents/MacOS/Electron electron/spec \
-  --ci --enable-logging -g 'BrowserWindow module'
+  --enable-logging -g 'BrowserWindow module'
 ```
 
 ## Sharing the git cache between multiple machines

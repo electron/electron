@@ -47,9 +47,6 @@ app.whenReady().then(() => {
     .boolean('i').alias('i', 'invert')
     .argv
 
-  const isCi = !!argv.ci
-  global.isCI = isCi
-
   const Mocha = require('mocha')
   const mochaOptions = {}
   if (process.env.MOCHA_REPORTER) {
@@ -65,7 +62,7 @@ app.whenReady().then(() => {
   if (!process.env.MOCHA_REPORTER) {
     mocha.ui('bdd').reporter('tap')
   }
-  mocha.timeout(isCi ? 30000 : 10000)
+  mocha.timeout(30000)
 
   if (argv.grep) mocha.grep(argv.grep)
   if (argv.invert) mocha.invert()

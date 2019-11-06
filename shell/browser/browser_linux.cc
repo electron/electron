@@ -236,8 +236,8 @@ void Browser::ShowAboutPanel() {
   gtk_widget_destroy(dialogWidget);
 }
 
-void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
-  about_panel_options_ = options.Clone();
+void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
+  about_panel_options_ = std::move(options);
 }
 
 }  // namespace electron

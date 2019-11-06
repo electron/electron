@@ -5,6 +5,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 })
 
 const testMap = {
+  connect () {
+    let success = false
+    try {
+      chrome.runtime.connect(chrome.runtime.id)
+      chrome.runtime.connect(chrome.runtime.id, { name: 'content-script' })
+      chrome.runtime.connect({ name: 'content-script' })
+      success = true
+    } finally {
+      console.log(JSON.stringify(success))
+    }
+  },
   getManifest () {
     const manifest = chrome.runtime.getManifest()
     console.log(JSON.stringify(manifest))

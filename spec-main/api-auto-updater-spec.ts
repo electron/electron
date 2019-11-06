@@ -9,7 +9,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
         expect(error.message).to.equal('Update URL is not set')
         done()
       })
-      autoUpdater.setFeedURL({url:''})
+      autoUpdater.setFeedURL({ url: '' })
       autoUpdater.checkForUpdates()
     })
   })
@@ -21,7 +21,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
 
     ifit(process.platform === 'win32')('correctly fetches the previously set FeedURL', function (done) {
       const updateURL = 'https://fake-update.electron.io'
-      autoUpdater.setFeedURL({url: updateURL})
+      autoUpdater.setFeedURL({ url: updateURL })
       expect(autoUpdater.getFeedURL()).to.equal(updateURL)
       done()
     })
@@ -50,7 +50,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
       })
 
       it('throws if no url is provided when using the new style', () => {
-        expect(() => autoUpdater.setFeedURL({ noUrl: 'lol' } as any),
+        expect(() => autoUpdater.setFeedURL({ noUrl: 'lol' } as any)
         ).to.throw('Expected options object to contain a \'url\' string property in setFeedUrl call')
       })
     })
@@ -61,7 +61,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
           expect(error.message).equal('Could not get code signature for running application')
           done()
         })
-        autoUpdater.setFeedURL({url:''})
+        autoUpdater.setFeedURL({ url: '' })
       })
 
       it('does not throw if default is the serverType', () => {

@@ -12,7 +12,7 @@
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -65,8 +65,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
     if (it == pending_requests_.end())
       return;
 
-    electron::util::Promise<base::DictionaryValue> promise =
-        std::move(it->second);
+    gin_helper::Promise<base::DictionaryValue> promise = std::move(it->second);
     pending_requests_.erase(it);
 
     base::DictionaryValue* error = nullptr;
@@ -130,7 +129,7 @@ void Debugger::Detach() {
 }
 
 v8::Local<v8::Promise> Debugger::SendCommand(gin_helper::Arguments* args) {
-  electron::util::Promise<base::DictionaryValue> promise(isolate());
+  gin_helper::Promise<base::DictionaryValue> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!agent_host_) {

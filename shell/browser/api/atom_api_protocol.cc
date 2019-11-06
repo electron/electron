@@ -17,8 +17,8 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/options_switches.h"
-#include "shell/common/promise_util.h"
 #include "url/url_util.h"
 
 namespace {
@@ -223,7 +223,7 @@ v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
       "protocol.isProtocolRegistered or protocol.isProtocolIntercepted "
       "instead.",
       "ProtocolDeprecateIsProtocolHandled");
-  return util::Promise<bool>::ResolvedPromise(
+  return gin_helper::Promise<bool>::ResolvedPromise(
       isolate(), IsProtocolRegistered(scheme) ||
                      IsProtocolIntercepted(scheme) ||
                      // The |isProtocolHandled| should return true for builtin

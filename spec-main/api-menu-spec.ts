@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { BrowserWindow, globalShortcut, Menu, MenuItem } from 'electron'
+import { BrowserWindow, Menu, MenuItem } from 'electron'
 import { sortMenuItems } from '../lib/browser/api/menu-utils'
 import { closeWindow } from './window-helpers'
 
@@ -838,99 +838,6 @@ describe('Menu module', function () {
     it('unsets a menu with null', () => {
       Menu.setApplicationMenu(null)
       expect(Menu.getApplicationMenu()).to.be.null('application menu')
-    })
-  })
-
-  describe('menu accelerators', async () => {
-    const sendRobotjsKey = (key: string, modifiers: string | string[] = [], delay = 500) => {
-      return new Promise((resolve, reject) => {
-        try {
-          require('robotjs').keyTap(key, modifiers)
-          setTimeout(() => {
-            resolve()
-          }, delay)
-        } catch (e) {
-          reject(e)
-        }
-      })
-    }
-
-    before(async function () {
-      // --ci flag breaks accelerator and robotjs interaction
-      if (isCI) {
-        this.skip()
-      }
-
-      // before accelerator tests, use globalShortcut to test if
-      // RobotJS is working at all
-      let isKeyPressed = false
-      globalShortcut.register('q', () => {
-        isKeyPressed = true
-      })
-      try {
-        await sendRobotjsKey('q')
-      } catch (e) {
-        this.skip()
-      }
-
-      if (!isKeyPressed) {
-        this.skip()
-      }
-
-      globalShortcut.unregister('q')
-    })
-
-    it('should perform the specified action', async () => {
-      let hasBeenClicked = false
-      const menu = Menu.buildFromTemplate([
-        {
-          label: 'Test',
-          submenu: [
-            {
-              label: 'Test Item',
-              accelerator: 'T',
-              click: (a, b, event) => {
-                hasBeenClicked = true
-                expect(event).to.deep.equal({
-                  shiftKey: false,
-                  ctrlKey: false,
-                  altKey: false,
-                  metaKey: false,
-                  triggeredByAccelerator: true
-                })
-              },
-              id: 'test'
-            }
-          ]
-        }
-      ])
-      Menu.setApplicationMenu(menu)
-      expect(Menu.getApplicationMenu()).to.not.be.null('application menu')
-      await sendRobotjsKey('t')
-      expect(hasBeenClicked).to.equal(true)
-    })
-
-    it('should not activate upon clicking another key combination', async () => {
-      let hasBeenClicked = false
-      const menu = Menu.buildFromTemplate([
-        {
-          label: 'Test',
-          submenu: [
-            {
-              label: 'Test Item',
-              accelerator: 'T',
-              click: (a, b, event) => {
-                hasBeenClicked = true
-              },
-              id: 'test'
-            }
-          ]
-        }
-      ])
-      Menu.setApplicationMenu(menu)
-      expect(Menu.getApplicationMenu()).to.not.be.null('application menu')
-      await sendRobotjsKey('t', 'shift')
-      expect(hasBeenClicked).to.equal(false)
     })
   })
 })
