@@ -95,8 +95,8 @@ The prebuilt `ia32` (`i686`) and `x64` (`amd64`) binaries of Electron are built 
 Ubuntu 12.04, the `armv7l` binary is built against ARM v7 with hard-float ABI and
 NEON for Debian Wheezy.
 
-[Until the release of Electron 2.0][arm-breaking-change], Electron will also
-continue to release the `armv7l` binary with a simple `arm` suffix. Both binaries
+[Before the release of Electron 2.0][arm-breaking-change], Electron also
+released the `armv7l` binary with a simple `arm` suffix. Both binaries
 are identical.
 
 Whether the prebuilt binary can run on a distribution depends on whether the
