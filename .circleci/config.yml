@@ -643,6 +643,11 @@ step-ninja-summary: &step-ninja-summary
     command: |
       python depot_tools/post_build_ninja_summary.py -C src/out/Default
 
+step-ninja-report: &step-ninja-report
+  store_artifacts:
+    path: src/out/Default/.ninja_log
+    destination: ninja_log
+
 # Checkout Steps
 step-generate-deps-hash: &step-generate-deps-hash
   run:
@@ -993,10 +998,11 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
 
     # Electron app
     - *step-electron-build
+    - *step-ninja-summary
+    - *step-ninja-report
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-ninja-summary
 
     # Native test targets
     - *step-native-unittests-build
