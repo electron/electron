@@ -78,7 +78,7 @@ build_script:
       "https://github.com/electron/electron"
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
-        gclient sync --with_branch_heads --with_tags --reset
+        cmd /C gclient sync --with_branch_heads --with_tags --reset
       } else {
         cd src\electron
         node script\generate-deps-hash.js
@@ -92,7 +92,7 @@ build_script:
           python src/electron/script/update-external-binaries.py
         } else {    
           # file does not exist, gclient sync, then zip
-          gclient sync --with_branch_heads --with_tags --reset
+          cmd /C gclient sync --with_branch_heads --with_tags --reset
           if ($env:TARGET_ARCH -ne 'ia32') {
             # archive current source for future use 
             # only run on x64/woa to avoid contention saving
