@@ -41,10 +41,12 @@ struct Converter<base::Optional<T>> {
                      v8::Local<v8::Value> val,
                      base::Optional<T>* out) {
     if (val->IsNull() || val->IsUndefined()) {
+      *out = base::nullopt;
       return true;
     }
     T converted;
-    if (Converter<T>::FromV8(isolate, val, &converted)) {
+    if (!Converter<T>::FromV8(isolate, val, &converted)) {
+      *out = base::nullopt;
       return true;
     }
     out->emplace(converted);
