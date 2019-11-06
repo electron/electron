@@ -1,0 +1,318 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maksim Sisov <msisov@igalia.com>
+Date: Mon, 9 Sep 2019 08:06:33 +0000
+Subject: X11 and Ozone: Move closing logic to DWTHPlatform
+
+Close and CloseNow were move to DWTHPlatform. The same was done with the
+container of children DWTH.
+
+Bug: 990756
+Change-Id: Ic09852c3a22e780738d98da3f4fdfee4a6741a52
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1771407
+Commit-Queue: Maksim Sisov <msisov@igalia.com>
+Reviewed-by: Scott Violet <sky@chromium.org>
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#694665}
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_window.cc b/ui/ozone/platform/wayland/host/wayland_window.cc
+index 386663f9b4b5ca0033a82521250ecf7b412f07b5..046241ea5ef656a52e647c0cd28891daac917e44 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_window.cc
+@@ -371,7 +371,7 @@ void WaylandWindow::Hide() {
+ }
+ 
+ void WaylandWindow::Close() {
+-  NOTIMPLEMENTED();
++  delegate_->OnClosed();
+ }
+ 
+ void WaylandWindow::PrepareForShutdown() {}
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
+index 606e37e1d8746183f93c9f268097713a9059d2d6..d124edaa9f57a8cd09a9a52ad7da8006e541580b 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
+@@ -100,19 +100,25 @@ DesktopWindowTreeHostPlatform::DesktopWindowTreeHostPlatform(
+       desktop_native_widget_aura_(desktop_native_widget_aura) {}
+ 
+ DesktopWindowTreeHostPlatform::~DesktopWindowTreeHostPlatform() {
+-// TODO(msisov): Once destruction goes from DWTHX11 to DWTHPlatform, remove this
+-// guard.
+-#if !defined(USE_X11)
+-  DCHECK(got_on_closed_);
++  DCHECK(!platform_window()) << "The host must be closed before destroying it.";
+   desktop_native_widget_aura_->OnDesktopWindowTreeHostDestroyed(this);
+   DestroyDispatcher();
+-#endif
+ }
+ 
+ void DesktopWindowTreeHostPlatform::Init(const Widget::InitParams& params) {
+   if (params.type == Widget::InitParams::TYPE_WINDOW)
+     content_window()->SetProperty(aura::client::kAnimationsDisabledKey, true);
+ 
++  // If we have a parent, record the parent/child relationship. We use this
++  // data during destruction to make sure that when we try to close a parent
++  // window, we also destroy all child windows.
++  if (params.parent && params.parent->GetHost()) {
++    window_parent_ =
++        static_cast<DesktopWindowTreeHostPlatform*>(params.parent->GetHost());
++    DCHECK(window_parent_);
++    window_parent_->window_children_.insert(this);
++  }
++
+   ui::PlatformWindowInitProperties properties =
+       ConvertWidgetInitParamsToInitProperties(params);
+   AddAdditionalInitProperties(params, &properties);
+@@ -182,37 +188,61 @@ DesktopWindowTreeHostPlatform::CreateDragDropClient(
+ }
+ 
+ void DesktopWindowTreeHostPlatform::Close() {
+-  if (waiting_for_close_now_)
++  // If we are in process of closing or the PlatformWindow has already been
++  // closed, do nothing.
++  if (close_widget_factory_.HasWeakPtrs() || !platform_window())
+     return;
+ 
+-  desktop_native_widget_aura_->content_window()->Hide();
++  content_window()->Hide();
+ 
+   // Hide while waiting for the close.
+   // Please note that it's better to call WindowTreeHost::Hide, which also calls
+   // PlatformWindow::Hide and Compositor::SetVisible(false).
+   Hide();
+ 
+-  waiting_for_close_now_ = true;
++  // And we delay the close so that if we are called from an ATL callback,
++  // we don't destroy the window before the callback returned (as the caller
++  // may delete ourselves on destroy and the ATL callback would still
++  // dereference us when the callback returns).
+   base::ThreadTaskRunnerHandle::Get()->PostTask(
+       FROM_HERE, base::BindOnce(&DesktopWindowTreeHostPlatform::CloseNow,
+-                                weak_factory_.GetWeakPtr()));
+-}
++                                close_widget_factory_.GetWeakPtr()));
++}  // namespace views
+ 
+ void DesktopWindowTreeHostPlatform::CloseNow() {
+-  auto weak_ref = weak_factory_.GetWeakPtr();
+-  SetWmDropHandler(platform_window(), nullptr);
+-  // Deleting the PlatformWindow may not result in OnClosed() being called, if
+-  // not behave as though it was.
+-  SetPlatformWindow(nullptr);
+-  if (!weak_ref || got_on_closed_)
++  if (!platform_window())
+     return;
+ 
+-  RemoveNonClientEventFilter();
++#if defined(USE_OZONE)
++  SetWmDropHandler(platform_window(), nullptr);
++#endif
++
++  platform_window()->PrepareForShutdown();
+ 
++  ReleaseCapture();
+   native_widget_delegate_->OnNativeWidgetDestroying();
+ 
+-  got_on_closed_ = true;
+-  desktop_native_widget_aura_->OnHostClosed();
++  // If we have children, close them. Use a copy for iteration because they'll
++  // remove themselves.
++  std::set<DesktopWindowTreeHostPlatform*> window_children_copy =
++      window_children_;
++  for (auto* child : window_children_copy)
++    child->CloseNow();
++  DCHECK(window_children_.empty());
++
++  // If we have a parent, remove ourselves from its children list.
++  if (window_parent_) {
++    window_parent_->window_children_.erase(this);
++    window_parent_ = nullptr;
++  }
++
++  // Destroy the compositor before destroying the |platform_window()| since
++  // shutdown may try to swap, and the swap without a window may cause an error
++  // in X Server or Wayland, which causes a crash with in-process renderer, for
++  // example.
++  DestroyCompositor();
++
++  platform_window()->Close();
+ }
+ 
+ aura::WindowTreeHost* DesktopWindowTreeHostPlatform::AsWindowTreeHost() {
+@@ -597,7 +627,8 @@ void DesktopWindowTreeHostPlatform::DispatchEvent(ui::Event* event) {
+ 
+ void DesktopWindowTreeHostPlatform::OnClosed() {
+   RemoveNonClientEventFilter();
+-  got_on_closed_ = true;
++
++  SetPlatformWindow(nullptr);
+   desktop_native_widget_aura_->OnHostClosed();
+ }
+ 
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h
+index 00ff41a2151d5360e97d6e4fb33385ae96e3b76a..7e426b43b21844c7df85202a1e008da6e6426d6b 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h
+@@ -137,20 +137,22 @@ class VIEWS_EXPORT DesktopWindowTreeHostPlatform
+   internal::NativeWidgetDelegate* const native_widget_delegate_;
+   DesktopNativeWidgetAura* const desktop_native_widget_aura_;
+ 
+-  // Set to true when Close() is called.
+-  bool waiting_for_close_now_ = false;
+-
+-  bool got_on_closed_ = false;
+-
+   bool is_active_ = false;
+ 
+   base::string16 window_title_;
+ 
++  // We can optionally have a parent which can order us to close, or own
++  // children who we're responsible for closing when we CloseNow().
++  DesktopWindowTreeHostPlatform* window_parent_ = nullptr;
++  std::set<DesktopWindowTreeHostPlatform*> window_children_;
++
+ #if defined(OS_LINUX)
+   // A handler for events intended for non client area.
+   std::unique_ptr<WindowEventFilter> non_client_window_event_filter_;
+ #endif
+ 
++  base::WeakPtrFactory<DesktopWindowTreeHostPlatform> close_widget_factory_{
++      this};
+   base::WeakPtrFactory<DesktopWindowTreeHostPlatform> weak_factory_{this};
+ 
+   DISALLOW_COPY_AND_ASSIGN(DesktopWindowTreeHostPlatform);
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_x11.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_x11.cc
+index 04ddfe73be4fd1f9ac9dc9a50c5c2dd2c93b3859..cdf96b6b4c5863dde0ac8d5003d3a3aa3cac514e 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_x11.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_x11.cc
+@@ -155,8 +155,9 @@ DesktopWindowTreeHostX11::DesktopWindowTreeHostX11(
+ DesktopWindowTreeHostX11::~DesktopWindowTreeHostX11() {
+   window()->ClearProperty(kHostForRootWindow);
+   wm::SetWindowMoveClient(window(), nullptr);
+-  desktop_native_widget_aura()->OnDesktopWindowTreeHostDestroyed(this);
+-  DestroyDispatcher();
++
++  // ~DWTHPlatform notifies the DestkopNativeWidgetAura about destruction and
++  // also destroyes the dispatcher.
+ }
+ 
+ // static
+@@ -237,16 +238,6 @@ void DesktopWindowTreeHostX11::CleanUpWindowList(
+ // DesktopWindowTreeHostX11, DesktopWindowTreeHost implementation:
+ 
+ void DesktopWindowTreeHostX11::Init(const Widget::InitParams& params) {
+-  // If we have a parent, record the parent/child relationship. We use this
+-  // data during destruction to make sure that when we try to close a parent
+-  // window, we also destroy all child windows.
+-  if (params.parent && params.parent->GetHost()) {
+-    window_parent_ =
+-        static_cast<DesktopWindowTreeHostX11*>(params.parent->GetHost());
+-    DCHECK(window_parent_);
+-    window_parent_->window_children_.insert(this);
+-  }
+-
+   DesktopWindowTreeHostPlatform::Init(params);
+ 
+   // Set XEventDelegate to receive selection, drag&drop and raw key events.
+@@ -298,55 +289,6 @@ DesktopWindowTreeHostX11::CreateDragDropClient(
+   return base::WrapUnique(drag_drop_client_);
+ }
+ 
+-void DesktopWindowTreeHostX11::Close() {
+-  content_window()->Hide();
+-
+-  // TODO(erg): Might need to do additional hiding tasks here.
+-  GetXWindow()->CancelResize();
+-
+-  if (!close_widget_factory_.HasWeakPtrs()) {
+-    // And we delay the close so that if we are called from an ATL callback,
+-    // we don't destroy the window before the callback returned (as the caller
+-    // may delete ourselves on destroy and the ATL callback would still
+-    // dereference us when the callback returns).
+-    base::ThreadTaskRunnerHandle::Get()->PostTask(
+-        FROM_HERE, base::BindOnce(&DesktopWindowTreeHostX11::CloseNow,
+-                                  close_widget_factory_.GetWeakPtr()));
+-  }
+-}
+-
+-void DesktopWindowTreeHostX11::CloseNow() {
+-  if (GetXWindow()->window() == x11::None)
+-    return;
+-  platform_window()->PrepareForShutdown();
+-
+-  ReleaseCapture();
+-  RemoveNonClientEventFilter();
+-  native_widget_delegate()->OnNativeWidgetDestroying();
+-
+-  // If we have children, close them. Use a copy for iteration because they'll
+-  // remove themselves.
+-  std::set<DesktopWindowTreeHostX11*> window_children_copy = window_children_;
+-  for (auto* child : window_children_copy)
+-    child->CloseNow();
+-  DCHECK(window_children_.empty());
+-
+-  // If we have a parent, remove ourselves from its children list.
+-  if (window_parent_) {
+-    window_parent_->window_children_.erase(this);
+-    window_parent_ = nullptr;
+-  }
+-
+-  // Destroy the compositor before destroying the |xwindow_| since shutdown
+-  // may try to swap, and the swap without a window causes an X error, which
+-  // causes a crash with in-process renderer.
+-  DestroyCompositor();
+-
+-  open_windows().remove(GetAcceleratedWidget());
+-
+-  platform_window()->Close();
+-}
+-
+ void DesktopWindowTreeHostX11::Show(ui::WindowShowState show_state,
+                                     const gfx::Rect& restore_bounds) {
+   if (compositor())
+@@ -1034,7 +976,12 @@ void DesktopWindowTreeHostX11::DispatchEvent(ui::Event* event) {
+ }
+ 
+ void DesktopWindowTreeHostX11::OnClosed() {
+-  desktop_native_widget_aura()->OnHostClosed();
++  // Remove the event listeners we've installed. We need to remove these
++  // because otherwise we get assert during ~WindowEventDispatcher().
++  RemoveNonClientEventFilter();
++
++  open_windows().remove(GetAcceleratedWidget());
++  DesktopWindowTreeHostPlatform::OnClosed();
+ }
+ 
+ void DesktopWindowTreeHostX11::OnWindowStateChanged(
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h
+index 5990a397802199f3d71860861dca9905d6f07335..5b79747f63d05fe854165b6aa84a68c8913c0eff 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h
+@@ -100,8 +100,6 @@ class VIEWS_EXPORT DesktopWindowTreeHostX11 : public DesktopWindowTreeHostLinux,
+   void OnNativeWidgetCreated(const Widget::InitParams& params) override;
+   std::unique_ptr<aura::client::DragDropClient> CreateDragDropClient(
+       DesktopNativeCursorManager* cursor_manager) override;
+-  void Close() override;
+-  void CloseNow() override;
+   void Show(ui::WindowShowState show_state,
+             const gfx::Rect& restore_bounds) override;
+   bool IsVisible() const override;
+@@ -256,11 +254,6 @@ class VIEWS_EXPORT DesktopWindowTreeHostX11 : public DesktopWindowTreeHostLinux,
+   std::unique_ptr<WindowEventFilter> non_client_event_filter_;
+   std::unique_ptr<X11DesktopWindowMoveClient> x11_window_move_client_;
+ 
+-  // We can optionally have a parent which can order us to close, or own
+-  // children who we're responsible for closing when we CloseNow().
+-  DesktopWindowTreeHostX11* window_parent_ = nullptr;
+-  std::set<DesktopWindowTreeHostX11*> window_children_;
+-
+   base::ObserverList<DesktopWindowTreeHostObserverX11>::Unchecked
+       observer_list_;
+ 
+@@ -282,7 +275,6 @@ class VIEWS_EXPORT DesktopWindowTreeHostX11 : public DesktopWindowTreeHostLinux,
+   std::unique_ptr<CompositorObserver> compositor_observer_;
+ 
+   // The display and the native X window hosting the root window.
+-  base::WeakPtrFactory<DesktopWindowTreeHostX11> close_widget_factory_{this};
+   base::WeakPtrFactory<DesktopWindowTreeHostX11> weak_factory_{this};
+ 
+   DISALLOW_COPY_AND_ASSIGN(DesktopWindowTreeHostX11);
