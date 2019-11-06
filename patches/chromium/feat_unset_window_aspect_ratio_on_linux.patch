@@ -12,7 +12,7 @@ this patch.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/1895789.
 
 diff --git a/ui/base/x/x11_window.cc b/ui/base/x/x11_window.cc
-index c2cd00336856dc06499540dc601ac737348ce905..60adb7dcb326695ad97473d8a362a75461f66c2b 100644
+index 05d9c28cb71338a77fad8e9cb8e5f2fcf87d0071..9cfc1d28c6b1930f3a4263487306da2d31c58697 100644
 --- a/ui/base/x/x11_window.cc
 +++ b/ui/base/x/x11_window.cc
 @@ -742,9 +742,14 @@ void XWindow::SetXWindowAspectRatio(const gfx::SizeF& aspect_ratio) {

@@ -180,10 +180,10 @@ index 73f0ab6d84d2cab6732866a6dc4b781faf630c0e..3319d058e8303066e0159d02d27ee2e8
    return base::string16();
  }
 diff --git a/ui/base/models/menu_model.h b/ui/base/models/menu_model.h
-index b0ae539ba1dc5a4c11390267c3053058e92e7f34..1e28cd2b1bc66d512ea4e0b8ae62bc8ec03d7a1b 100644
+index 5bcc6204c2b579fb2cba47ba1bc156967ec87faf..34e647d56dfe583a3484fb8df0a148064eacb07b 100644
 --- a/ui/base/models/menu_model.h
 +++ b/ui/base/models/menu_model.h
-@@ -65,6 +65,10 @@ class UI_BASE_EXPORT MenuModel : public base::SupportsWeakPtr<MenuModel> {
+@@ -67,6 +67,10 @@ class UI_BASE_EXPORT MenuModel : public base::SupportsWeakPtr<MenuModel> {
    // Returns the label of the item at the specified index.
    virtual base::string16 GetLabelAt(int index) const = 0;
  
@@ -195,10 +195,10 @@ index b0ae539ba1dc5a4c11390267c3053058e92e7f34..1e28cd2b1bc66d512ea4e0b8ae62bc8e
    // is rendered to the right of the label and using the font GetLabelFontAt().
    virtual base::string16 GetMinorTextAt(int index) const;
 diff --git a/ui/base/models/simple_menu_model.cc b/ui/base/models/simple_menu_model.cc
-index 0aeeb3e47074590834de6d9ca7e3eb7dbf6a7793..5efc0589644e243a095765710302af992d53f5b8 100644
+index 2b6847a98d9d588acce4d30b48d78a2d0a8b281e..dca763a69a064b3dfa1dbc2600d493c56452eb04 100644
 --- a/ui/base/models/simple_menu_model.cc
 +++ b/ui/base/models/simple_menu_model.cc
-@@ -42,6 +42,11 @@ base::string16 SimpleMenuModel::Delegate::GetLabelForCommandId(
+@@ -46,6 +46,11 @@ base::string16 SimpleMenuModel::Delegate::GetLabelForCommandId(
    return base::string16();
  }
  
@@ -210,7 +210,7 @@ index 0aeeb3e47074590834de6d9ca7e3eb7dbf6a7793..5efc0589644e243a095765710302af99
  base::string16 SimpleMenuModel::Delegate::GetMinorTextForCommandId(
      int command_id) const {
    return base::string16();
-@@ -324,6 +329,11 @@ void SimpleMenuModel::SetLabel(int index, const base::string16& label) {
+@@ -335,6 +340,11 @@ void SimpleMenuModel::SetLabel(int index, const base::string16& label) {
    MenuItemsChanged();
  }
  
@@ -222,7 +222,7 @@ index 0aeeb3e47074590834de6d9ca7e3eb7dbf6a7793..5efc0589644e243a095765710302af99
  void SimpleMenuModel::SetMinorText(int index,
                                     const base::string16& minor_text) {
    items_[ValidateItemIndex(index)].minor_text = minor_text;
-@@ -398,6 +408,12 @@ base::string16 SimpleMenuModel::GetLabelAt(int index) const {
+@@ -409,6 +419,12 @@ base::string16 SimpleMenuModel::GetLabelAt(int index) const {
    return items_[ValidateItemIndex(index)].label;
  }
  
@@ -236,7 +236,7 @@ index 0aeeb3e47074590834de6d9ca7e3eb7dbf6a7793..5efc0589644e243a095765710302af99
    if (IsItemDynamicAt(index))
      return delegate_->GetMinorTextForCommandId(GetCommandIdAt(index));
 diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_model.h
-index 3cc9d686da8f64ddc8bdc66df40b1866bdd20607..dfacbdd4a55b5f5aa4d8c67136c607f75a880278 100644
+index e51bcb4bb4c4c26a0247d3e2b446a3bbf41ccc07..d1d2cacd313eb4fa3cba7a713356a724251b3927 100644
 --- a/ui/base/models/simple_menu_model.h
 +++ b/ui/base/models/simple_menu_model.h
 @@ -44,10 +44,11 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
@@ -253,7 +253,7 @@ index 3cc9d686da8f64ddc8bdc66df40b1866bdd20607..dfacbdd4a55b5f5aa4d8c67136c607f7
      virtual base::string16 GetMinorTextForCommandId(int command_id) const;
      // Gets the icon for the item with the specified id, returning true if there
      // is an icon, false otherwise.
-@@ -175,6 +176,9 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
+@@ -176,6 +177,9 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
    // Sets the label for the item at |index|.
    void SetLabel(int index, const base::string16& label);
  
@@ -263,7 +263,7 @@ index 3cc9d686da8f64ddc8bdc66df40b1866bdd20607..dfacbdd4a55b5f5aa4d8c67136c607f7
    // Sets the minor text for the item at |index|.
    void SetMinorText(int index, const base::string16& minor_text);
  
-@@ -201,6 +205,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
+@@ -202,6 +206,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
    ui::MenuSeparatorType GetSeparatorTypeAt(int index) const override;
    int GetCommandIdAt(int index) const override;
    base::string16 GetLabelAt(int index) const override;
@@ -271,7 +271,7 @@ index 3cc9d686da8f64ddc8bdc66df40b1866bdd20607..dfacbdd4a55b5f5aa4d8c67136c607f7
    base::string16 GetMinorTextAt(int index) const override;
    const gfx::VectorIcon* GetMinorIconAt(int index) const override;
    bool IsItemDynamicAt(int index) const override;
-@@ -236,6 +241,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
+@@ -237,6 +242,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
      int command_id = 0;
      ItemType type = TYPE_COMMAND;
      base::string16 label;
@@ -280,10 +280,10 @@ index 3cc9d686da8f64ddc8bdc66df40b1866bdd20607..dfacbdd4a55b5f5aa4d8c67136c607f7
      const gfx::VectorIcon* minor_icon = nullptr;
      gfx::Image icon;
 diff --git a/ui/views/controls/menu/menu_item_view.cc b/ui/views/controls/menu/menu_item_view.cc
-index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87bdfce181 100644
+index f58099f2608c2847a2002667428515750293cd18..9f5660ae607faed96f16c81cd5426e96ce0d097b 100644
 --- a/ui/views/controls/menu/menu_item_view.cc
 +++ b/ui/views/controls/menu/menu_item_view.cc
-@@ -277,6 +277,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
+@@ -278,6 +278,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
      int index,
      int item_id,
      const base::string16& label,
@@ -291,7 +291,7 @@ index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87
      const base::string16& minor_text,
      const gfx::VectorIcon* minor_icon,
      const gfx::ImageSkia& icon,
-@@ -297,6 +298,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
+@@ -298,6 +299,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
      item->SetTitle(GetDelegate()->GetLabel(item_id));
    else
      item->SetTitle(label);
@@ -299,7 +299,7 @@ index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87
    item->SetMinorText(minor_text);
    item->SetMinorIcon(minor_icon);
    if (vector_icon) {
-@@ -338,21 +340,23 @@ void MenuItemView::RemoveAllMenuItems() {
+@@ -339,21 +341,23 @@ void MenuItemView::RemoveAllMenuItems() {
  MenuItemView* MenuItemView::AppendMenuItem(int item_id,
                                             const base::string16& label,
                                             Type type) {
@@ -329,7 +329,7 @@ index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87
  }
  
  MenuItemView* MenuItemView::AppendMenuItemWithLabel(
-@@ -366,12 +370,14 @@ MenuItemView* MenuItemView::AppendDelegateMenuItem(int item_id) {
+@@ -367,12 +371,14 @@ MenuItemView* MenuItemView::AppendDelegateMenuItem(int item_id) {
  }
  
  void MenuItemView::AppendSeparator() {
@@ -346,7 +346,7 @@ index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87
                  /*minor_text=*/base::string16(), /*minor_icon=*/nullptr,
                  /*icon=*/gfx::ImageSkia(), /*vector_icon=*/nullptr,
                  /*type=*/SEPARATOR,
-@@ -381,21 +387,22 @@ void MenuItemView::AddSeparatorAt(int index) {
+@@ -382,21 +388,22 @@ void MenuItemView::AddSeparatorAt(int index) {
  MenuItemView* MenuItemView::AppendMenuItemWithIcon(int item_id,
                                                     const base::string16& label,
                                                     const gfx::ImageSkia& icon) {
@@ -373,7 +373,7 @@ index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87
  }
  
  SubmenuView* MenuItemView::CreateSubmenu() {
-@@ -427,6 +434,11 @@ void MenuItemView::SetTitle(const base::string16& title) {
+@@ -428,6 +435,11 @@ void MenuItemView::SetTitle(const base::string16& title) {
    invalidate_dimensions();  // Triggers preferred size recalculation.
  }
  
@@ -385,7 +385,7 @@ index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87
  void MenuItemView::SetMinorText(const base::string16& minor_text) {
    minor_text_ = minor_text;
    invalidate_dimensions();  // Triggers preferred size recalculation.
-@@ -1016,13 +1028,23 @@ void MenuItemView::PaintButton(gfx::Canvas* canvas, PaintButtonMode mode) {
+@@ -1017,13 +1029,23 @@ void MenuItemView::PaintButton(gfx::Canvas* canvas, PaintButtonMode mode) {
        (!delegate ||
         delegate->ShouldReserveSpaceForSubmenuIndicator() ?
             item_right_margin_ : config.arrow_to_edge_padding);
@@ -410,7 +410,7 @@ index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87
    PaintMinorIconAndText(canvas, style);
  
    // Set the submenu indicator (arrow) image and color.
-@@ -1274,6 +1296,11 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
+@@ -1277,6 +1299,11 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
  
    // Determine the length of the label text.
    int string_width = gfx::GetStringWidth(title_, style.font_list);
@@ -422,7 +422,7 @@ index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87
    dimensions.standard_width = string_width + label_start +
        item_right_margin_;
    // Determine the length of the right-side text.
-@@ -1281,9 +1308,10 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
+@@ -1284,9 +1311,10 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
        minor_text.empty() ? 0 : gfx::GetStringWidth(minor_text, style.font_list);
  
    // Determine the height to use.
@@ -437,10 +437,10 @@ index 0fcca1e59688eda967c59397ea932637810af27b..35e7e3dc8f18fffa1713d6821c2bef87
        std::max(dimensions.height, MenuConfig::instance().item_min_height);
  
 diff --git a/ui/views/controls/menu/menu_item_view.h b/ui/views/controls/menu/menu_item_view.h
-index e129bed9de80df5a6aeaca8e22e7d12a949ab759..d7cfa2a5d93af7b865ab01f2cc004c4215fc9986 100644
+index 481075d52afa3dd9238f2d041788f95744eecbdd..c8cbf6eb77b2b1ed6d8ee35fe054a306bd00e1bd 100644
 --- a/ui/views/controls/menu/menu_item_view.h
 +++ b/ui/views/controls/menu/menu_item_view.h
-@@ -151,6 +151,7 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -152,6 +152,7 @@ class VIEWS_EXPORT MenuItemView : public View {
    MenuItemView* AddMenuItemAt(int index,
                                int item_id,
                                const base::string16& label,
@@ -448,7 +448,7 @@ index e129bed9de80df5a6aeaca8e22e7d12a949ab759..d7cfa2a5d93af7b865ab01f2cc004c42
                                const base::string16& minor_text,
                                const gfx::VectorIcon* minor_icon,
                                const gfx::ImageSkia& icon,
-@@ -214,6 +215,7 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -215,6 +216,7 @@ class VIEWS_EXPORT MenuItemView : public View {
    // All the AppendXXX methods funnel into this.
    MenuItemView* AppendMenuItemImpl(int item_id,
                                     const base::string16& label,
@@ -456,7 +456,7 @@ index e129bed9de80df5a6aeaca8e22e7d12a949ab759..d7cfa2a5d93af7b865ab01f2cc004c42
                                     const base::string16& minor_text,
                                     const gfx::VectorIcon* minor_icon,
                                     const gfx::ImageSkia& icon,
-@@ -241,6 +243,9 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -242,6 +244,9 @@ class VIEWS_EXPORT MenuItemView : public View {
    void SetTitle(const base::string16& title);
    const base::string16& title() const { return title_; }
  
@@ -466,7 +466,7 @@ index e129bed9de80df5a6aeaca8e22e7d12a949ab759..d7cfa2a5d93af7b865ab01f2cc004c42
    // Sets the minor text.
    void SetMinorText(const base::string16& minor_text);
  
-@@ -451,7 +456,7 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -452,7 +457,7 @@ class VIEWS_EXPORT MenuItemView : public View {
    void DestroyAllMenuHosts();
  
    // Returns the text that should be displayed on the end (right) of the menu
@@ -475,7 +475,7 @@ index e129bed9de80df5a6aeaca8e22e7d12a949ab759..d7cfa2a5d93af7b865ab01f2cc004c42
    base::string16 GetMinorText() const;
  
    // Returns the icon that should be displayed to the left of the minor text.
-@@ -542,6 +547,9 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -543,6 +548,9 @@ class VIEWS_EXPORT MenuItemView : public View {
    // Title.
    base::string16 title_;
  
@@ -505,10 +505,10 @@ index f51bd9d85dad7771f18fc535b55b30a855eac48f..63aa8eddf51cb4821517902564e94813
    AddItem("No minor content", base::string16(), nullptr);
    AddItem("Minor text only", base::ASCIIToUTF16("minor text"), nullptr);
 diff --git a/ui/views/controls/menu/menu_model_adapter.cc b/ui/views/controls/menu/menu_model_adapter.cc
-index 09b72733e66d1e13182730e475b781ffefe649c0..e45e249f2a89e1bfd31cc82341a65341571ffc21 100644
+index beac9986b2c6d13cde9cb26310eefc01cfbbbe09..ab9ac14fcd346ce5490c916cf3eceb534510fb69 100644
 --- a/ui/views/controls/menu/menu_model_adapter.cc
 +++ b/ui/views/controls/menu/menu_model_adapter.cc
-@@ -96,8 +96,8 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
+@@ -99,8 +99,8 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
  
    if (*type == MenuItemView::SEPARATOR) {
      return menu->AddMenuItemAt(menu_index, item_id, base::string16(),
@@ -519,7 +519,7 @@ index 09b72733e66d1e13182730e475b781ffefe649c0..e45e249f2a89e1bfd31cc82341a65341
                                 model->GetSeparatorTypeAt(model_index));
    }
  
-@@ -105,7 +105,8 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
+@@ -108,7 +108,8 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
    model->GetIconAt(model_index, &icon);
    return menu->AddMenuItemAt(
        menu_index, item_id, model->GetLabelAt(model_index),
