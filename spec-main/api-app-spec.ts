@@ -863,7 +863,7 @@ describe('app module', () => {
       // We can't expect particular app names here, but these protocols should
       // at least have _something_ registered. Except on our Linux CI
       // environment apparently.
-      if (process.platform === 'linux' && isCI) {
+      if (process.platform === 'linux') {
         this.skip()
       }
 
