@@ -42,6 +42,7 @@ ipcMain.on('message', function (event, ...args) {
   event.sender.send('message', ...args)
 })
 
+ipcMain.handle('get-modules', () => Object.keys(electron))
 ipcMain.handle('get-temp-dir', () => app.getPath('temp'))
 ipcMain.handle('ping', () => null)
 
@@ -75,6 +76,7 @@ ipcMain.on('echo', function (event, msg) {
 })
 
 global.setTimeoutPromisified = util.promisify(setTimeout)
+global.returnAPromise = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 100))
 
 process.removeAllListeners('uncaughtException')
 process.on('uncaughtException', function (error) {

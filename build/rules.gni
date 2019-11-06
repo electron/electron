@@ -1,9 +1,50 @@
 import("//build/config/mac/mac_sdk.gni")
 
-# This is imported from /ios becuase this functionality was moved
-# after Chromium stopped using xib files for macOS menu functionality
-# See https://chromium-review.googlesource.com/c/chromium/src/+/1648695
-import("//build/config/ios/rules.gni")
+# Template to compile .xib and .storyboard files.
+# (copied from src/build/config/ios/rules.gni)
+#
+# Arguments
+#
+#     sources:
+#         list of string, sources to compile
+#
+#     ibtool_flags:
+#         (optional) list of string, additional flags to pass to the ibtool
+template("compile_ib_files") {
+  action_foreach(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "testonly",
+                             "visibility",
+                           ])
+    assert(defined(invoker.sources),
+           "sources must be specified for $target_name")
+    assert(defined(invoker.output_extension),
+           "output_extension must be specified for $target_name")
+
+    ibtool_flags = []
+    if (defined(invoker.ibtool_flags)) {
+      ibtool_flags = invoker.ibtool_flags
+    }
+
+    _output_extension = invoker.output_extension
+
+    script = "//build/config/ios/compile_ib_files.py"
+    sources = invoker.sources
+    outputs = [
+      "$target_gen_dir/$target_name/{{source_name_part}}.$_output_extension",
+    ]
+    args = [
+      "--input",
+      "{{source}}",
+      "--output",
+      rebase_path(
+          "$target_gen_dir/$target_name/{{source_name_part}}.$_output_extension",
+          root_build_dir),
+    ]
+    args += ibtool_flags
+  }
+}
 
 # Template is copied here from Chromium but was removed in
 # https://chromium-review.googlesource.com/c/chromium/src/+/1637981

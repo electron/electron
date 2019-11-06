@@ -40,6 +40,8 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_service_factory.h",
     "//chrome/browser/predictors/preconnect_manager.cc",
     "//chrome/browser/predictors/preconnect_manager.h",
+    "//chrome/browser/predictors/predictors_features.cc",
+    "//chrome/browser/predictors/predictors_features.h",
     "//chrome/browser/predictors/proxy_lookup_client_impl.cc",
     "//chrome/browser/predictors/proxy_lookup_client_impl.h",
     "//chrome/browser/predictors/resolve_host_client_impl.cc",
@@ -319,6 +321,7 @@ source_set("chrome_spellchecker") {
     "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
     "//chrome/browser/spellchecker/spellcheck_service.cc",
     "//chrome/browser/spellchecker/spellcheck_service.h",
+    "//chrome/common/pref_names.h",
   ]
 
   if (has_spellcheck_panel) {

@@ -105,7 +105,8 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
   void BroadcastEventToRenderers(
       extensions::events::HistogramValue histogram_value,
       const std::string& event_name,
-      std::unique_ptr<base::ListValue> args) override;
+      std::unique_ptr<base::ListValue> args,
+      bool dispatch_to_off_the_record_profiles) override;
   extensions::ExtensionCache* GetExtensionCache() override;
   bool IsBackgroundUpdateAllowed() override;
   bool IsMinBrowserVersionSupported(const std::string& min_version) override;

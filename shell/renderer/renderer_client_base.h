@@ -27,7 +27,7 @@ class SpellCheck;
 #endif
 
 namespace network_hints {
-class PrescientNetworkingDispatcher;
+class WebPrescientNetworkingImpl;
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -113,8 +113,8 @@ class RendererClientBase : public content::ContentRendererClient
 #endif
 
  private:
-  std::unique_ptr<network_hints::PrescientNetworkingDispatcher>
-      prescient_networking_dispatcher_;
+  std::unique_ptr<network_hints::WebPrescientNetworkingImpl>
+      web_prescient_networking_impl_;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<extensions::ExtensionsClient> extensions_client_;
