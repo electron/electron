@@ -5,10 +5,10 @@ Subject: blink_world_context.patch
 
 
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index 0594883bc21d66704ef2f830863389d412179a29..b788ae92cacf588ad535887bb34ae3d3854bdb92 100644
+index 972a4220a024624d0365fc2189ff898a3f3e3463..8c3f00b84f3f8d04b7c18ed900541dd874064309 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
-@@ -343,6 +343,9 @@ class WebLocalFrame : public WebFrame {
+@@ -344,6 +344,9 @@ class WebLocalFrame : public WebFrame {
    // be calling this API.
    virtual v8::Local<v8::Context> MainWorldScriptContext() const = 0;
  

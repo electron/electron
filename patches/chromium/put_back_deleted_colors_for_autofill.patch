@@ -40,7 +40,7 @@ index ad87f4729fe2cec2cf6e12b5bfcaf68bccf0390d..fbf06627f58e5f088a28d431210b3051
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 7fd49a2e26968daaa16ed3322b516f53ff60fb56..f902910ecc8e5b4945187e836655362ebba49204 100644
+index 564e0555f5d709601bf39e71521733c8371cc6ed..f59bee7aa4bdf445702f00459759b26c91062827 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -56,6 +56,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
@@ -58,9 +58,9 @@ index 7fd49a2e26968daaa16ed3322b516f53ff60fb56..f902910ecc8e5b4945187e836655362e
        // FocusableBorder
        case NativeTheme::kColorId_FocusedBorderColor:
          return SkColorSetA(gfx::kGoogleBlue300, 0x66);
-@@ -359,6 +367,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -334,6 +342,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
-       return SkColorSetA(SK_ColorBLACK, 0x66);
+       return SkColorSetA(SK_ColorBLACK, 0x4e);
  
 +    // Results Tables
 +    case NativeTheme::kColorId_ResultsTableNormalBackground:
@@ -78,10 +78,10 @@ index 7fd49a2e26968daaa16ed3322b516f53ff60fb56..f902910ecc8e5b4945187e836655362e
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index f1330721a711c61211ea136286ee884bc00e1975..e479fc84f7013984fc53d18cad8812fbd43cb670 100644
+index 59a33c31c7a5844d0716fcfaf25ba5c5e04fcd70..d14394ad8ffac01a9b23baab4e0353450eb8f7a7 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -389,6 +389,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -391,6 +391,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
      kColorId_TableHeaderText,
      kColorId_TableHeaderBackground,
      kColorId_TableHeaderSeparator,
@@ -94,10 +94,10 @@ index f1330721a711c61211ea136286ee884bc00e1975..e479fc84f7013984fc53d18cad8812fb
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 5b1804538c2e78af23c797004f250369580b4178..97e72bc38a7231ce295ad943e977c69586cc6e07 100644
+index ebfdda6cb2cb486c0c2be34e2be3d9fbc4d7ed7c..53ee5677e9851b0f3deb7f5d27b59bf1bdc073ba 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -673,6 +673,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
+@@ -672,6 +672,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
      case kColorId_TableGroupingIndicatorColor:
        return system_colors_[SystemThemeColor::kGrayText];
  
