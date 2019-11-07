@@ -87,12 +87,12 @@
 }
 
 - (void)setImage:(NSImage*)image {
-  [[statusItem_ button] setImage:image];
+  [[statusItem_ button] setImage:[image copy]];
   [self updateDimensions];
 }
 
 - (void)setAlternateImage:(NSImage*)image {
-  [[statusItem_ button] setAlternateImage:image];
+  [[statusItem_ button] setAlternateImage:[image copy]];
 }
 
 - (void)setIgnoreDoubleClickEvents:(BOOL)ignore {
@@ -108,7 +108,7 @@
     [[statusItem_ button]
         setAttributedTitle:[title attributedStringParsingANSICodes]];
   } else {
-    [[statusItem_ button] setTitle:title];
+    [[statusItem_ button] setTitle:[title copy]];
   }
 
   // Fix icon margins.
