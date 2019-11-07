@@ -226,6 +226,8 @@ Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 
   new SessionPreferences(browser_context);
 
+  protocol_.Reset(isolate, Protocol::Create(isolate, browser_context).ToV8());
+
   Init(isolate);
   AttachAsUserData(browser_context);
 }
@@ -609,11 +611,6 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
-  if (protocol_.IsEmpty()) {
-    v8::Local<v8::Value> handle;
-    handle = Protocol::Create(isolate, browser_context()).ToV8();
-    protocol_.Reset(isolate, handle);
-  }
   return v8::Local<v8::Value>::New(isolate, protocol_);
 }
 
