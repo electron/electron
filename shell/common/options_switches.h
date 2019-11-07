@@ -84,6 +84,10 @@ extern const char kTextAreasAreResizable[];
 extern const char kWebGL[];
 extern const char kNavigateOnDragDrop[];
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+extern const char kSpellcheck[];
+#endif
+
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
 extern const char kEnableRemoteModule[];
 #endif
@@ -133,6 +137,10 @@ extern const char kIgnoreConnectionsLimit[];
 extern const char kAuthServerWhitelist[];
 extern const char kAuthNegotiateDelegateWhitelist[];
 extern const char kEnableAuthNegotiatePort[];
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+extern const char kEnableSpellcheck[];
+#endif
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
 extern const char kEnableRemoteModule[];

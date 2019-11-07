@@ -48,8 +48,6 @@
 #include "shell/common/options_switches.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "components/pref_registry/pref_registry_syncable.h"
-#include "components/user_prefs/user_prefs.h"
 #include "extensions/browser/browser_context_keyed_service_factories.h"
 #include "extensions/browser/extension_pref_store.h"
 #include "extensions/browser/extension_pref_value_map_factory.h"
@@ -62,6 +60,19 @@
 #include "shell/browser/extensions/atom_extensions_browser_client.h"
 #include "shell/common/extensions/atom_extensions_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
+    BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "components/pref_registry/pref_registry_syncable.h"
+#include "components/user_prefs/user_prefs.h"
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "base/i18n/rtl.h"
+#include "components/language/core/browser/language_prefs.h"
+#include "components/spellcheck/browser/pref_names.h"
+#include "components/spellcheck/common/spellcheck_common.h"
+#endif
 
 using content::BrowserThread;
 
@@ -102,6 +113,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
     base::PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
     base::PathService::Override(DIR_USER_DATA, path_);
+    base::PathService::Override(chrome::DIR_USER_DATA, path_);
   }
 
   if (!in_memory && !partition.empty())
@@ -156,7 +168,10 @@ void AtomBrowserContext::InitPrefs() {
       ExtensionPrefValueMapFactory::GetForBrowserContext(this),
       IsOffTheRecord());
   prefs_factory.set_extension_prefs(ext_pref_store);
+#endif
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
+    BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   auto registry = WrapRefCounted(new user_prefs::PrefRegistrySyncable);
 #else
   auto registry = WrapRefCounted(new PrefRegistrySimple);
@@ -177,12 +192,35 @@ void AtomBrowserContext::InitPrefs() {
   extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
 #endif
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  BrowserContextDependencyManager::GetInstance()
+      ->RegisterProfilePrefsForServices(registry.get());
+
+  language::LanguagePrefs::RegisterProfilePrefs(registry.get());
+#endif
+
   prefs_ = prefs_factory.Create(
       registry.get(),
       std::make_unique<PrefStoreDelegate>(weak_factory_.GetWeakPtr()));
   prefs_->UpdateCommandLinePrefStore(new ValueMapPrefStore);
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
+    BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   user_prefs::UserPrefs::Set(this, prefs_.get());
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  auto* current_dictionaries =
+      prefs()->Get(spellcheck::prefs::kSpellCheckDictionaries);
+  // No configured dictionaries, the default will be en-US
+  if (current_dictionaries->GetList().size() == 0) {
+    std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
+        base::i18n::GetConfiguredLocale());
+    if (!default_code.empty()) {
+      base::ListValue language_codes;
+      language_codes.AppendString(default_code);
+      prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries, language_codes);
+    }
+  }
 #endif
 }
 

@@ -109,6 +109,20 @@ ifdescribe(!process.electronBinding('features').isExtensionsEnabled())('chrome e
 
   afterEach(() => closeWindow(w).then(() => { w = null as unknown as BrowserWindow }))
 
+  it('chrome.runtime.connect parses arguments properly', async function () {
+    await w.loadURL('about:blank')
+
+    const promise = emittedOnce(w.webContents, 'console-message')
+
+    const message = { method: 'connect' }
+    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
+
+    const [,, responseString] = await promise
+    const response = JSON.parse(responseString)
+
+    expect(response).to.be.true()
+  })
+
   it('runtime.getManifest returns extension manifest', async () => {
     const actualManifest = (() => {
       const data = fs.readFileSync(path.join(fixtures, 'extensions/chrome-api/manifest.json'), 'utf-8')

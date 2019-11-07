@@ -101,6 +101,11 @@
 #include "net/ssl/client_cert_store.h"
 #endif
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spell_check_host_chrome_impl.h"  // nogncheck
+#include "components/spellcheck/common/spellcheck.mojom.h"  // nogncheck
+#endif
+
 #if BUILDFLAG(ENABLE_PEPPER_FLASH)
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
@@ -756,6 +761,18 @@ network::mojom::NetworkContext* AtomBrowserClient::GetSystemNetworkContext() {
   DCHECK(g_browser_process->system_network_context_manager());
   return g_browser_process->system_network_context_manager()->GetContext();
 }
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+void AtomBrowserClient::BindHostReceiverForRenderer(
+    content::RenderProcessHost* render_process_host,
+    mojo::GenericPendingReceiver receiver) {
+  if (auto host_receiver = receiver.As<spellcheck::mojom::SpellCheckHost>()) {
+    SpellCheckHostChromeImpl::Create(render_process_host->GetID(),
+                                     std::move(host_receiver));
+    return;
+  }
+}
+#endif
 
 base::Optional<service_manager::Manifest>
 AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {

@@ -87,6 +87,11 @@ class Session : public mate::TrackableObject<Session>,
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
   void Preconnect(const mate::Dictionary& options, mate::Arguments* args);
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  base::Value GetSpellCheckerLanguages();
+  void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,
+                                const std::vector<std::string>& languages);
+#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void LoadChromeExtension(const base::FilePath extension_path);

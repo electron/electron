@@ -1,6 +1,7 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
+import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//pdf/features.gni")
 import("//printing/buildflags/buildflags.gni")
@@ -21,6 +22,7 @@ import("buildflags/buildflags.gni")
 import("electron_paks.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
+import("filenames.hunspell.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -358,13 +360,13 @@ source_set("electron_lib") {
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
+    "//components/language/core/browser",
     "//components/net_log",
     "//components/network_hints/browser",
     "//components/network_hints/common:mojo_bindings",
     "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
     "//components/prefs",
-    "//components/spellcheck/renderer",
     "//components/viz/host",
     "//components/viz/service",
     "//content/public/browser",
@@ -477,6 +479,10 @@ source_set("electron_lib") {
       "shell/browser/fake_location_provider.cc",
       "shell/browser/fake_location_provider.h",
     ]
+  }
+
+  if (enable_builtin_spellchecker) {
+    deps += [ "chromium_src:chrome_spellchecker" ]
   }
 
   if (is_mac) {
@@ -1269,9 +1275,14 @@ template("dist_zip") {
                              "outputs",
                              "testonly",
                            ])
+    flatten = false
+    if (defined(invoker.flatten)) {
+      flatten = invoker.flatten
+    }
     args = rebase_path(outputs + [ _runtime_deps_file ], root_build_dir) + [
              target_cpu,
              target_os,
+             "$flatten",
            ]
   }
 }
@@ -1354,6 +1365,24 @@ dist_zip("electron_mksnapshot_zip") {
   ]
   outputs = [
     "$root_build_dir/mksnapshot.zip",
+  ]
+}
+
+copy("hunspell_dictionaries") {
+  sources = hunspell_dictionaries + hunspell_licenses
+  outputs = [
+    "$target_gen_dir/electron_hunspell/{{source_file_part}}",
+  ]
+}
+
+dist_zip("hunspell_dictionaries_zip") {
+  data_deps = [
+    ":hunspell_dictionaries",
+  ]
+  flatten = true
+
+  outputs = [
+    "$root_build_dir/hunspell_dictionaries.zip",
   ]
 }
 

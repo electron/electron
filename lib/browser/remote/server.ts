@@ -309,7 +309,7 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         v8Util.setHiddenValue(callIntoRenderer, 'location', meta.location)
         Object.defineProperty(callIntoRenderer, 'length', { value: meta.length })
 
-        v8Util.setRemoteCallbackFreer(callIntoRenderer, contextId, meta.id, sender)
+        v8Util.setRemoteCallbackFreer(callIntoRenderer, frameId, contextId, meta.id, sender)
         rendererFunctions.set(objectId, callIntoRenderer)
         return callIntoRenderer
       }
