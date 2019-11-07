@@ -41,6 +41,51 @@ parameters:
     type: boolean
     default: false
 
+executors:
+  linux-medium:
+    docker:
+      - image: electronbuilds/electron:0.0.10
+    resource_class: medium
+    parameters:
+      ninja-processes:
+        type: integer
+        default: 3
+    environment:
+      NUMBER_OF_NINJA_PROCESSES: << parameters.ninja-processes >>
+
+  linux-2xlarge:
+    docker:
+      - image: electronbuilds/electron:0.0.10
+    resource_class: 2xlarge+
+    parameters:
+      ninja-processes:
+        type: integer
+        default: 42
+    environment:
+      NUMBER_OF_NINJA_PROCESSES: << parameters.ninja-processes >>
+
+  mac-medium:
+    macos:
+      xcode: "10.3.0"
+    resource_class: medium
+    parameters:
+      ninja-processes:
+        type: integer
+        default: 6
+    environment:
+      NUMBER_OF_NINJA_PROCESSES: << parameters.ninja-processes >>
+
+  mac-large:
+    macos:
+      xcode: "10.3.0"
+    resource_class: xlarge
+    parameters:
+      ninja-processes:
+        type: integer
+        default: 18
+    environment:
+      NUMBER_OF_NINJA_PROCESSES: << parameters.ninja-processes >>
+
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
 #
@@ -51,26 +96,6 @@ parameters:
 # https://circleci.com/docs/2.0/env-vars/
 
 # Build machines configs.
-docker-image: &docker-image
-  docker:
-    - image: electronbuilds/electron:0.0.10
-
-machine-linux-medium: &machine-linux-medium
-  <<: *docker-image
-  resource_class: medium
-
-machine-linux-2xlarge: &machine-linux-2xlarge
-  <<: *docker-image
-  resource_class: 2xlarge
-
-machine-mac: &machine-mac
-  macos:
-    xcode: "10.3.0"
-
-machine-mac-large: &machine-mac-large
-  resource_class: large
-  macos:
-    xcode: "10.3.0"
 
 # Build configurations options.
 env-testing-build: &env-testing-build
@@ -126,24 +151,6 @@ env-enable-sccache: &env-enable-sccache
 
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
-
-env-linux-medium: &env-linux-medium
-  NUMBER_OF_NINJA_PROCESSES: 3
-
-env-linux-2xlarge: &env-linux-2xlarge
-  NUMBER_OF_NINJA_PROCESSES: 34
-
-env-linux-2xlarge-release: &env-linux-2xlarge-release
-  NUMBER_OF_NINJA_PROCESSES: 16
-
-env-machine-mac: &env-machine-mac
-  NUMBER_OF_NINJA_PROCESSES: 6
-
-env-mac-large: &env-mac-large
-  NUMBER_OF_NINJA_PROCESSES: 18
-
-env-mac-large-release: &env-mac-large-release
-  NUMBER_OF_NINJA_PROCESSES: 8
 
 env-ninja-status: &env-ninja-status
   NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es] "
@@ -1275,66 +1282,57 @@ chromium-upgrade-branches: &chromium-upgrade-branches
 jobs:
   # Layer 0: Lint. Standalone.
   lint:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
     <<: *steps-lint
 
   ts-compile-doc-change:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-testing-build
     <<: *steps-electron-ts-compile-for-doc-change
 
   # Layer 1: Checkout.
   linux-checkout-fast:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-checkout-fast
 
   linux-checkout-and-save-cache:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-checkout-and-save-cache
 
   linux-checkout-for-native-tests:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_pyyaml=True'
     <<: *steps-checkout-fast
 
   linux-checkout-for-native-tests-with-no-patches:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=apply_patches=False --custom-var=checkout_pyyaml=True'
     <<: *steps-checkout-fast
 
   mac-checkout-fast:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     <<: *steps-checkout-fast
 
   mac-checkout-and-save-cache:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     <<: *steps-checkout-and-save-cache
 
   # Layer 2: Builds.
   linux-x64-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
@@ -1342,9 +1340,8 @@ jobs:
     <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-x64-testing-no-run-as-node:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
@@ -1353,25 +1350,24 @@ jobs:
     <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-x64-testing-gn-check:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   linux-x64-chromedriver:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   linux-x64-release:
-    <<: *machine-linux-2xlarge
+    executor:
+      name: linux-2xlarge
+      ninja-processes: 20
     environment:
-      <<: *env-linux-2xlarge-release
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
@@ -1379,9 +1375,10 @@ jobs:
     <<: *steps-electron-build
 
   linux-x64-publish:
-    <<: *machine-linux-2xlarge
+    executor:
+      name: linux-2xlarge
+      ninja-processes: 20
     environment:
-      <<: *env-linux-2xlarge-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1389,9 +1386,8 @@ jobs:
     <<: *steps-electron-build-for-publish
 
   linux-ia32-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       <<: *env-ia32
       <<: *env-testing-build
       <<: *env-enable-sccache
@@ -1400,9 +1396,8 @@ jobs:
     <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-ia32-chromedriver:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1410,9 +1405,10 @@ jobs:
     <<: *steps-chromedriver-build
 
   linux-ia32-release:
-    <<: *machine-linux-2xlarge
+    executor:
+      name: linux-2xlarge
+      ninja-processes: 20
     environment:
-      <<: *env-linux-2xlarge-release
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1421,9 +1417,10 @@ jobs:
     <<: *steps-electron-build
 
   linux-ia32-publish:
-    <<: *machine-linux-2xlarge
+    executor:
+      name: linux-2xlarge
+      ninja-processes: 20
     environment:
-      <<: *env-linux-2xlarge-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
@@ -1432,9 +1429,8 @@ jobs:
     <<: *steps-electron-build-for-publish
 
   linux-arm-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       <<: *env-arm
       <<: *env-testing-build
       <<: *env-enable-sccache
@@ -1444,9 +1440,8 @@ jobs:
     <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-arm-chromedriver:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-arm
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1454,9 +1449,10 @@ jobs:
     <<: *steps-chromedriver-build
 
   linux-arm-release:
-    <<: *machine-linux-2xlarge
+    executor:
+      name: linux-2xlarge
+      ninja-processes: 20
     environment:
-      <<: *env-linux-2xlarge-release
       <<: *env-arm
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1465,9 +1461,10 @@ jobs:
     <<: *steps-electron-build
 
   linux-arm-publish:
-    <<: *machine-linux-2xlarge
+    executor:
+      name: linux-2xlarge
+      ninja-processes: 20
     environment:
-      <<: *env-linux-2xlarge-release
       <<: *env-arm
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1476,9 +1473,8 @@ jobs:
     <<: *steps-electron-build-for-publish
 
   linux-arm64-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       <<: *env-arm64
       <<: *env-testing-build
       <<: *env-enable-sccache
@@ -1488,17 +1484,15 @@ jobs:
     <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-arm64-testing-gn-check:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-arm64
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   linux-arm64-chromedriver:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1506,9 +1500,10 @@ jobs:
     <<: *steps-chromedriver-build
 
   linux-arm64-release:
-    <<: *machine-linux-2xlarge
+    executor:
+      name: linux-2xlarge
+      ninja-processes: 20
     environment:
-      <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1517,9 +1512,10 @@ jobs:
     <<: *steps-electron-build
 
   linux-arm64-publish:
-    <<: *machine-linux-2xlarge
+    executor:
+      name: linux-2xlarge
+      ninja-processes: 20
     environment:
-      <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1528,43 +1524,40 @@ jobs:
     <<: *steps-electron-build-for-publish
 
   osx-testing:
-    <<: *machine-mac-large
+    executor: mac-large
     environment:
-      <<: *env-mac-large
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
     <<: *steps-electron-build
 
   osx-testing-gn-check:
-    <<: *machine-mac
+    executor: mac-medium
     environment:
-      <<: *env-machine-mac
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   osx-chromedriver:
-    <<: *machine-mac
+    executor: mac-medium
     environment:
-      <<: *env-machine-mac
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   osx-release:
-    <<: *machine-mac-large
+    executor: mac-large
     environment:
-      <<: *env-mac-large
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
     <<: *steps-electron-build
 
   osx-publish:
-    <<: *machine-mac-large
+    executor:
+      name: mac-large
+      ninja-processes: 8
     environment:
-      <<: *env-mac-large-release
       <<: *env-release-build
       <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
@@ -1572,9 +1565,8 @@ jobs:
     <<: *steps-electron-build-for-publish
 
   mas-testing:
-    <<: *machine-mac-large
+    executor: mac-large
     environment:
-      <<: *env-mac-large
       <<: *env-mas
       <<: *env-testing-build
       <<: *env-enable-sccache
@@ -1582,26 +1574,23 @@ jobs:
     <<: *steps-electron-build
 
   mas-testing-gn-check:
-    <<: *machine-mac
+    executor: mac-medium
     environment:
-      <<: *env-machine-mac
       <<: *env-mas
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   mas-chromedriver:
-    <<: *machine-mac
+    executor: mac-medium
     environment:
-      <<: *env-machine-mac
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   mas-release:
-    <<: *machine-mac-large
+    executor: mac-large
     environment:
-      <<: *env-mac-large
       <<: *env-mas
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1609,9 +1598,10 @@ jobs:
     <<: *steps-electron-build
 
   mas-publish:
-    <<: *machine-mac-large
+    executor:
+      name: mac-large
+      ninja-processes: 8
     environment:
-      <<: *env-mac-large-release
       <<: *env-mas
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1621,18 +1611,16 @@ jobs:
 
   # Layer 3: Tests.
   linux-x64-unittests:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       <<: *env-unittests
       <<: *env-enable-sccache
       <<: *env-headless-testing
     <<: *steps-native-tests
 
   linux-x64-disabled-unittests:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       <<: *env-unittests
       <<: *env-enable-sccache
       <<: *env-headless-testing
@@ -1640,9 +1628,8 @@ jobs:
     <<: *steps-native-tests
 
   linux-x64-chromium-unittests:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       <<: *env-unittests
       <<: *env-enable-sccache
       <<: *env-headless-testing
@@ -1650,9 +1637,8 @@ jobs:
     <<: *steps-native-tests
 
   linux-x64-browsertests:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
       <<: *env-browsertests
       <<: *env-testing-build
       <<: *env-enable-sccache
@@ -1660,58 +1646,51 @@ jobs:
     <<: *steps-native-tests
 
   linux-x64-testing-tests:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
     parallelism: 3
     <<: *steps-tests
 
   linux-x64-testing-nan:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
     <<: *steps-test-nan
 
   linux-x64-testing-node:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
     <<: *steps-test-node
 
   linux-x64-release-tests:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
     <<: *steps-tests
 
   linux-x64-verify-ffmpeg:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
   linux-x64-verify-mksnapshot:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
     <<: *steps-verify-mksnapshot
 
   linux-ia32-testing-tests:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-stack-dumping
@@ -1719,155 +1698,136 @@ jobs:
     <<: *steps-tests
 
   linux-ia32-testing-nan:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-stack-dumping
     <<: *steps-test-nan
 
   linux-ia32-testing-node:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
-      <<: *env-linux-medium
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-stack-dumping
     <<: *steps-test-node
 
   linux-ia32-release-tests:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
     <<: *steps-tests
 
   linux-ia32-verify-ffmpeg:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
   linux-ia32-verify-mksnapshot:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
     <<: *steps-verify-mksnapshot
 
   osx-testing-tests:
-    <<: *machine-mac-large
+    executor: mac-large
     environment:
-      <<: *env-mac-large
       <<: *env-stack-dumping
     parallelism: 2
     <<: *steps-tests
 
   osx-release-tests:
-    <<: *machine-mac-large
+    executor: mac-large
     environment:
-      <<: *env-mac-large
       <<: *env-stack-dumping
       <<: *env-send-slack-notifications
     <<: *steps-tests
 
   osx-verify-ffmpeg:
-    <<: *machine-mac
+    executor: mac-medium
     environment:
-      <<: *env-machine-mac
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
   osx-verify-mksnapshot:
-    <<: *machine-mac
+    executor: mac-medium
     environment:
-      <<: *env-machine-mac
       <<: *env-send-slack-notifications
     <<: *steps-verify-mksnapshot
 
   mas-testing-tests:
-    <<: *machine-mac-large
+    executor: mac-large
     environment:
-      <<: *env-mac-large
       <<: *env-stack-dumping
     parallelism: 2
     <<: *steps-tests
 
   mas-release-tests:
-    <<: *machine-mac-large
+    executor: mac-large
     environment:
-      <<: *env-mac-large
       <<: *env-stack-dumping
       <<: *env-send-slack-notifications
     <<: *steps-tests
 
   mas-verify-ffmpeg:
-    <<: *machine-mac
+    executor: mac-medium
     environment:
-      <<: *env-machine-mac
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
   mas-verify-mksnapshot:
-    <<: *machine-mac
+    executor: mac-medium
     environment:
-      <<: *env-machine-mac
       <<: *env-send-slack-notifications
     <<: *steps-verify-mksnapshot
 
   # Layer 4: Summary.
   linux-x64-release-summary:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-send-slack-notifications
     steps:
       - *step-maybe-notify-slack-success
 
   linux-ia32-release-summary:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-send-slack-notifications
     steps:
       - *step-maybe-notify-slack-success
 
   linux-arm-release-summary:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-send-slack-notifications
     steps:
       - *step-maybe-notify-slack-success
 
   linux-arm64-release-summary:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
-      <<: *env-linux-medium
       <<: *env-send-slack-notifications
     steps:
       - *step-maybe-notify-slack-success
 
   mas-release-summary:
-    <<: *machine-mac
+    executor: mac-medium
     environment:
-      <<: *env-machine-mac
       <<: *env-send-slack-notifications
     steps:
       - *step-maybe-notify-slack-success
 
   osx-release-summary:
-    <<: *machine-mac
+    executor: mac-medium
     environment:
-      <<: *env-machine-mac
       <<: *env-send-slack-notifications
     steps:
       - *step-maybe-notify-slack-success
