@@ -89,6 +89,8 @@ class Browser : public WindowListObserver {
   bool IsDefaultProtocolClient(const std::string& protocol,
                                mate::Arguments* args);
 
+  base::string16 GetApplicationNameForProtocol(const GURL& url);
+
   // Set/Get the badge count.
   bool SetBadgeCount(int count);
   int GetBadgeCount();
