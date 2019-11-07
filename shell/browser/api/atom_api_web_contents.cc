@@ -1287,31 +1287,26 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   background_throttling_ = allowed;
 
   auto* contents = web_contents();
-  if (!contents) {
+  if (!contents)
     return;
-  }
 
   auto* render_view_host = contents->GetRenderViewHost();
-  if (!render_view_host) {
+  if (!render_view_host)
     return;
-  }
 
   auto* render_process_host = render_view_host->GetProcess();
-  if (!render_process_host) {
+  if (!render_process_host)
     return;
-  }
 
-  auto* render_widget_host_impl = content::RenderWidgetHostImpl::FromID(
-      render_process_host->GetID(), render_view_host->GetRoutingID());
-  if (!render_widget_host_impl) {
+  auto* render_widget_host_impl = static_cast<content::RenderWidgetHostImpl*>(
+      render_view_host->GetWidget());
+
+  if (!render_widget_host_impl)
     return;
-  }
 
   render_widget_host_impl->disable_hidden_ = !background_throttling_;
-
-  if (render_widget_host_impl->is_hidden()) {
+  if (render_widget_host_impl->is_hidden())
     render_widget_host_impl->WasShown(base::nullopt);
-  }
 }
 
 int WebContents::GetProcessID() const {
