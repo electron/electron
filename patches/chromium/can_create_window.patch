@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 6dc225ede0a64d77c103b80fc76d51299170cc44..0f89422b5c73c608df289834587ec98376079ee2 100644
+index b482fed5deb268b422da71ac323b88c5eba58f1c..535ab53bf35caa5b8c9c36e684831248a3b0100e 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4307,6 +4307,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4309,6 +4309,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,7 +66,7 @@ index 3792cba399a4b80f9fbb7fa1c5561f4614dbba62..891b69d65de0e47719af23eb7047d22d
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 2ddadfe3aa8aa8be885001429c5e817063788199..08ef43b9dcd13ee48598dd50b893347635ab6b06 100644
+index 808b3fabd93bf3d7daa9e4b944df9f4a35b446b2..e31eca37ea538c1c26fe6be636d2b0372792653b 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -71,6 +71,7 @@
@@ -75,9 +75,9 @@ index 2ddadfe3aa8aa8be885001429c5e817063788199..08ef43b9dcd13ee48598dd50b8933476
  #include "content/renderer/loader/request_extra_data.h"
 +#include "content/renderer/loader/web_url_request_util.h"
  #include "content/renderer/media/audio/audio_device_factory.h"
- #include "content/renderer/media/webrtc/rtc_peer_connection_handler.h"
  #include "content/renderer/render_frame_impl.h"
-@@ -1341,6 +1342,8 @@ WebView* RenderViewImpl::CreateView(
+ #include "content/renderer/render_frame_proxy.h"
+@@ -1339,6 +1340,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
