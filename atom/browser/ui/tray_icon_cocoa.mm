@@ -212,12 +212,12 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (void)setImage:(NSImage*)image {
-  image_.reset([image copy]);
+  image_.reset(image);
   [self updateDimensions];
 }
 
 - (void)setAlternateImage:(NSImage*)image {
-  alternateImage_.reset([image copy]);
+  alternateImage_.reset(image);
 }
 
 - (void)setHighlight:(atom::TrayIcon::HighlightMode)mode {
@@ -235,7 +235,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (void)setTitle:(NSString*)title {
   if (title.length > 0) {
-    title_.reset([title copy]);
+    title_.reset(title);
     ANSI_ = [title containsANSICodes];
   } else {
     title_.reset();
