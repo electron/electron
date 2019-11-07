@@ -31,7 +31,7 @@ build of Electron as a parameter.
 ```sh
 $ lldb ./out/Testing/Electron.app
 (lldb) target create "./out/Testing/Electron.app"
-Current executable set to './out/DeTestingbug/Electron.app' (x86_64).
+Current executable set to './out/Testing/Electron.app' (x86_64).
 ```
 
 ### Setting Breakpoints
