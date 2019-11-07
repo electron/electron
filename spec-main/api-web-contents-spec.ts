@@ -1541,6 +1541,39 @@ describe('webContents module', () => {
     });
   });
 
+  describe('getBackgroundThrottling()', () => {
+    afterEach(closeAllWindows);
+    it('works via getter', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.setBackgroundThrottling(false);
+      expect(w.webContents.getBackgroundThrottling()).to.equal(false);
+
+      w.webContents.setBackgroundThrottling(true);
+      expect(w.webContents.getBackgroundThrottling()).to.equal(true);
+    });
+
+    it('works via property', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.backgroundThrottling = false;
+      expect(w.webContents.backgroundThrottling).to.equal(false);
+
+      w.webContents.backgroundThrottling = true;
+      expect(w.webContents.backgroundThrottling).to.equal(true);
+    });
+
+    it('works via BrowserWindow', () => {
+      const w = new BrowserWindow({ show: false });
+
+      (w as any).setBackgroundThrottling(false);
+      expect((w as any).getBackgroundThrottling()).to.equal(false);
+
+      (w as any).setBackgroundThrottling(true);
+      expect((w as any).getBackgroundThrottling()).to.equal(true);
+    });
+  });
+
   ifdescribe(features.isPrintingEnabled())('getPrinters()', () => {
     afterEach(closeAllWindows);
     it('can get printer list', async () => {
