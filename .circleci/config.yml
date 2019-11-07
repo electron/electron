@@ -41,6 +41,12 @@ parameters:
     type: boolean
     default: false
 
+# Actual build parameters
+  gn-config:
+    type: enum
+    default: 'testing'
+    enum: ['testing', 'release', 'native_tests']
+
 executors:
   linux-medium:
     docker:
@@ -98,15 +104,8 @@ executors:
 # Build machines configs.
 
 # Build configurations options.
-env-testing-build: &env-testing-build
-  GN_CONFIG: //electron/build/args/testing.gn
-  CHECK_DIST_MANIFEST: '1'
-
 env-release-build: &env-release-build
-  GN_CONFIG: //electron/build/args/release.gn
-  STRIP_BINARIES: true
-  GENERATE_SYMBOLS: true
-
+  A: B
 env-headless-testing: &env-headless-testing
   DISPLAY: ':99.0'
 
@@ -114,12 +113,10 @@ env-stack-dumping: &env-stack-dumping
   ELECTRON_ENABLE_STACK_DUMPING: '1'
 
 env-browsertests: &env-browsertests
-  GN_CONFIG: //electron/build/args/native_tests.gn
   BUILD_TARGET: electron/spec:chromium_browsertests
   TESTS_CONFIG: src/electron/spec/configs/browsertests.yml
 
 env-unittests: &env-unittests
-  GN_CONFIG: //electron/build/args/native_tests.gn
   BUILD_TARGET: electron/spec:chromium_unittests
   TESTS_CONFIG: src/electron/spec/configs/unittests.yml
 
@@ -317,7 +314,7 @@ step-gn-gen-default: &step-gn-gen-default
     name: Default GN gen
     command: |
       cd src
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      gn gen out/Default --args='import("//electron/build/args/<< parameters.gn-config >>.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
 
 step-gn-check: &step-gn-check
   run:
@@ -351,7 +348,7 @@ step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
     name: Strip electron binaries
     command: |
-      if [ "$STRIP_BINARIES" == "true" ] && [ "`uname`" != "Darwin" ]; then
+      if [ "<< parameters.gn-config >>" == "release" ] && [ "`uname`" != "Darwin" ]; then
         cd src
         electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH"
       fi
@@ -363,7 +360,7 @@ step-electron-dist-build: &step-electron-dist-build
       cd src
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
         ninja -C out/Default electron:electron_dist_zip
-        if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+        if [ "<< parameters.gn-config >>" == "testing" ]; then
           if [ "`uname`" == "Darwin" ]; then
             target_os=mac
             target_cpu=x64
@@ -563,7 +560,7 @@ step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
     name: Generate breakpad symbols
     command: |
-      if [ "$GENERATE_SYMBOLS" == "true" ]; then
+      if [ "<< parameters.gn-config >>" == "release" ]; then
         cd src
         ninja -C out/Default electron:electron_symbols
       fi
@@ -1288,8 +1285,6 @@ jobs:
 
   ts-compile-doc-change:
     executor: linux-medium
-    environment:
-      <<: *env-testing-build
     <<: *steps-electron-ts-compile-for-doc-change
 
   # Layer 1: Checkout.
@@ -1333,7 +1328,6 @@ jobs:
   linux-x64-testing:
     executor: linux-2xlarge
     environment:
-      <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
@@ -1342,7 +1336,6 @@ jobs:
   linux-x64-testing-no-run-as-node:
     executor: linux-2xlarge
     environment:
-      <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
       <<: *env-disable-run-as-node
@@ -1351,8 +1344,6 @@ jobs:
 
   linux-x64-testing-gn-check:
     executor: linux-medium
-    environment:
-      <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   linux-x64-chromedriver:
@@ -1367,6 +1358,7 @@ jobs:
     executor:
       name: linux-2xlarge
       ninja-processes: 20
+      f: 1
     environment:
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1378,6 +1370,7 @@ jobs:
     executor:
       name: linux-2xlarge
       ninja-processes: 20
+      gn-config: release
     environment:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-release-build
@@ -1389,7 +1382,6 @@ jobs:
     executor: linux-2xlarge
     environment:
       <<: *env-ia32
-      <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
@@ -1432,7 +1424,6 @@ jobs:
     executor: linux-2xlarge
     environment:
       <<: *env-arm
-      <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
@@ -1476,7 +1467,6 @@ jobs:
     executor: linux-2xlarge
     environment:
       <<: *env-arm64
-      <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
@@ -1487,7 +1477,6 @@ jobs:
     executor: linux-medium
     environment:
       <<: *env-arm64
-      <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   linux-arm64-chromedriver:
@@ -1526,15 +1515,12 @@ jobs:
   osx-testing:
     executor: mac-large
     environment:
-      <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
     <<: *steps-electron-build
 
   osx-testing-gn-check:
     executor: mac-medium
-    environment:
-      <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   osx-chromedriver:
@@ -1568,7 +1554,6 @@ jobs:
     executor: mac-large
     environment:
       <<: *env-mas
-      <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
     <<: *steps-electron-build
@@ -1577,7 +1562,6 @@ jobs:
     executor: mac-medium
     environment:
       <<: *env-mas
-      <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   mas-chromedriver:
@@ -1640,7 +1624,6 @@ jobs:
     executor: linux-2xlarge
     environment:
       <<: *env-browsertests
-      <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-headless-testing
     <<: *steps-native-tests
