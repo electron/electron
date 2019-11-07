@@ -342,6 +342,13 @@ void CommonWebContentsDelegate::ExitFullscreenModeForTab(
     return;
   SetHtmlApiFullscreen(false);
   owner_window_->NotifyWindowLeaveHtmlFullScreen();
+
+  if (native_fullscreen_) {
+    // Explicitly trigger a view resize, as the size is not actually changing if
+    // the browser is fullscreened, too. Chrome does this indirectly from
+    // `chrome/browser/ui/exclusive_access/fullscreen_controller.cc`.
+    source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
+  }
 }
 
 bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
