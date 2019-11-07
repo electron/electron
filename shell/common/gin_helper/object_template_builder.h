@@ -56,6 +56,8 @@ class ObjectTemplateBuilder {
                            CallbackTraits<U>::CreateTemplate(isolate_, setter));
   }
 
+  v8::Local<v8::ObjectTemplate> Build();
+
  private:
   ObjectTemplateBuilder& SetImpl(const base::StringPiece& name,
                                  v8::Local<v8::Data> val);

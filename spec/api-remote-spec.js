@@ -1,19 +1,14 @@
 'use strict'
 
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+const { expect } = require('chai')
 const path = require('path')
-const { closeWindow } = require('./window-helpers')
 const { resolveGetters } = require('./expect-helpers')
 const { ifdescribe } = require('./spec-helpers')
 
 const { remote, ipcRenderer } = require('electron')
 const { ipcMain, BrowserWindow } = remote
-const { expect } = chai
 
 const features = process.electronBinding('features')
-
-chai.use(dirtyChai)
 
 const comparePaths = (path1, path2) => {
   if (process.platform === 'win32') {
@@ -156,10 +151,10 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   })
 
   describe('remote modules', () => {
-    it('includes browser process modules as properties', () => {
-      expect(remote.app.getPath).to.be.a('function')
-      expect(remote.webContents.getFocusedWebContents).to.be.a('function')
-      expect(remote.clipboard.readText).to.be.a('function')
+    it('includes browser process modules as properties', async () => {
+      const mainModules = await ipcRenderer.invoke('get-modules')
+      const remoteModules = mainModules.filter(name => remote[name])
+      expect(remoteModules).to.be.deep.equal(mainModules)
     })
 
     it('returns toString() of original function via toString()', () => {
@@ -498,40 +493,17 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     it('throws errors from the main process', () => {
       expect(() => {
         throwFunction()
-      }).to.throw()
+      }).to.throw(/undefined/)
     })
 
-    it('throws custom errors from the main process', () => {
-      const err = new Error('error')
-      err.cause = new Error('cause')
-      err.prop = 'error prop'
+    it('tracks error cause', () => {
       try {
-        throwFunction(err)
-      } catch (error) {
-        expect(error.cause).to.deep.equal(...resolveGetters(err))
+        throwFunction(new Error('error from main'))
+        expect.fail()
+      } catch (e) {
+        expect(e.message).to.match(/Could not call remote function/)
+        expect(e.cause.message).to.equal('error from main')
       }
-    })
-  })
-
-  describe('remote function in renderer', () => {
-    let w = null
-
-    afterEach(() => closeWindow(w).then(() => { w = null }))
-    afterEach(() => {
-      ipcMain.removeAllListeners('done')
-    })
-
-    it('works when created in preload script', (done) => {
-      ipcMain.once('done', () => w.close())
-      const preload = path.join(fixtures, 'module', 'preload-remote-function.js')
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          preload
-        }
-      })
-      w.once('closed', () => done())
-      w.loadURL('about:blank')
     })
   })
 
@@ -542,39 +514,21 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     })
   })
 
-  describe('remote listeners', () => {
-    let w = null
-    afterEach(() => closeWindow(w).then(() => { w = null }))
+  describe('with an overriden global Promise constrctor', () => {
+    let original
 
-    it('detaches listeners subscribed to destroyed renderers, and shows a warning', (done) => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      })
+    before(() => {
+      original = Promise
+    })
 
-      w.webContents.once('did-finish-load', () => {
-        w.webContents.once('did-finish-load', () => {
-          const expectedMessage = [
-            'Attempting to call a function in a renderer window that has been closed or released.',
-            'Function provided here: remote-event-handler.html:11:33',
-            'Remote event names: remote-handler, other-remote-handler'
-          ].join('\n')
+    it('using a promise based method  resolves correctly', async () => {
+      expect(await remote.getGlobal('returnAPromise')(123)).to.equal(123)
+      global.Promise = { resolve: () => ({}) }
+      expect(await remote.getGlobal('returnAPromise')(456)).to.equal(456)
+    })
 
-          const results = ipcRenderer.sendSync('try-emit-web-contents-event', w.webContents.id, 'remote-handler')
-
-          expect(results).to.deep.equal({
-            warningMessage: expectedMessage,
-            listenerCountBefore: 2,
-            listenerCountAfter: 1
-          })
-          done()
-        })
-
-        w.webContents.reload()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'remote-event-handler.html'))
+    after(() => {
+      global.Promise = original
     })
   })
 })

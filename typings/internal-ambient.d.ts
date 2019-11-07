@@ -30,7 +30,7 @@ declare namespace NodeJS {
     deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
     createDoubleIDWeakMap(): any;
-    setRemoteCallbackFreer(fn: Function, contextId: String, id: number, sender: any): void
+    setRemoteCallbackFreer(fn: Function, frameId: number, contextId: String, id: number, sender: any): void
   }
 
   interface Process {

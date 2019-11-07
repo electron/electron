@@ -10,11 +10,11 @@
 #include <vector>
 
 #include "base/strings/utf_string_conversions.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "ui/gfx/image/image.h"
 
 namespace gin {
@@ -25,7 +25,7 @@ namespace electron {
 
 namespace api {
 
-class Notification : public mate::TrackableObject<Notification>,
+class Notification : public gin_helper::TrackableObject<Notification>,
                      public NotificationDelegate {
  public:
   static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,

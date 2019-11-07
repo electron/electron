@@ -1,5 +1,4 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+const { expect } = require('chai')
 const ChildProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
@@ -8,9 +7,6 @@ const util = require('util')
 const nativeImage = require('electron').nativeImage
 
 const features = process.electronBinding('features')
-
-const { expect } = chai
-chai.use(dirtyChai)
 
 async function expectToThrowErrorWithCode (func, code) {
   let error
@@ -38,7 +34,7 @@ describe('asar package', function () {
       it('does not leak fd', function () {
         let readCalls = 1
         while (readCalls <= 10000) {
-          fs.readFileSync(path.join(process.resourcesPath, 'default_app.asar', 'index.js'))
+          fs.readFileSync(path.join(process.resourcesPath, 'default_app.asar', 'main.js'))
           readCalls++
         }
       })

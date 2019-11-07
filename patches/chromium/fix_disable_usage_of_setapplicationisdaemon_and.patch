@@ -7,10 +7,10 @@ Disable usage of SetApplicationIsDaemon and
 _LSSetApplicationLaunchServicesServerConnectionStatus in MAS builds
 
 diff --git a/content/utility/utility_service_factory.cc b/content/utility/utility_service_factory.cc
-index 9b0759ab820ddb0e2a9e609b88bbc1673607c4e3..2392fd01736550f404304df324da9d81dfb3d446 100644
+index 2c1c7f992f2a40509d2d8854fcd7a023d7e06b6d..4c3f2dc2e1e1bf4c06764c97f9be5b5331e311bb 100644
 --- a/content/utility/utility_service_factory.cc
 +++ b/content/utility/utility_service_factory.cc
-@@ -196,7 +196,7 @@ void UtilityServiceFactory::RunService(
+@@ -162,7 +162,7 @@ void UtilityServiceFactory::RunService(
  std::unique_ptr<service_manager::Service>
  UtilityServiceFactory::CreateAudioService(
      mojo::PendingReceiver<service_manager::mojom::Service> receiver) {
@@ -18,7 +18,7 @@ index 9b0759ab820ddb0e2a9e609b88bbc1673607c4e3..2392fd01736550f404304df324da9d81
 +#if defined(OS_MACOSX) && !defined(MAS_BUILD)
    // Don't connect to launch services when running sandboxed
    // (https://crbug.com/874785).
-   if (base::FeatureList::IsEnabled(
+   if (service_manager::IsAudioSandboxEnabled()) {
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
 index caa30bb378b30331f90057fe7ce3aec724104bf8..a766daa808495f7872051e129c6ad9f76f54e4fe 100644
 --- a/sandbox/mac/system_services.cc

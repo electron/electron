@@ -5,9 +5,13 @@
 #ifndef SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 #define SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
+#include <utility>
+
 #include "base/bind.h"
 #include "base/callback.h"
+#include "base/optional.h"
 #include "gin/arguments.h"
+#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
@@ -89,6 +93,20 @@ bool GetNextArgument(gin::Arguments* args,
   }
 }
 
+// Support base::Optional as output, which would be empty and do not throw error
+// when convertion to T fails.
+template <typename T>
+bool GetNextArgument(gin::Arguments* args,
+                     int create_flags,
+                     bool is_first,
+                     base::Optional<T>* result) {
+  T converted;
+  // Use gin::Arguments::GetNext which always advances |next| counter.
+  if (args->GetNext(&converted))
+    result->emplace(std::move(converted));
+  return true;
+}
+
 // For advanced use cases, we allow callers to request the unparsed Arguments
 // object and poke around in it directly.
 inline bool GetNextArgument(gin::Arguments* args,
@@ -115,6 +133,15 @@ inline bool GetNextArgument(gin::Arguments* args,
                             bool is_first,
                             ErrorThrower* result) {
   *result = ErrorThrower(args->isolate());
+  return true;
+}
+
+// Supports the gin_helper::Arguments.
+inline bool GetNextArgument(gin::Arguments* args,
+                            int create_flags,
+                            bool is_first,
+                            gin_helper::Arguments** result) {
+  *result = static_cast<gin_helper::Arguments*>(args);
   return true;
 }
 
@@ -189,7 +216,8 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   void DispatchToCallback(base::Callback<ReturnType(ArgTypes...)> callback) {
     v8::MicrotasksScope script_scope(args_->isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
-    args_->Return(callback.Run(ArgumentHolder<indices, ArgTypes>::value...));
+    args_->Return(
+        callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
 
   // In C++, you can declare the function foo(void), but you can't pass a void
@@ -198,7 +226,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   void DispatchToCallback(base::Callback<void(ArgTypes...)> callback) {
     v8::MicrotasksScope script_scope(args_->isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
-    callback.Run(ArgumentHolder<indices, ArgTypes>::value...);
+    callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 
  private:

@@ -1,11 +1,11 @@
 {
   "name": "electron",
-  "version": "8.0.0-nightly.20191017",
+  "version": "8.0.0-nightly.20191106",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "@electron/docs-parser": "^0.4.2",
-    "@electron/typescript-definitions": "^8.6.1",
+    "@electron/typescript-definitions": "^8.6.4",
     "@octokit/rest": "^16.3.2",
     "@primer/octicons": "^9.1.1",
     "@types/basic-auth": "^1.1.2",
@@ -21,8 +21,8 @@
     "@types/split": "^1.0.0",
     "@types/webpack": "^4.4.32",
     "@types/webpack-env": "^1.13.9",
-    "@typescript-eslint/eslint-plugin": "^1.4.2",
-    "@typescript-eslint/parser": "^1.4.2",
+    "@typescript-eslint/eslint-plugin": "^2.6.0",
+    "@typescript-eslint/parser": "^2.6.0",
     "asar": "^1.0.0",
     "check-for-leaks": "^1.2.1",
     "colors": "^1.1.2",
@@ -129,6 +129,9 @@
       "node script/gen-filenames.js",
       "python script/check-trailing-whitespace.py --fix",
       "git add filenames.auto.gni"
+    ],
+    "DEPS": [
+      "node script/gen-hunspell-filenames.js"
     ]
   },
   "dependencies": {

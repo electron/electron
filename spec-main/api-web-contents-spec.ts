@@ -1,6 +1,5 @@
-import * as chai from 'chai'
+import { expect } from 'chai'
 import { AddressInfo } from 'net'
-import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as http from 'http'
@@ -9,10 +8,6 @@ import { BrowserWindow, ipcMain, webContents, session, WebContents, app, clipboa
 import { emittedOnce } from './events-helpers'
 import { closeAllWindows } from './window-helpers'
 import { ifdescribe, ifit } from './spec-helpers'
-
-const { expect } = chai
-
-chai.use(chaiAsPromised)
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 const features = process.electronBinding('features')
@@ -47,22 +42,22 @@ describe('webContents module', () => {
   describe('will-prevent-unload event', () => {
     afterEach(closeAllWindows)
     it('does not emit if beforeunload returns undefined', (done) => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       w.once('closed', () => done())
-      w.webContents.once('will-prevent-unload', (e) => {
+      w.webContents.once('will-prevent-unload', () => {
         expect.fail('should not have fired')
       })
       w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-undefined.html'))
     })
 
     it('emits if beforeunload returns false', (done) => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       w.webContents.once('will-prevent-unload', () => done())
       w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
     })
 
     it('supports calling preventDefault on will-prevent-unload events', (done) => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       w.webContents.once('will-prevent-unload', event => event.preventDefault())
       w.once('closed', () => done())
       w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
@@ -72,7 +67,7 @@ describe('webContents module', () => {
   describe('webContents.send(channel, args...)', () => {
     afterEach(closeAllWindows)
     it('throws an error when the channel is missing', () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       expect(() => {
         (w.webContents.send as any)()
       }).to.throw('Missing required channel argument')
@@ -98,7 +93,7 @@ describe('webContents module', () => {
       })
       w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'))
       setTimeout(() => {
-        w.webContents.send("test")
+        w.webContents.send('test')
       }, 50)
     })
   })
@@ -145,7 +140,7 @@ describe('webContents module', () => {
       let w: BrowserWindow
 
       before(async () => {
-        w = new BrowserWindow({show: false})
+        w = new BrowserWindow({ show: false })
         await w.loadURL('about:blank')
       })
       after(closeAllWindows)
@@ -169,10 +164,10 @@ describe('webContents module', () => {
       })
     })
 
-    describe("on a real page", () => {
+    describe('on a real page', () => {
       let w: BrowserWindow
       beforeEach(() => {
-        w = new BrowserWindow({show: false})
+        w = new BrowserWindow({ show: false })
       })
       afterEach(closeAllWindows)
 
@@ -211,7 +206,7 @@ describe('webContents module', () => {
 
       it('executes after page load', (done) => {
         w.webContents.executeJavaScript(`(() => "test")()`).then(result => {
-          expect(result).to.equal("test")
+          expect(result).to.equal('test')
           done()
         })
         w.loadURL(serverUrl)
@@ -222,7 +217,7 @@ describe('webContents module', () => {
   describe('loadURL() promise API', () => {
     let w: BrowserWindow
     beforeEach(async () => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({ show: false })
     })
     afterEach(closeAllWindows)
 
@@ -266,7 +261,7 @@ describe('webContents module', () => {
     })
 
     it('rejects if the load is aborted', async () => {
-      const s = http.createServer((req, res) => { /* never complete the request */ })
+      const s = http.createServer(() => { /* never complete the request */ })
       await new Promise(resolve => s.listen(0, '127.0.0.1', resolve))
       const { port } = s.address() as AddressInfo
       const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/)
@@ -288,7 +283,7 @@ describe('webContents module', () => {
       await new Promise(resolve => s.listen(0, '127.0.0.1', resolve))
       const { port } = s.address() as AddressInfo
       const p = new Promise(resolve => {
-        w.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame, frameProcessId, frameRoutingId) => {
+        w.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
           if (!isMainFrame) {
             resolve()
           }
@@ -312,7 +307,7 @@ describe('webContents module', () => {
       await new Promise(resolve => s.listen(0, '127.0.0.1', resolve))
       const { port } = s.address() as AddressInfo
       const p = new Promise(resolve => {
-        w.webContents.on('did-frame-finish-load', (event, isMainFrame, frameProcessId, frameRoutingId) => {
+        w.webContents.on('did-frame-finish-load', (event, isMainFrame) => {
           if (!isMainFrame) {
             resolve()
           }
@@ -332,7 +327,7 @@ describe('webContents module', () => {
 
     const testFn = (process.platform === 'win32' && process.arch === 'arm64' ? it.skip : it)
     testFn('returns the focused web contents', async () => {
-      const w = new BrowserWindow({show: true})
+      const w = new BrowserWindow({ show: true })
       await w.loadURL('about:blank')
       expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id)
 
@@ -347,7 +342,7 @@ describe('webContents module', () => {
     })
 
     it('does not crash when called on a detached dev tools window', async () => {
-      const w = new BrowserWindow({show: true})
+      const w = new BrowserWindow({ show: true })
 
       w.webContents.openDevTools({ mode: 'detach' })
       w.webContents.inspectElement(100, 100)
@@ -358,7 +353,7 @@ describe('webContents module', () => {
       expect(() => { webContents.getFocusedWebContents() }).to.not.throw()
 
       // Work around https://github.com/electron/electron/issues/19985
-      await new Promise(r => setTimeout(r, 0))
+      await new Promise(resolve => setTimeout(resolve, 0))
 
       const devToolsClosed = emittedOnce(w.webContents, 'devtools-closed')
       w.webContents.closeDevTools()
@@ -420,7 +415,7 @@ describe('webContents module', () => {
   describe('getWebPreferences() API', () => {
     afterEach(closeAllWindows)
     it('should not crash when called for devTools webContents', (done) => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       w.webContents.openDevTools()
       w.webContents.once('devtools-opened', () => {
         expect(w.webContents.devToolsWebContents.getWebPreferences()).to.be.null()
@@ -432,7 +427,7 @@ describe('webContents module', () => {
   describe('openDevTools() API', () => {
     afterEach(closeAllWindows)
     it('can show window with activation', async () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       const focused = emittedOnce(w, 'focus')
       w.show()
       await focused
@@ -440,14 +435,14 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'detach', activate: true })
       await Promise.all([
         emittedOnce(w.webContents, 'devtools-opened'),
-        emittedOnce(w.webContents, 'devtools-focused'),
+        emittedOnce(w.webContents, 'devtools-focused')
       ])
       await new Promise(resolve => setTimeout(resolve, 0))
       expect(w.isFocused()).to.be.false()
     })
 
     it('can show window without activation', async () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
       w.webContents.openDevTools({ mode: 'detach', activate: false })
       await devtoolsOpened
@@ -464,7 +459,7 @@ describe('webContents module', () => {
         ipcMain.once('keydown', (event, key) => resolve(key))
       })
       w.webContents.once('before-input-event', (event, input) => {
-        if ('a' === input.key) event.preventDefault()
+        if (input.key === 'a') event.preventDefault()
       })
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'a' })
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'b' })
@@ -472,7 +467,7 @@ describe('webContents module', () => {
     })
 
     it('has the correct properties', async () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))
       const testBeforeInput = async (opts: any) => {
         const modifiers = []
@@ -689,13 +684,11 @@ describe('webContents module', () => {
 
       expect(() => {
         w.webContents.startDrag({ file: __filename } as any)
-      }).to.throw(`Must specify 'icon' option`)
+      }).to.throw(`Must specify non-empty 'icon' option`)
 
-      if (process.platform === 'darwin') {
-        expect(() => {
-          w.webContents.startDrag({ file: __filename, icon: __filename })
-        }).to.throw(`Must specify non-empty 'icon' option`)
-      }
+      expect(() => {
+        w.webContents.startDrag({ file: __filename, icon: __filename })
+      }).to.throw(`Must specify non-empty 'icon' option`)
     })
   })
 
@@ -1401,6 +1394,19 @@ describe('webContents module', () => {
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
       const data = await w.webContents.printToPDF({})
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
+    })
+
+    it('does not crash when called multiple times', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
+      const promises = []
+      for (let i = 0; i < 2; i++) {
+        promises.push(w.webContents.printToPDF({}))
+      }
+      const results = await Promise.all(promises)
+      for (const data of results) {
+        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
+      }
     })
   })
 

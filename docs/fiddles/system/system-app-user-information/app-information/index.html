@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+  </head>
+  <body>
+    <div>
+      <div>
+        <h1>App Information</h1>
+        <div>
+          <div>
+            <button id="app-info">View Demo</button>
+            <span id="got-app-info"></span>
+          </div>
+          <p>The main process <code>app</code> module can be used to get the path at which your app is located on the user's computer.</p>
+          <p>In this example, to get that information from the renderer process, we use the <code>ipc</code> module to send a message to the main process requesting the app's path.</p>
+          <p>See the <a id="electron-docs" href="https://electronjs.org/docs/api/app">app module documentation<span class="u-visible-to-screen-reader">(opens in new window)</span></a> for more.</p>
+        </div>
+      </div>
+    </div>
+    <script>
+      // You can also require other files to run in this process
+      require('./renderer.js')
+    </script>
+  </body>
+</html> 

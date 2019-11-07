@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 18 Oct 2019 11:20:16 -0700
+Subject: fix: remove uses of NODE_USE_V8_PLATFORM
+
+Electron makes use of HAVE_INSPECTOR but does not run with
+NODE_USE_V8_PLATFORM so this prevented some Inspector code from
+running properly on our end; specifically, this caused a crash in
+test/parallel/test-inspector-connect-main-thread.js.
+
+Upstreamed at https://github.com/nodejs/node/pull/30029.
+
+diff --git a/src/env.h b/src/env.h
+index 5b8465c8ba5335c8706b54dcf6e4ed46af31bcf0..d83fc3ab8d997e8044c5ee5ef12dcba3c44bb1a1 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -868,7 +868,7 @@ class Environment : public MemoryRetainer {
+   void CreateProperties();
+   // Should be called before InitializeInspector()
+   void InitializeDiagnostics();
+-#if HAVE_INSPECTOR && NODE_USE_V8_PLATFORM
++#if HAVE_INSPECTOR
+   // If the environment is created for a worker, pass parent_handle and
+   // the ownership if transferred into the Environment.
+   int InitializeInspector(inspector::ParentInspectorHandle* parent_handle);
+diff --git a/src/node.cc b/src/node.cc
+index 9b43d7676e5e106318b58bfe443651cc49780068..461f736beacec67b35c89a42319f99178a1e38e9 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -224,7 +224,7 @@ MaybeLocal<Value> ExecuteBootstrapper(Environment* env,
+   return scope.EscapeMaybe(result);
+ }
+ 
+-#if HAVE_INSPECTOR && NODE_USE_V8_PLATFORM
++#if HAVE_INSPECTOR
+ int Environment::InitializeInspector(
+     inspector::ParentInspectorHandle* parent_handle) {
+   std::string inspector_path;
+@@ -258,7 +258,7 @@ int Environment::InitializeInspector(
+ 
+   return 0;
+ }
+-#endif  // HAVE_INSPECTOR && NODE_USE_V8_PLATFORM
++#endif  // HAVE_INSPECTOR
+ 
+ void Environment::InitializeDiagnostics() {
+   isolate_->GetHeapProfiler()->AddBuildEmbedderGraphCallback(
+diff --git a/src/node_main_instance.cc b/src/node_main_instance.cc
+index e41e0c1fb6fe1f2ca8a8ebef8834a53d1875ac15..be53b585f0a106c6fd5675e805284291d295f205 100644
+--- a/src/node_main_instance.cc
++++ b/src/node_main_instance.cc
+@@ -204,7 +204,7 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
+ 
+   // TODO(joyeecheung): when we snapshot the bootstrapped context,
+   // the inspector and diagnostics setup should after after deserialization.
+-#if HAVE_INSPECTOR && NODE_USE_V8_PLATFORM
++#if HAVE_INSPECTOR
+   *exit_code = env->InitializeInspector(nullptr);
+ #endif
+   if (*exit_code != 0) {
+diff --git a/src/node_worker.cc b/src/node_worker.cc
+index 3dce5e25980ce2c6f17cda02dab9c0f8b4fab813..c8b2e1699f26ac9bfeb373653d35271f9b6c841f 100644
+--- a/src/node_worker.cc
++++ b/src/node_worker.cc
+@@ -8,7 +8,7 @@
+ #include "util-inl.h"
+ #include "async_wrap-inl.h"
+ 
+-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
++#if HAVE_INSPECTOR
+ #include "inspector/worker_inspector.h"  // ParentInspectorHandle
+ #endif
+ 
+@@ -41,7 +41,7 @@ namespace worker {
+ 
+ namespace {
+ 
+-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
++#if HAVE_INSPECTOR
+ void WaitForWorkerInspectorToStop(Environment* child) {
+   child->inspector_agent()->WaitForDisconnect();
+   child->inspector_agent()->Stop();
+@@ -84,7 +84,7 @@ Worker::Worker(Environment* env,
+                 Number::New(env->isolate(), static_cast<double>(thread_id_)))
+       .Check();
+ 
+-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
++#if HAVE_INSPECTOR
+   inspector_parent_handle_ =
+       env->inspector_agent()->GetParentHandle(thread_id_, url);
+ #endif
+@@ -195,7 +195,7 @@ void Worker::Run() {
+     Locker locker(isolate_);
+     Isolate::Scope isolate_scope(isolate_);
+     SealHandleScope outer_seal(isolate_);
+-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
++#if HAVE_INSPECTOR
+     bool inspector_started = false;
+ #endif
+ 
+@@ -227,7 +227,7 @@ void Worker::Run() {
+         env_->stop_sub_worker_contexts();
+         env_->RunCleanup();
+         RunAtExit(env_.get());
+-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
++#if HAVE_INSPECTOR
+         if (inspector_started)
+           WaitForWorkerInspectorToStop(env_.get());
+ #endif
+@@ -272,7 +272,7 @@ void Worker::Run() {
+       if (is_stopped()) return;
+       {
+         env_->InitializeDiagnostics();
+-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
++#if HAVE_INSPECTOR
+         env_->InitializeInspector(inspector_parent_handle_.release());
+         inspector_started = true;
+ #endif
+diff --git a/src/node_worker.h b/src/node_worker.h
+index ffc4f19882cc2629252c504119649f17dd8dbaff..77f68801e7c24731c63c8cfaf00dcd422b837f29 100644
+--- a/src/node_worker.h
++++ b/src/node_worker.h
+@@ -65,7 +65,7 @@ class Worker : public AsyncWrap {
+   bool start_profiler_idle_notifier_;
+   uv_thread_t tid_;
+ 
+-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
++#if HAVE_INSPECTOR
+   std::unique_ptr<inspector::ParentInspectorHandle> inspector_parent_handle_;
+ #endif
+ 

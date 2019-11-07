@@ -14,7 +14,8 @@ import { promisify } from 'util'
 describe('powerMonitor', () => {
   let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any
 
-  ifdescribe(process.platform === 'linux' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)('when powerMonitor module is loaded with dbus mock', () => {
+  // TODO(deepak1556): Enable on arm64 after upgrade, it crashes at the moment.
+  ifdescribe(process.platform === 'linux' && process.arch !== 'arm64' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)('when powerMonitor module is loaded with dbus mock', () => {
     before(async () => {
       const systemBus = dbus.systemBus()
       const loginService = systemBus.getService('org.freedesktop.login1')
@@ -116,6 +117,7 @@ describe('powerMonitor', () => {
   })
 
   describe('when powerMonitor module is loaded', () => {
+    // eslint-disable-next-line no-undef
     let powerMonitor: typeof Electron.powerMonitor
     before(() => {
       powerMonitor = require('electron').powerMonitor

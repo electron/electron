@@ -37,10 +37,8 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
     // public and private slot.
     // Redirect any slot usage to this persistent slot on Linux.
     g_nss_cert_database = new net::NSSCertDatabase(
-        crypto::ScopedPK11Slot(
-            crypto::GetPersistentNSSKeySlot()) /* public slot */,
-        crypto::ScopedPK11Slot(
-            crypto::GetPersistentNSSKeySlot()) /* private slot */);
+        crypto::ScopedPK11Slot(PK11_GetInternalKeySlot()) /* public slot */,
+        crypto::ScopedPK11Slot(PK11_GetInternalKeySlot()) /* private slot */);
   }
   return g_nss_cert_database;
 }

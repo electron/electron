@@ -25,7 +25,7 @@
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/common/application_info.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/skia_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 
@@ -56,7 +56,7 @@ bool GetProcessExecPath(base::string16* exe) {
   return true;
 }
 
-bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
+bool GetProtocolLaunchPath(gin_helper::Arguments* args, base::string16* exe) {
   if (!args->GetNext(exe) && !GetProcessExecPath(exe)) {
     return false;
   }
@@ -69,6 +69,68 @@ bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
   else
     *exe = base::StringPrintf(L"\"%ls\" \"%%1\"", exe->c_str());
   return true;
+}
+
+// Windows treats a given scheme as an Internet scheme only if its registry
+// entry has a "URL Protocol" key. Check this, otherwise we allow ProgIDs to be
+// used as custom protocols which leads to security bugs.
+bool IsValidCustomProtocol(const base::string16& scheme) {
+  if (scheme.empty())
+    return false;
+  base::win::RegKey cmd_key(HKEY_CLASSES_ROOT, scheme.c_str(), KEY_QUERY_VALUE);
+  return cmd_key.Valid() && cmd_key.HasValue(L"URL Protocol");
+}
+
+// Windows 8 introduced a new protocol->executable binding system which cannot
+// be retrieved in the HKCR registry subkey method implemented below. We call
+// AssocQueryString with the new Win8-only flag ASSOCF_IS_PROTOCOL instead.
+base::string16 GetAppForProtocolUsingAssocQuery(const GURL& url) {
+  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
+  if (!IsValidCustomProtocol(url_scheme))
+    return base::string16();
+
+  // Query AssocQueryString for a human-readable description of the program
+  // that will be invoked given the provided URL spec. This is used only to
+  // populate the external protocol dialog box the user sees when invoking
+  // an unknown external protocol.
+  wchar_t out_buffer[1024];
+  DWORD buffer_size = base::size(out_buffer);
+  HRESULT hr =
+      AssocQueryString(ASSOCF_IS_PROTOCOL, ASSOCSTR_FRIENDLYAPPNAME,
+                       url_scheme.c_str(), NULL, out_buffer, &buffer_size);
+  if (FAILED(hr)) {
+    DLOG(WARNING) << "AssocQueryString failed!";
+    return base::string16();
+  }
+  return base::string16(out_buffer);
+}
+
+base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
+  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
+  if (!IsValidCustomProtocol(url_scheme))
+    return base::string16();
+
+  // First, try and extract the application's display name.
+  base::string16 command_to_launch;
+  base::win::RegKey cmd_key_name(HKEY_CLASSES_ROOT, url_scheme.c_str(),
+                                 KEY_READ);
+  if (cmd_key_name.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS &&
+      !command_to_launch.empty()) {
+    return command_to_launch;
+  }
+
+  // Otherwise, parse the command line in the registry, and return the basename
+  // of the program path if it exists.
+  const base::string16 cmd_key_path = url_scheme + L"\\shell\\open\\command";
+  base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
+                                KEY_READ);
+  if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
+    base::CommandLine command_line(
+        base::CommandLine::FromString(command_to_launch));
+    return command_line.GetProgram().BaseName().value();
+  }
+
+  return base::string16();
 }
 
 bool FormatCommandLineString(base::string16* exe,
@@ -153,7 +215,7 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            mate::Arguments* args) {
+                                            gin_helper::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -215,7 +277,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         mate::Arguments* args) {
+                                         gin_helper::Arguments* args) {
   // HKEY_CLASSES_ROOT
   //    $PROTOCOL
   //       (Default) = "URL:$NAME"
@@ -259,7 +321,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      mate::Arguments* args) {
+                                      gin_helper::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -291,6 +353,17 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
   // Default value is the same as current file path
   return keyVal == exe;
+}
+
+base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
+  // Windows 8 or above has a new protocol association query.
+  if (base::win::GetVersion() >= base::win::Version::WIN8) {
+    base::string16 application_name = GetAppForProtocolUsingAssocQuery(url);
+    if (!application_name.empty())
+      return application_name;
+  }
+
+  return GetAppForProtocolUsingRegistry(url);
 }
 
 bool Browser::SetBadgeCount(int count) {
@@ -407,8 +480,8 @@ void Browser::ShowAboutPanel() {
   electron::ShowMessageBoxSync(settings);
 }
 
-void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
-  about_panel_options_ = options.Clone();
+void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
+  about_panel_options_ = std::move(options);
 }
 
 }  // namespace electron

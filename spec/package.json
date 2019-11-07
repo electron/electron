@@ -11,7 +11,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "coffeescript": "^2.4.1",
-    "dbus-native": "github:nornagon/dbus-native#master",
+    "dbus-native": "github:jkleinsc/dbus-native#master",
     "dirty-chai": "^2.0.1",
     "graceful-fs": "^4.1.15",
     "is-valid-window": "0.0.5",
@@ -27,10 +27,6 @@
     "winreg": "^1.2.4",
     "ws": "^6.1.4",
     "yargs": "^12.0.5"
-  },
-  "optionalDependencies": {
-    "abstract-socket": "github:nornagon/node-abstractsocket#v8-compat",
-    "robotjs": "github:octalmage/robotjs#d870ddb486e893361e10d23d32c95c9d2b4710c9"
   },
   "dependencies": {
     "mocha-appveyor-reporter": "^0.4.2"

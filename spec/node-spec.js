@@ -1,7 +1,5 @@
 const ChildProcess = require('child_process')
-const chai = require('chai')
-const { expect } = chai
-const dirtyChai = require('dirty-chai')
+const { expect } = require('chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
@@ -10,8 +8,6 @@ const features = process.electronBinding('features')
 
 const { emittedOnce } = require('./events-helpers')
 const { ifit } = require('./spec-helpers')
-
-chai.use(dirtyChai)
 
 describe('node feature', () => {
   const fixtures = path.join(__dirname, 'fixtures')

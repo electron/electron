@@ -5,7 +5,7 @@ import { emittedNTimes, emittedOnce } from './events-helpers'
 import { closeWindow } from './window-helpers'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { AddressInfo } from 'net'
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe } from './spec-helpers'
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description: string, webPreferences: any) => {

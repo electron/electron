@@ -1,5 +1,4 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+const { expect } = require('chai')
 const fs = require('fs')
 const http = require('http')
 const path = require('path')
@@ -10,9 +9,6 @@ const { ipcRenderer } = require('electron')
 const { emittedOnce } = require('./events-helpers')
 const { resolveGetters } = require('./expect-helpers')
 const features = process.electronBinding('features')
-
-const { expect } = chai
-chai.use(dirtyChai)
 
 /* Most of the APIs here don't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -427,13 +423,8 @@ describe('chromium feature', () => {
 
   describe('Promise', () => {
     it('resolves correctly in Node.js calls', (done) => {
-      document.registerElement('x-element', {
-        prototype: Object.create(HTMLElement.prototype, {
-          createdCallback: {
-            value: () => {}
-          }
-        })
-      })
+      class XElement extends HTMLElement {}
+      customElements.define('x-element', XElement)
       setImmediate(() => {
         let called = false
         Promise.resolve().then(() => {
@@ -445,13 +436,8 @@ describe('chromium feature', () => {
     })
 
     it('resolves correctly in Electron calls', (done) => {
-      document.registerElement('y-element', {
-        prototype: Object.create(HTMLElement.prototype, {
-          createdCallback: {
-            value: () => {}
-          }
-        })
-      })
+      class YElement extends HTMLElement {}
+      customElements.define('y-element', YElement)
       ipcRenderer.invoke('ping').then(() => {
         let called = false
         Promise.resolve().then(() => {

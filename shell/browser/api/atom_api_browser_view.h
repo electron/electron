@@ -9,19 +9,18 @@
 #include <string>
 
 #include "content/public/browser/web_contents_observer.h"
-#include "native_mate/handle.h"
-#include "shell/browser/api/trackable_object.h"
+#include "gin/handle.h"
 #include "shell/browser/native_browser_view.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace gfx {
 class Rect;
 }
 
-namespace mate {
-class Arguments;
+namespace gin_helper {
 class Dictionary;
-}  // namespace mate
+}
 
 namespace electron {
 
@@ -31,7 +30,7 @@ namespace api {
 
 class WebContents;
 
-class BrowserView : public mate::TrackableObject<BrowserView>,
+class BrowserView : public gin_helper::TrackableObject<BrowserView>,
                     public content::WebContentsObserver {
  public:
   static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
@@ -46,7 +45,7 @@ class BrowserView : public mate::TrackableObject<BrowserView>,
   int32_t ID() const;
 
  protected:
-  BrowserView(gin::Arguments* args, const mate::Dictionary& options);
+  BrowserView(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BrowserView() override;
 
   // content::WebContentsObserver:

@@ -21,7 +21,7 @@ std::string AutoUpdater::GetFeedURL() {
   return "";
 }
 
-void AutoUpdater::SetFeedURL(mate::Arguments* args) {}
+void AutoUpdater::SetFeedURL(gin_helper::Arguments* args) {}
 
 void AutoUpdater::CheckForUpdates() {}
 

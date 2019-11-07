@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,11 +23,11 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
-#include "shell/common/api/locker.h"
 #include "shell/common/atom_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/locker.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 
@@ -66,6 +67,7 @@
   V(atom_common_screen)              \
   V(atom_common_shell)               \
   V(atom_common_v8_util)             \
+  V(atom_renderer_context_bridge)    \
   V(atom_renderer_ipc)               \
   V(atom_renderer_web_frame)
 
@@ -120,6 +122,61 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
 }
 
 bool g_is_initialized = false;
+
+bool IsPackagedApp() {
+  base::FilePath exe_path;
+  base::PathService::Get(base::FILE_EXE, &exe_path);
+  base::FilePath::StringType base_name =
+      base::ToLowerASCII(exe_path.BaseName().value());
+
+#if defined(OS_WIN)
+  return base_name != FILE_PATH_LITERAL("electron.exe");
+#else
+  return base_name != FILE_PATH_LITERAL("electron");
+#endif
+}
+
+// Initialize NODE_OPTIONS to pass to Node.js
+void SetNodeOptions(base::Environment* env) {
+  // Options that are unilaterally disallowed
+  const std::set<std::string> disallowed = {
+      "--openssl-config", "--use-bundled-ca", "--use-openssl-ca",
+      "--force-fips", "--enable-fips"};
+
+  // Subset of options allowed in packaged apps
+  const std::set<std::string> allowed_in_packaged = {"--max-http-header-size"};
+
+  if (env->HasVar("NODE_OPTIONS")) {
+    std::string options;
+    env->GetVar("NODE_OPTIONS", &options);
+    std::vector<std::string> parts = base::SplitString(
+        options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+
+    bool is_packaged_app = IsPackagedApp();
+
+    for (const auto& part : parts) {
+      // Strip off values passed to individual NODE_OPTIONs
+      std::string option = part.substr(0, part.find("="));
+
+      if (is_packaged_app &&
+          allowed_in_packaged.find(option) == allowed_in_packaged.end()) {
+        // Explicitly disallow majority of NODE_OPTIONS in packaged apps
+        LOG(ERROR) << "Most NODE_OPTIONs are not supported in packaged apps."
+                   << " See documentation for more details.";
+        options.erase(options.find(option), part.length());
+      } else if (disallowed.find(option) != disallowed.end()) {
+        // Remove NODE_OPTIONS specifically disallowed for use in Node.js
+        // through Electron owing to constraints like BoringSSL.
+        LOG(ERROR) << "The NODE_OPTION " << option
+                   << " is not supported in Electron";
+        options.erase(options.find(option), part.length());
+      }
+    }
+
+    // overwrite new NODE_OPTIONS without unsupported variables
+    env->SetVar("NODE_OPTIONS", options);
+  }
+}
 
 }  // namespace
 
@@ -221,55 +278,7 @@ void NodeBindings::Initialize() {
   const char** exec_argv = nullptr;
 
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  if (env->HasVar("NODE_OPTIONS")) {
-    base::FilePath exe_path;
-    base::PathService::Get(base::FILE_EXE, &exe_path);
-#if defined(OS_WIN)
-    std::string path = base::UTF16ToUTF8(exe_path.value());
-#else
-    std::string path = exe_path.value();
-#endif
-    std::transform(path.begin(), path.end(), path.begin(), ::tolower);
-
-#if defined(OS_WIN)
-    const bool is_packaged_app = path == "electron.exe";
-#else
-    const bool is_packaged_app = path == "electron";
-#endif
-
-    // explicitly disallow NODE_OPTIONS in packaged apps
-    if (is_packaged_app) {
-      LOG(WARNING) << "NODE_OPTIONs are not supported in packaged apps";
-      env->SetVar("NODE_OPTIONS", "");
-    } else {
-      const std::vector<std::string> disallowed = {
-          "--openssl-config", "--use-bundled-ca", "--use-openssl-ca",
-          "--force-fips", "--enable-fips"};
-
-      std::string options;
-      env->GetVar("NODE_OPTIONS", &options);
-      std::vector<std::string> parts = base::SplitString(
-          options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-
-      // parse passed options for unsupported options
-      // and remove them from the options list
-      std::string new_options = options;
-      for (const auto& disallow : disallowed) {
-        for (const auto& part : parts) {
-          if (part.find(disallow) != std::string::npos) {
-            LOG(WARNING) << "The NODE_OPTION" << disallow
-                         << "is not supported in Electron";
-            new_options.erase(new_options.find(part), part.length());
-            break;
-          }
-        }
-      }
-
-      // overwrite new NODE_OPTIONS without unsupported variables
-      if (new_options != options)
-        env->SetVar("NODE_OPTIONS", new_options);
-    }
-  }
+  SetNodeOptions(env.get());
 
   // TODO(codebytere): this is going to be deprecated in the near future
   // in favor of Init(std::vector<std::string>* argv,
@@ -327,9 +336,11 @@ node::Environment* NodeBindings::CreateEnvironment(
   args.insert(args.begin() + 1, init_script);
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
-  node::Environment* env = node::CreateEnvironment(
-      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
-      context, args.size(), c_argv.get(), 0, nullptr, bootstrap_env);
+  isolate_data_ =
+      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
+  node::Environment* env =
+      node::CreateEnvironment(isolate_data_, context, args.size(), c_argv.get(),
+                              0, nullptr, bootstrap_env);
   DCHECK(env);
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
@@ -395,7 +406,7 @@ void NodeBindings::UvRunOnce() {
     return;
 
   // Use Locker in browser process.
-  mate::Locker locker(env->isolate());
+  gin_helper::Locker locker(env->isolate());
   v8::HandleScope handle_scope(env->isolate());
 
   // Enter node context while dealing with uv events.

@@ -9,7 +9,9 @@
 
 #include "base/memory/weak_ptr.h"
 #include "content/public/renderer/render_frame_observer.h"
-#include "mojo/public/cpp/bindings/associated_binding.h"
+#include "mojo/public/cpp/bindings/associated_receiver.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
+#include "mojo/public/cpp/bindings/pending_associated_receiver.h"
 #include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/web/web_autofill_client.h"
@@ -27,7 +29,8 @@ class AutofillAgent : public content::RenderFrameObserver,
                          blink::AssociatedInterfaceRegistry* registry);
   ~AutofillAgent() override;
 
-  void BindRequest(mojom::ElectronAutofillAgentAssociatedRequest request);
+  void BindReceiver(
+      mojo::PendingAssociatedReceiver<mojom::ElectronAutofillAgent> receiver);
 
   // content::RenderFrameObserver:
   void OnDestruct() override;
@@ -67,8 +70,9 @@ class AutofillAgent : public content::RenderFrameObserver,
 
   void DoFocusChangeComplete();
 
-  const mojom::ElectronAutofillDriverAssociatedPtr& GetAutofillDriver();
-  mojom::ElectronAutofillDriverAssociatedPtr autofill_driver_;
+  const mojo::AssociatedRemote<mojom::ElectronAutofillDriver>&
+  GetAutofillDriver();
+  mojo::AssociatedRemote<mojom::ElectronAutofillDriver> autofill_driver_;
 
   // True when the last click was on the focused node.
   bool focused_node_was_last_clicked_ = false;
@@ -78,7 +82,7 @@ class AutofillAgent : public content::RenderFrameObserver,
   // already focused, or if it caused the focus to change.
   bool was_focused_before_now_ = false;
 
-  mojo::AssociatedBinding<mojom::ElectronAutofillAgent> binding_;
+  mojo::AssociatedReceiver<mojom::ElectronAutofillAgent> receiver_{this};
 
   base::WeakPtrFactory<AutofillAgent> weak_ptr_factory_;
 

@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { CallbacksRegistry } from '../lib/renderer/remote/callbacks-registry'
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe } from './spec-helpers'
 
 const features = process.electronBinding('features')
 

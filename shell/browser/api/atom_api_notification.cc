@@ -6,7 +6,6 @@
 
 #include "base/guid.h"
 #include "base/strings/utf_string_conversions.h"
-#include "native_mate/constructor.h"
 #include "shell/browser/api/atom_api_menu.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/browser.h"

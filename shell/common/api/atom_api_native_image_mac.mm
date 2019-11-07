@@ -33,8 +33,8 @@ double safeShift(double in, double def) {
   return def;
 }
 
-mate::Handle<NativeImage> NativeImage::CreateFromNamedImage(
-    mate::Arguments* args,
+gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(
+    gin::Arguments* args,
     const std::string& name) {
   @autoreleasepool {
     std::vector<double> hsl_shift;

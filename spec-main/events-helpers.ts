@@ -40,3 +40,16 @@ export const emittedNTimes = async (emitter: NodeJS.EventEmitter, eventName: str
   }
   return p
 }
+
+export const emittedUntil = async (emitter: NodeJS.EventEmitter, eventName: string, untilFn: Function) => {
+  const p = new Promise<any[][]>(resolve => {
+    const handler = (...args: any[]) => {
+      if (untilFn(...args)) {
+        emitter.removeListener(eventName, handler)
+        resolve(args)
+      }
+    }
+    emitter.on(eventName, handler)
+  })
+  return p
+}

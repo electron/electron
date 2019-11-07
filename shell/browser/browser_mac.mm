@@ -20,8 +20,9 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_helper/arguments.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/platform_util.h"
-#include "shell/common/promise_util.h"
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 
@@ -58,7 +59,7 @@ void Browser::ClearRecentDocuments() {
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            mate::Arguments* args) {
+                                            gin_helper::Arguments* args) {
   NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
   if (!identifier)
     return false;
@@ -93,7 +94,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         mate::Arguments* args) {
+                                         gin_helper::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -108,7 +109,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      mate::Arguments* args) {
+                                      gin_helper::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -131,6 +132,22 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   return result == NSOrderedSame;
 }
 
+base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
+  NSURL* ns_url = [NSURL
+      URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
+  base::ScopedCFTypeRef<CFErrorRef> out_err;
+  base::ScopedCFTypeRef<CFURLRef> openingApp(LSCopyDefaultApplicationURLForURL(
+      (CFURLRef)ns_url, kLSRolesAll, out_err.InitializeInto()));
+  if (out_err) {
+    // likely kLSApplicationNotFoundErr
+    return base::string16();
+  }
+  NSString* appPath = [base::mac::CFToNSCast(openingApp.get()) path];
+  NSString* appDisplayName =
+      [[NSFileManager defaultManager] displayNameAtPath:appPath];
+  return base::SysNSStringToUTF16(appDisplayName);
+}
+
 void Browser::SetAppUserModelID(const base::string16& name) {}
 
 bool Browser::SetBadgeCount(int count) {
@@ -140,8 +157,8 @@ bool Browser::SetBadgeCount(int count) {
 }
 
 void Browser::SetUserActivity(const std::string& type,
-                              const base::DictionaryValue& user_info,
-                              mate::Arguments* args) {
+                              base::DictionaryValue user_info,
+                              gin_helper::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
 
@@ -166,7 +183,7 @@ void Browser::ResignCurrentActivity() {
 }
 
 void Browser::UpdateCurrentActivity(const std::string& type,
-                                    const base::DictionaryValue& user_info) {
+                                    base::DictionaryValue user_info) {
   [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
                withUserInfo:DictionaryValueToNSDictionary(user_info)];
@@ -186,7 +203,7 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   const base::DictionaryValue& user_info) {
+                                   base::DictionaryValue user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnContinueUserActivity(&prevent_default, type, user_info);
@@ -194,13 +211,13 @@ bool Browser::ContinueUserActivity(const std::string& type,
 }
 
 void Browser::UserActivityWasContinued(const std::string& type,
-                                       const base::DictionaryValue& user_info) {
+                                       base::DictionaryValue user_info) {
   for (BrowserObserver& observer : observers_)
     observer.OnUserActivityWasContinued(type, user_info);
 }
 
 bool Browser::UpdateUserActivityState(const std::string& type,
-                                      const base::DictionaryValue& user_info) {
+                                      base::DictionaryValue user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnUpdateUserActivityState(&prevent_default, type, user_info);
@@ -313,7 +330,7 @@ bool Browser::DockIsVisible() {
 }
 
 v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
-  util::Promise<void*> promise(isolate);
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   BOOL active = [[NSRunningApplication currentApplication] isActive];
@@ -327,7 +344,7 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
       [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
       break;
     }
-    __block util::Promise<void*> p = std::move(promise);
+    __block gin_helper::Promise<void> p = std::move(promise);
     dispatch_time_t one_ms = dispatch_time(DISPATCH_TIME_NOW, USEC_PER_SEC);
     dispatch_after(one_ms, dispatch_get_main_queue(), ^{
       TransformProcessType(&psn, kProcessTransformToForegroundApplication);
@@ -372,15 +389,14 @@ void Browser::ShowAboutPanel() {
       orderFrontStandardAboutPanelWithOptions:options];
 }
 
-void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
+void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
   about_panel_options_.Clear();
 
-  for (const auto& pair : options) {
-    std::string key = pair.first;
-    const auto& val = pair.second;
-    if (!key.empty() && val->is_string()) {
+  for (auto& pair : options) {
+    std::string& key = pair.first;
+    if (!key.empty() && pair.second->is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
-      about_panel_options_.SetString(key, val->GetString());
+      about_panel_options_.Set(key, std::move(pair.second));
     }
   }
 }

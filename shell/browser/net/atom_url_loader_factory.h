@@ -9,7 +9,8 @@
 #include <string>
 #include <utility>
 
-#include "mojo/public/cpp/bindings/binding_set.h"
+#include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "net/url_request/url_request_job_factory.h"
 #include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
@@ -42,18 +43,20 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   ~AtomURLLoaderFactory() override;
 
   // network::mojom::URLLoaderFactory:
-  void CreateLoaderAndStart(network::mojom::URLLoaderRequest loader,
-                            int32_t routing_id,
-                            int32_t request_id,
-                            uint32_t options,
-                            const network::ResourceRequest& request,
-                            network::mojom::URLLoaderClientPtr client,
-                            const net::MutableNetworkTrafficAnnotationTag&
-                                traffic_annotation) override;
-  void Clone(network::mojom::URLLoaderFactoryRequest request) override;
+  void CreateLoaderAndStart(
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      int32_t routing_id,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& request,
+      network::mojom::URLLoaderClientPtr client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
+      override;
+  void Clone(mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver)
+      override;
 
   static void StartLoading(
-      network::mojom::URLLoaderRequest loader,
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
       int32_t routing_id,
       int32_t request_id,
       uint32_t options,
@@ -73,23 +76,25 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
                                  const gin_helper::Dictionary& dict,
                                  v8::Isolate* isolate,
                                  v8::Local<v8::Value> response);
-  static void StartLoadingFile(network::mojom::URLLoaderRequest loader,
-                               network::ResourceRequest request,
-                               network::mojom::URLLoaderClientPtr client,
-                               network::ResourceResponseHead head,
-                               const gin_helper::Dictionary& dict,
-                               v8::Isolate* isolate,
-                               v8::Local<v8::Value> response);
+  static void StartLoadingFile(
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      network::ResourceRequest request,
+      network::mojom::URLLoaderClientPtr client,
+      network::ResourceResponseHead head,
+      const gin_helper::Dictionary& dict,
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> response);
   static void StartLoadingHttp(
-      network::mojom::URLLoaderRequest loader,
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
       const network::ResourceRequest& original_request,
       network::mojom::URLLoaderClientPtr client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       const gin_helper::Dictionary& dict);
-  static void StartLoadingStream(network::mojom::URLLoaderRequest loader,
-                                 network::mojom::URLLoaderClientPtr client,
-                                 network::ResourceResponseHead head,
-                                 const gin_helper::Dictionary& dict);
+  static void StartLoadingStream(
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      network::mojom::URLLoaderClientPtr client,
+      network::ResourceResponseHead head,
+      const gin_helper::Dictionary& dict);
 
   // Helper to send string as response.
   static void SendContents(network::mojom::URLLoaderClientPtr client,
@@ -99,7 +104,7 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   // TODO(zcbenz): This comes from extensions/browser/extension_protocols.cc
   // but I don't know what it actually does, find out the meanings of |Clone|
   // and |bindings_| and add comments for them.
-  mojo::BindingSet<network::mojom::URLLoaderFactory> bindings_;
+  mojo::ReceiverSet<network::mojom::URLLoaderFactory> receivers_;
 
   ProtocolType type_;
   ProtocolHandler handler_;

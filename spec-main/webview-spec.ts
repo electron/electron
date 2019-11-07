@@ -4,7 +4,7 @@ import { closeAllWindows } from './window-helpers'
 import { emittedOnce } from './events-helpers'
 import { expect } from 'chai'
 
-async function loadWebView(w: WebContents, attributes: Record<string, string>): Promise<void> {
+async function loadWebView (w: WebContents, attributes: Record<string, string>): Promise<void> {
   await w.executeJavaScript(`
     new Promise((resolve, reject) => {
       const webview = new WebView()
@@ -395,7 +395,7 @@ describe('<webview> tag', function () {
       await w.loadURL('about:blank')
     })
     afterEach(closeAllWindows)
-    
+
     it('can enable context isolation', async () => {
       loadWebView(w.webContents, {
         allowpopups: 'yes',
@@ -439,7 +439,7 @@ describe('<webview> tag', function () {
 
     const partition = 'permissionTest'
 
-    function setUpRequestHandler(webContentsId: number, requestedPermission: string) {
+    function setUpRequestHandler (webContentsId: number, requestedPermission: string) {
       return new Promise((resolve, reject) => {
         session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, callback) {
           if (webContents.id === webContentsId) {
@@ -523,7 +523,7 @@ describe('<webview> tag', function () {
     it('emits when accessing external protocol', async () => {
       loadWebView(w.webContents, {
         src: `magnet:test`,
-        partition,
+        partition
       })
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created')
       await setUpRequestHandler(webViewContents.id, 'openExternal')
@@ -544,5 +544,4 @@ describe('<webview> tag', function () {
       expect(error).to.equal('denied')
     })
   })
-
 })

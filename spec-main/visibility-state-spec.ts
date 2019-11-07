@@ -1,15 +1,15 @@
 import { expect } from 'chai'
-import * as cp from 'child_process';
+import * as cp from 'child_process'
 import { BrowserWindow, BrowserWindowConstructorOptions, ipcMain } from 'electron'
 import * as path from 'path'
 
 import { emittedOnce } from './events-helpers'
-import { closeWindow } from './window-helpers';
-import { ifdescribe } from './spec-helpers';
+import { closeWindow } from './window-helpers'
+import { ifdescribe, delay } from './spec-helpers'
 
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass
-ifdescribe(process.platform !== 'linux' || !isCI)('document.visibilityState', () => {
+ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
   let w: BrowserWindow
 
   afterEach(() => {
@@ -45,7 +45,7 @@ ifdescribe(process.platform !== 'linux' || !isCI)('document.visibilityState', ()
   })
 
   itWithOptions('should be visible when the window is initially shown', {
-    show: true,
+    show: true
   }, async () => {
     await load()
     const state = await getVisibilityState()
@@ -53,7 +53,7 @@ ifdescribe(process.platform !== 'linux' || !isCI)('document.visibilityState', ()
   })
 
   itWithOptions('should be hidden when the window is initially hidden', {
-    show: false,
+    show: false
   }, async () => {
     await load()
     const state = await getVisibilityState()
@@ -61,7 +61,7 @@ ifdescribe(process.platform !== 'linux' || !isCI)('document.visibilityState', ()
   })
 
   itWithOptions('should be visible when the window is initially hidden but shown before the page is loaded', {
-    show: false,
+    show: false
   }, async () => {
     w.show()
     await load()
@@ -70,12 +70,12 @@ ifdescribe(process.platform !== 'linux' || !isCI)('document.visibilityState', ()
   })
 
   itWithOptions('should be hidden when the window is initially shown but hidden before the page is loaded', {
-    show: true,
+    show: true
   }, async () => {
     // TODO(MarshallOfSound): Figure out if we can work around this 1 tick issue for users
     if (process.platform === 'darwin') {
       // Wait for a tick, the window being "shown" takes 1 tick on macOS
-      await new Promise(r => setTimeout(r, 0))
+      await delay(0)
     }
     w.hide()
     await load()
@@ -110,7 +110,7 @@ ifdescribe(process.platform !== 'linux' || !isCI)('document.visibilityState', ()
   describe('on platforms that support occlusion detection', () => {
     let child: cp.ChildProcess
 
-    before(function() {
+    before(function () {
       if (process.platform !== 'darwin') this.skip()
     })
 
@@ -133,13 +133,13 @@ ifdescribe(process.platform !== 'linux' || !isCI)('document.visibilityState', ()
       x: 0,
       y: 0,
       width: 200,
-      height: 200,
+      height: 200
     }, async () => {
       await makeOtherWindow({
         x: 200,
         y: 0,
         width: 200,
-        height: 200,
+        height: 200
       })
       await load()
       const state = await getVisibilityState()
@@ -150,13 +150,13 @@ ifdescribe(process.platform !== 'linux' || !isCI)('document.visibilityState', ()
       x: 50,
       y: 50,
       width: 150,
-      height: 150,
+      height: 150
     }, async () => {
       await makeOtherWindow({
         x: 100,
         y: 0,
         width: 200,
-        height: 200,
+        height: 200
       })
       await load()
       const state = await getVisibilityState()
@@ -167,7 +167,7 @@ ifdescribe(process.platform !== 'linux' || !isCI)('document.visibilityState', ()
       x: 50,
       y: 50,
       width: 50,
-      height: 50,
+      height: 50
     }, async function () {
       this.timeout(240000)
       await load()
@@ -176,7 +176,7 @@ ifdescribe(process.platform !== 'linux' || !isCI)('document.visibilityState', ()
           x: 0,
           y: 0,
           width: 300,
-          height: 300,
+          height: 300
         })
       })
       const state = await getVisibilityState()
