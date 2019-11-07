@@ -132,6 +132,22 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   return result == NSOrderedSame;
 }
 
+base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
+  NSURL* ns_url = [NSURL
+      URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
+  base::ScopedCFTypeRef<CFErrorRef> out_err;
+  base::ScopedCFTypeRef<CFURLRef> openingApp(LSCopyDefaultApplicationURLForURL(
+      (CFURLRef)ns_url, kLSRolesAll, out_err.InitializeInto()));
+  if (out_err) {
+    // likely kLSApplicationNotFoundErr
+    return base::string16();
+  }
+  NSString* appPath = [base::mac::CFToNSCast(openingApp.get()) path];
+  NSString* appDisplayName =
+      [[NSFileManager defaultManager] displayNameAtPath:appPath];
+  return base::SysNSStringToUTF16(appDisplayName);
+}
+
 void Browser::SetAppUserModelID(const base::string16& name) {}
 
 bool Browser::SetBadgeCount(int count) {
