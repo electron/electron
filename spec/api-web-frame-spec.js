@@ -1,9 +1,5 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+const { expect } = require('chai')
 const { webFrame } = require('electron')
-
-const { expect } = chai
-chai.use(dirtyChai)
 
 describe('webFrame module', function () {
   it('supports setting the visual and layout zoom level limits', function () {

@@ -1221,7 +1221,8 @@ steps-tests: &steps-tests
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
-          (cd electron && node script/yarn test -- --enable-logging)
+          (cd electron && node script/yarn test --runners=main --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
+          (cd electron && node script/yarn test --runners=remote --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
     - run:
         name: Check test results existence
         command: |
@@ -1766,6 +1767,7 @@ jobs:
       <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
+    parallelism: 3
     <<: *steps-tests
 
   linux-x64-testing-nan:
@@ -1815,6 +1817,7 @@ jobs:
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-stack-dumping
+    parallelism: 3
     <<: *steps-tests
 
   linux-ia32-testing-nan:
@@ -1867,6 +1870,7 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
+    parallelism: 2
     <<: *steps-tests
 
   osx-release-tests:
@@ -1896,6 +1900,7 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
+    parallelism: 2
     <<: *steps-tests
 
   mas-release-tests:

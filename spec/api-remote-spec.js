@@ -1,18 +1,14 @@
 'use strict'
 
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+const { expect } = require('chai')
 const path = require('path')
 const { resolveGetters } = require('./expect-helpers')
 const { ifdescribe } = require('./spec-helpers')
 
 const { remote, ipcRenderer } = require('electron')
 const { ipcMain, BrowserWindow } = remote
-const { expect } = chai
 
 const features = process.electronBinding('features')
-
-chai.use(dirtyChai)
 
 const comparePaths = (path1, path2) => {
   if (process.platform === 'win32') {

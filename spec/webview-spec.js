@@ -1,13 +1,9 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+const { expect } = require('chai')
 const path = require('path')
 const http = require('http')
 const url = require('url')
 const { ipcRenderer } = require('electron')
 const { emittedOnce, waitForEvent } = require('./events-helpers')
-
-const { expect } = chai
-chai.use(dirtyChai)
 
 const features = process.electronBinding('features')
 const nativeModulesEnabled = process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS

@@ -43,6 +43,7 @@ app.whenReady().then(() => {
 
   const argv = require('yargs')
     .boolean('ci')
+    .array('files')
     .string('g').alias('g', 'grep')
     .boolean('i').alias('i', 'invert')
     .argv
@@ -86,15 +87,27 @@ app.whenReady().then(() => {
     }
   })
 
+  const baseElectronDir = path.resolve(__dirname, '..')
+
   walker.on('end', () => {
     testFiles.sort()
-    sortToEnd(testFiles, f => f.includes('crash-reporter')).forEach((file) => mocha.addFile(file))
+    sortToEnd(testFiles, f => f.includes('crash-reporter')).forEach((file) => {
+      if (!argv.files || argv.files.includes(path.relative(baseElectronDir, file))) {
+        mocha.addFile(file)
+      }
+    })
     const cb = () => {
       // Ensure the callback is called after runner is defined
       process.nextTick(() => {
         process.exit(runner.failures)
       })
     }
+
+    // Set up chai in the correct order
+    const chai = require('chai')
+    chai.use(require('chai-as-promised'))
+    chai.use(require('dirty-chai'))
+
     const runner = mocha.run(cb)
   })
 })

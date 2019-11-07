@@ -11,6 +11,7 @@ const v8 = require('v8')
 
 const argv = require('yargs')
   .boolean('ci')
+  .array('files')
   .string('g').alias('g', 'grep')
   .boolean('i').alias('i', 'invert')
   .argv
@@ -133,7 +134,8 @@ app.on('ready', function () {
   window.loadFile('static/index.html', {
     query: {
       grep: argv.grep,
-      invert: argv.invert ? 'true' : ''
+      invert: argv.invert ? 'true' : '',
+      files: argv.files ? argv.files.join(',') : undefined
     }
   })
   window.on('unresponsive', function () {

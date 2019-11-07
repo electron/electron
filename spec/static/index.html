@@ -55,6 +55,8 @@
   if (query.grep) mocha.grep(query.grep)
   if (query.invert) mocha.invert()
 
+  const files = query.files ? query.files.split(',') : undefined
+
   // Read all test files.
   const walker = require('walkdir').walk(path.dirname(__dirname), {
     no_recurse: true
@@ -73,9 +75,20 @@
     }
   })
 
+  const baseElectronDir = path.resolve(__dirname, '..', '..')
+
   walker.on('end', () => {
     testFiles.sort()
-    testFiles.forEach((file) => mocha.addFile(file))
+    testFiles.forEach((file) => {
+      if (!files || files.includes(path.relative(baseElectronDir, file))) {
+        mocha.addFile(file)
+      }
+    })
+
+    // Set up chai in the correct order
+    const chai = require('chai')
+    chai.use(require('chai-as-promised'))
+    chai.use(require('dirty-chai'))
 
     const runner = mocha.run(() => {
       // Ensure the callback is called after runner is defined

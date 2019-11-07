@@ -1,5 +1,4 @@
-import * as chai from 'chai'
-import * as chaiAsPromised from 'chai-as-promised'
+import { expect } from 'chai'
 import * as cp from 'child_process'
 import * as https from 'https'
 import * as net from 'net'
@@ -12,10 +11,6 @@ import { ifdescribe } from './spec-helpers'
 import split = require('split')
 
 const features = process.electronBinding('features')
-
-const { expect } = chai
-
-chai.use(chaiAsPromised)
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures')
 

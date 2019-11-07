@@ -1,6 +1,5 @@
-import * as chai from 'chai'
+import { expect } from 'chai'
 import { AddressInfo } from 'net'
-import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as http from 'http'
@@ -9,10 +8,6 @@ import { BrowserWindow, ipcMain, webContents, session, WebContents, app, clipboa
 import { emittedOnce } from './events-helpers'
 import { closeAllWindows } from './window-helpers'
 import { ifdescribe, ifit } from './spec-helpers'
-
-const { expect } = chai
-
-chai.use(chaiAsPromised)
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 const features = process.electronBinding('features')
