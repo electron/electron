@@ -20,9 +20,9 @@
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/cpp/resource_request.h"
+#include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
-#include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/net/atom_url_loader_factory.h"
 
 namespace electron {
@@ -161,7 +161,7 @@ class ProxyingURLLoaderFactory
 
     base::Optional<extensions::WebRequestInfo> info_;
 
-    network::mojom::URLResponseHeadPtr current_response_;
+    network::ResourceResponseHead current_response_;
     scoped_refptr<net::HttpResponseHeaders> override_headers_;
     GURL redirect_url_;
 

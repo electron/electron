@@ -47,7 +47,6 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       traffic_annotation_(traffic_annotation),
       proxied_loader_binding_(this, std::move(loader_request)),
       target_client_(std::move(client)),
-      current_response_(network::mojom::URLResponseHead::New()),
       proxied_client_binding_(this),
       // TODO(zcbenz): We should always use "extraHeaders" mode to be compatible
       // with old APIs.
@@ -194,12 +193,12 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
   if (current_request_uses_header_client_) {
     // Use the headers we got from OnHeadersReceived as that'll contain
     // Set-Cookie if it existed.
-    auto saved_headers = current_response_->headers;
-    current_response_ = std::move(head);
-    current_response_->headers = saved_headers;
+    auto saved_headers = current_response_.headers;
+    current_response_ = head;
+    current_response_.headers = saved_headers;
     ContinueToResponseStarted(net::OK);
   } else {
-    current_response_ = std::move(head);
+    current_response_ = head;
     HandleResponseOrRedirectHeaders(
         base::BindOnce(&InProgressRequest::ContinueToResponseStarted,
                        weak_factory_.GetWeakPtr()));
@@ -214,16 +213,16 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveRedirect(
   if (current_request_uses_header_client_) {
     // Use the headers we got from OnHeadersReceived as that'll contain
     // Set-Cookie if it existed.
-    auto saved_headers = current_response_->headers;
-    current_response_ = std::move(head);
+    auto saved_headers = current_response_.headers;
+    current_response_ = head;
     // If this redirect is from an HSTS upgrade, OnHeadersReceived will not be
     // called before OnReceiveRedirect, so make sure the saved headers exist
     // before setting them.
     if (saved_headers)
-      current_response_->headers = saved_headers;
+      current_response_.headers = saved_headers;
     ContinueToBeforeRedirect(redirect_info, net::OK);
   } else {
-    current_response_ = std::move(head);
+    current_response_ = head;
     HandleResponseOrRedirectHeaders(
         base::BindOnce(&InProgressRequest::ContinueToBeforeRedirect,
                        weak_factory_.GetWeakPtr(), redirect_info));
@@ -296,8 +295,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
   }
 
   on_headers_received_callback_ = std::move(callback);
-  current_response_ = network::mojom::URLResponseHead::New();
-  current_response_->headers =
+  current_response_.headers =
       base::MakeRefCounted<net::HttpResponseHeaders>(headers);
   HandleResponseOrRedirectHeaders(
       base::BindOnce(&InProgressRequest::ContinueToHandleOverrideHeaders,
@@ -451,7 +449,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::
       // Make sure to update current_response_,  since when OnReceiveResponse
       // is called we will not use its headers as it might be missing the
       // Set-Cookie line (as that gets stripped over IPC).
-      current_response_->headers = override_headers_;
+      current_response_.headers = override_headers_;
     }
   }
   std::move(on_headers_received_callback_).Run(net::OK, headers, redirect_url_);
@@ -470,7 +468,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToResponseStarted(
 
   DCHECK(!current_request_uses_header_client_ || !override_headers_);
   if (override_headers_)
-    current_response_->headers = override_headers_;
+    current_response_.headers = override_headers_;
 
   std::string redirect_location;
   if (override_headers_ && override_headers_->IsRedirect(&redirect_location)) {
@@ -500,12 +498,12 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToResponseStarted(
     return;
   }
 
-  info_->AddResponseInfoFromResourceResponse(*current_response_);
+  info_->AddResponseInfoFromResourceResponse(current_response_);
 
   proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
   factory_->web_request_api()->OnResponseStarted(&info_.value(), request_);
-  target_client_->OnReceiveResponse(std::move(current_response_));
+  target_client_->OnReceiveResponse(current_response_);
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
@@ -516,15 +514,14 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
     return;
   }
 
-  info_->AddResponseInfoFromResourceResponse(*current_response_);
+  info_->AddResponseInfoFromResourceResponse(current_response_);
 
   if (proxied_client_binding_.is_bound())
     proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
   factory_->web_request_api()->OnBeforeRedirect(&info_.value(), request_,
                                                 redirect_info.new_url);
-  target_client_->OnReceiveRedirect(redirect_info,
-                                    std::move(current_response_));
+  target_client_->OnReceiveRedirect(redirect_info, current_response_);
   request_.url = redirect_info.new_url;
   request_.method = redirect_info.new_method;
   request_.site_for_cookies = redirect_info.new_site_for_cookies;
@@ -562,7 +559,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::
   redirect_info.new_url = redirect_url_;
   redirect_info.new_site_for_cookies = redirect_url_;
 
-  auto head = network::mojom::URLResponseHead::New();
+  network::ResourceResponseHead head;
   std::string headers = base::StringPrintf(
       "HTTP/1.1 %i Internal Redirect\n"
       "Location: %s\n"
@@ -600,11 +597,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::
           http_origin.c_str());
     }
   }
-  head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
+  head.headers = base::MakeRefCounted<net::HttpResponseHeaders>(
       net::HttpUtil::AssembleRawHeaders(headers));
-  head->encoded_data_length = 0;
+  head.encoded_data_length = 0;
 
-  current_response_ = std::move(head);
+  current_response_ = head;
   ContinueToBeforeRedirect(redirect_info, net::OK);
 }
 
@@ -613,14 +610,14 @@ void ProxyingURLLoaderFactory::InProgressRequest::
   override_headers_ = nullptr;
   redirect_url_ = GURL();
 
-  info_->AddResponseInfoFromResourceResponse(*current_response_);
+  info_->AddResponseInfoFromResourceResponse(current_response_);
 
   net::CompletionRepeatingCallback copyable_callback =
       base::AdaptCallbackForRepeating(std::move(continuation));
   DCHECK(info_.has_value());
   int result = factory_->web_request_api()->OnHeadersReceived(
       &info_.value(), request_, copyable_callback,
-      current_response_->headers.get(), &override_headers_, &redirect_url_);
+      current_response_.headers.get(), &override_headers_, &redirect_url_);
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     OnRequestError(network::URLLoaderCompletionStatus(result));
     return;
