@@ -83,8 +83,12 @@ executors:
       ninja-processes:
         type: integer
         default: 18
+      mase:
+        type: boolean
+        default: false
     environment:
       NUMBER_OF_NINJA_PROCESSES: << parameters.ninja-processes >>
+      
 
 commands:
   send-failure-to-slack:
@@ -144,11 +148,15 @@ jobs:
       gn-config:
         type: enum
         enum: ['testing', 'release', 'native_tests']
+      mas:
+        type: boolean
+        default: false
       executor:
         type: executor
     executor: << parameters.executor >>
     steps:
-      - run: echo Hello
+      - run: echo Hello << parameters.mas >>
+      - run: exit 1
     environment:
       TARGET_ARCH: << parameters.target-arch >>
       NPM_CONFIG_ARCH: << parameters.target-arch >>
@@ -157,6 +165,9 @@ jobs:
     parameters:
       executor:
         type: executor
+      parallelism:
+        type: integer
+        default: 2
     executor: << parameters.executor >>
     steps:
       - attach_workspace:
@@ -211,24 +222,50 @@ workflows:
   build-linux:
     jobs:
       - build-electron:
-          name: linux-ia32-testing
+          name: ia32-testing
           target-arch: ia32
           persist-for-tests: true
           gn-config: testing
-          executor:
-            name: linux-2xlarge
+          executor: linux-2xlarge
       - build-electron:
-          name: linux-x64-testing
+          name: x64-testing
           persist-for-tests: true
           gn-config: testing
           executor: linux-2xlarge
       - test-electron:
-          name: linux-ia32-tests
+          name: ia32-tests
           requires:
-            - linux-ia32-testing
+            - ia32-testing
           executor: linux-medium
+          parallelism: 3
       - test-electron:
-          name: linux-x64-tests
+          name: x64-tests
           requires:
-            - linux-x64-testing
+            - x64-testing
           executor: linux-medium
+          parallelism: 3
+  build-mac:
+    jobs:
+      - build-electron:
+          name: mac-testing
+          target-arch: x64
+          persist-for-tests: true
+          gn-config: testing
+          executor: mac-large
+      - build-electron:
+          name: mas-testing
+          target-arch: x64
+          persist-for-tests: true
+          gn-config: testing
+          mas: true
+          executor: mac-large
+      - test-electron:
+          name: mac-tests
+          requires:
+            - mac-testing
+          executor: mac-medium
+      - test-electron:
+          name: mas-tests
+          requires:
+            - mas-testing
+          executor: mac-medium
