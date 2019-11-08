@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@github.com>
+Date: Fri, 8 Nov 2019 15:15:59 -0500
+Subject: fix: add missing algorithm include
+
+Fixes errors of missing std::min and std::max
+
+diff --git a/include/perfetto/ext/traced/sys_stats_counters.h b/include/perfetto/ext/traced/sys_stats_counters.h
+index f4ba962ec091cc59f7a056508e2969a788992337..8a052fadc6c04ef794ea23926286859f841cdca3 100644
+--- a/include/perfetto/ext/traced/sys_stats_counters.h
++++ b/include/perfetto/ext/traced/sys_stats_counters.h
+@@ -20,6 +20,7 @@
+ #include "perfetto/ext/base/utils.h"
+ #include "protos/perfetto/common/sys_stats_counters.pbzero.h"
+ 
++#include <algorithm>
+ #include <vector>
+ 
+ namespace perfetto {
+diff --git a/include/perfetto/trace_processor/basic_types.h b/include/perfetto/trace_processor/basic_types.h
+index efac31c22c511313883ab5ba8593ad432f2b89c1..c8757bc38ccbce25c97922f5cbdbd3778e31a5d1 100644
+--- a/include/perfetto/trace_processor/basic_types.h
++++ b/include/perfetto/trace_processor/basic_types.h
+@@ -18,6 +18,7 @@
+ #define INCLUDE_PERFETTO_TRACE_PROCESSOR_BASIC_TYPES_H_
+ 
+ #include <assert.h>
++#include <algorithm>
+ #include <math.h>
+ #include <stdarg.h>
+ #include <stdint.h>
