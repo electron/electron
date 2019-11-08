@@ -559,7 +559,9 @@ void InspectableWebContentsImpl::ShowItemInFolder(
     return;
 
   base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-  platform_util::OpenItem(path);
+
+  // Pass empty callback here; we can ignore errors
+  platform_util::OpenPath(path, platform_util::OpenCallback());
 }
 
 void InspectableWebContentsImpl::SaveToFile(const std::string& url,
