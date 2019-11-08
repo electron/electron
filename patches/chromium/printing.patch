@@ -382,19 +382,10 @@ index 9fbea6d0a2dbe55b1d600fbc217dee5aa8ae8cd5..de9bd267e408c02fd4da7d903523c0e6
    // content::BrowserMessageFilter:
    bool OnMessageReceived(const IPC::Message& message) override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index d5ff612320fb3f324b58c91b0c05e0eac689beef..254810ca174c456b6bf6966954e4e188c2460f15 100644
+index ea33e38c6604a4ca989e0cc94da3e770344692b4..d1e16f2c8e78e7024f6cb86804596334feb37824 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
-@@ -4,6 +4,8 @@
- 
- module printing.mojom;
- 
-+import "mojo/public/mojom/base/values.mojom";
-+
- // Interface implemented by a class that desires to render print documents for
- // Chrome print preview.
- interface PrintRenderer {
-@@ -16,7 +18,7 @@ interface PrintRenderer {
+@@ -24,7 +24,7 @@ interface PrintRenderer {
  interface PrintRenderFrame {
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
@@ -404,7 +395,7 @@ index d5ff612320fb3f324b58c91b0c05e0eac689beef..254810ca174c456b6bf6966954e4e188
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 4d158128d6def9ae9fe73e9ba8e379c353bce301..ee6be6aa5078568062316c27a5eb8c98f65b4dae 100644
+index 4d158128d6def9ae9fe73e9ba8e379c353bce301..ee9db58676a04760068614906f156ad2a67fc047 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -39,6 +39,7 @@
@@ -553,7 +544,7 @@ index 4d158128d6def9ae9fe73e9ba8e379c353bce301..ee6be6aa5078568062316c27a5eb8c98
      Send(new PrintHostMsg_ShowInvalidPrinterSettingsError(routing_id()));
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index f80f71eb33f34cfb877118cd489b5a7351456dd5..e787c8d20c9f8dbf039992ddaba94c672b77aafb 100644
+index f80f71eb33f34cfb877118cd489b5a7351456dd5..ced01dabb64a8074ee2a1791e0ea76dc3c2afaf5 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -221,7 +221,7 @@ class PrintRenderFrameHelper
