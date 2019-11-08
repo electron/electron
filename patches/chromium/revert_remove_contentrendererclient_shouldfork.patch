@@ -6,10 +6,10 @@ Subject: Revert "Remove ContentRendererClient::ShouldFork."
 This reverts commit 6b068eb8ca4a3c7350bdafa22fc0cf0636ef8b74.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index feea878036d61c2ed128b8e0397cfd6979eed04a..e53f7ea3d5d0fb0e02ca526042d7937a3b627936 100644
+index 9d9e256f652f6d9e01f91ab3fcbab1d7b207cd92..91b4082c77da637405b7ccb2e1a1430d5fa00794 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1225,6 +1225,25 @@ bool ChromeContentRendererClient::AllowPopup() {
+@@ -1227,6 +1227,25 @@ bool ChromeContentRendererClient::AllowPopup() {
  #endif
  }
  
@@ -89,10 +89,10 @@ index a05cef66facd477057fedb388e4000475bc76830..906920393c34043d19183064a2a4506c
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |attach_same_site_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 00def0359815fa8f778ed059858d6e54e1d12fc0..a95c35555bfc7a9976d4ce8c691bf4cf959ef206 100644
+index 4d83bfaeb9227531b6c8ea304d2a16a6b0d3bf4f..51b899f4daddb6428626786e2af71d7e1ccd4f5f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6137,6 +6137,15 @@ void RenderFrameImpl::BeginNavigation(
+@@ -6045,6 +6045,15 @@ void RenderFrameImpl::BeginNavigation(
      int cumulative_bindings = RenderProcess::current()->GetEnabledBindings();
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (cumulative_bindings & kWebUIBindingsPolicyMask);
@@ -109,7 +109,7 @@ index 00def0359815fa8f778ed059858d6e54e1d12fc0..a95c35555bfc7a9976d4ce8c691bf4cf
        OpenURL(std::move(info));
        return;  // Suppress the load here.
 diff --git a/content/renderer/render_view_browsertest.cc b/content/renderer/render_view_browsertest.cc
-index b8c9f30a3492696bf3f2eb1996e54f09b8ef32a3..913eadc2b3faf21ca579ca094a0e90ecade246c7 100644
+index 2e4920b0535a22e99d0593d5f41f4953453a29cb..8ebf2cb860f06adefae515981e66697aab708c78 100644
 --- a/content/renderer/render_view_browsertest.cc
 +++ b/content/renderer/render_view_browsertest.cc
 @@ -989,6 +989,73 @@ TEST_F(RenderViewImplTest, BeginNavigationForWebUI) {

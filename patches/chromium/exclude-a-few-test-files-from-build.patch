@@ -7,7 +7,7 @@ Compilation of those files fails with the Chromium 68.
 Remove the patch during the Chromium 69 upgrade.
 
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 798f74742c56ae1ebb7ee53138f1a64b11a2262e..2bde8dbe0b2b698c44759c8fe838d72d925f331f 100644
+index f25b577d5b03608a5a7098dc0b3ccc9ac6b22580..59a22b9f121a47facf87571102fcbae2ec1fed2c 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1814,7 +1814,7 @@ jumbo_source_set("blink_platform_unittests_sources") {
