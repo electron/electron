@@ -131,6 +131,102 @@ commands:
           paths:
             - /usr/local/Homebrew
           key: v1-brew-cache-{{ arch }}
+  checkout-electron:
+    parameters:
+      save-caches:
+        type: boolean
+        default: true
+    steps:
+      - checkout:
+          path: src/electron
+      # - *step-check-for-doc-only-change
+      # - *step-persist-doc-only-change
+      # - *step-maybe-early-exit-doc-only-change
+      - run:
+          name: Set Up Depot Tools
+          command: |
+            git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+            echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
+      - install-gnutar-on-mac
+      - run:
+          name: Prepare For Sync
+          command: |
+            # Get some more space on macOS
+            if [ "`uname`" == "Darwin" ]; then
+              sudo rm -rf /Library/Developer/CoreSimulator
+              sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/AppleTVOS.platform
+              sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform
+              sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform
+              sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform
+              sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/AppleTVSimulator.platform
+              sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform
+            fi
+            node src/electron/script/generate-deps-hash.js
+            touch src/electron/.circle-sync-done
+
+      - restore_cache:
+          paths:
+            - ./src
+          keys:
+            - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+          name: Restoring src cache if available
+      - restore_cache:
+          name: Restoring git cache if required
+          paths:
+            - ~/.gclient-cache
+          keys:
+            - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+            - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}
+      - run:
+          name: GClient Sync If Required
+          command: |
+            export GIT_CACHE_PATH="$HOME/.gclient-cache"
+            # If we did not restore a complete sync then we need to sync for realz
+            if [ ! -s "src/electron/.circle-sync-done" ]; then
+              gclient config \
+                --name "src/electron" \
+                --unmanaged \
+                $GCLIENT_EXTRA_ARGS \
+                "$CIRCLE_REPOSITORY_URL"
+
+              gclient sync --with_branch_heads --with_tags
+            fi
+      - when:
+          condition: << parameters.save-caches >>
+          steps:
+            - save_cache:
+                paths:
+                  - ~/.gclient-cache
+                key: v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+                name: Persisting git cache
+      # These next few steps reset Electron to the correct commit regardless of which cache was restored
+      - run:
+          name: Wipe Electron
+          command: rm -rf src/electron
+      - checkout:
+          path: src/electron
+      - run:
+          name: Set Up Electron Checkout
+          command: |
+            # Run electron only hooks
+            gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+            # Prep the deps hash and sync done flag
+            (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
+            echo DONE > src/electron/.circle-sync-done
+            # Removed unused things
+            rm -rf src/android_webview
+            rm -rf src/ios
+            rm -rf src/third_party/blink/web_tests
+            rm -rf src/third_party/blink/perf_tests
+            rm -rf src/third_party/WebKit/LayoutTests
+      - when:
+          condition: << parameters.save-caches >>
+          steps:
+            - save_cache:
+                paths:
+                  - ./src
+                key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+                name: Persisting src cache
 
 jobs:
   build-electron:
@@ -151,12 +247,18 @@ jobs:
       mas:
         type: boolean
         default: false
+      checkout:
+        type: boolean
+        default: true
       executor:
         type: executor
     executor: << parameters.executor >>
     steps:
-      - run: echo Hello << parameters.mas >>
-      - run: exit 1
+      - when:
+          condition: << parameters.checkout >>
+          steps:
+            - checkout-electron:
+                save-caches: false
     environment:
       TARGET_ARCH: << parameters.target-arch >>
       NPM_CONFIG_ARCH: << parameters.target-arch >>
