@@ -142,7 +142,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       std::vector<std::string>* additional_schemes) override;
   void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
   std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
-      content::ResourceContext* resource_context) override;
+      content::BrowserContext* browser_context) override;
   std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
       override;
   mojo::Remote<network::mojom::NetworkContext> CreateNetworkContext(

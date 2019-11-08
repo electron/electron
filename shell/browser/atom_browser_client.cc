@@ -725,7 +725,7 @@ void AtomBrowserClient::SiteInstanceDeleting(
 }
 
 std::unique_ptr<net::ClientCertStore> AtomBrowserClient::CreateClientCertStore(
-    content::ResourceContext* resource_context) {
+    content::BrowserContext* browser_context) {
 #if defined(USE_NSS_CERTS)
   return std::make_unique<net::ClientCertStoreNSS>(
       net::ClientCertStoreNSS::PasswordDelegateFactory());
