@@ -257,7 +257,6 @@ webview.capturePage().then(image => { console.log(image) })
 {
   const opened: boolean = webview.isDevToolsOpened()
   const focused: boolean = webview.isDevToolsFocused()
-  const focused2: boolean = webview.getWebContents().isFocused()
 }
 
 // In guest page.
