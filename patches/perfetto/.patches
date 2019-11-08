@@ -1,1 +1,2 @@
 build_win_fix_compilation_error_with_msstl.patch
+fix_add_missing_algorithm_include.patch
