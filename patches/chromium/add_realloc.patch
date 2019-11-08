@@ -54,10 +54,10 @@ index e5deb70f68bb79f020f320f751d85e8c95d4fccb..a3800e63e15da122bfb05a06443c5872
      ArrayBufferContents::FreeMemory(data);
    }
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-index ac525b62a1282839bc906b1ee59837211a83476c..5e6c54b87e88ea2741bc7986bf76ddaa48723e56 100644
+index a868934f025d3957419d71eeb4553ce23fcb4707..fd103b2bd1ffc30e95d34101bd1a1e6225f206d8 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-@@ -126,6 +126,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
+@@ -147,6 +147,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
    return AllocateMemoryWithFlags(size, policy, base::PartitionAllocReturnNull);
  }
  
@@ -70,14 +70,14 @@ index ac525b62a1282839bc906b1ee59837211a83476c..5e6c54b87e88ea2741bc7986bf76ddaa
    WTF::Partitions::ArrayBufferPartition()->Free(data);
  }
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
-index 1adf4924657624059dcbe4e88cef684478787752..3b14d852b0654309cb53f933e396dc1e7b479790 100644
+index a597d88799bed96da654d0d6c387bf1cf3dd102b..1f8d9f232e253964dfb12cdda2052226ff6c606d 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
-@@ -149,6 +149,7 @@ class CORE_EXPORT ArrayBufferContents {
+@@ -101,6 +101,7 @@ class CORE_EXPORT ArrayBufferContents {
    void CopyTo(ArrayBufferContents& other);
  
    static void* AllocateMemoryOrNull(size_t, InitializationPolicy);
 +  static void* Realloc(void* data, size_t);
    static void FreeMemory(void*);
-   static DataHandle CreateDataHandle(size_t, InitializationPolicy);
  
+  private:
