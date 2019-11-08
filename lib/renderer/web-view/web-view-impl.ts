@@ -238,6 +238,12 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
     return remote.getGuestWebContents(internal.guestInstanceId!)
   }
 
+  WebViewElement.prototype.getWebContents = electron.deprecate.moveAPI(
+    WebViewElement.prototype.getWebContents,
+    'webview.getWebContents()',
+    'remote.webContents.fromId(webview.getWebContentsId())'
+  ) as any
+
   // Focusing the webview should move page focus to the underlying iframe.
   WebViewElement.prototype.focus = function () {
     this.contentWindow.focus()

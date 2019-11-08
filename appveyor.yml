@@ -1,5 +1,5 @@
 # The config expects the following environment variables to be set:
-#  - "GN_CONFIG" Build type. One of {'debug', 'testing', 'release'}.
+#  - "GN_CONFIG" Build type. One of {'testing', 'release'}.
 #  - "GN_EXTRA_ARGS" Additional gn arguments for a build config,
 #      e.g. 'target_cpu="x86"' to build for a 32bit platform.
 #      https://gn.googlesource.com/gn/+/master/docs/reference.md#target_cpu
