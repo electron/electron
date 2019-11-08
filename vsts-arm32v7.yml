@@ -1,7 +1,7 @@
 resources:
   containers:
   - container: arm32v7-test-container
-    image: electronjs/build:arm32v7-latest
+    image: electronjs/build:arm32v7-4549cebcf9a1e4dff317ce3cf910ff9b64867aac
     options: --shm-size 128m
 
 jobs:
