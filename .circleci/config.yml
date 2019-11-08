@@ -688,6 +688,14 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
       - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
 
+step-restore-out-cache: &step-restore-out-cache
+  restore_cache:
+    paths:
+      - ./src/out/Default
+    keys:
+      - v1-out-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}-{{ .Environment.TARGET_ARCH }}-{{ .Environment.GN_CONFIG }}
+    name: Restoring out cache
+
 step-set-git-cache-path: &step-set-git-cache-path
   run:
     name: Set GIT_CACHE_PATH to make gclient to use the cache
@@ -704,6 +712,13 @@ step-save-git-cache: &step-save-git-cache
       - ~/.gclient-cache
     key: v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
+
+step-save-out-cache: &step-save-out-cache
+  save_cache:
+    paths:
+      - ./src/out/Default
+    key: v1-out-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}-{{ .Environment.TARGET_ARCH }}-{{ .Environment.GN_CONFIG }}
+    name: Persisting out cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
   run:
@@ -1003,7 +1018,9 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
     - *step-gn-gen-default
 
     # Electron app
+    - *step-restore-out-cache
     - *step-electron-build
+    - *step-save-out-cache
     - *step-ninja-summary
     - *step-ninja-report
     - *step-maybe-electron-dist-strip
