@@ -42,4 +42,4 @@ const effectivePlatform = extraArgs.includes('host_os=mac') ? 'darwin' : process
 
 // Write the hash to disk
 fs.writeFileSync(path.resolve(__dirname, '../.depshash'), hasher.digest('hex'))
-fs.writeFileSync(path.resolve(__dirname, '../.depshash-target'), `${effectivePlatform}\n${process.env.TARGET_ARCH}\n${process.env.GN_CONFIG}\n${process.env.MAS_BUILD}\n${process.env.GN_EXTRA_ARGS}\n${process.env.GN_BUILDFLAG_ARGS}`)
+fs.writeFileSync(path.resolve(__dirname, '../.depshash-target'), `${effectivePlatform}\n${process.env.TARGET_ARCH}\n${process.env.GN_CONFIG}\n${undefined}\n${process.env.GN_EXTRA_ARGS}\n${process.env.GN_BUILDFLAG_ARGS}`)
