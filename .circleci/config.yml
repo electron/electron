@@ -1220,38 +1220,44 @@ chromium-upgrade-branches: &chromium-upgrade-branches
 
 # Command Aliases
 commands:
-  electron-build-with-inline-checkout-for-tests: &electron-build-with-inline-checkout-for-tests
+  electron-build: &electron-build
     parameters:
       persist:
         type: boolean
         default: true
+      checkout:
+        type: boolean
+        default: true
     steps:
-      # Checkout - Copied ffrom steps-checkout
-      - *step-checkout-electron
-      - *step-check-for-doc-only-change
-      - *step-persist-doc-only-change
-      - *step-maybe-early-exit-doc-only-change
-      - *step-depot-tools-get
-      - *step-depot-tools-add-to-path
-      - *step-restore-brew-cache
-      - *step-get-more-space-on-mac
-      - *step-install-gnutar-on-mac
-      - *step-generate-deps-hash
-      - *step-touch-sync-done
-      - *step-maybe-restore-src-cache
-      - *step-maybe-restore-git-cache
-      - *step-set-git-cache-path
-      # This sync call only runs if .circle-sync-done is an EMPTY file
-      - *step-gclient-sync
-      # These next few steps reset Electron to the correct commit regardless of which cache was restored
-      - run:
-          name: Wipe Electron
-          command: rm -rf src/electron
-      - *step-checkout-electron
-      - *step-run-electron-only-hooks
-      - *step-generate-deps-hash-cleanly
-      - *step-mark-sync-done
-      - *step-minimize-workspace-size-from-checkout
+      - when:
+          condition: << parameters.checkout >>
+          steps:
+            # Checkout - Copied ffrom steps-checkout
+            - *step-checkout-electron
+            - *step-check-for-doc-only-change
+            - *step-persist-doc-only-change
+            - *step-maybe-early-exit-doc-only-change
+            - *step-depot-tools-get
+            - *step-depot-tools-add-to-path
+            - *step-restore-brew-cache
+            - *step-get-more-space-on-mac
+            - *step-install-gnutar-on-mac
+            - *step-generate-deps-hash
+            - *step-touch-sync-done
+            - *step-maybe-restore-src-cache
+            - *step-maybe-restore-git-cache
+            - *step-set-git-cache-path
+            # This sync call only runs if .circle-sync-done is an EMPTY file
+            - *step-gclient-sync
+            # These next few steps reset Electron to the correct commit regardless of which cache was restored
+            - run:
+                name: Wipe Electron
+                command: rm -rf src/electron
+            - *step-checkout-electron
+            - *step-run-electron-only-hooks
+            - *step-generate-deps-hash-cleanly
+            - *step-mark-sync-done
+            - *step-minimize-workspace-size-from-checkout
 
       - *step-depot-tools-add-to-path
       - *step-setup-env-for-build
@@ -1381,8 +1387,9 @@ jobs:
       <<: *env-ninja-status
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
-      - electron-build-with-inline-checkout-for-tests:
+      - electron-build:
           persist: true
+          checkout: true
 
   linux-x64-testing-no-run-as-node:
     <<: *machine-linux-2xlarge
@@ -1394,8 +1401,9 @@ jobs:
       <<: *env-disable-run-as-node
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
-      - electron-build-with-inline-checkout-for-tests:
+      - electron-build:
           persist: true
+          checkout: true
 
   linux-x64-testing-gn-check:
     <<: *machine-linux-medium
@@ -1443,8 +1451,9 @@ jobs:
       <<: *env-ninja-status
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
-      - electron-build-with-inline-checkout-for-tests:
+      - electron-build:
           persist: true
+          checkout: true
 
   linux-ia32-chromedriver:
     <<: *machine-linux-medium
@@ -1490,8 +1499,9 @@ jobs:
       TRIGGER_ARM_TEST: true
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
-      - electron-build-with-inline-checkout-for-tests:
+      - electron-build:
           persist: false
+          checkout: true
 
   linux-arm-chromedriver:
     <<: *machine-linux-medium
@@ -1537,8 +1547,9 @@ jobs:
       TRIGGER_ARM_TEST: true
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
-      - electron-build-with-inline-checkout-for-tests:
+      - electron-build:
           persist: false
+          checkout: true
 
   linux-arm64-testing-gn-check:
     <<: *machine-linux-medium
@@ -1587,7 +1598,10 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
 
   osx-testing-gn-check:
     <<: *machine-mac
@@ -1632,7 +1646,10 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
 
   mas-testing-gn-check:
     <<: *machine-mac
