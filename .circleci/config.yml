@@ -61,7 +61,7 @@ machine-linux-medium: &machine-linux-medium
 
 machine-linux-2xlarge: &machine-linux-2xlarge
   <<: *docker-image
-  resource_class: 2xlarge
+  resource_class: 2xlarge+
 
 machine-mac: &machine-mac
   macos:
@@ -542,6 +542,7 @@ step-mksnapshot-build: &step-mksnapshot-build
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
         else
           electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
+          electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
         fi
       fi
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
