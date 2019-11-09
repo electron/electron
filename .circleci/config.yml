@@ -1208,9 +1208,9 @@ commands:
       build:
         type: boolean
         default: true
-      out-cache-attached:
+      need-out-cache:
         type: boolean
-        default: false
+        default: true
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1279,7 +1279,10 @@ commands:
             - *step-gn-gen-default
 
             # Electron app
-            - *step-restore-out-cache
+            - when:
+                condition: << parameters.need-out-cache >>
+                steps:
+                  - *step-restore-out-cache
             - *step-electron-build
             - *step-save-out-cache
             - *step-ninja-summary
@@ -1638,7 +1641,7 @@ jobs:
           persist: true
           checkout: false
           attach: true
-          out-cache-attached: true
+          need-out-cache: false
 
   osx-testing-gn-check:
     <<: *machine-mac
@@ -1688,7 +1691,7 @@ jobs:
           persist: true
           checkout: false
           attach: true
-          out-cache-attached: true
+          need-out-cache: false
 
 
   mas-testing-gn-check:
