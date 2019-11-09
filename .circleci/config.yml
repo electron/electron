@@ -1223,6 +1223,9 @@ chromium-upgrade-branches: &chromium-upgrade-branches
 commands:
   electron-build: &electron-build
     parameters:
+      attach:
+        type: boolean
+        default: false
       persist:
         type: boolean
         default: true
@@ -1230,6 +1233,11 @@ commands:
         type: boolean
         default: true
     steps:
+      - when:
+          condition: << parameters.attach >>
+          steps:
+            - attach_workspace:
+                at: .
       - when:
           condition: << parameters.checkout >>
           steps:
@@ -1603,6 +1611,7 @@ jobs:
       - electron-build:
           persist: true
           checkout: false
+          attach: true
 
   osx-testing-gn-check:
     <<: *machine-mac
@@ -1651,6 +1660,7 @@ jobs:
       - electron-build:
           persist: true
           checkout: false
+          attach: true
 
   mas-testing-gn-check:
     <<: *machine-mac
