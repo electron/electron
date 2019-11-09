@@ -674,7 +674,7 @@ step-maybe-restore-src-cache: &step-maybe-restore-src-cache
     paths:
       - ./src
     keys:
-      - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+      - v6-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -685,8 +685,8 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
     paths:
       - ~/.gclient-cache
     keys:
-      - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
-      - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}
+      - v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+      - v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
 
 step-restore-out-cache: &step-restore-out-cache
@@ -711,7 +711,7 @@ step-save-git-cache: &step-save-git-cache
   save_cache:
     paths:
       - ~/.gclient-cache
-    key: v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+    key: v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
 
 step-save-out-cache: &step-save-out-cache
@@ -753,7 +753,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - ./src
-    key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+    key: v6-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Persisting src cache
 
 # Check for doc only change
@@ -1610,8 +1610,7 @@ jobs:
     steps:
       - electron-build:
           persist: true
-          checkout: false
-          attach: true
+          checkout: true
 
   osx-testing-gn-check:
     <<: *machine-mac
@@ -1659,8 +1658,7 @@ jobs:
     steps:
       - electron-build:
           persist: true
-          checkout: false
-          attach: true
+          checkout: true
 
   mas-testing-gn-check:
     <<: *machine-mac
@@ -2049,9 +2047,7 @@ workflows:
       - mac-checkout-fast
       - mac-checkout-and-save-cache
 
-      - osx-testing:
-          requires:
-            - mac-checkout-fast
+      - osx-testing
 
       - osx-testing-gn-check:
           requires:
@@ -2061,9 +2057,7 @@ workflows:
           requires:
             - osx-testing
 
-      - mas-testing:
-          requires:
-            - mac-checkout-fast
+      - mas-testing
 
       - mas-testing-gn-check:
           requires:
