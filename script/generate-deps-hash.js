@@ -39,4 +39,4 @@ hasher.update(process.env.GCLIENT_EXTRA_ARGS || 'no_extra_args')
 
 // Write the hash to disk
 fs.writeFileSync(path.resolve(__dirname, '../.depshash'), hasher.digest('hex'))
-fs.writeFileSync(path.resolve(__dirname, '../.depshash-target'), `${process.platform}\n${process.env.TARGET_ARCH}\n${process.env.GN_CONFIG}\n${process.env.MAS_BUILD}`)
+fs.writeFileSync(path.resolve(__dirname, '../.depshash-target'), `${process.platform}\n${process.env.TARGET_ARCH}\n${process.env.GN_CONFIG}\n${process.env.MAS_BUILD}\n${process.env.GN_EXTRA_ARGS}\n${process.env.GN_BUILDFLAG_ARGS}`)

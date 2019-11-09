@@ -979,91 +979,6 @@ steps-electron-build: &steps-electron-build
 
     - *step-maybe-notify-slack-failure
 
-steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-inline-checkout-for-tests
-  steps:
-    # Checkout - Copied ffrom steps-checkout
-    - *step-checkout-electron
-    - *step-check-for-doc-only-change
-    - *step-persist-doc-only-change
-    - *step-maybe-early-exit-doc-only-change
-    - *step-depot-tools-get
-    - *step-depot-tools-add-to-path
-    - *step-restore-brew-cache
-    - *step-get-more-space-on-mac
-    - *step-install-gnutar-on-mac
-    - *step-generate-deps-hash
-    - *step-touch-sync-done
-    - *step-maybe-restore-src-cache
-    - *step-maybe-restore-git-cache
-    - *step-set-git-cache-path
-    # This sync call only runs if .circle-sync-done is an EMPTY file
-    - *step-gclient-sync
-    # These next few steps reset Electron to the correct commit regardless of which cache was restored
-    - run:
-        name: Wipe Electron
-        command: rm -rf src/electron
-    - *step-checkout-electron
-    - *step-run-electron-only-hooks
-    - *step-generate-deps-hash-cleanly
-    - *step-mark-sync-done
-    - *step-minimize-workspace-size-from-checkout
-
-    - *step-depot-tools-add-to-path
-    - *step-setup-env-for-build
-    - *step-restore-brew-cache
-    - *step-get-more-space-on-mac
-    - *step-install-npm-deps-on-mac
-    - *step-fix-sync-on-mac
-    - *step-delete-git-directories
-    - *step-gn-gen-default
-
-    # Electron app
-    - *step-restore-out-cache
-    - *step-electron-build
-    - *step-save-out-cache
-    - *step-ninja-summary
-    - *step-ninja-report
-    - *step-maybe-electron-dist-strip
-    - *step-electron-dist-build
-    - *step-electron-dist-store
-
-    # Native test targets
-    - *step-native-unittests-build
-    - *step-native-unittests-store
-
-    # Node.js headers
-    - *step-nodejs-headers-build
-    - *step-nodejs-headers-store
-
-    - *step-show-sccache-stats
-
-    # mksnapshot
-    - *step-mksnapshot-build
-    - *step-mksnapshot-store
-    - *step-maybe-cross-arch-snapshot
-    - *step-maybe-cross-arch-snapshot-store
-
-    # ffmpeg
-    - *step-ffmpeg-gn-gen
-    - *step-ffmpeg-build
-    - *step-ffmpeg-store
-
-    # hunspell
-    - *step-hunspell-build
-    - *step-hunspell-store
-
-    # Save all data needed for a further tests run.
-    - *step-persist-data-for-tests
-
-    - *step-maybe-generate-breakpad-symbols
-    - *step-maybe-zip-symbols
-    - *step-symbols-store
-
-    # Trigger tests on arm hardware if needed
-    - *step-maybe-trigger-arm-test
-
-    - *step-maybe-notify-slack-failure
-
 steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-change
   steps:
     # Checkout - Copied ffrom steps-checkout
@@ -1303,6 +1218,100 @@ steps-test-node: &steps-test-node
 chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
 
+# Command Aliases
+commands:
+  electron-build-with-inline-checkout-for-tests: &electron-build-with-inline-checkout-for-tests
+    parameters:
+      persist:
+        type: boolean
+        default: true
+    steps:
+      # Checkout - Copied ffrom steps-checkout
+      - *step-checkout-electron
+      - *step-check-for-doc-only-change
+      - *step-persist-doc-only-change
+      - *step-maybe-early-exit-doc-only-change
+      - *step-depot-tools-get
+      - *step-depot-tools-add-to-path
+      - *step-restore-brew-cache
+      - *step-get-more-space-on-mac
+      - *step-install-gnutar-on-mac
+      - *step-generate-deps-hash
+      - *step-touch-sync-done
+      - *step-maybe-restore-src-cache
+      - *step-maybe-restore-git-cache
+      - *step-set-git-cache-path
+      # This sync call only runs if .circle-sync-done is an EMPTY file
+      - *step-gclient-sync
+      # These next few steps reset Electron to the correct commit regardless of which cache was restored
+      - run:
+          name: Wipe Electron
+          command: rm -rf src/electron
+      - *step-checkout-electron
+      - *step-run-electron-only-hooks
+      - *step-generate-deps-hash-cleanly
+      - *step-mark-sync-done
+      - *step-minimize-workspace-size-from-checkout
+
+      - *step-depot-tools-add-to-path
+      - *step-setup-env-for-build
+      - *step-restore-brew-cache
+      - *step-get-more-space-on-mac
+      - *step-install-npm-deps-on-mac
+      - *step-fix-sync-on-mac
+      - *step-delete-git-directories
+      - *step-gn-gen-default
+
+      # Electron app
+      - *step-restore-out-cache
+      - *step-electron-build
+      - *step-save-out-cache
+      - *step-ninja-summary
+      - *step-ninja-report
+      - *step-maybe-electron-dist-strip
+      - *step-electron-dist-build
+      - *step-electron-dist-store
+
+      # Native test targets
+      - *step-native-unittests-build
+      - *step-native-unittests-store
+
+      # Node.js headers
+      - *step-nodejs-headers-build
+      - *step-nodejs-headers-store
+
+      - *step-show-sccache-stats
+
+      # mksnapshot
+      - *step-mksnapshot-build
+      - *step-mksnapshot-store
+      - *step-maybe-cross-arch-snapshot
+      - *step-maybe-cross-arch-snapshot-store
+
+      # ffmpeg
+      - *step-ffmpeg-gn-gen
+      - *step-ffmpeg-build
+      - *step-ffmpeg-store
+
+      # hunspell
+      - *step-hunspell-build
+      - *step-hunspell-store
+
+      # Save all data needed for a further tests run.
+      - when:
+          condition: << parameters.persist >>
+          steps:
+            - *step-persist-data-for-tests
+
+      - *step-maybe-generate-breakpad-symbols
+      - *step-maybe-zip-symbols
+      - *step-symbols-store
+
+      # Trigger tests on arm hardware if needed
+      - *step-maybe-trigger-arm-test
+
+      - *step-maybe-notify-slack-failure
+
 # List of all jobs.
 jobs:
   # Layer 0: Lint. Standalone.
@@ -1371,7 +1380,9 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-ninja-status
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-build-with-inline-checkout-for-tests
+    steps:
+      - electron-build-with-inline-checkout-for-tests:
+          persist: true
 
   linux-x64-testing-no-run-as-node:
     <<: *machine-linux-2xlarge
@@ -1382,7 +1393,9 @@ jobs:
       <<: *env-ninja-status
       <<: *env-disable-run-as-node
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-build-with-inline-checkout-for-tests
+    steps:
+      - electron-build-with-inline-checkout-for-tests:
+          persist: true
 
   linux-x64-testing-gn-check:
     <<: *machine-linux-medium
@@ -1429,7 +1442,9 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-ninja-status
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-build-with-inline-checkout-for-tests
+    steps:
+      - electron-build-with-inline-checkout-for-tests:
+          persist: true
 
   linux-ia32-chromedriver:
     <<: *machine-linux-medium
@@ -1474,7 +1489,9 @@ jobs:
       <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-build-with-inline-checkout-for-tests
+    steps:
+      - electron-build-with-inline-checkout-for-tests:
+          persist: false
 
   linux-arm-chromedriver:
     <<: *machine-linux-medium
@@ -1519,7 +1536,9 @@ jobs:
       <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-build-with-inline-checkout-for-tests
+    steps:
+      - electron-build-with-inline-checkout-for-tests:
+          persist: false
 
   linux-arm64-testing-gn-check:
     <<: *machine-linux-medium
