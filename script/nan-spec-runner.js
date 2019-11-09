@@ -17,7 +17,7 @@ async function main () {
   const nodeDir = path.resolve(BASE, `out/${utils.getOutDir(true)}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
-    npm_config_msvs_version: '2017',
+    npm_config_msvs_version: '2019',
     npm_config_arch: process.env.NPM_CONFIG_ARCH
   })
   const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--directory', 'test'], {

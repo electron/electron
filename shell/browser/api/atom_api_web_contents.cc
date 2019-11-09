@@ -44,6 +44,7 @@
 #include "content/public/common/context_menu_params.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
@@ -91,6 +92,7 @@
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
+#include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/platform/web_cursor_info.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "ui/display/screen.h"
@@ -733,7 +735,7 @@ void WebContents::ContentsZoomChange(bool zoom_in) {
 void WebContents::EnterFullscreenModeForTab(
     content::WebContents* source,
     const GURL& origin,
-    const blink::WebFullscreenOptions& options) {
+    const blink::mojom::FullscreenOptions& options) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(source);
   auto callback =
@@ -745,7 +747,7 @@ void WebContents::EnterFullscreenModeForTab(
 void WebContents::OnEnterFullscreenModeForTab(
     content::WebContents* source,
     const GURL& origin,
-    const blink::WebFullscreenOptions& options,
+    const blink::mojom::FullscreenOptions& options,
     bool allowed) {
   if (!allowed)
     return;
@@ -1477,9 +1479,7 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   web_contents()->GetMutableRendererPrefs()->webrtc_ip_handling_policy =
       webrtc_ip_handling_policy;
 
-  content::RenderViewHost* host = web_contents()->GetRenderViewHost();
-  if (host)
-    host->SyncRendererPrefs();
+  web_contents()->SyncRendererPrefs();
 }
 
 bool WebContents::IsCrashed() const {
@@ -1797,11 +1797,8 @@ void WebContents::Print(mate::Arguments* args) {
 
   // We don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
-  settings.SetBoolean(printing::kSettingPrintToPDF, false);
-  settings.SetBoolean(printing::kSettingCloudPrintDialog, false);
-  settings.SetBoolean(printing::kSettingPrintWithPrivet, false);
+  settings.SetInteger(printing::kSettingPrinterType, printing::kLocalPrinter);
   settings.SetBoolean(printing::kSettingShouldPrintSelectionOnly, false);
-  settings.SetBoolean(printing::kSettingPrintWithExtension, false);
   settings.SetBoolean(printing::kSettingRasterizePdf, false);
 
   // Set custom page ranges to print
@@ -1850,10 +1847,7 @@ void WebContents::Print(mate::Arguments* args) {
   auto* rfh = focused_frame && focused_frame->HasSelection()
                   ? focused_frame
                   : web_contents()->GetMainFrame();
-  print_view_manager->PrintNow(rfh,
-                               std::make_unique<PrintMsg_PrintPages>(
-                                   rfh->GetRoutingID(), silent, settings),
-                               std::move(callback));
+  print_view_manager->PrintNow(rfh, std::move(callback));
 }
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
@@ -2032,10 +2026,11 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
   }
 
   for (auto* frame_host : target_hosts) {
-    mojom::ElectronRendererAssociatedPtr electron_ptr;
+    mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-        mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(internal, false, channel, std::move(args), sender_id);
+        &electron_renderer);
+    electron_renderer->Message(internal, false, channel, std::move(args),
+                               sender_id);
   }
   return true;
 }
@@ -2060,11 +2055,10 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   if (!(*iter)->IsRenderFrameLive())
     return false;
 
-  mojom::ElectronRendererAssociatedPtr electron_ptr;
-  (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
-      mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(internal, send_to_all, channel, std::move(message),
-                        0 /* sender_id */);
+  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
+  (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
+  electron_renderer->Message(internal, send_to_all, channel, std::move(message),
+                             0 /* sender_id */);
   return true;
 }
 
@@ -2483,14 +2477,15 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   // This dance with `base::Owned` is to ensure that the interface stays alive
   // until the callback is called. Otherwise it would be closed at the end of
   // this function.
-  auto electron_ptr = std::make_unique<mojom::ElectronRendererAssociatedPtr>();
+  auto electron_renderer =
+      std::make_unique<mojo::AssociatedRemote<mojom::ElectronRenderer>>();
   frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-      mojo::MakeRequest(electron_ptr.get()));
-  auto* raw_ptr = electron_ptr.get();
+      electron_renderer.get());
+  auto* raw_ptr = electron_renderer.get();
   (*raw_ptr)->TakeHeapSnapshot(
       mojo::WrapPlatformFile(file.TakePlatformFile()),
       base::BindOnce(
-          [](mojom::ElectronRendererAssociatedPtr* ep,
+          [](mojo::AssociatedRemote<mojom::ElectronRenderer>* ep,
              util::Promise<void*> promise, bool success) {
             if (success) {
               promise.Resolve();
@@ -2498,7 +2493,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
               promise.RejectWithErrorMessage("takeHeapSnapshot failed");
             }
           },
-          base::Owned(std::move(electron_ptr)), std::move(promise)));
+          base::Owned(std::move(electron_renderer)), std::move(promise)));
   return handle;
 }
 

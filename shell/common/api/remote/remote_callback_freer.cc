@@ -9,6 +9,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 
 namespace electron {
@@ -45,10 +46,9 @@ void RemoteCallbackFreer::RunDestructor() {
   });
 
   if (iter != frames.end() && (*iter)->IsRenderFrameLive()) {
-    mojom::ElectronRendererAssociatedPtr electron_ptr;
-    (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
-        mojo::MakeRequest(&electron_ptr));
-    electron_ptr->DereferenceRemoteJSCallback(context_id_, object_id_);
+    mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
+    (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
+    electron_renderer->DereferenceRemoteJSCallback(context_id_, object_id_);
   }
 
   Observe(nullptr);

@@ -52,19 +52,17 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
 
 AutofillAgent::AutofillAgent(content::RenderFrame* frame,
                              blink::AssociatedInterfaceRegistry* registry)
-    : content::RenderFrameObserver(frame),
-      binding_(this),
-      weak_ptr_factory_(this) {
+    : content::RenderFrameObserver(frame), weak_ptr_factory_(this) {
   render_frame()->GetWebFrame()->SetAutofillClient(this);
   registry->AddInterface(
-      base::Bind(&AutofillAgent::BindRequest, base::Unretained(this)));
+      base::Bind(&AutofillAgent::BindReceiver, base::Unretained(this)));
 }
 
 AutofillAgent::~AutofillAgent() = default;
 
-void AutofillAgent::BindRequest(
-    mojom::ElectronAutofillAgentAssociatedRequest request) {
-  binding_.Bind(std::move(request));
+void AutofillAgent::BindReceiver(
+    mojo::PendingAssociatedReceiver<mojom::ElectronAutofillAgent> receiver) {
+  receiver_.Bind(std::move(receiver));
 }
 
 void AutofillAgent::OnDestruct() {
@@ -188,8 +186,7 @@ void AutofillAgent::HidePopup() {
 void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
                               const std::vector<base::string16>& values,
                               const std::vector<base::string16>& labels) {
-  gfx::RectF bounds =
-      render_frame()->GetRenderView()->ElementBoundsInWindow(element);
+  gfx::RectF bounds = render_frame()->ElementBoundsInWindow(element);
   GetAutofillDriver()->ShowAutofillPopup(bounds, values, labels);
 }
 
@@ -218,11 +215,11 @@ void AutofillAgent::DoFocusChangeComplete() {
   focused_node_was_last_clicked_ = false;
 }
 
-const mojom::ElectronAutofillDriverAssociatedPtr&
+const mojo::AssociatedRemote<mojom::ElectronAutofillDriver>&
 AutofillAgent::GetAutofillDriver() {
   if (!autofill_driver_) {
     render_frame()->GetRemoteAssociatedInterfaces()->GetInterface(
-        mojo::MakeRequest(&autofill_driver_));
+        &autofill_driver_);
   }
 
   return autofill_driver_;
