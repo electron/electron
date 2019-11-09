@@ -1374,11 +1374,17 @@ dist_zip("electron_chromedriver_zip") {
   ]
 }
 
-dist_zip("electron_mksnapshot_zip") {
-  data_deps = [
+group("electron_mksnapshot") {
+  public_deps = [
     "//v8:mksnapshot($v8_snapshot_toolchain)",
     "//tools/v8_context_snapshot:v8_context_snapshot_generator",
     ":licenses",
+  ]
+}
+
+dist_zip("electron_mksnapshot_zip") {
+  data_deps = [
+    ":electron_mksnapshot",
   ]
   outputs = [
     "$root_build_dir/mksnapshot.zip",
