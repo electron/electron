@@ -67,11 +67,10 @@ describe('version-bumper', () => {
       const matches = next.match(nightlyPattern)
       expect(matches).to.have.lengthOf(1)
     })
-    
+
     it('bumps to a nightly version above our switch from N-0-x to N-x-y branch names', async () => {
       const version = 'v2.0.0-nightly.19950901'
       const next = await nextVersion('nightly', version)
-      const matches = next.match(nightlyPattern)
       // If it starts with v8 then we didn't bump above the 8-x-y branch
       expect(next.startsWith('v8')).to.equal(false)
     })
