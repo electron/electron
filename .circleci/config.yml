@@ -1263,13 +1263,21 @@ commands:
                         - *step-restore-out-cache
                         - run:
                             name: Move macOS out cache to the linux directory for workspace persistance
-                            command: mv /Users/distiller/project/src/out/Default src/out/Default
+                            command: |
+                              if [ -d "/Users/distiller/project/src/out/Default" ]; then
+                                mv /Users/distiller/project/src/out/Default src/out/Default
+                              fi
                         # This removes half the size but retains > 70% of the previous build.  Worth it when you add it all up.
                         - run:
                             name: Remove the big things
                             command: |
+                              mkdir -p src/out/Default
                               cd src/out/Default
                               find -type f -size +50M -delete
+                              mkdir -p gen/electron
+                              cd gen/electron
+                              # These files do not seem to like being in a layer, let us remove them
+                              find . -type f -name '*_pkg_info' -delete
                   - persist_to_workspace:
                       root: .
                       paths:
