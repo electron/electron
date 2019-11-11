@@ -1264,10 +1264,6 @@ commands:
                         - run:
                             name: Move macOS out cache to the linux directory for workspace persistance
                             command: mv /Users/distiller/project/src/out/Default src/out/Default
-                        - persist_to_workspace:
-                            root: .
-                            paths:
-                              - src/out/Default
                   - persist_to_workspace:
                       root: .
                       paths:
