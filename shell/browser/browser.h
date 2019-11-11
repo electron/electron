@@ -250,10 +250,6 @@ class Browser : public WindowListObserver {
 
   void OnAccessibilitySupportChanged();
 
-  // Request basic auth login.
-  void RequestLogin(scoped_refptr<LoginHandler> login_handler,
-                    std::unique_ptr<base::DictionaryValue> request_details);
-
   void PreMainMessageLoopRun();
 
   // Stores the supplied |quit_closure|, to be run when the last Browser

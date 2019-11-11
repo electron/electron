@@ -1,12 +1,13 @@
 import { expect } from 'chai'
 import * as cp from 'child_process'
 import * as https from 'https'
+import * as http from 'http'
 import * as net from 'net'
 import * as fs from 'fs'
 import * as path from 'path'
 import { app, BrowserWindow, Menu } from 'electron'
 import { emittedOnce } from './events-helpers'
-import { closeWindow } from './window-helpers'
+import { closeWindow, closeAllWindows } from './window-helpers'
 import { ifdescribe } from './spec-helpers'
 import split = require('split')
 
@@ -1413,6 +1414,33 @@ describe('default behavior', () => {
       expect(output[0]).to.be.a('number').that.is.greaterThan(0)
       expect(output[1]).to.be.a('number').that.is.greaterThan(0)
       expect(output[0]).to.equal(output[1])
+    })
+  })
+
+  describe('login event', () => {
+    afterEach(closeAllWindows)
+    let server: http.Server
+    let serverUrl: string
+
+    before((done) => {
+      server = http.createServer((request, response) => {
+        if (request.headers.authorization) {
+          return response.end('ok')
+        }
+        response
+          .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
+          .end()
+      }).listen(0, '127.0.0.1', () => {
+        serverUrl = 'http://127.0.0.1:' + (server.address() as net.AddressInfo).port
+        done()
+      })
+    })
+
+    it('should emit a login event on app when a WebContents hits a 401', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL(serverUrl)
+      const [, webContents] = await emittedOnce(app, 'login')
+      expect(webContents).to.equal(w.webContents)
     })
   })
 })

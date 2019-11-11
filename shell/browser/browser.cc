@@ -181,13 +181,6 @@ void Browser::OnAccessibilitySupportChanged() {
     observer.OnAccessibilitySupportChanged();
 }
 
-void Browser::RequestLogin(
-    scoped_refptr<LoginHandler> login_handler,
-    std::unique_ptr<base::DictionaryValue> request_details) {
-  for (BrowserObserver& observer : observers_)
-    observer.OnLogin(login_handler, *(request_details.get()));
-}
-
 void Browser::PreMainMessageLoopRun() {
   for (BrowserObserver& observer : observers_) {
     observer.OnPreMainMessageLoopRun();
