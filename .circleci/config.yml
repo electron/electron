@@ -1264,6 +1264,12 @@ commands:
                         - run:
                             name: Move macOS out cache to the linux directory for workspace persistance
                             command: mv /Users/distiller/project/src/out/Default src/out/Default
+                        # This removes half the size but retains > 70% of the previous build.  Worth it when you add it all up.
+                        - run:
+                            name: Remove the big things
+                            command: |
+                              cd src/out/Default
+                              find -type f -size +50M -delete
                   - persist_to_workspace:
                       root: .
                       paths:
