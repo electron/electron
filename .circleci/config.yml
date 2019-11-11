@@ -1202,7 +1202,7 @@ commands:
       checkout:
         type: boolean
         default: true
-      checkout-out-cache-for-workspace:
+      checkout-mac-out-cache-for-workspace:
         type: boolean
         default: false
       build:
@@ -1249,22 +1249,30 @@ commands:
             - when:
                 condition: << parameters.persist-checkout >>
                 steps:
+                  - when:
+                      condition: << parameters.checkout-mac-out-cache-for-workspace >>
+                      steps:
+                        - run:
+                            name: Make Empty Default Folder
+                            command: mkdir -p src/out
+                        - run:
+                            name: Fake the macOS directory structure
+                            command: |
+                              sudo mkdir -p /Users/distiller/project
+                              sudo chmod -R 777 /Users/distiller/project
+                        - *step-restore-out-cache
+                        - run:
+                            name: Move macOS out cache to the linux directory for workspace persistance
+                            command: mv /Users/distiller/project/src/out/Default src/out/Default
+                        - persist_to_workspace:
+                            root: .
+                            paths:
+                              - src/out/Default
                   - persist_to_workspace:
                       root: .
                       paths:
                         - depot_tools
                         - src
-                  - when:
-                      condition: << parameters.checkout-out-cache-for-workspace >>
-                      steps:
-                        - run:
-                            name: Make Empty Default Folder
-                            command: mkdir -p src/out/Default
-                        - *step-restore-out-cache
-                        - persist_to_workspace:
-                            root: .
-                            paths:
-                              - src/out/Default
 
       - when:
           condition: << parameters.build >>
@@ -1406,7 +1414,7 @@ jobs:
           build: false
           checkout: true
           persist-checkout: true
-          checkout-out-cache-for-workspace: true
+          checkout-mac-out-cache-for-workspace: true
 
   mac-checkout-and-save-cache:
     <<: *machine-linux-2xlarge
