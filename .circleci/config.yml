@@ -695,7 +695,7 @@ step-restore-out-cache: &step-restore-out-cache
     paths:
       - ./src/out/Default
     keys:
-      - v3-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+      - v4-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
     name: Restoring out cache
 
 step-set-git-cache-path: &step-set-git-cache-path
@@ -719,7 +719,7 @@ step-save-out-cache: &step-save-out-cache
   save_cache:
     paths:
       - ./src/out/Default
-    key: v3-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+    key: v4-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
     name: Persisting out cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
@@ -1267,17 +1267,6 @@ commands:
                               if [ -d "/Users/distiller/project/src/out/Default" ]; then
                                 mv /Users/distiller/project/src/out/Default src/out/Default
                               fi
-                        # This removes half the size but retains > 70% of the previous build.  Worth it when you add it all up.
-                        - run:
-                            name: Remove the big things
-                            command: |
-                              mkdir -p src/out/Default
-                              cd src/out/Default
-                              find -type f -size +50M -delete
-                              mkdir -p gen/electron
-                              cd gen/electron
-                              # These files do not seem to like being in a layer, let us remove them
-                              find . -type f -name '*_pkg_info' -delete
                   - persist_to_workspace:
                       root: .
                       paths:
@@ -1302,6 +1291,16 @@ commands:
                 steps:
                   - *step-restore-out-cache
             - *step-electron-build
+            - run:
+                name: Remove the big things, this seems to be better on average
+                command: |
+                  mkdir -p src/out/Default
+                  cd src/out/Default
+                  find . -type f -size +50M -delete
+                  mkdir -p gen/electron
+                  cd gen/electron
+                  # These files do not seem to like being in a cache, let us remove them
+                  find . -type f -name '*_pkg_info' -delete
             - *step-save-out-cache
             - *step-ninja-summary
             - *step-ninja-report
@@ -1424,7 +1423,7 @@ jobs:
           build: false
           checkout: true
           persist-checkout: true
-          checkout-mac-out-cache-for-workspace: true
+          checkout-mac-out-cache-for-workspace: false
 
   mac-checkout-and-save-cache:
     <<: *machine-linux-2xlarge
