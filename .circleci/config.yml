@@ -1658,7 +1658,7 @@ jobs:
           persist: true
           checkout: false
           attach: true
-          need-out-cache: false
+          need-out-cache: true
 
   osx-testing-gn-check:
     <<: *machine-mac
@@ -1708,7 +1708,7 @@ jobs:
           persist: true
           checkout: false
           attach: true
-          need-out-cache: false
+          need-out-cache: true
 
 
   mas-testing-gn-check:
