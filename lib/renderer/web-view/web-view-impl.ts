@@ -5,6 +5,7 @@ import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-inte
 import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal'
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants'
 import { syncMethods, asyncMethods } from '@electron/internal/common/web-view-methods'
+import { deserialize } from '@electron/internal/common/type-utils'
 const { webFrame } = electron
 
 const v8Util = process.electronBinding('v8_util')
@@ -243,6 +244,10 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
 
   for (const method of asyncMethods) {
     (WebViewElement.prototype as Record<string, any>)[method] = createNonBlockHandler(method)
+  }
+
+  WebViewElement.prototype.capturePage = async function (...args) {
+    return deserialize(await ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CAPTURE_PAGE', this.getWebContentsId(), args))
   }
 }
 
