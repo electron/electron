@@ -206,6 +206,33 @@ describe('net module', () => {
         urlRequest.end()
       })
     })
+
+    it('should emit the login event when 401', async () => {
+      const [user, pass] = ['user', 'pass']
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+        }
+        response.writeHead(200).end('ok')
+      })
+      let loginAuthInfo: any
+      await new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: serverUrl })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          response.on('data', () => {})
+          response.on('end', () => resolve())
+        })
+        request.on('login', (authInfo, cb) => {
+          loginAuthInfo = authInfo
+          cb(user, pass)
+        })
+        request.on('error', reject)
+        request.end()
+      })
+      expect(loginAuthInfo.realm).to.equal('Foo')
+      expect(loginAuthInfo.scheme).to.equal('basic')
+    })
   })
 
   describe('ClientRequest API', () => {

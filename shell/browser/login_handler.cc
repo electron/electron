@@ -13,6 +13,7 @@
 #include "gin/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 
@@ -57,7 +58,7 @@ void LoginHandler::EmitEvent(
   v8::HandleScope scope(isolate);
 
   auto details = gin::Dictionary::CreateEmpty(isolate);
-  details.Set("url", url.spec());
+  details.Set("url", url);
 
   // These parameters aren't documented, and I'm not sure that they're useful,
   // but we might as well stick 'em on the details object. If it turns out they

@@ -17,6 +17,7 @@
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/data_pipe_getter.mojom.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/common/gin_helper/event_emitter.h"
 
 namespace electron {
@@ -32,6 +33,15 @@ class URLRequest : public gin_helper::EventEmitter<URLRequest>,
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
+  static URLRequest* FromID(uint32_t id);
+
+  void OnAuthRequired(
+      const GURL& url,
+      bool first_auth_attempt,
+      net::AuthChallengeInfo auth_info,
+      network::mojom::URLResponseHeadPtr head,
+      mojo::PendingRemote<network::mojom::AuthChallengeResponder>
+          auth_challenge_responder);
 
  protected:
   explicit URLRequest(gin::Arguments* args);
@@ -89,7 +99,7 @@ class URLRequest : public gin_helper::EventEmitter<URLRequest>,
   };
   void EmitError(EventType type, base::StringPiece error);
   template <typename... Args>
-  void EmitEvent(EventType type, Args... args);
+  void EmitEvent(EventType type, Args&&... args);
 
   std::unique_ptr<network::ResourceRequest> request_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
@@ -131,6 +141,8 @@ class URLRequest : public gin_helper::EventEmitter<URLRequest>,
 
   // Used by pin/unpin to manage lifetime.
   v8::Global<v8::Object> wrapper_;
+
+  uint32_t id_;
 
   base::WeakPtrFactory<URLRequest> weak_factory_;
 

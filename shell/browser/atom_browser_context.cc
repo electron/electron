@@ -32,6 +32,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+#include "shell/browser/api/atom_api_url_request.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_download_manager_delegate.h"
@@ -325,6 +326,7 @@ AtomBrowserContext::GetURLLoaderFactory() {
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
   params->header_client = std::move(header_client);
+  params->auth_client = auth_client_.BindNewPipeAndPassRemote();
   params->process_id = network::mojom::kBrowserProcessId;
   params->is_trusted = true;
   params->is_corb_enabled = false;
@@ -340,6 +342,42 @@ AtomBrowserContext::GetURLLoaderFactory() {
       base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
           std::move(network_factory_remote));
   return url_loader_factory_;
+}
+
+class AuthResponder : public network::mojom::TrustedAuthClient {
+ public:
+  AuthResponder(
+      mojo::PendingReceiver<network::mojom::TrustedAuthClient> auth_client)
+      : receiver_(this, std::move(auth_client)) {}
+  ~AuthResponder() override = default;
+
+ private:
+  void OnAuthRequired(
+      const base::Optional<::base::UnguessableToken>& window_id,
+      uint32_t process_id,
+      uint32_t routing_id,
+      uint32_t request_id,
+      const ::GURL& url,
+      bool first_auth_attempt,
+      const ::net::AuthChallengeInfo& auth_info,
+      ::network::mojom::URLResponseHeadPtr head,
+      mojo::PendingRemote<network::mojom::AuthChallengeResponder>
+          auth_challenge_responder) override {
+    api::URLRequest* url_request = api::URLRequest::FromID(routing_id);
+    if (url_request) {
+      url_request->OnAuthRequired(url, first_auth_attempt, auth_info,
+                                  std::move(head),
+                                  std::move(auth_challenge_responder));
+    }
+  }
+
+  mojo::Receiver<network::mojom::TrustedAuthClient> receiver_;
+};
+
+void AtomBrowserContext::OnLoaderCreated(
+    int32_t request_id,
+    mojo::PendingReceiver<network::mojom::TrustedAuthClient> auth_client) {
+  new AuthResponder(std::move(auth_client));
 }
 
 content::PushMessagingService* AtomBrowserContext::GetPushMessagingService() {
