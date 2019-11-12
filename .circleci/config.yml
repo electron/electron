@@ -1193,6 +1193,7 @@ commands:
       - *step-maybe-early-exit-doc-only-change
       - *step-depot-tools-get
       - *step-depot-tools-add-to-path
+      - *step-generate-deps-hash
       - *step-maybe-restore-src-cache
       - run:
           name: Ensure src checkout worked
