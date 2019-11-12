@@ -314,10 +314,8 @@ Returns:
 
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
-* `request` Object
-  * `method` String
+* `authenticationResponseDetails` Object
   * `url` URL
-  * `referrer` URL
 * `authInfo` Object
   * `isProxy` Boolean
   * `scheme` String
@@ -337,7 +335,7 @@ should prevent the default behavior with `event.preventDefault()` and call
 ```javascript
 const { app } = require('electron')
 
-app.on('login', (event, webContents, request, authInfo, callback) => {
+app.on('login', (event, webContents, details, authInfo, callback) => {
   event.preventDefault()
   callback('username', 'secret')
 })
@@ -482,18 +480,6 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 
 Emitted when `remote.getCurrentWebContents()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-### Event: 'remote-get-guest-web-contents'
-
-Returns:
-
-* `event` Event
-* `webContents` [WebContents](web-contents.md)
-* `guestWebContents` [WebContents](web-contents.md)
-
-Emitted when `<webview>.getWebContents()` is called in the renderer process of `webContents`.
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 

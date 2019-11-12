@@ -328,7 +328,7 @@ own version of standard web platform features.
 ### How?
 
 Operate under the assumption that polyfills in current versions of Electron
-are unnecessary. If you have doubts, check [caniuse.com][https://caniuse.com/]
+are unnecessary. If you have doubts, check [caniuse.com](https://caniuse.com/)
 and check if the [version of Chromium used in your Electron version](../api/process.md#processversionschrome-readonly)
 supports the feature you desire.
 

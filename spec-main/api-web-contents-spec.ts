@@ -1513,4 +1513,99 @@ describe('webContents module', () => {
       await devtoolsClosed
     })
   })
+
+  describe('login event', () => {
+    afterEach(closeAllWindows)
+
+    let server: http.Server
+    let serverUrl: string
+    let serverPort: number
+    let proxyServer: http.Server
+    let proxyServerPort: number
+
+    before((done) => {
+      server = http.createServer((request, response) => {
+        if (request.url === '/no-auth') {
+          return response.end('ok')
+        }
+        if (request.headers.authorization) {
+          response.writeHead(200, { 'Content-type': 'text/plain' })
+          return response.end(request.headers.authorization)
+        }
+        response
+          .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
+          .end()
+      }).listen(0, '127.0.0.1', () => {
+        serverPort = (server.address() as AddressInfo).port
+        serverUrl = `http://127.0.0.1:${serverPort}`
+        done()
+      })
+    })
+
+    before((done) => {
+      proxyServer = http.createServer((request, response) => {
+        if (request.headers['proxy-authorization']) {
+          response.writeHead(200, { 'Content-type': 'text/plain' })
+          return response.end(request.headers['proxy-authorization'])
+        }
+        response
+          .writeHead(407, { 'Proxy-Authenticate': 'Basic realm="Foo"' })
+          .end()
+      }).listen(0, '127.0.0.1', () => {
+        proxyServerPort = (proxyServer.address() as AddressInfo).port
+        done()
+      })
+    })
+
+    after(() => {
+      server.close()
+      proxyServer.close()
+    })
+
+    it('is emitted when navigating', async () => {
+      const [user, pass] = ['user', 'pass']
+      const w = new BrowserWindow({ show: false })
+      let eventRequest: any
+      let eventAuthInfo: any
+      w.webContents.on('login', (event, request, authInfo, cb) => {
+        eventRequest = request
+        eventAuthInfo = authInfo
+        event.preventDefault()
+        cb(user, pass)
+      })
+      await w.loadURL(serverUrl)
+      const body = await w.webContents.executeJavaScript(`document.documentElement.textContent`)
+      expect(body).to.equal(`Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`)
+      expect(eventRequest.url).to.equal(serverUrl + '/')
+      expect(eventAuthInfo.isProxy).to.be.false()
+      expect(eventAuthInfo.scheme).to.equal('basic')
+      expect(eventAuthInfo.host).to.equal('127.0.0.1')
+      expect(eventAuthInfo.port).to.equal(serverPort)
+      expect(eventAuthInfo.realm).to.equal('Foo')
+    })
+
+    it('is emitted when a proxy requests authorization', async () => {
+      const customSession = session.fromPartition(`${Math.random()}`)
+      await customSession.setProxy({ proxyRules: `127.0.0.1:${proxyServerPort}`, proxyBypassRules: '<-loopback>' })
+      const [user, pass] = ['user', 'pass']
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
+      let eventRequest: any
+      let eventAuthInfo: any
+      w.webContents.on('login', (event, request, authInfo, cb) => {
+        eventRequest = request
+        eventAuthInfo = authInfo
+        event.preventDefault()
+        cb(user, pass)
+      })
+      await w.loadURL(`${serverUrl}/no-auth`)
+      const body = await w.webContents.executeJavaScript(`document.documentElement.textContent`)
+      expect(body).to.equal(`Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`)
+      expect(eventRequest.url).to.equal(`${serverUrl}/no-auth`)
+      expect(eventAuthInfo.isProxy).to.be.true()
+      expect(eventAuthInfo.scheme).to.equal('basic')
+      expect(eventAuthInfo.host).to.equal('127.0.0.1')
+      expect(eventAuthInfo.port).to.equal(proxyServerPort)
+      expect(eventAuthInfo.realm).to.equal('Foo')
+    })
+  })
 })

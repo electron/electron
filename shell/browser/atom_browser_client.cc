@@ -30,6 +30,7 @@
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/client_certificate_delegate.h"
+#include "content/public/browser/login_delegate.h"
 #include "content/public/browser/overlay_window.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -1102,6 +1103,20 @@ void AtomBrowserClient::BindHostReceiverForRenderer(
     return;
   }
 #endif
+}
+
+std::unique_ptr<content::LoginDelegate> AtomBrowserClient::CreateLoginDelegate(
+    const net::AuthChallengeInfo& auth_info,
+    content::WebContents* web_contents,
+    const content::GlobalRequestID& request_id,
+    bool is_main_frame,
+    const GURL& url,
+    scoped_refptr<net::HttpResponseHeaders> response_headers,
+    bool first_auth_attempt,
+    LoginAuthRequiredCallback auth_required_callback) {
+  return std::make_unique<LoginHandler>(
+      auth_info, web_contents, is_main_frame, url, response_headers,
+      first_auth_attempt, std::move(auth_required_callback));
 }
 
 }  // namespace electron

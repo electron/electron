@@ -115,11 +115,6 @@ export class WebViewImpl {
     })
   }
 
-  createGuestSync () {
-    this.beforeFirstNavigation = false
-    this.attachGuestInstance(guestViewInternal.createGuestSync(this.buildParams()))
-  }
-
   dispatchEvent (webViewEvent: Electron.Event) {
     this.webviewNode.dispatchEvent(webViewEvent)
   }
@@ -223,26 +218,6 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
     }
     return internal.guestInstanceId
   }
-
-  // WebContents associated with this webview.
-  WebViewElement.prototype.getWebContents = function () {
-    const remote = electron.remote as Electron.RemoteInternal
-    if (!remote) {
-      throw new Error('getGuestWebContents requires remote, which is not enabled')
-    }
-    const internal = v8Util.getHiddenValue<WebViewImpl>(this, 'internal')
-    if (!internal.guestInstanceId) {
-      internal.createGuestSync()
-    }
-
-    return remote.getGuestWebContents(internal.guestInstanceId!)
-  }
-
-  WebViewElement.prototype.getWebContents = electron.deprecate.moveAPI(
-    WebViewElement.prototype.getWebContents,
-    'webview.getWebContents()',
-    'remote.webContents.fromId(webview.getWebContentsId())'
-  ) as any
 
   // Focusing the webview should move page focus to the underlying iframe.
   WebViewElement.prototype.focus = function () {

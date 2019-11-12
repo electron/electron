@@ -454,10 +454,8 @@ The usage is the same with [the `select-client-certificate` event of
 Returns:
 
 * `event` Event
-* `request` Object
-  * `method` String
+* `authenticationResponseDetails` Object
   * `url` URL
-  * `referrer` URL
 * `authInfo` Object
   * `isProxy` Boolean
   * `scheme` String
@@ -799,17 +797,6 @@ Returns:
 * `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-guest-web-contents'
-
-Returns:
-
-* `event` IpcMainEvent
-* `guestWebContents` [WebContents](web-contents.md)
-
-Emitted when `<webview>.getWebContents()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
@@ -1391,13 +1378,20 @@ An example of showing devtools in a `<webview>` tag:
 </head>
 <body>
   <webview id="browser" src="https://github.com"></webview>
-  <webview id="devtools"></webview>
+  <webview id="devtools" src="about:blank"></webview>
   <script>
+    const { webContents } = require('electron').remote
+    const emittedOnce = (element, eventName) => new Promise(resolve => {
+      element.addEventListener(eventName, event => resolve(event), { once: true })
+    })
     const browserView = document.getElementById('browser')
     const devtoolsView = document.getElementById('devtools')
-    browserView.addEventListener('dom-ready', () => {
-      const browser = browserView.getWebContents()
-      browser.setDevToolsWebContents(devtoolsView.getWebContents())
+    const browserReady = emittedOnce(browserView, 'dom-ready')
+    const devtoolsReady = emittedOnce(devtoolsView, 'dom-ready')
+    Promise.all([browserReady, devtoolsReady]).then(() => {
+      const browser = webContents.fromId(browserView.getWebContentsId())
+      const devtools = webContents.fromId(devtoolsView.getWebContentsId())
+      browser.setDevToolsWebContents(devtools)
       browser.openDevTools()
     })
   </script>

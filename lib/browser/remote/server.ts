@@ -4,7 +4,6 @@ import * as electron from 'electron'
 import { EventEmitter } from 'events'
 import objectsRegistry from './objects-registry'
 import { ipcMainInternal } from '../ipc-main-internal'
-import * as guestViewManager from '@electron/internal/browser/guest-view-manager'
 import { isPromise, isSerializableObject } from '@electron/internal/common/remote/type-utils'
 
 const v8Util = process.electronBinding('v8_util')
@@ -541,23 +540,6 @@ handleRemoteCommand('ELECTRON_BROWSER_DEREFERENCE', function (event, contextId, 
 
 handleRemoteCommand('ELECTRON_BROWSER_CONTEXT_RELEASE', (event, contextId) => {
   objectsRegistry.clear(event.sender, contextId)
-})
-
-handleRemoteCommand('ELECTRON_BROWSER_GUEST_WEB_CONTENTS', function (event, contextId, guestInstanceId, stack) {
-  logStack(event.sender, 'remote.getGuestWebContents()', stack)
-  const guest = guestViewManager.getGuestForWebContents(guestInstanceId, event.sender)
-
-  const customEvent = emitCustomEvent(event.sender, 'remote-get-guest-web-contents', guest)
-
-  if (customEvent.returnValue === undefined) {
-    if (customEvent.defaultPrevented) {
-      throw new Error(`Blocked remote.getGuestWebContents()`)
-    } else {
-      customEvent.returnValue = guest
-    }
-  }
-
-  return valueToMeta(event.sender, contextId, customEvent.returnValue)
 })
 
 module.exports = {
