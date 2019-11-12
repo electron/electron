@@ -695,7 +695,7 @@ step-restore-out-cache: &step-restore-out-cache
     paths:
       - ./src/out/Default
     keys:
-      - v5-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+      - v6-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
     name: Restoring out cache
 
 step-set-git-cache-path: &step-set-git-cache-path
@@ -719,7 +719,7 @@ step-save-out-cache: &step-save-out-cache
   save_cache:
     paths:
       - ./src/out/Default
-    key: v5-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+    key: v6-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
     name: Persisting out cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
@@ -1188,7 +1188,26 @@ chromium-upgrade-branches: &chromium-upgrade-branches
 
 # Command Aliases
 commands:
-  electron-build: &electron-build
+  checkout-from-cache:
+    steps:
+      - *step-maybe-early-exit-doc-only-change
+      - *step-depot-tools-get
+      - *step-depot-tools-add-to-path
+      - *step-maybe-restore-src-cache
+      - run:
+          name: Ensure src checkout worked
+          command: |
+            if [ ! -d "src/third_party/blink" ]; then
+              echo src cache was not restored for some reason, idk what happened here...
+              exit 1
+            fi
+      - run:
+          name: Wipe Electron
+          command: rm -rf src/electron
+      - *step-checkout-electron
+      - *step-run-electron-only-hooks
+      - *step-generate-deps-hash-cleanly
+  electron-build:
     parameters:
       attach:
         type: boolean
@@ -1202,6 +1221,9 @@ commands:
       checkout:
         type: boolean
         default: true
+      checkout-and-assume-cache:
+        type: boolean
+        default: false
       build:
         type: boolean
         default: true
@@ -1211,6 +1233,10 @@ commands:
           steps:
             - attach_workspace:
                 at: .
+      - when:
+          condition: << parameters.checkout-and-assume-cache >>
+          steps:
+            - checkout-from-cache
       - when:
           condition: << parameters.checkout >>
           steps:
@@ -1265,19 +1291,6 @@ commands:
             - *step-restore-out-cache
             - *step-gn-gen-default
             - *step-electron-build
-            - run:
-                name: Remove the big things on macOS, this seems to be better on average
-                command: |
-                  if [ "`uname`" == "Darwin" ]; then
-                    mkdir -p src/out/Default
-                    cd src/out/Default
-                    find . -type f -size +50M -delete
-                    mkdir -p gen/electron
-                    cd gen/electron
-                    # These files do not seem to like being in a cache, let us remove them
-                    find . -type f -name '*_pkg_info' -delete
-                  fi
-            - *step-save-out-cache
             - *step-ninja-summary
             - *step-ninja-report
             - *step-maybe-electron-dist-strip
@@ -1321,6 +1334,23 @@ commands:
             - *step-maybe-generate-breakpad-symbols
             - *step-maybe-zip-symbols
             - *step-symbols-store
+
+      - when:
+          condition: << parameters.build >>
+          steps:
+            - run:
+                name: Remove the big things on macOS, this seems to be better on average
+                command: |
+                  if [ "`uname`" == "Darwin" ]; then
+                    mkdir -p src/out/Default
+                    cd src/out/Default
+                    find . -type f -size +50M -delete
+                    mkdir -p gen/electron
+                    cd gen/electron
+                    # These files do not seem to like being in a cache, let us remove them
+                    find . -type f -name '*_pkg_info' -delete
+                  fi
+            - *step-save-out-cache
 
       # Trigger tests on arm hardware if needed
       - *step-maybe-trigger-arm-test
@@ -1632,7 +1662,8 @@ jobs:
       - electron-build:
           persist: true
           checkout: false
-          attach: true
+          checkout-and-assume-cache: true
+          attach: false
 
   osx-testing-gn-check:
     <<: *machine-mac
@@ -1681,7 +1712,8 @@ jobs:
       - electron-build:
           persist: true
           checkout: false
-          attach: true
+          checkout-and-assume-cache: true
+          attach: false
 
   mas-testing-gn-check:
     <<: *machine-mac
@@ -2072,7 +2104,7 @@ workflows:
 
       - osx-testing:
           requires:
-            - mac-checkout-fast
+            - mac-checkout-and-save-cache
 
       - osx-testing-gn-check:
           requires:
@@ -2084,7 +2116,7 @@ workflows:
 
       - mas-testing:
           requires:
-            - mac-checkout-fast
+            - mac-checkout-and-save-cache
 
       - mas-testing-gn-check:
           requires:
