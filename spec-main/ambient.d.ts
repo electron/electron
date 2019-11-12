@@ -1,4 +1,4 @@
-declare var isCI: boolean;
+declare let standardScheme: string
 
 declare namespace Electron {
   interface Menu {
@@ -15,5 +15,22 @@ declare namespace Electron {
 
   interface WebContents {
     getOwnerBrowserWindow(): BrowserWindow;
+    getWebPreferences(): any;
+  }
+
+  interface Session {
+    destroy(): void;
+  }
+
+  // Experimental views API
+  class TopLevelWindow {
+    constructor(args: {show: boolean})
+    setContentView(view: View): void
+  }
+  class View {}
+  class WebContentsView {
+    constructor(webContents: WebContents)
   }
 }
+
+declare module 'dbus-native';

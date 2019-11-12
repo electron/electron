@@ -20,7 +20,7 @@ namespace api {
 
 class MenuMac : public Menu {
  protected:
-  MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
+  explicit MenuMac(gin::Arguments* args);
   ~MenuMac() override;
 
   void PopupAt(TopLevelWindow* window,
@@ -35,6 +35,7 @@ class MenuMac : public Menu {
                  int positioning_item,
                  base::Closure callback);
   void ClosePopupAt(int32_t window_id) override;
+  void ClosePopupOnUI(int32_t window_id);
 
  private:
   friend class Menu;

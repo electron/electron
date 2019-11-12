@@ -9,10 +9,13 @@
 #include <utility>
 #include <vector>
 
-#include "native_mate/dictionary.h"
+#include "base/memory/ptr_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
 #include "ui/views/widget/widget.h"
 
@@ -43,7 +46,7 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 }  // namespace
 
-NativeWindow::NativeWindow(const mate::Dictionary& options,
+NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
     : widget_(new views::Widget), parent_(parent), weak_factory_(this) {
   options.Get(options::kFrame, &has_frame_);
@@ -65,7 +68,7 @@ NativeWindow::~NativeWindow() {
   NotifyWindowClosed();
 }
 
-void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
+void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   // Setup window from options.
   int x = -1, y = -1;
   bool center;
@@ -344,12 +347,12 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
 void NativeWindow::SetVibrancy(const std::string& filename) {}
 
 void NativeWindow::SetTouchBar(
-    const std::vector<mate::PersistentDictionary>& items) {}
+    std::vector<gin_helper::PersistentDictionary> items) {}
 
 void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {}
 
 void NativeWindow::SetEscapeTouchBarItem(
-    const mate::PersistentDictionary& item) {}
+    gin_helper::PersistentDictionary item) {}
 
 void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {}
 
@@ -580,6 +583,22 @@ views::Widget* NativeWindow::GetWidget() {
 
 const views::Widget* NativeWindow::GetWidget() const {
   return widget();
+}
+
+base::string16 NativeWindow::GetAccessibleWindowTitle() const {
+  if (accessible_title_.empty()) {
+    return views::WidgetDelegate::GetAccessibleWindowTitle();
+  }
+
+  return accessible_title_;
+}
+
+void NativeWindow::SetAccessibleTitle(const std::string& title) {
+  accessible_title_ = base::UTF8ToUTF16(title);
+}
+
+std::string NativeWindow::GetAccessibleTitle() {
+  return base::UTF16ToUTF8(accessible_title_);
 }
 
 // static

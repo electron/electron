@@ -82,10 +82,6 @@ void AtomExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   extension_loader_ = std::make_unique<AtomExtensionLoader>(browser_context_);
 }
 
-void AtomExtensionSystem::InitForIncognitoProfile() {
-  NOTREACHED();
-}
-
 ExtensionService* AtomExtensionSystem::extension_service() {
   return nullptr;
 }
@@ -135,7 +131,7 @@ AppSorting* AtomExtensionSystem::app_sorting() {
 void AtomExtensionSystem::RegisterExtensionWithRequestContexts(
     const Extension* extension,
     const base::Closure& callback) {
-  base::PostTaskWithTraitsAndReply(
+  base::PostTaskAndReply(
       FROM_HERE, {BrowserThread::IO},
       base::Bind(&InfoMap::AddExtension, info_map(),
                  base::RetainedRef(extension), base::Time::Now(), false, false),

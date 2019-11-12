@@ -3,12 +3,15 @@
 // found in the LICENSE file.
 
 #include <algorithm>
+#include <memory>
+
 #include <utility>
 #include <vector>
 
 #include "base/i18n/rtl.h"
 #include "chrome/browser/ui/autofill/popup_view_common.h"
 #include "electron/buildflags/buildflags.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/autofill_popup.h"
 #include "shell/common/api/api.mojom.h"
@@ -79,7 +82,7 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
     }
 
     auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(rwhv);
-    view_->view_proxy_.reset(new OffscreenViewProxy(view_));
+    view_->view_proxy_ = std::make_unique<OffscreenViewProxy>(view_);
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
   }
 #endif
@@ -111,9 +114,8 @@ void AutofillPopup::SetItems(const std::vector<base::string16>& values,
 }
 
 void AutofillPopup::AcceptSuggestion(int index) {
-  mojom::ElectronAutofillAgentAssociatedPtr autofill_agent;
-  frame_host_->GetRemoteAssociatedInterfaces()->GetInterface(
-      mojo::MakeRequest(&autofill_agent));
+  mojo::AssociatedRemote<mojom::ElectronAutofillAgent> autofill_agent;
+  frame_host_->GetRemoteAssociatedInterfaces()->GetInterface(&autofill_agent);
   autofill_agent->AcceptDataListSuggestion(GetValueAt(index));
 }
 

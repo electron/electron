@@ -48,7 +48,7 @@ any module you don't actually need will increase your application's size.
 
 The output should look roughly like this:
 
-```text
+```plaintext
 ├── Ghost.exe
 ├── LICENSE
 ├── content_resources_200_percent.pak
@@ -62,7 +62,6 @@ The output should look roughly like this:
 │   ├── am.pak
 │   ├── ar.pak
 │   ├── [...]
-├── natives_blob.bin
 ├── node.dll
 ├── resources
 │   ├── app

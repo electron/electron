@@ -12,19 +12,19 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/page_type.h"
-#include "content/public/common/page_zoom.h"
 #include "net/base/url_util.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
 
 namespace electron {
 
 WebContentsZoomController::WebContentsZoomController(
     content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents) {
-  default_zoom_factor_ = content::kEpsilon;
+  default_zoom_factor_ = kPageZoomEpsilon;
   host_zoom_map_ = content::HostZoomMap::GetForWebContents(web_contents);
 }
 
-WebContentsZoomController::~WebContentsZoomController() {}
+WebContentsZoomController::~WebContentsZoomController() = default;
 
 void WebContentsZoomController::AddObserver(
     WebContentsZoomController::Observer* observer) {
@@ -43,7 +43,7 @@ void WebContentsZoomController::SetEmbedderZoomController(
 
 void WebContentsZoomController::SetZoomLevel(double level) {
   if (!web_contents()->GetRenderViewHost()->IsRenderViewLive() ||
-      content::ZoomValuesEqual(GetZoomLevel(), level) ||
+      blink::PageZoomValuesEqual(GetZoomLevel(), level) ||
       zoom_mode_ == ZoomMode::DISABLED)
     return;
 
@@ -247,7 +247,7 @@ void WebContentsZoomController::RenderFrameHostChanged(
 
 void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
     const GURL& url) {
-  if (content::ZoomValuesEqual(GetDefaultZoomFactor(), content::kEpsilon))
+  if (blink::PageZoomValuesEqual(GetDefaultZoomFactor(), kPageZoomEpsilon))
     return;
 
   if (host_zoom_map_->UsesTemporaryZoomLevel(old_process_id_, old_view_id_)) {
@@ -268,11 +268,11 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
   std::string host = net::GetHostOrSpecFromURL(url);
   std::string scheme = url.scheme();
   double zoom_factor = GetDefaultZoomFactor();
-  double zoom_level = content::ZoomFactorToZoomLevel(zoom_factor);
+  double zoom_level = blink::PageZoomFactorToZoomLevel(zoom_factor);
   if (host_zoom_map_->HasZoomLevel(scheme, host)) {
     zoom_level = host_zoom_map_->GetZoomLevelForHostAndScheme(scheme, host);
   }
-  if (content::ZoomValuesEqual(zoom_level, GetZoomLevel()))
+  if (blink::PageZoomValuesEqual(zoom_level, GetZoomLevel()))
     return;
 
   SetZoomLevel(zoom_level);

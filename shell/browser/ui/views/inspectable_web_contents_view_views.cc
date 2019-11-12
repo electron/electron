@@ -4,6 +4,10 @@
 
 #include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 
+#include <memory>
+
+#include <utility>
+
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_impl.h"
@@ -34,7 +38,7 @@ class DevToolsWindowDelegate : public views::ClientView,
     if (shell->GetDelegate())
       icon_ = shell->GetDelegate()->GetDevToolsWindowIcon();
   }
-  ~DevToolsWindowDelegate() override {}
+  ~DevToolsWindowDelegate() override = default;
 
   // views::WidgetDelegate:
   void DeleteDelegate() override { delete this; }
@@ -152,7 +156,7 @@ void InspectableWebContentsViewViews::CloseDevTools() {
     devtools_window_delegate_ = nullptr;
   } else {
     devtools_web_view_->SetVisible(false);
-    devtools_web_view_->SetWebContents(NULL);
+    devtools_web_view_->SetWebContents(nullptr);
     Layout();
   }
 }
@@ -174,8 +178,8 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked, bool activate) {
   CloseDevTools();
 
   if (!docked) {
-    devtools_window_.reset(new views::Widget);
-    devtools_window_web_view_ = new views::WebView(NULL);
+    devtools_window_ = std::make_unique<views::Widget>();
+    devtools_window_web_view_ = new views::WebView(nullptr);
     devtools_window_delegate_ = new DevToolsWindowDelegate(
         this, devtools_window_web_view_, devtools_window_.get());
 
@@ -191,7 +195,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked, bool activate) {
                                               &params.wm_class_class);
 #endif
 
-    devtools_window_->Init(params);
+    devtools_window_->Init(std::move(params));
     devtools_window_->UpdateWindowIcon();
   }
 

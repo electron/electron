@@ -5,6 +5,8 @@
 #include "shell/renderer/api/atom_api_spell_check_client.h"
 
 #include <map>
+#include <memory>
+
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -14,10 +16,8 @@
 #include "base/numerics/safe_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
-#include "native_mate/converter.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/function_template.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/function_template.h"
 #include "third_party/blink/public/web/web_text_checking_completion.h"
 #include "third_party/blink/public/web/web_text_checking_result.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
@@ -55,7 +55,7 @@ class SpellCheckClient::SpellcheckRequest {
       const base::string16& text,
       std::unique_ptr<blink::WebTextCheckingCompletion> completion)
       : text_(text), completion_(std::move(completion)) {}
-  ~SpellcheckRequest() {}
+  ~SpellcheckRequest() = default;
 
   const base::string16& text() const { return text_; }
   blink::WebTextCheckingCompletion* completion() { return completion_.get(); }
@@ -82,8 +82,9 @@ SpellCheckClient::SpellCheckClient(const std::string& language,
   character_attributes_.SetDefaultLanguage(language);
 
   // Persistent the method.
-  mate::Dictionary dict(isolate, provider);
-  dict.Get("spellCheck", &spell_check_);
+  v8::Local<v8::Function> spell_check;
+  gin_helper::Dictionary(isolate, provider).Get("spellCheck", &spell_check);
+  spell_check_.Reset(isolate, spell_check);
 }
 
 SpellCheckClient::~SpellCheckClient() {
@@ -105,8 +106,8 @@ void SpellCheckClient::RequestCheckingOfText(
     pending_request_param_->completion()->DidCancelCheckingText();
   }
 
-  pending_request_param_.reset(
-      new SpellcheckRequest(text, std::move(completionCallback)));
+  pending_request_param_ =
+      std::make_unique<SpellcheckRequest>(text, std::move(completionCallback));
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
@@ -219,12 +220,12 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
                                        const std::set<base::string16>& words) {
   DCHECK(!scope.spell_check_.IsEmpty());
 
-  v8::Local<v8::FunctionTemplate> templ = mate::CreateFunctionTemplate(
+  v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate_,
       base::BindRepeating(&SpellCheckClient::OnSpellCheckDone, AsWeakPtr()));
 
   auto context = isolate_->GetCurrentContext();
-  v8::Local<v8::Value> args[] = {mate::ConvertToV8(isolate_, words),
+  v8::Local<v8::Value> args[] = {gin::ConvertToV8(isolate_, words),
                                  templ->GetFunction(context).ToLocalChecked()};
   // Call javascript with the words and the callback function
   scope.spell_check_->Call(context, scope.provider_, 2, args).IsEmpty();
@@ -265,8 +266,9 @@ SpellCheckClient::SpellCheckScope::SpellCheckScope(
     : handle_scope_(client.isolate_),
       context_scope_(
           v8::Local<v8::Context>::New(client.isolate_, client.context_)),
-      provider_(client.provider_.NewHandle()),
-      spell_check_(client.spell_check_.NewHandle()) {}
+      provider_(v8::Local<v8::Object>::New(client.isolate_, client.provider_)),
+      spell_check_(
+          v8::Local<v8::Function>::New(client.isolate_, client.spell_check_)) {}
 
 SpellCheckClient::SpellCheckScope::~SpellCheckScope() = default;
 

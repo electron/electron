@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Deepak Mohan <hop2deep@gmail.com>
+Date: Thu, 24 Oct 2019 17:58:10 -0700
+Subject: build,[win]: fix compilation error with MSSTL
+
+Moves the accessor definition from header file to avoid the following
+error:
+
+\MSVC\14.16.27023\include\vector(905,3): error: arithmetic on a pointer
+to an incomplete type 'std::_Simple_types<perfetto::FieldDescriptorProto>::value_type' (aka 'perfetto::FieldDescriptorProto')
+                ++this->_Mylast();
+                ^ ~~~~~~~~~~~~~~~
+\MSVC\14.16.27023\include\vector(919,12): note: in instantiation of function template specialization
+'std::vector<perfetto::FieldDescriptorProto, std::allocator<perfetto::FieldDescriptorProto> >::_Emplace_back_with_unused_capacity<>'requested here
+                        return (_Emplace_back_with_unused_capacity(_STD forward<_Valty>(_Val)...));
+                                ^
+gen/third_party/perfetto\protos/perfetto/common/descriptor.gen.h(155,54): note: in instantiation of function template
+specialization 'std::vector<perfetto::FieldDescriptorProto, std::allocator<perfetto::FieldDescriptorProto> >::emplace_back<>' requested here
+  FieldDescriptorProto* add_extension() { extension_.emplace_back(); return &extension_.back(); }
+                                                     ^
+gen/third_party/perfetto\protos/perfetto/common/descriptor.gen.h(34,7): note: forward declaration of 'perfetto::FieldDescriptorProto'
+class FieldDescriptorProto;
+
+diff --git a/src/protozero/protoc_plugin/cppgen_plugin.cc b/src/protozero/protoc_plugin/cppgen_plugin.cc
+index 98e6c470471db090e2b6bd0824b58adcfc15100f..2ce5abfd9cbdae8d1d7aeeebf5403cd382942869 100644
+--- a/src/protozero/protoc_plugin/cppgen_plugin.cc
++++ b/src/protozero/protoc_plugin/cppgen_plugin.cc
+@@ -402,7 +402,7 @@ void CppObjGenerator::GenClassDecl(const Descriptor* msg, Printer* p) const {
+                GetCppType(field, false), "n", field->lowercase_name());
+       p->Print("void clear_$n$() { $n$_.clear(); }\n", "n",
+                field->lowercase_name());
+-      p->Print("$t$* add_$n$() { $n$_.emplace_back(); return &$n$_.back(); }\n",
++      p->Print("$t$* add_$n$();\n",
+                "t", GetCppType(field, false), "n", field->lowercase_name());
+     }
+   }
+@@ -461,6 +461,21 @@ void CppObjGenerator::GenClassDef(const Descriptor* msg, Printer* p) const {
+   p->Outdent();
+   p->Print("\n}\n\n");
+ 
++  // Generate Accessor Definitons for repeated field,
++  // worksaround incomplete type error with MSSTL.
++  for (int i = 0; i < msg->field_count(); i++) {
++    const FieldDescriptor* field = msg->field(i);
++    if (field->is_repeated()) {
++      p->Print("$t$* $n$::add_$p$() {\n", "t", GetCppType(field, false),
++               "n", full_name, "p", field->lowercase_name());
++      p->Indent();
++      p->Print("$n$_.emplace_back();\n", "n", field->lowercase_name());
++      p->Print("return &$n$_.back();\n", "n", field->lowercase_name());
++      p->Outdent();
++      p->Print("}\n\n");
++    }
++  }
++
+   std::string proto_type = GetFullName(msg, true);
+ 
+   // Genrate the ParseRawProto() method definition.

@@ -1,13 +1,8 @@
 import { expect } from 'chai'
 import { globalShortcut } from 'electron'
+import { ifdescribe } from './spec-helpers'
 
-describe('globalShortcut module', () => {
-  before(function () {
-    if (isCI && process.platform === 'win32') {
-      this.skip()
-    }
-  })
-
+ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
   beforeEach(() => {
     globalShortcut.unregisterAll()
   })

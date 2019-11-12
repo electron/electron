@@ -12,10 +12,11 @@
 
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
+#include "base/numerics/ranges.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "content/public/browser/browser_accessibility_state.h"
-#include "native_mate/dictionary.h"
+#include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/atom_native_widget_mac.h"
 #include "shell/browser/ui/cocoa/atom_ns_window.h"
@@ -27,12 +28,65 @@
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/deprecate_util.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
+#include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
+#include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/widget.h"
+
+// This view would inform Chromium to resize the hosted views::View.
+//
+// The overrided methods should behave the same with BridgedContentView.
+@interface ElectronAdapatedContentView : NSView {
+ @private
+  views::NativeWidgetMacNSWindowHost* bridge_host_;
+}
+@end
+
+@implementation ElectronAdapatedContentView
+
+- (id)initWithShell:(electron::NativeWindowMac*)shell {
+  if ((self = [self init])) {
+    bridge_host_ = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
+        shell->GetNativeWindow());
+  }
+  return self;
+}
+
+- (void)viewDidMoveToWindow {
+  // When this view is added to a window, AppKit calls setFrameSize before it is
+  // added to the window, so the behavior in setFrameSize is not triggered.
+  NSWindow* window = [self window];
+  if (window)
+    [self setFrameSize:NSZeroSize];
+}
+
+- (void)setFrameSize:(NSSize)newSize {
+  // The size passed in here does not always use
+  // -[NSWindow contentRectForFrameRect]. The following ensures that the
+  // contentView for a frameless window can extend over the titlebar of the new
+  // window containing it, since AppKit requires a titlebar to give frameless
+  // windows correct shadows and rounded corners.
+  NSWindow* window = [self window];
+  if (window && [window contentView] == self) {
+    newSize = [window contentRectForFrameRect:[window frame]].size;
+    // Ensure that the window geometry be updated on the host side before the
+    // view size is updated.
+    bridge_host_->GetInProcessNSWindowBridge()->UpdateWindowGeometry();
+  }
+
+  [super setFrameSize:newSize];
+
+  // The OnViewSizeChanged is marked private in derived class.
+  static_cast<remote_cocoa::mojom::NativeWidgetNSWindowHost*>(bridge_host_)
+      ->OnViewSizeChanged(gfx::Size(newSize.width, newSize.height));
+}
+
+@end
 
 // This view always takes the size of its superview. It is intended to be used
 // as a NSWindow's contentView.  It is needed because NSWindow's implementation
@@ -190,7 +244,7 @@
 
 @end
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<electron::NativeWindowMac::TitleBarStyle> {
@@ -214,7 +268,7 @@ struct Converter<electron::NativeWindowMac::TitleBarStyle> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -264,7 +318,7 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
 
 }  // namespace
 
-NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
+NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
   int width = 800, height = 600;
@@ -332,7 +386,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.native_widget = new AtomNativeWidgetMac(this, styleMask, widget());
-  widget()->Init(params);
+  widget()->Init(std::move(params));
   window_ = static_cast<AtomNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
 
@@ -723,6 +777,21 @@ void NativeWindowMac::SetContentSizeConstraints(
   NativeWindow::SetContentSizeConstraints(size_constraints);
 }
 
+bool NativeWindowMac::MoveAbove(const std::string& sourceId) {
+  const content::DesktopMediaID id = content::DesktopMediaID::Parse(sourceId);
+  if (id.type != content::DesktopMediaID::TYPE_WINDOW)
+    return false;
+
+  // Check if the window source is valid.
+  const CGWindowID window_id = id.id;
+  if (!webrtc::GetWindowOwnerPid(window_id))
+    return false;
+
+  [window_ orderWindow:NSWindowAbove relativeTo:id.id];
+
+  return true;
+}
+
 void NativeWindowMac::MoveTop() {
   [window_ orderWindow:NSWindowAbove relativeTo:0];
 }
@@ -806,47 +875,63 @@ bool NativeWindowMac::IsClosable() {
 }
 
 void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
-                                     const std::string& level,
-                                     int relativeLevel,
-                                     std::string* error) {
-  int windowLevel = NSNormalWindowLevel;
-  CGWindowLevel maxWindowLevel = CGWindowLevelForKey(kCGMaximumWindowLevelKey);
-  CGWindowLevel minWindowLevel = CGWindowLevelForKey(kCGMinimumWindowLevelKey);
-
-  if (z_order != ui::ZOrderLevel::kNormal) {
-    if (level == "floating") {
-      windowLevel = NSFloatingWindowLevel;
-    } else if (level == "torn-off-menu") {
-      windowLevel = NSTornOffMenuWindowLevel;
-    } else if (level == "modal-panel") {
-      windowLevel = NSModalPanelWindowLevel;
-    } else if (level == "main-menu") {
-      windowLevel = NSMainMenuWindowLevel;
-    } else if (level == "status") {
-      windowLevel = NSStatusWindowLevel;
-    } else if (level == "pop-up-menu") {
-      windowLevel = NSPopUpMenuWindowLevel;
-    } else if (level == "screen-saver") {
-      windowLevel = NSScreenSaverWindowLevel;
-    } else if (level == "dock") {
-      // Deprecated by macOS, but kept for backwards compatibility
-      windowLevel = NSDockWindowLevel;
-    }
+                                     const std::string& level_name,
+                                     int relative_level) {
+  if (z_order == ui::ZOrderLevel::kNormal) {
+    SetWindowLevel(NSNormalWindowLevel);
+    return;
   }
 
-  NSInteger newLevel = windowLevel + relativeLevel;
-  if (newLevel >= minWindowLevel && newLevel <= maxWindowLevel) {
-    was_maximizable_ = IsMaximizable();
-    [window_ setLevel:newLevel];
-    // Set level will make the zoom button revert to default, probably
-    // a bug of Cocoa or macOS.
-    [[window_ standardWindowButton:NSWindowZoomButton]
-        setEnabled:was_maximizable_];
-  } else {
-    *error = std::string([[NSString
-        stringWithFormat:@"relativeLevel must be between %d and %d",
-                         minWindowLevel, maxWindowLevel] UTF8String]);
+  int level = NSNormalWindowLevel;
+  if (level_name == "floating") {
+    level = NSFloatingWindowLevel;
+  } else if (level_name == "torn-off-menu") {
+    level = NSTornOffMenuWindowLevel;
+  } else if (level_name == "modal-panel") {
+    level = NSModalPanelWindowLevel;
+  } else if (level_name == "main-menu") {
+    level = NSMainMenuWindowLevel;
+  } else if (level_name == "status") {
+    level = NSStatusWindowLevel;
+  } else if (level_name == "pop-up-menu") {
+    level = NSPopUpMenuWindowLevel;
+  } else if (level_name == "screen-saver") {
+    level = NSScreenSaverWindowLevel;
+  } else if (level_name == "dock") {
+    // Deprecated by macOS, but kept for backwards compatibility
+    level = NSDockWindowLevel;
   }
+
+  SetWindowLevel(level + relative_level);
+}
+
+void NativeWindowMac::SetWindowLevel(int unbounded_level) {
+  int level = std::min(
+      std::max(unbounded_level, CGWindowLevelForKey(kCGMinimumWindowLevelKey)),
+      CGWindowLevelForKey(kCGMaximumWindowLevelKey));
+  ui::ZOrderLevel z_order_level = level == NSNormalWindowLevel
+                                      ? ui::ZOrderLevel::kNormal
+                                      : ui::ZOrderLevel::kFloatingWindow;
+  bool did_z_order_level_change = z_order_level != GetZOrderLevel();
+
+  was_maximizable_ = IsMaximizable();
+
+  // We need to explicitly keep the NativeWidget up to date, since it stores the
+  // window level in a local variable, rather than reading it from the NSWindow.
+  // Unfortunately, it results in a second setLevel call. It's not ideal, but we
+  // don't expect this to cause any user-visible jank.
+  widget()->SetZOrderLevel(z_order_level);
+  [window_ setLevel:level];
+
+  // Set level will make the zoom button revert to default, probably
+  // a bug of Cocoa or macOS.
+  [[window_ standardWindowButton:NSWindowZoomButton]
+      setEnabled:was_maximizable_];
+
+  // This must be notified at the very end or IsAlwaysOnTop
+  // will not yet have been updated to reflect the new status
+  if (did_z_order_level_change)
+    NativeWindow::NotifyWindowAlwaysOnTopChanged();
 }
 
 ui::ZOrderLevel NativeWindowMac::GetZOrderLevel() {
@@ -1026,7 +1111,8 @@ bool NativeWindowMac::HasShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  [window_ setAlphaValue:opacity];
+  const double boundedOpacity = base::ClampToRange(opacity, 0.0, 1.0);
+  [window_ setAlphaValue:boundedOpacity];
 }
 
 double NativeWindowMac::GetOpacity() {
@@ -1120,7 +1206,12 @@ gfx::NativeWindow NativeWindowMac::GetNativeWindow() const {
 }
 
 gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() const {
-  return gfx::kNullAcceleratedWidget;
+  return [window_ windowNumber];
+}
+
+content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
+  return content::DesktopMediaID(content::DesktopMediaID::TYPE_WINDOW,
+                                 GetAcceleratedWidget());
 }
 
 NativeWindowHandle NativeWindowMac::GetNativeWindowHandle() const {
@@ -1371,12 +1462,12 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 }
 
 void NativeWindowMac::SetTouchBar(
-    const std::vector<mate::PersistentDictionary>& items) {
+    std::vector<gin_helper::PersistentDictionary> items) {
   if (@available(macOS 10.12.2, *)) {
     touch_bar_.reset([[AtomTouchBar alloc]
         initWithDelegate:window_delegate_.get()
                   window:this
-                settings:items]);
+                settings:std::move(items)]);
     [window_ setTouchBar:nil];
   }
 }
@@ -1389,10 +1480,11 @@ void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
 }
 
 void NativeWindowMac::SetEscapeTouchBarItem(
-    const mate::PersistentDictionary& item) {
+    gin_helper::PersistentDictionary item) {
   if (@available(macOS 10.12.2, *)) {
     if (touch_bar_ && [window_ touchBar])
-      [touch_bar_ setEscapeTouchBarItem:item forTouchBar:[window_ touchBar]];
+      [touch_bar_ setEscapeTouchBarItem:std::move(item)
+                            forTouchBar:[window_ touchBar]];
   }
 }
 
@@ -1528,10 +1620,15 @@ void NativeWindowMac::OverrideNSWindowContentView() {
   // `BridgedContentView` as content view, which does not support draggable
   // regions. In order to make draggable regions work, we have to replace the
   // content view with a simple NSView.
-  container_view_.reset([[FullSizeContentView alloc] init]);
+  if (has_frame()) {
+    container_view_.reset(
+        [[ElectronAdapatedContentView alloc] initWithShell:this]);
+  } else {
+    container_view_.reset([[FullSizeContentView alloc] init]);
+    [container_view_ setFrame:[[[window_ contentView] superview] bounds]];
+  }
   [container_view_
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  [container_view_ setFrame:[[[window_ contentView] superview] bounds]];
   [window_ setContentView:container_view_];
   AddContentViewLayers(IsMinimizable(), IsClosable());
 }
@@ -1563,7 +1660,7 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
 }
 
 // static
-NativeWindow* NativeWindow::Create(const mate::Dictionary& options,
+NativeWindow* NativeWindow::Create(const gin_helper::Dictionary& options,
                                    NativeWindow* parent) {
   return new NativeWindowMac(options, parent);
 }

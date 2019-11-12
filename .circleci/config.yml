@@ -1,3 +1,46 @@
+version: 2.1
+
+parameters:
+  upload-to-s3:
+    type: string
+    default: '1'
+
+  run-lint:
+    type: boolean
+    default: true
+
+  run-build-linux:
+    type: boolean
+    default: true
+
+  run-build-mac:
+    type: boolean
+    default: true
+
+  run-linux-x64-publish:
+    type: boolean
+    default: false
+
+  run-linux-ia32-publish:
+    type: boolean
+    default: false
+
+  run-linux-arm-publish:
+    type: boolean
+    default: false
+
+  run-linux-arm64-publish:
+    type: boolean
+    default: false
+
+  run-osx-publish:
+    type: boolean
+    default: false
+
+  run-mas-publish:
+    type: boolean
+    default: false
+
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
 #
@@ -22,17 +65,14 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "9.4.1"
+    xcode: "10.3.0"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "9.4.1"
+    xcode: "10.3.0"
 
 # Build configurations options.
-env-debug-build: &env-debug-build
-  GN_CONFIG: //electron/build/args/debug.gn
-
 env-testing-build: &env-testing-build
   GN_CONFIG: //electron/build/args/testing.gn
   CHECK_DIST_MANIFEST: '1'
@@ -91,16 +131,19 @@ env-linux-medium: &env-linux-medium
   NUMBER_OF_NINJA_PROCESSES: 3
 
 env-linux-2xlarge: &env-linux-2xlarge
-  NUMBER_OF_NINJA_PROCESSES: 18
+  NUMBER_OF_NINJA_PROCESSES: 34
+
+env-linux-2xlarge-release: &env-linux-2xlarge-release
+  NUMBER_OF_NINJA_PROCESSES: 16
 
 env-machine-mac: &env-machine-mac
   NUMBER_OF_NINJA_PROCESSES: 6
 
 env-mac-large: &env-mac-large
-  NUMBER_OF_NINJA_PROCESSES: 10
+  NUMBER_OF_NINJA_PROCESSES: 18
 
-env-disable-crash-reporter-tests: &env-disable-crash-reporter-tests
-  DISABLE_CRASH_REPORTER_TESTS: true
+env-mac-large-release: &env-mac-large-release
+  NUMBER_OF_NINJA_PROCESSES: 8
 
 env-ninja-status: &env-ninja-status
   NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es] "
@@ -174,7 +217,7 @@ step-setup-env-for-build: &step-setup-env-for-build
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
         if [ "$CIRCLE_PR_NUMBER" != "" ]; then
           #if building a fork set readonly access to sccache
-          echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
+          echo 'export SCCACHE_BUCKET="electronjs-sccache-ci"' >> $BASH_ENV
           echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
         fi
       fi
@@ -186,12 +229,25 @@ step-restore-brew-cache: &step-restore-brew-cache
     keys:
       - v1-brew-cache-{{ arch }}
 
+step-save-brew-cache: &step-save-brew-cache
+  save_cache:
+    paths:
+      - /usr/local/Homebrew
+    key: v1-brew-cache-{{ arch }}
+    name: Persisting brew cache
+
 step-get-more-space-on-mac: &step-get-more-space-on-mac
   run:
     name: Free up space on MacOS
     command: |
       if [ "`uname`" == "Darwin" ]; then
         sudo rm -rf /Library/Developer/CoreSimulator
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/AppleTVOS.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/AppleTVSimulator.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform
       fi
 
 step-delete-git-directories: &step-delete-git-directories
@@ -265,6 +321,8 @@ step-gn-check: &step-gn-check
       gn check out/Default //electron:electron_app
       gn check out/Default //electron:manifests
       gn check out/Default //electron/shell/common/api:mojo
+      # Check the hunspell filenames
+      node electron/script/gen-hunspell-filenames.js --check
 
 step-electron-build: &step-electron-build
   run:
@@ -273,6 +331,14 @@ step-electron-build: &step-electron-build
     command: |
       cd src
       ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
+
+step-native-unittests-build: &step-native-unittests-build
+  run:
+    name: Build native test targets
+    no_output_timeout: 30m
+    command: |
+      cd src
+      ninja -C out/Default shell_browser_ui_unittests -j $NUMBER_OF_NINJA_PROCESSES
 
 step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
@@ -288,28 +354,30 @@ step-electron-dist-build: &step-electron-dist-build
     name: Build dist.zip
     command: |
       cd src
-      ninja -C out/Default electron:electron_dist_zip
-      if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
-        if [ "`uname`" == "Darwin" ]; then
-          target_os=mac
-          target_cpu=x64
-          if [ x"$MAS_BUILD" == x"true" ]; then
-            target_os=mac_mas
-          fi
-        elif [ "`uname`" == "Linux" ]; then
-          target_os=linux
-          if [ x"$TARGET_ARCH" == x ]; then
+      if [ "$SKIP_DIST_ZIP" != "1" ]; then
+        ninja -C out/Default electron:electron_dist_zip
+        if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+          if [ "`uname`" == "Darwin" ]; then
+            target_os=mac
             target_cpu=x64
-          elif [ "$TARGET_ARCH" == "ia32" ]; then
-            target_cpu=x86
+            if [ x"$MAS_BUILD" == x"true" ]; then
+              target_os=mac_mas
+            fi
+          elif [ "`uname`" == "Linux" ]; then
+            target_os=linux
+            if [ x"$TARGET_ARCH" == x ]; then
+              target_cpu=x64
+            elif [ "$TARGET_ARCH" == "ia32" ]; then
+              target_cpu=x86
+            else
+              target_cpu="$TARGET_ARCH"
+            fi
           else
-            target_cpu="$TARGET_ARCH"
+            echo "Unknown system: `uname`"
+            exit 1
           fi
-        else
-          echo "Unknown system: `uname`"
-          exit 1
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
         fi
-        electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
       fi
 
 step-electron-dist-store: &step-electron-dist-store
@@ -343,6 +411,11 @@ step-nodejs-headers-store: &step-nodejs-headers-store
     path: src/out/Default/gen/node_headers.tar.gz
     destination: node_headers.tar.gz
 
+step-native-unittests-store: &step-native-unittests-store
+  store_artifacts:
+    path: src/out/Default/shell_browser_ui_unittests
+    destination: shell_browser_ui_unittests
+
 step-electron-publish: &step-electron-publish
   run:
     name: Publish Electron Dist
@@ -363,8 +436,12 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       # Build artifacts
       - src/out/Default/dist.zip
       - src/out/Default/mksnapshot.zip
+      - src/out/Default/shell_browser_ui_unittests
       - src/out/Default/gen/node_headers
       - src/out/ffmpeg/ffmpeg.zip
+      - src/electron
+      - src/third_party/electron_node
+      - src/third_party/nan
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
@@ -452,12 +529,28 @@ step-mksnapshot-build: &step-mksnapshot-build
           electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
         fi
       fi
-      ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+      if [ "$SKIP_DIST_ZIP" != "1" ]; then
+        ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+      fi
 
 step-mksnapshot-store: &step-mksnapshot-store
   store_artifacts:
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
+
+step-hunspell-build: &step-hunspell-build
+  run:
+    name: hunspell build
+    command: |
+      cd src
+      if [ "$SKIP_DIST_ZIP" != "1" ]; then
+        ninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+      fi
+
+step-hunspell-store: &step-hunspell-store
+  store_artifacts:
+    path: src/out/Default/hunspell_dictionaries.zip
+    destination: hunspell_dictionaries.zip
 
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
@@ -474,7 +567,14 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
     command: |
       cd src
       export BUILD_PATH="$PWD/out/Default"
+      ninja -C out/Default electron:licenses
+      ninja -C out/Default electron:electron_version
       electron/script/zip-symbols.py -b $BUILD_PATH
+
+step-symbols-store: &step-symbols-store
+  store_artifacts:
+    path: src/out/Default/symbols.zip
+    destination: symbols.zip
 
 step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
   run:
@@ -535,6 +635,142 @@ step-ninja-summary: &step-ninja-summary
     command: |
       python depot_tools/post_build_ninja_summary.py -C src/out/Default
 
+step-ninja-report: &step-ninja-report
+  store_artifacts:
+    path: src/out/Default/.ninja_log
+    destination: ninja_log
+
+# Checkout Steps
+step-generate-deps-hash: &step-generate-deps-hash
+  run:
+    name: Generate DEPS Hash
+    command: node src/electron/script/generate-deps-hash.js
+
+step-touch-sync-done: &step-touch-sync-done
+  run:
+    name: Touch Sync Done
+    command: touch src/electron/.circle-sync-done
+
+# Restore exact src cache based on the hash of DEPS and patches/*
+# If no cache is matched EXACTLY then the .circle-sync-done file is empty
+# If a cache is matched EXACTLY then the .circle-sync-done file contains "done"
+step-maybe-restore-src-cache: &step-maybe-restore-src-cache
+  restore_cache:
+    paths:
+      - ./src
+    keys:
+      - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+    name: Restoring src cache
+
+# Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
+# If the src cache was restored above then this will match an empty cache
+# If the src cache was not restored above then this will match a close git cache
+step-maybe-restore-git-cache: &step-maybe-restore-git-cache
+  restore_cache:
+    paths:
+      - ~/.gclient-cache
+    keys:
+      - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+      - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}
+    name: Conditionally restoring git cache
+
+step-set-git-cache-path: &step-set-git-cache-path
+  run:
+    name: Set GIT_CACHE_PATH to make gclient to use the cache
+    command: |
+      # CircleCI does not support interpolation when setting environment variables.
+      # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
+      echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+
+# Persist the git cache based on the hash of DEPS and .circle-sync-done
+# If the src cache was restored above then this will persist an empty cache
+step-save-git-cache: &step-save-git-cache
+  save_cache:
+    paths:
+      - ~/.gclient-cache
+    key: v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+    name: Persisting git cache
+
+step-run-electron-only-hooks: &step-run-electron-only-hooks
+  run:
+    name: Run Electron Only Hooks
+    command: gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+
+step-generate-deps-hash-cleanly: &step-generate-deps-hash-cleanly
+  run:
+    name: Generate DEPS Hash
+    command: (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
+
+# Mark the sync as done for future cache saving
+step-mark-sync-done: &step-mark-sync-done
+  run:
+    name: Mark Sync Done
+    command: echo DONE > src/electron/.circle-sync-done
+
+# Minimize the size of the cache
+step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-checkout
+  run:
+    name: Remove some unused data to avoid storing it in the workspace/cache
+    command: |
+      rm -rf src/android_webview
+      rm -rf src/ios
+      rm -rf src/third_party/blink/web_tests
+      rm -rf src/third_party/blink/perf_tests
+      rm -rf src/third_party/WebKit/LayoutTests
+
+# Save the src cache based on the deps hash
+step-save-src-cache: &step-save-src-cache
+  save_cache:
+    paths:
+      - ./src
+    key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+    name: Persisting src cache
+
+# Check for doc only change
+step-check-for-doc-only-change: &step-check-for-doc-only-change
+  run:
+    name: Check if commit is doc only change
+    command: |
+      cd src/electron
+      node script/yarn install --frozen-lockfile
+      if node script/doc-only-change.js --prNumber=$CIRCLE_PR_NUMBER --prURL=$CIRCLE_PULL_REQUEST; then
+        #PR is doc only change; save file with value true to indicate doc only change
+        echo "true" > .skip-ci-build
+      else
+        #PR is not a doc only change; create empty file to indicate check has been done
+        touch .skip-ci-build
+      fi
+
+step-persist-doc-only-change: &step-persist-doc-only-change
+  persist_to_workspace:
+    root: .
+    paths:
+      - src/electron/.skip-ci-build
+
+step-maybe-early-exit-doc-only-change: &step-maybe-early-exit-doc-only-change
+  run:
+    name: Shortcircuit build if doc only change
+    command: |
+      if [ -s src/electron/.skip-ci-build ]; then
+        circleci-agent step halt
+      fi
+
+step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
+  run:
+    name: Shortcircuit job if change is not doc only
+    command: |
+      if [ ! -s src/electron/.skip-ci-build ]; then
+        circleci-agent step halt
+      fi
+
+step-ts-compile: &step-ts-compile
+  run:
+    name: Run TS/JS compile on doc only change
+    command: |
+      cd src
+      ninja -C out/Default electron:default_app_js -j $NUMBER_OF_NINJA_PROCESSES
+      ninja -C out/Default electron:atom_js2c -j $NUMBER_OF_NINJA_PROCESSES
+
 # Lists of steps.
 steps-lint: &steps-lint
   steps:
@@ -551,7 +787,7 @@ steps-lint: &steps-lint
           chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
           gn_version="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep gn_version | head -n1 | cut -d\' -f4)"
 
-          cipd ensure -ensure-file - -root . <<-CIPD
+          cipd ensure -ensure-file - -root . \<<-CIPD
           \$ServiceURL https://chrome-infra-packages.appspot.com/
           @Subdir src/buildtools/linux64
           gn/gn/linux-amd64 $gn_version
@@ -580,101 +816,77 @@ steps-lint: &steps-lint
           node script/yarn install --frozen-lockfile
           node script/yarn lint
 
-steps-checkout: &steps-checkout
+steps-checkout-fast: &steps-checkout-fast
   steps:
     - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-persist-doc-only-change
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
     - *step-get-more-space-on-mac
     - *step-install-gnutar-on-mac
 
-    - run:
-        name: Generate DEPS Hash
-        command: node src/electron/script/generate-deps-hash.js
-    - run:
-        name: Touch Sync Done
-        command: touch src/electron/.circle-sync-done
-    # Restore exact src cache based on the hash of DEPS and patches/*
-    # If no cache is matched EXACTLY then the .circle-sync-done file is empty
-    # If a cache is matched EXACTLY then the .circle-sync-done file contains "done"
-    - restore_cache:
-        paths:
-          - ./src
-        keys:
-          - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
-        name: Restoring src cache
-    # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
-    # If the src cache was restored above then this will match an empty cache
-    # If the src cache was not restored above then this will match a close git cache
-    - restore_cache:
-        paths:
-          - ~/.gclient-cache
-        keys:
-          - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
-          - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}
-        name: Conditionally restoring git cache
-    - run:
-        name: Set GIT_CACHE_PATH to make gclient to use the cache
-        command: |
-          # CircleCI does not support interpolation when setting environment variables.
-          # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
-          echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+    - *step-generate-deps-hash
+    - *step-touch-sync-done
+    - *step-maybe-restore-src-cache
+    - *step-maybe-restore-git-cache
+    - *step-set-git-cache-path
     # This sync call only runs if .circle-sync-done is an EMPTY file
     - *step-gclient-sync
-    # Persist the git cache based on the hash of DEPS and .circle-sync-done
-    # If the src cache was restored above then this will persist an empty cache
-    - save_cache:
-        paths:
-          - ~/.gclient-cache
-        key: v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
-        name: Persisting git cache
     # These next few steps reset Electron to the correct commit regardless of which cache was restored
     - run:
         name: Wipe Electron
         command: rm -rf src/electron
     - *step-checkout-electron
-    - run:
-        name: Run Electron Only Hooks
-        command: gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
-    - run:
-        name: Generate DEPS Hash
-        command: (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
-    # Mark the sync as done for future cache saving
-    - run:
-        name: Mark Sync Done
-        command: echo DONE > src/electron/.circle-sync-done
-    # Minimize the size of the cache
-    - run:
-        name: Remove some unused data to avoid storing it in the workspace/cache
-        command: |
-          rm -rf src/android_webview
-          rm -rf src/ios
-          rm -rf src/third_party/blink/web_tests
-          rm -rf src/third_party/blink/perf_tests
-          rm -rf src/third_party/hunspell_dictionaries
-          rm -rf src/third_party/WebKit/LayoutTests
-    # Save the src cache based on the deps hash
-    - save_cache:
-        paths:
-          - ./src
-        key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
-        name: Persisting src cache
-    - save_cache:
-        paths:
-          - /usr/local/Homebrew
-        key: v1-brew-cache-{{ arch }}
-        name: Persisting brew cache
+    - *step-run-electron-only-hooks
+    - *step-generate-deps-hash-cleanly
+    - *step-mark-sync-done
+    - *step-minimize-workspace-size-from-checkout
     - persist_to_workspace:
         root: .
         paths:
           - depot_tools
           - src
 
+steps-checkout-and-save-cache: &steps-checkout-and-save-cache
+  steps:
+    - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-persist-doc-only-change
+    - *step-maybe-early-exit-doc-only-change
+    - *step-depot-tools-get
+    - *step-depot-tools-add-to-path
+    - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
+    - *step-install-gnutar-on-mac
+
+    - *step-generate-deps-hash
+    - *step-touch-sync-done
+    - *step-maybe-restore-src-cache
+    - *step-maybe-restore-git-cache
+    - *step-set-git-cache-path
+    # This sync call only runs if .circle-sync-done is an EMPTY file
+    - *step-gclient-sync
+    - *step-save-git-cache
+    # These next few steps reset Electron to the correct commit regardless of which cache was restored
+    - run:
+        name: Wipe Electron
+        command: rm -rf src/electron
+    - *step-checkout-electron
+    - *step-run-electron-only-hooks
+    - *step-generate-deps-hash-cleanly
+    - *step-mark-sync-done
+    - *step-minimize-workspace-size-from-checkout
+    - *step-save-src-cache
+    - *step-save-brew-cache
+
 steps-electron-gn-check: &steps-electron-gn-check
   steps:
     - attach_workspace:
         at: .
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-gn-gen-default
@@ -684,32 +896,15 @@ steps-electron-build: &steps-electron-build
   steps:
     - attach_workspace:
         at: .
-    - *step-depot-tools-add-to-path
-    - *step-setup-env-for-build
-    - *step-gn-gen-default
-
-    # Electron app
-    - *step-electron-build
-    - *step-electron-dist-build
-    - *step-electron-dist-store
-    - *step-ninja-summary
-
-    # Node.js headers
-    - *step-nodejs-headers-build
-    - *step-nodejs-headers-store
-
-    - *step-show-sccache-stats
-
-steps-electron-build-for-tests: &steps-electron-build-for-tests
-  steps:
-    - attach_workspace:
-        at: .
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync-on-mac
     - *step-gn-gen-default
+    - *step-delete-git-directories
 
     # Electron app
     - *step-electron-build
@@ -717,6 +912,10 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-electron-dist-build
     - *step-electron-dist-store
     - *step-ninja-summary
+
+    # Native test targets
+    - *step-native-unittests-build
+    - *step-native-unittests-store
 
     # Node.js headers
     - *step-nodejs-headers-build
@@ -735,16 +934,143 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-ffmpeg-build
     - *step-ffmpeg-store
 
+    # hunspell
+    - *step-hunspell-build
+    - *step-hunspell-store
+
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
+    - *step-symbols-store
 
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
 
     - *step-maybe-notify-slack-failure
+
+steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-inline-checkout-for-tests
+  steps:
+    # Checkout - Copied ffrom steps-checkout
+    - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-persist-doc-only-change
+    - *step-maybe-early-exit-doc-only-change
+    - *step-depot-tools-get
+    - *step-depot-tools-add-to-path
+    - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
+    - *step-install-gnutar-on-mac
+    - *step-generate-deps-hash
+    - *step-touch-sync-done
+    - *step-maybe-restore-src-cache
+    - *step-maybe-restore-git-cache
+    - *step-set-git-cache-path
+    # This sync call only runs if .circle-sync-done is an EMPTY file
+    - *step-gclient-sync
+    # These next few steps reset Electron to the correct commit regardless of which cache was restored
+    - run:
+        name: Wipe Electron
+        command: rm -rf src/electron
+    - *step-checkout-electron
+    - *step-run-electron-only-hooks
+    - *step-generate-deps-hash-cleanly
+    - *step-mark-sync-done
+    - *step-minimize-workspace-size-from-checkout
+
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
+    - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
+    - *step-install-npm-deps-on-mac
+    - *step-fix-sync-on-mac
+    - *step-gn-gen-default
+    - *step-delete-git-directories
+
+    # Electron app
+    - *step-electron-build
+    - *step-ninja-summary
+    - *step-ninja-report
+    - *step-maybe-electron-dist-strip
+    - *step-electron-dist-build
+    - *step-electron-dist-store
+
+    # Native test targets
+    - *step-native-unittests-build
+    - *step-native-unittests-store
+
+    # Node.js headers
+    - *step-nodejs-headers-build
+    - *step-nodejs-headers-store
+
+    - *step-show-sccache-stats
+
+    # mksnapshot
+    - *step-mksnapshot-build
+    - *step-mksnapshot-store
+    - *step-maybe-cross-arch-snapshot
+    - *step-maybe-cross-arch-snapshot-store
+
+    # ffmpeg
+    - *step-ffmpeg-gn-gen
+    - *step-ffmpeg-build
+    - *step-ffmpeg-store
+
+    # hunspell
+    - *step-hunspell-build
+    - *step-hunspell-store
+
+    # Save all data needed for a further tests run.
+    - *step-persist-data-for-tests
+
+    - *step-maybe-generate-breakpad-symbols
+    - *step-maybe-zip-symbols
+    - *step-symbols-store
+
+    # Trigger tests on arm hardware if needed
+    - *step-maybe-trigger-arm-test
+
+    - *step-maybe-notify-slack-failure
+
+steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-change
+  steps:
+    # Checkout - Copied ffrom steps-checkout
+    - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-maybe-early-exit-no-doc-change
+    - *step-depot-tools-get
+    - *step-depot-tools-add-to-path
+    - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
+    - *step-install-gnutar-on-mac
+    - *step-generate-deps-hash
+    - *step-touch-sync-done
+    - *step-maybe-restore-src-cache
+    - *step-maybe-restore-git-cache
+    - *step-set-git-cache-path
+    # This sync call only runs if .circle-sync-done is an EMPTY file
+    - *step-gclient-sync
+    # These next few steps reset Electron to the correct commit regardless of which cache was restored
+    - run:
+        name: Wipe Electron
+        command: rm -rf src/electron
+    - *step-checkout-electron
+    - *step-run-electron-only-hooks
+    - *step-generate-deps-hash-cleanly
+    - *step-mark-sync-done
+    - *step-minimize-workspace-size-from-checkout
+
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
+    - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
+    - *step-install-npm-deps-on-mac
+    - *step-fix-sync-on-mac
+    - *step-gn-gen-default
+
+    #Compile ts/js to verify doc change didn't break anything
+    - *step-ts-compile
 
 steps-electron-build-for-publish: &steps-electron-build-for-publish
   steps:
@@ -760,11 +1086,12 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Electron app
     - *step-electron-build
+    - *step-maybe-generate-breakpad-symbols
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
+    - *step-symbols-store
 
     # mksnapshot
     - *step-mksnapshot-build
@@ -782,6 +1109,10 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
     - *step-ffmpeg-store
+
+    # hunspell
+    - *step-hunspell-build
+    - *step-hunspell-store
 
     # typescript defs
     - *step-maybe-generate-typescript-defs
@@ -863,6 +1194,7 @@ steps-tests: &steps-tests
   steps:
     - attach_workspace:
         at: .
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
     - *step-mksnapshot-unzip
@@ -881,7 +1213,8 @@ steps-tests: &steps-tests
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
-          (cd electron && node script/yarn test -- --ci --enable-logging)
+          (cd electron && node script/yarn test --runners=main --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
+          (cd electron && node script/yarn test --runners=remote --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
     - run:
         name: Check test results existence
         command: |
@@ -905,6 +1238,7 @@ steps-test-nan: &steps-test-nan
   steps:
     - attach_workspace:
           at: .
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
     - *step-setup-linux-for-headless-testing
@@ -920,6 +1254,7 @@ steps-test-node: &steps-test-node
   steps:
     - attach_workspace:
           at: .
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
     - *step-setup-linux-for-headless-testing
@@ -937,7 +1272,6 @@ chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
 
 # List of all jobs.
-version: 2
 jobs:
   # Layer 0: Lint. Standalone.
   lint:
@@ -946,52 +1280,57 @@ jobs:
       <<: *env-linux-medium
     <<: *steps-lint
 
+  ts-compile-doc-change:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-testing-build
+    <<: *steps-electron-ts-compile-for-doc-change
+
   # Layer 1: Checkout.
-  linux-checkout:
+  linux-checkout-fast:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-checkout
+    <<: *steps-checkout-fast
+
+  linux-checkout-and-save-cache:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-checkout-and-save-cache
 
   linux-checkout-for-native-tests:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_pyyaml=True'
-    <<: *steps-checkout
+    <<: *steps-checkout-fast
 
   linux-checkout-for-native-tests-with-no-patches:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=apply_patches=False --custom-var=checkout_pyyaml=True'
-    <<: *steps-checkout
+    <<: *steps-checkout-fast
 
-  mac-checkout:
+  mac-checkout-fast:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    <<: *steps-checkout
+    <<: *steps-checkout-fast
 
-  # Layer 2: Builds.
-  linux-x64-debug:
+  mac-checkout-and-save-cache:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
-      <<: *env-debug-build
-      <<: *env-enable-sccache
-      <<: *env-ninja-status
-    <<: *steps-electron-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    <<: *steps-checkout-and-save-cache
 
-  linux-x64-debug-gn-check:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-debug-build
-    <<: *steps-electron-gn-check
-
+  # Layer 2: Builds.
   linux-x64-testing:
     <<: *machine-linux-2xlarge
     environment:
@@ -999,7 +1338,8 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-x64-testing-no-run-as-node:
     <<: *machine-linux-2xlarge
@@ -1009,7 +1349,8 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-ninja-status
       <<: *env-disable-run-as-node
-    <<: *steps-electron-build-for-tests
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-x64-testing-gn-check:
     <<: *machine-linux-medium
@@ -1030,30 +1371,22 @@ jobs:
   linux-x64-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   linux-x64-publish:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-release-build
-    <<: *steps-electron-build-for-publish
-
-  linux-ia32-debug:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-ia32
-      <<: *env-debug-build
       <<: *env-enable-sccache
-      <<: *env-ninja-status
-    <<: *steps-electron-build
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    <<: *steps-electron-build-for-publish
 
   linux-ia32-testing:
     <<: *machine-linux-2xlarge
@@ -1063,7 +1396,8 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-ia32-chromedriver:
     <<: *machine-linux-medium
@@ -1078,32 +1412,24 @@ jobs:
   linux-ia32-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   linux-ia32-publish:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
-    <<: *steps-electron-build-for-publish
-
-  linux-arm-debug:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-arm
-      <<: *env-debug-build
       <<: *env-enable-sccache
-      <<: *env-ninja-status
-    <<: *steps-electron-build
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    <<: *steps-electron-build-for-publish
 
   linux-arm-testing:
     <<: *machine-linux-2xlarge
@@ -1114,7 +1440,8 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
-    <<: *steps-electron-build-for-tests
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-arm-chromedriver:
     <<: *machine-linux-medium
@@ -1129,40 +1456,24 @@ jobs:
   linux-arm-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-arm
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   linux-arm-publish:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-arm
       <<: *env-release-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
-    <<: *steps-electron-build-for-publish
-
-  linux-arm64-debug:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-arm64
-      <<: *env-debug-build
       <<: *env-enable-sccache
-      <<: *env-ninja-status
-    <<: *steps-electron-build
-
-  linux-arm64-debug-gn-check:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-arm64
-      <<: *env-debug-build
-    <<: *steps-electron-gn-check
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    <<: *steps-electron-build-for-publish
 
   linux-arm64-testing:
     <<: *machine-linux-2xlarge
@@ -1173,7 +1484,8 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
-    <<: *steps-electron-build-for-tests
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-arm64-testing-gn-check:
     <<: *machine-linux-medium
@@ -1196,21 +1508,23 @@ jobs:
   linux-arm64-release:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   linux-arm64-publish:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
+      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
   osx-testing:
@@ -1220,14 +1534,7 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
-
-  osx-debug-gn-check:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-debug-build
-    <<: *steps-electron-gn-check
+    <<: *steps-electron-build
 
   osx-testing-gn-check:
     <<: *machine-mac
@@ -1252,14 +1559,16 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
+    <<: *steps-electron-build
 
   osx-publish:
     <<: *machine-mac-large
     environment:
-      <<: *env-mac-large
+      <<: *env-mac-large-release
       <<: *env-release-build
+      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
   mas-testing:
@@ -1270,15 +1579,7 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
-    <<: *steps-electron-build-for-tests
-
-  mas-debug-gn-check:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-mas
-      <<: *env-debug-build
-    <<: *steps-electron-gn-check
+    <<: *steps-electron-build
 
   mas-testing-gn-check:
     <<: *machine-mac
@@ -1304,16 +1605,18 @@ jobs:
       <<: *env-mas
       <<: *env-release-build
       <<: *env-enable-sccache
-      <<: *env-ninja-status      
-    <<: *steps-electron-build-for-tests
+      <<: *env-ninja-status
+    <<: *steps-electron-build
 
   mas-publish:
     <<: *machine-mac-large
     environment:
-      <<: *env-mac-large
+      <<: *env-mac-large-release
       <<: *env-mas
       <<: *env-release-build
+      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
   # Layer 3: Tests.
@@ -1362,6 +1665,7 @@ jobs:
       <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
+    parallelism: 3
     <<: *steps-tests
 
   linux-x64-testing-nan:
@@ -1411,6 +1715,7 @@ jobs:
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-stack-dumping
+    parallelism: 3
     <<: *steps-tests
 
   linux-ia32-testing-nan:
@@ -1463,7 +1768,7 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
-      <<: *env-disable-crash-reporter-tests
+    parallelism: 2
     <<: *steps-tests
 
   osx-release-tests:
@@ -1472,7 +1777,6 @@ jobs:
       <<: *env-mac-large
       <<: *env-stack-dumping
       <<: *env-send-slack-notifications
-      <<: *env-disable-crash-reporter-tests
     <<: *steps-tests
 
   osx-verify-ffmpeg:
@@ -1494,6 +1798,7 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
+    parallelism: 2
     <<: *steps-tests
 
   mas-release-tests:
@@ -1568,30 +1873,66 @@ jobs:
       - *step-maybe-notify-slack-success
 
 workflows:
-  version: 2
+  version: 2.1
+
+  # The publish workflows below each contain one job so that they are
+  # compatible with how sudowoodo works today.  If these workflows are
+  # changed to have multiple jobs, then scripts/release/ci-release-build.js
+  # will need to be updated and there will most likely need to be changes to
+  # sudowoodo
+
+  publish-x64-linux:
+    when: << pipeline.parameters.run-linux-x64-publish >>
+    jobs:
+    - linux-x64-publish:
+        context: release-env
+
+  publish-ia32-linux:
+    when: << pipeline.parameters.run-linux-ia32-publish >>
+    jobs:
+    - linux-ia32-publish:
+        context: release-env
+
+  publish-arm-linux:
+    when: << pipeline.parameters.run-linux-arm-publish >>
+    jobs:
+    - linux-arm-publish:
+        context: release-env
+
+  publish-arm64-linux:
+    when: << pipeline.parameters.run-linux-arm64-publish >>
+    jobs:
+    - linux-arm64-publish:
+        context: release-env
+
+  publish-osx:
+    when: << pipeline.parameters.run-osx-publish >>
+    jobs:
+    - osx-publish:
+        context: release-env
+
+  publish-mas:
+    when: << pipeline.parameters.run-mas-publish >>
+    jobs:
+    - mas-publish:
+        context: release-env
+
   lint:
+    when: << pipeline.parameters.run-lint >>
     jobs:
       - lint
 
   build-linux:
+    when: << pipeline.parameters.run-build-linux >>
     jobs:
-      - linux-checkout
+      - linux-checkout-fast
+      - linux-checkout-and-save-cache
 
-      - linux-x64-debug:
-          requires:
-            - linux-checkout
-      - linux-x64-debug-gn-check:
-          requires:
-            - linux-checkout
-      - linux-x64-testing:
-          requires:
-            - linux-checkout
-      - linux-x64-testing-no-run-as-node:
-          requires:
-            - linux-checkout
+      - linux-x64-testing
+      - linux-x64-testing-no-run-as-node
       - linux-x64-testing-gn-check:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
@@ -1602,12 +1943,7 @@ workflows:
           requires:
             - linux-x64-testing
 
-      - linux-ia32-debug:
-          requires:
-            - linux-checkout
-      - linux-ia32-testing:
-          requires:
-            - linux-checkout
+      - linux-ia32-testing
       - linux-ia32-testing-tests:
           requires:
             - linux-ia32-testing
@@ -1618,39 +1954,27 @@ workflows:
           requires:
             - linux-ia32-testing
 
-      - linux-arm-debug:
-          requires:
-            - linux-checkout
-      - linux-arm-testing:
-          requires:
-            - linux-checkout
+      - linux-arm-testing
 
-      - linux-arm64-debug:
-          requires:
-            - linux-checkout
-      - linux-arm64-debug-gn-check:
-          requires:
-            - linux-checkout
-      - linux-arm64-testing:
-          requires:
-            - linux-checkout
+      - linux-arm64-testing
       - linux-arm64-testing-gn-check:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
+      - ts-compile-doc-change
 
   build-mac:
+    when: << pipeline.parameters.run-build-mac >>
     jobs:
-      - mac-checkout
+      - mac-checkout-fast
+      - mac-checkout-and-save-cache
+
       - osx-testing:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
 
-      - osx-debug-gn-check:
-          requires:
-            - mac-checkout
       - osx-testing-gn-check:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
 
       - osx-testing-tests:
           requires:
@@ -1658,14 +1982,11 @@ workflows:
 
       - mas-testing:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
 
-      - mas-debug-gn-check:
-          requires:
-            - mac-checkout
       - mas-testing-gn-check:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
 
       - mas-testing-tests:
           requires:
@@ -1681,11 +2002,11 @@ workflows:
                 - master
                 - *chromium-upgrade-branches
     jobs:
-      - linux-checkout
+      - linux-checkout-fast
 
       - linux-x64-release:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-x64-release-tests:
           requires:
             - linux-x64-release
@@ -1697,7 +2018,7 @@ workflows:
             - linux-x64-release
       - linux-x64-chromedriver:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-x64-release-summary:
           requires:
             - linux-x64-release
@@ -1707,7 +2028,7 @@ workflows:
 
       - linux-ia32-release:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-ia32-release-tests:
           requires:
             - linux-ia32-release
@@ -1719,7 +2040,7 @@ workflows:
             - linux-ia32-release
       - linux-ia32-chromedriver:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-ia32-release-summary:
           requires:
             - linux-ia32-release
@@ -1729,10 +2050,10 @@ workflows:
 
       - linux-arm-release:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm-chromedriver:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm-release-summary:
           requires:
             - linux-arm-release
@@ -1741,10 +2062,10 @@ workflows:
 
       - linux-arm64-release:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm64-chromedriver:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm64-release-summary:
           requires:
             - linux-arm64-release
@@ -1760,11 +2081,11 @@ workflows:
                 - master
                 - *chromium-upgrade-branches
     jobs:
-      - mac-checkout
+      - mac-checkout-fast
 
       - osx-release:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
       - osx-release-tests:
           requires:
             - osx-release
@@ -1776,7 +2097,7 @@ workflows:
             - osx-release
       - osx-chromedriver:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
       - osx-release-summary:
           requires:
           - osx-release
@@ -1786,7 +2107,7 @@ workflows:
 
       - mas-release:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
       - mas-release-tests:
           requires:
             - mas-release
@@ -1798,7 +2119,7 @@ workflows:
             - mas-release
       - mas-chromedriver:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
       - mas-release-summary:
           requires:
           - mas-release

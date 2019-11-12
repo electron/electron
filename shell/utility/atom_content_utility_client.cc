@@ -13,19 +13,20 @@
 #include "content/public/common/service_manager_connection.h"
 #include "content/public/common/simple_connection_filter.h"
 #include "content/public/utility/utility_thread.h"
+#include "mojo/public/cpp/bindings/service_factory.h"
 #include "services/proxy_resolver/proxy_resolver_factory_impl.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "services/service_manager/public/cpp/service.h"
 #include "services/service_manager/sandbox/switches.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/services/printing/printing_service.h"
-#include "chrome/services/printing/public/mojom/constants.mojom.h"
-#include "components/services/pdf_compositor/public/cpp/pdf_compositor_service_factory.h"
+#include "components/services/pdf_compositor/pdf_compositor_impl.h"
 #include "components/services/pdf_compositor/public/mojom/pdf_compositor.mojom.h"
 
 #if defined(OS_WIN)
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
+#include "chrome/services/printing/printing_service.h"
+#include "chrome/services/printing/public/mojom/printing_service.mojom.h"
 #include "chrome/utility/printing_handler.h"
 #endif  // defined(OS_WIN)
 
@@ -35,11 +36,27 @@ namespace electron {
 
 namespace {
 
-void RunServiceAsyncThenTerminateProcess(
-    std::unique_ptr<service_manager::Service> service) {
-  service_manager::Service::RunAsyncUntilTermination(
-      std::move(service),
-      base::BindOnce([] { content::UtilityThread::Get()->ReleaseProcess(); }));
+#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+auto RunPrintingService(
+    mojo::PendingReceiver<printing::mojom::PrintingService> receiver) {
+  return std::make_unique<printing::PrintingService>(std::move(receiver));
+}
+#endif
+
+#if BUILDFLAG(ENABLE_PRINTING)
+auto RunPdfCompositor(
+    mojo::PendingReceiver<printing::mojom::PdfCompositor> receiver) {
+  return std::make_unique<printing::PdfCompositorImpl>(
+      std::move(receiver), true /* initialize_environment */,
+      content::UtilityThread::Get()->GetIOTaskRunner());
+}
+#endif
+
+auto RunProxyResolver(
+    mojo::PendingReceiver<proxy_resolver::mojom::ProxyResolverFactory>
+        receiver) {
+  return std::make_unique<proxy_resolver::ProxyResolverFactoryImpl>(
+      std::move(receiver));
 }
 
 }  // namespace
@@ -50,7 +67,7 @@ AtomContentUtilityClient::AtomContentUtilityClient() : elevated_(false) {
 #endif
 }
 
-AtomContentUtilityClient::~AtomContentUtilityClient() {}
+AtomContentUtilityClient::~AtomContentUtilityClient() = default;
 
 // The guts of this came from the chromium implementation
 // https://cs.chromium.org/chromium/src/chrome/utility/
@@ -99,43 +116,21 @@ bool AtomContentUtilityClient::OnMessageReceived(const IPC::Message& message) {
   return false;
 }
 
-bool AtomContentUtilityClient::HandleServiceRequest(
-    const std::string& service_name,
-    service_manager::mojom::ServiceRequest request) {
-  auto service = MaybeCreateMainThreadService(service_name, std::move(request));
-  if (service) {
-    RunServiceAsyncThenTerminateProcess(std::move(service));
-    return true;
-  }
-
-  return false;
-}
-
-void AtomContentUtilityClient::RunIOThreadService(
-    mojo::GenericPendingReceiver* receiver) {
-  if (auto factory_receiver =
-          receiver->As<proxy_resolver::mojom::ProxyResolverFactory>()) {
-    static base::NoDestructor<proxy_resolver::ProxyResolverFactoryImpl> factory(
-        std::move(factory_receiver));
-    return;
-  }
-}
-
-std::unique_ptr<service_manager::Service>
-AtomContentUtilityClient::MaybeCreateMainThreadService(
-    const std::string& service_name,
-    service_manager::mojom::ServiceRequest request) {
+mojo::ServiceFactory* AtomContentUtilityClient::GetMainThreadServiceFactory() {
+  static base::NoDestructor<mojo::ServiceFactory> factory {
 #if BUILDFLAG(ENABLE_PRINTING)
-  if (service_name == printing::mojom::kServiceName) {
-    return printing::CreatePdfCompositorService(std::move(request));
-  }
-
-  if (service_name == printing::mojom::kChromePrintingServiceName) {
-    return std::make_unique<printing::PrintingService>(std::move(request));
-  }
+    RunPdfCompositor,
+#if defined(OS_WIN)
+        RunPrintingService
 #endif
+#endif
+  };
+  return factory.get();
+}
 
-  return nullptr;
+mojo::ServiceFactory* AtomContentUtilityClient::GetIOThreadServiceFactory() {
+  static base::NoDestructor<mojo::ServiceFactory> factory{RunProxyResolver};
+  return factory.get();
 }
 
 }  // namespace electron

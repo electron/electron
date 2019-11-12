@@ -1,14 +1,9 @@
-import * as chai from 'chai'
-import * as chaiAsPromised from 'chai-as-promised'
+import { expect } from 'chai'
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
-
-const { expect } = chai
-
-chai.use(chaiAsPromised)
 
 describe('ipc module', () => {
   describe('invoke', () => {
-    let w = (null as unknown as BrowserWindow);
+    let w = (null as unknown as BrowserWindow)
 
     before(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
@@ -18,13 +13,13 @@ describe('ipc module', () => {
       w.destroy()
     })
 
-    async function rendererInvoke(...args: any[]) {
-      const {ipcRenderer} = require('electron')
+    async function rendererInvoke (...args: any[]) {
+      const { ipcRenderer } = require('electron')
       try {
         const result = await ipcRenderer.invoke('test', ...args)
-        ipcRenderer.send('result', {result})
+        ipcRenderer.send('result', { result })
       } catch (e) {
-        ipcRenderer.send('result', {error: e.message})
+        ipcRenderer.send('result', { error: e.message })
       }
     }
 
@@ -34,7 +29,7 @@ describe('ipc module', () => {
         return 3
       })
       const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
-        expect(arg).to.deep.equal({result: 3})
+        expect(arg).to.deep.equal({ result: 3 })
         resolve()
       }))
       await w.webContents.executeJavaScript(`(${rendererInvoke})(123)`)
@@ -48,7 +43,7 @@ describe('ipc module', () => {
         return 3
       })
       const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
-        expect(arg).to.deep.equal({result: 3})
+        expect(arg).to.deep.equal({ result: 3 })
         resolve()
       }))
       await w.webContents.executeJavaScript(`(${rendererInvoke})(123)`)
@@ -111,7 +106,7 @@ describe('ipc module', () => {
   })
 
   describe('ordering', () => {
-    let w = (null as unknown as BrowserWindow);
+    let w = (null as unknown as BrowserWindow)
 
     before(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
@@ -126,21 +121,21 @@ describe('ipc module', () => {
       ipcMain.on('test-async', (e, i) => { received.push(i) })
       ipcMain.on('test-sync', (e, i) => { received.push(i); e.returnValue = null })
       const done = new Promise(resolve => ipcMain.once('done', () => { resolve() }))
-      try {
-        function rendererStressTest() {
-          const {ipcRenderer} = require('electron')
-          for (let i = 0; i < 1000; i++) {
-            switch ((Math.random() * 2) | 0) {
-              case 0:
-                ipcRenderer.send('test-async', i)
-                break;
-              case 1:
-                ipcRenderer.sendSync('test-sync', i)
-                break;
-            }
+      function rendererStressTest () {
+        const { ipcRenderer } = require('electron')
+        for (let i = 0; i < 1000; i++) {
+          switch ((Math.random() * 2) | 0) {
+            case 0:
+              ipcRenderer.send('test-async', i)
+              break
+            case 1:
+              ipcRenderer.sendSync('test-sync', i)
+              break
           }
-          ipcRenderer.send('done')
         }
+        ipcRenderer.send('done')
+      }
+      try {
         w.webContents.executeJavaScript(`(${rendererStressTest})()`)
         await done
       } finally {
@@ -157,24 +152,24 @@ describe('ipc module', () => {
       ipcMain.on('test-async', (e, i) => { received.push(i) })
       ipcMain.on('test-sync', (e, i) => { received.push(i); e.returnValue = null })
       const done = new Promise(resolve => ipcMain.once('done', () => { resolve() }))
-      try {
-        function rendererStressTest() {
-          const {ipcRenderer} = require('electron')
-          for (let i = 0; i < 1000; i++) {
-            switch ((Math.random() * 3) | 0) {
-              case 0:
-                ipcRenderer.send('test-async', i)
-                break;
-              case 1:
-                ipcRenderer.sendSync('test-sync', i)
-                break;
-              case 2:
-                ipcRenderer.invoke('test-invoke', i)
-                break;
-            }
+      function rendererStressTest () {
+        const { ipcRenderer } = require('electron')
+        for (let i = 0; i < 1000; i++) {
+          switch ((Math.random() * 3) | 0) {
+            case 0:
+              ipcRenderer.send('test-async', i)
+              break
+            case 1:
+              ipcRenderer.sendSync('test-sync', i)
+              break
+            case 2:
+              ipcRenderer.invoke('test-invoke', i)
+              break
           }
-          ipcRenderer.send('done')
         }
+        ipcRenderer.send('done')
+      }
+      try {
         w.webContents.executeJavaScript(`(${rendererStressTest})()`)
         await done
       } finally {

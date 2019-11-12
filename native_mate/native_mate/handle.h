@@ -16,7 +16,7 @@ namespace mate {
 template <typename T>
 class Handle {
  public:
-  Handle() : object_(NULL) {}
+  Handle() = default;
 
   Handle(v8::Local<v8::Object> wrapper, T* object)
       : wrapper_(wrapper), object_(object) {}
@@ -34,7 +34,7 @@ class Handle {
 
  private:
   v8::Local<v8::Object> wrapper_;
-  T* object_;
+  T* object_ = nullptr;
 };
 
 template <typename T>
@@ -68,5 +68,23 @@ mate::Handle<T> CreateHandle(v8::Isolate* isolate, T* object) {
 }
 
 }  // namespace mate
+
+namespace gin {
+
+// Keep compatibility with gin.
+template <typename T>
+struct Converter<mate::Handle<T>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const mate::Handle<T>& in) {
+    return mate::ConvertToV8(isolate, in);
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     mate::Handle<T>* out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+};
+
+}  // namespace gin
 
 #endif  // NATIVE_MATE_NATIVE_MATE_HANDLE_H_

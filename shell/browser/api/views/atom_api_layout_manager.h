@@ -7,14 +7,14 @@
 
 #include <memory>
 
-#include "shell/browser/api/trackable_object.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "ui/views/layout/layout_manager.h"
 
 namespace electron {
 
 namespace api {
 
-class LayoutManager : public mate::TrackableObject<LayoutManager> {
+class LayoutManager : public gin_helper::TrackableObject<LayoutManager> {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
 

@@ -48,3 +48,12 @@ would run `npm run test -- -g ipc`.
 1. Push the Windows key and search for _Manage optional features_.
 1. Click _Add a feature_.
 1. Select _Japanese Supplemental Fonts_ and click _Install_.
+
+
+Some tests which rely on precise pixel measurements may not work correctly on
+devices with Hi-DPI screen settings due to floating point precision errors.
+To run these tests correctly, make sure the device is set to 100% scaling.
+
+To configure display scaling:
+1. Push the Windows key and search for _Display settings_.
+1. Under _Scale and layout_, make sure that the device is set to 100%.

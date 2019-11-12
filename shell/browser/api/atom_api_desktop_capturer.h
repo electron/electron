@@ -11,14 +11,14 @@
 
 #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
-#include "native_mate/handle.h"
-#include "shell/browser/api/trackable_object.h"
+#include "gin/handle.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
 
 namespace api {
 
-class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
+class DesktopCapturer : public gin_helper::TrackableObject<DesktopCapturer>,
                         public DesktopMediaListObserver {
  public:
   struct Source {
@@ -30,7 +30,7 @@ class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
     bool fetch_icon = false;
   };
 
-  static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
+  static gin::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -44,16 +44,15 @@ class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
   explicit DesktopCapturer(v8::Isolate* isolate);
   ~DesktopCapturer() override;
 
-  // DesktopMediaListObserver overrides.
-  void OnSourceAdded(DesktopMediaList* list, int index) override;
-  void OnSourceRemoved(DesktopMediaList* list, int index) override;
+  // DesktopMediaListObserver:
+  void OnSourceAdded(DesktopMediaList* list, int index) override {}
+  void OnSourceRemoved(DesktopMediaList* list, int index) override {}
   void OnSourceMoved(DesktopMediaList* list,
                      int old_index,
-                     int new_index) override;
-  void OnSourceNameChanged(DesktopMediaList* list, int index) override;
-  void OnSourceThumbnailChanged(DesktopMediaList* list, int index) override;
+                     int new_index) override {}
+  void OnSourceNameChanged(DesktopMediaList* list, int index) override {}
+  void OnSourceThumbnailChanged(DesktopMediaList* list, int index) override {}
   void OnSourceUnchanged(DesktopMediaList* list) override;
-  bool ShouldScheduleNextRefresh(DesktopMediaList* list) override;
 
  private:
   void UpdateSourcesList(DesktopMediaList* list);
@@ -67,6 +66,8 @@ class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
 #if defined(OS_WIN)
   bool using_directx_capturer_ = false;
 #endif  // defined(OS_WIN)
+
+  base::WeakPtrFactory<DesktopCapturer> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };

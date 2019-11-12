@@ -94,7 +94,8 @@ void WindowsToastNotification::Show(const NotificationOptions& options) {
 
   ComPtr<IXmlDocument> toast_xml;
   if (FAILED(GetToastXml(toast_manager_.Get(), options.title, options.msg,
-                         icon_path, options.silent, &toast_xml))) {
+                         icon_path, options.timeout_type, options.silent,
+                         &toast_xml))) {
     NotificationFailed();
     return;
   }
@@ -149,6 +150,7 @@ bool WindowsToastNotification::GetToastXml(
     const std::wstring& title,
     const std::wstring& msg,
     const std::wstring& icon_path,
+    const std::wstring& timeout_type,
     bool silent,
     IXmlDocument** toast_xml) {
   ABI::Windows::UI::Notifications::ToastTemplateType template_type;
@@ -183,6 +185,15 @@ bool WindowsToastNotification::GetToastXml(
     }
   }
 
+  // Configure the toast's timeout settings
+  if (timeout_type == base::ASCIIToUTF16("never")) {
+    if (FAILED(SetXmlScenarioReminder(*toast_xml))) {
+      if (IsDebuggingNotifications())
+        LOG(INFO) << "Setting \"scenario\" option on notification failed";
+      return false;
+    }
+  }
+
   // Configure the toast's notification sound
   if (silent) {
     if (FAILED(SetXmlAudioSilent(*toast_xml))) {
@@ -199,6 +210,56 @@ bool WindowsToastNotification::GetToastXml(
     return SetXmlImage(*toast_xml, icon_path);
 
   return true;
+}
+
+bool WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
+  ScopedHString tag(L"toast");
+  if (!tag.success())
+    return false;
+
+  ComPtr<IXmlNodeList> node_list;
+  if (FAILED(doc->GetElementsByTagName(tag, &node_list)))
+    return false;
+
+  // Check that root "toast" node exists
+  ComPtr<IXmlNode> root;
+  if (FAILED(node_list->Item(0, &root)))
+    return false;
+
+  // get attributes of root "toast" node
+  ComPtr<IXmlNamedNodeMap> attributes;
+  if (FAILED(root->get_Attributes(&attributes)))
+    return false;
+
+  ComPtr<IXmlAttribute> scenario_attribute;
+  ScopedHString scenario_str(L"scenario");
+  if (FAILED(doc->CreateAttribute(scenario_str, &scenario_attribute)))
+    return false;
+
+  ComPtr<IXmlNode> scenario_attribute_node;
+  if (FAILED(scenario_attribute.As(&scenario_attribute_node)))
+    return false;
+
+  ScopedHString scenario_value(L"reminder");
+  if (!scenario_value.success())
+    return false;
+
+  ComPtr<IXmlText> scenario_text;
+  if (FAILED(doc->CreateTextNode(scenario_value, &scenario_text)))
+    return false;
+
+  ComPtr<IXmlNode> scenario_node;
+  if (FAILED(scenario_text.As(&scenario_node)))
+    return false;
+
+  ComPtr<IXmlNode> child_node;
+  if (FAILED(scenario_attribute_node->AppendChild(scenario_node.Get(),
+                                                  &child_node)))
+    return false;
+
+  ComPtr<IXmlNode> scenario_attribute_pnode;
+  return SUCCEEDED(attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
+                                                  &scenario_attribute_pnode));
 }
 
 bool WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
@@ -413,7 +474,7 @@ ToastEventHandler::~ToastEventHandler() {}
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     IInspectable* args) {
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&Notification::NotificationClicked, notification_));
   if (IsDebuggingNotifications())
@@ -425,7 +486,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) {
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&Notification::NotificationDismissed, notification_));
   if (IsDebuggingNotifications())
@@ -437,7 +498,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) {
-  base::PostTaskWithTraits(
+  base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&Notification::NotificationFailed, notification_));
   if (IsDebuggingNotifications())

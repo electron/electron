@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+  </head>
+  <body>
+    <div>
+      <h3>Take a Screenshot</h3>
+      <i>Supports: Win, macOS, Linux <span>|</span> Process: Renderer</i>
+       <div>
+        <div>
+          <div>
+            <button id="screen-shot">View Demo</button>
+            <span id="screenshot-path"></span>
+          </div>
+          <p>This demo uses the <code>desktopCapturer</code> module to gather screens in use and select the entire screen and take a snapshot of what is visible.</p>
+          <p>Clicking the demo button will take a screenshot of your current screen and open it in your default viewer.</p>
+        </div>
+    </div>
+    <script>
+      // You can also require other files to run in this process
+      require('./renderer.js')
+    </script>
+  </body>
+</html>

@@ -58,6 +58,23 @@ NSString* GetLoginHelperBundleIdentifier() {
       stringByAppendingString:@".loginhelper"];
 }
 
+std::string OpenPathOnThread(const base::FilePath& full_path) {
+  NSString* path_string = base::SysUTF8ToNSString(full_path.value());
+  NSURL* url = [NSURL fileURLWithPath:path_string];
+  if (!url)
+    return "Invalid path";
+
+  const NSWorkspaceLaunchOptions launch_options =
+      NSWorkspaceLaunchAsync | NSWorkspaceLaunchWithErrorPresentation;
+  BOOL success = [[NSWorkspace sharedWorkspace] openURLs:@[ url ]
+                                 withAppBundleIdentifier:nil
+                                                 options:launch_options
+                          additionalEventParamDescriptor:nil
+                                       launchIdentifiers:NULL];
+
+  return success ? "" : "Failed to open path";
+}
+
 }  // namespace
 
 namespace platform_util {
@@ -75,28 +92,13 @@ void ShowItemInFolder(const base::FilePath& path) {
   }
 }
 
-bool OpenItem(const base::FilePath& full_path) {
-  DCHECK([NSThread isMainThread]);
-  NSString* path_string = base::SysUTF8ToNSString(full_path.value());
-  if (!path_string)
-    return false;
-
-  NSURL* url = [NSURL fileURLWithPath:path_string];
-  if (!url)
-    return false;
-
-  const NSWorkspaceLaunchOptions launch_options =
-      NSWorkspaceLaunchAsync | NSWorkspaceLaunchWithErrorPresentation;
-  return [[NSWorkspace sharedWorkspace] openURLs:@[ url ]
-                         withAppBundleIdentifier:nil
-                                         options:launch_options
-                  additionalEventParamDescriptor:nil
-                               launchIdentifiers:NULL];
+void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
+  std::move(callback).Run(OpenPathOnThread(full_path));
 }
 
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
-                  OpenExternalCallback callback) {
+                  OpenCallback callback) {
   DCHECK([NSThread isMainThread]);
   NSURL* ns_url = net::NSURLWithGURL(url);
   if (!ns_url) {
@@ -105,7 +107,7 @@ void OpenExternal(const GURL& url,
   }
 
   bool activate = options.activate;
-  __block OpenExternalCallback c = std::move(callback);
+  __block OpenCallback c = std::move(callback);
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
                  ^{
                    __block std::string error = OpenURL(ns_url, activate);
@@ -115,16 +117,35 @@ void OpenExternal(const GURL& url,
                  });
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path) {
+bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
-  BOOL status = [[NSFileManager defaultManager]
-        trashItemAtURL:[NSURL fileURLWithPath:path_string]
-      resultingItemURL:nil
-                 error:nil];
-  if (!path_string || !status)
+  if (!path_string) {
+    LOG(WARNING) << "Invalid file path " << full_path.value();
+    return false;
+  }
+
+  NSURL* url = [NSURL fileURLWithPath:path_string];
+  NSError* err = nil;
+  BOOL did_trash = [[NSFileManager defaultManager] trashItemAtURL:url
+                                                 resultingItemURL:nil
+                                                            error:&err];
+
+  if (delete_on_fail) {
+    // Some volumes may not support a Trash folder or it may be disabled
+    // so these methods will report failure by returning NO or nil and
+    // an NSError with NSFeatureUnsupportedError.
+    // Handle this by deleting the item as a fallback.
+    if (!did_trash && [err code] == NSFeatureUnsupportedError) {
+      did_trash = [[NSFileManager defaultManager] removeItemAtURL:url
+                                                            error:nil];
+    }
+  }
+
+  if (!did_trash)
     LOG(WARNING) << "NSWorkspace failed to move file " << full_path.value()
                  << " to trash";
-  return status;
+
+  return did_trash;
 }
 
 void Beep() {

@@ -21,7 +21,8 @@ def get_symbol_path(symbol_data):
   module_info = get_module_info(symbol_data[:symbol_data.index('\n')])
   if not module_info:
     raise Exception("Couldn't get module info for binary '{}'".format(binary))
-  return os.path.join(module_info.name, module_info.hash, module_info.name + ".sym")
+  exe_name = module_info.name.replace('.pdb', '')
+  return os.path.join(module_info.name, module_info.hash, exe_name + ".sym")
 
 def mkdir_p(path):
   """Simulates mkdir -p."""

@@ -8,12 +8,14 @@ from lib.util import execute, get_out_dir
 
 LINUX_BINARIES_TO_STRIP = [
   'electron',
+  'chrome-sandbox',
+  'crashpad_handler',
   'libffmpeg.so',
   'libGLESv2.so',
   'libEGL.so',
   'swiftshader/libGLESv2.so',
   'swiftshader/libEGL.so',
-  'swiftshader/libvulkan.so'
+  'libvk_swiftshader.so'
 ]
 
 def strip_binaries(directory, target_cpu):

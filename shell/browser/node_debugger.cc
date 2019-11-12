@@ -20,7 +20,7 @@ namespace electron {
 
 NodeDebugger::NodeDebugger(node::Environment* env) : env_(env) {}
 
-NodeDebugger::~NodeDebugger() {}
+NodeDebugger::~NodeDebugger() = default;
 
 void NodeDebugger::Start() {
   auto* inspector = env_->inspector_agent();

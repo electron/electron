@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Wed, 28 Aug 2019 12:21:25 -0700
+Subject: expose SetUserAgent on NetworkContext
+
+Applying
+https://chromium-review.googlesource.com/c/chromium/src/+/1585083 before
+it's merged. There may end up being a better way of doing this, or the
+patch may be merged upstream, at which point this patch should be
+removed.
+
+diff --git a/net/url_request/static_http_user_agent_settings.h b/net/url_request/static_http_user_agent_settings.h
+index 0ccfe130f00ec3b6c75cd8ee04d5a2777e1fd00c..653829457d58bf92057cc36aa8a289703d8b0577 100644
+--- a/net/url_request/static_http_user_agent_settings.h
++++ b/net/url_request/static_http_user_agent_settings.h
+@@ -26,13 +26,17 @@ class NET_EXPORT StaticHttpUserAgentSettings : public HttpUserAgentSettings {
+     accept_language_ = new_accept_language;
+   }
+ 
++  void set_user_agent(const std::string& new_user_agent) {
++    user_agent_ = new_user_agent;
++  }
++
+   // HttpUserAgentSettings implementation
+   std::string GetAcceptLanguage() const override;
+   std::string GetUserAgent() const override;
+ 
+  private:
+   std::string accept_language_;
+-  const std::string user_agent_;
++  std::string user_agent_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(StaticHttpUserAgentSettings);
+ };
+diff --git a/services/network/network_context.cc b/services/network/network_context.cc
+index 144714a3a1e63bb891b86cba12a27de50be7f976..e98a296a6b52ec4c6eb336e2d882a36e6f58b76c 100644
+--- a/services/network/network_context.cc
++++ b/services/network/network_context.cc
+@@ -931,6 +931,13 @@ void NetworkContext::SetNetworkConditions(
+                                       std::move(network_conditions));
+ }
+ 
++void NetworkContext::SetUserAgent(const std::string& new_user_agent) {
++  // This may only be called on NetworkContexts created with a constructor that
++  // calls ApplyContextParamsToBuilder.
++  DCHECK(user_agent_settings_);
++  user_agent_settings_->set_user_agent(new_user_agent);
++}
++
+ void NetworkContext::SetAcceptLanguage(const std::string& new_accept_language) {
+   // This may only be called on NetworkContexts created with the constructor
+   // that calls MakeURLRequestContext().
+diff --git a/services/network/network_context.h b/services/network/network_context.h
+index f0a41d64804eab8195c389b457f6c0119d24a783..b531fa64af4ae625cd8b79c40d08b64b40a76d1e 100644
+--- a/services/network/network_context.h
++++ b/services/network/network_context.h
+@@ -226,6 +226,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+   void CloseIdleConnections(CloseIdleConnectionsCallback callback) override;
+   void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
+                             mojom::NetworkConditionsPtr conditions) override;
++  void SetUserAgent(const std::string& new_user_agent) override;
+   void SetAcceptLanguage(const std::string& new_accept_language) override;
+   void SetEnableReferrers(bool enable_referrers) override;
+ #if defined(OS_CHROMEOS)
+diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
+index 88e78f46415d7a416534e88c13bb45b26cc856f3..6b14d8354375377526e141ee499a7583be3f22b0 100644
+--- a/services/network/public/mojom/network_context.mojom
++++ b/services/network/public/mojom/network_context.mojom
+@@ -932,6 +932,9 @@ interface NetworkContext {
+   SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
+                        NetworkConditions? conditions);
+ 
++  // Updates the user agent to be used for requests.
++  SetUserAgent(string new_user_agent);
++
+   // Updates the Accept-Language header to be used for requests.
+   SetAcceptLanguage(string new_accept_language);
+ 
+diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
+index f7f7e16c5bd6d85e3a65065a61df27d92f38ff1b..62161a5e54ddcbfd37c8ebfe631cb6d697b3d530 100644
+--- a/services/network/test/test_network_context.h
++++ b/services/network/test/test_network_context.h
+@@ -99,6 +99,7 @@ class TestNetworkContext : public mojom::NetworkContext {
+   void CloseIdleConnections(CloseIdleConnectionsCallback callback) override {}
+   void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
+                             mojom::NetworkConditionsPtr conditions) override {}
++  void SetUserAgent(const std::string& new_user_agent) override {}
+   void SetAcceptLanguage(const std::string& new_accept_language) override {}
+   void SetEnableReferrers(bool enable_referrers) override {}
+ #if defined(OS_CHROMEOS)

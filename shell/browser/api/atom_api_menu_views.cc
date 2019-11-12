@@ -16,8 +16,7 @@ namespace electron {
 
 namespace api {
 
-MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : Menu(isolate, wrapper), weak_factory_(this) {}
+MenuViews::MenuViews(gin::Arguments* args) : Menu(args), weak_factory_(this) {}
 
 MenuViews::~MenuViews() = default;
 
@@ -26,6 +25,9 @@ void MenuViews::PopupAt(TopLevelWindow* window,
                         int y,
                         int positioning_item,
                         const base::Closure& callback) {
+  gin_helper::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+
   auto* native_window = static_cast<NativeWindowViews*>(window->window());
   if (!native_window)
     return;
@@ -51,7 +53,7 @@ void MenuViews::PopupAt(TopLevelWindow* window,
   menu_runners_[window_id] =
       std::make_unique<MenuRunner>(model(), flags, close_callback);
   menu_runners_[window_id]->RunMenuAt(
-      native_window->widget(), NULL, gfx::Rect(location, gfx::Size()),
+      native_window->widget(), nullptr, gfx::Rect(location, gfx::Size()),
       views::MenuAnchorPosition::kTopLeft, ui::MENU_SOURCE_MOUSE);
 }
 
@@ -75,8 +77,8 @@ void MenuViews::OnClosed(int32_t window_id, base::Closure callback) {
 }
 
 // static
-mate::WrappableBase* Menu::New(mate::Arguments* args) {
-  return new MenuViews(args->isolate(), args->GetThis());
+mate::WrappableBase* Menu::New(gin::Arguments* args) {
+  return new MenuViews(args);
 }
 
 }  // namespace api

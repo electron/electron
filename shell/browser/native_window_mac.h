@@ -21,7 +21,6 @@
 @class AtomPreviewItem;
 @class AtomTouchBar;
 @class CustomWindowButtonView;
-@class FullSizeContentView;
 
 namespace electron {
 
@@ -29,7 +28,7 @@ class RootViewMac;
 
 class NativeWindowMac : public NativeWindow {
  public:
-  NativeWindowMac(const mate::Dictionary& options, NativeWindow* parent);
+  NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
 
   // NativeWindow:
@@ -59,6 +58,7 @@ class NativeWindowMac : public NativeWindow {
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
+  bool MoveAbove(const std::string& sourceId) override;
   void MoveTop() override;
   bool IsResizable() override;
   void SetMovable(bool movable) override;
@@ -78,8 +78,7 @@ class NativeWindowMac : public NativeWindow {
   bool IsClosable() override;
   void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
-                      int relativeLevel,
-                      std::string* error) override;
+                      int relativeLevel) override;
   ui::ZOrderLevel GetZOrderLevel() override;
   void Center() override;
   void Invalidate() override;
@@ -108,6 +107,7 @@ class NativeWindowMac : public NativeWindow {
   void AddBrowserView(NativeBrowserView* browser_view) override;
   void RemoveBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
+  content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
@@ -133,9 +133,10 @@ class NativeWindowMac : public NativeWindow {
 
   void SetVibrancy(const std::string& type) override;
   void SetTouchBar(
-      const std::vector<mate::PersistentDictionary>& items) override;
+      std::vector<gin_helper::PersistentDictionary> items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
-  void SetEscapeTouchBarItem(const mate::PersistentDictionary& item) override;
+  void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) override;
+  void SetGTKDarkThemeEnabled(bool use_dark_theme) override {}
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
@@ -146,6 +147,7 @@ class NativeWindowMac : public NativeWindow {
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
+  void SetWindowLevel(int level);
 
   enum class TitleBarStyle {
     NORMAL,
@@ -159,7 +161,7 @@ class NativeWindowMac : public NativeWindow {
   AtomTouchBar* touch_bar() const { return touch_bar_.get(); }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
-  bool simple_fullscreen() const { return always_simple_fullscreen_; }
+  bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
 
  protected:
   // views::WidgetDelegate:
@@ -183,10 +185,12 @@ class NativeWindowMac : public NativeWindow {
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;
 
-  // The view that will fill the whole frameless window.
-  base::scoped_nsobject<FullSizeContentView> container_view_;
+  // The NSView that used as contentView of window.
+  //
+  // For frameless window it would fill the whole window.
+  base::scoped_nsobject<NSView> container_view_;
 
-  // The view that fills the client area.
+  // The views::View that fills the client area.
   std::unique_ptr<RootViewMac> root_view_;
 
   bool is_kiosk_ = false;

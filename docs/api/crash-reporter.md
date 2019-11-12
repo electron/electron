@@ -48,7 +48,7 @@ The `crashReporter` module has the following methods:
   * `productName` String (optional) - Defaults to `app.name`.
   * `uploadToServer` Boolean (optional) - Whether crash reports should be sent to the server. Default is `true`.
   * `ignoreSystemCrashHandler` Boolean (optional) - Default is `false`.
-  * `extra` Object (optional) - An object you can define that will be sent along with the
+  * `extra` Record<String, String> (optional) - An object you can define that will be sent along with the
     report. Only string properties are sent correctly. Nested objects are not
     supported. When using Windows, the property names and values must be fewer than 64 characters.
   * `crashesDirectory` String (optional) - Directory to store the crash reports temporarily (only used when the crash reporter is started via `process.crashReporter.start`).
@@ -118,6 +118,10 @@ Remove a extra parameter from the current set of parameters so that it will not 
 ### `crashReporter.getParameters()`
 
 See all of the current parameters being passed to the crash reporter.
+
+### `crashReporter.getCrashesDirectory()`
+
+Returns `String` - The directory where crashes are temporarily stored before being uploaded.
 
 ## Crash Report Payload
 

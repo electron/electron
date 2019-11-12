@@ -6,78 +6,56 @@
 
 #include <utility>
 
-#include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/web_contents.h"
-#include "native_mate/object_template_builder.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "gin/object_template_builder.h"
+#include "shell/common/gin_converters/blink_converter.h"
 
-namespace mate {
+namespace gin_helper {
 
-Event::Event(v8::Isolate* isolate) {
-  Init(isolate);
-}
+gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Event::~Event() {}
+Event::Event() {}
 
-void Event::SetSenderAndMessage(content::RenderFrameHost* sender,
-                                base::Optional<MessageSyncCallback> callback) {
-  DCHECK(!sender_);
+Event::~Event() = default;
+
+void Event::SetCallback(InvokeCallback callback) {
   DCHECK(!callback_);
-  sender_ = sender;
   callback_ = std::move(callback);
-
-  Observe(content::WebContents::FromRenderFrameHost(sender));
-}
-
-void Event::RenderFrameDeleted(content::RenderFrameHost* rfh) {
-  if (sender_ != rfh)
-    return;
-  sender_ = nullptr;
-  callback_.reset();
-}
-
-void Event::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
-                                   content::RenderFrameHost* new_rfh) {
-  if (sender_ && sender_ == old_rfh)
-    sender_ = new_rfh;
-}
-
-void Event::FrameDeleted(content::RenderFrameHost* rfh) {
-  if (sender_ != rfh)
-    return;
-  sender_ = nullptr;
-  callback_.reset();
 }
 
 void Event::PreventDefault(v8::Isolate* isolate) {
-  GetWrapper()
-      ->Set(isolate->GetCurrentContext(),
-            StringToV8(isolate, "defaultPrevented"), v8::True(isolate))
+  v8::Local<v8::Object> self = GetWrapper(isolate).ToLocalChecked();
+  self->Set(isolate->GetCurrentContext(),
+            gin::StringToV8(isolate, "defaultPrevented"), v8::True(isolate))
       .Check();
 }
 
-bool Event::SendReply(const base::Value& result) {
-  if (!callback_ || sender_ == nullptr)
+bool Event::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> result) {
+  if (!callback_)
     return false;
 
-  std::move(*callback_).Run(result.Clone());
-  callback_.reset();
+  blink::CloneableMessage message;
+  if (!gin::ConvertFromV8(isolate, result, &message)) {
+    return false;
+  }
+
+  std::move(callback_).Run(std::move(message));
   return true;
 }
 
-// static
-Handle<Event> Event::Create(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new Event(isolate));
-}
-
-// static
-void Event::BuildPrototype(v8::Isolate* isolate,
-                           v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Event"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder Event::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::Wrappable<Event>::GetObjectTemplateBuilder(isolate)
       .SetMethod("preventDefault", &Event::PreventDefault)
       .SetMethod("sendReply", &Event::SendReply);
 }
 
-}  // namespace mate
+const char* Event::GetTypeName() {
+  return "WebRequest";
+}
+
+// static
+gin::Handle<Event> Event::Create(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new Event());
+}
+
+}  // namespace gin_helper

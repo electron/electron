@@ -52,7 +52,7 @@ describe('systemPreferences module', () => {
 
       for (const badDefault of badDefaults) {
         expect(() => {
-          systemPreferences.registerDefaults(badDefault)
+          systemPreferences.registerDefaults(badDefault as any)
         }).to.throw('Invalid userDefault data provided')
       }
     })
@@ -117,11 +117,70 @@ describe('systemPreferences module', () => {
   })
 
   ifdescribe(process.platform === 'darwin')('systemPreferences.getSystemColor(color)', () => {
+    it('throws on invalid system colors', () => {
+      const color = 'bad-color'
+      expect(() => {
+        systemPreferences.getSystemColor(color as any)
+      }).to.throw(`Unknown system color: ${color}`)
+    })
+
     it('returns a valid system color', () => {
       const colors = ['blue', 'brown', 'gray', 'green', 'orange', 'pink', 'purple', 'red', 'yellow']
-      
+
       colors.forEach(color => {
         const sysColor = systemPreferences.getSystemColor(color as any)
+        expect(sysColor).to.be.a('string')
+      })
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('systemPreferences.getColor(color)', () => {
+    it('throws on invalid colors', () => {
+      const color = 'bad-color'
+      expect(() => {
+        systemPreferences.getColor(color as any)
+      }).to.throw(`Unknown color: ${color}`)
+    })
+
+    it('returns a valid color', () => {
+      const colors = [
+        'alternate-selected-control-text',
+        'control-background',
+        'control',
+        'control-text',
+        'disabled-control-text',
+        'find-highlight',
+        'grid',
+        'header-text',
+        'highlight',
+        'keyboard-focus-indicator',
+        'label',
+        'link',
+        'placeholder-text',
+        'quaternary-label',
+        'scrubber-textured-background',
+        'secondary-label',
+        'selected-content-background',
+        'selected-control',
+        'selected-control-text',
+        'selected-menu-item-text',
+        'selected-text-background',
+        'selected-text',
+        'separator',
+        'shadow',
+        'tertiary-label',
+        'text-background',
+        'text',
+        'under-page-background',
+        'unemphasized-selected-content-background',
+        'unemphasized-selected-text-background',
+        'unemphasized-selected-text',
+        'window-background',
+        'window-frame-text'
+      ]
+
+      colors.forEach(color => {
+        const sysColor = systemPreferences.getColor(color as any)
         expect(sysColor).to.be.a('string')
       })
     })
@@ -177,7 +236,7 @@ describe('systemPreferences module', () => {
 
   ifdescribe(process.platform === 'darwin')('systemPreferences.getMediaAccessStatus(mediaType)', () => {
     const statuses = ['not-determined', 'granted', 'denied', 'restricted', 'unknown']
-    
+
     it('returns an access status for a camera access request', () => {
       const cameraStatus = systemPreferences.getMediaAccessStatus('camera')
       expect(statuses).to.include(cameraStatus)

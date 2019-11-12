@@ -4,20 +4,20 @@
 
 #include <string>
 
-#include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/platform_util.h"
-#include "shell/common/promise_util.h"
 
 #if defined(OS_WIN)
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/shortcut.h"
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<base::win::ShortcutOperation> {
@@ -39,26 +39,26 @@ struct Converter<base::win::ShortcutOperation> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 #endif
 
 namespace {
 
-void OnOpenExternalFinished(electron::util::Promise promise,
-                            const std::string& error) {
+void OnOpenFinished(gin_helper::Promise<void> promise,
+                    const std::string& error) {
   if (error.empty())
     promise.Resolve();
   else
     promise.RejectWithErrorMessage(error.c_str());
 }
 
-v8::Local<v8::Promise> OpenExternal(const GURL& url, mate::Arguments* args) {
-  electron::util::Promise promise(args->isolate());
+v8::Local<v8::Promise> OpenExternal(const GURL& url, gin::Arguments* args) {
+  gin_helper::Promise<void> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   platform_util::OpenExternalOptions options;
   if (args->Length() >= 2) {
-    mate::Dictionary obj;
+    gin::Dictionary obj(nullptr);
     if (args->GetNext(&obj)) {
       obj.Get("activate", &options.activate);
       obj.Get("workingDirectory", &options.working_dir);
@@ -66,17 +66,40 @@ v8::Local<v8::Promise> OpenExternal(const GURL& url, mate::Arguments* args) {
   }
 
   platform_util::OpenExternal(
-      url, options,
-      base::BindOnce(&OnOpenExternalFinished, std::move(promise)));
+      url, options, base::BindOnce(&OnOpenFinished, std::move(promise)));
   return handle;
+}
+
+v8::Local<v8::Promise> OpenPath(v8::Isolate* isolate,
+                                const base::FilePath& full_path) {
+  gin_helper::Promise<const std::string&> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  platform_util::OpenPath(
+      full_path,
+      base::BindOnce(
+          [](gin_helper::Promise<const std::string&> promise,
+             const std::string& err_msg) { promise.Resolve(err_msg); },
+          std::move(promise)));
+  return handle;
+}
+
+bool MoveItemToTrash(gin::Arguments* args) {
+  base::FilePath full_path;
+  args->GetNext(&full_path);
+
+  bool delete_on_fail = false;
+  args->GetNext(&delete_on_fail);
+
+  return platform_util::MoveItemToTrash(full_path, delete_on_fail);
 }
 
 #if defined(OS_WIN)
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
-                       mate::Arguments* args) {
+                       gin_helper::Arguments* args) {
   base::win::ShortcutOperation operation = base::win::SHORTCUT_CREATE_ALWAYS;
   args->GetNext(&operation);
-  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
   if (!args->GetNext(&options)) {
     args->ThrowError();
     return false;
@@ -104,16 +127,16 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
                                                operation);
 }
 
-v8::Local<v8::Value> ReadShortcutLink(mate::Arguments* args,
+v8::Local<v8::Value> ReadShortcutLink(gin_helper::ErrorThrower thrower,
                                       const base::FilePath& path) {
   using base::win::ShortcutProperties;
-  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  gin::Dictionary options = gin::Dictionary::CreateEmpty(thrower.isolate());
   base::win::ScopedCOMInitializer com_initializer;
   base::win::ShortcutProperties properties;
   if (!base::win::ResolveShortcutProperties(
           path, ShortcutProperties::PROPERTIES_ALL, &properties)) {
-    args->ThrowError("Failed to read shortcut link");
-    return v8::Null(args->isolate());
+    thrower.ThrowError("Failed to read shortcut link");
+    return v8::Null(thrower.isolate());
   }
   options.Set("target", properties.target);
   options.Set("cwd", properties.working_dir);
@@ -122,7 +145,7 @@ v8::Local<v8::Value> ReadShortcutLink(mate::Arguments* args,
   options.Set("icon", properties.icon);
   options.Set("iconIndex", properties.icon_index);
   options.Set("appUserModelId", properties.app_id);
-  return options.GetHandle();
+  return gin::ConvertToV8(thrower.isolate(), options);
 }
 #endif
 
@@ -130,11 +153,11 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
-  dict.SetMethod("openItem", &platform_util::OpenItem);
+  dict.SetMethod("openPath", &OpenPath);
   dict.SetMethod("openExternal", &OpenExternal);
-  dict.SetMethod("moveItemToTrash", &platform_util::MoveItemToTrash);
+  dict.SetMethod("moveItemToTrash", &MoveItemToTrash);
   dict.SetMethod("beep", &platform_util::Beep);
 #if defined(OS_WIN)
   dict.SetMethod("writeShortcutLink", &WriteShortcutLink);

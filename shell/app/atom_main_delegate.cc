@@ -126,9 +126,9 @@ void LoadResourceBundle(const std::string& locale) {
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
-AtomMainDelegate::AtomMainDelegate() {}
+AtomMainDelegate::AtomMainDelegate() = default;
 
-AtomMainDelegate::~AtomMainDelegate() {}
+AtomMainDelegate::~AtomMainDelegate() = default;
 
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -149,7 +149,7 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   base::FilePath log_filename;
   base::PathService::Get(base::DIR_EXE, &log_filename);
   log_filename = log_filename.AppendASCII("debug.log");
-  settings.log_file = log_filename.value().c_str();
+  settings.log_file_path = log_filename.value().c_str();
   settings.lock_log = logging::LOCK_LOG_FILE;
   settings.delete_old = logging::DELETE_OLD_LOG_FILE;
 #else
@@ -283,12 +283,12 @@ void AtomMainDelegate::PreCreateMainMessageLoop() {
 }
 
 content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
-  browser_client_.reset(new AtomBrowserClient);
+  browser_client_ = std::make_unique<AtomBrowserClient>();
   return browser_client_.get();
 }
 
 content::ContentGpuClient* AtomMainDelegate::CreateContentGpuClient() {
-  gpu_client_.reset(new AtomGpuClient);
+  gpu_client_ = std::make_unique<AtomGpuClient>();
   return gpu_client_.get();
 }
 
@@ -297,16 +297,16 @@ AtomMainDelegate::CreateContentRendererClient() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   if (IsSandboxEnabled(command_line)) {
-    renderer_client_.reset(new AtomSandboxedRendererClient);
+    renderer_client_ = std::make_unique<AtomSandboxedRendererClient>();
   } else {
-    renderer_client_.reset(new AtomRendererClient);
+    renderer_client_ = std::make_unique<AtomRendererClient>();
   }
 
   return renderer_client_.get();
 }
 
 content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
-  utility_client_.reset(new AtomContentUtilityClient);
+  utility_client_ = std::make_unique<AtomContentUtilityClient>();
   return utility_client_.get();
 }
 

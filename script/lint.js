@@ -15,6 +15,7 @@ const BLACKLIST = new Set([
   ['shell', 'browser', 'mac', 'atom_application_delegate.h'],
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_bundle_mover.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'atom_ns_window.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
@@ -94,8 +95,8 @@ const LINTERS = [ {
   }
 }, {
   key: 'javascript',
-  roots: ['lib', 'spec', 'script', 'default_app'],
-  ignoreRoots: ['spec/node_modules'],
+  roots: ['lib', 'spec', 'spec-main', 'script', 'default_app'],
+  ignoreRoots: ['spec/node_modules', 'spec-main/node_modules'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: (opts, filenames) => {
     const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint')
@@ -136,7 +137,7 @@ const LINTERS = [ {
   key: 'patches',
   roots: ['patches'],
   test: () => true,
-  run: () => {
+  run: (opts, filenames) => {
     const patchesDir = path.resolve(__dirname, '../patches')
     for (const patchTarget of fs.readdirSync(patchesDir)) {
       const targetDir = path.resolve(patchesDir, patchTarget)
@@ -178,6 +179,18 @@ const LINTERS = [ {
           throw new Error(`Expected all the patch files listed in the .patches file at "${dotPatchesPath}" to exist but some did not:\n${JSON.stringify([...patchFileSet.values()], null, 2)}`)
         }
       }
+    }
+
+    let ok = true
+    filenames.filter(f => f.endsWith('.patch')).forEach(f => {
+      const patchText = fs.readFileSync(f, 'utf8')
+      if (/^Subject: .*$\s+^diff/.test(patchText)) {
+        console.warn(`Patch file '${f}' has no description. Every patch must contain a justification for why the patch exists and the plan for its removal.`)
+        ok = false
+      }
+    })
+    if (!ok) {
+      process.exit(1)
     }
   }
 }]

@@ -10,6 +10,8 @@
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "content/public/common/content_features.h"
+#include "electron/buildflags/buildflags.h"
+#include "media/base/media_switches.h"
 
 namespace electron {
 
@@ -25,6 +27,9 @@ void InitializeFeatureList() {
   // when node integration is enabled.
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
+#if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  disable_features += std::string(",") + media::kPictureInPicture.name;
+#endif
   base::FeatureList::InitializeInstance(enable_features, disable_features);
 }
 

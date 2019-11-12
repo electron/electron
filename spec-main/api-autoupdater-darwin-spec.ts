@@ -5,7 +5,7 @@ import * as express from 'express'
 import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
-import { AddressInfo } from 'net';
+import { AddressInfo } from 'net'
 
 const features = process.electronBinding('features')
 
@@ -21,10 +21,10 @@ describeFn('autoUpdater behavior', function () {
 
   beforeEach(function () {
     const result = cp.spawnSync(path.resolve(__dirname, '../script/codesign/get-trusted-identity.sh'))
-    if (result.status !== 0 || result.stdout.toString().trim().length === 0)  {
+    if (result.status !== 0 || result.stdout.toString().trim().length === 0) {
       // Per https://circleci.com/docs/2.0/env-vars:
       // CIRCLE_PR_NUMBER is only present on forked PRs
-      if (isCI && !process.env.CIRCLE_PR_NUMBER) {
+      if (process.env.CI && !process.env.CIRCLE_PR_NUMBER) {
         throw new Error('No valid signing identity available to run autoUpdater specs')
       }
       this.skip()
@@ -99,7 +99,7 @@ describeFn('autoUpdater behavior', function () {
     try {
       await fn(dir)
     } finally {
-      cp.spawnSync('rm', ['-r' , dir])
+      cp.spawnSync('rm', ['-r', dir])
     }
   }
 
@@ -132,10 +132,10 @@ describeFn('autoUpdater behavior', function () {
   })
 
   describe('with update server', () => {
-    let port = 0;
-    let server: express.Application = null as any;
+    let port = 0
+    let server: express.Application = null as any
     let httpServer: http.Server = null as any
-    let requests: express.Request[] = [];
+    let requests: express.Request[] = []
 
     beforeEach((done) => {
       requests = []
@@ -219,7 +219,7 @@ describeFn('autoUpdater behavior', function () {
             (await fs.readFile(appPJPath, 'utf8')).replace('1.0.0', '2.0.0')
           )
           await signApp(secondAppPath)
-          const updateZipPath = path.resolve(dir2, 'update.zip');
+          const updateZipPath = path.resolve(dir2, 'update.zip')
           await spawn('zip', ['-r', '--symlinks', updateZipPath, './'], {
             cwd: dir2
           })
@@ -235,7 +235,7 @@ describeFn('autoUpdater behavior', function () {
               pub_date: (new Date()).toString()
             })
           })
-          const relaunchPromise = new Promise((resolve, reject) => {
+          const relaunchPromise = new Promise((resolve) => {
             server.get('/update-check/updated/:version', (req, res) => {
               res.status(204).send()
               resolve()

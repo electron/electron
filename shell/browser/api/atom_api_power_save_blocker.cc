@@ -49,7 +49,7 @@ PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
     : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension),
       is_wake_lock_active_(false) {}
 
-PowerSaveBlocker::~PowerSaveBlocker() {}
+PowerSaveBlocker::~PowerSaveBlocker() = default;
 
 void PowerSaveBlocker::UpdatePowerSaveBlocker() {
   if (wake_lock_types_.empty()) {

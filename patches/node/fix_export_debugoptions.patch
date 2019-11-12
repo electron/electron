@@ -5,10 +5,10 @@ Subject: fix: export DebugOptions
 
 
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 021fc5d70b250b39ac76028b5d384608d51f7248..11c910bbd17c8b8e345862e11a24aba7822c31b6 100644
+index e2a39626b69fd3380febc258fb25efc0cea2a08e..f4dc3d7df5a33ce92ca52e901283db5aa9f143b4 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -202,11 +202,6 @@ void EnvironmentOptions::CheckOptions(std::vector<std::string>* errors) {
+@@ -204,11 +204,6 @@ void EnvironmentOptions::CheckOptions(std::vector<std::string>* errors) {
  
  namespace options_parser {
  
@@ -21,7 +21,7 @@ index 021fc5d70b250b39ac76028b5d384608d51f7248..11c910bbd17c8b8e345862e11a24aba7
   public:
    EnvironmentOptionsParser();
 diff --git a/src/node_options.h b/src/node_options.h
-index 34c54511e1bb8bba201994802f7fd53c4217cece..35daba3291c8358a44f9fca53df34b35c5423d15 100644
+index dbd85b2d584be57619fc5c8d019140f67514f427..5fb23cfda7aebca507174555b78c9a73e837dda0 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -59,7 +59,7 @@ struct InspectPublishUid {
@@ -33,7 +33,7 @@ index 34c54511e1bb8bba201994802f7fd53c4217cece..35daba3291c8358a44f9fca53df34b35
   public:
    DebugOptions() = default;
    DebugOptions(const DebugOptions&) = default;
-@@ -236,7 +236,7 @@ class PerProcessOptions : public Options {
+@@ -240,7 +240,7 @@ class PerProcessOptions : public Options {
  
  namespace options_parser {
  
@@ -42,7 +42,7 @@ index 34c54511e1bb8bba201994802f7fd53c4217cece..35daba3291c8358a44f9fca53df34b35
      std::vector<std::string>* errors);
  void GetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
  
-@@ -429,6 +429,11 @@ class OptionsParser {
+@@ -433,6 +433,11 @@ class OptionsParser {
    friend void GetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
  };
  

@@ -9,19 +9,21 @@
 #include <string>
 
 #include "base/callback.h"
+#include "gin/arguments.h"
 #include "shell/browser/api/atom_api_top_level_window.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/ui/atom_menu_model.h"
+#include "shell/common/gin_helper/locker.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
 
 namespace api {
 
-class Menu : public mate::TrackableObject<Menu>,
+class Menu : public gin_helper::TrackableObject<Menu>,
              public AtomMenuModel::Delegate,
              public AtomMenuModel::Observer {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args);
+  static mate::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -37,7 +39,7 @@ class Menu : public mate::TrackableObject<Menu>,
   AtomMenuModel* model() const { return model_.get(); }
 
  protected:
-  Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
+  explicit Menu(gin::Arguments* args);
   ~Menu() override;
 
   // mate::Wrappable:
@@ -121,7 +123,7 @@ class Menu : public mate::TrackableObject<Menu>,
 
 }  // namespace electron
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<electron::AtomMenuModel*> {
@@ -139,6 +141,19 @@ struct Converter<electron::AtomMenuModel*> {
       return false;
     *out = menu->model();
     return true;
+  }
+};
+
+}  // namespace gin
+
+namespace mate {
+
+template <>
+struct Converter<electron::AtomMenuModel*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::AtomMenuModel** out) {
+    return gin::ConvertFromV8(isolate, val, out);
   }
 };
 

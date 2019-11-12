@@ -19,6 +19,17 @@
 #include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
 #endif
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "services/service_manager/public/cpp/binder_registry.h"
+#include "services/service_manager/public/cpp/local_interface_provider.h"
+
+class SpellCheck;
+#endif
+
+namespace network_hints {
+class WebPrescientNetworkingImpl;
+}
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace extensions {
 class ExtensionsClient;
@@ -31,10 +42,23 @@ namespace electron {
 class AtomExtensionsRendererClient;
 #endif
 
-class RendererClientBase : public content::ContentRendererClient {
+class RendererClientBase : public content::ContentRendererClient
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+    ,
+                           public service_manager::LocalInterfaceProvider
+#endif
+{
  public:
   RendererClientBase();
   ~RendererClientBase() override;
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  // service_manager::LocalInterfaceProvider implementation.
+  void GetInterface(const std::string& name,
+                    mojo::ScopedMessagePipeHandle request_handle) override;
+
+  void BindReceiverOnMainThread(mojo::GenericPendingReceiver receiver) override;
+#endif
 
   virtual void DidCreateScriptContext(v8::Handle<v8::Context> context,
                                       content::RenderFrame* render_frame);
@@ -47,6 +71,7 @@ class RendererClientBase : public content::ContentRendererClient {
                                             content::RenderFrame* render_frame,
                                             int world_id) = 0;
 
+  blink::WebPrescientNetworking* GetPrescientNetworking() override;
   bool isolated_world() const { return isolated_world_; }
 
   // Get the context that the Electron API is running in.
@@ -67,8 +92,6 @@ class RendererClientBase : public content::ContentRendererClient {
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
   void RenderFrameCreated(content::RenderFrame*) override;
-  std::unique_ptr<blink::WebSpeechSynthesizer> OverrideSpeechSynthesizer(
-      blink::WebSpeechSynthesizerClient* client) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
@@ -90,10 +113,14 @@ class RendererClientBase : public content::ContentRendererClient {
 #endif
 
  private:
+  std::unique_ptr<network_hints::WebPrescientNetworkingImpl>
+      web_prescient_networking_impl_;
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<extensions::ExtensionsClient> extensions_client_;
   std::unique_ptr<AtomExtensionsRendererClient> extensions_renderer_client_;
 #endif
+
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
 #endif
@@ -101,6 +128,11 @@ class RendererClientBase : public content::ContentRendererClient {
   std::string renderer_client_id_;
   // An increasing ID used for indentifying an V8 context in this process.
   int64_t next_context_id_ = 0;
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  std::unique_ptr<SpellCheck> spellcheck_;
+  service_manager::BinderRegistry registry_;
+#endif
 };
 
 }  // namespace electron

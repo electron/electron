@@ -54,6 +54,15 @@ steps:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
 - bash: |
+   export NATIVE_UNITTESTS_DEST=$PWD/src/out/Default
+   cd src/electron
+   node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=shell_browser_ui_unittests --dest=$NATIVE_UNITTESTS_DEST
+   chmod +x $NATIVE_UNITTESTS_DEST/shell_browser_ui_unittests
+  displayName: 'Download native unittest executables'
+  env:
+    CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
+
+- bash: |
     sh -e /etc/init.d/xvfb start
   displayName: Setup for headless testing
   env:
@@ -62,7 +71,7 @@ steps:
 - bash: |
     cd src
     export ELECTRON_OUT_DIR=Default
-    (cd electron && node script/yarn test -- --ci --enable-logging)
+    (cd electron && node script/yarn test -- --enable-logging)
   displayName: 'Run Electron tests'
   timeoutInMinutes: 20
   env:

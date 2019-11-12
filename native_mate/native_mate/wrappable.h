@@ -21,7 +21,7 @@ void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val);
 template <typename T>
 class Wrappable : public WrappableBase {
  public:
-  Wrappable() {}
+  Wrappable() = default;
 
   template <typename Sig>
   static void SetConstructor(v8::Isolate* isolate,
@@ -96,5 +96,29 @@ struct Converter<T*,
 };
 
 }  // namespace mate
+
+namespace gin {
+
+// Provides compatibility for gin.
+template <typename T>
+struct Converter<
+    T*,
+    typename std::enable_if<
+        std::is_convertible<T*, mate::WrappableBase*>::value>::type> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, T* val) {
+    if (val)
+      return val->GetWrapper();
+    else
+      return v8::Null(isolate);
+  }
+
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, T** out) {
+    *out = static_cast<T*>(static_cast<mate::WrappableBase*>(
+        mate::internal::FromV8Impl(isolate, val)));
+    return *out != nullptr;
+  }
+};
+
+}  // namespace gin
 
 #endif  // NATIVE_MATE_NATIVE_MATE_WRAPPABLE_H_

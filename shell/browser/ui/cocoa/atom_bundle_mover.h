@@ -5,27 +5,27 @@
 #ifndef SHELL_BROWSER_UI_COCOA_ATOM_BUNDLE_MOVER_H_
 #define SHELL_BROWSER_UI_COCOA_ATOM_BUNDLE_MOVER_H_
 
-#include <string>
+#include "base/mac/foundation_util.h"
+#include "shell/common/gin_helper/error_thrower.h"
 
-#include "native_mate/persistent_dictionary.h"
+namespace gin {
+class Arguments;
+}
 
 namespace electron {
 
 // Possible bundle movement conflicts
 enum class BundlerMoverConflictType { EXISTS, EXISTS_AND_RUNNING };
 
-namespace ui {
-
-namespace cocoa {
-
 class AtomBundleMover {
  public:
-  static bool Move(mate::Arguments* args);
+  static bool Move(gin_helper::ErrorThrower thrower, gin::Arguments* args);
   static bool IsCurrentAppInApplicationsFolder();
 
  private:
-  static bool ShouldContinueMove(BundlerMoverConflictType type,
-                                 mate::Arguments* args);
+  static bool ShouldContinueMove(gin_helper::ErrorThrower thrower,
+                                 BundlerMoverConflictType type,
+                                 gin::Arguments* args);
   static bool IsInApplicationsFolder(NSString* bundlePath);
   static NSString* ContainingDiskImageDevice(NSString* bundlePath);
   static void Relaunch(NSString* destinationPath);
@@ -38,10 +38,6 @@ class AtomBundleMover {
   static bool DeleteOrTrash(NSString* path);
   static bool Trash(NSString* path);
 };
-
-}  // namespace cocoa
-
-}  // namespace ui
 
 }  // namespace electron
 

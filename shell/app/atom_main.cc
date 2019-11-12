@@ -102,18 +102,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
 #ifdef _DEBUG
   // Don't display assert dialog boxes in CI test runs
-  static const char* kCI = "ELECTRON_CI";
-  bool is_ci = IsEnvSet(kCI);
-  if (!is_ci) {
-    for (int i = 0; i < arguments.argc; ++i) {
-      if (!_wcsicmp(arguments.argv[i], L"--ci")) {
-        is_ci = true;
-        _putenv_s(kCI, "1");  // set flag for child processes
-        break;
-      }
-    }
-  }
-  if (is_ci) {
+  static const char* kCI = "CI";
+  if (IsEnvSet(kCI)) {
     _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
     _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
 

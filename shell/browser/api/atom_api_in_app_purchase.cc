@@ -8,17 +8,17 @@
 #include <utility>
 #include <vector>
 
-#include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<in_app_purchase::Payment> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const in_app_purchase::Payment& payment) {
-    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.SetHidden("simple", true);
     dict.Set("productIdentifier", payment.productIdentifier);
     dict.Set("quantity", payment.quantity);
@@ -30,7 +30,7 @@ template <>
 struct Converter<in_app_purchase::Transaction> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const in_app_purchase::Transaction& val) {
-    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.SetHidden("simple", true);
     dict.Set("transactionIdentifier", val.transactionIdentifier);
     dict.Set("transactionDate", val.transactionDate);
@@ -48,7 +48,7 @@ template <>
 struct Converter<in_app_purchase::Product> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const in_app_purchase::Product& val) {
-    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.SetHidden("simple", true);
     dict.Set("productIdentifier", val.productIdentifier);
     dict.Set("localizedDescription", val.localizedDescription);
@@ -67,7 +67,7 @@ struct Converter<in_app_purchase::Product> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -75,15 +75,15 @@ namespace api {
 
 #if defined(OS_MACOSX)
 // static
-mate::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new InAppPurchase(isolate));
+gin::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new InAppPurchase(isolate));
 }
 
 // static
 void InAppPurchase::BuildPrototype(v8::Isolate* isolate,
                                    v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "InAppPurchase"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "InAppPurchase"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("canMakePayments", &in_app_purchase::CanMakePayments)
       .SetMethod("getReceiptURL", &in_app_purchase::GetReceiptURL)
       .SetMethod("purchaseProduct", &InAppPurchase::PurchaseProduct)
@@ -102,9 +102,9 @@ InAppPurchase::~InAppPurchase() {}
 
 v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
     const std::string& product_id,
-    mate::Arguments* args) {
+    gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  electron::util::Promise promise(isolate);
+  gin_helper::Promise<bool> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   int quantity = 1;
@@ -112,7 +112,7 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
 
   in_app_purchase::PurchaseProduct(
       product_id, quantity,
-      base::BindOnce(electron::util::Promise::ResolvePromise<bool>,
+      base::BindOnce(gin_helper::Promise<bool>::ResolvePromise,
                      std::move(promise)));
 
   return handle;
@@ -120,15 +120,16 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
 
 v8::Local<v8::Promise> InAppPurchase::GetProducts(
     const std::vector<std::string>& productIDs,
-    mate::Arguments* args) {
+    gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  electron::util::Promise promise(isolate);
+  gin_helper::Promise<std::vector<in_app_purchase::Product>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   in_app_purchase::GetProducts(
-      productIDs, base::BindOnce(electron::util::Promise::ResolvePromise<
-                                     std::vector<in_app_purchase::Product>>,
-                                 std::move(promise)));
+      productIDs,
+      base::BindOnce(gin_helper::Promise<
+                         std::vector<in_app_purchase::Product>>::ResolvePromise,
+                     std::move(promise)));
 
   return handle;
 }
@@ -153,7 +154,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
 #if defined(OS_MACOSX)
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("inAppPurchase", InAppPurchase::Create(isolate));
   dict.Set("InAppPurchase", InAppPurchase::GetConstructor(isolate)
                                 ->GetFunction(context)

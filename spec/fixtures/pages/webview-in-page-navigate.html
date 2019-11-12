@@ -1,6 +1,6 @@
 <html>
 <body>
-<webview nodeintegration src="zoom://host1" id="view" partition="webview-temp"/>
+<webview nodeintegration src="app://host1" id="view" partition="webview-temp"/>
 </body>
 <script>
   const {ipcRenderer, webFrame} = require('electron')
@@ -19,7 +19,7 @@
     SendZoomLevel().then(() => {
       if (!finalNavigation) {
         finalNavigation = true
-        view.executeJavaScript('window.location.hash=123', () => {})
+        view.executeJavaScript('window.location.hash=123')
       }
     })
   })

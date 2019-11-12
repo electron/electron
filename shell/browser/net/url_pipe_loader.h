@@ -47,7 +47,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
              base::DictionaryValue upload_data);
   void NotifyComplete(int result);
   void OnResponseStarted(const GURL& final_url,
-                         const network::ResourceResponseHead& response_head);
+                         const network::mojom::URLResponseHead& response_head);
   void OnWrite(base::OnceClosure resume, MojoResult result);
 
   // SimpleURLLoaderStreamConsumer:
@@ -60,7 +60,6 @@ class URLPipeLoader : public network::mojom::URLLoader,
   void FollowRedirect(const std::vector<std::string>& removed_headers,
                       const net::HttpRequestHeaders& modified_headers,
                       const base::Optional<GURL>& new_url) override {}
-  void ProceedWithResponse() override {}
   void SetPriority(net::RequestPriority priority,
                    int32_t intra_priority_value) override {}
   void PauseReadingBodyFromNet() override {}

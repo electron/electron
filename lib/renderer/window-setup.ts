@@ -28,19 +28,19 @@ const toString = (value: any) => {
   return value != null ? `${value}` : value
 }
 
-const windowProxies: Record<number, BrowserWindowProxy> = {}
+const windowProxies = new Map<number, BrowserWindowProxy>()
 
 const getOrCreateProxy = (guestId: number) => {
-  let proxy = windowProxies[guestId]
+  let proxy = windowProxies.get(guestId)
   if (proxy == null) {
     proxy = new BrowserWindowProxy(guestId)
-    windowProxies[guestId] = proxy
+    windowProxies.set(guestId, proxy)
   }
   return proxy
 }
 
 const removeProxy = (guestId: number) => {
-  delete windowProxies[guestId]
+  windowProxies.delete(guestId)
 }
 
 type LocationProperties = 'hash' | 'href' | 'host' | 'hostname' | 'origin' | 'pathname' | 'port' | 'protocol' | 'search'
@@ -64,12 +64,12 @@ class LocationProxy {
    */
   private static ProxyProperty<T> (target: LocationProxy, propertyKey: LocationProperties) {
     Object.defineProperty(target, propertyKey, {
-      get: function (): T | string {
+      get: function (this: LocationProxy): T | string {
         const guestURL = this.getGuestURL()
         const value = guestURL ? guestURL[propertyKey] : ''
         return value === undefined ? '' : value
       },
-      set: function (newVal: T) {
+      set: function (this: LocationProxy, newVal: T) {
         const guestURL = this.getGuestURL()
         if (guestURL) {
           // TypeScript doesn't want us to assign to read-only variables.
@@ -103,6 +103,10 @@ class LocationProxy {
     }
 
     return null
+  }
+
+  private _invokeWebContentsMethod (method: string, ...args: any[]) {
+    return ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
   }
 
   private _invokeWebContentsMethodSync (method: string, ...args: any[]) {
@@ -154,7 +158,7 @@ class BrowserWindowProxy {
   }
 
   public postMessage (message: any, targetOrigin: string) {
-    ipcRendererUtils.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin)
+    ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin)
   }
 
   public eval (code: string) {
@@ -162,11 +166,11 @@ class BrowserWindowProxy {
   }
 
   private _invokeWindowMethod (method: string, ...args: any[]) {
-    return ipcRendererUtils.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, method, ...args)
+    return ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, method, ...args)
   }
 
   private _invokeWebContentsMethod (method: string, ...args: any[]) {
-    return ipcRendererUtils.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
+    return ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
   }
 }
 
@@ -176,7 +180,7 @@ export const windowSetup = (
   if (guestInstanceId == null) {
     // Override default window.close.
     window.close = function () {
-      ipcRendererInternal.sendSync('ELECTRON_BROWSER_WINDOW_CLOSE')
+      ipcRendererInternal.send('ELECTRON_BROWSER_WINDOW_CLOSE')
     }
   }
 
