@@ -3,6 +3,7 @@ import { deprecate, remote, webFrame } from 'electron'
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal'
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants'
+import { deserialize } from '@electron/internal/common/type-utils'
 import {
   syncMethods,
   asyncCallbackMethods,
@@ -275,6 +276,14 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
   for (const method of asyncPromiseMethods) {
     (WebViewElement.prototype as Record<string, any>)[method] = deprecate.promisify(createPromiseHandler(method))
   }
+
+  const createCapturePageHandler = function () {
+    return function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
+      return ipcRendererUtils.invoke('ELECTRON_GUEST_VIEW_MANAGER_CAPTURE_PAGE', this.getWebContentsId(), args).then(image => deserialize(image))
+    }
+  }
+
+  WebViewElement.prototype.capturePage = deprecate.promisify(createCapturePageHandler())
 }
 
 export const webViewImplModule = {

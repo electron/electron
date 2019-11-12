@@ -124,6 +124,7 @@ declare namespace ElectronInternal {
     // Created in web-view-impl
     public getWebContents(): Electron.WebContents;
     public getWebContentsId(): number;
+    public capturePage(rect?: Electron.Rectangle): Promise<Electron.NativeImage>;
   }
 }
 
