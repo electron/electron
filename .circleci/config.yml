@@ -695,7 +695,7 @@ step-restore-out-cache: &step-restore-out-cache
     paths:
       - ./src/out/Default
     keys:
-      - v4-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+      - v5-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
     name: Restoring out cache
 
 step-set-git-cache-path: &step-set-git-cache-path
@@ -719,7 +719,7 @@ step-save-out-cache: &step-save-out-cache
   save_cache:
     paths:
       - ./src/out/Default
-    key: v4-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+    key: v5-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
     name: Persisting out cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
@@ -1202,13 +1202,7 @@ commands:
       checkout:
         type: boolean
         default: true
-      checkout-mac-out-cache-for-workspace:
-        type: boolean
-        default: false
       build:
-        type: boolean
-        default: true
-      need-out-cache:
         type: boolean
         default: true
     steps:
@@ -1249,24 +1243,6 @@ commands:
             - when:
                 condition: << parameters.persist-checkout >>
                 steps:
-                  - when:
-                      condition: << parameters.checkout-mac-out-cache-for-workspace >>
-                      steps:
-                        - run:
-                            name: Make Empty Default Folder
-                            command: mkdir -p src/out
-                        - run:
-                            name: Fake the macOS directory structure
-                            command: |
-                              sudo mkdir -p /Users/distiller/project
-                              sudo chmod -R 777 /Users/distiller/project
-                        - *step-restore-out-cache
-                        - run:
-                            name: Move macOS out cache to the linux directory for workspace persistance
-                            command: |
-                              if [ -d "/Users/distiller/project/src/out/Default" ]; then
-                                mv /Users/distiller/project/src/out/Default src/out/Default
-                              fi
                   - persist_to_workspace:
                       root: .
                       paths:
@@ -1286,21 +1262,21 @@ commands:
             - *step-gn-gen-default
 
             # Electron app
-            - when:
-                condition: << parameters.need-out-cache >>
-                steps:
-                  - *step-restore-out-cache
+            - *step-restore-out-cache
+            - *step-gn-gen-default
             - *step-electron-build
             - run:
-                name: Remove the big things, this seems to be better on average
+                name: Remove the big things on macOS, this seems to be better on average
                 command: |
-                  mkdir -p src/out/Default
-                  cd src/out/Default
-                  find . -type f -size +50M -delete
-                  mkdir -p gen/electron
-                  cd gen/electron
-                  # These files do not seem to like being in a cache, let us remove them
-                  find . -type f -name '*_pkg_info' -delete
+                  if [ "`uname`" == "Darwin" ]; then
+                    mkdir -p src/out/Default
+                    cd src/out/Default
+                    find . -type f -size +50M -delete
+                    mkdir -p gen/electron
+                    cd gen/electron
+                    # These files do not seem to like being in a cache, let us remove them
+                    find . -type f -name '*_pkg_info' -delete
+                  fi
             - *step-save-out-cache
             - *step-ninja-summary
             - *step-ninja-report
@@ -1423,7 +1399,6 @@ jobs:
           build: false
           checkout: true
           persist-checkout: true
-          checkout-mac-out-cache-for-workspace: false
 
   mac-checkout-and-save-cache:
     <<: *machine-linux-2xlarge
@@ -1658,7 +1633,6 @@ jobs:
           persist: true
           checkout: false
           attach: true
-          need-out-cache: true
 
   osx-testing-gn-check:
     <<: *machine-mac
@@ -1708,8 +1682,6 @@ jobs:
           persist: true
           checkout: false
           attach: true
-          need-out-cache: true
-
 
   mas-testing-gn-check:
     <<: *machine-mac
