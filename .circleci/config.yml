@@ -1190,6 +1190,7 @@ chromium-upgrade-branches: &chromium-upgrade-branches
 commands:
   checkout-from-cache:
     steps:
+      - *step-checkout-electron
       - *step-maybe-early-exit-doc-only-change
       - *step-depot-tools-get
       - *step-depot-tools-add-to-path
