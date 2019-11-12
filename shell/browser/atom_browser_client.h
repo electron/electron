@@ -201,6 +201,15 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       ui::PageTransition page_transition,
       bool has_user_gesture,
       network::mojom::URLLoaderFactoryPtr* out_factory) override;
+  std::unique_ptr<content::LoginDelegate> CreateLoginDelegate(
+      const net::AuthChallengeInfo& auth_info,
+      content::WebContents* web_contents,
+      const content::GlobalRequestID& request_id,
+      bool is_main_frame,
+      const GURL& url,
+      scoped_refptr<net::HttpResponseHeaders> response_headers,
+      bool first_auth_attempt,
+      LoginAuthRequiredCallback auth_required_callback) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
