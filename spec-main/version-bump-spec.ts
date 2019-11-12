@@ -68,6 +68,13 @@ describe('version-bumper', () => {
       expect(matches).to.have.lengthOf(1)
     })
 
+    it('bumps to a nightly version above our switch from N-0-x to N-x-y branch names', async () => {
+      const version = 'v2.0.0-nightly.19950901'
+      const next = await nextVersion('nightly', version)
+      // If it starts with v8 then we didn't bump above the 8-x-y branch
+      expect(next.startsWith('v8')).to.equal(false)
+    })
+
     it('throws error when bumping to beta from stable', () => {
       const version = 'v2.0.0'
       return expect(
