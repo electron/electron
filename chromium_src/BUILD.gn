@@ -32,6 +32,8 @@ static_library("chrome") {
     "//chrome/browser/icon_loader_win.cc",
     "//chrome/browser/icon_manager.cc",
     "//chrome/browser/icon_manager.h",
+    "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
+    "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.cc",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.h",
     "//chrome/browser/net/proxy_config_monitor.cc",
