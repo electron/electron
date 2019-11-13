@@ -148,7 +148,7 @@ describe('webRequest module', () => {
       expect(data).to.equal('/header/received')
     })
 
-    it('can change CROS headers', async () => {
+    it('can change CORS headers', async () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders
         requestHeaders.Origin = 'http://new-origin'
