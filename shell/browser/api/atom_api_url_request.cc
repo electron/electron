@@ -222,13 +222,17 @@ void URLRequest::OnAuthRequired(
       base::BindOnce(&URLRequest::Cancel, weak_factory_.GetWeakPtr()));
   auto cb = base::BindOnce(
       [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
-         base::string16 username, base::string16 password) {
+         gin::Arguments* args) {
+        base::string16 username_str, password_str;
+        if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
+          auth_responder->OnAuthCredentials(base::nullopt);
+          return;
+        }
         auth_responder->OnAuthCredentials(
-            net::AuthCredentials(username, password));
+            net::AuthCredentials(username_str, password_str));
       },
       std::move(auth_responder));
-  EmitEvent(EventType::kRequest, false, "login", auth_info,
-            base::AdaptCallbackForRepeating(std::move(cb)));
+  Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
 }
 
 bool URLRequest::NotStarted() const {
