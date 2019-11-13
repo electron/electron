@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "gin/dictionary.h"
+#include "mate/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/gin_converters/callback_converter_gin_adapter.h"
 #include "shell/common/gin_converters/net_converter_gin_adapter.h"
@@ -33,8 +33,8 @@ LoginHandler::LoginHandler(
       auth_required_callback_(std::move(auth_required_callback)) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  base::PostTask(
-      FROM_HERE, {base::CurrentThread()},
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::UI},
       base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(),
                      auth_info, is_main_frame, url, response_headers,
                      first_auth_attempt));
@@ -56,7 +56,7 @@ void LoginHandler::EmitEvent(
 
   v8::HandleScope scope(isolate);
 
-  auto details = gin::Dictionary::CreateEmpty(isolate);
+  auto details = mate::Dictionary::CreateEmpty(isolate);
   details.Set("url", url.spec());
 
   // These parameters aren't documented, and I'm not sure that they're useful,
