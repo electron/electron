@@ -10,11 +10,11 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "gin/dictionary.h"
+#include "mate/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
-#include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_converters/net_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 
 using content::BrowserThread;
 
@@ -56,7 +56,7 @@ void LoginHandler::EmitEvent(
 
   v8::HandleScope scope(isolate);
 
-  auto details = gin::Dictionary::CreateEmpty(isolate);
+  auto details = mate::Dictionary::CreateEmpty(isolate);
   details.Set("url", url.spec());
 
   // These parameters aren't documented, and I'm not sure that they're useful,
