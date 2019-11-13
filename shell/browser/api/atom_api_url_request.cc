@@ -175,6 +175,7 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
 
 URLRequest::URLRequest(gin::Arguments* args)
     : id_(GetAllRequests().Add(this)), weak_factory_(this) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   request_ = std::make_unique<network::ResourceRequest>();
   gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
@@ -203,6 +204,7 @@ URLRequest::URLRequest(gin::Arguments* args)
 URLRequest::~URLRequest() = default;
 
 URLRequest* URLRequest::FromID(uint32_t id) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   return GetAllRequests().Lookup(id);
 }
 
@@ -213,6 +215,7 @@ void URLRequest::OnAuthRequired(
     network::mojom::URLResponseHeadPtr head,
     mojo::PendingRemote<network::mojom::AuthChallengeResponder>
         auth_challenge_responder) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder(
       std::move(auth_challenge_responder));
   auth_responder.set_disconnect_handler(
