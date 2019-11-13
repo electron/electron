@@ -212,7 +212,7 @@ describe('webRequest module', () => {
       expect(headers).to.match(/^custom: Changed$/m)
     })
 
-    it('can change CROS headers', async () => {
+    it('can change CORS headers', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!
         responseHeaders['access-control-allow-origin'] = ['http://new-origin'] as any
