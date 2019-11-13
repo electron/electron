@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_LOGIN_HANDLER_H_
 #define SHELL_BROWSER_LOGIN_HANDLER_H_
 
-#include "base/strings/string16.h"
 #include "base/values.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/login_delegate.h"
@@ -13,6 +12,10 @@
 
 namespace content {
 class WebContents;
+}
+
+namespace gin {
+class Arguments;
 }
 
 namespace electron {
@@ -36,7 +39,7 @@ class LoginHandler : public content::LoginDelegate,
                  const GURL& url,
                  scoped_refptr<net::HttpResponseHeaders> response_headers,
                  bool first_auth_attempt);
-  void CallbackFromJS(base::string16 username, base::string16 password);
+  void CallbackFromJS(gin::Arguments* args);
 
   LoginAuthRequiredCallback auth_required_callback_;
 

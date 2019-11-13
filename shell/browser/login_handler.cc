@@ -10,6 +10,8 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "base/strings/string16.h"
+#include "gin/arguments.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -78,9 +80,13 @@ void LoginHandler::EmitEvent(
 
 LoginHandler::~LoginHandler() = default;
 
-void LoginHandler::CallbackFromJS(base::string16 username,
-                                  base::string16 password) {
+void LoginHandler::CallbackFromJS(gin::Arguments* args) {
   if (auth_required_callback_) {
+    base::string16 username, password;
+    if (!args->GetNext(&username) || !args->GetNext(&password)) {
+      std::move(auth_required_callback_).Run(base::nullopt);
+      return;
+    }
     std::move(auth_required_callback_)
         .Run(net::AuthCredentials(username, password));
   }
