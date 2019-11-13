@@ -41,9 +41,9 @@ void NodeDebugger::Start() {
   std::vector<std::string> v8_args;
   std::vector<std::string> errors;
 
+  // TODO(codebytere): refactor this
   node::options_parser::Parse(&args, &exec_args, &v8_args, &options,
-                              node::options_parser::kDisallowedInEnvironment,
-                              &errors);
+                              node::kDisallowedInEnvironment, &errors);
 
   if (!errors.empty()) {
     // TODO(jeremy): what's the appropriate behaviour here?

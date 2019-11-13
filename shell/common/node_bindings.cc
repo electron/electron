@@ -136,7 +136,44 @@ bool IsPackagedApp() {
 #endif
 }
 
+// Initialize Node.js cli options to pass to Node.js
+// See https://nodejs.org/api/cli.html#cli_options
+void SetNodeCliFlags() {
+  // Only allow DebugOptions for now
+  const std::set<std::string> allowed = {"--inspect", "--inspect-brk",
+                                         "--debug", "--inspect-brk-node",
+                                         "--inspect-publish-uid"};
+
+  std::vector<std::string> args;
+  for (const auto& arg : base::CommandLine::ForCurrentProcess()->argv()) {
+    auto stripped = arg.substr(0, arg.find("="));
+#if defined(OS_WIN)
+    std::string option = base::UTF16ToUTF8(stripped);
+#else
+    std::string option = stripped;
+#endif
+    if (allowed.find(option) != allowed.end()) {
+      args.push_back(option);
+    } else {
+      LOG(ERROR) << "The Node.js cli flag " << option
+                 << " is not supported in Electron";
+    }
+  }
+
+  std::vector<std::string> exec_args;
+  std::vector<std::string> errors;
+  const int exit_code = ProcessGlobalArgs(&args, &exec_args, &errors,
+                                          node::kAllowedInEnvironment);
+  if (exit_code != 0) {
+    LOG(ERROR) << "Error parsing Node.js cli flags";
+  } else if (!errors.empty()) {
+    LOG(ERROR) << "Error parsing node cli flags: "
+               << base::JoinString(errors, " ");
+  }
+}
+
 // Initialize NODE_OPTIONS to pass to Node.js
+// See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
   // Options that are unilaterally disallowed
   const std::set<std::string> disallowed = {
@@ -269,6 +306,9 @@ void NodeBindings::Initialize() {
 
   // Explicitly register electron's builtin modules.
   RegisterBuiltinModules();
+
+  // Parse and set Node.js cli flags.
+  SetNodeCliFlags();
 
   // pass non-null program name to argv so it doesn't crash
   // trying to index into a nullptr
