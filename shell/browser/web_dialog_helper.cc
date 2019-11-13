@@ -58,7 +58,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    electron::util::Promise<gin_helper::Dictionary> promise(isolate);
+    gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
 
     auto callback = base::BindOnce(&FileSelectHelper::OnOpenDialogDone, this);
     ignore_result(promise.Then(std::move(callback)));
@@ -68,7 +68,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   void ShowSaveDialog(const file_dialog::DialogSettings& settings) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    electron::util::Promise<gin_helper::Dictionary> promise(isolate);
+    gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
 
     auto callback = base::BindOnce(&FileSelectHelper::OnSaveDialogDone, this);
     ignore_result(promise.Then(std::move(callback)));

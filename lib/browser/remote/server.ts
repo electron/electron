@@ -4,8 +4,7 @@ import * as electron from 'electron'
 import { EventEmitter } from 'events'
 import objectsRegistry from './objects-registry'
 import { ipcMainInternal } from '../ipc-main-internal'
-import * as guestViewManager from '@electron/internal/browser/guest-view-manager'
-import { isPromise, isSerializableObject } from '@electron/internal/common/remote/type-utils'
+import { isPromise, isSerializableObject } from '@electron/internal/common/type-utils'
 
 const v8Util = process.electronBinding('v8_util')
 const eventBinding = process.electronBinding('event')
@@ -245,6 +244,17 @@ type MetaTypeFromRenderer = {
   length: number
 }
 
+const fakeConstructor = (constructor: Function, name: string) =>
+  new Proxy(Object, {
+    get (target, prop, receiver) {
+      if (prop === 'name') {
+        return name
+      } else {
+        return Reflect.get(target, prop, receiver)
+      }
+    }
+  })
+
 // Convert array of meta data from renderer into array of real values.
 const unwrapArgs = function (sender: electron.WebContents, frameId: number, contextId: string, args: any[]) {
   const metaToValue = function (meta: MetaTypeFromRenderer): any {
@@ -262,8 +272,9 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
           then: metaToValue(meta.then)
         })
       case 'object': {
-        const ret: any = {}
-        Object.defineProperty(ret.constructor, 'name', { value: meta.name })
+        const ret: any = meta.name !== 'Object' ? Object.create({
+          constructor: fakeConstructor(Object, meta.name)
+        }) : {}
 
         for (const { name, value } of meta.members) {
           ret[name] = metaToValue(value)
@@ -297,7 +308,7 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         v8Util.setHiddenValue(callIntoRenderer, 'location', meta.location)
         Object.defineProperty(callIntoRenderer, 'length', { value: meta.length })
 
-        v8Util.setRemoteCallbackFreer(callIntoRenderer, contextId, meta.id, sender)
+        v8Util.setRemoteCallbackFreer(callIntoRenderer, frameId, contextId, meta.id, sender)
         rendererFunctions.set(objectId, callIntoRenderer)
         return callIntoRenderer
       }
@@ -529,24 +540,6 @@ handleRemoteCommand('ELECTRON_BROWSER_DEREFERENCE', function (event, contextId, 
 
 handleRemoteCommand('ELECTRON_BROWSER_CONTEXT_RELEASE', (event, contextId) => {
   objectsRegistry.clear(event.sender, contextId)
-  return null
-})
-
-handleRemoteCommand('ELECTRON_BROWSER_GUEST_WEB_CONTENTS', function (event, contextId, guestInstanceId, stack) {
-  logStack(event.sender, 'remote.getGuestWebContents()', stack)
-  const guest = guestViewManager.getGuestForWebContents(guestInstanceId, event.sender)
-
-  const customEvent = emitCustomEvent(event.sender, 'remote-get-guest-web-contents', guest)
-
-  if (customEvent.returnValue === undefined) {
-    if (customEvent.defaultPrevented) {
-      throw new Error(`Blocked remote.getGuestWebContents()`)
-    } else {
-      customEvent.returnValue = guest
-    }
-  }
-
-  return valueToMeta(event.sender, contextId, customEvent.returnValue)
 })
 
 module.exports = {

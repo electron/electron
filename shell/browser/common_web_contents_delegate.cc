@@ -39,7 +39,7 @@
 #include "shell/browser/web_dialog_helper.h"
 #include "shell/common/atom_constants.h"
 #include "shell/common/options_switches.h"
-#include "storage/browser/fileapi/isolated_context.h"
+#include "storage/browser/file_system/isolated_context.h"
 
 #if BUILDFLAG(ENABLE_COLOR_CHOOSER)
 #include "chrome/browser/ui/color_chooser.h"
@@ -57,6 +57,11 @@
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
+#include "shell/browser/electron_pdf_web_contents_helper_client.h"
 #endif
 
 using content::BrowserThread;
@@ -198,6 +203,11 @@ void CommonWebContentsDelegate::InitWithWebContents(
                                           browser_context->GetUserAgent());
 #endif
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  pdf::PDFWebContentsHelper::CreateForWebContentsWithClient(
+      web_contents, std::make_unique<ElectronPDFWebContentsHelperClient>());
+#endif
+
   // Determien whether the WebContents is offscreen.
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   offscreen_ =
@@ -328,7 +338,7 @@ void CommonWebContentsDelegate::EnumerateDirectory(
 void CommonWebContentsDelegate::EnterFullscreenModeForTab(
     content::WebContents* source,
     const GURL& origin,
-    const blink::WebFullscreenOptions& options) {
+    const blink::mojom::FullscreenOptions& options) {
   if (!owner_window_)
     return;
   if (IsFullscreenForTabOrPending(source)) {
@@ -345,6 +355,13 @@ void CommonWebContentsDelegate::ExitFullscreenModeForTab(
     return;
   SetHtmlApiFullscreen(false);
   owner_window_->NotifyWindowLeaveHtmlFullScreen();
+
+  if (native_fullscreen_) {
+    // Explicitly trigger a view resize, as the size is not actually changing if
+    // the browser is fullscreened, too. Chrome does this indirectly from
+    // `chrome/browser/ui/exclusive_access/fullscreen_controller.cc`.
+    source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
+  }
 }
 
 bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
@@ -352,7 +369,7 @@ bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
   return html_fullscreen_;
 }
 
-blink::WebSecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
+blink::SecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
     content::WebContents* web_contents,
     content::SecurityStyleExplanations* security_style_explanations) {
   SecurityStateTabHelper* helper =

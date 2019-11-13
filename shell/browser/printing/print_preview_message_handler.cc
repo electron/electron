@@ -23,7 +23,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
-#include "shell/common/api/locker.h"
+#include "shell/common/gin_helper/locker.h"
 
 #include "shell/common/node_includes.h"
 
@@ -143,8 +143,8 @@ void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
 }
 
 void PrintPreviewMessageHandler::PrintToPDF(
-    const base::DictionaryValue& options,
-    electron::util::Promise<v8::Local<v8::Value>> promise) {
+    base::DictionaryValue options,
+    gin_helper::Promise<v8::Local<v8::Value>> promise) {
   int request_id;
   options.GetInteger(printing::kPreviewRequestID, &request_id);
   promise_map_.emplace(request_id, std::move(promise));
@@ -156,12 +156,12 @@ void PrintPreviewMessageHandler::PrintToPDF(
   rfh->Send(new PrintMsg_PrintPreview(rfh->GetRoutingID(), options));
 }
 
-util::Promise<v8::Local<v8::Value>> PrintPreviewMessageHandler::GetPromise(
-    int request_id) {
+gin_helper::Promise<v8::Local<v8::Value>>
+PrintPreviewMessageHandler::GetPromise(int request_id) {
   auto it = promise_map_.find(request_id);
   DCHECK(it != promise_map_.end());
 
-  util::Promise<v8::Local<v8::Value>> promise = std::move(it->second);
+  gin_helper::Promise<v8::Local<v8::Value>> promise = std::move(it->second);
   promise_map_.erase(it);
 
   return promise;
@@ -172,10 +172,10 @@ void PrintPreviewMessageHandler::ResolvePromise(
     scoped_refptr<base::RefCountedMemory> data_bytes) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  util::Promise<v8::Local<v8::Value>> promise = GetPromise(request_id);
+  gin_helper::Promise<v8::Local<v8::Value>> promise = GetPromise(request_id);
 
   v8::Isolate* isolate = promise.isolate();
-  mate::Locker locker(isolate);
+  gin_helper::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(
       v8::Local<v8::Context>::New(isolate, promise.GetContext()));
@@ -192,7 +192,7 @@ void PrintPreviewMessageHandler::ResolvePromise(
 void PrintPreviewMessageHandler::RejectPromise(int request_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  util::Promise<v8::Local<v8::Value>> promise = GetPromise(request_id);
+  gin_helper::Promise<v8::Local<v8::Value>> promise = GetPromise(request_id);
   promise.RejectWithErrorMessage("Failed to generate PDF");
 }
 

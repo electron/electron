@@ -6,13 +6,12 @@
 
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/platform_util.h"
-#include "shell/common/promise_util.h"
 
 #if defined(OS_WIN)
 #include "base/win/scoped_com_initializer.h"
@@ -45,8 +44,8 @@ struct Converter<base::win::ShortcutOperation> {
 
 namespace {
 
-void OnOpenExternalFinished(electron::util::Promise<void*> promise,
-                            const std::string& error) {
+void OnOpenFinished(gin_helper::Promise<void> promise,
+                    const std::string& error) {
   if (error.empty())
     promise.Resolve();
   else
@@ -54,7 +53,7 @@ void OnOpenExternalFinished(electron::util::Promise<void*> promise,
 }
 
 v8::Local<v8::Promise> OpenExternal(const GURL& url, gin::Arguments* args) {
-  electron::util::Promise<void*> promise(args->isolate());
+  gin_helper::Promise<void> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   platform_util::OpenExternalOptions options;
@@ -67,8 +66,21 @@ v8::Local<v8::Promise> OpenExternal(const GURL& url, gin::Arguments* args) {
   }
 
   platform_util::OpenExternal(
-      url, options,
-      base::BindOnce(&OnOpenExternalFinished, std::move(promise)));
+      url, options, base::BindOnce(&OnOpenFinished, std::move(promise)));
+  return handle;
+}
+
+v8::Local<v8::Promise> OpenPath(v8::Isolate* isolate,
+                                const base::FilePath& full_path) {
+  gin_helper::Promise<const std::string&> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  platform_util::OpenPath(
+      full_path,
+      base::BindOnce(
+          [](gin_helper::Promise<const std::string&> promise,
+             const std::string& err_msg) { promise.Resolve(err_msg); },
+          std::move(promise)));
   return handle;
 }
 
@@ -84,10 +96,9 @@ bool MoveItemToTrash(gin::Arguments* args) {
 
 #if defined(OS_WIN)
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
-                       gin::Arguments* args) {
+                       gin_helper::Arguments* args) {
   base::win::ShortcutOperation operation = base::win::SHORTCUT_CREATE_ALWAYS;
-  if (gin::ConvertFromV8(args->isolate(), args->PeekNext(), &operation))
-    args->Skip();
+  args->GetNext(&operation);
   gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
   if (!args->GetNext(&options)) {
     args->ThrowError();
@@ -144,7 +155,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
-  dict.SetMethod("openItem", &platform_util::OpenItem);
+  dict.SetMethod("openPath", &OpenPath);
   dict.SetMethod("openExternal", &OpenExternal);
   dict.SetMethod("moveItemToTrash", &MoveItemToTrash);
   dict.SetMethod("beep", &platform_util::Beep);

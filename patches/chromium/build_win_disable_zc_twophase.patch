@@ -8,7 +8,7 @@ Windows. This is to workaround the bug in crbug.com/969698#c10
 until fixes have landed in upstream.
 
 diff --git a/build/config/win/BUILD.gn b/build/config/win/BUILD.gn
-index a3a164b41b45381061c7fceb7d7ec1fdb4907792..8de0cb6a8d1987f84aaca5c3bb30ead0a2019bef 100644
+index 95e32520781fc225be1c2bf7d8bfe43925d16d45..8de0cb6a8d1987f84aaca5c3bb30ead0a2019bef 100644
 --- a/build/config/win/BUILD.gn
 +++ b/build/config/win/BUILD.gn
 @@ -2,6 +2,7 @@
@@ -19,18 +19,13 @@ index a3a164b41b45381061c7fceb7d7ec1fdb4907792..8de0cb6a8d1987f84aaca5c3bb30ead0
  import("//build/config/chrome_build.gni")
  import("//build/config/clang/clang.gni")
  import("//build/config/compiler/compiler.gni")
-@@ -61,9 +62,13 @@ config("compiler") {
-     "/FS",  # Preserve previous PDB behavior.
-     "/bigobj",  # Some of our files are bigger than the regular limits.
+@@ -63,7 +64,8 @@ config("compiler") {
      "/utf-8",  # Assume UTF-8 by default to avoid code page dependencies.
--    "/Zc:twoPhase",
    ]
  
+-  if (is_clang) {
 +  if (use_custom_libcxx) {
 +    # Work around crbug.com/969698#c6, bug in MSSTL <xxatomic>.
-+    cflags += [ "/Zc:twoPhase" ]
-+  }
-+
-   # Force C/C++ mode for the given GN detected file type. This is necessary
-   # for precompiled headers where the same source file is compiled in both
-   # modes.
+     cflags += [ "/Zc:twoPhase" ]
+   }
+ 

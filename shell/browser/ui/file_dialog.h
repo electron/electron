@@ -11,7 +11,7 @@
 
 #include "base/files/file_path.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/promise_util.h"
+#include "shell/common/gin_helper/promise.h"
 
 namespace electron {
 class NativeWindow;
@@ -65,12 +65,12 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
                         std::vector<base::FilePath>* paths);
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise<gin_helper::Dictionary> promise);
+                    gin_helper::Promise<gin_helper::Dictionary> promise);
 
 bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path);
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise<gin_helper::Dictionary> promise);
+                    gin_helper::Promise<gin_helper::Dictionary> promise);
 
 }  // namespace file_dialog
 

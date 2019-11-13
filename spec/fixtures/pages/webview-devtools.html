@@ -8,7 +8,8 @@
     <script>
         var wv = document.querySelector('webview')
         wv.addEventListener('dom-ready', () => {
-          const webContents = wv.getWebContents()
+          const { remote } = require('electron')
+          const webContents = remote.webContents.fromId(wv.getWebContentsId())
           webContents.on('devtools-opened', function () {
             var showPanelIntevalId = setInterval(function () {
               if (webContents.devToolsWebContents) {

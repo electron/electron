@@ -2,7 +2,7 @@ const v8Util = process.electronBinding('v8_util')
 
 export class CallbacksRegistry {
   private nextId: number = 0
-  private callbacks: Record<number, Function> = {}
+  private callbacks = new Map<number, Function>()
 
   add (callback: Function) {
     // The callback is already added.
@@ -31,14 +31,14 @@ export class CallbacksRegistry {
       break
     }
 
-    this.callbacks[id] = callback
+    this.callbacks.set(id, callback)
     v8Util.setHiddenValue(callback, 'callbackId', id)
     v8Util.setHiddenValue(callback, 'location', filenameAndLine)
     return id
   }
 
   get (id: number) {
-    return this.callbacks[id] || function () {}
+    return this.callbacks.get(id) || function () {}
   }
 
   apply (id: number, ...args: any[]) {
@@ -46,10 +46,10 @@ export class CallbacksRegistry {
   }
 
   remove (id: number) {
-    const callback = this.callbacks[id]
+    const callback = this.callbacks.get(id)
     if (callback) {
       v8Util.deleteHiddenValue(callback, 'callbackId')
-      delete this.callbacks[id]
+      this.callbacks.delete(id)
     }
   }
 }

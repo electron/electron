@@ -67,10 +67,6 @@ declare namespace Electron {
     sendToAll(webContentsId: number, channel: string, ...args: any[]): void
   }
 
-  interface RemoteInternal extends Electron.Remote {
-    getGuestWebContents(guestInstanceId: number): Electron.WebContents;
-  }
-
   interface WebContentsInternal extends Electron.WebContents {
     _sendInternal(channel: string, ...args: any[]): void;
     _sendInternalToAll(channel: string, ...args: any[]): void;
@@ -165,8 +161,8 @@ declare namespace ElectronInternal {
     public disconnectedCallback(): void;
 
     // Created in web-view-impl
-    public getWebContents(): Electron.WebContents;
     public getWebContentsId(): number;
+    public capturePage(rect?: Electron.Rectangle): Promise<Electron.NativeImage>;
   }
 }
 

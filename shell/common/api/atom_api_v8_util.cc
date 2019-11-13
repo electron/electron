@@ -7,8 +7,8 @@
 
 #include "base/hash/hash.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
-#include "shell/common/gin_converters/native_mate_handle_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "url/origin.h"
@@ -19,10 +19,6 @@
 #include "shell/common/api/remote/remote_callback_freer.h"
 #include "shell/common/api/remote/remote_object_freer.h"
 #endif
-
-// TODO(zcbenz): Remove the includes after removing native_mate.
-#include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/content_converter.h"
 
 namespace std {
 
@@ -126,11 +122,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  // TODO(zcbenz): Use gin_helper::Dictionary when content_converter.h is moved
-  // to gin.
-  mate::Dictionary mdict(context->GetIsolate(), exports);
-  mdict.SetMethod("setRemoteCallbackFreer",
-                  &electron::RemoteCallbackFreer::BindTo);
+  dict.SetMethod("setRemoteCallbackFreer",
+                 &electron::RemoteCallbackFreer::BindTo);
   dict.SetMethod("setRemoteObjectFreer", &electron::RemoteObjectFreer::BindTo);
   dict.SetMethod("addRemoteObjectRef", &electron::RemoteObjectFreer::AddRef);
   dict.SetMethod("createIDWeakMap",

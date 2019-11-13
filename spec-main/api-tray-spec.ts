@@ -3,7 +3,7 @@ import { Menu, Tray, nativeImage } from 'electron'
 import { ifdescribe, ifit } from './spec-helpers'
 
 describe('tray module', () => {
-  let tray: Tray;
+  let tray: Tray
 
   beforeEach(() => { tray = new Tray(nativeImage.createEmpty()) })
 
@@ -56,9 +56,9 @@ describe('tray module', () => {
   describe('tray.getBounds()', () => {
     afterEach(() => { tray.destroy() })
 
-    ifit(process.platform !== 'linux') ('returns a bounds object', function () {
+    ifit(process.platform !== 'linux')('returns a bounds object', function () {
       const bounds = tray.getBounds()
-      expect(bounds).to.be.an('object').and.to.have.all.keys('x', 'y', 'width', 'height');
+      expect(bounds).to.be.an('object').and.to.have.all.keys('x', 'y', 'width', 'height')
     })
   })
 

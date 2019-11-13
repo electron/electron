@@ -39,6 +39,7 @@ an issue:
   * [Using Electron's APIs](tutorial/application-architecture.md#using-electron-apis)
   * [Using Node.js APIs](tutorial/application-architecture.md#using-nodejs-apis)
   * [Using Native Node.js Modules](tutorial/using-native-node-modules.md)
+  * [Performance Strategies](tutorial/performance.md)
 * Adding Features to Your App
   * [Notifications](tutorial/notifications.md)
   * [Recent Documents](tutorial/recent-documents.md)

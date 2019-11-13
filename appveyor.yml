@@ -1,5 +1,5 @@
 # The config expects the following environment variables to be set:
-#  - "GN_CONFIG" Build type. One of {'debug', 'testing', 'release'}.
+#  - "GN_CONFIG" Build type. One of {'testing', 'release'}.
 #  - "GN_EXTRA_ARGS" Additional gn arguments for a build config,
 #      e.g. 'target_cpu="x86"' to build for a 32bit platform.
 #      https://gn.googlesource.com/gn/+/master/docs/reference.md#target_cpu
@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: libcc-20
-image: vs2017-15.9-10.0.18362
+image: vs2019-16.3-10.0.18362
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -50,6 +50,12 @@ build_script:
   - ps: >-
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
         Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+      } else {
+        node script/yarn.js install --frozen-lockfile
+
+        if ($(node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH;$LASTEXITCODE -eq 0)) {
+          Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+        }
       }
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
@@ -70,10 +76,33 @@ build_script:
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
-  - gclient sync --with_branch_heads --with_tags --reset
+  - ps: >-
+      if ($env:GN_CONFIG -eq 'release') {
+        gclient sync --with_branch_heads --with_tags --reset
+      } else {
+        cd src\electron
+        node script\generate-deps-hash.js
+        $depshash = Get-Content .\.depshash -Raw 
+        $zipfile = "Z:\$depshash.7z"
+        cd ..\..
+        if (Test-Path -Path $zipfile) {
+          # file exists, unzip and then gclient sync
+          7z x -y $zipfile -mmt=30 -aoa
+          # update external binaries
+          python src/electron/script/update-external-binaries.py
+        } else {    
+          # file does not exist, gclient sync, then zip
+          gclient sync --with_branch_heads --with_tags --reset
+          if ($env:TARGET_ARCH -ne 'ia32') {
+            # archive current source for future use 
+            # only run on x64/woa to avoid contention saving
+            7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\WebKit\LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30
+          }
+        }
+      }
   - cd src
   - ps: $env:BUILD_CONFIG_PATH="//electron/build/args/%GN_CONFIG%.gn"
-  - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS%"
+  - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS% cc_wrapper=\"%SCCACHE_PATH%\""
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
   - gn check out/Default //electron:manifests
@@ -85,8 +114,10 @@ build_script:
   - ninja -C out/Default electron:electron_dist_zip
   - ninja -C out/Default shell_browser_ui_unittests
   - ninja -C out/Default electron:electron_mksnapshot_zip
+  - ninja -C out/Default electron:hunspell_dictionaries_zip
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
+  - cmd /C %SCCACHE_PATH% --show-stats
   - appveyor PushArtifact out/Default/dist.zip
   - appveyor PushArtifact out/Default/shell_browser_ui_unittests.exe
   - appveyor PushArtifact out/Default/chromedriver.zip
@@ -94,6 +125,7 @@ build_script:
   - 7z a node_headers.zip out\Default\gen\node_headers
   - appveyor PushArtifact node_headers.zip
   - appveyor PushArtifact out/Default/mksnapshot.zip
+  - appveyor PushArtifact out/Default/hunspell_dictionaries.zip
   - appveyor PushArtifact out/Default/electron.lib
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
@@ -127,7 +159,7 @@ test_script:
         echo "Skipping tests for $env:GN_CONFIG build"
       }
   - cd electron
-  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --ci --enable-logging)
+  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --enable-logging)
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - echo "About to verify mksnapshot"

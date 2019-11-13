@@ -21,16 +21,17 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
-#include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/atom_application.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/ui/cocoa/NSColor+Hex.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/deprecate_util.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "ui/native_theme/native_theme.h"
 
-namespace mate {
+namespace gin {
+
 template <>
 struct Converter<NSAppearance*> {
   static bool FromV8(v8::Isolate* isolate,
@@ -42,7 +43,7 @@ struct Converter<NSAppearance*> {
     }
 
     std::string name;
-    if (!mate::ConvertFromV8(isolate, val, &name)) {
+    if (!gin::ConvertFromV8(isolate, val, &name)) {
       return false;
     }
 
@@ -67,18 +68,19 @@ struct Converter<NSAppearance*> {
     }
 
     if ([val.name isEqualToString:NSAppearanceNameAqua]) {
-      return mate::ConvertToV8(isolate, "light");
+      return gin::ConvertToV8(isolate, "light");
     }
     if (@available(macOS 10.14, *)) {
       if ([val.name isEqualToString:NSAppearanceNameDarkAqua]) {
-        return mate::ConvertToV8(isolate, "dark");
+        return gin::ConvertToV8(isolate, "dark");
       }
     }
 
-    return mate::ConvertToV8(isolate, "unknown");
+    return gin::ConvertToV8(isolate, "unknown");
   }
 };
-}  // namespace mate
+
+}  // namespace gin
 
 namespace electron {
 
@@ -101,26 +103,11 @@ AVMediaType ParseMediaType(const std::string& media_type) {
   }
 }
 
-std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
-  switch (status) {
-    case AVAuthorizationStatusNotDeterminedMac:
-      return "not-determined";
-    case AVAuthorizationStatusRestrictedMac:
-      return "restricted";
-    case AVAuthorizationStatusDeniedMac:
-      return "denied";
-    case AVAuthorizationStatusAuthorizedMac:
-      return "granted";
-    default:
-      return "unknown";
-  }
-}
-
 }  // namespace
 
 void SystemPreferences::PostNotification(const std::string& name,
-                                         const base::DictionaryValue& user_info,
-                                         mate::Arguments* args) {
+                                         base::DictionaryValue user_info,
+                                         gin_helper::Arguments* args) {
   bool immediate = false;
   args->GetNext(&immediate);
 
@@ -143,9 +130,8 @@ void SystemPreferences::UnsubscribeNotification(int request_id) {
   DoUnsubscribeNotification(request_id, kNSDistributedNotificationCenter);
 }
 
-void SystemPreferences::PostLocalNotification(
-    const std::string& name,
-    const base::DictionaryValue& user_info) {
+void SystemPreferences::PostLocalNotification(const std::string& name,
+                                              base::DictionaryValue user_info) {
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center postNotificationName:base::SysUTF8ToNSString(name)
                         object:nil
@@ -164,7 +150,7 @@ void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
 
 void SystemPreferences::PostWorkspaceNotification(
     const std::string& name,
-    const base::DictionaryValue& user_info) {
+    base::DictionaryValue user_info) {
   NSNotificationCenter* center =
       [[NSWorkspace sharedWorkspace] notificationCenter];
   [center postNotificationName:base::SysUTF8ToNSString(name)
@@ -209,17 +195,15 @@ int SystemPreferences::DoSubscribeNotification(
                   object:nil
                    queue:nil
               usingBlock:^(NSNotification* notification) {
-                std::unique_ptr<base::DictionaryValue> user_info =
-                    NSDictionaryToDictionaryValue(notification.userInfo);
-
                 std::string object = "";
                 if ([notification.object isKindOfClass:[NSString class]]) {
                   object = base::SysNSStringToUTF8(notification.object);
                 }
 
-                if (user_info) {
+                if (notification.userInfo) {
                   copied_callback.Run(
-                      base::SysNSStringToUTF8(notification.name), *user_info,
+                      base::SysNSStringToUTF8(notification.name),
+                      NSDictionaryToDictionaryValue(notification.userInfo),
                       object);
                 } else {
                   copied_callback.Run(
@@ -260,7 +244,7 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* key = base::SysUTF8ToNSString(name);
   if (type == "string") {
-    return mate::StringToV8(
+    return gin::StringToV8(
         isolate(), base::SysNSStringToUTF8([defaults stringForKey:key]));
   } else if (type == "boolean") {
     return v8::Boolean::New(isolate(), [defaults boolForKey:key]);
@@ -271,26 +255,20 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   } else if (type == "double") {
     return v8::Number::New(isolate(), [defaults doubleForKey:key]);
   } else if (type == "url") {
-    return mate::ConvertToV8(isolate(),
-                             net::GURLWithNSURL([defaults URLForKey:key]));
+    return gin::ConvertToV8(isolate(),
+                            net::GURLWithNSURL([defaults URLForKey:key]));
   } else if (type == "array") {
-    std::unique_ptr<base::ListValue> list =
-        NSArrayToListValue([defaults arrayForKey:key]);
-    if (list == nullptr)
-      list.reset(new base::ListValue());
-    return mate::ConvertToV8(isolate(), *list);
+    return gin::ConvertToV8(isolate(),
+                            NSArrayToListValue([defaults arrayForKey:key]));
   } else if (type == "dictionary") {
-    std::unique_ptr<base::DictionaryValue> dictionary =
-        NSDictionaryToDictionaryValue([defaults dictionaryForKey:key]);
-    if (dictionary == nullptr)
-      dictionary.reset(new base::DictionaryValue());
-    return mate::ConvertToV8(isolate(), *dictionary);
+    return gin::ConvertToV8(isolate(), NSDictionaryToDictionaryValue(
+                                           [defaults dictionaryForKey:key]));
   } else {
     return v8::Undefined(isolate());
   }
 }
 
-void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
+void SystemPreferences::RegisterDefaults(gin_helper::Arguments* args) {
   base::DictionaryValue value;
 
   if (!args->GetNext(&value)) {
@@ -314,7 +292,7 @@ void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
 
 void SystemPreferences::SetUserDefault(const std::string& name,
                                        const std::string& type,
-                                       mate::Arguments* args) {
+                                       gin_helper::Arguments* args) {
   const auto throwConversionError = [&] {
     args->ThrowError("Unable to convert value to: " + type);
   };
@@ -451,7 +429,7 @@ bool SystemPreferences::CanPromptTouchID() {
 v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     v8::Isolate* isolate,
     const std::string& reason) {
-  util::Promise<void*> promise(isolate);
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (@available(macOS 10.12.2, *)) {
@@ -468,7 +446,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     scoped_refptr<base::SequencedTaskRunner> runner =
         base::SequencedTaskRunnerHandle::Get();
 
-    __block util::Promise<void*> p = std::move(promise);
+    __block gin_helper::Promise<void> p = std::move(promise);
     [context
         evaluateAccessControl:access_control
                     operation:LAAccessControlOperationUseKeySign
@@ -480,13 +458,13 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
                             runner->PostTask(
                                 FROM_HERE,
                                 base::BindOnce(
-                                    util::Promise<void*>::RejectPromise,
+                                    gin_helper::Promise<void>::RejectPromise,
                                     std::move(p), std::move(err_msg)));
                           } else {
                             runner->PostTask(
                                 FROM_HERE,
                                 base::BindOnce(
-                                    util::Promise<void*>::ResolveEmptyPromise,
+                                    gin_helper::Promise<void>::ResolvePromise,
                                     std::move(p)));
                           }
                         }];
@@ -503,18 +481,23 @@ bool SystemPreferences::IsTrustedAccessibilityClient(bool prompt) {
   return AXIsProcessTrustedWithOptions((CFDictionaryRef)options);
 }
 
-std::string SystemPreferences::GetColor(const std::string& color,
-                                        mate::Arguments* args) {
+std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
+                                        const std::string& color) {
   NSColor* sysColor = nil;
   if (color == "alternate-selected-control-text") {
     sysColor = [NSColor alternateSelectedControlTextColor];
+    EmitDeprecationWarning(
+        node::Environment::GetCurrent(thrower.isolate()),
+        "'alternate-selected-control-text' is deprecated as an input to "
+        "getColor.  Use 'selected-content-background' instead.",
+        "electron");
   } else if (color == "control-background") {
     sysColor = [NSColor controlBackgroundColor];
   } else if (color == "control") {
     sysColor = [NSColor controlColor];
   } else if (color == "control-text") {
     sysColor = [NSColor controlTextColor];
-  } else if (color == "disabled-control") {
+  } else if (color == "disabled-control-text") {
     sysColor = [NSColor disabledControlTextColor];
   } else if (color == "find-highlight") {
     if (@available(macOS 10.14, *))
@@ -580,23 +563,34 @@ std::string SystemPreferences::GetColor(const std::string& color,
   } else if (color == "window-frame-text") {
     sysColor = [NSColor windowFrameTextColor];
   } else {
-    args->ThrowError("Unknown color: " + color);
-    return "";
+    thrower.ThrowError("Unknown color: " + color);
   }
 
-  return base::SysNSStringToUTF8([sysColor hexadecimalValue]);
+  if (sysColor)
+    return base::SysNSStringToUTF8([sysColor hexadecimalValue]);
+  return "";
 }
 
 std::string SystemPreferences::GetMediaAccessStatus(
     const std::string& media_type,
-    mate::Arguments* args) {
+    gin_helper::Arguments* args) {
   if (auto type = ParseMediaType(media_type)) {
     if (@available(macOS 10.14, *)) {
-      return ConvertAuthorizationStatus(
-          [AVCaptureDevice authorizationStatusForMediaType:type]);
+      switch ([AVCaptureDevice authorizationStatusForMediaType:type]) {
+        case AVAuthorizationStatusNotDetermined:
+          return "not-determined";
+        case AVAuthorizationStatusRestricted:
+          return "restricted";
+        case AVAuthorizationStatusDenied:
+          return "denied";
+        case AVAuthorizationStatusAuthorized:
+          return "granted";
+        default:
+          return "unknown";
+      }
     } else {
       // access always allowed pre-10.14 Mojave
-      return ConvertAuthorizationStatus(AVAuthorizationStatusAuthorizedMac);
+      return "granted";
     }
   } else {
     args->ThrowError("Invalid media type");
@@ -607,12 +601,12 @@ std::string SystemPreferences::GetMediaAccessStatus(
 v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
     v8::Isolate* isolate,
     const std::string& media_type) {
-  util::Promise<bool> promise(isolate);
+  gin_helper::Promise<bool> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (auto type = ParseMediaType(media_type)) {
     if (@available(macOS 10.14, *)) {
-      __block util::Promise<bool> p = std::move(promise);
+      __block gin_helper::Promise<bool> p = std::move(promise);
       [AVCaptureDevice requestAccessForMediaType:type
                                completionHandler:^(BOOL granted) {
                                  dispatch_async(dispatch_get_main_queue(), ^{
@@ -651,7 +645,7 @@ bool SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled() {
 v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
     v8::Isolate* isolate) {
   if (@available(macOS 10.14, *)) {
-    return mate::ConvertToV8(
+    return gin::ConvertToV8(
         isolate, [NSApplication sharedApplication].effectiveAppearance);
   }
   return v8::Null(isolate);
@@ -660,13 +654,13 @@ v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
 v8::Local<v8::Value> SystemPreferences::GetAppLevelAppearance(
     v8::Isolate* isolate) {
   if (@available(macOS 10.14, *)) {
-    return mate::ConvertToV8(isolate,
-                             [NSApplication sharedApplication].appearance);
+    return gin::ConvertToV8(isolate,
+                            [NSApplication sharedApplication].appearance);
   }
   return v8::Null(isolate);
 }
 
-void SystemPreferences::SetAppLevelAppearance(mate::Arguments* args) {
+void SystemPreferences::SetAppLevelAppearance(gin_helper::Arguments* args) {
   if (@available(macOS 10.14, *)) {
     NSAppearance* appearance;
     if (args->GetNext(&appearance)) {

@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 17 Oct 2019 15:15:12 -0700
+Subject: fix: don't use node-controlled prepareStackTrace
+
+At the moment, Electron uses the v8 version of Error.prepareStackTrace as
+defined in v7.9.74 (where https://crbug.com/v8/7848 has been fixed) and
+not the one polyfilled by Node.js. As a result, we were experiencing failures
+in parallel/test-buffer-constructor-outside-node-modules.js because
+the polyfilled prepareStackTrace was not being run and thus code
+inside that function would never be executed.
+
+Upstreamed at https://github.com/nodejs/node/pull/30014.
+
+diff --git a/lib/internal/util.js b/lib/internal/util.js
+index 58502f3b7a7a937c896ff6d32a90a45c6912e3b3..e91362cc3a8a6c5d2462a017f177bebfd607a850 100644
+--- a/lib/internal/util.js
++++ b/lib/internal/util.js
+@@ -340,10 +340,10 @@ function isInsideNodeModules() {
+     // the perf implications should be okay.
+     getStructuredStack = runInNewContext(`(function() {
+       Error.stackTraceLimit = Infinity;
++      Error.prepareStackTrace = (err, trace) => trace;
++
+       return function structuredStack() {
+-        const e = new Error();
+-        overrideStackTrace.set(e, (err, trace) => trace);
+-        return e.stack;
++        return new Error().stack;
+       };
+     })()`, { overrideStackTrace }, { filename: 'structured-stack' });
+   }

@@ -17,7 +17,7 @@ namespace electron {
 namespace api {
 
 SavePageHandler::SavePageHandler(content::WebContents* web_contents,
-                                 util::Promise<void*> promise)
+                                 gin_helper::Promise<void> promise)
     : web_contents_(web_contents), promise_(std::move(promise)) {}
 
 SavePageHandler::~SavePageHandler() = default;

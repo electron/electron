@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/chrome/browser/ui/libgtkui/native_theme_gtk.cc b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-index 80542c2cab345f991079453b66f58439d0f214eb..d460eb8d2432df1209412a28cecc22f2db9af99b 100644
+index ad87f4729fe2cec2cf6e12b5bfcaf68bccf0390d..b1c3fd0f798d520da0637268dcbd51ecde9b40a7 100644
 --- a/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 +++ b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 @@ -279,6 +279,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
@@ -78,7 +78,7 @@ index 7fd49a2e26968daaa16ed3322b516f53ff60fb56..f902910ecc8e5b4945187e836655362e
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 3604105e43ee1866a8517c52ed05205b3ed10b56..70389e0245993faa2c17e9deefeb000280ef2368 100644
+index f1330721a711c61211ea136286ee884bc00e1975..e479fc84f7013984fc53d18cad8812fbd43cb670 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -389,6 +389,11 @@ class NATIVE_THEME_EXPORT NativeTheme {

@@ -5,7 +5,7 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
 #define SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
 
-#include "shell/browser/api/event_emitter.h"
+#include "shell/common/gin_helper/event_emitter.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
@@ -13,7 +13,7 @@ namespace electron {
 
 namespace api {
 
-class NativeTheme : public mate::EventEmitter<NativeTheme>,
+class NativeTheme : public gin_helper::EventEmitter<NativeTheme>,
                     public ui::NativeThemeObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
@@ -58,20 +58,6 @@ struct Converter<ui::NativeTheme::ThemeSource> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      ui::NativeTheme::ThemeSource* out);
-};
-
-// TODO(zcbenz): Remove this after converting NativeTheme to gin::Wrapper.
-template <>
-struct Converter<electron::api::NativeTheme*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::NativeTheme** out) {
-    return mate::ConvertFromV8(isolate, val, out);
-  }
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::api::NativeTheme* in) {
-    return mate::ConvertToV8(isolate, in);
-  }
 };
 
 }  // namespace gin

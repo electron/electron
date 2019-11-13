@@ -9,19 +9,19 @@
 #include <string>
 #include <vector>
 
-#include "native_mate/handle.h"
-#include "shell/browser/api/trackable_object.h"
+#include "gin/handle.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
+#include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace gfx {
 class Image;
 }
 
-namespace mate {
-class Arguments;
+namespace gin_helper {
 class Dictionary;
-}  // namespace mate
+}
 
 namespace electron {
 
@@ -32,18 +32,17 @@ namespace api {
 class Menu;
 class NativeImage;
 
-class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
+class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
  public:
-  static mate::WrappableBase* New(mate::Handle<NativeImage> image,
-                                  mate::Arguments* args);
+  static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
+                                  gin::Handle<NativeImage> image,
+                                  gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  Tray(v8::Isolate* isolate,
-       v8::Local<v8::Object> wrapper,
-       mate::Handle<NativeImage> image);
+  Tray(gin::Handle<NativeImage> image, gin_helper::Arguments* args);
   ~Tray() override;
 
   // TrayIconObserver:
@@ -65,22 +64,24 @@ class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
   void OnMouseExited(const gfx::Point& location, int modifiers) override;
   void OnMouseMoved(const gfx::Point& location, int modifiers) override;
 
-  void SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image);
-  void SetPressedImage(v8::Isolate* isolate, mate::Handle<NativeImage> image);
+  void SetImage(v8::Isolate* isolate, gin::Handle<NativeImage> image);
+  void SetPressedImage(v8::Isolate* isolate, gin::Handle<NativeImage> image);
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title);
   std::string GetTitle();
   void SetIgnoreDoubleClickEvents(bool ignore);
   bool GetIgnoreDoubleClickEvents();
-  void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
+  void DisplayBalloon(gin_helper::ErrorThrower thrower,
+                      const gin_helper::Dictionary& options);
   void RemoveBalloon();
   void Focus();
-  void PopUpContextMenu(mate::Arguments* args);
-  void SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu);
+  void PopUpContextMenu(gin_helper::Arguments* args);
+  void SetContextMenu(gin_helper::ErrorThrower thrower,
+                      v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();
 
  private:
-  v8::Global<v8::Object> menu_;
+  v8::Global<v8::Value> menu_;
   std::unique_ptr<TrayIcon> tray_icon_;
 
   DISALLOW_COPY_AND_ASSIGN(Tray);

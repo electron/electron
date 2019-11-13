@@ -11,6 +11,7 @@
 #include "base/guid.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
+#include "mojo/public/cpp/bindings/binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "net/base/filename_util.h"
@@ -23,16 +24,16 @@
 #include "shell/browser/net/node_stream_loader.h"
 #include "shell/browser/net/url_pipe_loader.h"
 #include "shell/common/atom_constants.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/net_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 
 #include "shell/common/node_includes.h"
 
 using content::BrowserThread;
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<electron::ProtocolType> {
@@ -58,7 +59,7 @@ struct Converter<electron::ProtocolType> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -77,17 +78,18 @@ bool ResponseMustBeObject(ProtocolType type) {
 }
 
 // Helper to convert value to Dictionary.
-mate::Dictionary ToDict(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+gin::Dictionary ToDict(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   if (!value->IsFunction() && value->IsObject())
-    return mate::Dictionary(
+    return gin::Dictionary(
         isolate,
         value->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
   else
-    return mate::Dictionary();
+    return gin::Dictionary(isolate);
 }
 
 // Parse headers from response object.
-network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
+network::ResourceResponseHead ToResponseHead(
+    const gin_helper::Dictionary& dict) {
   network::ResourceResponseHead head;
   head.mime_type = "text/html";
   head.charset = "utf-8";
@@ -123,9 +125,8 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
       }
       // Some apps are passing content-type via headers, which is not accepted
       // in NetworkService.
-      if (base::ToLowerASCII(iter.first) == "content-type" &&
-          iter.second.is_string()) {
-        head.mime_type = iter.second.GetString();
+      if (base::ToLowerASCII(iter.first) == "content-type") {
+        head.headers->GetMimeTypeAndCharset(&head.mime_type, &head.charset);
         has_content_type = true;
       }
     }
@@ -167,7 +168,7 @@ AtomURLLoaderFactory::AtomURLLoaderFactory(ProtocolType type,
 AtomURLLoaderFactory::~AtomURLLoaderFactory() = default;
 
 void AtomURLLoaderFactory::CreateLoaderAndStart(
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     int32_t routing_id,
     int32_t request_id,
     uint32_t options,
@@ -183,13 +184,13 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
 }
 
 void AtomURLLoaderFactory::Clone(
-    network::mojom::URLLoaderFactoryRequest request) {
-  bindings_.AddBinding(this, std::move(request));
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver) {
+  receivers_.Add(this, std::move(receiver));
 }
 
 // static
 void AtomURLLoaderFactory::StartLoading(
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     int32_t routing_id,
     int32_t request_id,
     uint32_t options,
@@ -198,7 +199,7 @@ void AtomURLLoaderFactory::StartLoading(
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     network::mojom::URLLoaderFactory* proxy_factory,
     ProtocolType type,
-    mate::Arguments* args) {
+    gin::Arguments* args) {
   // Send network error when there is no argument passed.
   //
   // Note that we should not throw JS error in the callback no matter what is
@@ -211,7 +212,7 @@ void AtomURLLoaderFactory::StartLoading(
   }
 
   // Parse {error} object.
-  mate::Dictionary dict = ToDict(args->isolate(), response);
+  gin_helper::Dictionary dict = ToDict(args->isolate(), response);
   if (!dict.IsEmpty()) {
     int error_code;
     if (dict.Get("error", &error_code)) {
@@ -252,7 +253,7 @@ void AtomURLLoaderFactory::StartLoading(
     } else {
       StartLoadingHttp(std::move(loader), new_request, std::move(client),
                        traffic_annotation,
-                       mate::Dictionary::CreateEmpty(args->isolate()));
+                       gin::Dictionary::CreateEmpty(args->isolate()));
     }
     return;
   }
@@ -286,7 +287,7 @@ void AtomURLLoaderFactory::StartLoading(
       break;
     case ProtocolType::kFree:
       ProtocolType type;
-      if (!mate::ConvertFromV8(args->isolate(), response, &type)) {
+      if (!gin::ConvertFromV8(args->isolate(), response, &type)) {
         client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
         return;
       }
@@ -301,7 +302,7 @@ void AtomURLLoaderFactory::StartLoading(
 void AtomURLLoaderFactory::StartLoadingBuffer(
     network::mojom::URLLoaderClientPtr client,
     network::ResourceResponseHead head,
-    const mate::Dictionary& dict) {
+    const gin_helper::Dictionary& dict) {
   v8::Local<v8::Value> buffer = dict.GetHandle();
   dict.Get("data", &buffer);
   if (!node::Buffer::HasInstance(buffer)) {
@@ -318,7 +319,7 @@ void AtomURLLoaderFactory::StartLoadingBuffer(
 void AtomURLLoaderFactory::StartLoadingString(
     network::mojom::URLLoaderClientPtr client,
     network::ResourceResponseHead head,
-    const mate::Dictionary& dict,
+    const gin_helper::Dictionary& dict,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
   std::string contents;
@@ -336,15 +337,15 @@ void AtomURLLoaderFactory::StartLoadingString(
 
 // static
 void AtomURLLoaderFactory::StartLoadingFile(
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     network::ResourceRequest request,
     network::mojom::URLLoaderClientPtr client,
     network::ResourceResponseHead head,
-    const mate::Dictionary& dict,
+    const gin_helper::Dictionary& dict,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
   base::FilePath path;
-  if (mate::ConvertFromV8(isolate, response, &path)) {
+  if (gin::ConvertFromV8(isolate, response, &path)) {
     request.url = net::FilePathToFileURL(path);
   } else if (!dict.IsEmpty()) {
     dict.Get("referrer", &request.referrer);
@@ -363,11 +364,11 @@ void AtomURLLoaderFactory::StartLoadingFile(
 
 // static
 void AtomURLLoaderFactory::StartLoadingHttp(
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     const network::ResourceRequest& original_request,
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-    const mate::Dictionary& dict) {
+    const gin_helper::Dictionary& dict) {
   auto request = std::make_unique<network::ResourceRequest>();
   request->headers = original_request.headers;
   request->cors_exempt_headers = original_request.cors_exempt_headers;
@@ -388,8 +389,8 @@ void AtomURLLoaderFactory::StartLoadingHttp(
     if (value->IsNull()) {
       browser_context = AtomBrowserContext::From(base::GenerateGUID(), true);
     } else {
-      mate::Handle<api::Session> session;
-      if (mate::ConvertFromV8(dict.isolate(), value, &session) &&
+      gin::Handle<api::Session> session;
+      if (gin::ConvertFromV8(dict.isolate(), value, &session) &&
           !session.IsEmpty()) {
         browser_context = session->browser_context();
       }
@@ -405,10 +406,10 @@ void AtomURLLoaderFactory::StartLoadingHttp(
 
 // static
 void AtomURLLoaderFactory::StartLoadingStream(
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     network::mojom::URLLoaderClientPtr client,
     network::ResourceResponseHead head,
-    const mate::Dictionary& dict) {
+    const gin_helper::Dictionary& dict) {
   v8::Local<v8::Value> stream;
   if (!dict.Get("data", &stream)) {
     // Assume the opts is already a stream.
@@ -436,7 +437,7 @@ void AtomURLLoaderFactory::StartLoadingStream(
     return;
   }
 
-  mate::Dictionary data = ToDict(dict.isolate(), stream);
+  gin_helper::Dictionary data = ToDict(dict.isolate(), stream);
   v8::Local<v8::Value> method;
   if (!data.Get("on", &method) || !method->IsFunction() ||
       !data.Get("removeListener", &method) || !method->IsFunction()) {

@@ -194,7 +194,7 @@ bool Archive::Init() {
 
   header_size_ = 8 + size;
   header_ = base::DictionaryValue::From(
-      std::make_unique<base::Value>(value->Clone()));
+      base::Value::ToUniquePtrValue(std::move(*value)));
   return true;
 }
 

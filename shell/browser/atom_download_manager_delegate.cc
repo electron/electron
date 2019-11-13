@@ -124,7 +124,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     settings.force_detached = offscreen;
 
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    electron::util::Promise<gin_helper::Dictionary> dialog_promise(isolate);
+    gin_helper::Promise<gin_helper::Dictionary> dialog_promise(isolate);
     auto dialog_callback =
         base::BindOnce(&AtomDownloadManagerDelegate::OnDownloadSaveDialogDone,
                        base::Unretained(this), download_id, callback);

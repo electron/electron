@@ -6,6 +6,20 @@ Breaking changes will be documented here, and deprecation warnings added to JS c
 
 The `FIXME` string is used in code comments to denote things that should be fixed for future releases. See https://github.com/electron/electron/search?q=fixme
 
+## Planned Breaking API Changes (9.0)
+
+### `<webview>.getWebContents()`
+
+This API, which was deprecated in Electron 8.0, is now removed.
+
+```js
+// Removed in Electron 9.0
+webview.getWebContents()
+// Replace with
+const { remote } = require('electron')
+remote.webContents.fromId(webview.getWebContentsId())
+```
+
 ## Planned Breaking API Changes (8.0)
 
 ### Values sent over IPC are now serialized with Structured Clone Algorithm
@@ -58,6 +72,47 @@ before with a DeprecationWarning message, but starting in Electron 9, sending
 these kinds of objects will throw a 'could not be cloned' error.
 
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
+
+### `<webview>.getWebContents()`
+
+This API is implemented using the `remote` module, which has both performance
+and security implications. Therefore its usage should be explicit.
+
+```js
+// Deprecated
+webview.getWebContents()
+// Replace with
+const { remote } = require('electron')
+remote.webContents.fromId(webview.getWebContentsId())
+```
+
+However, it is recommended to avoid using the `remote` module altogether.
+
+```js
+// main
+const { ipcMain, webContents } = require('electron')
+
+const getGuestForWebContents = function (webContentsId, contents) {
+  const guest = webContents.fromId(webContentsId)
+  if (!guest) {
+    throw new Error(`Invalid webContentsId: ${webContentsId}`)
+  }
+  if (guest.hostWebContents !== contents) {
+    throw new Error(`Access denied to webContents`)
+  }
+  return guest
+}
+
+ipcMain.handle('openDevTools', (event, webContentsId) => {
+  const guest = getGuestForWebContents(webContentsId, event.sender)
+  guest.openDevTools()
+})
+
+// renderer
+const { ipcRenderer } = require('electron')
+
+ipcRenderer.invoke('openDevTools', webview.getWebContentsId())
+```
 
 ## Planned Breaking API Changes (7.0)
 

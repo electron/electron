@@ -30,8 +30,7 @@ namespace electron {
 
 namespace api {
 
-MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : Menu(isolate, wrapper), weak_factory_(this) {}
+MenuMac::MenuMac(gin::Arguments* args) : Menu(args), weak_factory_(this) {}
 
 MenuMac::~MenuMac() = default;
 
@@ -57,6 +56,9 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                         int y,
                         int positioning_item,
                         base::Closure callback) {
+  gin_helper::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+
   if (!native_window)
     return;
   NSWindow* nswindow = native_window->GetNativeWindow().GetNativeNSWindow();
@@ -173,8 +175,8 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-mate::WrappableBase* Menu::New(mate::Arguments* args) {
-  return new MenuMac(args->isolate(), args->GetThis());
+mate::WrappableBase* Menu::New(gin::Arguments* args) {
+  return new MenuMac(args);
 }
 
 }  // namespace api

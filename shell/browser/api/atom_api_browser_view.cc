@@ -4,26 +4,25 @@
 
 #include "shell/browser/api/atom_api_browser_view.h"
 
-#include "native_mate/constructor.h"
-#include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_browser_view.h"
 #include "shell/common/color_util.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "ui/gfx/geometry/rect.h"
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<electron::AutoResizeFlags> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::AutoResizeFlags* auto_resize_flags) {
-    mate::Dictionary params;
+    gin_helper::Dictionary params;
     if (!ConvertFromV8(isolate, val, &params)) {
       return false;
     }
@@ -51,25 +50,20 @@ struct Converter<electron::AutoResizeFlags> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
 namespace api {
 
-BrowserView::BrowserView(v8::Isolate* isolate,
-                         v8::Local<v8::Object> wrapper,
-                         const mate::Dictionary& options) {
-  Init(isolate, wrapper, options);
-}
-
-void BrowserView::Init(v8::Isolate* isolate,
-                       v8::Local<v8::Object> wrapper,
-                       const mate::Dictionary& options) {
-  mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
+BrowserView::BrowserView(gin::Arguments* args,
+                         const gin_helper::Dictionary& options) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::Dictionary web_preferences =
+      gin::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
   web_preferences.Set("type", "browserView");
-  mate::Handle<class WebContents> web_contents =
+  gin::Handle<class WebContents> web_contents =
       WebContents::Create(isolate, web_preferences);
 
   web_contents_.Reset(isolate, web_contents.ToV8());
@@ -79,7 +73,7 @@ void BrowserView::Init(v8::Isolate* isolate,
   view_.reset(
       NativeBrowserView::Create(api_web_contents_->managed_web_contents()));
 
-  InitWith(isolate, wrapper);
+  InitWithArgs(args);
 }
 
 BrowserView::~BrowserView() {
@@ -96,16 +90,17 @@ void BrowserView::WebContentsDestroyed() {
 }
 
 // static
-mate::WrappableBase* BrowserView::New(mate::Arguments* args) {
+mate::WrappableBase* BrowserView::New(gin_helper::ErrorThrower thrower,
+                                      gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create BrowserView before app is ready");
+    thrower.ThrowError("Cannot create BrowserView before app is ready");
     return nullptr;
   }
 
-  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
-  return new BrowserView(args->isolate(), args->GetThis(), options);
+  return new BrowserView(args, options);
 }
 
 int32_t BrowserView::ID() const {
@@ -139,9 +134,9 @@ v8::Local<v8::Value> BrowserView::GetWebContents() {
 // static
 void BrowserView::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "BrowserView"));
+  prototype->SetClassName(gin::StringToV8(isolate, "BrowserView"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)
       .SetMethod("getBounds", &BrowserView::GetBounds)
@@ -165,14 +160,13 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   BrowserView::SetConstructor(isolate, base::BindRepeating(&BrowserView::New));
 
-  mate::Dictionary browser_view(isolate, BrowserView::GetConstructor(isolate)
-                                             ->GetFunction(context)
-                                             .ToLocalChecked());
-  browser_view.SetMethod("fromId",
-                         &mate::TrackableObject<BrowserView>::FromWeakMapID);
-  browser_view.SetMethod("getAllViews",
-                         &mate::TrackableObject<BrowserView>::GetAll);
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary browser_view(isolate,
+                                      BrowserView::GetConstructor(isolate)
+                                          ->GetFunction(context)
+                                          .ToLocalChecked());
+  browser_view.SetMethod("fromId", &BrowserView::FromWeakMapID);
+  browser_view.SetMethod("getAllViews", &BrowserView::GetAll);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("BrowserView", browser_view);
 }
 

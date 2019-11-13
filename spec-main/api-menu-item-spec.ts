@@ -1,8 +1,7 @@
 import { BrowserWindow, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron'
-const { roleList, execute } = require('../lib/browser/api/menu-item-roles')
 import { expect } from 'chai'
-import { closeAllWindows } from './window-helpers';
-
+import { closeAllWindows } from './window-helpers'
+const { roleList, execute } = require('../lib/browser/api/menu-item-roles')
 
 describe('MenuItems', () => {
   describe('MenuItem instance properties', () => {
@@ -48,7 +47,7 @@ describe('MenuItems', () => {
           expect(item.label).to.equal('text')
           done()
         }
-      }]);
+      }])
       menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
     })
   })
@@ -142,7 +141,7 @@ describe('MenuItems', () => {
           const groupId = (menu.items[g.begin!] as any).groupId
 
           // groupId should be previously unused
-          //expect(usedGroupIds.has(groupId)).to.be.false('group id present')
+          // expect(usedGroupIds.has(groupId)).to.be.false('group id present')
           expect(usedGroupIds).not.to.contain(groupId)
           usedGroupIds.add(groupId)
 
@@ -471,9 +470,9 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Alt+Tab' }
       ])
 
-      expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? '⌘⇥\u0000' : 'Ctrl+Tab')
-      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
-      expect(menu.getAcceleratorTextAt(2)).to.equal(isDarwin() ? '⌥⇥\u0000' : 'Alt+Tab')
+      expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? '⌘⇥' : 'Ctrl+Tab')
+      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧⇥' : 'Shift+Tab')
+      expect(menu.getAcceleratorTextAt(2)).to.equal(isDarwin() ? '⌥⇥' : 'Alt+Tab')
     })
 
     it('should not display modifiers twice', () => {
@@ -483,7 +482,7 @@ describe('MenuItems', () => {
       ])
 
       expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? '⇧A' : 'Shift+A')
-      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
+      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧⇥' : 'Shift+Tab')
     })
 
     it('should display correctly for edge cases', () => {

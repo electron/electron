@@ -13,8 +13,8 @@
 #include "base/threading/thread_restrictions.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/atom_constants.h"
-#include "shell/common/gin_converters/blink_converter_gin_adapter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -98,18 +98,17 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
     content::RenderFrame* render_frame,
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(render_frame),
-      binding_(this),
       renderer_client_(renderer_client),
       weak_factory_(this) {}
 
 void ElectronApiServiceImpl::BindTo(
-    mojom::ElectronRendererAssociatedRequest request) {
+    mojo::PendingAssociatedReceiver<mojom::ElectronRenderer> receiver) {
   // Note: BindTo might be called for multiple times.
-  if (binding_.is_bound())
-    binding_.Unbind();
+  if (receiver_.is_bound())
+    receiver_.reset();
 
-  binding_.Bind(std::move(request));
-  binding_.set_connection_error_handler(
+  receiver_.Bind(std::move(receiver));
+  receiver_.set_disconnect_handler(
       base::BindOnce(&ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
 }
 
@@ -122,8 +121,8 @@ void ElectronApiServiceImpl::OnDestruct() {
 }
 
 void ElectronApiServiceImpl::OnConnectionError() {
-  if (binding_.is_bound())
-    binding_.Unbind();
+  if (receiver_.is_bound())
+    receiver_.reset();
 }
 
 void ElectronApiServiceImpl::Message(bool internal,

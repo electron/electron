@@ -30,6 +30,7 @@
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/windows_version.h"
 #include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "ui/base/win/shell.h"
 #include "url/gurl.h"
 
@@ -238,14 +239,11 @@ std::string OpenExternalOnWorkerThread(
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
-  std::string escaped_url = url.spec();
-  escaped_url.insert(0, "\"");
-  escaped_url += "\"";
-
-  std::string working_dir = options.working_dir.AsUTF8Unsafe();
+  base::string16 escaped_url = L"\"" + base::UTF8ToUTF16(url.spec()) + L"\"";
+  base::string16 working_dir = options.working_dir.value();
 
   if (reinterpret_cast<ULONG_PTR>(
-          ShellExecuteA(nullptr, "open", escaped_url.c_str(), nullptr,
+          ShellExecuteW(nullptr, L"open", escaped_url.c_str(), nullptr,
                         working_dir.empty() ? nullptr : working_dir.c_str(),
                         SW_SHOWNORMAL)) <= 32) {
     return "Failed to open";
@@ -306,6 +304,19 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
   }
 }
 
+std::string OpenPathOnThread(const base::FilePath& full_path) {
+  // May result in an interactive dialog.
+  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                base::BlockingType::MAY_BLOCK);
+  bool success;
+  if (base::DirectoryExists(full_path))
+    success = ui::win::OpenFolderViaShell(full_path);
+  else
+    success = ui::win::OpenFileViaShell(full_path);
+
+  return success ? "" : "Failed to open path";
+}
+
 }  // namespace
 
 namespace platform_util {
@@ -317,16 +328,20 @@ void ShowItemInFolder(const base::FilePath& full_path) {
                  base::BindOnce(&ShowItemInFolderOnWorkerThread, full_path));
 }
 
-bool OpenItem(const base::FilePath& full_path) {
-  if (base::DirectoryExists(full_path))
-    return ui::win::OpenFolderViaShell(full_path);
-  else
-    return ui::win::OpenFileViaShell(full_path);
+void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+  base::PostTaskAndReplyWithResult(
+      base::CreateCOMSTATaskRunner({base::ThreadPool(), base::MayBlock(),
+                                    base::TaskPriority::USER_BLOCKING})
+          .get(),
+      FROM_HERE, base::BindOnce(&OpenPathOnThread, full_path),
+      std::move(callback));
 }
 
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
-                  OpenExternalCallback callback) {
+                  OpenCallback callback) {
   base::PostTaskAndReplyWithResult(
       base::CreateCOMSTATaskRunner({base::ThreadPool(), base::MayBlock(),
                                     base::TaskPriority::USER_BLOCKING})

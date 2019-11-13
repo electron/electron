@@ -22,6 +22,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_helper/arguments.h"
 
 namespace electron {
 
@@ -57,7 +58,7 @@ void Browser::Quit() {
     electron::WindowList::CloseAllWindows();
 }
 
-void Browser::Exit(mate::Arguments* args) {
+void Browser::Exit(gin_helper::Arguments* args) {
   int code = 0;
   args->GetNext(&code);
 
@@ -150,7 +151,7 @@ void Browser::WillFinishLaunching() {
     observer.OnWillFinishLaunching();
 }
 
-void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
+void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::FilePath user_data;
@@ -165,26 +166,19 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
     observer.OnFinishLaunching(launch_info);
 }
 
-const util::Promise<void*>& Browser::WhenReady(v8::Isolate* isolate) {
+v8::Local<v8::Value> Browser::WhenReady(v8::Isolate* isolate) {
   if (!ready_promise_) {
-    ready_promise_ = std::make_unique<util::Promise<void*>>(isolate);
+    ready_promise_ = std::make_unique<gin_helper::Promise<void>>(isolate);
     if (is_ready()) {
       ready_promise_->Resolve();
     }
   }
-  return *ready_promise_;
+  return ready_promise_->GetHandle();
 }
 
 void Browser::OnAccessibilitySupportChanged() {
   for (BrowserObserver& observer : observers_)
     observer.OnAccessibilitySupportChanged();
-}
-
-void Browser::RequestLogin(
-    scoped_refptr<LoginHandler> login_handler,
-    std::unique_ptr<base::DictionaryValue> request_details) {
-  for (BrowserObserver& observer : observers_)
-    observer.OnLogin(login_handler, *(request_details.get()));
 }
 
 void Browser::PreMainMessageLoopRun() {

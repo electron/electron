@@ -38,11 +38,15 @@ npm install --platform=win32 electron
 
 ## Proxies
 
-If you need to use an HTTP proxy you can [set these environment variables][proxy-env].
+If you need to use an HTTP proxy, you need to set the `ELECTRON_GET_USE_PROXY` variable to any
+value, plus additional environment variables depending on your host system's Node version:
+
+* [Node 10 and above][proxy-env-10]
+* [Before Node 10][proxy-env]
 
 ## Custom Mirrors and Caches
 During installation, the `electron` module will call out to
-[`electron-download`][electron-download] to download prebuilt binaries of
+[`@electron/get`][electron-get] to download prebuilt binaries of
 Electron for your platform. It will do so by contacting GitHub's
 release download page (`https://github.com/electron/electron/releases/tag/v$VERSION`,
 where `$VERSION` is the exact version of Electron).
@@ -62,7 +66,7 @@ url = ELECTRON_MIRROR + ELECTRON_CUSTOM_DIR + '/' + ELECTRON_CUSTOM_FILENAME
 For instance, to use the China mirror:
 
 ```plaintext
-ELECTRON_MIRROR="https://npm.taobao.org/mirrors/electron/"
+ELECTRON_MIRROR="https://cdn.npm.taobao.org/dist/electron/"
 ```
 
 #### Cache
@@ -146,7 +150,8 @@ If you need to force a re-download of the asset and the SHASUM file set the
 [npm]: https://docs.npmjs.com
 [versioning]: ./electron-versioning.md
 [releases]: https://github.com/electron/electron/releases
-[proxy-env]: https://github.com/request/request/tree/f0c4ec061141051988d1216c24936ad2e7d5c45d#controlling-proxy-behaviour-using-environment-variables
-[electron-download]: https://github.com/electron-userland/electron-download
+[proxy-env-10]: https://github.com/gajus/global-agent/blob/v2.1.5/README.md#environment-variables
+[proxy-env]: https://github.com/np-maintain/global-tunnel/blob/v2.7.1/README.md#auto-config
+[electron-get]: https://github.com/electron/get
 [npm-permissions]: https://docs.npmjs.com/getting-started/fixing-npm-permissions
 [unsafe-perm]: https://docs.npmjs.com/misc/config#unsafe-perm

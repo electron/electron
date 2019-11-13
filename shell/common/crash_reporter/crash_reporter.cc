@@ -16,8 +16,8 @@
 #include "electron/electron_version.h"
 #include "shell/browser/browser.h"
 #include "shell/common/atom_constants.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/map_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace crash_reporter {
 
@@ -126,7 +126,7 @@ CrashReporter* CrashReporter::GetInstance() {
 }
 #endif
 
-void CrashReporter::StartInstance(const mate::Dictionary& options) {
+void CrashReporter::StartInstance(const gin_helper::Dictionary& options) {
   auto* reporter = GetInstance();
   if (!reporter)
     return;

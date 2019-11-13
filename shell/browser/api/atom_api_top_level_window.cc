@@ -5,25 +5,25 @@
 #include "shell/browser/api/atom_api_top_level_window.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
-#include "native_mate/handle.h"
-#include "native_mate/persistent_dictionary.h"
 #include "shell/browser/api/atom_api_browser_view.h"
 #include "shell/browser/api/atom_api_menu.h"
 #include "shell/browser/api/atom_api_view.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
-#include "shell/common/native_mate_converters/image_converter.h"
-#include "shell/common/native_mate_converters/native_window_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/native_window_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 
@@ -36,11 +36,8 @@
 #include "ui/base/win/shell.h"
 #endif
 
-// TODO(zcbenz): Remove this after removing mate::ObjectTemplateBuilder.
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
-
 #if defined(OS_WIN)
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<electron::TaskbarHost::ThumbarButton> {
@@ -57,7 +54,7 @@ struct Converter<electron::TaskbarHost::ThumbarButton> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 #endif
 
 namespace electron {
@@ -78,20 +75,20 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 }  // namespace
 
 TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
-                               const mate::Dictionary& options)
+                               const gin_helper::Dictionary& options)
     : weak_factory_(this) {
   // The parent window.
-  mate::Handle<TopLevelWindow> parent;
+  gin::Handle<TopLevelWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
 #if BUILDFLAG(ENABLE_OSR)
   // Offscreen windows are always created frameless.
-  mate::Dictionary web_preferences;
+  gin_helper::Dictionary web_preferences;
   bool offscreen;
   if (options.Get(options::kWebPreferences, &web_preferences) &&
       web_preferences.Get(options::kOffscreen, &offscreen) && offscreen) {
-    const_cast<mate::Dictionary&>(options).Set(options::kFrame, false);
+    const_cast<gin_helper::Dictionary&>(options).Set(options::kFrame, false);
   }
 #endif
 
@@ -102,17 +99,16 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
 
 #if defined(TOOLKIT_VIEWS)
   // Sets the window icon.
-  mate::Handle<NativeImage> icon;
+  gin::Handle<NativeImage> icon;
   if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
     SetIcon(icon);
 #endif
 }
 
-TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
-                               v8::Local<v8::Object> wrapper,
-                               const mate::Dictionary& options)
-    : TopLevelWindow(isolate, options) {
-  InitWith(isolate, wrapper);
+TopLevelWindow::TopLevelWindow(gin_helper::Arguments* args,
+                               const gin_helper::Dictionary& options)
+    : TopLevelWindow(args->isolate(), options) {
+  InitWithArgs(args);
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
 }
@@ -129,13 +125,13 @@ TopLevelWindow::~TopLevelWindow() {
 void TopLevelWindow::InitWith(v8::Isolate* isolate,
                               v8::Local<v8::Object> wrapper) {
   AttachAsUserData(window_.get());
-  mate::TrackableObject<TopLevelWindow>::InitWith(isolate, wrapper);
+  gin_helper::TrackableObject<TopLevelWindow>::InitWith(isolate, wrapper);
 
   // We can only append this window to parent window's child windows after this
   // window's JS wrapper gets initialized.
   if (!parent_window_.IsEmpty()) {
-    mate::Handle<TopLevelWindow> parent;
-    mate::ConvertFromV8(isolate, GetParentWindow(), &parent);
+    gin::Handle<TopLevelWindow> parent;
+    gin::ConvertFromV8(isolate, GetParentWindow(), &parent);
     DCHECK(!parent.IsEmpty());
     parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
   }
@@ -301,7 +297,7 @@ void TopLevelWindow::OnWindowMessage(UINT message,
 }
 #endif
 
-void TopLevelWindow::SetContentView(mate::Handle<View> view) {
+void TopLevelWindow::SetContentView(gin::Handle<View> view) {
   ResetBrowserViews();
   content_view_.Reset(isolate(), view.ToV8());
   window_->SetContentView(view->view());
@@ -382,7 +378,8 @@ bool TopLevelWindow::IsFullscreen() {
   return window_->IsFullscreen();
 }
 
-void TopLevelWindow::SetBounds(const gfx::Rect& bounds, mate::Arguments* args) {
+void TopLevelWindow::SetBounds(const gfx::Rect& bounds,
+                               gin_helper::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetBounds(bounds, animate);
@@ -401,7 +398,7 @@ gfx::Rect TopLevelWindow::GetNormalBounds() {
 }
 
 void TopLevelWindow::SetContentBounds(const gfx::Rect& bounds,
-                                      mate::Arguments* args) {
+                                      gin_helper::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetContentBounds(bounds, animate);
@@ -411,7 +408,9 @@ gfx::Rect TopLevelWindow::GetContentBounds() {
   return window_->GetContentBounds();
 }
 
-void TopLevelWindow::SetSize(int width, int height, mate::Arguments* args) {
+void TopLevelWindow::SetSize(int width,
+                             int height,
+                             gin_helper::Arguments* args) {
   bool animate = false;
   gfx::Size size = window_->GetMinimumSize();
   size.SetToMax(gfx::Size(width, height));
@@ -429,7 +428,7 @@ std::vector<int> TopLevelWindow::GetSize() {
 
 void TopLevelWindow::SetContentSize(int width,
                                     int height,
-                                    mate::Arguments* args) {
+                                    gin_helper::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetContentSize(gfx::Size(width, height), animate);
@@ -467,7 +466,8 @@ std::vector<int> TopLevelWindow::GetMaximumSize() {
   return result;
 }
 
-void TopLevelWindow::SetSheetOffset(double offsetY, mate::Arguments* args) {
+void TopLevelWindow::SetSheetOffset(double offsetY,
+                                    gin_helper::Arguments* args) {
   double offsetX = 0.0;
   args->GetNext(&offsetX);
   window_->SetSheetOffset(offsetX, offsetY);
@@ -521,19 +521,15 @@ bool TopLevelWindow::IsClosable() {
   return window_->IsClosable();
 }
 
-void TopLevelWindow::SetAlwaysOnTop(bool top, mate::Arguments* args) {
+void TopLevelWindow::SetAlwaysOnTop(bool top, gin_helper::Arguments* args) {
   std::string level = "floating";
   int relative_level = 0;
   args->GetNext(&level);
   args->GetNext(&relative_level);
 
-  std::string error;
   ui::ZOrderLevel z_order =
       top ? ui::ZOrderLevel::kFloatingWindow : ui::ZOrderLevel::kNormal;
-  window_->SetAlwaysOnTop(z_order, level, relative_level, &error);
-
-  if (!error.empty())
-    args->ThrowError(error);
+  window_->SetAlwaysOnTop(z_order, level, relative_level);
 }
 
 bool TopLevelWindow::IsAlwaysOnTop() {
@@ -544,7 +540,7 @@ void TopLevelWindow::Center() {
   window_->Center();
 }
 
-void TopLevelWindow::SetPosition(int x, int y, mate::Arguments* args) {
+void TopLevelWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetPosition(gfx::Point(x, y), animate);
@@ -558,7 +554,7 @@ std::vector<int> TopLevelWindow::GetPosition() {
   return result;
 }
 void TopLevelWindow::MoveAbove(const std::string& sourceId,
-                               mate::Arguments* args) {
+                               gin_helper::Arguments* args) {
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   if (!window_->MoveAbove(sourceId))
     args->ThrowError("Invalid media source id");
@@ -660,8 +656,9 @@ bool TopLevelWindow::IsDocumentEdited() {
   return window_->IsDocumentEdited();
 }
 
-void TopLevelWindow::SetIgnoreMouseEvents(bool ignore, mate::Arguments* args) {
-  mate::Dictionary options;
+void TopLevelWindow::SetIgnoreMouseEvents(bool ignore,
+                                          gin_helper::Arguments* args) {
+  gin_helper::Dictionary options;
   bool forward = false;
   args->GetNext(&options) && options.Get("forward", &forward);
   return window_->SetIgnoreMouseEvents(ignore, forward);
@@ -677,11 +674,11 @@ void TopLevelWindow::SetFocusable(bool focusable) {
 
 void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
-  mate::Handle<Menu> menu;
+  gin::Handle<Menu> menu;
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
       gin::V8ToString(isolate, object->GetConstructorName()) == "Menu" &&
-      mate::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
+      gin::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
     menu_.Reset(isolate, menu.ToV8());
     window_->SetMenu(menu->model());
   } else if (value->IsNull()) {
@@ -689,7 +686,7 @@ void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
     window_->SetMenu(nullptr);
   } else {
     isolate->ThrowException(
-        v8::Exception::TypeError(mate::StringToV8(isolate, "Invalid Menu")));
+        v8::Exception::TypeError(gin::StringToV8(isolate, "Invalid Menu")));
   }
 }
 
@@ -699,18 +696,18 @@ void TopLevelWindow::RemoveMenu() {
 }
 
 void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
-                                     mate::Arguments* args) {
+                                     gin_helper::Arguments* args) {
   if (IsModal()) {
     args->ThrowError("Can not be called for modal window");
     return;
   }
 
-  mate::Handle<TopLevelWindow> parent;
+  gin::Handle<TopLevelWindow> parent;
   if (value->IsNull() || value->IsUndefined()) {
     RemoveFromParentChildWindows();
     parent_window_.Reset();
     window_->SetParentWindow(nullptr);
-  } else if (mate::ConvertFromV8(isolate(), value, &parent)) {
+  } else if (gin::ConvertFromV8(isolate(), value, &parent)) {
     RemoveFromParentChildWindows();
     parent_window_.Reset(isolate(), value);
     window_->SetParentWindow(parent->window_.get());
@@ -726,9 +723,9 @@ void TopLevelWindow::SetBrowserView(v8::Local<v8::Value> value) {
 }
 
 void TopLevelWindow::AddBrowserView(v8::Local<v8::Value> value) {
-  mate::Handle<BrowserView> browser_view;
+  gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
-      mate::ConvertFromV8(isolate(), value, &browser_view)) {
+      gin::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->weak_map_id());
     if (get_that_view == browser_views_.end()) {
       window_->AddBrowserView(browser_view->view());
@@ -739,9 +736,9 @@ void TopLevelWindow::AddBrowserView(v8::Local<v8::Value> value) {
 }
 
 void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
-  mate::Handle<BrowserView> browser_view;
+  gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
-      mate::ConvertFromV8(isolate(), value, &browser_view)) {
+      gin::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->weak_map_id());
     if (get_that_view != browser_views_.end()) {
       window_->RemoveBrowserView(browser_view->view());
@@ -765,8 +762,9 @@ v8::Local<v8::Value> TopLevelWindow::GetNativeWindowHandle() {
   return ToBuffer(isolate(), &handle, sizeof(handle));
 }
 
-void TopLevelWindow::SetProgressBar(double progress, mate::Arguments* args) {
-  mate::Dictionary options;
+void TopLevelWindow::SetProgressBar(double progress,
+                                    gin_helper::Arguments* args) {
+  gin_helper::Dictionary options;
   std::string mode;
   args->GetNext(&options) && options.Get("mode", &mode);
 
@@ -789,8 +787,8 @@ void TopLevelWindow::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible,
-                                               mate::Arguments* args) {
-  mate::Dictionary options;
+                                               gin_helper::Arguments* args) {
+  gin_helper::Dictionary options;
   bool visibleOnFullScreen = false;
   args->GetNext(&options) &&
       options.Get("visibleOnFullScreen", &visibleOnFullScreen);
@@ -812,8 +810,8 @@ void TopLevelWindow::SetVibrancy(v8::Isolate* isolate,
 }
 
 void TopLevelWindow::SetTouchBar(
-    const std::vector<mate::PersistentDictionary>& items) {
-  window_->SetTouchBar(items);
+    std::vector<gin_helper::PersistentDictionary> items) {
+  window_->SetTouchBar(std::move(items));
 }
 
 void TopLevelWindow::RefreshTouchBarItem(const std::string& item_id) {
@@ -821,8 +819,8 @@ void TopLevelWindow::RefreshTouchBarItem(const std::string& item_id) {
 }
 
 void TopLevelWindow::SetEscapeTouchBarItem(
-    const mate::PersistentDictionary& item) {
-  window_->SetEscapeTouchBarItem(item);
+    gin_helper::PersistentDictionary item) {
+  window_->SetEscapeTouchBarItem(std::move(item));
 }
 
 void TopLevelWindow::SelectPreviousTab() {
@@ -846,13 +844,13 @@ void TopLevelWindow::ToggleTabBar() {
 }
 
 void TopLevelWindow::AddTabbedWindow(NativeWindow* window,
-                                     mate::Arguments* args) {
+                                     gin_helper::Arguments* args) {
   if (!window_->AddTabbedWindow(window))
     args->ThrowError("AddTabbedWindow cannot be called by a window on itself.");
 }
 
 void TopLevelWindow::SetWindowButtonVisibility(bool visible,
-                                               mate::Arguments* args) {
+                                               gin_helper::Arguments* args) {
   if (!window_->SetWindowButtonVisibility(visible)) {
     args->ThrowError("Not supported for this window");
   }
@@ -875,14 +873,14 @@ bool TopLevelWindow::IsMenuBarVisible() {
 }
 
 void TopLevelWindow::SetAspectRatio(double aspect_ratio,
-                                    mate::Arguments* args) {
+                                    gin_helper::Arguments* args) {
   gfx::Size extra_size;
   args->GetNext(&extra_size);
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
 void TopLevelWindow::PreviewFile(const std::string& path,
-                                 mate::Arguments* args) {
+                                 gin_helper::Arguments* args) {
   std::string display_name;
   if (!args->GetNext(&display_name))
     display_name = path;
@@ -916,7 +914,7 @@ std::vector<v8::Local<v8::Object>> TopLevelWindow::GetChildWindows() const {
 }
 
 v8::Local<v8::Value> TopLevelWindow::GetBrowserView(
-    mate::Arguments* args) const {
+    gin_helper::Arguments* args) const {
   if (browser_views_.size() == 0) {
     return v8::Null(isolate());
   } else if (browser_views_.size() == 1) {
@@ -944,7 +942,7 @@ bool TopLevelWindow::IsModal() const {
   return window_->is_modal();
 }
 
-bool TopLevelWindow::SetThumbarButtons(mate::Arguments* args) {
+bool TopLevelWindow::SetThumbarButtons(gin_helper::Arguments* args) {
 #if defined(OS_WIN)
   std::vector<TaskbarHost::ThumbarButton> buttons;
   if (!args->GetNext(&buttons)) {
@@ -960,7 +958,7 @@ bool TopLevelWindow::SetThumbarButtons(mate::Arguments* args) {
 }
 
 #if defined(TOOLKIT_VIEWS)
-void TopLevelWindow::SetIcon(mate::Handle<NativeImage> icon) {
+void TopLevelWindow::SetIcon(gin::Handle<NativeImage> icon) {
 #if defined(OS_WIN)
   static_cast<NativeWindowViews*>(window_.get())
       ->SetIcon(icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
@@ -1003,7 +1001,7 @@ bool TopLevelWindow::SetThumbnailToolTip(const std::string& tooltip) {
       window_->GetAcceleratedWidget(), tooltip);
 }
 
-void TopLevelWindow::SetAppDetails(const mate::Dictionary& options) {
+void TopLevelWindow::SetAppDetails(const gin_helper::Dictionary& options) {
   base::string16 app_id;
   base::FilePath app_icon_path;
   int app_icon_index = 0;
@@ -1028,10 +1026,10 @@ int32_t TopLevelWindow::GetID() const {
 
 void TopLevelWindow::ResetBrowserViews() {
   for (auto& item : browser_views_) {
-    mate::Handle<BrowserView> browser_view;
-    if (mate::ConvertFromV8(isolate(),
-                            v8::Local<v8::Value>::New(isolate(), item.second),
-                            &browser_view) &&
+    gin::Handle<BrowserView> browser_view;
+    if (gin::ConvertFromV8(isolate(),
+                           v8::Local<v8::Value>::New(isolate(), item.second),
+                           &browser_view) &&
         !browser_view.IsEmpty()) {
       window_->RemoveBrowserView(browser_view->view());
       browser_view->web_contents()->SetOwnerWindow(nullptr);
@@ -1047,8 +1045,8 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
   if (parent_window_.IsEmpty())
     return;
 
-  mate::Handle<TopLevelWindow> parent;
-  if (!mate::ConvertFromV8(isolate(), GetParentWindow(), &parent) ||
+  gin::Handle<TopLevelWindow> parent;
+  if (!gin::ConvertFromV8(isolate(), GetParentWindow(), &parent) ||
       parent.IsEmpty()) {
     return;
   }
@@ -1057,19 +1055,20 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
 }
 
 // static
-mate::WrappableBase* TopLevelWindow::New(mate::Arguments* args) {
-  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+mate::WrappableBase* TopLevelWindow::New(gin_helper::Arguments* args) {
+  gin_helper::Dictionary options =
+      gin::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
-  return new TopLevelWindow(args->isolate(), args->GetThis(), options);
+  return new TopLevelWindow(args, options);
 }
 
 // static
 void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
                                     v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "TopLevelWindow"));
+  prototype->SetClassName(gin::StringToV8(isolate, "TopLevelWindow"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setContentView", &TopLevelWindow::SetContentView)
       .SetMethod("close", &TopLevelWindow::Close)
       .SetMethod("focus", &TopLevelWindow::Focus)
@@ -1245,15 +1244,14 @@ void Initialize(v8::Local<v8::Object> exports,
   TopLevelWindow::SetConstructor(isolate,
                                  base::BindRepeating(&TopLevelWindow::New));
 
-  mate::Dictionary constructor(isolate, TopLevelWindow::GetConstructor(isolate)
-                                            ->GetFunction(context)
-                                            .ToLocalChecked());
-  constructor.SetMethod("fromId",
-                        &mate::TrackableObject<TopLevelWindow>::FromWeakMapID);
-  constructor.SetMethod("getAllWindows",
-                        &mate::TrackableObject<TopLevelWindow>::GetAll);
+  gin_helper::Dictionary constructor(isolate,
+                                     TopLevelWindow::GetConstructor(isolate)
+                                         ->GetFunction(context)
+                                         .ToLocalChecked());
+  constructor.SetMethod("fromId", &TopLevelWindow::FromWeakMapID);
+  constructor.SetMethod("getAllWindows", &TopLevelWindow::GetAll);
 
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("TopLevelWindow", constructor);
 }
 

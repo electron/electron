@@ -131,6 +131,7 @@ function assetsForVersion (version, validatingRelease) {
     `electron-${version}-win32-arm64.zip`,
     `electron-api.json`,
     `electron.d.ts`,
+    `hunspell_dictionaries.zip`,
     `ffmpeg-${version}-darwin-x64.zip`,
     `ffmpeg-${version}-linux-arm64.zip`,
     `ffmpeg-${version}-linux-armv7l.zip`,

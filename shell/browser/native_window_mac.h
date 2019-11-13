@@ -28,7 +28,7 @@ class RootViewMac;
 
 class NativeWindowMac : public NativeWindow {
  public:
-  NativeWindowMac(const mate::Dictionary& options, NativeWindow* parent);
+  NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
 
   // NativeWindow:
@@ -78,8 +78,7 @@ class NativeWindowMac : public NativeWindow {
   bool IsClosable() override;
   void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
-                      int relativeLevel,
-                      std::string* error) override;
+                      int relativeLevel) override;
   ui::ZOrderLevel GetZOrderLevel() override;
   void Center() override;
   void Invalidate() override;
@@ -134,9 +133,9 @@ class NativeWindowMac : public NativeWindow {
 
   void SetVibrancy(const std::string& type) override;
   void SetTouchBar(
-      const std::vector<mate::PersistentDictionary>& items) override;
+      std::vector<gin_helper::PersistentDictionary> items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
-  void SetEscapeTouchBarItem(const mate::PersistentDictionary& item) override;
+  void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) override;
   void SetGTKDarkThemeEnabled(bool use_dark_theme) override {}
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
@@ -148,6 +147,7 @@ class NativeWindowMac : public NativeWindow {
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
+  void SetWindowLevel(int level);
 
   enum class TitleBarStyle {
     NORMAL,

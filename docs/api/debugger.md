@@ -50,7 +50,7 @@ Returns:
 
 * `event` Event
 * `method` String - Method name.
-* `params` unknown - Event parameters defined by the 'parameters'
+* `params` any - Event parameters defined by the 'parameters'
    attribute in the remote debugging protocol.
 
 Emitted whenever the debugging target issues an instrumentation event.

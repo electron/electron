@@ -16,12 +16,12 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/atom_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
-#include "third_party/electron_node/src/node_native_module_env.h"
 
 namespace electron {
 
@@ -121,11 +121,12 @@ void AtomRendererClient::DidCreateScriptContext(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
-  v8::Local<v8::Context> context =
-      node::MaybeInitializeContext(renderer_context);
-  DCHECK(!context.IsEmpty());
+  bool initialized = node::InitializeContext(renderer_context);
+  CHECK(initialized);
+
   node::Environment* env =
-      node_bindings_->CreateEnvironment(context, nullptr, true);
+      node_bindings_->CreateEnvironment(renderer_context, nullptr, true);
+
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
   if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
@@ -175,8 +176,12 @@ void AtomRendererClient::WillReleaseScriptContext(
   // avoid memory leaks
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kNodeIntegrationInSubFrames) ||
-      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
+      command_line->HasSwitch(
+          switches::kDisableElectronSiteInstanceOverrides)) {
     node::FreeEnvironment(env);
+    if (env == node_bindings_->uv_env())
+      node::FreeIsolateData(node_bindings_->isolate_data());
+  }
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);
@@ -228,9 +233,8 @@ void AtomRendererClient::SetupMainWorldOverrides(
       env->process_object(),
       GetContext(render_frame->GetWebFrame(), isolate)->Global()};
 
-  node::native_module::NativeModuleEnv::CompileAndCall(
-      context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
-      &isolated_bundle_args, nullptr);
+  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
+                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
 }
 
 void AtomRendererClient::SetupExtensionWorldOverrides(
@@ -256,9 +260,8 @@ void AtomRendererClient::SetupExtensionWorldOverrides(
       GetContext(render_frame->GetWebFrame(), isolate)->Global(),
       v8::Integer::New(isolate, world_id)};
 
-  node::native_module::NativeModuleEnv::CompileAndCall(
-      context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
-      &isolated_bundle_args, nullptr);
+  util::CompileAndCall(context, "electron/js2c/content_script_bundle",
+                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
 #endif
 }
 

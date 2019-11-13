@@ -3,7 +3,7 @@ import * as http from 'http'
 import * as qs from 'querystring'
 import * as path from 'path'
 import { session, WebContents, webContents } from 'electron'
-import { AddressInfo } from 'net';
+import { AddressInfo } from 'net'
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
@@ -40,7 +40,7 @@ describe('webRequest module', () => {
   let contents: WebContents = null as unknown as WebContents
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
   before(async () => {
-    contents = (webContents as any).create({sandbox: true})
+    contents = (webContents as any).create({ sandbox: true })
     await contents.loadFile(path.join(fixturesPath, 'pages', 'jquery.html'))
   })
   after(() => (contents as any).destroy())
@@ -103,7 +103,7 @@ describe('webRequest module', () => {
       })
       await expect(ajax(defaultURL, {
         type: 'POST',
-        data: postData,
+        data: postData
       })).to.eventually.be.rejectedWith('404')
     })
 
@@ -227,7 +227,7 @@ describe('webRequest module', () => {
       })
       const { headers } = await contents.executeJavaScript(`new Promise((resolve, reject) => {
         const options = {
-          ...${JSON.stringify({url: defaultURL})},
+          ...${JSON.stringify({ url: defaultURL })},
           success: (data, status, request) => {
             reject(new Error('expected failure'))
           },

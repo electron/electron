@@ -12,15 +12,15 @@
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "gin/converter.h"
-#include "native_mate/dictionary.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/api/constructor.h"
 #include "shell/common/color_util.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "ui/gl/gpu_switching_manager.h"
@@ -29,14 +29,15 @@ namespace electron {
 
 namespace api {
 
-BrowserWindow::BrowserWindow(v8::Isolate* isolate,
-                             v8::Local<v8::Object> wrapper,
-                             const mate::Dictionary& options)
-    : TopLevelWindow(isolate, options), weak_factory_(this) {
-  mate::Handle<class WebContents> web_contents;
+BrowserWindow::BrowserWindow(gin::Arguments* args,
+                             const gin_helper::Dictionary& options)
+    : TopLevelWindow(args->isolate(), options), weak_factory_(this) {
+  gin::Handle<class WebContents> web_contents;
 
   // Use options.webPreferences in WebContents.
-  mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::Dictionary web_preferences =
+      gin::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
   // Copy the backgroundColor to webContents.
@@ -66,8 +67,8 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
     auto* existing_preferences =
         WebContentsPreferences::From(web_contents->web_contents());
     base::DictionaryValue web_preferences_dict;
-    if (mate::ConvertFromV8(isolate, web_preferences.GetHandle(),
-                            &web_preferences_dict)) {
+    if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
+                           &web_preferences_dict)) {
       existing_preferences->Clear();
       existing_preferences->Merge(web_preferences_dict);
     }
@@ -82,7 +83,7 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   Observe(api_web_contents_->web_contents());
 
   // Keep a copy of the options for later use.
-  mate::Dictionary(isolate, web_contents->GetWrapper())
+  gin_helper::Dictionary(isolate, web_contents->GetWrapper())
       .Set("browserWindowOptions", options);
 
   // Associate with BrowserWindow.
@@ -92,7 +93,7 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   if (host)
     host->GetWidget()->AddInputEventObserver(this);
 
-  InitWith(isolate, wrapper);
+  InitWithArgs(args);
 
 #if defined(OS_MACOSX)
   OverrideNSWindowContentView(web_contents->managed_web_contents());
@@ -195,8 +196,8 @@ void BrowserWindow::OnCloseContents() {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   for (v8::Local<v8::Value> value : child_windows_.Values(isolate())) {
-    mate::Handle<BrowserWindow> child;
-    if (mate::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
+    gin::Handle<BrowserWindow> child;
+    if (gin::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
       child->window()->CloseImmediately();
   }
 
@@ -444,9 +445,10 @@ void BrowserWindow::OnWindowHide() {
 }
 
 // static
-mate::WrappableBase* BrowserWindow::New(mate::Arguments* args) {
+mate::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
+                                        gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create BrowserWindow before app is ready");
+    thrower.ThrowError("Cannot create BrowserWindow before app is ready");
     return nullptr;
   }
 
@@ -455,19 +457,19 @@ mate::WrappableBase* BrowserWindow::New(mate::Arguments* args) {
     return nullptr;
   }
 
-  mate::Dictionary options;
+  gin_helper::Dictionary options;
   if (!(args->Length() == 1 && args->GetNext(&options))) {
-    options = mate::Dictionary::CreateEmpty(args->isolate());
+    options = gin::Dictionary::CreateEmpty(args->isolate());
   }
 
-  return new BrowserWindow(args->isolate(), args->GetThis(), options);
+  return new BrowserWindow(args, options);
 }
 
 // static
 void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
                                    v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "BrowserWindow"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "BrowserWindow"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
       .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
       .SetMethod("isWebViewFocused", &BrowserWindow::IsWebViewFocused)
@@ -498,7 +500,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow",
            mate::CreateConstructor<BrowserWindow>(
                isolate, base::BindRepeating(&BrowserWindow::New)));

@@ -4,10 +4,10 @@
 
 #include "shell/browser/api/atom_api_system_preferences.h"
 
-#include "native_mate/dictionary.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/gfx/animation/animation.h"
 #include "ui/gfx/color_utils.h"
@@ -58,17 +58,16 @@ v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
 }
 
 // static
-mate::Handle<SystemPreferences> SystemPreferences::Create(
-    v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new SystemPreferences(isolate));
+gin::Handle<SystemPreferences> SystemPreferences::Create(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new SystemPreferences(isolate));
 }
 
 // static
 void SystemPreferences::BuildPrototype(
     v8::Isolate* isolate,
     v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "SystemPreferences"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "SystemPreferences"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
 #if defined(OS_WIN) || defined(OS_MACOSX)
       .SetMethod("getColor", &SystemPreferences::GetColor)
       .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
@@ -142,7 +141,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("systemPreferences", SystemPreferences::Create(isolate));
   dict.Set("SystemPreferences", SystemPreferences::GetConstructor(isolate)
                                     ->GetFunction(context)

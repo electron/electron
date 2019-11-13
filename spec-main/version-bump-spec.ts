@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { nextVersion } from '../script/release/version-bumper'
 import * as utils from '../script/release/version-utils'
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe } from './spec-helpers'
 
 describe('version-bumper', () => {
   describe('makeVersion', () => {
@@ -43,7 +43,7 @@ describe('version-bumper', () => {
 
   // On macOS Circle CI we don't have a real git environment due to running
   // gclient sync on a linux machine. These tests therefore don't run as expected.
-  ifdescribe(!(process.platform === 'linux' && process.arch === 'arm') && !(isCI && process.platform === 'darwin'))('nextVersion', () => {
+  ifdescribe(!(process.platform === 'linux' && process.arch === 'arm') && process.platform !== 'darwin')('nextVersion', () => {
     const nightlyPattern = /[0-9.]*(-nightly.(\d{4})(\d{2})(\d{2}))$/g
     const betaPattern = /[0-9.]*(-beta[0-9.]*)/g
 
@@ -66,6 +66,13 @@ describe('version-bumper', () => {
       const next = await nextVersion('nightly', version)
       const matches = next.match(nightlyPattern)
       expect(matches).to.have.lengthOf(1)
+    })
+
+    it('bumps to a nightly version above our switch from N-0-x to N-x-y branch names', async () => {
+      const version = 'v2.0.0-nightly.19950901'
+      const next = await nextVersion('nightly', version)
+      // If it starts with v8 then we didn't bump above the 8-x-y branch
+      expect(next.startsWith('v8')).to.equal(false)
     })
 
     it('throws error when bumping to beta from stable', () => {
@@ -98,6 +105,12 @@ describe('version-bumper', () => {
       const version = 'v2.0.0'
       const next = await nextVersion('stable', version)
       expect(next).to.equal('2.0.1')
+    })
+
+    it('bumps to minor from stable', async () => {
+      const version = 'v2.0.0'
+      const next = await nextVersion('minor', version)
+      expect(next).to.equal('2.1.0')
     })
 
     it('bumps to stable from nightly', async () => {

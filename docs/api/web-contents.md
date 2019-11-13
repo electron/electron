@@ -454,10 +454,8 @@ The usage is the same with [the `select-client-certificate` event of
 Returns:
 
 * `event` Event
-* `request` Object
-  * `method` String
+* `authenticationResponseDetails` Object
   * `url` URL
-  * `referrer` URL
 * `authInfo` Object
   * `isProxy` Boolean
   * `scheme` String
@@ -570,6 +568,9 @@ Returns:
   * `titleText` String - Title or alt text of the selection that the context
     was invoked on.
   * `misspelledWord` String - The misspelled word under the cursor, if any.
+  * `dictionarySuggestions` String[] - An array of suggested words to show the
+    user to replace the `misspelledWord`.  Only available if there is a misspelled
+    word and spellchecker is enabled.
   * `frameCharset` String - The character encoding of the frame on which the
     menu was invoked.
   * `inputFieldType` String - If the context menu was invoked on an input
@@ -796,17 +797,6 @@ Returns:
 * `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-guest-web-contents'
-
-Returns:
-
-* `event` IpcMainEvent
-* `guestWebContents` [WebContents](web-contents.md)
-
-Emitted when `<webview>.getWebContents()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
@@ -1388,13 +1378,20 @@ An example of showing devtools in a `<webview>` tag:
 </head>
 <body>
   <webview id="browser" src="https://github.com"></webview>
-  <webview id="devtools"></webview>
+  <webview id="devtools" src="about:blank"></webview>
   <script>
+    const { webContents } = require('electron').remote
+    const emittedOnce = (element, eventName) => new Promise(resolve => {
+      element.addEventListener(eventName, event => resolve(event), { once: true })
+    })
     const browserView = document.getElementById('browser')
     const devtoolsView = document.getElementById('devtools')
-    browserView.addEventListener('dom-ready', () => {
-      const browser = browserView.getWebContents()
-      browser.setDevToolsWebContents(devtoolsView.getWebContents())
+    const browserReady = emittedOnce(browserView, 'dom-ready')
+    const devtoolsReady = emittedOnce(devtoolsView, 'dom-ready')
+    Promise.all([browserReady, devtoolsReady]).then(() => {
+      const browser = webContents.fromId(browserView.getWebContentsId())
+      const devtools = webContents.fromId(devtoolsView.getWebContentsId())
+      browser.setDevToolsWebContents(devtools)
       browser.openDevTools()
     })
   </script>

@@ -12,8 +12,8 @@
 #include "mojo/public/cpp/system/data_pipe.h"
 #include "mojo/public/cpp/system/simple_watcher.h"
 #include "net/base/net_errors.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/key_weak_map.h"
-#include "shell/common/promise_util.h"
 
 #include "shell/common/node_includes.h"
 
@@ -32,7 +32,7 @@ KeyWeakMap<std::string> g_weak_map;
 // Utility class to read from data pipe.
 class DataPipeReader {
  public:
-  DataPipeReader(util::Promise<v8::Local<v8::Value>> promise,
+  DataPipeReader(gin_helper::Promise<v8::Local<v8::Value>> promise,
                  mojo::Remote<network::mojom::DataPipeGetter> data_pipe_getter)
       : promise_(std::move(promise)),
         data_pipe_getter_(std::move(data_pipe_getter)),
@@ -116,7 +116,7 @@ class DataPipeReader {
     delete static_cast<DataPipeReader*>(self);
   }
 
-  util::Promise<v8::Local<v8::Value>> promise_;
+  gin_helper::Promise<v8::Local<v8::Value>> promise_;
 
   mojo::Remote<network::mojom::DataPipeGetter> data_pipe_getter_;
   mojo::ScopedDataPipeConsumerHandle data_pipe_;
@@ -148,7 +148,7 @@ DataPipeHolder::DataPipeHolder(const network::DataElement& element)
 DataPipeHolder::~DataPipeHolder() = default;
 
 v8::Local<v8::Promise> DataPipeHolder::ReadAll(v8::Isolate* isolate) {
-  util::Promise<v8::Local<v8::Value>> promise(isolate);
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   if (!data_pipe_) {
     promise.RejectWithErrorMessage("Could not get blob data");

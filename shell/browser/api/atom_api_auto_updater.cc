@@ -5,18 +5,16 @@
 #include "shell/browser/api/atom_api_auto_updater.h"
 
 #include "base/time/time.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder_deprecated.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-// TODO(zcbenz): Remove this after removing mate::ObjectTemplateBuilder.
-#include "shell/common/native_mate_converters/callback_converter_deprecated.h"
-
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<base::Time> {
@@ -31,7 +29,7 @@ struct Converter<base::Time> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -49,7 +47,7 @@ AutoUpdater::~AutoUpdater() {
 void AutoUpdater::OnError(const std::string& message) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
+  auto error = v8::Exception::Error(gin::StringToV8(isolate(), message));
   gin_helper::EmitEvent(
       isolate(), GetWrapper(), "error",
       error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked(),
@@ -62,7 +60,7 @@ void AutoUpdater::OnError(const std::string& message,
                           const std::string& domain) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
+  auto error = v8::Exception::Error(gin::StringToV8(isolate(), message));
   auto errorObject =
       error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked();
 
@@ -70,12 +68,12 @@ void AutoUpdater::OnError(const std::string& message,
 
   // add two new params for better error handling
   errorObject
-      ->Set(context, mate::StringToV8(isolate(), "code"),
+      ->Set(context, gin::StringToV8(isolate(), "code"),
             v8::Integer::New(isolate(), code))
       .Check();
   errorObject
-      ->Set(context, mate::StringToV8(isolate(), "domain"),
-            mate::StringToV8(isolate(), domain))
+      ->Set(context, gin::StringToV8(isolate(), "domain"),
+            gin::StringToV8(isolate(), domain))
       .Check();
 
   gin_helper::EmitEvent(isolate(), GetWrapper(), "error", errorObject, message);
@@ -107,7 +105,7 @@ void AutoUpdater::OnWindowAllClosed() {
   QuitAndInstall();
 }
 
-void AutoUpdater::SetFeedURL(mate::Arguments* args) {
+void AutoUpdater::SetFeedURL(gin_helper::Arguments* args) {
   auto_updater::AutoUpdater::SetFeedURL(args);
 }
 
@@ -126,15 +124,15 @@ void AutoUpdater::QuitAndInstall() {
 }
 
 // static
-mate::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new AutoUpdater(isolate));
+gin::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new AutoUpdater(isolate));
 }
 
 // static
 void AutoUpdater::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "AutoUpdater"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "AutoUpdater"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
       .SetMethod("getFeedURL", &auto_updater::AutoUpdater::GetFeedURL)
       .SetMethod("setFeedURL", &AutoUpdater::SetFeedURL)
@@ -154,7 +152,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("autoUpdater", AutoUpdater::Create(isolate));
   dict.Set("AutoUpdater", AutoUpdater::GetConstructor(isolate)
                               ->GetFunction(context)

@@ -61,22 +61,4 @@ class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
 
 }  // namespace electron
 
-namespace gin {
-
-// TODO(zcbenz): Remove this after converting KeyWeakMap to gin::Wrapper.
-template <typename T>
-struct Converter<electron::api::KeyWeakMap<T>*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::KeyWeakMap<T>** out) {
-    return mate::ConvertFromV8(isolate, val, out);
-  }
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::api::KeyWeakMap<T>* in) {
-    return mate::ConvertToV8(isolate, in);
-  }
-};
-
-}  // namespace gin
-
 #endif  // SHELL_COMMON_API_ATOM_API_KEY_WEAK_MAP_H_
