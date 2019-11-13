@@ -59,6 +59,11 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
 }
 
 ProxyingURLLoaderFactory::InProgressRequest::~InProgressRequest() {
+  // This is important to ensure that no outstanding blocking requests continue
+  // to reference state owned by this object.
+  if (info_) {
+    factory_->web_request_api()->OnRequestWillBeDestroyed(&info_.value());
+  }
   if (on_before_send_headers_callback_) {
     std::move(on_before_send_headers_callback_)
         .Run(net::ERR_ABORTED, base::nullopt);
