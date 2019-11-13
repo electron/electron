@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 7 Nov 2019 16:49:03 -0800
+Subject: fix: missing algorithm include
+
+This file had an include-what-you-use issue leading to release build
+failures, as it was unable to find max in the std namespace.
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/1904823.
+
+diff --git a/media/base/byte_queue.cc b/media/base/byte_queue.cc
+index 245fafa668568fd308e5a2806dafc1c5f0bf3dbd..f9cd0c214ac6210d4332bad47b56ef8130be67a2 100644
+--- a/media/base/byte_queue.cc
++++ b/media/base/byte_queue.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "media/base/byte_queue.h"
+ 
++#include <algorithm>
++
+ #include "base/logging.h"
+ #include "base/numerics/checked_math.h"
+ 
+diff --git a/third_party/blink/public/platform/web_time_range.h b/third_party/blink/public/platform/web_time_range.h
+index 2c17f7c8ce58f1255994e9e6fd74f70fa1a22b1c..4b0a59bf3308b49d2c4ffd86120759417094cb21 100644
+--- a/third_party/blink/public/platform/web_time_range.h
++++ b/third_party/blink/public/platform/web_time_range.h
+@@ -31,6 +31,8 @@
+ #ifndef THIRD_PARTY_BLINK_PUBLIC_PLATFORM_WEB_TIME_RANGE_H_
+ #define THIRD_PARTY_BLINK_PUBLIC_PLATFORM_WEB_TIME_RANGE_H_
+ 
++#include <algorithm>
++
+ #include "third_party/blink/public/platform/web_vector.h"
+ 
+ namespace blink {
+diff --git a/third_party/blink/renderer/core/layout/min_max_size.h b/third_party/blink/renderer/core/layout/min_max_size.h
+index c3fdbde6e4bf585351b3fc8d0ce2bd2673a82b5e..4233e6c79a1d67dd6c1ca33929d0beedbf9a1116 100644
+--- a/third_party/blink/renderer/core/layout/min_max_size.h
++++ b/third_party/blink/renderer/core/layout/min_max_size.h
+@@ -5,6 +5,8 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_LAYOUT_MIN_MAX_SIZE_H_
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_LAYOUT_MIN_MAX_SIZE_H_
+ 
++#include <algorithm>
++
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/platform/geometry/layout_unit.h"
+ 
+diff --git a/third_party/blink/renderer/core/layout/ng/geometry/ng_margin_strut.h b/third_party/blink/renderer/core/layout/ng/geometry/ng_margin_strut.h
+index 50f699428acf8251f14411dc30caa750cfac88bf..8236afa14ee99b5f61e6c785721abf62299cbaed 100644
+--- a/third_party/blink/renderer/core/layout/ng/geometry/ng_margin_strut.h
++++ b/third_party/blink/renderer/core/layout/ng/geometry/ng_margin_strut.h
+@@ -5,6 +5,8 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_LAYOUT_NG_GEOMETRY_NG_MARGIN_STRUT_H_
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_LAYOUT_NG_GEOMETRY_NG_MARGIN_STRUT_H_
+ 
++#include <algorithm>
++
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/platform/geometry/layout_unit.h"
+ 
+diff --git a/third_party/blink/renderer/core/style/style_difference.h b/third_party/blink/renderer/core/style/style_difference.h
+index 91292961f1f02e53c58653f72297ea05d78fc07b..517fbb8f5a7aa549373e3806aaec4b3d1f0ec13f 100644
+--- a/third_party/blink/renderer/core/style/style_difference.h
++++ b/third_party/blink/renderer/core/style/style_difference.h
+@@ -5,7 +5,9 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_STYLE_STYLE_DIFFERENCE_H_
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_STYLE_STYLE_DIFFERENCE_H_
+ 
++#include <algorithm>
+ #include <iosfwd>
++
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
+ #include "third_party/blink/renderer/platform/wtf/assertions.h"
