@@ -1,17 +1,6 @@
 ## Promisification
 
-The Electron team is currently undergoing an initiative to convert callback-based functions in Electron to return Promises. During this transition period, both the callback and Promise-based versions of these functions will work correctly, and will both be documented.
-
-To enable deprecation warnings for these updated functions, use the [`process.enablePromiseAPIs` runtime flag](../process.md#processenablepromiseapis).
-
-When a majority of affected functions are migrated, this flag will be enabled by default and all developers will be able to see these deprecation warnings. At that time, the callback-based versions will also be removed from documentation. This document will be continuously updated as more functions are converted.
-
-### Candidate Functions
-
-- [app.importCertificate(options, callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#importCertificate)
-- [contents.print([options], [callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#print)
-
-### Converted Functions
+The Electron team recently underwent an initiative to convert callback-based APIs to Promise-based ones. See converted functions below:
 
 - [app.getFileIcon(path[, options], callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#getFileIcon)
 - [contents.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#capturePage)

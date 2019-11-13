@@ -82,12 +82,6 @@ A `Boolean` that controls whether or not deprecation warnings are printed to `st
 Setting this to `true` will silence deprecation warnings. This property is used
 instead of the `--no-deprecation` command line flag.
 
-### `process.enablePromiseAPIs`
-
-A `Boolean` that controls whether or not deprecation warnings are printed to `stderr` when
-formerly callback-based APIs converted to Promises are invoked using callbacks. Setting this to `true`
-will enable deprecation warnings.
-
 ### `process.resourcesPath` _Readonly_
 
 A `String` representing the path to the resources directory.

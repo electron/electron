@@ -90,11 +90,6 @@ declare namespace ElectronInternal {
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K): T;
     renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
     moveAPI(fn: Function, oldUsage: string, newUsage: string): Function;
-
-    promisify<T extends (...args: any[]) => any>(fn: T): T;
-
-    // convertPromiseValue: Temporarily disabled until it's used
-    promisifyMultiArg<T extends (...args: any[]) => any>(fn: T, /*convertPromiseValue: (v: any) => any*/): T;
   }
 
   interface DesktopCapturer {
