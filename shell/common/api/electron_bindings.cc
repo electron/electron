@@ -102,6 +102,9 @@ void ElectronBindings::BindTo(v8::Isolate* isolate,
   if (dict.Get("versions", &versions)) {
     versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
     versions.SetReadOnly("chrome", CHROME_VERSION_STRING);
+
+    // We don't build with OpenSSL
+    versions.Delete("openssl");
   }
 }
 

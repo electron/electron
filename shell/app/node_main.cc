@@ -113,6 +113,9 @@ int NodeMain(int argc, char* argv[]) {
     gin_helper::Dictionary versions;
     if (process.Get("versions", &versions)) {
       versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
+
+      // We don't build with OpenSSL
+      versions.Delete("openssl");
     }
 
     node::LoadEnvironment(env);
