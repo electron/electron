@@ -7,7 +7,7 @@ Electron has exposed methods to allow setting the aspect ratio
 for a given window, and as a part of that needed to allow users to
 reset the aspect ratio. On macOS, we can do this with existing APIs,
 but on Linux this was not possible using currently exposed APIs without
-this patch. 
+this patch.
 
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/1895789.
 
