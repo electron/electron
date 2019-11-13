@@ -772,7 +772,7 @@ events.
 
 #### `win.id` _Readonly_
 
-A `Integer` property representing the unique ID of the window.
+A `Integer` property representing the unique ID of the window. Each ID is unique among all `BrowserWindow` instances of the entire Electron application.
 
 #### `win.autoHideMenuBar`
 

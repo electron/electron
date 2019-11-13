@@ -1771,7 +1771,7 @@ Only applicable if *offscreen rendering* is enabled.
 
 #### `contents.id` _Readonly_
 
-A `Integer` representing the unique ID of this WebContents.
+A `Integer` representing the unique ID of this WebContents. Each ID is unique among all `WebContents` instances of the entire Electron application.
 
 #### `contents.session` _Readonly_
 
