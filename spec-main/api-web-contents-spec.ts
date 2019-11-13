@@ -1557,6 +1557,10 @@ describe('webContents module', () => {
       })
     })
 
+    afterEach(async () => {
+      await session.defaultSession.clearAuthCache({ type: 'password' })
+    })
+
     after(() => {
       server.close()
       proxyServer.close()
