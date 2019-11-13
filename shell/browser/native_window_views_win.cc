@@ -355,7 +355,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       // use the proper display to calculate the scale factor to use.
       if (!last_normal_placement_bounds_.IsEmpty() &&
           GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
-        last_normal_placement_bounds_.set_size(gfx::Size(0, 0));
         wp.rcNormalPosition = last_normal_placement_bounds_.ToRECT();
         SetWindowPlacement(GetAcceleratedWidget(), &wp);
 
