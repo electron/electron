@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "mate/dictionary.h"
+#include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/gin_converters/callback_converter_gin_adapter.h"
 #include "shell/common/gin_converters/net_converter_gin_adapter.h"
