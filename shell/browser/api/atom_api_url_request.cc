@@ -216,7 +216,8 @@ void URLRequest::OnAuthRequired(
         auth_challenge_responder) {
   mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder(
       std::move(auth_challenge_responder));
-  // XXX: set connection error handler
+  auth_responder.set_disconnect_handler(
+      base::BindOnce(&URLRequest::Cancel, weak_factory_.GetWeakPtr()));
   auto cb = base::BindOnce(
       [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
          base::string16 username, base::string16 password) {
