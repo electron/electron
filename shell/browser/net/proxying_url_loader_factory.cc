@@ -49,9 +49,8 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       target_client_(std::move(client)),
       current_response_(network::mojom::URLResponseHead::New()),
       proxied_client_binding_(this),
-      // TODO(zcbenz): We should always use "extraHeaders" mode to be compatible
-      // with old APIs.
-      has_any_extra_headers_listeners_(false) {
+      // Always use "extraHeaders" mode to be compatible with old APIs.
+      has_any_extra_headers_listeners_(true) {
   // If there is a client error, clean up the request.
   target_client_.set_connection_error_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::InProgressRequest::OnRequestError,
@@ -60,7 +59,14 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
 }
 
 ProxyingURLLoaderFactory::InProgressRequest::~InProgressRequest() {
-  // TODO(zcbenz): Do cleanup here.
+  if (on_before_send_headers_callback_) {
+    std::move(on_before_send_headers_callback_)
+        .Run(net::ERR_ABORTED, base::nullopt);
+  }
+  if (on_headers_received_callback_) {
+    std::move(on_headers_received_callback_)
+        .Run(net::ERR_ABORTED, base::nullopt, base::nullopt);
+  }
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::Restart() {
@@ -85,7 +91,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
   current_request_uses_header_client_ =
       factory_->url_loader_header_client_receiver_.is_bound() &&
       network_service_request_id_ != 0 &&
-      false /* TODO(zcbenz): HasExtraHeadersListenerForRequest */;
+      true /* HasExtraHeadersListenerForRequest */;
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::RestartInternal() {
