@@ -21,6 +21,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
+#include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"
 #include "native_mate/object_template_builder_deprecated.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/atom_application.h"
@@ -102,15 +103,17 @@ AVMediaType ParseMediaType(const std::string& media_type) {
   }
 }
 
-std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
-  switch (status) {
-    case AVAuthorizationStatusNotDeterminedMac:
+std::string ConvertSystemPermission(
+    system_media_permissions::SystemPermission value) {
+  using SystemPermission = system_media_permissions::SystemPermission;
+  switch (value) {
+    case SystemPermission::kNotDetermined:
       return "not-determined";
-    case AVAuthorizationStatusRestrictedMac:
+    case SystemPermission::kRestricted:
       return "restricted";
-    case AVAuthorizationStatusDeniedMac:
+    case SystemPermission::kDenied:
       return "denied";
-    case AVAuthorizationStatusAuthorizedMac:
+    case SystemPermission::kAllowed:
       return "granted";
     default:
       return "unknown";
@@ -597,14 +600,15 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
 std::string SystemPreferences::GetMediaAccessStatus(
     const std::string& media_type,
     mate::Arguments* args) {
-  if (auto type = ParseMediaType(media_type)) {
-    if (@available(macOS 10.14, *)) {
-      return ConvertAuthorizationStatus(
-          [AVCaptureDevice authorizationStatusForMediaType:type]);
-    } else {
-      // access always allowed pre-10.14 Mojave
-      return ConvertAuthorizationStatus(AVAuthorizationStatusAuthorizedMac);
-    }
+  if (media_type == "camera") {
+    return ConvertSystemPermission(
+        system_media_permissions::CheckSystemVideoCapturePermission());
+  } else if (media_type == "microphone") {
+    return ConvertSystemPermission(
+        system_media_permissions::CheckSystemAudioCapturePermission());
+  } else if (media_type == "screen") {
+    return ConvertSystemPermission(
+        system_media_permissions::CheckSystemScreenCapturePermission());
   } else {
     args->ThrowError("Invalid media type");
     return std::string();

@@ -434,11 +434,13 @@ Returns `Boolean` - `true` if the current process is a trusted accessibility cli
 
 ### `systemPreferences.getMediaAccessStatus(mediaType)` _macOS_
 
-* `mediaType` String - `microphone` or `camera`.
+* `mediaType` String - Can be `microphone`, `camera` or `screen`.
 
 Returns `String` - Can be `not-determined`, `granted`, `denied`, `restricted` or `unknown`.
 
-This user consent was not required until macOS 10.14 Mojave, so this method will always return `granted` if your system is running 10.13 High Sierra or lower.
+This user consent was not required on macOS 10.13 High Sierra or lower so this method will always return `granted`.
+macOS 10.14 Mojave or higher requires consent for `microphone` and `camera` access.
+macOS 10.15 Catalina or higher requires consent for `screen` access.
 
 ### `systemPreferences.askForMediaAccess(mediaType)` _macOS_
 

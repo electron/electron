@@ -246,6 +246,11 @@ describe('systemPreferences module', () => {
       const microphoneStatus = systemPreferences.getMediaAccessStatus('microphone')
       expect(statuses).to.include(microphoneStatus)
     })
+
+    it('returns an access status for a screen access request', () => {
+      const screenStatus = systemPreferences.getMediaAccessStatus('screen')
+      expect(statuses).to.include(screenStatus)
+    })
   })
 
   describe('systemPreferences.getAnimationSettings()', () => {
