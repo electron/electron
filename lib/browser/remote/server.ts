@@ -5,7 +5,7 @@ import { EventEmitter } from 'events'
 import objectsRegistry from './objects-registry'
 import { ipcMainInternal } from '../ipc-main-internal'
 import * as guestViewManager from '@electron/internal/browser/guest-view-manager'
-import { isPromise, isSerializableObject } from '@electron/internal/common/remote/type-utils'
+import { isPromise, isSerializableObject } from '@electron/internal/common/type-utils'
 
 const v8Util = process.electronBinding('v8_util')
 const eventBinding = process.electronBinding('event')

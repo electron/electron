@@ -52,7 +52,6 @@ export const syncMethods = new Set([
 
 export const asyncMethods = new Set([
   'loadURL',
-  'capturePage',
   'executeJavaScript',
   'insertCSS',
   'insertText',
