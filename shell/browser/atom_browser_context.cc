@@ -28,6 +28,7 @@
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
@@ -346,9 +347,7 @@ AtomBrowserContext::GetURLLoaderFactory() {
 
 class AuthResponder : public network::mojom::TrustedAuthClient {
  public:
-  AuthResponder(
-      mojo::PendingReceiver<network::mojom::TrustedAuthClient> auth_client)
-      : receiver_(this, std::move(auth_client)) {}
+  AuthResponder() {}
   ~AuthResponder() override = default;
 
  private:
@@ -370,14 +369,13 @@ class AuthResponder : public network::mojom::TrustedAuthClient {
                                   std::move(auth_challenge_responder));
     }
   }
-
-  mojo::Receiver<network::mojom::TrustedAuthClient> receiver_;
 };
 
 void AtomBrowserContext::OnLoaderCreated(
     int32_t request_id,
     mojo::PendingReceiver<network::mojom::TrustedAuthClient> auth_client) {
-  new AuthResponder(std::move(auth_client));
+  mojo::MakeSelfOwnedReceiver(std::make_unique<AuthResponder>(),
+                              std::move(auth_client));
 }
 
 content::PushMessagingService* AtomBrowserContext::GetPushMessagingService() {

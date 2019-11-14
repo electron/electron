@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 6b14d8354375377526e141ee499a7583be3f22b0..0294da2745563bb46c5840d968d12a6273840870 100644
+index 6b14d8354375377526e141ee499a7583be3f22b0..eeb9e19c0ecdf4631e596e7c0927693f2239f293 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -181,6 +181,25 @@ interface TrustedURLLoaderHeaderClient {
@@ -33,7 +33,7 @@ index 6b14d8354375377526e141ee499a7583be3f22b0..0294da2745563bb46c5840d968d12a62
 +  // When a new URLLoader is created, this will be called to pass a
 +  // corresponding |auth_client|.
 +  OnLoaderCreated(int32 request_id,
-+                  pending_receiver<TrustedAuthClient> header_client);
++                  pending_receiver<TrustedAuthClient> auth_client);
 +};
 +
  interface CertVerifierClient {
