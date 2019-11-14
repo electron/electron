@@ -62,7 +62,7 @@ index 389f2ed29bd85c35b38df92346a8d6c76ce22fd6..02cf492fa4068d10c4b8b2addee8102b
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index f17aa1fa451f1b99d7f083e07edd49b11f7639e4..09f7c5d6a92d89c199b296771a8ff60c89a07083 100644
+index cb69e08c0185f55497089505ed5b226e57140321..362f28accc248248f3bcb54955c2352819242fa9 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -13,6 +13,7 @@
@@ -83,7 +83,7 @@ index f17aa1fa451f1b99d7f083e07edd49b11f7639e4..09f7c5d6a92d89c199b296771a8ff60c
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index c0c66133f90fc43469b03dd7d1d66f71057a0c44..7efda769316e5ffcb92f7e53da51aefd9857881d 100644
+index 3a601c80363f3b39a8380f9d8d5419dfe29607bf..cf3b93cebdfd7c0fe9237c609d8f948da9724f75 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -83,6 +83,9 @@
@@ -157,10 +157,10 @@ index c0c66133f90fc43469b03dd7d1d66f71057a0c44..7efda769316e5ffcb92f7e53da51aefd
    gfx::ColorSpace dst_color_space =
 -      current_frame()->current_render_pass->color_space;
 +      PATCH_CS(current_frame()->current_render_pass->color_space);
- 
- #if defined(OS_WIN)
    // Force sRGB output on Windows for overlay candidate video quads to match
-@@ -2463,8 +2468,8 @@ void GLRenderer::DrawStreamVideoQuad(const StreamVideoDrawQuad* quad,
+   // DirectComposition behavior in case these switch between overlays and
+   // compositing. See https://crbug.com/811118 for details.
+@@ -2460,8 +2465,8 @@ void GLRenderer::DrawStreamVideoQuad(const StreamVideoDrawQuad* quad,
  
    SetUseProgram(ProgramKey::VideoStream(tex_coord_precision,
                                          ShouldApplyRoundedCorner(quad)),
@@ -171,7 +171,7 @@ index c0c66133f90fc43469b03dd7d1d66f71057a0c44..7efda769316e5ffcb92f7e53da51aefd
  
    DCHECK_EQ(GL_TEXTURE0, GetActiveTextureUnit(gl_));
    gl_->BindTexture(GL_TEXTURE_EXTERNAL_OES, lock.texture_id());
-@@ -2526,8 +2531,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
+@@ -2523,8 +2528,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
        draw_cache_.nearest_neighbor ? GL_NEAREST : GL_LINEAR);
  
    // Bind the program to the GL state.
@@ -182,7 +182,7 @@ index c0c66133f90fc43469b03dd7d1d66f71057a0c44..7efda769316e5ffcb92f7e53da51aefd
  
    if (current_program_->rounded_corner_rect_location() != -1) {
      SetShaderRoundedCorner(
-@@ -3242,7 +3247,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
+@@ -3228,7 +3233,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
  void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& src_color_space,
                                 const gfx::ColorSpace& dst_color_space) {
@@ -193,7 +193,7 @@ index c0c66133f90fc43469b03dd7d1d66f71057a0c44..7efda769316e5ffcb92f7e53da51aefd
  
    gfx::ColorSpace adjusted_color_space = src_color_space;
    float sdr_white_level = current_frame()->sdr_white_level;
-@@ -3626,7 +3633,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -3607,7 +3614,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
  
    *overlay_texture = FindOrCreateOverlayTexture(
        params.quad->render_pass_id, iosurface_width, iosurface_height,
@@ -202,7 +202,7 @@ index c0c66133f90fc43469b03dd7d1d66f71057a0c44..7efda769316e5ffcb92f7e53da51aefd
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -3845,8 +3852,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -3825,8 +3832,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -213,14 +213,14 @@ index c0c66133f90fc43469b03dd7d1d66f71057a0c44..7efda769316e5ffcb92f7e53da51aefd
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4006,3 +4013,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -3986,3 +3993,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 9dd6a8ccad0cb0d305eff35583369d760ecdac5c..cd33d513ba61eb499dba9ae255796223d5acc055 100644
+index ff602d0c5a7a58b800d1473631b16a0c9ed64760..143308bc62df88ca46a852ee7eecd0e93ea18802 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -190,6 +190,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(

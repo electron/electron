@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/chrome/browser/ui/libgtkui/native_theme_gtk.cc b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-index ad87f4729fe2cec2cf6e12b5bfcaf68bccf0390d..b1c3fd0f798d520da0637268dcbd51ecde9b40a7 100644
+index 6e32548fd98f45750cb4c9c044293a641b934390..22c7b15f2b8c79e0a24f86aa6847791d8cf15b6d 100644
 --- a/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 +++ b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-@@ -279,6 +279,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
+@@ -278,6 +278,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -40,7 +40,7 @@ index ad87f4729fe2cec2cf6e12b5bfcaf68bccf0390d..b1c3fd0f798d520da0637268dcbd51ec
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 564e0555f5d709601bf39e71521733c8371cc6ed..f59bee7aa4bdf445702f00459759b26c91062827 100644
+index 328fac0ef377bb77f8c41e4481f9ff42f482083b..41a86bad5fbd22523b83862153b9cc0eb5605f8f 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -56,6 +56,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
@@ -57,10 +57,10 @@ index 564e0555f5d709601bf39e71521733c8371cc6ed..f59bee7aa4bdf445702f00459759b26c
 +
        // FocusableBorder
        case NativeTheme::kColorId_FocusedBorderColor:
-         return SkColorSetA(gfx::kGoogleBlue300, 0x66);
-@@ -334,6 +342,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
-     case NativeTheme::kColorId_UnfocusedBorderColor:
-       return SkColorSetA(SK_ColorBLACK, 0x4e);
+         return SkColorSetA(gfx::kGoogleBlue300, 0x4D);
+@@ -343,6 +351,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+           .color;
+     }
  
 +    // Results Tables
 +    case NativeTheme::kColorId_ResultsTableNormalBackground:
@@ -78,10 +78,10 @@ index 564e0555f5d709601bf39e71521733c8371cc6ed..f59bee7aa4bdf445702f00459759b26c
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 59a33c31c7a5844d0716fcfaf25ba5c5e04fcd70..d14394ad8ffac01a9b23baab4e0353450eb8f7a7 100644
+index 31480e5cee96132c0668da423c7c6514cdf46dfe..c0487134358891ba7bccbfbfd9ea5c7073725458 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -391,6 +391,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -390,6 +390,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
      kColorId_TableHeaderText,
      kColorId_TableHeaderBackground,
      kColorId_TableHeaderSeparator,
