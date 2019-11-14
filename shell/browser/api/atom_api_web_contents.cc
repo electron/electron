@@ -601,6 +601,20 @@ void WebContents::OnCreateWindow(
        body);
 }
 
+bool WebContents::IsWebContentsCreationOverridden(
+    content::SiteInstance* source_site_instance,
+    content::mojom::WindowContainerType window_container_type,
+    const GURL& opener_url,
+    const std::string& frame_name,
+    const GURL& target_url) {
+  if (Emit("-will-add-new-contents", target_url, frame_name)) {
+    // If we've prevented default, tell Chrome we're overriding and then do
+    // nothing.
+    return true;
+  }
+  return false;
+}
+
 void WebContents::WebContentsCreatedWithFullParams(
     content::WebContents* source_contents,
     int opener_render_process_id,
@@ -887,7 +901,7 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
     // When the RVH that has been deleted is the current RVH it means that the
     // the web contents are being closed. This is communicated by this event.
-    // Currently tracked by guest-window-manager.js to destroy the
+    // Currently tracked by guest-window-manager.ts to destroy the
     // BrowserWindow.
     Emit("current-render-view-deleted",
          render_view_host->GetProcess()->GetID());

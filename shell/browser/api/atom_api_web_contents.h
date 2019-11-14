@@ -352,6 +352,12 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                               const base::string16& message,
                               int32_t line_no,
                               const base::string16& source_id) override;
+  bool IsWebContentsCreationOverridden(
+      content::SiteInstance* source_site_instance,
+      content::mojom::WindowContainerType window_container_type,
+      const GURL& opener_url,
+      const std::string& frame_name,
+      const GURL& target_url) override;
   void WebContentsCreatedWithFullParams(
       content::WebContents* source_contents,
       int opener_render_process_id,
