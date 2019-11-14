@@ -17,6 +17,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/media/media_device_id_salt.h"
 
@@ -50,7 +51,8 @@ class WebViewManager;
 
 class AtomBrowserContext
     : public base::RefCountedDeleteOnSequence<AtomBrowserContext>,
-      public content::BrowserContext {
+      public content::BrowserContext,
+      public network::mojom::TrustedURLLoaderAuthClient {
  public:
   // partition_id => browser_context
   struct PartitionKey {
@@ -148,6 +150,10 @@ class AtomBrowserContext
   friend class base::RefCountedDeleteOnSequence<AtomBrowserContext>;
   friend class base::DeleteHelper<AtomBrowserContext>;
 
+  void OnLoaderCreated(int32_t request_id,
+                       mojo::PendingReceiver<network::mojom::TrustedAuthClient>
+                           header_client) override;
+
   // Initialize pref registry.
   void InitPrefs();
 
@@ -184,6 +190,7 @@ class AtomBrowserContext
 
   // Shared URLLoaderFactory.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
+  mojo::Receiver<network::mojom::TrustedURLLoaderAuthClient> auth_client_{this};
 
   base::WeakPtrFactory<AtomBrowserContext> weak_factory_;
 

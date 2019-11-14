@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { net, session, ClientRequest } from 'electron'
+import { net, session, ClientRequest, BrowserWindow } from 'electron'
 import * as http from 'http'
 import * as url from 'url'
 import { AddressInfo } from 'net'
@@ -191,6 +191,135 @@ describe('net module', () => {
           expect(urlRequest.write(chunk)).to.equal(true)
         }
         urlRequest.end()
+      })
+    })
+
+    it('should emit the login event when 401', async () => {
+      const [user, pass] = ['user', 'pass']
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+        }
+        response.writeHead(200).end('ok')
+      })
+      let loginAuthInfo: any
+      await new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: serverUrl })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          response.on('data', () => {})
+          response.on('end', () => resolve())
+        })
+        request.on('login', (authInfo, cb) => {
+          loginAuthInfo = authInfo
+          cb(user, pass)
+        })
+        request.on('error', reject)
+        request.end()
+      })
+      expect(loginAuthInfo.realm).to.equal('Foo')
+      expect(loginAuthInfo.scheme).to.equal('basic')
+    })
+
+    it('should produce an error on the response object when cancelling authentication', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+        }
+        response.writeHead(200).end('ok')
+      })
+      await expect(new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: serverUrl })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          response.on('data', () => {})
+          response.on('end', () => resolve())
+        })
+        request.on('login', (authInfo, cb) => {
+          cb()
+        })
+        request.on('error', reject)
+        request.end()
+      })).to.eventually.be.rejectedWith('net::ERR_HTTP_RESPONSE_CODE_FAILURE')
+    })
+
+    it('should share credentials with WebContents', async () => {
+      const [user, pass] = ['user', 'pass']
+      const serverUrl = await new Promise<string>((resolve) => {
+        const server = http.createServer((request, response) => {
+          if (!request.headers.authorization) {
+            return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+          }
+          return response.writeHead(200).end('ok')
+        })
+        server.listen(0, '127.0.0.1', () => {
+          resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)
+        })
+        after(() => { server.close() })
+      })
+      const bw = new BrowserWindow({ show: false })
+      const loaded = bw.loadURL(serverUrl)
+      bw.webContents.on('login', (event, details, authInfo, cb) => {
+        event.preventDefault()
+        cb(user, pass)
+      })
+      await loaded
+      bw.close()
+      await new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: serverUrl })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          response.on('data', () => {})
+          response.on('end', () => resolve())
+        })
+        request.on('login', () => {
+          // we shouldn't receive a login event, because the credentials should
+          // be cached.
+          reject(new Error('unexpected login event'))
+        })
+        request.on('error', reject)
+        request.end()
+      })
+    })
+
+    it('should share proxy credentials with WebContents', async () => {
+      const [user, pass] = ['user', 'pass']
+      const proxyPort = await new Promise<number>((resolve) => {
+        const server = http.createServer((request, response) => {
+          if (!request.headers['proxy-authorization']) {
+            return response.writeHead(407, { 'Proxy-Authenticate': 'Basic realm="Foo"' }).end()
+          }
+          return response.writeHead(200).end('ok')
+        })
+        server.listen(0, '127.0.0.1', () => {
+          resolve((server.address() as AddressInfo).port)
+        })
+        after(() => { server.close() })
+      })
+      const customSession = session.fromPartition(`net-proxy-test-${Math.random()}`)
+      await customSession.setProxy({ proxyRules: `127.0.0.1:${proxyPort}`, proxyBypassRules: '<-loopback>' })
+      const bw = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
+      const loaded = bw.loadURL('http://127.0.0.1:9999')
+      bw.webContents.on('login', (event, details, authInfo, cb) => {
+        event.preventDefault()
+        cb(user, pass)
+      })
+      await loaded
+      bw.close()
+      await new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: 'http://127.0.0.1:9999', session: customSession })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          response.on('data', () => {})
+          response.on('end', () => resolve())
+        })
+        request.on('login', () => {
+          // we shouldn't receive a login event, because the credentials should
+          // be cached.
+          reject(new Error('unexpected login event'))
+        })
+        request.on('error', reject)
+        request.end()
       })
     })
   })
