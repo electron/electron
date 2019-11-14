@@ -1534,7 +1534,7 @@ describe('webContents module', () => {
         }
         response
           .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
-          .end()
+          .end('401')
       }).listen(0, '127.0.0.1', () => {
         serverPort = (server.address() as AddressInfo).port
         serverUrl = `http://127.0.0.1:${serverPort}`
@@ -1555,6 +1555,10 @@ describe('webContents module', () => {
         proxyServerPort = (proxyServer.address() as AddressInfo).port
         done()
       })
+    })
+
+    afterEach(async () => {
+      await session.defaultSession.clearAuthCache({ type: 'password' })
     })
 
     after(() => {
@@ -1606,6 +1610,17 @@ describe('webContents module', () => {
       expect(eventAuthInfo.host).to.equal('127.0.0.1')
       expect(eventAuthInfo.port).to.equal(proxyServerPort)
       expect(eventAuthInfo.realm).to.equal('Foo')
+    })
+
+    it('cancels authentication when callback is called with no arguments', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.webContents.on('login', (event, request, authInfo, cb) => {
+        event.preventDefault()
+        cb()
+      })
+      await w.loadURL(serverUrl)
+      const body = await w.webContents.executeJavaScript(`document.documentElement.textContent`)
+      expect(body).to.equal('401')
     })
   })
 })
