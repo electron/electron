@@ -13,7 +13,6 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/file_url_loader.h"
 #include "mojo/public/cpp/bindings/receiver.h"
-#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/file_data_source.h"
 #include "net/base/filename_util.h"

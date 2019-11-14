@@ -10,9 +10,12 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "base/strings/string16.h"
 #include "native_mate/dictionary.h"
+#include "native_mate/arguments.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/native_mate_converters/callback_converter_deprecated.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 
@@ -57,7 +60,7 @@ void LoginHandler::EmitEvent(
   v8::HandleScope scope(isolate);
 
   auto details = mate::Dictionary::CreateEmpty(isolate);
-  details.Set("url", url.spec());
+  details.Set("url", url);
 
   // These parameters aren't documented, and I'm not sure that they're useful,
   // but we might as well stick 'em on the details object. If it turns out they
@@ -77,9 +80,13 @@ void LoginHandler::EmitEvent(
 
 LoginHandler::~LoginHandler() = default;
 
-void LoginHandler::CallbackFromJS(base::string16 username,
-                                  base::string16 password) {
+void LoginHandler::CallbackFromJS(mate::Arguments* args) {
   if (auth_required_callback_) {
+    base::string16 username, password;
+    if (!args->GetNext(&username) || !args->GetNext(&password)) {
+      std::move(auth_required_callback_).Run(base::nullopt);
+      return;
+    }
     std::move(auth_required_callback_)
         .Run(net::AuthCredentials(username, password));
   }

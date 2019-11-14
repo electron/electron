@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/containers/id_map.h"
 #include "gin/handle.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/system/string_data_source.h"
@@ -13,6 +14,7 @@
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/atom_browser_context.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -50,6 +52,11 @@ namespace electron {
 namespace api {
 
 namespace {
+
+base::IDMap<URLRequest*>& GetAllRequests() {
+  static base::NoDestructor<base::IDMap<URLRequest*>> s_all_requests;
+  return *s_all_requests;
+}
 
 // Network state for request and response.
 enum State {
@@ -166,7 +173,8 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
   mojo::ReceiverSet<network::mojom::ChunkedDataPipeGetter> receiver_set_;
 };
 
-URLRequestNS::URLRequestNS(gin::Arguments* args) : weak_factory_(this) {
+URLRequestNS::URLRequestNS(gin::Arguments* args) : id_(GetAllRequests().Add(this)), weak_factory_(this) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   request_ = std::make_unique<network::ResourceRequest>();
   gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
@@ -175,6 +183,8 @@ URLRequestNS::URLRequestNS(gin::Arguments* args) : weak_factory_(this) {
     dict.Get("redirect", &redirect_mode_);
     request_->redirect_mode = redirect_mode_;
   }
+
+  request_->render_frame_id = id_;
 
   std::string partition;
   mate::Handle<api::Session> session;
@@ -191,6 +201,38 @@ URLRequestNS::URLRequestNS(gin::Arguments* args) : weak_factory_(this) {
 }
 
 URLRequestNS::~URLRequestNS() = default;
+
+URLRequest* URLRequest::FromID(uint32_t id) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  return GetAllRequests().Lookup(id);
+}
+
+void URLRequestNS::OnAuthRequired(
+    const GURL& url,
+    bool first_auth_attempt,
+    net::AuthChallengeInfo auth_info,
+    network::mojom::URLResponseHeadPtr head,
+    mojo::PendingRemote<network::mojom::AuthChallengeResponder>
+        auth_challenge_responder) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder(
+      std::move(auth_challenge_responder));
+  auth_responder.set_disconnect_handler(
+      base::BindOnce(&URLRequestNS::Cancel, weak_factory_.GetWeakPtr()));
+  auto cb = base::BindOnce(
+      [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
+         gin::Arguments* args) {
+        base::string16 username_str, password_str;
+        if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
+          auth_responder->OnAuthCredentials(base::nullopt);
+          return;
+        }
+        auth_responder->OnAuthCredentials(
+            net::AuthCredentials(username_str, password_str));
+      },
+      std::move(auth_responder));
+  Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
+}
 
 bool URLRequestNS::NotStarted() const {
   return request_state_ == 0;
@@ -512,11 +554,12 @@ void URLRequestNS::EmitError(EventType type, base::StringPiece message) {
 }
 
 template <typename... Args>
-void URLRequestNS::EmitEvent(EventType type, Args... args) {
+void URLRequestNS::EmitEvent(EventType type, Args&&... args) {
   const char* method =
       type == EventType::kRequest ? "_emitRequestEvent" : "_emitResponseEvent";
   v8::HandleScope handle_scope(isolate());
-  gin_helper::CustomEmit(isolate(), GetWrapper(), method, args...);
+  gin_helper::CustomEmit(isolate(), GetWrapper(), method,
+                         std::forward<Args>(args)...);
 }
 
 // static

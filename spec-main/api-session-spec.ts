@@ -519,7 +519,8 @@ describe('session module', () => {
             resolve(data)
           })
           response.on('error', (error: any) => { reject(new Error(error)) })
-        });
+        })
+        request.on('error', (error: any) => { reject(new Error(error)) })
         request.end()
       })
       // the first time should throw due to unauthenticated
