@@ -1452,6 +1452,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod(
           "removeAsDefaultProtocolClient",
           base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
+      .SetMethod(
+          "getApplicationNameForProtocol",
+          base::BindRepeating(&Browser::GetApplicationNameForProtocol, browser))
       .SetMethod("_setBadgeCount",
                  base::BindRepeating(&Browser::SetBadgeCount, browser))
       .SetMethod("_getBadgeCount",
