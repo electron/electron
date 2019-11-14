@@ -233,7 +233,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   })
 
   describe('remote value in browser', () => {
-    const print = path.join(fixtures, 'module', 'print_name.js')
+    const print = path.join(__dirname, '..', 'spec-main', 'fixtures', 'module', 'print_name.js')
     const printName = remote.require(print)
 
     it('preserves NaN', () => {
