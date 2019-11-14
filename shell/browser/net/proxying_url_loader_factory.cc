@@ -49,9 +49,10 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       target_client_(std::move(client)),
       current_response_(network::mojom::URLResponseHead::New()),
       proxied_client_binding_(this),
-      // TODO(zcbenz): We should always use "extraHeaders" mode to be compatible
-      // with old APIs.
-      has_any_extra_headers_listeners_(false) {
+      // Always use "extraHeaders" mode to be compatible with old APIs, except
+      // when the |request_id_| is zero, which is not supported in Chromium and
+      // only happens in Electron when the request is started from net module.
+      has_any_extra_headers_listeners_(network_service_request_id != 0) {
   // If there is a client error, clean up the request.
   target_client_.set_connection_error_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::InProgressRequest::OnRequestError,
@@ -60,7 +61,19 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
 }
 
 ProxyingURLLoaderFactory::InProgressRequest::~InProgressRequest() {
-  // TODO(zcbenz): Do cleanup here.
+  // This is important to ensure that no outstanding blocking requests continue
+  // to reference state owned by this object.
+  if (info_) {
+    factory_->web_request_api()->OnRequestWillBeDestroyed(&info_.value());
+  }
+  if (on_before_send_headers_callback_) {
+    std::move(on_before_send_headers_callback_)
+        .Run(net::ERR_ABORTED, base::nullopt);
+  }
+  if (on_headers_received_callback_) {
+    std::move(on_headers_received_callback_)
+        .Run(net::ERR_ABORTED, base::nullopt, base::nullopt);
+  }
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::Restart() {
@@ -84,8 +97,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
 
   current_request_uses_header_client_ =
       factory_->url_loader_header_client_receiver_.is_bound() &&
-      network_service_request_id_ != 0 &&
-      false /* TODO(zcbenz): HasExtraHeadersListenerForRequest */;
+      network_service_request_id_ != 0 && has_any_extra_headers_listeners_;
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::RestartInternal() {
@@ -722,6 +734,10 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // don't use it for identity here.
   const uint64_t web_request_id = ++g_request_id;
 
+  // Notes: Chromium assumes that requests with zero-ID would never use the
+  // "extraHeaders" code path, however in Electron requests started from
+  // the net module would have zero-ID because they do not have renderer process
+  // associated.
   if (request_id)
     network_request_id_to_web_request_id_.emplace(request_id, web_request_id);
 
