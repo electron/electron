@@ -85,6 +85,7 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   void OnCompleted(extensions::WebRequestInfo* info,
                    const network::ResourceRequest& request,
                    int net_error) override;
+  void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) override;
 
   enum SimpleEvent {
     kOnSendHeaders,

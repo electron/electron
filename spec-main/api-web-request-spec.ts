@@ -20,6 +20,9 @@ describe('webRequest module', () => {
       if (req.headers.accept === '*/*;test/header') {
         content += 'header/received'
       }
+      if (req.headers.origin === 'http://new-origin') {
+        content += 'new/origin'
+      }
       res.end(content)
     }
   })
@@ -145,6 +148,16 @@ describe('webRequest module', () => {
       expect(data).to.equal('/header/received')
     })
 
+    it('can change CORS headers', async () => {
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        const requestHeaders = details.requestHeaders
+        requestHeaders.Origin = 'http://new-origin'
+        callback({ requestHeaders: requestHeaders })
+      })
+      const { data } = await ajax(defaultURL)
+      expect(data).to.equal('/new/origin')
+    })
+
     it('resets the whole headers', async () => {
       const requestHeaders = {
         Test: 'header'
@@ -197,6 +210,16 @@ describe('webRequest module', () => {
       })
       const { headers } = await ajax(defaultURL)
       expect(headers).to.match(/^custom: Changed$/m)
+    })
+
+    it('can change CORS headers', async () => {
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        const responseHeaders = details.responseHeaders!
+        responseHeaders['access-control-allow-origin'] = ['http://new-origin'] as any
+        callback({ responseHeaders: responseHeaders })
+      })
+      const { headers } = await ajax(defaultURL)
+      expect(headers).to.match(/^access-control-allow-origin: http:\/\/new-origin$/m)
     })
 
     it('does not change header by default', async () => {
