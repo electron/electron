@@ -47,20 +47,20 @@ describe('webContents module', () => {
       w.webContents.once('will-prevent-unload', () => {
         expect.fail('should not have fired')
       })
-      w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-undefined.html'))
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'))
     })
 
-    it('emits if beforeunload returns false', (done) => {
+    it('emits if beforeunload returns false', async () => {
       const w = new BrowserWindow({ show: false })
-      w.webContents.once('will-prevent-unload', () => done())
-      w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'))
+      await emittedOnce(w.webContents, 'will-prevent-unload')
     })
 
-    it('supports calling preventDefault on will-prevent-unload events', (done) => {
+    it('supports calling preventDefault on will-prevent-unload events', async () => {
       const w = new BrowserWindow({ show: false })
       w.webContents.once('will-prevent-unload', event => event.preventDefault())
-      w.once('closed', () => done())
-      w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'))
+      await emittedOnce(w, 'closed')
     })
   })
 
