@@ -47,20 +47,20 @@ describe('webContents module', () => {
       w.webContents.once('will-prevent-unload', () => {
         expect.fail('should not have fired')
       })
-      w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-undefined.html'))
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'))
     })
 
-    it('emits if beforeunload returns false', (done) => {
+    it('emits if beforeunload returns false', async () => {
       const w = new BrowserWindow({ show: false })
-      w.webContents.once('will-prevent-unload', () => done())
-      w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'))
+      await emittedOnce(w.webContents, 'will-prevent-unload')
     })
 
-    it('supports calling preventDefault on will-prevent-unload events', (done) => {
+    it('supports calling preventDefault on will-prevent-unload events', async () => {
       const w = new BrowserWindow({ show: false })
       w.webContents.once('will-prevent-unload', event => event.preventDefault())
-      w.once('closed', () => done())
-      w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'))
+      await emittedOnce(w, 'closed')
     })
   })
 
@@ -695,15 +695,19 @@ describe('webContents module', () => {
   describe('focus()', () => {
     describe('when the web contents is hidden', () => {
       afterEach(closeAllWindows)
-      it('does not blur the focused window', (done) => {
+      it('does not blur the focused window', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-        ipcMain.once('answer', (event, parentFocused, childFocused) => {
-          expect(parentFocused).to.be.true()
-          expect(childFocused).to.be.false()
-          done()
-        })
         w.show()
-        w.loadFile(path.join(fixturesPath, 'pages', 'focus-web-contents.html'))
+        await w.loadURL('about:blank')
+        w.focus()
+        const child = new BrowserWindow({ show: false })
+        child.loadURL('about:blank')
+        child.webContents.focus()
+        const currentFocused = w.isFocused()
+        const childFocused = child.isFocused()
+        child.close()
+        expect(currentFocused).to.be.true()
+        expect(childFocused).to.be.false()
       })
     })
   })

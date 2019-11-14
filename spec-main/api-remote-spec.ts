@@ -158,6 +158,24 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     })
   })
 
+  describe('remote objects registry', () => {
+    it('does not dereference until the render view is deleted (regression)', (done) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+
+      ipcMain.once('error-message', (event, message) => {
+        expect(message).to.match(/^Cannot call method 'getURL' on missing remote object/)
+        done()
+      })
+
+      w.loadFile(path.join(fixtures, 'api', 'render-view-deleted.html'))
+    })
+  })
+
   describe('remote listeners', () => {
     afterEach(closeAllWindows)
 
@@ -168,7 +186,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
           nodeIntegration: true
         }
       })
-      await w.loadFile(path.join(__dirname, '..', 'spec', 'fixtures', 'api', 'remote-event-handler.html'))
+      await w.loadFile(path.join(fixtures, 'api', 'remote-event-handler.html'))
       w.webContents.reload()
       await emittedOnce(w.webContents, 'did-finish-load')
 

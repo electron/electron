@@ -80,7 +80,12 @@ describe('BrowserWindow module', () => {
     })
     it('should emit beforeunload handler', async () => {
       await w.loadFile(path.join(fixtures, 'api', 'beforeunload-false.html'))
-      const beforeunload = emittedOnce(w, 'onbeforeunload')
+      const beforeunload = new Promise(resolve => {
+        ipcMain.once('onbeforeunload', (e) => {
+          e.returnValue = null
+          resolve()
+        })
+      })
       w.close()
       await beforeunload
     })
@@ -164,8 +169,9 @@ describe('BrowserWindow module', () => {
       expect(content).to.equal('close')
     })
     it('should emit beforeunload event', async () => {
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
-      await emittedOnce(w, 'onbeforeunload')
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'))
+      const [e] = await emittedOnce(ipcMain, 'onbeforeunload')
+      e.returnValue = null
     })
   })
 
@@ -1552,7 +1558,7 @@ describe('BrowserWindow module', () => {
         expect(test).to.eql('preload')
       })
       it('can successfully delete the Buffer global', async () => {
-        const preload = path.join(fixtures, 'module', 'delete-buffer.js')
+        const preload = path.join(__dirname, 'fixtures', 'module', 'delete-buffer.js')
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -1676,7 +1682,7 @@ describe('BrowserWindow module', () => {
     describe('"enableRemoteModule" option', () => {
       const generateSpecs = (description: string, sandbox: boolean) => {
         describe(description, () => {
-          const preload = path.join(fixtures, 'module', 'preload-remote.js')
+          const preload = path.join(__dirname, 'fixtures', 'module', 'preload-remote.js')
 
           it('enables the remote module by default', async () => {
             const w = new BrowserWindow({
@@ -1794,7 +1800,7 @@ describe('BrowserWindow module', () => {
             preload
           }
         })
-        const htmlPath = path.join(fixtures, 'api', 'sandbox.html?exit-event')
+        const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?exit-event')
         const pageUrl = 'file://' + htmlPath
         w.loadURL(pageUrl)
         const [, url] = await emittedOnce(ipcMain, 'answer')
@@ -1815,7 +1821,7 @@ describe('BrowserWindow module', () => {
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
           options.webPreferences!.preload = preload
         })
-        const htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open')
+        const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?window-open')
         const pageUrl = 'file://' + htmlPath
         const answer = emittedOnce(ipcMain, 'answer')
         w.loadURL(pageUrl)
@@ -1844,7 +1850,7 @@ describe('BrowserWindow module', () => {
           options.webPreferences!.preload = preload
         })
         w.loadFile(
-          path.join(fixtures, 'api', 'sandbox.html'),
+          path.join(__dirname, 'fixtures', 'api', 'sandbox.html'),
           { search: 'window-open-external' }
         )
 
@@ -1921,7 +1927,11 @@ describe('BrowserWindow module', () => {
           prefs.foo = 'bar'
         })
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
-        const [, , webPreferences] = await emittedOnce(ipcMain, 'answer')
+        const [[, childWebContents]] = await Promise.all([
+          emittedOnce(app, 'web-contents-created'),
+          emittedOnce(ipcMain, 'answer')
+        ])
+        const webPreferences = (childWebContents as any).getLastWebPreferences()
         expect(webPreferences.foo).to.equal('bar')
       })
 
@@ -1952,7 +1962,7 @@ describe('BrowserWindow module', () => {
           'parent-answer',
           'child-answer'
         ], done)
-        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'verify-ipc-sender' })
+        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'verify-ipc-sender' })
       })
 
       describe('event handling', () => {
@@ -1988,7 +1998,7 @@ describe('BrowserWindow module', () => {
             'did-frame-finish-load',
             'dom-ready'
           ], done)
-          w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'webcontents-events' })
+          w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'webcontents-events' })
         })
       })
 
@@ -2021,7 +2031,7 @@ describe('BrowserWindow module', () => {
             sandbox: true
           }
         })
-        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'reload-remote' })
+        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'reload-remote' })
 
         ipcMain.on('get-remote-module-path', (event) => {
           event.returnValue = path.join(fixtures, 'module', 'hello.js')
@@ -2057,7 +2067,7 @@ describe('BrowserWindow module', () => {
           options.webPreferences!.preload = preload
         })
 
-        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'reload-remote-child' })
+        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'reload-remote-child' })
 
         ipcMain.on('get-remote-module-path', (event) => {
           event.returnValue = path.join(fixtures, 'module', 'hello-child.js')
@@ -2233,7 +2243,11 @@ describe('BrowserWindow module', () => {
           prefs.foo = 'bar'
         })
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
-        const [, , webPreferences] = await emittedOnce(ipcMain, 'answer')
+        const [[, childWebContents]] = await Promise.all([
+          emittedOnce(app, 'web-contents-created'),
+          emittedOnce(ipcMain, 'answer')
+        ])
+        const webPreferences = (childWebContents as any).getLastWebPreferences()
         expect(webPreferences.foo).to.equal('bar')
       })
       it('should have nodeIntegration disabled in child windows', async () => {
@@ -2359,22 +2373,27 @@ describe('BrowserWindow module', () => {
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
     })
+    afterEach(() => {
+      ipcMain.removeAllListeners('onbeforeunload')
+    })
     afterEach(closeAllWindows)
     it('returning undefined would not prevent close', (done) => {
       w.once('closed', () => { done() })
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'))
     })
-    it('returning false would prevent close', (done) => {
-      w.once('onbeforeunload' as any, () => { done() })
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
+    it('returning false would prevent close', async () => {
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'))
+      const [e] = await emittedOnce(ipcMain, 'onbeforeunload')
+      e.returnValue = null
     })
     it('returning empty string would prevent close', (done) => {
-      w.once('onbeforeunload' as any, () => { done() })
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-empty-string.html'))
+      ipcMain.once('onbeforeunload', (e) => { e.returnValue = null; done() })
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-empty-string.html'))
     })
     it('emits for each close attempt', (done) => {
       let beforeUnloadCount = 0
-      w.on('onbeforeunload' as any, () => {
+      ipcMain.on('onbeforeunload', (e) => {
+        e.returnValue = null
         beforeUnloadCount += 1
         if (beforeUnloadCount < 3) {
           w.close()
@@ -2382,12 +2401,13 @@ describe('BrowserWindow module', () => {
           done()
         }
       })
-      w.webContents.once('did-finish-load', () => { w.close() })
-      w.loadFile(path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+      w.webContents.once('did-finish-load', () => { w.webContents.executeJavaScript('window.close()', true) })
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'))
     })
     it('emits for each reload attempt', (done) => {
       let beforeUnloadCount = 0
-      w.on('onbeforeunload' as any, () => {
+      ipcMain.on('onbeforeunload', (e) => {
+        e.returnValue = null
         beforeUnloadCount += 1
         if (beforeUnloadCount < 3) {
           w.reload()
@@ -2401,11 +2421,12 @@ describe('BrowserWindow module', () => {
         })
         w.reload()
       })
-      w.loadFile(path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'))
     })
     it('emits for each navigation attempt', (done) => {
       let beforeUnloadCount = 0
-      w.on('onbeforeunload' as any, () => {
+      ipcMain.on('onbeforeunload', (e) => {
+        e.returnValue = null
         beforeUnloadCount += 1
         if (beforeUnloadCount < 3) {
           w.loadURL('about:blank')
@@ -2419,7 +2440,7 @@ describe('BrowserWindow module', () => {
         })
         w.loadURL('about:blank')
       })
-      w.loadFile(path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'))
     })
   })
 
