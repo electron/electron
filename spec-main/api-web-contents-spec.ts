@@ -287,7 +287,7 @@ describe('webContents module', () => {
       const body = await w.webContents.executeJavaScript(`document.documentElement.textContent`)
       expect(body).to.equal(`Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`)
       expect(eventRequest.url).to.equal(serverUrl + '/')
-      expect(eventAuthInfo.isProxy).to.be.false()
+      expect(eventAuthInfo.isProxy).to.be.false('is proxy')
       expect(eventAuthInfo.scheme).to.equal('basic')
       expect(eventAuthInfo.host).to.equal('127.0.0.1')
       expect(eventAuthInfo.port).to.equal(serverPort)
@@ -296,7 +296,7 @@ describe('webContents module', () => {
 
     it('is emitted when a proxy requests authorization', async () => {
       const customSession = session.fromPartition(`${Math.random()}`)
-      await customSession.setProxy({ proxyRules: `127.0.0.1:${proxyServerPort}`, proxyBypassRules: '<-loopback>' })
+      await customSession.setProxy({ proxyRules: `127.0.0.1:${proxyServerPort}`, proxyBypassRules: '<-loopback>' } as any)
       const [user, pass] = ['user', 'pass']
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
       let eventRequest: any
@@ -311,7 +311,7 @@ describe('webContents module', () => {
       const body = await w.webContents.executeJavaScript(`document.documentElement.textContent`)
       expect(body).to.equal(`Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`)
       expect(eventRequest.url).to.equal(`${serverUrl}/no-auth`)
-      expect(eventAuthInfo.isProxy).to.be.true()
+      expect(eventAuthInfo.isProxy).to.be.true('is proxy')
       expect(eventAuthInfo.scheme).to.equal('basic')
       expect(eventAuthInfo.host).to.equal('127.0.0.1')
       expect(eventAuthInfo.port).to.equal(proxyServerPort)
