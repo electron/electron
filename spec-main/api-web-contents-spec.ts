@@ -3,7 +3,7 @@ import { AddressInfo } from 'net'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
 import * as http from 'http'
-import { BrowserWindow, ipcMain, webContents } from 'electron'
+import { BrowserWindow, ipcMain, webContents, session } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import { ifdescribe } from './spec-helpers';
