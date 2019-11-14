@@ -116,64 +116,6 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     })
   },
 
-  // deprecate a callback-based function in favor of one returning a Promise
-  promisify: <T extends (...args: any[]) => any>(fn: T): T => {
-    const fnName = fn.name || 'function'
-    const oldName = `${fnName} with callbacks`
-    const newName = `${fnName} with Promises`
-    const warn = warnOnce(oldName, newName)
-
-    return function (this: any, ...params: any[]) {
-      let cb: Function | undefined
-      if (params.length > 0 && typeof params[params.length - 1] === 'function') {
-        cb = params.pop()
-      }
-      const promise = fn.apply(this, params)
-      if (!cb) return promise
-      if (process.enablePromiseAPIs) warn()
-      return promise
-        .then((res: any) => {
-          process.nextTick(() => {
-            cb!.length === 2 ? cb!(null, res) : cb!(res)
-          })
-          return res
-        }, (err: Error) => {
-          process.nextTick(() => {
-            cb!.length === 2 ? cb!(err) : cb!()
-          })
-          throw err
-        })
-    } as T
-  },
-
-  // convertPromiseValue: Temporarily disabled until it's used
-  // deprecate a callback-based function in favor of one returning a Promise
-  promisifyMultiArg: <T extends (...args: any[]) => any>(fn: T /* convertPromiseValue: (v: any) => any */): T => {
-    const fnName = fn.name || 'function'
-    const oldName = `${fnName} with callbacks`
-    const newName = `${fnName} with Promises`
-    const warn = warnOnce(oldName, newName)
-
-    return function (this: any, ...params) {
-      let cb: Function | undefined
-      if (params.length > 0 && typeof params[params.length - 1] === 'function') {
-        cb = params.pop()
-      }
-      const promise = fn.apply(this, params)
-      if (!cb) return promise
-      if (process.enablePromiseAPIs) warn()
-      return promise
-        .then((res: any) => {
-          process.nextTick(() => {
-            // eslint-disable-next-line standard/no-callback-literal
-            cb!.length > 2 ? cb!(null, ...res) : cb!(...res)
-          })
-        }, (err: Error) => {
-          process.nextTick(() => cb!(err))
-        })
-    } as T
-  },
-
   // change the name of a property
   renameProperty: (o, oldName, newName) => {
     const warn = warnOnce(oldName, newName)
