@@ -280,7 +280,7 @@ index e51bcb4bb4c4c26a0247d3e2b446a3bbf41ccc07..d1d2cacd313eb4fa3cba7a713356a724
      const gfx::VectorIcon* minor_icon = nullptr;
      gfx::Image icon;
 diff --git a/ui/views/controls/menu/menu_item_view.cc b/ui/views/controls/menu/menu_item_view.cc
-index f58099f2608c2847a2002667428515750293cd18..9f5660ae607faed96f16c81cd5426e96ce0d097b 100644
+index 93b0f97c621339bb899fa90e36f5dde4332beff7..ed308347ea1ac1015ac18cb9a7083552c8158d47 100644
 --- a/ui/views/controls/menu/menu_item_view.cc
 +++ b/ui/views/controls/menu/menu_item_view.cc
 @@ -278,6 +278,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
@@ -410,7 +410,7 @@ index f58099f2608c2847a2002667428515750293cd18..9f5660ae607faed96f16c81cd5426e96
    PaintMinorIconAndText(canvas, style);
  
    // Set the submenu indicator (arrow) image and color.
-@@ -1277,6 +1299,11 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
+@@ -1273,6 +1295,11 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
  
    // Determine the length of the label text.
    int string_width = gfx::GetStringWidth(title_, style.font_list);
@@ -422,7 +422,7 @@ index f58099f2608c2847a2002667428515750293cd18..9f5660ae607faed96f16c81cd5426e96
    dimensions.standard_width = string_width + label_start +
        item_right_margin_;
    // Determine the length of the right-side text.
-@@ -1284,9 +1311,10 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
+@@ -1280,9 +1307,10 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
        minor_text.empty() ? 0 : gfx::GetStringWidth(minor_text, style.font_list);
  
    // Determine the height to use.

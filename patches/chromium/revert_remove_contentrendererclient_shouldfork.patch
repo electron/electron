@@ -6,7 +6,7 @@ Subject: Revert "Remove ContentRendererClient::ShouldFork."
 This reverts commit 6b068eb8ca4a3c7350bdafa22fc0cf0636ef8b74.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index 9d9e256f652f6d9e01f91ab3fcbab1d7b207cd92..91b4082c77da637405b7ccb2e1a1430d5fa00794 100644
+index 20be306b03a392ad265215a40bf05d6c4c4979e9..6b94f692a719265e16fc0abe95824b5c8b755335 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
 @@ -1227,6 +1227,25 @@ bool ChromeContentRendererClient::AllowPopup() {
@@ -89,10 +89,10 @@ index a05cef66facd477057fedb388e4000475bc76830..906920393c34043d19183064a2a4506c
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |attach_same_site_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 4d83bfaeb9227531b6c8ea304d2a16a6b0d3bf4f..51b899f4daddb6428626786e2af71d7e1ccd4f5f 100644
+index a64e35eb90e081bca1263b98cd69452c7ddfbfbb..eea4cbd22047af3a2a3bb64fcfed12c8d0696da4 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6045,6 +6045,15 @@ void RenderFrameImpl::BeginNavigation(
+@@ -6047,6 +6047,15 @@ void RenderFrameImpl::BeginNavigation(
      int cumulative_bindings = RenderProcess::current()->GetEnabledBindings();
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (cumulative_bindings & kWebUIBindingsPolicyMask);
