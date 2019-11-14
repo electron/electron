@@ -1800,7 +1800,7 @@ describe('BrowserWindow module', () => {
             preload
           }
         })
-        const htmlPath = path.join(fixtures, 'api', 'sandbox.html?exit-event')
+        const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?exit-event')
         const pageUrl = 'file://' + htmlPath
         w.loadURL(pageUrl)
         const [, url] = await emittedOnce(ipcMain, 'answer')
@@ -1821,7 +1821,7 @@ describe('BrowserWindow module', () => {
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
           options.webPreferences!.preload = preload
         })
-        const htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open')
+        const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?window-open')
         const pageUrl = 'file://' + htmlPath
         const answer = emittedOnce(ipcMain, 'answer')
         w.loadURL(pageUrl)
@@ -1850,7 +1850,7 @@ describe('BrowserWindow module', () => {
           options.webPreferences!.preload = preload
         })
         w.loadFile(
-          path.join(fixtures, 'api', 'sandbox.html'),
+          path.join(__dirname, 'fixtures', 'api', 'sandbox.html'),
           { search: 'window-open-external' }
         )
 
@@ -1962,7 +1962,7 @@ describe('BrowserWindow module', () => {
           'parent-answer',
           'child-answer'
         ], done)
-        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'verify-ipc-sender' })
+        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'verify-ipc-sender' })
       })
 
       describe('event handling', () => {
@@ -1998,7 +1998,7 @@ describe('BrowserWindow module', () => {
             'did-frame-finish-load',
             'dom-ready'
           ], done)
-          w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'webcontents-events' })
+          w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'webcontents-events' })
         })
       })
 
@@ -2031,7 +2031,7 @@ describe('BrowserWindow module', () => {
             sandbox: true
           }
         })
-        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'reload-remote' })
+        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'reload-remote' })
 
         ipcMain.on('get-remote-module-path', (event) => {
           event.returnValue = path.join(fixtures, 'module', 'hello.js')
@@ -2067,7 +2067,7 @@ describe('BrowserWindow module', () => {
           options.webPreferences!.preload = preload
         })
 
-        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'reload-remote-child' })
+        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'reload-remote-child' })
 
         ipcMain.on('get-remote-module-path', (event) => {
           event.returnValue = path.join(fixtures, 'module', 'hello-child.js')
