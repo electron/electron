@@ -332,6 +332,10 @@ void WebRequestNS::OnCompleted(extensions::WebRequestInfo* info,
   HandleSimpleEvent(kOnCompleted, info, request, net_error);
 }
 
+void WebRequestNS::OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) {
+  callbacks_.erase(info->id);
+}
+
 template <WebRequestNS::SimpleEvent event>
 void WebRequestNS::SetSimpleListener(gin::Arguments* args) {
   SetListener<SimpleListener>(event, &simple_listeners_, args);

@@ -67,6 +67,7 @@ class WebRequestAPI {
   virtual void OnCompleted(extensions::WebRequestInfo* info,
                            const network::ResourceRequest& request,
                            int net_error) = 0;
+  virtual void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) = 0;
 };
 
 // This class is responsible for following tasks when NetworkService is enabled:
