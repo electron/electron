@@ -5,7 +5,7 @@ Subject: fix: Export node::Abort and Assert
 
 
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index d3a409b1ab455a018768982f24f644dbcddb72db..66da1c58340d7ad39a667d8dcb35dcdf4a165996 100644
+index 0214521144c607c084cabc941f006780bcd3cfa2..ea4113aa3b2b431c6d9bbfbf4b20f8ff59cd9182 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
 @@ -242,13 +242,13 @@ void AppendExceptionLine(Environment* env,
@@ -48,4 +48,3 @@ index a94e88f232fd3116fa842aed4d02a78fd0c54ffc..62ae0fe6e6beb77e456bff3522465055
  void DumpBacktrace(FILE* fp);
  
  // Windows 8+ does not like abort() in Release mode
-

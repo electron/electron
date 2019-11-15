@@ -30,4 +30,3 @@ index 58502f3b7a7a937c896ff6d32a90a45c6912e3b3..e91362cc3a8a6c5d2462a017f177bebf
        };
      })()`, { overrideStackTrace }, { filename: 'structured-stack' });
    }
-

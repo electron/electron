@@ -26,4 +26,3 @@ index 43257e53dfe0319d6c110e94529cbc991c2bcfb3..2f478625c8220fc86c34876c17c8f532
    options.execPath = options.execPath || process.execPath;
    options.shell = false;
  
-
