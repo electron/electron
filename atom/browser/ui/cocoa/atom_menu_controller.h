@@ -28,7 +28,7 @@ class AtomMenuModel;
   base::scoped_nsobject<NSMenu> menu_;
   BOOL isMenuOpen_;
   BOOL useDefaultAccelerator_;
-  base::Callback<void()> closeCallback;
+  base::OnceClosure closeCallback;
 }
 
 @property(nonatomic, assign) atom::AtomMenuModel* model;
@@ -37,7 +37,7 @@ class AtomMenuModel;
 // to the contents of the model after calling this will not be noticed.
 - (id)initWithModel:(atom::AtomMenuModel*)model useDefaultAccelerator:(BOOL)use;
 
-- (void)setCloseCallback:(const base::Callback<void()>&)callback;
+- (void)setCloseCallback:(base::OnceClosure)callback;
 
 // Populate current NSMenu with |model|.
 - (void)populateWithModel:(atom::AtomMenuModel*)model;
