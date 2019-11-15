@@ -99,7 +99,7 @@ Some examples of valid `urls`:
     * `timestamp` Double
     * `requestHeaders` Record<string, string>
   * `callback` Function
-    * `response` Object
+    * `beforeSendResponse` Object
       * `cancel` Boolean (optional)
       * `requestHeaders` Record<string, string | string[]> (optional) - When provided, request will be made
   with these headers.
@@ -148,7 +148,7 @@ response are visible by the time this listener is fired.
     * `statusCode` Integer
     * `responseHeaders` Record<string, string> (optional)
   * `callback` Function
-    * `response` Object
+    * `headersReceivedResponse` Object
       * `cancel` Boolean (optional)
       * `responseHeaders` Record<string, string | string[]> (optional) - When provided, the server is assumed
         to have responded with these headers.
