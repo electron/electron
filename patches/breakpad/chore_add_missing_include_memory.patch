@@ -4,6 +4,18 @@ Date: Fri, 15 Nov 2019 09:46:00 -0600
 Subject: chore: add missing `#include <memory>`
 
 
+diff --git a/src/common/windows/pe_util.cc b/src/common/windows/pe_util.cc
+index 6fa63fa3b5699b79d3479c6d4a37a1c68553223f..03dcd142c9c06836546b204c19e040fb5d9c771a 100644
+--- a/src/common/windows/pe_util.cc
++++ b/src/common/windows/pe_util.cc
+@@ -35,6 +35,7 @@
+ #include <ImageHlp.h>
+ 
+ #include <functional>
++#include <memory>
+ 
+ #include "common/windows/string_utils-inl.h"
+ #include "common/windows/guid_string.h"
 diff --git a/src/tools/windows/dump_syms/dump_syms.cc b/src/tools/windows/dump_syms/dump_syms.cc
 index 5b7d1777538cd3cfefd0bef45558f900798d6c51..1f22cfc2d14b2523c7ae133c1ba6fe2d66333d47 100644
 --- a/src/tools/windows/dump_syms/dump_syms.cc
