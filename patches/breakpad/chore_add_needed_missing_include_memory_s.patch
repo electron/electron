@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Charles Kerr <ckerr@github.com>
-Date: Fri, 15 Nov 2019 09:46:00 -0600
-Subject: chore: add missing `#include <memory>`
+Date: Fri, 15 Nov 2019 14:16:48 -0600
+Subject: chore: add needed missing `#include <memory>`s
 
 
 diff --git a/src/common/windows/pe_util.cc b/src/common/windows/pe_util.cc
