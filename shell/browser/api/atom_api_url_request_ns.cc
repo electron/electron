@@ -173,7 +173,8 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
   mojo::ReceiverSet<network::mojom::ChunkedDataPipeGetter> receiver_set_;
 };
 
-URLRequestNS::URLRequestNS(gin::Arguments* args) : id_(GetAllRequests().Add(this)), weak_factory_(this) {
+URLRequestNS::URLRequestNS(gin::Arguments* args)
+    : id_(GetAllRequests().Add(this)), weak_factory_(this) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   request_ = std::make_unique<network::ResourceRequest>();
   gin_helper::Dictionary dict;
