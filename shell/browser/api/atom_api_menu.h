@@ -12,7 +12,6 @@
 #include "gin/arguments.h"
 #include "shell/browser/api/atom_api_top_level_window.h"
 #include "shell/browser/ui/atom_menu_model.h"
-#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
@@ -62,7 +61,7 @@ class Menu : public gin_helper::TrackableObject<Menu>,
                        int x,
                        int y,
                        int positioning_item,
-                       const base::Closure& callback) = 0;
+                       base::OnceClosure callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
 
   std::unique_ptr<AtomMenuModel> model_;
@@ -71,6 +70,11 @@ class Menu : public gin_helper::TrackableObject<Menu>,
   // Observable:
   void OnMenuWillClose() override;
   void OnMenuWillShow() override;
+
+ protected:
+  // Returns a new callback which keeps references of the JS wrapper until the
+  // passed |callback| is called.
+  base::OnceClosure BindSelfToClosure(base::OnceClosure callback);
 
  private:
   void InsertItemAt(int index, int command_id, const base::string16& label);
