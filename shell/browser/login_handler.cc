@@ -70,7 +70,7 @@ void LoginHandler::EmitEvent(
       api_web_contents->Emit("login", std::move(details), auth_info,
                              base::BindOnce(&LoginHandler::CallbackFromJS,
                                             weak_factory_.GetWeakPtr()));
-  if (!default_prevented) {
+  if (!default_prevented && auth_required_callback_) {
     std::move(auth_required_callback_).Run(base::nullopt);
   }
 }
@@ -79,8 +79,10 @@ LoginHandler::~LoginHandler() = default;
 
 void LoginHandler::CallbackFromJS(base::string16 username,
                                   base::string16 password) {
-  std::move(auth_required_callback_)
-      .Run(net::AuthCredentials(username, password));
+  if (auth_required_callback_) {
+    std::move(auth_required_callback_)
+        .Run(net::AuthCredentials(username, password));
+  }
 }
 
 }  // namespace electron
