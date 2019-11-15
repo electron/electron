@@ -219,26 +219,31 @@ describe('net module', () => {
       expect(loginAuthInfo.scheme).to.equal('basic')
     })
 
-    it('should produce an error on the response object when cancelling authentication', async () => {
+    it('should response when cancelling authentication', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         if (!request.headers.authorization) {
-          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+          response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
+          response.end('unauthenticated')
+        } else {
+          response.writeHead(200).end('ok')
         }
-        response.writeHead(200).end('ok')
       })
-      await expect(new Promise((resolve, reject) => {
+      expect(await new Promise((resolve, reject) => {
         const request = net.request({ method: 'GET', url: serverUrl })
         request.on('response', (response) => {
+          let data = ''
           response.on('error', reject)
-          response.on('data', () => {})
-          response.on('end', () => resolve())
+          response.on('data', (chunk) => {
+            data += chunk
+          })
+          response.on('end', () => resolve(data))
         })
         request.on('login', (authInfo, cb) => {
           cb()
         })
         request.on('error', reject)
         request.end()
-      })).to.eventually.be.rejectedWith('net::ERR_HTTP_RESPONSE_CODE_FAILURE')
+      })).to.equal('unauthenticated')
     })
 
     it('should share credentials with WebContents', async () => {
