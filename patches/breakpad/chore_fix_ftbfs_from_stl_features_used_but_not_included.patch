@@ -1,21 +1,21 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Charles Kerr <ckerr@github.com>
-Date: Fri, 15 Nov 2019 14:16:48 -0600
-Subject: chore: add needed missing `#include <memory>`s
+Date: Fri, 15 Nov 2019 15:26:53 -0600
+Subject: chore: fix FTBFS from stl features used but not included
 
 
 diff --git a/src/common/windows/pe_util.cc b/src/common/windows/pe_util.cc
-index 6fa63fa3b5699b79d3479c6d4a37a1c68553223f..03dcd142c9c06836546b204c19e040fb5d9c771a 100644
+index 6fa63fa3b5699b79d3479c6d4a37a1c68553223f..59c1c1d74f70dca8f871fdddd8e27da102ec9148 100644
 --- a/src/common/windows/pe_util.cc
 +++ b/src/common/windows/pe_util.cc
-@@ -35,6 +35,7 @@
- #include <ImageHlp.h>
+@@ -119,7 +119,6 @@ private:
  
- #include <functional>
-+#include <memory>
+ namespace google_breakpad {
  
- #include "common/windows/string_utils-inl.h"
- #include "common/windows/guid_string.h"
+-using std::unique_ptr;
+ using google_breakpad::GUIDString;
+ 
+ bool ReadModuleInfo(const wstring & pe_file, PDBModuleInfo * info) {
 diff --git a/src/tools/windows/dump_syms/dump_syms.cc b/src/tools/windows/dump_syms/dump_syms.cc
 index 5b7d1777538cd3cfefd0bef45558f900798d6c51..1f22cfc2d14b2523c7ae133c1ba6fe2d66333d47 100644
 --- a/src/tools/windows/dump_syms/dump_syms.cc
