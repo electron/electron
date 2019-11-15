@@ -17,8 +17,8 @@
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/data_pipe_getter.mojom.h"
-#include "shell/browser/api/event_emitter_deprecated.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+#include "shell/browser/api/event_emitter_deprecated.h"
 
 namespace electron {
 
