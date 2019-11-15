@@ -65,7 +65,7 @@ index 2851641d0219164185567a100c2c19d49274c233..778da01c7eaf11ef954e213a5a6ecb5e
  NSString* const
      NSAccessibilityTextMarkerNodeDebugDescriptionParameterizedAttribute =
          @"AXTextMarkerNodeDebugDescription";
-+#endif        
++#endif
  
  // Other private attributes.
  NSString* const NSAccessibilitySelectTextWithCriteriaParameterizedAttribute =
