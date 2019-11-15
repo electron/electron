@@ -20,3 +20,4 @@ index 2f478625c8220fc86c34876c17c8f532d88ba922..9a79e06555b6bf5d970f96bedb2c2146
    if (!options.execPath && process.type && process.platform == 'darwin') {
      options.execPath = process.helperExecPath;
    }
+
