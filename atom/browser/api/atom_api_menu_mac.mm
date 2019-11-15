@@ -37,15 +37,20 @@ void MenuMac::PopupAt(TopLevelWindow* window,
                       int x,
                       int y,
                       int positioning_item,
-                      const base::Closure& callback) {
+                      base::OnceClosure callback) {
   NativeWindow* native_window = window->window();
   if (!native_window)
     return;
 
-  auto popup = base::Bind(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
-                          native_window->GetWeakPtr(), window->weak_map_id(), x,
-                          y, positioning_item, callback);
-  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, popup);
+  // Make sure the Menu object would not be garbage-collected until the callback
+  // has run.
+  base::OnceClosure callback_with_ref = BindSelfToClosure(std::move(callback));
+
+  auto popup =
+      base::BindOnce(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
+                     native_window->GetWeakPtr(), window->weak_map_id(), x, y,
+                     positioning_item, std::move(callback_with_ref));
+  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, std::move(popup));
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
@@ -53,16 +58,14 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                         int x,
                         int y,
                         int positioning_item,
-                        base::Closure callback) {
-  mate::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-
+                        base::OnceClosure callback) {
   if (!native_window)
     return;
   NSWindow* nswindow = native_window->GetNativeWindow().GetNativeNSWindow();
 
-  auto close_callback = base::Bind(
-      &MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
+  base::OnceClosure close_callback =
+      base::BindOnce(&MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id,
+                     std::move(callback));
   popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>(
       [[AtomMenuController alloc] initWithModel:model()
                           useDefaultAccelerator:NO]);
@@ -100,7 +103,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
 
-  [popup_controllers_[window_id] setCloseCallback:close_callback];
+  [popup_controllers_[window_id] setCloseCallback:std::move(close_callback)];
   // Make sure events can be pumped while the menu is up.
   base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
 
@@ -131,9 +134,9 @@ void MenuMac::ClosePopupAt(int32_t window_id) {
   }
 }
 
-void MenuMac::OnClosed(int32_t window_id, base::Closure callback) {
+void MenuMac::OnClosed(int32_t window_id, base::OnceClosure callback) {
   popup_controllers_.erase(window_id);
-  callback.Run();
+  std::move(callback).Run();
 }
 
 // static
