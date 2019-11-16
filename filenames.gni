@@ -358,6 +358,7 @@ filenames = {
     "shell/browser/ui/tray_icon_observer.h",
     "shell/browser/ui/tray_icon_win.cc",
     "shell/browser/ui/views/atom_views_delegate.cc",
+    "shell/browser/ui/views/atom_views_delegate_win.cc",
     "shell/browser/ui/views/atom_views_delegate.h",
     "shell/browser/ui/views/autofill_popup_view.cc",
     "shell/browser/ui/views/autofill_popup_view.h",
