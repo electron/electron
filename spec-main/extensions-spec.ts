@@ -1,13 +1,12 @@
 import { expect } from 'chai'
 import { session, BrowserWindow, ipcMain } from 'electron'
-import { closeAllWindows } from './window-helpers'
+import { closeAllWindows, closeWindow } from './window-helpers'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 import * as path from 'path'
 import * as fs from 'fs'
 import { ifdescribe } from './spec-helpers'
 import { emittedOnce } from './events-helpers'
-import { closeWindow } from './window-helpers';
 
 const fixtures = path.join(__dirname, 'fixtures')
 
@@ -34,7 +33,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     // default session.
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'red-bg'))
-    const w = new BrowserWindow({show: false, webPreferences: {session: customSession}})
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
     await w.loadURL(url)
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
     expect(bg).to.equal('red')
@@ -43,7 +42,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   it('confines an extension to the session it was loaded in', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'red-bg'))
-    const w = new BrowserWindow({show: false}) // not in the session
+    const w = new BrowserWindow({ show: false }) // not in the session
     await w.loadURL(url)
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
     expect(bg).to.equal('')
@@ -54,7 +53,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     before(async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'chrome-runtime'))
-      const w = new BrowserWindow({show: false, webPreferences: { session: customSession }})
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
       try {
         await w.loadURL(url)
         content = JSON.parse(await w.webContents.executeJavaScript('document.documentElement.textContent'))
@@ -78,7 +77,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     it('stores and retrieves a key', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'chrome-storage'))
-      const w = new BrowserWindow({show: false, webPreferences: { session: customSession, nodeIntegration: true }})
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
       try {
         const p = emittedOnce(ipcMain, 'storage-success')
         await w.loadURL(url)
@@ -108,6 +107,20 @@ ifdescribe(!process.electronBinding('features').isExtensionsEnabled())('chrome e
   })
 
   afterEach(() => closeWindow(w).then(() => { w = null as unknown as BrowserWindow }))
+
+  it('chrome.runtime.connect parses arguments properly', async function () {
+    await w.loadURL('about:blank')
+
+    const promise = emittedOnce(w.webContents, 'console-message')
+
+    const message = { method: 'connect' }
+    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
+
+    const [,, responseString] = await promise
+    const response = JSON.parse(responseString)
+
+    expect(response).to.be.true()
+  })
 
   it('runtime.getManifest returns extension manifest', async () => {
     const actualManifest = (() => {

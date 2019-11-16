@@ -42,6 +42,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/logging/logging_utils.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 
@@ -122,15 +123,15 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 }
 
 double GetNextZoomLevel(double level, bool out) {
-  double factor = content::ZoomLevelToZoomFactor(level);
+  double factor = blink::PageZoomLevelToZoomFactor(level);
   size_t size = base::size(kPresetZoomFactors);
   for (size_t i = 0; i < size; ++i) {
-    if (!content::ZoomValuesEqual(kPresetZoomFactors[i], factor))
+    if (!blink::PageZoomValuesEqual(kPresetZoomFactors[i], factor))
       continue;
     if (out && i > 0)
-      return content::ZoomFactorToZoomLevel(kPresetZoomFactors[i - 1]);
+      return blink::PageZoomFactorToZoomLevel(kPresetZoomFactors[i - 1]);
     if (!out && i != size - 1)
-      return content::ZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
+      return blink::PageZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
   }
   return level;
 }
@@ -558,7 +559,9 @@ void InspectableWebContentsImpl::ShowItemInFolder(
     return;
 
   base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-  platform_util::OpenItem(path);
+
+  // Pass empty callback here; we can ignore errors
+  platform_util::OpenPath(path, platform_util::OpenCallback());
 }
 
 void InspectableWebContentsImpl::SaveToFile(const std::string& url,
@@ -802,22 +805,6 @@ bool InspectableWebContentsImpl::DidAddMessageToConsole(
       << "\"" << message << "\", source: " << source_id << " (" << line_no
       << ")";
   return true;
-}
-
-bool InspectableWebContentsImpl::ShouldCreateWebContents(
-    content::WebContents* web_contents,
-    content::RenderFrameHost* opener,
-    content::SiteInstance* source_site_instance,
-    int32_t route_id,
-    int32_t main_frame_route_id,
-    int32_t main_frame_widget_route_id,
-    content::mojom::WindowContainerType window_container_type,
-    const GURL& opener_url,
-    const std::string& frame_name,
-    const GURL& target_url,
-    const std::string& partition_id,
-    content::SessionStorageNamespace* session_storage_namespace) {
-  return false;
 }
 
 bool InspectableWebContentsImpl::HandleKeyboardEvent(

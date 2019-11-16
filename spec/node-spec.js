@@ -1,7 +1,5 @@
 const ChildProcess = require('child_process')
-const chai = require('chai')
-const { expect } = chai
-const dirtyChai = require('dirty-chai')
+const { expect } = require('chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
@@ -10,8 +8,6 @@ const features = process.electronBinding('features')
 
 const { emittedOnce } = require('./events-helpers')
 const { ifit } = require('./spec-helpers')
-
-chai.use(dirtyChai)
 
 describe('node feature', () => {
   const fixtures = path.join(__dirname, 'fixtures')
@@ -217,35 +213,18 @@ describe('node feature', () => {
 
     describe('setInterval called under blink env in renderer process', () => {
       it('can be scheduled in time', (done) => {
-        let interval = null
-        let clearing = false
-        const clear = () => {
-          if (interval === null || clearing) return
-
-          // interval might trigger while clearing (remote is slow sometimes)
-          clearing = true
-          clearInterval(interval)
-          clearing = false
-          interval = null
+        const id = setInterval(() => {
+          clearInterval(id)
           done()
-        }
-        interval = setInterval(clear, 10)
+        }, 10)
       })
 
       it('can be scheduled in time from timers module', (done) => {
-        let interval = null
-        let clearing = false
-        const clear = () => {
-          if (interval === null || clearing) return
-
-          // interval might trigger while clearing (remote is slow sometimes)
-          clearing = true
-          require('timers').clearInterval(interval)
-          clearing = false
-          interval = null
+        const { setInterval, clearInterval } = require('timers')
+        const id = setInterval(() => {
+          clearInterval(id)
           done()
-        }
-        interval = require('timers').setInterval(clear, 10)
+        }, 10)
       })
     })
   })

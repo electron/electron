@@ -5,7 +5,7 @@ import { emittedNTimes, emittedOnce } from './events-helpers'
 import { closeWindow } from './window-helpers'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { AddressInfo } from 'net'
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe } from './spec-helpers'
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description: string, webPreferences: any) => {
@@ -84,19 +84,14 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const details = await detailsPromise
         const senders = details.map(event => event[0].sender)
-        await new Promise(async resolve => {
-          let resultCount = 0
-          senders.forEach(async sender => {
-            const result = await sender.webContents.executeJavaScript('window.isolatedGlobal')
-            if (webPreferences.contextIsolation) {
-              expect(result).to.be.null()
-            } else {
-              expect(result).to.equal(true)
-            }
-            resultCount++
-            if (resultCount === senders.length) resolve()
-          })
-        })
+        const isolatedGlobals = await Promise.all(senders.map(sender => sender.webContents.executeJavaScript('window.isolatedGlobal')))
+        for (const result of isolatedGlobals) {
+          if (webPreferences.contextIsolation) {
+            expect(result).to.be.undefined()
+          } else {
+            expect(result).to.equal(true)
+          }
+        }
       })
     })
   }

@@ -5,11 +5,11 @@
 #ifndef NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 #define NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 
-#include "../shell/common/gin_helper/destroyable.h"
-#include "../shell/common/gin_helper/error_thrower.h"
 #include "base/callback.h"
 #include "native_mate/arguments.h"
 #include "native_mate/wrappable_base.h"
+#include "shell/common/gin_helper/destroyable.h"
+#include "shell/common/gin_helper/error_thrower.h"
 
 // =============================== NOTICE ===============================
 // Do not add code here, native_mate is being removed. Any new code

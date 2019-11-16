@@ -28,19 +28,19 @@ const toString = (value: any) => {
   return value != null ? `${value}` : value
 }
 
-const windowProxies: Record<number, BrowserWindowProxy> = {}
+const windowProxies = new Map<number, BrowserWindowProxy>()
 
 const getOrCreateProxy = (guestId: number) => {
-  let proxy = windowProxies[guestId]
+  let proxy = windowProxies.get(guestId)
   if (proxy == null) {
     proxy = new BrowserWindowProxy(guestId)
-    windowProxies[guestId] = proxy
+    windowProxies.set(guestId, proxy)
   }
   return proxy
 }
 
 const removeProxy = (guestId: number) => {
-  delete windowProxies[guestId]
+  windowProxies.delete(guestId)
 }
 
 type LocationProperties = 'hash' | 'href' | 'host' | 'hostname' | 'origin' | 'pathname' | 'port' | 'protocol' | 'search'
@@ -180,7 +180,7 @@ export const windowSetup = (
   if (guestInstanceId == null) {
     // Override default window.close.
     window.close = function () {
-      ipcRendererInternal.sendSync('ELECTRON_BROWSER_WINDOW_CLOSE')
+      ipcRendererInternal.send('ELECTRON_BROWSER_WINDOW_CLOSE')
     }
   }
 

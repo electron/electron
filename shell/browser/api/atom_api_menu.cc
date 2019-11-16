@@ -6,13 +6,12 @@
 
 #include <map>
 
-#include "native_mate/constructor.h"
 #include "shell/browser/native_window.h"
+#include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/native_mate_converters/accelerator_converter.h"
 #include "shell/common/node_includes.h"
 
 namespace {
@@ -28,9 +27,8 @@ namespace electron {
 
 namespace api {
 
-Menu::Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : model_(new AtomMenuModel(this)) {
-  InitWith(isolate, wrapper);
+Menu::Menu(gin::Arguments* args) : model_(new AtomMenuModel(this)) {
+  InitWithArgs(args);
   model_->AddObserver(this);
 }
 
@@ -89,7 +87,7 @@ bool Menu::GetAcceleratorForCommandIdWithParams(
   v8::HandleScope handle_scope(isolate());
   v8::Local<v8::Value> val =
       get_accelerator_.Run(GetWrapper(), command_id, use_default_accelerator);
-  return mate::ConvertFromV8(isolate(), val, accelerator);
+  return gin::ConvertFromV8(isolate(), val, accelerator);
 }
 
 bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
@@ -101,9 +99,9 @@ bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
 void Menu::ExecuteCommand(int command_id, int flags) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  execute_command_.Run(GetWrapper(),
-                       mate::internal::CreateEventFromFlags(isolate(), flags),
-                       command_id);
+  execute_command_.Run(
+      GetWrapper(),
+      gin_helper::internal::CreateEventFromFlags(isolate(), flags), command_id);
 }
 
 void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {

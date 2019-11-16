@@ -90,8 +90,6 @@ class BrowserProcessImpl : public BrowserProcess {
   resource_coordinator::ResourceCoordinatorParts* resource_coordinator_parts()
       override;
   resource_coordinator::TabManager* GetTabManager() override;
-  shell_integration::DefaultWebClientState CachedDefaultWebClientState()
-      override;
   void CreateDevToolsProtocolHandler() override {}
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(

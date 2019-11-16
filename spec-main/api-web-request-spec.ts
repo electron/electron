@@ -3,7 +3,7 @@ import * as http from 'http'
 import * as qs from 'querystring'
 import * as path from 'path'
 import { session, WebContents, webContents } from 'electron'
-import { AddressInfo } from 'net';
+import { AddressInfo } from 'net'
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
@@ -19,6 +19,9 @@ describe('webRequest module', () => {
       let content = req.url
       if (req.headers.accept === '*/*;test/header') {
         content += 'header/received'
+      }
+      if (req.headers.origin === 'http://new-origin') {
+        content += 'new/origin'
       }
       res.end(content)
     }
@@ -40,7 +43,7 @@ describe('webRequest module', () => {
   let contents: WebContents = null as unknown as WebContents
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
   before(async () => {
-    contents = (webContents as any).create({sandbox: true})
+    contents = (webContents as any).create({ sandbox: true })
     await contents.loadFile(path.join(fixturesPath, 'pages', 'jquery.html'))
   })
   after(() => (contents as any).destroy())
@@ -103,7 +106,7 @@ describe('webRequest module', () => {
       })
       await expect(ajax(defaultURL, {
         type: 'POST',
-        data: postData,
+        data: postData
       })).to.eventually.be.rejectedWith('404')
     })
 
@@ -143,6 +146,16 @@ describe('webRequest module', () => {
       })
       const { data } = await ajax(defaultURL)
       expect(data).to.equal('/header/received')
+    })
+
+    it('can change CORS headers', async () => {
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        const requestHeaders = details.requestHeaders
+        requestHeaders.Origin = 'http://new-origin'
+        callback({ requestHeaders: requestHeaders })
+      })
+      const { data } = await ajax(defaultURL)
+      expect(data).to.equal('/new/origin')
     })
 
     it('resets the whole headers', async () => {
@@ -199,6 +212,16 @@ describe('webRequest module', () => {
       expect(headers).to.match(/^custom: Changed$/m)
     })
 
+    it('can change CORS headers', async () => {
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        const responseHeaders = details.responseHeaders!
+        responseHeaders['access-control-allow-origin'] = ['http://new-origin'] as any
+        callback({ responseHeaders: responseHeaders })
+      })
+      const { headers } = await ajax(defaultURL)
+      expect(headers).to.match(/^access-control-allow-origin: http:\/\/new-origin$/m)
+    })
+
     it('does not change header by default', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         callback({})
@@ -227,7 +250,7 @@ describe('webRequest module', () => {
       })
       const { headers } = await contents.executeJavaScript(`new Promise((resolve, reject) => {
         const options = {
-          ...${JSON.stringify({url: defaultURL})},
+          ...${JSON.stringify({ url: defaultURL })},
           success: (data, status, request) => {
             reject(new Error('expected failure'))
           },

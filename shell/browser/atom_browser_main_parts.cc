@@ -34,7 +34,6 @@
 #include "services/service_manager/public/cpp/connector.h"
 #include "shell/app/atom_main_delegate.h"
 #include "shell/browser/api/atom_api_app.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_paths.h"
@@ -49,6 +48,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/asar/asar_util.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/idle/idle.h"
@@ -102,6 +102,10 @@
 #include "shell/browser/extensions/atom_extensions_browser_client.h"
 #include "shell/common/extensions/atom_extensions_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_factory.h"  // nogncheck
+#endif
 
 namespace electron {
 
@@ -442,6 +446,10 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   extensions::electron::EnsureBrowserContextKeyedServiceFactoriesBuilt();
 #endif
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SpellcheckServiceFactory::GetInstance();
+#endif
+
   // url::Add*Scheme are not threadsafe, this helps prevent data races.
   url::LockSchemeRegistries();
 
@@ -536,7 +544,8 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 
 void AtomBrowserMainParts::PreMainMessageLoopStartCommon() {
 #if defined(OS_MACOSX)
-  InitializeEmptyApplicationMenu();
+  InitializeMainNib();
+  RegisterURLHandler();
 #endif
   media::SetLocalizedStringProvider(MediaStringProvider);
 }

@@ -314,10 +314,8 @@ Returns:
 
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
-* `request` Object
-  * `method` String
+* `authenticationResponseDetails` Object
   * `url` URL
-  * `referrer` URL
 * `authInfo` Object
   * `isProxy` Boolean
   * `scheme` String
@@ -325,8 +323,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
-  * `username` String
-  * `password` String
+  * `username` String (optional)
+  * `password` String (optional)
 
 Emitted when `webContents` wants to do basic auth.
 
@@ -337,11 +335,15 @@ should prevent the default behavior with `event.preventDefault()` and call
 ```javascript
 const { app } = require('electron')
 
-app.on('login', (event, webContents, request, authInfo, callback) => {
+app.on('login', (event, webContents, details, authInfo, callback) => {
   event.preventDefault()
   callback('username', 'secret')
 })
 ```
+
+If `callback` is called without a username or password, the authentication
+request will be cancelled and the authentication error will be returned to the
+page.
 
 ### Event: 'gpu-info-update'
 
@@ -482,18 +484,6 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 
 Emitted when `remote.getCurrentWebContents()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-### Event: 'remote-get-guest-web-contents'
-
-Returns:
-
-* `event` Event
-* `webContents` [WebContents](web-contents.md)
-* `guestWebContents` [WebContents](web-contents.md)
-
-Emitted when `<webview>.getWebContents()` is called in the renderer process of `webContents`.
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
@@ -769,6 +759,21 @@ macOS machine. Please refer to
 [Apple's documentation][LSCopyDefaultHandlerForURLScheme] for details.
 
 The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
+
+### `app.getApplicationNameForProtocol(url)`
+
+* `url` String - a URL with the protocol name to check. Unlike the other
+  methods in this family, this accepts an entire URL, including `://` at a
+  minimum (e.g. `https://`).
+
+Returns `String` - Name of the application handling the protocol, or an empty
+  string if there is no handler. For instance, if Electron is the default
+  handler of the URL, this could be `Electron` on Windows and Mac. However,
+  don't rely on the precise format which is not guaranteed to remain unchanged.
+  Expect a different format on Linux, possibly with a `.desktop` suffix.
+
+This method returns the application name of the default handler for the protocol
+(aka URI scheme) of a URL.
 
 ### `app.setUserTasks(tasks)` _Windows_
 

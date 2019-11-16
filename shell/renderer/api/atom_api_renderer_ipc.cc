@@ -13,10 +13,11 @@
 #include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/promise_util.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 using blink::WebLocalFrame;
@@ -69,45 +70,71 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
   const char* GetTypeName() override { return "IPCRenderer"; }
 
  private:
-  void Send(bool internal,
+  void Send(v8::Isolate* isolate,
+            bool internal,
             const std::string& channel,
-            const base::ListValue& arguments) {
-    electron_browser_ptr_->get()->Message(internal, channel, arguments.Clone());
+            v8::Local<v8::Value> arguments) {
+    blink::CloneableMessage message;
+    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+      return;
+    }
+    electron_browser_ptr_->get()->Message(internal, channel,
+                                          std::move(message));
   }
 
   v8::Local<v8::Promise> Invoke(v8::Isolate* isolate,
                                 bool internal,
                                 const std::string& channel,
-                                const base::Value& arguments) {
-    electron::util::Promise<base::Value> p(isolate);
+                                v8::Local<v8::Value> arguments) {
+    blink::CloneableMessage message;
+    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+      return v8::Local<v8::Promise>();
+    }
+    gin_helper::Promise<blink::CloneableMessage> p(isolate);
     auto handle = p.GetHandle();
 
     electron_browser_ptr_->get()->Invoke(
-        internal, channel, arguments.Clone(),
-        base::BindOnce([](electron::util::Promise<base::Value> p,
-                          base::Value result) { p.ResolveWithGin(result); },
-                       std::move(p)));
+        internal, channel, std::move(message),
+        base::BindOnce(
+            [](gin_helper::Promise<blink::CloneableMessage> p,
+               blink::CloneableMessage result) { p.Resolve(result); },
+            std::move(p)));
 
     return handle;
   }
 
-  void SendTo(bool internal,
+  void SendTo(v8::Isolate* isolate,
+              bool internal,
               bool send_to_all,
               int32_t web_contents_id,
               const std::string& channel,
-              const base::ListValue& arguments) {
+              v8::Local<v8::Value> arguments) {
+    blink::CloneableMessage message;
+    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+      return;
+    }
     electron_browser_ptr_->get()->MessageTo(
-        internal, send_to_all, web_contents_id, channel, arguments.Clone());
+        internal, send_to_all, web_contents_id, channel, std::move(message));
   }
 
-  void SendToHost(const std::string& channel,
-                  const base::ListValue& arguments) {
-    electron_browser_ptr_->get()->MessageHost(channel, arguments.Clone());
+  void SendToHost(v8::Isolate* isolate,
+                  const std::string& channel,
+                  v8::Local<v8::Value> arguments) {
+    blink::CloneableMessage message;
+    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+      return;
+    }
+    electron_browser_ptr_->get()->MessageHost(channel, std::move(message));
   }
 
-  base::Value SendSync(bool internal,
-                       const std::string& channel,
-                       const base::ListValue& arguments) {
+  blink::CloneableMessage SendSync(v8::Isolate* isolate,
+                                   bool internal,
+                                   const std::string& channel,
+                                   v8::Local<v8::Value> arguments) {
+    blink::CloneableMessage message;
+    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+      return blink::CloneableMessage();
+    }
     // We aren't using a true synchronous mojo call here. We're calling an
     // asynchronous method and blocking on the result. The reason we're doing
     // this is a little complicated, so buckle up.
@@ -154,7 +181,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     //
     // Phew. If you got this far, here's a gold star: ⭐️
 
-    base::Value result;
+    blink::CloneableMessage result;
 
     // A task is posted to a worker thread to execute the request so that
     // this thread may block on a waitable event. It is safe to pass raw
@@ -167,16 +194,16 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
                                   base::Unretained(this),
                                   base::Unretained(&response_received_event),
                                   base::Unretained(&result), internal, channel,
-                                  arguments.Clone()));
+                                  std::move(message)));
     response_received_event.Wait();
     return result;
   }
 
   void SendMessageSyncOnWorkerThread(base::WaitableEvent* event,
-                                     base::Value* result,
+                                     blink::CloneableMessage* result,
                                      bool internal,
                                      const std::string& channel,
-                                     base::Value arguments) {
+                                     blink::CloneableMessage arguments) {
     electron_browser_ptr_->get()->MessageSync(
         internal, channel, std::move(arguments),
         base::BindOnce(&IPCRenderer::ReturnSyncResponseToMainThread,
@@ -184,8 +211,8 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
   }
 
   static void ReturnSyncResponseToMainThread(base::WaitableEvent* event,
-                                             base::Value* result,
-                                             base::Value response) {
+                                             blink::CloneableMessage* result,
+                                             blink::CloneableMessage response) {
     *result = std::move(response);
     event->Signal();
   }

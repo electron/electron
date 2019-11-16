@@ -67,10 +67,6 @@ declare namespace Electron {
     sendToAll(webContentsId: number, channel: string, ...args: any[]): void
   }
 
-  interface RemoteInternal extends Electron.Remote {
-    getGuestWebContents(guestInstanceId: number): Electron.WebContents;
-  }
-
   interface WebContentsInternal extends Electron.WebContents {
     _sendInternal(channel: string, ...args: any[]): void;
     _sendInternalToAll(channel: string, ...args: any[]): void;
@@ -94,11 +90,6 @@ declare namespace ElectronInternal {
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K): T;
     renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
     moveAPI(fn: Function, oldUsage: string, newUsage: string): Function;
-
-    promisify<T extends (...args: any[]) => any>(fn: T): T;
-
-    // convertPromiseValue: Temporarily disabled until it's used
-    promisifyMultiArg<T extends (...args: any[]) => any>(fn: T, /*convertPromiseValue: (v: any) => any*/): T;
   }
 
   interface DesktopCapturer {
@@ -165,8 +156,8 @@ declare namespace ElectronInternal {
     public disconnectedCallback(): void;
 
     // Created in web-view-impl
-    public getWebContents(): Electron.WebContents;
     public getWebContentsId(): number;
+    public capturePage(rect?: Electron.Rectangle): Promise<Electron.NativeImage>;
   }
 }
 

@@ -1,19 +1,17 @@
-import * as chai from 'chai'
-import * as chaiAsPromised from 'chai-as-promised'
+import { expect } from 'chai'
 import * as cp from 'child_process'
 import * as https from 'https'
+import * as http from 'http'
 import * as net from 'net'
 import * as fs from 'fs'
 import * as path from 'path'
-import { homedir } from 'os'
-import split = require('split')
 import { app, BrowserWindow, Menu } from 'electron'
-import { emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
+import { emittedOnce } from './events-helpers'
+import { closeWindow, closeAllWindows } from './window-helpers'
+import { ifdescribe } from './spec-helpers'
+import split = require('split')
 
-const { expect } = chai
-
-chai.use(chaiAsPromised)
+const features = process.electronBinding('features')
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures')
 
@@ -126,7 +124,7 @@ describe('app module', () => {
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
       let expectedLength = 2
-      if (isCI && process.platform === 'linux') {
+      if (process.platform === 'linux') {
         // Linux CI machines have no locale.
         expectedLength = 0
       }
@@ -140,13 +138,7 @@ describe('app module', () => {
     })
   })
 
-  describe('app.isInApplicationsFolder()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  ifdescribe(process.platform === 'darwin')('app.isInApplicationsFolder()', () => {
     it('should be false during tests', () => {
       expect(app.isInApplicationsFolder()).to.equal(false)
     })
@@ -200,7 +192,7 @@ describe('app module', () => {
       // Singleton will send us greeting data to let us know it's running.
       // After that, ask it to exit gracefully and confirm that it does.
       if (appProcess && appProcess.stdout) {
-        appProcess.stdout.on('data', data => appProcess!.kill())
+        appProcess.stdout.on('data', () => appProcess!.kill())
       }
       const [code, signal] = await emittedOnce(appProcess, 'close')
 
@@ -407,10 +399,9 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false })
     })
 
-    it('should emit renderer-process-crashed event when renderer crashes', async function() {
+    it('should emit renderer-process-crashed event when renderer crashes', async function () {
       // FIXME: re-enable this test on win32.
-      if (process.platform === 'win32')
-        return this.skip()
+      if (process.platform === 'win32') { return this.skip() }
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -426,103 +417,107 @@ describe('app module', () => {
       expect(webContents).to.equal(w.webContents)
     })
 
-    it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
+    ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
+      it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
+        await w.loadURL('about:blank')
+
+        const promise = emittedOnce(app, 'desktop-capturer-get-sources')
+        w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] })`)
+
+        const [, webContents] = await promise
+        expect(webContents).to.equal(w.webContents)
       })
-      await w.loadURL('about:blank')
-
-      const promise = emittedOnce(app, 'desktop-capturer-get-sources')
-      w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] })`)
-
-      const [, webContents] = await promise
-      expect(webContents).to.equal(w.webContents)
     })
 
-    it('should emit remote-require event when remote.require() is invoked', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
+    ifdescribe(features.isRemoteModuleEnabled())('remote module filtering', () => {
+      it('should emit remote-require event when remote.require() is invoked', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
+        await w.loadURL('about:blank')
+
+        const promise = emittedOnce(app, 'remote-require')
+        w.webContents.executeJavaScript(`require('electron').remote.require('test')`)
+
+        const [, webContents, moduleName] = await promise
+        expect(webContents).to.equal(w.webContents)
+        expect(moduleName).to.equal('test')
       })
-      await w.loadURL('about:blank')
 
-      const promise = emittedOnce(app, 'remote-require')
-      w.webContents.executeJavaScript(`require('electron').remote.require('test')`)
+      it('should emit remote-get-global event when remote.getGlobal() is invoked', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
+        await w.loadURL('about:blank')
 
-      const [, webContents, moduleName] = await promise
-      expect(webContents).to.equal(w.webContents)
-      expect(moduleName).to.equal('test')
-    })
+        const promise = emittedOnce(app, 'remote-get-global')
+        w.webContents.executeJavaScript(`require('electron').remote.getGlobal('test')`)
 
-    it('should emit remote-get-global event when remote.getGlobal() is invoked', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
+        const [, webContents, globalName] = await promise
+        expect(webContents).to.equal(w.webContents)
+        expect(globalName).to.equal('test')
       })
-      await w.loadURL('about:blank')
 
-      const promise = emittedOnce(app, 'remote-get-global')
-      w.webContents.executeJavaScript(`require('electron').remote.getGlobal('test')`)
+      it('should emit remote-get-builtin event when remote.getBuiltin() is invoked', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
+        await w.loadURL('about:blank')
 
-      const [, webContents, globalName] = await promise
-      expect(webContents).to.equal(w.webContents)
-      expect(globalName).to.equal('test')
-    })
+        const promise = emittedOnce(app, 'remote-get-builtin')
+        w.webContents.executeJavaScript(`require('electron').remote.app`)
 
-    it('should emit remote-get-builtin event when remote.getBuiltin() is invoked', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
+        const [, webContents, moduleName] = await promise
+        expect(webContents).to.equal(w.webContents)
+        expect(moduleName).to.equal('app')
       })
-      await w.loadURL('about:blank')
 
-      const promise = emittedOnce(app, 'remote-get-builtin')
-      w.webContents.executeJavaScript(`require('electron').remote.app`)
+      it('should emit remote-get-current-window event when remote.getCurrentWindow() is invoked', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
+        await w.loadURL('about:blank')
 
-      const [, webContents, moduleName] = await promise
-      expect(webContents).to.equal(w.webContents)
-      expect(moduleName).to.equal('app')
-    })
+        const promise = emittedOnce(app, 'remote-get-current-window')
+        w.webContents.executeJavaScript(`{ require('electron').remote.getCurrentWindow() }`)
 
-    it('should emit remote-get-current-window event when remote.getCurrentWindow() is invoked', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
+        const [, webContents] = await promise
+        expect(webContents).to.equal(w.webContents)
       })
-      await w.loadURL('about:blank')
 
-      const promise = emittedOnce(app, 'remote-get-current-window')
-      w.webContents.executeJavaScript(`require('electron').remote.getCurrentWindow()`)
+      it('should emit remote-get-current-web-contents event when remote.getCurrentWebContents() is invoked', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
+        await w.loadURL('about:blank')
 
-      const [, webContents] = await promise
-      expect(webContents).to.equal(w.webContents)
-    })
+        const promise = emittedOnce(app, 'remote-get-current-web-contents')
+        w.webContents.executeJavaScript(`{ require('electron').remote.getCurrentWebContents() }`)
 
-    it('should emit remote-get-current-web-contents event when remote.getCurrentWebContents() is invoked', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
+        const [, webContents] = await promise
+        expect(webContents).to.equal(w.webContents)
       })
-      await w.loadURL('about:blank')
-
-      const promise = emittedOnce(app, 'remote-get-current-web-contents')
-      w.webContents.executeJavaScript(`require('electron').remote.getCurrentWebContents()`)
-
-      const [, webContents] = await promise
-      expect(webContents).to.equal(w.webContents)
     })
   })
 
@@ -644,7 +639,7 @@ describe('app module', () => {
     it('returns whether the Chrome has accessibility APIs enabled', () => {
       expect(app.accessibilitySupportEnabled).to.be.a('boolean')
 
-      //TODO(codebytere): remove when propertyification is complete
+      // TODO(codebytere): remove when propertyification is complete
       expect(app.isAccessibilitySupportEnabled).to.be.a('function')
       expect(app.setAccessibilitySupportEnabled).to.be.a('function')
     })
@@ -669,30 +664,6 @@ describe('app module', () => {
     it('works for files', async () => {
       const { appPath } = await runTestApp('app-path/lib/index.js')
       expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
-    })
-  })
-
-  describe('getPath("logs")', () => {
-    const logsPaths = {
-      'darwin': path.resolve(homedir(), 'Library', 'Logs'),
-      'linux': path.resolve(homedir(), 'AppData', app.name),
-      'win32': path.resolve(homedir(), 'AppData', app.name),
-    }
-
-    it('has no logs directory by default', () => {
-      // this won't be deterministic except on CI since
-      // users may or may not have this dir
-      if (!isCI) return
-
-      const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.false
-    })
-
-    it('creates a new logs directory if one does not exist', () => {
-      expect(() => { app.getPath('logs') }).to.not.throw()
-
-      const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.true
     })
   })
 
@@ -722,9 +693,9 @@ describe('app module', () => {
     it('does not create a new directory by default', () => {
       const badPath = path.join(__dirname, 'music')
 
-      expect(fs.existsSync(badPath)).to.be.false
+      expect(fs.existsSync(badPath)).to.be.false()
       app.setPath('music', badPath)
-      expect(fs.existsSync(badPath)).to.be.false
+      expect(fs.existsSync(badPath)).to.be.false()
 
       expect(() => { app.getPath(badPath as any) }).to.throw()
     })
@@ -876,6 +847,40 @@ describe('app module', () => {
         })
       })
     })
+
+    it('sets the default client such that getApplicationNameForProtocol returns Electron', () => {
+      app.setAsDefaultProtocolClient(protocol)
+      expect(app.getApplicationNameForProtocol(`${protocol}://`)).to.equal('Electron')
+    })
+  })
+
+  describe('getApplicationNameForProtocol()', () => {
+    it('returns application names for common protocols', function () {
+      // We can't expect particular app names here, but these protocols should
+      // at least have _something_ registered. Except on our Linux CI
+      // environment apparently.
+      if (process.platform === 'linux') {
+        this.skip()
+      }
+
+      const protocols = [
+        'http://',
+        'https://'
+      ]
+      protocols.forEach((protocol) => {
+        expect(app.getApplicationNameForProtocol(protocol)).to.not.equal('')
+      })
+    })
+
+    it('returns an empty string for a bogus protocol', () => {
+      expect(app.getApplicationNameForProtocol('bogus-protocol://')).to.equal('')
+    })
+  })
+
+  describe('isDefaultProtocolClient()', () => {
+    it('returns false for a bogus protocol', () => {
+      expect(app.isDefaultProtocolClient('bogus-protocol://')).to.equal(false)
+    })
   })
 
   describe('app launch through uri', () => {
@@ -916,22 +921,14 @@ describe('app module', () => {
     })
   })
 
-  describe('getFileIcon() API', () => {
+  // FIXME Get these specs running on Linux CI
+  ifdescribe(process.platform !== 'linux')('getFileIcon() API', () => {
     const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
     const sizes = {
       small: 16,
       normal: 32,
       large: process.platform === 'win32' ? 32 : 48
     }
-
-    // (alexeykuzmin): `.skip()` called in `before`
-    // doesn't affect nested `describe`s.
-    beforeEach(function () {
-      // FIXME Get these specs running on Linux CI
-      if (process.platform === 'linux' && isCI) {
-        this.skip()
-      }
-    })
 
     it('fetches a non-empty icon', async () => {
       const icon = await app.getFileIcon(iconPath)
@@ -1417,6 +1414,33 @@ describe('default behavior', () => {
       expect(output[0]).to.be.a('number').that.is.greaterThan(0)
       expect(output[1]).to.be.a('number').that.is.greaterThan(0)
       expect(output[0]).to.equal(output[1])
+    })
+  })
+
+  describe('login event', () => {
+    afterEach(closeAllWindows)
+    let server: http.Server
+    let serverUrl: string
+
+    before((done) => {
+      server = http.createServer((request, response) => {
+        if (request.headers.authorization) {
+          return response.end('ok')
+        }
+        response
+          .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
+          .end()
+      }).listen(0, '127.0.0.1', () => {
+        serverUrl = 'http://127.0.0.1:' + (server.address() as net.AddressInfo).port
+        done()
+      })
+    })
+
+    it('should emit a login event on app when a WebContents hits a 401', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL(serverUrl)
+      const [, webContents] = await emittedOnce(app, 'login')
+      expect(webContents).to.equal(w.webContents)
     })
   })
 })

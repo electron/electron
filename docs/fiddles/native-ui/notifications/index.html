@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Desktop notifications</title>
+  </head>
+  <body>
+    <div>
+      <h1>Desktop notifications</h1>
+      <h3>
+        The <code>notification</code> module in Electron allows you to add basic
+        desktop notifications.
+      </h3>
+
+      <p>
+        Electron conveniently allows developers to send notifications with the
+        <a href="https://notifications.spec.whatwg.org/">HTML5 Notification API</a>, 
+        using the currently running operating system’s native notification
+        APIs to display it.
+      </p>
+
+      <p>
+        <b>Note:</b> Since this is an HTML5 API it is only available in the
+        renderer process.
+      </p>
+
+      <p>
+        Open the
+        <a href="https://electron.atom.io/docs/all/#notifications-windows-linux-macos">
+          full API documentation<span>(opens in new window)</span>
+        </a>
+        in your browser.
+      </p>
+    </div>
+
+    <div>
+      <div>
+        <h2>Basic notification</h2>
+        <div>
+          <div>
+            <button id="basic-noti">View demo</button>
+          </div>
+          <p>This demo demonstrates a basic notification. Text only.</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div>
+        <h2>Notification with image</h2>
+        <div>
+          <div>
+            <button id="advanced-noti">View demo</button>
+          </div>
+          <p>
+            This demo demonstrates a basic notification. Both text and a image
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // You can also require other files to run in this process
+      require("./renderer.js");
+    </script>
+  </body>
+</html>

@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import * as path from 'path'
 import { ipcMain, BrowserWindow, WebContents, WebPreferences, webContents } from 'electron'
 import { emittedOnce } from './events-helpers'
-import { closeWindow } from './window-helpers';
+import { closeWindow } from './window-helpers'
 
 describe('ipcRenderer module', () => {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures')
@@ -31,14 +31,14 @@ describe('ipcRenderer module', () => {
       expect(received).to.deep.equal(obj)
     })
 
-    it('can send instances of Date as ISO strings', async () => {
+    it('can send instances of Date as Dates', async () => {
       const isoDate = new Date().toISOString()
       w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('message', new Date(${JSON.stringify(isoDate)}))
       }`)
       const [, received] = await emittedOnce(ipcMain, 'message')
-      expect(received).to.equal(isoDate)
+      expect(received.toISOString()).to.equal(isoDate)
     })
 
     it('can send instances of Buffer', async () => {
@@ -48,10 +48,12 @@ describe('ipcRenderer module', () => {
         ipcRenderer.send('message', Buffer.from(${JSON.stringify(data)}))
       }`)
       const [, received] = await emittedOnce(ipcMain, 'message')
-      expect(received).to.be.an.instanceOf(Buffer)
+      expect(received).to.be.an.instanceOf(Uint8Array)
       expect(Buffer.from(data).equals(received)).to.be.true()
     })
 
+    // TODO(nornagon): Change this test to expect an exception to be thrown in
+    // Electron 9.
     it('can send objects with DOM class prototypes', async () => {
       w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
@@ -62,21 +64,20 @@ describe('ipcRenderer module', () => {
       expect(value.hostname).to.equal('')
     })
 
-    it('does not crash on external objects (regression)', async () => {
+    // TODO(nornagon): Change this test to expect an exception to be thrown in
+    // Electron 9.
+    it('does not crash when sending external objects', async () => {
       w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
         const http = require('http')
 
         const request = http.request({ port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/' })
         const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream
-        request.on('error', () => {})
 
-        ipcRenderer.send('message', request, stream)
+        ipcRenderer.send('message', stream)
       }`)
-      const [, requestValue, externalStreamValue] = await emittedOnce(ipcMain, 'message')
+      const [, externalStreamValue] = await emittedOnce(ipcMain, 'message')
 
-      expect(requestValue.method).to.equal('GET')
-      expect(requestValue.path).to.equal('/')
       expect(externalStreamValue).to.be.null()
     })
 
@@ -104,7 +105,7 @@ describe('ipcRenderer module', () => {
       expect(childValue).to.deep.equal(child)
     })
 
-    it('inserts null for cyclic references', async () => {
+    it('can handle cyclic references', async () => {
       w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
         const array = [5]
@@ -117,10 +118,10 @@ describe('ipcRenderer module', () => {
 
       const [, arrayValue, childValue] = await emittedOnce(ipcMain, 'message')
       expect(arrayValue[0]).to.equal(5)
-      expect(arrayValue[1]).to.be.null()
+      expect(arrayValue[1]).to.equal(arrayValue)
 
       expect(childValue.hello).to.equal('world')
-      expect(childValue.child).to.be.null()
+      expect(childValue.child).to.equal(childValue)
     })
   })
 
@@ -182,9 +183,6 @@ describe('ipcRenderer module', () => {
     generateSpecs('with contextIsolation', { contextIsolation: true })
     generateSpecs('with contextIsolation + sandbox', { contextIsolation: true, sandbox: true })
   })
-  /*
-
-  */
 
   describe('ipcRenderer.on', () => {
     it('is not used for internals', async () => {

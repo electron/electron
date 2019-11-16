@@ -15,6 +15,7 @@
 #include "content/public/common/content_features.h"
 #include "content/public/common/service_names.mojom.h"
 #include "mojo/public/cpp/bindings/associated_interface_ptr.h"
+#include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "net/net_buildflags.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/cross_thread_shared_url_loader_factory_info.h"
@@ -68,14 +69,15 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
   }
 
   // mojom::URLLoaderFactory implementation:
-  void CreateLoaderAndStart(network::mojom::URLLoaderRequest request,
-                            int32_t routing_id,
-                            int32_t request_id,
-                            uint32_t options,
-                            const network::ResourceRequest& url_request,
-                            network::mojom::URLLoaderClientPtr client,
-                            const net::MutableNetworkTrafficAnnotationTag&
-                                traffic_annotation) override {
+  void CreateLoaderAndStart(
+      mojo::PendingReceiver<network::mojom::URLLoader> request,
+      int32_t routing_id,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& url_request,
+      network::mojom::URLLoaderClientPtr client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
+      override {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
     if (!manager_)
       return;
@@ -84,10 +86,11 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
         std::move(client), traffic_annotation);
   }
 
-  void Clone(network::mojom::URLLoaderFactoryRequest request) override {
+  void Clone(mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver)
+      override {
     if (!manager_)
       return;
-    manager_->GetURLLoaderFactory()->Clone(std::move(request));
+    manager_->GetURLLoaderFactory()->Clone(std::move(receiver));
   }
 
   // SharedURLLoaderFactory implementation:
@@ -127,7 +130,7 @@ network::mojom::NetworkContext* SystemNetworkContextManager::GetContext() {
 network::mojom::URLLoaderFactory*
 SystemNetworkContextManager::GetURLLoaderFactory() {
   // Create the URLLoaderFactory as needed.
-  if (url_loader_factory_ && !url_loader_factory_.encountered_error()) {
+  if (url_loader_factory_ && url_loader_factory_.is_connected()) {
     return url_loader_factory_.get();
   }
 
@@ -135,8 +138,9 @@ SystemNetworkContextManager::GetURLLoaderFactory() {
       network::mojom::URLLoaderFactoryParams::New();
   params->process_id = network::mojom::kBrowserProcessId;
   params->is_corb_enabled = false;
-  GetContext()->CreateURLLoaderFactory(mojo::MakeRequest(&url_loader_factory_),
-                                       std::move(params));
+  url_loader_factory_.reset();
+  GetContext()->CreateURLLoaderFactory(
+      url_loader_factory_.BindNewPipeAndPassReceiver(), std::move(params));
   return url_loader_factory_.get();
 }
 

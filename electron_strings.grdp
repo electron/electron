@@ -69,4 +69,10 @@
   <message name="IDS_PICTURE_IN_PICTURE_PREVIOUS_TRACK_CONTROL_ACCESSIBLE_TEXT" desc="Accessible text label used for the controls button in the Picture-in-Picture window. The button invokes previous track action.">
     Previous track
   </message>
+  <message name="IDS_SPELLCHECK_DICTIONARY" use_name_for_id="true">
+    en-US
+  </message>
+  <message name="IDS_ACCEPT_LANGUAGES" use_name_for_id="true">
+    en-US,en
+  </message>
 </grit-part>

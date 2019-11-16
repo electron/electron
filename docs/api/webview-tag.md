@@ -565,7 +565,7 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
   * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
   * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
 
-Returns `Promise<Buffer>` - Resolves with the generated PDF data.
+Returns `Promise<Uint8Array>` - Resolves with the generated PDF data.
 
 Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options)`.
 
@@ -647,14 +647,6 @@ Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 ### `<webview>.showDefinitionForSelection()` _macOS_
 
 Shows pop-up dictionary that searches the selected word on the page.
-
-### `<webview>.getWebContents()`
-
-Returns [`WebContents`](web-contents.md) - The web contents associated with
-this `webview`.
-
-It depends on the [`remote`](remote.md) module,
-it is therefore not available when this module is disabled.
 
 ### `<webview>.getWebContentsId()`
 

@@ -1,8 +1,21 @@
 import { expect } from 'chai'
-import { net, session, ClientRequest } from 'electron'
+import { net as originalNet, session, ClientRequest, BrowserWindow } from 'electron'
 import * as http from 'http'
 import * as url from 'url'
 import { AddressInfo } from 'net'
+
+const outstandingRequests: ClientRequest[] = []
+const net: {request: (typeof originalNet)['request']} = {
+  request: (...args) => {
+    const r = originalNet.request(...args)
+    outstandingRequests.push(r)
+    return r
+  }
+}
+const abortOutstandingRequests = () => {
+  outstandingRequests.forEach(r => r.abort())
+  outstandingRequests.length = 0
+}
 
 const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
@@ -21,13 +34,12 @@ function randomString (length: number) {
   return buffer.toString()
 }
 
-function respondOnce(fn: http.RequestListener): Promise<string> {
+function respondOnce (fn: http.RequestListener): Promise<string> {
   return new Promise((resolve) => {
     const server = http.createServer((request, response) => {
       fn(request, response)
       // don't close if a redirect was returned
-      if (response.statusCode < 300 || response.statusCode >= 399)
-        server.close()
+      if (response.statusCode < 300 || response.statusCode >= 399) { server.close() }
     })
     server.listen(0, '127.0.0.1', () => {
       resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)
@@ -48,7 +60,7 @@ respondOnce.toRoutes = (routes: Record<string, http.RequestListener>) => {
 }
 
 respondOnce.toURL = (url: string, fn: http.RequestListener) => {
-  return respondOnce.toRoutes({[url]: fn})
+  return respondOnce.toRoutes({ [url]: fn })
 }
 
 respondOnce.toSingleURL = (fn: http.RequestListener) => {
@@ -57,6 +69,7 @@ respondOnce.toSingleURL = (fn: http.RequestListener) => {
 }
 
 describe('net module', () => {
+  afterEach(abortOutstandingRequests)
   describe('HTTP basics', () => {
     it('should be able to issue a basic GET request', (done) => {
       respondOnce.toSingleURL((request, response) => {
@@ -191,6 +204,135 @@ describe('net module', () => {
           expect(urlRequest.write(chunk)).to.equal(true)
         }
         urlRequest.end()
+      })
+    })
+
+    it('should emit the login event when 401', async () => {
+      const [user, pass] = ['user', 'pass']
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+        }
+        response.writeHead(200).end('ok')
+      })
+      let loginAuthInfo: any
+      await new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: serverUrl })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          response.on('data', () => {})
+          response.on('end', () => resolve())
+        })
+        request.on('login', (authInfo, cb) => {
+          loginAuthInfo = authInfo
+          cb(user, pass)
+        })
+        request.on('error', reject)
+        request.end()
+      })
+      expect(loginAuthInfo.realm).to.equal('Foo')
+      expect(loginAuthInfo.scheme).to.equal('basic')
+    })
+
+    it('should produce an error on the response object when cancelling authentication', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+        }
+        response.writeHead(200).end('ok')
+      })
+      await expect(new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: serverUrl })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          response.on('data', () => {})
+          response.on('end', () => resolve())
+        })
+        request.on('login', (authInfo, cb) => {
+          cb()
+        })
+        request.on('error', reject)
+        request.end()
+      })).to.eventually.be.rejectedWith('net::ERR_HTTP_RESPONSE_CODE_FAILURE')
+    })
+
+    it('should share credentials with WebContents', async () => {
+      const [user, pass] = ['user', 'pass']
+      const serverUrl = await new Promise<string>((resolve) => {
+        const server = http.createServer((request, response) => {
+          if (!request.headers.authorization) {
+            return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+          }
+          return response.writeHead(200).end('ok')
+        })
+        server.listen(0, '127.0.0.1', () => {
+          resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)
+        })
+        after(() => { server.close() })
+      })
+      const bw = new BrowserWindow({ show: false })
+      const loaded = bw.loadURL(serverUrl)
+      bw.webContents.on('login', (event, details, authInfo, cb) => {
+        event.preventDefault()
+        cb(user, pass)
+      })
+      await loaded
+      bw.close()
+      await new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: serverUrl })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          response.on('data', () => {})
+          response.on('end', () => resolve())
+        })
+        request.on('login', () => {
+          // we shouldn't receive a login event, because the credentials should
+          // be cached.
+          reject(new Error('unexpected login event'))
+        })
+        request.on('error', reject)
+        request.end()
+      })
+    })
+
+    it('should share proxy credentials with WebContents', async () => {
+      const [user, pass] = ['user', 'pass']
+      const proxyPort = await new Promise<number>((resolve) => {
+        const server = http.createServer((request, response) => {
+          if (!request.headers['proxy-authorization']) {
+            return response.writeHead(407, { 'Proxy-Authenticate': 'Basic realm="Foo"' }).end()
+          }
+          return response.writeHead(200).end('ok')
+        })
+        server.listen(0, '127.0.0.1', () => {
+          resolve((server.address() as AddressInfo).port)
+        })
+        after(() => { server.close() })
+      })
+      const customSession = session.fromPartition(`net-proxy-test-${Math.random()}`)
+      await customSession.setProxy({ proxyRules: `127.0.0.1:${proxyPort}`, proxyBypassRules: '<-loopback>' })
+      const bw = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
+      const loaded = bw.loadURL('http://127.0.0.1:9999')
+      bw.webContents.on('login', (event, details, authInfo, cb) => {
+        event.preventDefault()
+        cb(user, pass)
+      })
+      await loaded
+      bw.close()
+      await new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: 'http://127.0.0.1:9999', session: customSession })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          response.on('data', () => {})
+          response.on('end', () => resolve())
+        })
+        request.on('login', () => {
+          // we shouldn't receive a login event, because the credentials should
+          // be cached.
+          reject(new Error('unexpected login event'))
+        })
+        request.on('error', reject)
+        request.end()
       })
     })
   })
@@ -445,7 +587,7 @@ describe('net module', () => {
         let requestAbortEventEmitted = false
 
         const urlRequest = net.request(serverUrl)
-        urlRequest.on('response', (response) => {
+        urlRequest.on('response', () => {
           expect.fail('Unexpected response event')
         })
         urlRequest.on('finish', () => {
@@ -470,14 +612,14 @@ describe('net module', () => {
     it('it should be able to abort an HTTP request before request end', (done) => {
       let requestReceivedByServer = false
       let urlRequest: ClientRequest | null = null
-      respondOnce.toSingleURL((request, response) => {
+      respondOnce.toSingleURL(() => {
         requestReceivedByServer = true
         urlRequest!.abort()
       }).then(serverUrl => {
         let requestAbortEventEmitted = false
 
         urlRequest = net.request(serverUrl)
-        urlRequest.on('response', (response) => {
+        urlRequest.on('response', () => {
           expect.fail('Unexpected response event')
         })
         urlRequest.on('finish', () => {
@@ -516,7 +658,7 @@ describe('net module', () => {
         let requestFinishEventEmitted = false
 
         urlRequest = net.request(serverUrl)
-        urlRequest.on('response', (response) => {
+        urlRequest.on('response', () => {
           expect.fail('Unexpected response event')
         })
         urlRequest.on('finish', () => {
@@ -557,8 +699,7 @@ describe('net module', () => {
           requestResponseEventEmitted = true
           const statusCode = response.statusCode
           expect(statusCode).to.equal(200)
-          response.on('data', (chunk) => {
-          })
+          response.on('data', () => {})
           response.on('end', () => {
             expect.fail('Unexpected end event')
           })
@@ -594,7 +735,7 @@ describe('net module', () => {
     it('abort event should be emitted at most once', (done) => {
       let requestReceivedByServer = false
       let urlRequest: ClientRequest | null = null
-      respondOnce.toSingleURL((request, response) => {
+      respondOnce.toSingleURL(() => {
         requestReceivedByServer = true
         urlRequest!.abort()
         urlRequest!.abort()
@@ -707,7 +848,7 @@ describe('net module', () => {
           requestIsRedirected = true
           response.end()
         }).then(serverUrl => {
-          session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+          session.defaultSession.webRequest.onBeforeRequest(() => {
             expect.fail('Request should not be intercepted by the default session')
           })
 
@@ -734,8 +875,7 @@ describe('net module', () => {
           })
           urlRequest.on('response', (response) => {
             expect(response.statusCode).to.equal(200)
-            response.on('data', (chunk) => {
-            })
+            response.on('data', () => {})
             response.on('end', () => {
               expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL')
               expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module')
@@ -755,7 +895,7 @@ describe('net module', () => {
           requestIsRedirected = true
           response.end()
         }).then(serverUrl => {
-          session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+          session.defaultSession.webRequest.onBeforeRequest(() => {
             expect.fail('Request should not be intercepted by the default session')
           })
 
@@ -782,8 +922,7 @@ describe('net module', () => {
           })
           urlRequest.on('response', (response) => {
             expect(response.statusCode).to.equal(200)
-            response.on('data', (chunk) => {
-            })
+            response.on('data', () => {})
             response.on('end', () => {
               expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL')
               expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module')
@@ -835,7 +974,7 @@ describe('net module', () => {
         '/200': (request, response) => {
           response.statusCode = 200
           response.end()
-        },
+        }
       }).then(serverUrl => {
         const urlRequest = net.request({
           url: `${serverUrl}${requestUrl}`
@@ -863,7 +1002,7 @@ describe('net module', () => {
         '/200': (request, response) => {
           response.statusCode = 200
           response.end()
-        },
+        }
       }).then(serverUrl => {
         const urlRequest = net.request({
           url: `${serverUrl}/redirectChain`
@@ -911,7 +1050,7 @@ describe('net module', () => {
         '/200': (request, response) => {
           response.statusCode = 200
           response.end()
-        },
+        }
       }).then(serverUrl => {
         const urlRequest = net.request({
           url: `${serverUrl}/redirectChain`,
@@ -943,7 +1082,7 @@ describe('net module', () => {
         '/200': (request, response) => {
           response.statusCode = 200
           response.end()
-        },
+        }
       }).then(serverUrl => {
         const urlRequest = net.request({
           url: `${serverUrl}/redirect`,
@@ -977,7 +1116,7 @@ describe('net module', () => {
           url: 'https://foo',
           session: 1 as any
         })
-      }).to.throw("`session` should be an instance of the Session class")
+      }).to.throw('`session` should be an instance of the Session class')
     })
 
     it('should throw if given an invalid partition option', () => {
@@ -986,7 +1125,7 @@ describe('net module', () => {
           url: 'https://foo',
           partition: 1 as any
         })
-      }).to.throw("`partition` should be a string")
+      }).to.throw('`partition` should be a string')
     })
 
     it('should be able to create a request with options', (done) => {
@@ -1045,7 +1184,7 @@ describe('net module', () => {
           const netRequest = net.request(netServerUrl)
           netRequest.on('response', (netResponse) => {
             expect(netResponse.statusCode).to.equal(200)
-            netResponse.on('data', (chunk) => {})
+            netResponse.on('data', () => {})
             netResponse.on('end', () => {
               expect(netRequestReceived).to.be.true('net request received')
               expect(netRequestEnded).to.be.true('net request ended')
@@ -1059,7 +1198,7 @@ describe('net module', () => {
     })
 
     it('should emit error event on server socket close', (done) => {
-      respondOnce.toSingleURL((request, response) => {
+      respondOnce.toSingleURL((request) => {
         request.socket.destroy()
       }).then(serverUrl => {
         let requestErrorEventEmitted = false
@@ -1108,7 +1247,7 @@ describe('net module', () => {
           const httpVersionMinor = response.httpVersionMinor
           expect(httpVersionMinor).to.be.a('number').and.to.be.at.least(0)
 
-          response.on('data', chunk => {})
+          response.on('data', () => {})
           response.on('end', () => { done() })
         })
         urlRequest.end()
@@ -1142,7 +1281,7 @@ describe('net module', () => {
           expect(headers).to.not.have.property(discardableHeader)
           expect(headers[includedHeader]).to.equal(includedHeaderValue)
 
-          response.on('data', chunk => {})
+          response.on('data', () => {})
           response.on('end', () => { done() })
         })
         urlRequest.end()
@@ -1167,7 +1306,7 @@ describe('net module', () => {
           expect(headers).to.have.property('referrer-policy')
           expect(headers['referrer-policy']).to.equal('first-text, second-text')
 
-          response.on('data', chunk => {})
+          response.on('data', () => {})
           response.on('end', () => { done() })
         })
         urlRequest.end()
@@ -1201,7 +1340,7 @@ describe('net module', () => {
             port: serverUrl.port
           }
           const nodeRequest = http.request(nodeOptions, res => {
-            res.on('data', (chunk) => {})
+            res.on('data', () => {})
             res.on('end', () => {
               done()
             })

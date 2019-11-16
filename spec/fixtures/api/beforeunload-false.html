@@ -5,7 +5,7 @@
   var unloadPrevented = false;
   window.onbeforeunload = function() {
     setTimeout(function() {
-      require('electron').remote.getCurrentWindow().emit('onbeforeunload');
+      require('electron').ipcRenderer.sendSync('onbeforeunload');
     }, 0);
     if (!unloadPrevented) {
       unloadPrevented = true;

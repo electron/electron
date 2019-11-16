@@ -196,8 +196,6 @@ if (nodeIntegration) {
   }
 }
 
-const errorUtils = require('@electron/internal/common/error-utils')
-
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {
   try {
@@ -206,7 +204,7 @@ for (const preloadScript of preloadScripts) {
     console.error(`Unable to load preload script: ${preloadScript}`)
     console.error(error)
 
-    ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadScript, errorUtils.serialize(error))
+    ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadScript, error)
   }
 }
 

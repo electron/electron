@@ -1,0 +1,15 @@
+<body>
+    <iframe style="width: 0" frameborder=0 src="fullscreen.html" allowfullscreen></iframe>
+    <script>
+        const { webFrame, ipcRenderer } = require('electron')
+        const iframe = document.querySelector('iframe')
+
+        document.addEventListener('fullscreenchange', () => {
+            ipcRenderer.send('fullscreenChange')
+        })
+
+        iframe.addEventListener('load', () => {
+            webFrame.executeJavaScript("document.querySelector('iframe').contentDocument.querySelector('video').requestFullscreen()", true)
+        })
+    </script>
+</body>

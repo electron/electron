@@ -163,7 +163,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   // store the current status window level to be restored in
   // windowDidDeminiaturize
   level_ = [window level];
-  [window setLevel:NSNormalWindowLevel];
+  shell_->SetWindowLevel(NSNormalWindowLevel);
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {
@@ -173,7 +173,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
   [super windowDidDeminiaturize:notification];
-  [shell_->GetNativeWindow().GetNativeNSWindow() setLevel:level_];
+  shell_->SetWindowLevel(level_);
   shell_->NotifyWindowRestore();
 }
 

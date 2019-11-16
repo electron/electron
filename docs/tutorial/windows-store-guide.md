@@ -62,7 +62,6 @@ The output should look roughly like this:
 │   ├── am.pak
 │   ├── ar.pak
 │   ├── [...]
-├── natives_blob.bin
 ├── node.dll
 ├── resources
 │   ├── app

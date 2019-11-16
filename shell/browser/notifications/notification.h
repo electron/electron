@@ -32,6 +32,7 @@ struct NotificationOptions {
   GURL icon_url;
   SkBitmap icon;
   bool has_reply;
+  base::string16 timeout_type;
   base::string16 reply_placeholder;
   base::string16 sound;
   base::string16 urgency;  // Linux

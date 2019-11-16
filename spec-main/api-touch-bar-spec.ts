@@ -36,7 +36,7 @@ describe('TouchBar module', () => {
     let window: BrowserWindow
 
     beforeEach(() => {
-      window = new BrowserWindow({show: false})
+      window = new BrowserWindow({ show: false })
     })
 
     afterEach(async () => {
@@ -72,14 +72,14 @@ describe('TouchBar module', () => {
           mode: 'fixed',
           showArrowButtons: true
         })
-      ]})
+      ] })
       const escapeButton = new TouchBarButton({ label: 'foo' })
       window.setTouchBar(touchBar)
       touchBar.escapeItem = escapeButton
       label.label = 'baz'
       escapeButton.label = 'hello'
       window.setTouchBar(null)
-      window.setTouchBar(new TouchBar({items: [new TouchBarLabel({ label: 'two' })]}))
+      window.setTouchBar(new TouchBar({ items: [new TouchBarLabel({ label: 'two' })] }))
       touchBar.escapeItem = null
     })
 

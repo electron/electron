@@ -5,47 +5,50 @@
 #ifndef SHELL_BROWSER_API_EVENT_H_
 #define SHELL_BROWSER_API_EVENT_H_
 
-#include "base/optional.h"
 #include "electron/shell/common/api/api.mojom.h"
-#include "native_mate/handle.h"
-#include "native_mate/wrappable.h"
+#include "gin/handle.h"
+#include "gin/wrappable.h"
 
 namespace IPC {
 class Message;
 }
 
-namespace mate {
+namespace gin_helper {
 
-class Event : public Wrappable<Event> {
+class Event : public gin::Wrappable<Event> {
  public:
-  using MessageSyncCallback =
-      electron::mojom::ElectronBrowser::MessageSyncCallback;
-  static Handle<Event> Create(v8::Isolate* isolate);
+  using InvokeCallback = electron::mojom::ElectronBrowser::InvokeCallback;
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  static gin::WrapperInfo kWrapperInfo;
+
+  static gin::Handle<Event> Create(v8::Isolate* isolate);
 
   // Pass the callback to be invoked.
-  void SetCallback(base::Optional<MessageSyncCallback> callback);
+  void SetCallback(InvokeCallback callback);
 
   // event.PreventDefault().
   void PreventDefault(v8::Isolate* isolate);
 
   // event.sendReply(value), used for replying to synchronous messages and
   // `invoke` calls.
-  bool SendReply(const base::Value& result);
+  bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> result);
 
  protected:
-  explicit Event(v8::Isolate* isolate);
+  Event();
   ~Event() override;
+
+  // gin::Wrappable:
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  private:
   // Replyer for the synchronous messages.
-  base::Optional<MessageSyncCallback> callback_;
+  InvokeCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(Event);
 };
 
-}  // namespace mate
+}  // namespace gin_helper
 
 #endif  // SHELL_BROWSER_API_EVENT_H_

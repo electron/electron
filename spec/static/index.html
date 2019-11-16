@@ -15,7 +15,7 @@
 
   const path = require('path')
   const electron = require('electron')
-  const { remote, ipcRenderer } = electron
+  const { ipcRenderer } = electron
 
   // Set up chai-as-promised here first to avoid conflicts
   // It must be loaded first or really strange things happen inside
@@ -23,32 +23,16 @@
   // DO NOT MOVE, REMOVE OR EDIT THIS LINE
   require('chai').use(require('chai-as-promised'))
 
-  // Check if we are running in CI.
-  const isCi = remote.getGlobal('isCi')
-
-  if (!isCi) {
-    const win = remote.getCurrentWindow()
-    win.show()
-    win.focus()
-  }
-
-  // Show DevTools.
-  document.oncontextmenu = (e) => {
-    remote.getCurrentWindow().inspectElement(e.clientX, e.clientY)
-  }
-
   // Rediret all output to browser.
-  if (isCi) {
-    const fakeConsole = {}
-    for (const k in console) {
-      if (console.hasOwnProperty(k) && k !== 'assert') {
-        fakeConsole[k] = (...args) => ipcRenderer.send('console-call', k, args)
-      }
+  const fakeConsole = {}
+  for (const k in console) {
+    if (console.hasOwnProperty(k) && k !== 'assert') {
+      fakeConsole[k] = (...args) => ipcRenderer.send('console-call', k, args)
     }
-    global.__defineGetter__('console', function () {
-      return fakeConsole
-    })
   }
+  global.__defineGetter__('console', function () {
+    return fakeConsole
+  })
 
   const Mocha = require('mocha')
   const mochaOptions = {}
@@ -63,20 +47,20 @@
   const mocha = new Mocha(mochaOptions)
 
   if (!process.env.MOCHA_REPORTER) {
-    mocha.ui('bdd').reporter(isCi ? 'tap' : 'html')
+    mocha.ui('bdd').reporter('tap')
   }
-  mocha.timeout(isCi ? 30000 : 10000)
+  mocha.timeout(30000)
 
   const query = Mocha.utils.parseQuery(window.location.search || '')
   if (query.grep) mocha.grep(query.grep)
   if (query.invert) mocha.invert()
 
+  const files = query.files ? query.files.split(',') : undefined
+
   // Read all test files.
   const walker = require('walkdir').walk(path.dirname(__dirname), {
     no_recurse: true
   })
-
-  const crashSpec = 'api-crash-reporter-spec.js'
 
   // This allows you to run specific modules only:
   // npm run test -match=menu
@@ -86,24 +70,31 @@
 
   const testFiles = []
   walker.on('file', (file) => {
-    if (/-spec\.js$/.test(file) && !file.includes(crashSpec) &&
-        (!moduleMatch || moduleMatch.test(file))) {
+    if (/-spec\.js$/.test(file) && (!moduleMatch || moduleMatch.test(file))) {
       testFiles.push(file)
     }
   })
 
+  const baseElectronDir = path.resolve(__dirname, '..', '..')
+
   walker.on('end', () => {
     testFiles.sort()
-    testFiles.forEach((file) => mocha.addFile(file))
-    if (!process.env.npm_config_match || new RegExp(process.env.npm_config_match, 'g').test(crashSpec)) {
-      mocha.addFile(path.resolve(__dirname, '..', crashSpec))
-    }
+    testFiles.forEach((file) => {
+      if (!files || files.includes(path.relative(baseElectronDir, file))) {
+        mocha.addFile(file)
+      }
+    })
+
+    // Set up chai in the correct order
+    const chai = require('chai')
+    chai.use(require('chai-as-promised'))
+    chai.use(require('dirty-chai'))
 
     const runner = mocha.run(() => {
       // Ensure the callback is called after runner is defined
       setTimeout(() => {
         Mocha.utils.highlightTags('code')
-        if (isCi) ipcRenderer.send('process.exit', runner.failures)
+        ipcRenderer.send('process.exit', runner.failures)
       }, 0)
     })
   })

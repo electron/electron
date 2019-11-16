@@ -16,8 +16,8 @@
 #include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/promise_util.h"
 
 namespace {
 
@@ -25,24 +25,23 @@ int ShowMessageBoxSync(const electron::MessageBoxSettings& settings) {
   return electron::ShowMessageBoxSync(settings);
 }
 
-void ResolvePromiseObject(
-    electron::util::Promise<gin_helper::Dictionary> promise,
-    int result,
-    bool checkbox_checked) {
+void ResolvePromiseObject(gin_helper::Promise<gin_helper::Dictionary> promise,
+                          int result,
+                          bool checkbox_checked) {
   v8::Isolate* isolate = promise.isolate();
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
 
   dict.Set("response", result);
   dict.Set("checkboxChecked", checkbox_checked);
 
-  promise.ResolveWithGin(dict);
+  promise.Resolve(dict);
 }
 
 v8::Local<v8::Promise> ShowMessageBox(
     const electron::MessageBoxSettings& settings,
     gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  electron::util::Promise<gin_helper::Dictionary> promise(isolate);
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   electron::ShowMessageBox(
@@ -61,7 +60,7 @@ void ShowOpenDialogSync(const file_dialog::DialogSettings& settings,
 v8::Local<v8::Promise> ShowOpenDialog(
     const file_dialog::DialogSettings& settings,
     gin::Arguments* args) {
-  electron::util::Promise<gin_helper::Dictionary> promise(args->isolate());
+  gin_helper::Promise<gin_helper::Dictionary> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   file_dialog::ShowOpenDialog(settings, std::move(promise));
   return handle;
@@ -77,7 +76,7 @@ void ShowSaveDialogSync(const file_dialog::DialogSettings& settings,
 v8::Local<v8::Promise> ShowSaveDialog(
     const file_dialog::DialogSettings& settings,
     gin::Arguments* args) {
-  electron::util::Promise<gin_helper::Dictionary> promise(args->isolate());
+  gin_helper::Promise<gin_helper::Dictionary> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   file_dialog::ShowSaveDialog(settings, std::move(promise));

@@ -465,10 +465,8 @@ The usage is the same with [the `select-client-certificate` event of
 Returns:
 
 * `event` Event
-* `request` Object
-  * `method` String
+* `authenticationResponseDetails` Object
   * `url` URL
-  * `referrer` URL
 * `authInfo` Object
   * `isProxy` Boolean
   * `scheme` String
@@ -476,8 +474,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
-  * `username` String
-  * `password` String
+  * `username` String (optional)
+  * `password` String (optional)
 
 Emitted when `webContents` wants to do basic auth.
 
@@ -581,6 +579,9 @@ Returns:
   * `titleText` String - Title or alt text of the selection that the context
     was invoked on.
   * `misspelledWord` String - The misspelled word under the cursor, if any.
+  * `dictionarySuggestions` String[] - An array of suggested words to show the
+    user to replace the `misspelledWord`.  Only available if there is a misspelled
+    word and spellchecker is enabled.
   * `frameCharset` String - The character encoding of the frame on which the
     menu was invoked.
   * `inputFieldType` String - If the context menu was invoked on an input
@@ -807,17 +808,6 @@ Returns:
 * `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-guest-web-contents'
-
-Returns:
-
-* `event` IpcMainEvent
-* `guestWebContents` [WebContents](web-contents.md)
-
-Emitted when `<webview>.getWebContents()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
@@ -1399,13 +1389,20 @@ An example of showing devtools in a `<webview>` tag:
 </head>
 <body>
   <webview id="browser" src="https://github.com"></webview>
-  <webview id="devtools"></webview>
+  <webview id="devtools" src="about:blank"></webview>
   <script>
+    const { webContents } = require('electron').remote
+    const emittedOnce = (element, eventName) => new Promise(resolve => {
+      element.addEventListener(eventName, event => resolve(event), { once: true })
+    })
     const browserView = document.getElementById('browser')
     const devtoolsView = document.getElementById('devtools')
-    browserView.addEventListener('dom-ready', () => {
-      const browser = browserView.getWebContents()
-      browser.setDevToolsWebContents(devtoolsView.getWebContents())
+    const browserReady = emittedOnce(browserView, 'dom-ready')
+    const devtoolsReady = emittedOnce(devtoolsView, 'dom-ready')
+    Promise.all([browserReady, devtoolsReady]).then(() => {
+      const browser = webContents.fromId(browserView.getWebContentsId())
+      const devtools = webContents.fromId(devtoolsView.getWebContentsId())
+      browser.setDevToolsWebContents(devtools)
       browser.openDevTools()
     })
   </script>
@@ -1490,9 +1487,15 @@ Opens the developer tools for the service worker context.
 * `channel` String
 * `...args` any[]
 
-Send an asynchronous message to renderer process via `channel`, you can also
-send arbitrary arguments. Arguments will be serialized in JSON internally and
-hence no functions or prototype chain will be included.
+Send an asynchronous message to the renderer process via `channel`, along with
+arguments. Arguments will be serialized with the [Structured Clone
+Algorithm][SCA], just like [`postMessage`][], so prototype chains will not be
+included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
+throw an exception.
+
+> **NOTE**: Sending non-standard JavaScript types such as DOM objects or
+> special Electron objects is deprecated, and will begin throwing an exception
+> starting with Electron 9.
 
 The renderer process can handle the message by listening to `channel` with the
 [`ipcRenderer`](ipc-renderer.md) module.
@@ -1533,8 +1536,14 @@ app.on('ready', () => {
 * `...args` any[]
 
 Send an asynchronous message to a specific frame in a renderer process via
-`channel`. Arguments will be serialized
-as JSON internally and as such no functions or prototype chains will be included.
+`channel`, along with arguments. Arguments will be serialized with the
+[Structured Clone Algorithm][SCA], just like [`postMessage`][], so prototype
+chains will not be included. Sending Functions, Promises, Symbols, WeakMaps, or
+WeakSets will throw an exception.
+
+> **NOTE**: Sending non-standard JavaScript types such as DOM objects or
+> special Electron objects is deprecated, and will begin throwing an exception
+> starting with Electron 9.
 
 The renderer process can handle the message by listening to `channel` with the
 [`ipcRenderer`](ipc-renderer.md) module.
@@ -1796,3 +1805,5 @@ A [`Debugger`](debugger.md) instance for this webContents.
 
 [keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
+[SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
+[`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage

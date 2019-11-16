@@ -456,9 +456,37 @@ this session just before normal `preload` scripts run.
 Returns `String[]` an array of paths to preload scripts that have been
 registered.
 
+#### `ses.setSpellCheckerLanguages(languages)`
+
+* `languages` String[] - An array of language codes to enable the spellchecker for.
+
+The built in spellchecker does not automatically detect what language a user is typing in.  In order for the
+spell checker to correctly check their words you must call this API with an array of language codes.  You can
+get the list of supported language codes with the `ses.availableSpellCheckerLanguages` property.
+
+#### `ses.getSpellCheckerLanguages()`
+
+Returns `String[]` - An array of language codes the spellchecker is enabled for.  If this list is empty the spellchecker
+will fallback to using `en-US`.  By default on launch if this setting is an empty list Electron will try to populate this
+setting with the current OS locale.  This setting is persisted across restarts.
+
+#### `ses.setSpellCheckerDictionaryDownloadURL(url)`
+
+* `url` String - A base URL for Electron to download hunspell dictionaries from.
+
+By default Electron will download hunspell dictionaries from the Chromium CDN.  If you want to override this
+behavior you can use this API to point the dictionary downloader at your own hosted version of the hunspell
+dictionaries.  We publish a `hunspell_dictionaries.zip` file with each release which contains the files you need
+to host here.
+
 ### Instance Properties
 
 The following properties are available on instances of `Session`:
+
+#### `ses.availableSpellCheckerLanguages` _Readonly_
+
+A `String[]` array which consists of all the known available spell checker languages.  Providing a language
+code to the `setSpellCheckerLanaguages` API that isn't in this array will result in an error.
 
 #### `ses.cookies` _Readonly_
 

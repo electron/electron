@@ -70,8 +70,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
-  * `username` String
-  * `password` String
+  * `username` String (optional)
+  * `password` String (optional)
 
 Emitted when an authenticating proxy is asking for user credentials.
 

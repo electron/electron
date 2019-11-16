@@ -49,10 +49,6 @@ class BrowserObserver : public base::CheckedObserver {
   virtual void OnWillFinishLaunching() {}
   virtual void OnFinishLaunching(const base::DictionaryValue& launch_info) {}
 
-  // The browser requests HTTP login.
-  virtual void OnLogin(scoped_refptr<LoginHandler> login_handler,
-                       const base::DictionaryValue& request_details) {}
-
   // The browser's accessibility suppport has changed.
   virtual void OnAccessibilitySupportChanged() {}
 

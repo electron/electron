@@ -11,15 +11,14 @@
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
 #include "electron/electron_version.h"
-#include "native_mate/converter.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/handle.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<net::NetLogCaptureMode> {
@@ -41,7 +40,7 @@ struct Converter<net::NetLogCaptureMode> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -63,7 +62,8 @@ base::File OpenFileForWriting(base::FilePath path) {
                     base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
 }
 
-void ResolvePromiseWithNetError(util::Promise<void*> promise, int32_t error) {
+void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
+                                int32_t error) {
   if (error == net::OK) {
     promise.Resolve();
   } else {
@@ -84,7 +84,7 @@ NetLog::NetLog(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 NetLog::~NetLog() = default;
 
 v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
-                                            mate::Arguments* args) {
+                                            gin_helper::Arguments* args) {
   if (log_path.empty()) {
     args->ThrowError("The first parameter must be a valid string");
     return v8::Local<v8::Promise>();
@@ -93,20 +93,20 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::kDefault;
   uint64_t max_file_size = network::mojom::NetLogExporter::kUnlimitedFileSize;
 
-  mate::Dictionary dict;
+  gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
     v8::Local<v8::Value> capture_mode_v8;
     if (dict.Get("captureMode", &capture_mode_v8)) {
-      if (!mate::ConvertFromV8(args->isolate(), capture_mode_v8,
-                               &capture_mode)) {
+      if (!gin::ConvertFromV8(args->isolate(), capture_mode_v8,
+                              &capture_mode)) {
         args->ThrowError("Invalid value for captureMode");
         return v8::Local<v8::Promise>();
       }
     }
     v8::Local<v8::Value> max_file_size_v8;
     if (dict.Get("maxFileSize", &max_file_size_v8)) {
-      if (!mate::ConvertFromV8(args->isolate(), max_file_size_v8,
-                               &max_file_size)) {
+      if (!gin::ConvertFromV8(args->isolate(), max_file_size_v8,
+                              &max_file_size)) {
         args->ThrowError("Invalid value for maxFileSize");
         return v8::Local<v8::Promise>();
       }
@@ -118,7 +118,8 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
     return v8::Local<v8::Promise>();
   }
 
-  pending_start_promise_ = base::make_optional<util::Promise<void*>>(isolate());
+  pending_start_promise_ =
+      base::make_optional<gin_helper::Promise<void>>(isolate());
   v8::Local<v8::Promise> handle = pending_start_promise_->GetHandle();
 
   auto command_line_string =
@@ -187,8 +188,8 @@ bool NetLog::IsCurrentlyLogging() const {
   return !!net_log_exporter_;
 }
 
-v8::Local<v8::Promise> NetLog::StopLogging(mate::Arguments* args) {
-  util::Promise<void*> promise(isolate());
+v8::Local<v8::Promise> NetLog::StopLogging(gin_helper::Arguments* args) {
+  gin_helper::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (net_log_exporter_) {
@@ -198,8 +199,8 @@ v8::Local<v8::Promise> NetLog::StopLogging(mate::Arguments* args) {
     net_log_exporter_->Stop(
         base::Value(base::Value::Type::DICTIONARY),
         base::BindOnce(
-            [](network::mojom::NetLogExporterPtr, util::Promise<void*> promise,
-               int32_t error) {
+            [](network::mojom::NetLogExporterPtr,
+               gin_helper::Promise<void> promise, int32_t error) {
               ResolvePromiseWithNetError(std::move(promise), error);
             },
             std::move(net_log_exporter_), std::move(promise)));
@@ -211,16 +212,16 @@ v8::Local<v8::Promise> NetLog::StopLogging(mate::Arguments* args) {
 }
 
 // static
-mate::Handle<NetLog> NetLog::Create(v8::Isolate* isolate,
-                                    AtomBrowserContext* browser_context) {
-  return mate::CreateHandle(isolate, new NetLog(isolate, browser_context));
+gin::Handle<NetLog> NetLog::Create(v8::Isolate* isolate,
+                                   AtomBrowserContext* browser_context) {
+  return gin::CreateHandle(isolate, new NetLog(isolate, browser_context));
 }
 
 // static
 void NetLog::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "NetLog"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "NetLog"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetProperty("currentlyLogging", &NetLog::IsCurrentlyLogging)
       .SetMethod("startLogging", &NetLog::StartLogging)
       .SetMethod("stopLogging", &NetLog::StopLogging);

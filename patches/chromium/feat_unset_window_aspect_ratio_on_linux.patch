@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Erick Zhao <erickzhao@github.com>
+Date: Thu, 1 Aug 2019 13:40:17 -0700
+Subject: feat: unset window aspect ratio on linux
+
+Electron has exposed methods to allow setting the aspect ratio
+for a given window, and as a part of that needed to allow users to
+reset the aspect ratio. On macOS, we can do this with existing APIs,
+but on Linux this was not possible using currently exposed APIs without
+this patch.
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/1895789.
+
+diff --git a/ui/base/x/x11_window.cc b/ui/base/x/x11_window.cc
+index c2cd00336856dc06499540dc601ac737348ce905..60adb7dcb326695ad97473d8a362a75461f66c2b 100644
+--- a/ui/base/x/x11_window.cc
++++ b/ui/base/x/x11_window.cc
+@@ -742,9 +742,14 @@ void XWindow::SetXWindowAspectRatio(const gfx::SizeF& aspect_ratio) {
+   long supplied_return;
+ 
+   XGetWMNormalHints(xdisplay_, xwindow_, &size_hints, &supplied_return);
+-  size_hints.flags |= PAspect;
+-  size_hints.min_aspect.x = size_hints.max_aspect.x = aspect_ratio.width();
+-  size_hints.min_aspect.y = size_hints.max_aspect.y = aspect_ratio.height();
++  // if ratio parameter has length 0, unforce the aspect ratio
++  if (aspect_ratio.IsEmpty()) {
++    size_hints.flags &= ~PAspect;
++  } else {
++    size_hints.flags |= PAspect;
++    size_hints.min_aspect.x = size_hints.max_aspect.x = aspect_ratio.width();
++    size_hints.min_aspect.y = size_hints.max_aspect.y = aspect_ratio.height();
++  }
+   XSetWMNormalHints(xdisplay_, xwindow_, &size_hints);
+ }
+ 

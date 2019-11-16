@@ -14,10 +14,6 @@
 #include "base/values.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
-#include "net/base/upload_bytes_element_reader.h"
-#include "net/base/upload_data_stream.h"
-#include "net/base/upload_element_reader.h"
-#include "net/base/upload_file_element_reader.h"
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
@@ -25,7 +21,7 @@
 #include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
-#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
@@ -286,6 +282,58 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
 }
 
 // static
+v8::Local<v8::Value>
+Converter<scoped_refptr<network::ResourceRequestBody>>::ToV8(
+    v8::Isolate* isolate,
+    const scoped_refptr<network::ResourceRequestBody>& val) {
+  if (!val)
+    return v8::Null(isolate);
+  return ConvertToV8(isolate, *val);
+}
+
+// static
+bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    scoped_refptr<network::ResourceRequestBody>* out) {
+  auto list = std::make_unique<base::ListValue>();
+  if (!ConvertFromV8(isolate, val, list.get()))
+    return false;
+  *out = new network::ResourceRequestBody();
+  for (size_t i = 0; i < list->GetSize(); ++i) {
+    base::DictionaryValue* dict = nullptr;
+    std::string type;
+    if (!list->GetDictionary(i, &dict))
+      return false;
+    dict->GetString("type", &type);
+    if (type == "rawData") {
+      base::Value* bytes = nullptr;
+      dict->GetBinary("bytes", &bytes);
+      (*out)->AppendBytes(
+          reinterpret_cast<const char*>(bytes->GetBlob().data()),
+          base::checked_cast<int>(bytes->GetBlob().size()));
+    } else if (type == "file") {
+      std::string file;
+      int offset = 0, length = -1;
+      double modification_time = 0.0;
+      dict->GetStringWithoutPathExpansion("filePath", &file);
+      dict->GetInteger("offset", &offset);
+      dict->GetInteger("file", &length);
+      dict->GetDouble("modificationTime", &modification_time);
+      (*out)->AppendFileRange(base::FilePath::FromUTF8Unsafe(file),
+                              static_cast<uint64_t>(offset),
+                              static_cast<uint64_t>(length),
+                              base::Time::FromDoubleT(modification_time));
+    } else if (type == "blob") {
+      std::string uuid;
+      dict->GetString("blobUUID", &uuid);
+      (*out)->AppendBlob(uuid);
+    }
+  }
+  return true;
+}
+
+// static
 v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequest& val) {
@@ -312,57 +360,3 @@ v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
 }
 
 }  // namespace gin
-
-namespace electron {
-
-void FillRequestDetails(base::DictionaryValue* details,
-                        const net::URLRequest* request) {
-  details->SetString("method", request->method());
-  std::string url;
-  if (!request->url_chain().empty())
-    url = request->url().spec();
-  details->SetKey("url", base::Value(url));
-  details->SetString("referrer", request->referrer());
-  auto list = std::make_unique<base::ListValue>();
-  GetUploadData(list.get(), request);
-  if (!list->empty())
-    details->Set("uploadData", std::move(list));
-  auto headers_value = std::make_unique<base::DictionaryValue>();
-  for (net::HttpRequestHeaders::Iterator it(request->extra_request_headers());
-       it.GetNext();) {
-    headers_value->SetString(it.name(), it.value());
-  }
-  details->Set("headers", std::move(headers_value));
-}
-
-void GetUploadData(base::ListValue* upload_data_list,
-                   const net::URLRequest* request) {
-  const net::UploadDataStream* upload_data = request->get_upload();
-  if (!upload_data)
-    return;
-  const std::vector<std::unique_ptr<net::UploadElementReader>>* readers =
-      upload_data->GetElementReaders();
-  for (const auto& reader : *readers) {
-    auto upload_data_dict = std::make_unique<base::DictionaryValue>();
-    if (reader->AsBytesReader()) {
-      const net::UploadBytesElementReader* bytes_reader =
-          reader->AsBytesReader();
-      auto bytes = std::make_unique<base::Value>(
-          std::vector<char>(bytes_reader->bytes(),
-                            bytes_reader->bytes() + bytes_reader->length()));
-      upload_data_dict->Set("bytes", std::move(bytes));
-    } else if (reader->AsFileReader()) {
-      const net::UploadFileElementReader* file_reader = reader->AsFileReader();
-      auto file_path = file_reader->path().AsUTF8Unsafe();
-      upload_data_dict->SetKey("file", base::Value(file_path));
-    }
-    // else {
-    //   const storage::UploadBlobElementReader* blob_reader =
-    //       static_cast<storage::UploadBlobElementReader*>(reader.get());
-    //   upload_data_dict->SetString("blobUUID", blob_reader->uuid());
-    // }
-    upload_data_list->Append(std::move(upload_data_dict));
-  }
-}
-
-}  // namespace electron

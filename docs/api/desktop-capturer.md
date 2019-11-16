@@ -91,7 +91,11 @@ The `desktopCapturer` module has the following methods:
 
 Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`DesktopCapturerSource`](structures/desktop-capturer-source.md) objects, each `DesktopCapturerSource` represents a screen or an individual window that can be captured.
 
+**Note** Capturing the screen contents requires user consent on macOS 10.15 Catalina or higher,
+which can detected by [`systemPreferences.getMediaAccessStatus`].
+
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
+[`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-macos
 
 ## Caveats
 

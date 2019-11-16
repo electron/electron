@@ -15,9 +15,8 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/common/content_constants.h"
-#include "content/public/common/pepper_plugin_info.h"
 #include "electron/buildflags/buildflags.h"
-#include "ppapi/shared_impl/ppapi_permissions.h"
+#include "ppapi/buildflags/buildflags.h"
 #include "shell/browser/atom_paths.h"
 #include "shell/common/options_switches.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -33,9 +32,15 @@
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "pdf/pdf.h"
-#include "shell/common/atom_constants.h"
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "pdf/pdf.h"                      // nogncheck
+#include "pdf/pdf_ppapi.h"                // nogncheck
+#include "shell/common/atom_constants.h"  // nogncheck
+#endif                                    // BUILDFLAG(ENABLE_PDF_VIEWER)
+
+#if BUILDFLAG(ENABLE_PLUGINS)
+#include "content/public/common/pepper_plugin_info.h"
+#include "ppapi/shared_impl/ppapi_permissions.h"
+#endif  // BUILDFLAG(ENABLE_PLUGINS)
 
 namespace electron {
 
@@ -141,6 +146,7 @@ void AddPepperFlashFromCommandLine(
 }
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
+#if BUILDFLAG(ENABLE_PLUGINS)
 void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   content::PepperPluginInfo pdf_info;
@@ -148,7 +154,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   pdf_info.is_out_of_process = true;
   pdf_info.name = "Chromium PDF Viewer";
   pdf_info.description = "Portable Document Format";
-  pdf_info.path = base::FilePath::FromUTF8Unsafe(kPdfPluginPath);
+  pdf_info.path = base::FilePath(FILE_PATH_LITERAL("internal-pdf-viewer"));
   content::WebPluginMimeType pdf_mime_type(kPdfPluginMimeType, "pdf",
                                            "Portable Document Format");
   pdf_info.mime_types.push_back(pdf_mime_type);
@@ -157,10 +163,11 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
       chrome_pdf::PPP_InitializeModule;
   pdf_info.internal_entry_points.shutdown_module =
       chrome_pdf::PPP_ShutdownModule;
-  pdf_info.permissions = ppapi::PERMISSION_PRIVATE | ppapi::PERMISSION_DEV;
+  pdf_info.permissions = ppapi::PERMISSION_PDF | ppapi::PERMISSION_DEV;
   plugins->push_back(pdf_info);
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
+#endif  // BUILDFLAG(ENABLE_PLUGINS)
 
 void AppendDelimitedSwitchToVector(const base::StringPiece cmd_switch,
                                    std::vector<std::string>* append_me) {
@@ -227,7 +234,9 @@ void AtomContentClient::AddPepperPlugins(
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   AddPepperFlashFromCommandLine(command_line, plugins);
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PLUGINS)
   ComputeBuiltInPlugins(plugins);
+#endif  // BUILDFLAG(ENABLE_PLUGINS)
 }
 
 void AtomContentClient::AddContentDecryptionModules(

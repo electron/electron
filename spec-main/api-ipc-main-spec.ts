@@ -45,24 +45,6 @@ describe('ipc main module', () => {
     })
   })
 
-  describe('remote objects registry', () => {
-    it('does not dereference until the render view is deleted (regression)', (done) => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      })
-
-      ipcMain.once('error-message', (event, message) => {
-        expect(message).to.match(/^Cannot call method 'getURL' on missing remote object/)
-        done()
-      })
-
-      w.loadFile(path.join(fixtures, 'api', 'render-view-deleted.html'))
-    })
-  })
-
   describe('ipcMain.on', () => {
     it('is not used for internals', async () => {
       const appPath = path.join(fixtures, 'api', 'ipc-main-listeners')

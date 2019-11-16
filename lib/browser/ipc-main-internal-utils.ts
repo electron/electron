@@ -1,5 +1,4 @@
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal'
-import * as errorUtils from '@electron/internal/common/error-utils'
 
 type IPCHandler = (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any
 
@@ -8,7 +7,7 @@ export const handleSync = function <T extends IPCHandler> (channel: string, hand
     try {
       event.returnValue = [null, await handler(event, ...args)]
     } catch (error) {
-      event.returnValue = [errorUtils.serialize(error)]
+      event.returnValue = [error]
     }
   })
 }
@@ -30,7 +29,7 @@ export function invokeInWebContents<T> (sender: Electron.WebContentsInternal, se
       ipcMainInternal.removeListener(channel, handler)
 
       if (error) {
-        reject(errorUtils.deserialize(error))
+        reject(error)
       } else {
         resolve(result)
       }

@@ -60,11 +60,12 @@ locales/uk.pak
 locales/vi.pak
 locales/zh-CN.pak
 locales/zh-TW.pak
-natives_blob.bin
 resources.pak
 resources/default_app.asar
 snapshot_blob.bin
 swiftshader/libEGL.dll
 swiftshader/libGLESv2.dll
+libvk_swiftshader_icd.json
+vk_swiftshader.dll
 v8_context_snapshot.bin
 version

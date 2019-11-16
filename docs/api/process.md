@@ -82,12 +82,6 @@ A `Boolean` that controls whether or not deprecation warnings are printed to `st
 Setting this to `true` will silence deprecation warnings. This property is used
 instead of the `--no-deprecation` command line flag.
 
-### `process.enablePromiseAPIs`
-
-A `Boolean` that controls whether or not deprecation warnings are printed to `stderr` when
-formerly callback-based APIs converted to Promises are invoked using callbacks. Setting this to `true`
-will enable deprecation warnings.
-
 ### `process.resourcesPath` _Readonly_
 
 A `String` representing the path to the resources directory.
@@ -217,11 +211,15 @@ that all statistics are reported in Kilobytes.
 
 Returns `String` - The version of the host operating system.
 
-Examples:
+Example:
 
-* `macOS` -> `10.13.6`
-* `Windows` -> `10.0.17763`
-* `Linux` -> `4.15.0-45-generic`
+```js
+const version = process.getSystemVersion()
+console.log(version)
+// On macOS -> '10.13.6'
+// On Windows -> '10.0.17763'
+// On Linux -> '4.15.0-45-generic'
+```
 
 **Note:** It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
 

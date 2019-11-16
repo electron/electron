@@ -8,22 +8,17 @@
 #include <memory>
 #include <string>
 
-#include "base/callback.h"
 #include "base/values.h"
-#include "native_mate/handle.h"
-#include "shell/browser/api/event_emitter.h"
+#include "gin/handle.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/promise_util.h"
+#include "shell/common/gin_helper/event_emitter.h"
+#include "shell/common/gin_helper/promise.h"
 
 #if defined(OS_WIN)
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #include "ui/gfx/sys_color_change_listener.h"
 #endif
-
-namespace base {
-class DictionaryValue;
-}
 
 namespace electron {
 
@@ -37,7 +32,7 @@ enum NotificationCenterKind {
 };
 #endif
 
-class SystemPreferences : public mate::EventEmitter<SystemPreferences>
+class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
 #if defined(OS_WIN)
     ,
                           public BrowserObserver,
@@ -45,14 +40,15 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #endif
 {
  public:
-  static mate::Handle<SystemPreferences> Create(v8::Isolate* isolate);
+  static gin::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
 #if defined(OS_WIN) || defined(OS_MACOSX)
   std::string GetAccentColor();
-  std::string GetColor(const std::string& color, mate::Arguments* args);
+  std::string GetColor(gin_helper::ErrorThrower thrower,
+                       const std::string& color);
 #endif
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
@@ -66,33 +62,31 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
 
 #elif defined(OS_MACOSX)
-  using NotificationCallback =
-      base::RepeatingCallback<void(const std::string&,
-                                   const base::DictionaryValue&,
-                                   const std::string&)>;
+  using NotificationCallback = base::RepeatingCallback<
+      void(const std::string&, base::DictionaryValue, const std::string&)>;
 
   void PostNotification(const std::string& name,
-                        const base::DictionaryValue& user_info,
-                        mate::Arguments* args);
+                        base::DictionaryValue user_info,
+                        gin_helper::Arguments* args);
   int SubscribeNotification(const std::string& name,
                             const NotificationCallback& callback);
   void UnsubscribeNotification(int id);
   void PostLocalNotification(const std::string& name,
-                             const base::DictionaryValue& user_info);
+                             base::DictionaryValue user_info);
   int SubscribeLocalNotification(const std::string& name,
                                  const NotificationCallback& callback);
   void UnsubscribeLocalNotification(int request_id);
   void PostWorkspaceNotification(const std::string& name,
-                                 const base::DictionaryValue& user_info);
+                                 base::DictionaryValue user_info);
   int SubscribeWorkspaceNotification(const std::string& name,
                                      const NotificationCallback& callback);
   void UnsubscribeWorkspaceNotification(int request_id);
   v8::Local<v8::Value> GetUserDefault(const std::string& name,
                                       const std::string& type);
-  void RegisterDefaults(mate::Arguments* args);
+  void RegisterDefaults(gin_helper::Arguments* args);
   void SetUserDefault(const std::string& name,
                       const std::string& type,
-                      mate::Arguments* args);
+                      gin_helper::Arguments* args);
   void RemoveUserDefault(const std::string& name);
   bool IsSwipeTrackingFromScrollEventsEnabled();
 
@@ -108,7 +102,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   // TODO(codebytere): Write tests for these methods once we
   // are running tests on a Mojave machine
   std::string GetMediaAccessStatus(const std::string& media_type,
-                                   mate::Arguments* args);
+                                   gin_helper::Arguments* args);
   v8::Local<v8::Promise> AskForMediaAccess(v8::Isolate* isolate,
                                            const std::string& media_type);
 
@@ -116,7 +110,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   // are running tests on a Mojave machine
   v8::Local<v8::Value> GetEffectiveAppearance(v8::Isolate* isolate);
   v8::Local<v8::Value> GetAppLevelAppearance(v8::Isolate* isolate);
-  void SetAppLevelAppearance(mate::Arguments* args);
+  void SetAppLevelAppearance(gin_helper::Arguments* args);
 #endif
   bool IsDarkMode();
   bool IsInvertedColorScheme();

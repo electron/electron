@@ -2,14 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "shell/browser/ui/gtk_util.h"
 #include "shell/browser/ui/message_box.h"
-#include "shell/browser/ui/util_gtk.h"
 
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
-#include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/native_window_views.h"
@@ -56,7 +55,7 @@ class GtkMessageBox : public NativeWindowObserver {
       static constexpr int pixel_width = 48;
       static constexpr int pixel_height = 48;
       GdkPixbuf* pixbuf =
-          libgtkui::GdkPixbufFromSkBitmap(*settings.icon.bitmap());
+          gtk_util::GdkPixbufFromSkBitmap(*settings.icon.bitmap());
       GdkPixbuf* scaled_pixbuf = gdk_pixbuf_scale_simple(
           pixbuf, pixel_width, pixel_height, GDK_INTERP_BILINEAR);
       GtkWidget* w = gtk_image_new_from_pixbuf(scaled_pixbuf);

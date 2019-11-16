@@ -1,4 +1,4 @@
-const { ipcRenderer, remote } = require('electron')
+const { ipcRenderer } = require('electron')
 
-ipcRenderer.send('answer', process.argv, remote.getCurrentWindow().webContents.getWebPreferences())
+ipcRenderer.send('answer', process.argv)
 window.close()

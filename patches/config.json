@@ -3,7 +3,11 @@
 
   "src/electron/patches/boringssl": "src/third_party/boringssl/src",
 
-  "src/electron/patches/perfetto": "src/third_party/perfetto",
+  "src/electron/patches/breakpad":  "src/third_party/breakpad/breakpad",
+
+  "src/electron/patches/perfetto":  "src/third_party/perfetto",
+
+  "src/electron/patches/skia":  "src/third_party/skia",
 
   "src/electron/patches/v8":  "src/v8",
 

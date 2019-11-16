@@ -72,7 +72,7 @@ async function nextNightly (v) {
 
 async function getLastMajorForMaster () {
   let branchNames
-  const result = await GitProcess.exec(['branch', '-a', '--remote', '--list', 'origin/[0-9]-[0-9]-x'], ELECTRON_DIR)
+  const result = await GitProcess.exec(['branch', '-a', '--remote', '--list', 'origin/[0-9]*-x-y'], ELECTRON_DIR)
   if (result.exitCode === 0) {
     branchNames = result.stdout.trim().split('\n')
     const filtered = branchNames.map(b => b.replace('origin/', ''))
@@ -83,7 +83,7 @@ async function getLastMajorForMaster () {
 }
 
 function getNextReleaseBranch (branches) {
-  const converted = branches.map(b => b.replace(/-/g, '.').replace('x', '0'))
+  const converted = branches.map(b => b.replace(/-/g, '.').replace('x', '0').replace('y', '0'))
   return converted.reduce((v1, v2) => semver.gt(v1, v2) ? v1 : v2)
 }
 

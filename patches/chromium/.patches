@@ -8,7 +8,6 @@ blink_world_context.patch
 can_create_window.patch
 disable_hidden.patch
 dom_storage_limits.patch
-out_of_process_instance.patch
 render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
 thread_capabilities.patch
@@ -21,7 +20,7 @@ blink-worker-enable-csp-in-file-scheme.patch
 disable-redraw-lock.patch
 v8_context_snapshot_generator.patch
 boringssl_build_gn.patch
-pepper_flash.patch
+pepper_plugin_support.patch
 no_cache_storage_check.patch
 blink_fix_prototype_assert.patch
 libgtkui_export.patch
@@ -34,8 +33,6 @@ scroll_bounce_flag.patch
 mas-cfisobjc.patch
 mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
-mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
-ignore_rc_check.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
@@ -68,7 +65,6 @@ crashpad_pid_check.patch
 preconnect_feature.patch
 network_service_allow_remote_certificate_verification_logic.patch
 put_back_deleted_colors_for_autofill.patch
-build_win_disable_zc_twophase.patch
 disable_color_correct_rendering.patch
 add_contentgpuclient_precreatemessageloop_callback.patch
 picture-in-picture.patch
@@ -77,5 +73,17 @@ allow_new_privileges_in_unsandboxed_child_processes.patch
 expose_setuseragent_on_networkcontext.patch
 feat_add_set_theme_source_to_allow_apps_to.patch
 revert_cleanup_remove_menu_subtitles_sublabels.patch
-ui_views_fix_jumbo_build.patch
-fix_windows_build.patch
+export_fetchapi_mojo_traits_to_fix_component_build.patch
+add_zoom_limit_setters_to_webcontents.patch
+revert_remove_contentrendererclient_shouldfork.patch
+build_win_disable_zc_twophase.patch
+ignore_rc_check.patch
+build_win_iwyu_for_smil_time.patch
+remove_usage_of_incognito_apis_in_the_spellchecker.patch
+chore_use_electron_resources_not_chrome_for_spellchecker.patch
+feat_unset_window_aspect_ratio_on_linux.patch
+fix_ambiguous_reference_to_data.patch
+backport_fix_msstl_compat_in_ui_events.patch
+build_win_fix_msstl_compatibility_for_pdf.patch
+fix_missing_algorithm_include.patch
+add_trustedauthclient_to_urlloaderfactory.patch

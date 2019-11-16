@@ -2,28 +2,25 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "native_mate/dictionary.h"
-#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/event.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/node_includes.h"
 
 namespace {
 
 v8::Local<v8::Object> CreateWithSender(v8::Isolate* isolate,
                                        v8::Local<v8::Object> sender) {
-  return mate::internal::CreateJSEvent(isolate, sender, nullptr, base::nullopt);
-}
-
-v8::Local<v8::Object> CreateEmpty(v8::Isolate* isolate) {
-  return mate::internal::CreateEmptyJSEvent(isolate);
+  return gin_helper::internal::CreateEvent(isolate, sender);
 }
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createWithSender", &CreateWithSender);
-  dict.SetMethod("createEmpty", &CreateEmpty);
+  dict.SetMethod("createEmpty", &gin_helper::Event::Create);
 }
 
 }  // namespace

@@ -4,7 +4,7 @@ parameters:
   upload-to-s3:
     type: string
     default: '1'
-  
+
   run-lint:
     type: boolean
     default: true
@@ -28,11 +28,11 @@ parameters:
   run-linux-arm-publish:
     type: boolean
     default: false
-  
+
   run-linux-arm64-publish:
     type: boolean
     default: false
-  
+
   run-osx-publish:
     type: boolean
     default: false
@@ -53,7 +53,7 @@ parameters:
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electronbuilds/electron:0.0.10
+    - image: electronjs/build:697b894f36d127155e020f4e8ad4b2e5f6a09613
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
@@ -65,18 +65,14 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "9.4.1"
+    xcode: "10.3.0"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "9.4.1"
+    xcode: "10.3.0"
 
 # Build configurations options.
-env-debug-build: &env-debug-build
-  GN_CONFIG: //electron/build/args/debug.gn
-  SKIP_DIST_ZIP: '1'
-
 env-testing-build: &env-testing-build
   GN_CONFIG: //electron/build/args/testing.gn
   CHECK_DIST_MANIFEST: '1'
@@ -136,7 +132,7 @@ env-linux-medium: &env-linux-medium
 
 env-linux-2xlarge: &env-linux-2xlarge
   NUMBER_OF_NINJA_PROCESSES: 34
-  
+
 env-linux-2xlarge-release: &env-linux-2xlarge-release
   NUMBER_OF_NINJA_PROCESSES: 16
 
@@ -221,7 +217,7 @@ step-setup-env-for-build: &step-setup-env-for-build
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
         if [ "$CIRCLE_PR_NUMBER" != "" ]; then
           #if building a fork set readonly access to sccache
-          echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
+          echo 'export SCCACHE_BUCKET="electronjs-sccache-ci"' >> $BASH_ENV
           echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
         fi
       fi
@@ -246,6 +242,12 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         sudo rm -rf /Library/Developer/CoreSimulator
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/AppleTVOS.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/AppleTVSimulator.platform
+        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform
       fi
 
 step-delete-git-directories: &step-delete-git-directories
@@ -319,6 +321,8 @@ step-gn-check: &step-gn-check
       gn check out/Default //electron:electron_app
       gn check out/Default //electron:manifests
       gn check out/Default //electron/shell/common/api:mojo
+      # Check the hunspell filenames
+      node electron/script/gen-hunspell-filenames.js --check
 
 step-electron-build: &step-electron-build
   run:
@@ -329,7 +333,7 @@ step-electron-build: &step-electron-build
       ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
 
 step-native-unittests-build: &step-native-unittests-build
-  run: 
+  run:
     name: Build native test targets
     no_output_timeout: 30m
     command: |
@@ -534,6 +538,20 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
+step-hunspell-build: &step-hunspell-build
+  run:
+    name: hunspell build
+    command: |
+      cd src
+      if [ "$SKIP_DIST_ZIP" != "1" ]; then
+        ninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+      fi
+
+step-hunspell-store: &step-hunspell-store
+  store_artifacts:
+    path: src/out/Default/hunspell_dictionaries.zip
+    destination: hunspell_dictionaries.zip
+
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
     name: Generate breakpad symbols
@@ -552,6 +570,11 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
       ninja -C out/Default electron:licenses
       ninja -C out/Default electron:electron_version
       electron/script/zip-symbols.py -b $BUILD_PATH
+
+step-symbols-store: &step-symbols-store
+  store_artifacts:
+    path: src/out/Default/symbols.zip
+    destination: symbols.zip
 
 step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
   run:
@@ -611,6 +634,11 @@ step-ninja-summary: &step-ninja-summary
     name: Print ninja summary
     command: |
       python depot_tools/post_build_ninja_summary.py -C src/out/Default
+
+step-ninja-report: &step-ninja-report
+  store_artifacts:
+    path: src/out/Default/.ninja_log
+    destination: ninja_log
 
 # Checkout Steps
 step-generate-deps-hash: &step-generate-deps-hash
@@ -688,7 +716,6 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
       rm -rf src/ios
       rm -rf src/third_party/blink/web_tests
       rm -rf src/third_party/blink/perf_tests
-      rm -rf src/third_party/hunspell_dictionaries
       rm -rf src/third_party/WebKit/LayoutTests
 
 # Save the src cache based on the deps hash
@@ -698,6 +725,51 @@ step-save-src-cache: &step-save-src-cache
       - ./src
     key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
     name: Persisting src cache
+
+# Check for doc only change
+step-check-for-doc-only-change: &step-check-for-doc-only-change
+  run:
+    name: Check if commit is doc only change
+    command: |
+      cd src/electron
+      node script/yarn install --frozen-lockfile
+      if node script/doc-only-change.js --prNumber=$CIRCLE_PR_NUMBER --prURL=$CIRCLE_PULL_REQUEST; then
+        #PR is doc only change; save file with value true to indicate doc only change
+        echo "true" > .skip-ci-build
+      else
+        #PR is not a doc only change; create empty file to indicate check has been done
+        touch .skip-ci-build
+      fi
+
+step-persist-doc-only-change: &step-persist-doc-only-change
+  persist_to_workspace:
+    root: .
+    paths:
+      - src/electron/.skip-ci-build
+
+step-maybe-early-exit-doc-only-change: &step-maybe-early-exit-doc-only-change
+  run:
+    name: Shortcircuit build if doc only change
+    command: |
+      if [ -s src/electron/.skip-ci-build ]; then
+        circleci-agent step halt
+      fi
+
+step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
+  run:
+    name: Shortcircuit job if change is not doc only
+    command: |
+      if [ ! -s src/electron/.skip-ci-build ]; then
+        circleci-agent step halt
+      fi
+
+step-ts-compile: &step-ts-compile
+  run:
+    name: Run TS/JS compile on doc only change
+    command: |
+      cd src
+      ninja -C out/Default electron:default_app_js -j $NUMBER_OF_NINJA_PROCESSES
+      ninja -C out/Default electron:atom_js2c -j $NUMBER_OF_NINJA_PROCESSES
 
 # Lists of steps.
 steps-lint: &steps-lint
@@ -747,6 +819,9 @@ steps-lint: &steps-lint
 steps-checkout-fast: &steps-checkout-fast
   steps:
     - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-persist-doc-only-change
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
@@ -778,6 +853,9 @@ steps-checkout-fast: &steps-checkout-fast
 steps-checkout-and-save-cache: &steps-checkout-and-save-cache
   steps:
     - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-persist-doc-only-change
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
@@ -808,6 +886,7 @@ steps-electron-gn-check: &steps-electron-gn-check
   steps:
     - attach_workspace:
         at: .
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-gn-gen-default
@@ -817,6 +896,7 @@ steps-electron-build: &steps-electron-build
   steps:
     - attach_workspace:
         at: .
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-restore-brew-cache
@@ -854,11 +934,16 @@ steps-electron-build: &steps-electron-build
     - *step-ffmpeg-build
     - *step-ffmpeg-store
 
+    # hunspell
+    - *step-hunspell-build
+    - *step-hunspell-store
+
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
+    - *step-symbols-store
 
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
@@ -869,6 +954,9 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
   steps:
     # Checkout - Copied ffrom steps-checkout
     - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-persist-doc-only-change
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
@@ -890,7 +978,7 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
     - *step-generate-deps-hash-cleanly
     - *step-mark-sync-done
     - *step-minimize-workspace-size-from-checkout
-    
+
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-restore-brew-cache
@@ -902,10 +990,11 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
 
     # Electron app
     - *step-electron-build
+    - *step-ninja-summary
+    - *step-ninja-report
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-ninja-summary
 
     # Native test targets
     - *step-native-unittests-build
@@ -928,16 +1017,60 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
     - *step-ffmpeg-build
     - *step-ffmpeg-store
 
+    # hunspell
+    - *step-hunspell-build
+    - *step-hunspell-store
+
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
+    - *step-symbols-store
 
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
 
     - *step-maybe-notify-slack-failure
+
+steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-change
+  steps:
+    # Checkout - Copied ffrom steps-checkout
+    - *step-checkout-electron
+    - *step-check-for-doc-only-change
+    - *step-maybe-early-exit-no-doc-change
+    - *step-depot-tools-get
+    - *step-depot-tools-add-to-path
+    - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
+    - *step-install-gnutar-on-mac
+    - *step-generate-deps-hash
+    - *step-touch-sync-done
+    - *step-maybe-restore-src-cache
+    - *step-maybe-restore-git-cache
+    - *step-set-git-cache-path
+    # This sync call only runs if .circle-sync-done is an EMPTY file
+    - *step-gclient-sync
+    # These next few steps reset Electron to the correct commit regardless of which cache was restored
+    - run:
+        name: Wipe Electron
+        command: rm -rf src/electron
+    - *step-checkout-electron
+    - *step-run-electron-only-hooks
+    - *step-generate-deps-hash-cleanly
+    - *step-mark-sync-done
+    - *step-minimize-workspace-size-from-checkout
+
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
+    - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
+    - *step-install-npm-deps-on-mac
+    - *step-fix-sync-on-mac
+    - *step-gn-gen-default
+
+    #Compile ts/js to verify doc change didn't break anything
+    - *step-ts-compile
 
 steps-electron-build-for-publish: &steps-electron-build-for-publish
   steps:
@@ -953,11 +1086,12 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Electron app
     - *step-electron-build
+    - *step-maybe-generate-breakpad-symbols
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
+    - *step-symbols-store
 
     # mksnapshot
     - *step-mksnapshot-build
@@ -975,6 +1109,10 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
     - *step-ffmpeg-store
+
+    # hunspell
+    - *step-hunspell-build
+    - *step-hunspell-store
 
     # typescript defs
     - *step-maybe-generate-typescript-defs
@@ -1056,6 +1194,7 @@ steps-tests: &steps-tests
   steps:
     - attach_workspace:
         at: .
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
     - *step-mksnapshot-unzip
@@ -1074,7 +1213,8 @@ steps-tests: &steps-tests
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
-          (cd electron && node script/yarn test -- --ci --enable-logging)
+          (cd electron && node script/yarn test --runners=main --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
+          (cd electron && node script/yarn test --runners=remote --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
     - run:
         name: Check test results existence
         command: |
@@ -1098,6 +1238,7 @@ steps-test-nan: &steps-test-nan
   steps:
     - attach_workspace:
           at: .
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
     - *step-setup-linux-for-headless-testing
@@ -1113,6 +1254,7 @@ steps-test-node: &steps-test-node
   steps:
     - attach_workspace:
           at: .
+    - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
     - *step-setup-linux-for-headless-testing
@@ -1137,6 +1279,13 @@ jobs:
     environment:
       <<: *env-linux-medium
     <<: *steps-lint
+
+  ts-compile-doc-change:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-testing-build
+    <<: *steps-electron-ts-compile-for-doc-change
 
   # Layer 1: Checkout.
   linux-checkout-fast:
@@ -1182,23 +1331,6 @@ jobs:
     <<: *steps-checkout-and-save-cache
 
   # Layer 2: Builds.
-  linux-x64-debug:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-debug-build
-      <<: *env-enable-sccache
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-build-with-inline-checkout-for-tests
-
-  linux-x64-debug-gn-check:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-debug-build
-    <<: *steps-electron-gn-check
-
   linux-x64-testing:
     <<: *machine-linux-2xlarge
     environment:
@@ -1256,17 +1388,6 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
-  linux-ia32-debug:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-ia32
-      <<: *env-debug-build
-      <<: *env-enable-sccache
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-build-with-inline-checkout-for-tests
-
   linux-ia32-testing:
     <<: *machine-linux-2xlarge
     environment:
@@ -1309,17 +1430,6 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
-
-  linux-arm-debug:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-arm
-      <<: *env-debug-build
-      <<: *env-enable-sccache
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-build-with-inline-checkout-for-tests
 
   linux-arm-testing:
     <<: *machine-linux-2xlarge
@@ -1364,25 +1474,6 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
-
-  linux-arm64-debug:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-arm64
-      <<: *env-debug-build
-      <<: *env-enable-sccache
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-build-with-inline-checkout-for-tests
-
-  linux-arm64-debug-gn-check:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-arm64
-      <<: *env-debug-build
-    <<: *steps-electron-gn-check
 
   linux-arm64-testing:
     <<: *machine-linux-2xlarge
@@ -1445,22 +1536,6 @@ jobs:
       <<: *env-ninja-status
     <<: *steps-electron-build
 
-  osx-debug:
-    <<: *machine-mac-large
-    environment:
-      <<: *env-mac-large
-      <<: *env-debug-build
-      <<: *env-enable-sccache
-      <<: *env-ninja-status
-    <<: *steps-electron-build
-
-  osx-debug-gn-check:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-debug-build
-    <<: *steps-electron-gn-check
-
   osx-testing-gn-check:
     <<: *machine-mac
     environment:
@@ -1506,24 +1581,6 @@ jobs:
       <<: *env-ninja-status
     <<: *steps-electron-build
 
-  mas-debug:
-    <<: *machine-mac-large
-    environment:
-      <<: *env-mac-large
-      <<: *env-mas
-      <<: *env-debug-build
-      <<: *env-enable-sccache
-      <<: *env-ninja-status
-    <<: *steps-electron-build
-
-  mas-debug-gn-check:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-mas
-      <<: *env-debug-build
-    <<: *steps-electron-gn-check
-
   mas-testing-gn-check:
     <<: *machine-mac
     environment:
@@ -1548,7 +1605,7 @@ jobs:
       <<: *env-mas
       <<: *env-release-build
       <<: *env-enable-sccache
-      <<: *env-ninja-status      
+      <<: *env-ninja-status
     <<: *steps-electron-build
 
   mas-publish:
@@ -1608,6 +1665,7 @@ jobs:
       <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
+    parallelism: 3
     <<: *steps-tests
 
   linux-x64-testing-nan:
@@ -1657,6 +1715,7 @@ jobs:
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-stack-dumping
+    parallelism: 3
     <<: *steps-tests
 
   linux-ia32-testing-nan:
@@ -1709,6 +1768,7 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
+    parallelism: 2
     <<: *steps-tests
 
   osx-release-tests:
@@ -1738,6 +1798,7 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
+    parallelism: 2
     <<: *steps-tests
 
   mas-release-tests:
@@ -1814,7 +1875,7 @@ jobs:
 workflows:
   version: 2.1
 
-  # The publish workflows below each contain one job so that they are 
+  # The publish workflows below each contain one job so that they are
   # compatible with how sudowoodo works today.  If these workflows are
   # changed to have multiple jobs, then scripts/release/ci-release-build.js
   # will need to be updated and there will most likely need to be changes to
@@ -1837,13 +1898,13 @@ workflows:
     jobs:
     - linux-arm-publish:
         context: release-env
-  
+
   publish-arm64-linux:
     when: << pipeline.parameters.run-linux-arm64-publish >>
     jobs:
     - linux-arm64-publish:
         context: release-env
-  
+
   publish-osx:
     when: << pipeline.parameters.run-osx-publish >>
     jobs:
@@ -1867,10 +1928,6 @@ workflows:
       - linux-checkout-fast
       - linux-checkout-and-save-cache
 
-      - linux-x64-debug
-      - linux-x64-debug-gn-check:
-          requires:
-            - linux-checkout-fast
       - linux-x64-testing
       - linux-x64-testing-no-run-as-node
       - linux-x64-testing-gn-check:
@@ -1886,7 +1943,6 @@ workflows:
           requires:
             - linux-x64-testing
 
-      - linux-ia32-debug
       - linux-ia32-testing
       - linux-ia32-testing-tests:
           requires:
@@ -1898,17 +1954,13 @@ workflows:
           requires:
             - linux-ia32-testing
 
-      - linux-arm-debug
       - linux-arm-testing
 
-      - linux-arm64-debug
-      - linux-arm64-debug-gn-check:
-          requires:
-            - linux-checkout-fast
       - linux-arm64-testing
       - linux-arm64-testing-gn-check:
           requires:
             - linux-checkout-fast
+      - ts-compile-doc-change
 
   build-mac:
     when: << pipeline.parameters.run-build-mac >>
@@ -1917,14 +1969,6 @@ workflows:
       - mac-checkout-and-save-cache
 
       - osx-testing:
-          requires:
-            - mac-checkout-fast
-
-      - osx-debug:
-          requires:
-            - mac-checkout-fast
-
-      - osx-debug-gn-check:
           requires:
             - mac-checkout-fast
 
@@ -1937,14 +1981,6 @@ workflows:
             - osx-testing
 
       - mas-testing:
-          requires:
-            - mac-checkout-fast
-
-      - mas-debug:
-          requires:
-            - mac-checkout-fast
-
-      - mas-debug-gn-check:
           requires:
             - mac-checkout-fast
 

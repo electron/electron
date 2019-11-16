@@ -2,6 +2,10 @@ const features = process.electronBinding('features')
 
 export const moduleList: ElectronInternal.ModuleEntry[] = [
   {
+    name: 'contextBridge',
+    loader: () => require('@electron/internal/renderer/api/context-bridge')
+  },
+  {
     name: 'crashReporter',
     loader: () => require('@electron/internal/renderer/api/crash-reporter')
   },

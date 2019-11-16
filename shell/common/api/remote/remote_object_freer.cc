@@ -7,8 +7,8 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
-#include "electron/shell/common/api/api.mojom.h"
-#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 using blink::WebLocalFrame;
@@ -80,17 +80,10 @@ void RemoteObjectFreer::RunDestructor() {
       ref_mapper_.erase(objects_it);
   }
 
-  auto* channel = "ELECTRON_BROWSER_DEREFERENCE";
-
-  base::ListValue args;
-  args.AppendString(context_id_);
-  args.AppendInteger(object_id_);
-  args.AppendInteger(ref_count);
-
-  mojom::ElectronBrowserAssociatedPtr electron_ptr;
-  render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+  mojom::ElectronBrowserPtr electron_ptr;
+  render_frame->GetRemoteInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(true, channel, args.Clone());
+  electron_ptr->DereferenceRemoteJSObject(context_id_, object_id_, ref_count);
 }
 
 }  // namespace electron
