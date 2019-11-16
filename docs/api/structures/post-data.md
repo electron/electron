@@ -2,9 +2,9 @@
 
 * `type` String - One of the following:
   * `rawData` - The data is available as a `Buffer`, in the `rawData` field.
-  * `file` - The object represent a file. The `filePath`, `offset`, `length`
+  * `file` - The object represents a file. The `filePath`, `offset`, `length`
     and `modificationTime` fields will be used to describe the file.
-  * `blob` - The object represent a `Blob`. The `blobUUID` field will be used to
+  * `blob` - The object represents a `Blob`. The `blobUUID` field will be used to
     describe the `Blob`.
 * `bytes` String - The raw bytes of the post data in a `Buffer`.
 * `filePath` String - The path of the file being uploaded.
