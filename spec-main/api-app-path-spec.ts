@@ -243,10 +243,6 @@ describe('app path module', () => {
     }
 
     it('has no logs directory by default', () => {
-      // this won't be deterministic except on CI since
-      // users may or may not have this dir
-      if (!isCI) return
-
       const osLogPath = (logsPaths as any)[process.platform]
       expect(fs.existsSync(osLogPath)).to.be.false
     })
