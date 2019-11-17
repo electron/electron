@@ -118,6 +118,8 @@ build_script:
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
   - cmd /C %SCCACHE_PATH% --show-stats
+  - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
+  - appveyor PushArtifact out/Default/windows_toolchain_profile.json
   - appveyor PushArtifact out/Default/dist.zip
   - appveyor PushArtifact out/Default/shell_browser_ui_unittests.exe
   - appveyor PushArtifact out/Default/chromedriver.zip

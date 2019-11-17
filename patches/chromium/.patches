@@ -85,3 +85,5 @@ feat_unset_window_aspect_ratio_on_linux.patch
 fix_ambiguous_reference_to_data.patch
 backport_fix_msstl_compat_in_ui_events.patch
 build_win_fix_msstl_compatibility_for_pdf.patch
+fix_missing_algorithm_include.patch
+add_trustedauthclient_to_urlloaderfactory.patch

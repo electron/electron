@@ -191,16 +191,16 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       break;
   }
 
-  if (val == static_cast<content::PermissionType>(PermissionType::POINTER_LOCK))
-    return StringToV8(isolate, "pointerLock");
-  else if (val ==
-           static_cast<content::PermissionType>(PermissionType::FULLSCREEN))
-    return StringToV8(isolate, "fullscreen");
-  else if (val ==
-           static_cast<content::PermissionType>(PermissionType::OPEN_EXTERNAL))
-    return StringToV8(isolate, "openExternal");
-
-  return StringToV8(isolate, "unknown");
+  switch (static_cast<PermissionType>(val)) {
+    case PermissionType::POINTER_LOCK:
+      return StringToV8(isolate, "pointerLock");
+    case PermissionType::FULLSCREEN:
+      return StringToV8(isolate, "fullscreen");
+    case PermissionType::OPEN_EXTERNAL:
+      return StringToV8(isolate, "openExternal");
+    default:
+      return StringToV8(isolate, "unknown");
+  }
 }
 
 // static

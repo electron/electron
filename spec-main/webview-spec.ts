@@ -164,7 +164,21 @@ describe('<webview> tag', function () {
     const extensionPath = path.join(fixtures, 'devtools-extensions', 'foo')
     BrowserWindow.addDevToolsExtension(extensionPath)
 
-    w.loadFile(path.join(fixtures, 'pages', 'webview-devtools.html'))
+    w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'))
+    app.once('web-contents-created', (e, webContents) => {
+      webContents.on('devtools-opened', function () {
+        const showPanelIntervalId = setInterval(function () {
+          if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
+            webContents.devToolsWebContents.executeJavaScript('(' + function () {
+              const lastPanelId: any = (window as any).UI.inspectorView._tabbedPane._tabs.peekLast().id;
+              (window as any).UI.inspectorView.showPanel(lastPanelId)
+            }.toString() + ')()')
+          } else {
+            clearInterval(showPanelIntervalId)
+          }
+        }, 100)
+      })
+    })
 
     const [, { runtimeId, tabId }] = await emittedOnce(ipcMain, 'answer')
     expect(runtimeId).to.equal('foo')

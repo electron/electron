@@ -5,7 +5,7 @@
   var unloadPreventedCount = 0;
   window.onbeforeunload = function() {
     setTimeout(function() {
-      require('electron').remote.getCurrentWindow().emit('onbeforeunload');
+      require('electron').ipcRenderer.sendSync('onbeforeunload')
     }, 0);
     if (unloadPreventedCount < 3) {
       unloadPreventedCount++;
