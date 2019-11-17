@@ -260,7 +260,7 @@ void URLRequest::Cancel() {
 }
 
 void URLRequest::Close() {
-  if (!pending_writes_.empty() && !(request_state_ & STATE_CANCELED)) {
+  if (!pending_writes_.empty() && last_chunk_written_) {
     request_state_ |= STATE_PENDING_CLOSE;
     return;
   }
