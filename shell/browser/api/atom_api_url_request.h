@@ -98,6 +98,7 @@ class URLRequest : public gin_helper::EventEmitter<URLRequest>,
     kResponse,
   };
   void EmitError(EventType type, base::StringPiece error);
+  void EmitFinished();
   template <typename... Args>
   void EmitEvent(EventType type, Args&&... args);
 

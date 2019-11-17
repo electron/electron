@@ -65,6 +65,7 @@ enum State {
   STATE_CANCELED = 1 << 2,
   STATE_FAILED = 1 << 3,
   STATE_CLOSED = 1 << 4,
+  STATE_PENDING_CLOSE = 1 << 5,
   STATE_ERROR = STATE_CANCELED | STATE_FAILED | STATE_CLOSED,
 };
 
@@ -259,6 +260,11 @@ void URLRequest::Cancel() {
 }
 
 void URLRequest::Close() {
+  if (!pending_writes_.empty() && !(request_state_ & STATE_CANCELED)) {
+    request_state_ |= STATE_PENDING_CLOSE;
+    return;
+  }
+
   if (!(request_state_ & STATE_CLOSED)) {
     request_state_ |= STATE_CLOSED;
     if (response_state_ & STATE_STARTED) {
@@ -321,10 +327,9 @@ bool URLRequest::Write(v8::Local<v8::Value> data, bool is_last) {
     if (!pending_writes_.empty()) {
       last_chunk_written_ = true;
       StartWriting();
+    } else {
+      EmitFinished();
     }
-
-    request_state_ |= STATE_FINISHED;
-    EmitEvent(EventType::kRequest, true, "finish");
   }
   return true;
 }
@@ -509,8 +514,15 @@ void URLRequest::OnWrite(MojoResult result) {
 
   // Continue the pending writes.
   pending_writes_.pop_front();
-  if (!pending_writes_.empty())
+  if (!pending_writes_.empty()) {
     DoWrite();
+  } else if (last_chunk_written_) {
+    EmitFinished();
+    size_callback_.Reset();
+    if (request_state_ & (STATE_PENDING_CLOSE | STATE_ERROR)) {
+      Close();
+    }
+  }
 }
 
 void URLRequest::DoWrite() {
@@ -524,8 +536,13 @@ void URLRequest::DoWrite() {
 }
 
 void URLRequest::StartWriting() {
-  if (!last_chunk_written_ || size_callback_.is_null())
+  if (!last_chunk_written_ || size_callback_.is_null() || !producer_)
     return;
+
+  if (request_state_ & STATE_CANCELED) {
+    EmitFinished();
+    return;
+  }
 
   size_t size = 0;
   for (const auto& data : pending_writes_)
@@ -552,6 +569,11 @@ void URLRequest::EmitError(EventType type, base::StringPiece message) {
   v8::HandleScope handle_scope(isolate());
   auto error = v8::Exception::Error(gin::StringToV8(isolate(), message));
   EmitEvent(type, false, "error", error);
+}
+
+void URLRequest::EmitFinished() {
+  request_state_ |= STATE_FINISHED;
+  EmitEvent(EventType::kRequest, true, "finish");
 }
 
 template <typename... Args>
