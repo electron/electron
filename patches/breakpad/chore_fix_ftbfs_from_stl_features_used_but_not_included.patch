@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <ckerr@github.com>
+Date: Fri, 15 Nov 2019 17:14:54 -0600
+Subject: chore: fix FTBFS from stl features used but not included
+
+
+diff --git a/src/common/windows/pe_util.cc b/src/common/windows/pe_util.cc
+index 6fa63fa3b5699b79d3479c6d4a37a1c68553223f..59c1c1d74f70dca8f871fdddd8e27da102ec9148 100644
+--- a/src/common/windows/pe_util.cc
++++ b/src/common/windows/pe_util.cc
+@@ -119,7 +119,6 @@ private:
+ 
+ namespace google_breakpad {
+ 
+-using std::unique_ptr;
+ using google_breakpad::GUIDString;
+ 
+ bool ReadModuleInfo(const wstring & pe_file, PDBModuleInfo * info) {
+diff --git a/src/tools/windows/dump_syms/dump_syms.cc b/src/tools/windows/dump_syms/dump_syms.cc
+index 5b7d1777538cd3cfefd0bef45558f900798d6c51..2b2fdaf3f908db1d6f3f96a6bc23f0698cf879dc 100644
+--- a/src/tools/windows/dump_syms/dump_syms.cc
++++ b/src/tools/windows/dump_syms/dump_syms.cc
+@@ -41,7 +41,6 @@
+ using std::wstring;
+ using google_breakpad::PDBSourceLineWriter;
+ using google_breakpad::PESourceLineWriter;
+-using std::unique_ptr;
+ 
+ int wmain(int argc, wchar_t **argv) {
+   bool success;

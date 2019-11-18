@@ -15,7 +15,7 @@ index ad87f4729fe2cec2cf6e12b5bfcaf68bccf0390d..b1c3fd0f798d520da0637268dcbd51ec
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
-+    // Results Table  
++    // Results Table
 +    case ui::NativeTheme::kColorId_ResultsTableNormalBackground:
 +      return SkColorFromColorId(
 +          ui::NativeTheme::kColorId_TextfieldDefaultBackground);
