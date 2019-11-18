@@ -199,7 +199,7 @@ describe('app path module', () => {
   })
 
   describe('setAppLogsPath', () => {
-    // const appLogsPath = path.join(os.tmpdir(), 'mylogs')
+    const appLogsPath = path.join(os.tmpdir(), 'mylogs')
     it('by default', async () => {
       const output = await runTestApp('app-custom-path')
       switch (process.platform) {
@@ -226,13 +226,13 @@ describe('app path module', () => {
     // }
 
     // To review later
-    // it(`setAppLogsPath()`, async () => {
-    //   const defaultAppLogs = app.getPath('logs');
-    //   app.setAppLogsPath(appLogsPath);
-    //   expect(app.getPath('logs')).to.equal(appLogsPath)
-    //   app.setAppLogsPath();
-    //   expect(app.getPath('logs')).to.equal(defaultAppLogs)
-    // })
+    it(`setAppLogsPath()`, async () => {
+      const defaultAppLogs = app.getPath('logs');
+      app.setAppLogsPath(appLogsPath);
+      expect(app.getPath('logs')).to.equal(appLogsPath)
+      app.setAppLogsPath();
+      expect(app.getPath('logs')).to.equal(defaultAppLogs)
+    })
   })
 
   describe('getPath("logs")', () => {

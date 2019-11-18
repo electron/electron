@@ -48,12 +48,10 @@ void AtomPaths::Register() {
 
 bool AtomPaths::GetDefault(int key, base::FilePath* path) {
   switch (key) {
-    case DIR_APP_DATA:
 #if defined(USE_X11)
+    case DIR_APP_DATA:
       GetLinuxAppDataPath(path);
       return true;
-#else
-      return false;
 #endif
     case DIR_USER_DATA:
       base::PathService::Get(DIR_APP_DATA, path);
@@ -73,9 +71,8 @@ bool AtomPaths::GetDefault(int key, base::FilePath* path) {
       *path = path->Append(base::FilePath::FromUTF8Unsafe("logs"));
 #endif
       return true;
-    default:
-      return false;
   }
+  return false;
 }
 
 }  // namespace electron

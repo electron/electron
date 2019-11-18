@@ -830,6 +830,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
   } else {
     AtomPaths::GetDefault(DIR_APP_LOGS, &logs_path);
   }
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::PathService::Override(DIR_APP_LOGS, logs_path);
 }
 
