@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 177e2b4fd4438c4687aa5b1f2b137fc68050405d..8d9c55e2500b2e1f8f4d9d2d446737c3816ea532 100644
+index 74ee58d46b5714ebb9ff5646490fcede15ae508a..f948987e50614e2acfa44f56b9cfa7e201ab6ff9 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4323,6 +4323,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4328,6 +4328,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -17,10 +17,10 @@ index 177e2b4fd4438c4687aa5b1f2b137fc68050405d..8d9c55e2500b2e1f8f4d9d2d446737c3
            &no_javascript_access);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index b1a79f99b881d384b615fb9722b4ec921a69f21c..459e00abf2e5f2bd18c464a30638213ff40f739d 100644
+index b5a969d9d77f4867430a1e82018fdee73a337046..190c685c5c0a39ec2bd2b4698aaabb680b586a36 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -296,6 +296,10 @@ struct CreateNewWindowParams {
+@@ -302,6 +302,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
@@ -32,10 +32,10 @@ index b1a79f99b881d384b615fb9722b4ec921a69f21c..459e00abf2e5f2bd18c464a30638213f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2677a63aee8be5b7ab8ab1b95c0e1598e104763b..bafe9773a11296c3c8d65ed2efb10a9147af22a6 100644
+index dad2aea392a10f5a3d4b97caddc72f44ddf878ca..1e640e9f598363eb749037a8d7ed97038deb0c44 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -513,6 +513,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -514,6 +514,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -45,7 +45,7 @@ index 2677a63aee8be5b7ab8ab1b95c0e1598e104763b..bafe9773a11296c3c8d65ed2efb10a91
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 7402dfedb6e5d237921bde5979990179d887a299..23b94db7e6819266afcda3f6f9a411a815be509d 100644
+index efe38e0d93264397ba8d7fecf2bd72bae2f40f1e..ad40384ae8925a74e2bdddb59a1ae97528346149 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -134,6 +134,7 @@ class NetworkService;
@@ -56,7 +56,7 @@ index 7402dfedb6e5d237921bde5979990179d887a299..23b94db7e6819266afcda3f6f9a411a8
  }  // namespace network
  
  namespace rappor {
-@@ -819,6 +820,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -821,6 +822,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -66,7 +66,7 @@ index 7402dfedb6e5d237921bde5979990179d887a299..23b94db7e6819266afcda3f6f9a411a8
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 77fe072dcc2eadeacdec2d038709279347b10b8e..67f15247d893d1c091d830a64986f785ec0d18fc 100644
+index da39b12eb8eaf226d8bbeeca59a9969caa11f51c..f2f6127a5130c34bb00ab7ab020c40b23dbcb4de 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -71,6 +71,7 @@

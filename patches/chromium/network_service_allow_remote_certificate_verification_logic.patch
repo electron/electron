@@ -5,7 +5,7 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index ad5befc6e694ae88f9c509cc6afc9a125c02d409..c2f4b4a6b5f7f93edc90d19bd0879dd42194d2d4 100644
+index 8c7a82acb76b347a183b4af1316dffb00e129290..ee6b2b24f1c5ada827d6ec783678f41ea1761944 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -92,6 +92,11 @@
@@ -188,20 +188,13 @@ index aed41d8ad5c0f761f59158f1e5e57bd533ea45fd..61581b166ac7885a9c79106601a8ee3a
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index f7c195fc5c56d5ab25e63be8c1793ea5055d9a99..34b1e3c73b0f239e10b6b721f0b8edec370538a1 100644
+index 62d4508a363b02999eda3f0f3599a58e77202c0d..489b5210eb9caecb078048cc65b735a0c0494cda 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -182,11 +182,22 @@ interface TrustedURLLoaderHeaderClient {
-       pending_receiver<TrustedHeaderClient> header_client);
+@@ -189,6 +189,17 @@ struct HttpAuthStaticNetworkContextParams {
+      = DefaultCredentials.ALLOW_DEFAULT_CREDENTIALS;
  };
  
- struct HttpAuthStaticNetworkContextParams {
-   // Whether authentication APIs that support fallback to the default account
-   // on the system can be used without specifying an account.
-   DefaultCredentials allow_default_credentials
-      = DefaultCredentials.ALLOW_DEFAULT_CREDENTIALS;
-+};
-+
 +interface CertVerifierClient {
 +  Verify(
 +    int32 default_error,
@@ -211,10 +204,12 @@ index f7c195fc5c56d5ab25e63be8c1793ea5055d9a99..34b1e3c73b0f239e10b6b721f0b8edec
 +    int32 flags,
 +    string? ocsp_response
 +  ) => (int32 error_code, CertVerifyResult result);
- };
- 
++};
++
  // Parameters for constructing a network context.
-@@ -768,6 +780,9 @@ interface NetworkContext {
+ struct NetworkContextParams {
+   // Name used by memory tools to identify the context.
+@@ -765,6 +776,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

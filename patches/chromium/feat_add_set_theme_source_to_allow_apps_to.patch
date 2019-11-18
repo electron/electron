@@ -26,10 +26,10 @@ index d9175ae9661218b58e9b587ad3a9dbd540bfd384..ed178ea7b3d7f8039f47402bc08cae20
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index c0487134358891ba7bccbfbfd9ea5c7073725458..dee11bb910123483594056345b1337d6449dd930 100644
+index 71b1cea60023bc2ee3c4f6d79fd5695420aff230..d48ab8641f262b6a608ce004aa24c982a961b0f0 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -430,6 +430,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -428,6 +428,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
        ColorId color_id,
        ColorScheme color_scheme = ColorScheme::kDefault) const = 0;
  
@@ -52,7 +52,7 @@ index c0487134358891ba7bccbfbfd9ea5c7073725458..dee11bb910123483594056345b1337d6
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -554,6 +570,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -552,6 +568,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredColorScheme preferred_color_scheme_ =
        PreferredColorScheme::kNoPreference;
  
@@ -75,10 +75,10 @@ index a8fbfee3b13672902aac05fd5a65fa8ee81f9f7e..1be6369acf0b7c02a6f862636c2b2de1
  }
  
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 53ee5677e9851b0f3deb7f5d27b59bf1bdc073ba..251ab67b2236986a5fb2fe9ab2d1dced2dcc9298 100644
+index 8214352e3b7e7aaadf0a63004238da244ebc08d0..369bd6c721eeb45502ceb8c4e73cbfe5b035219a 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -811,6 +811,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -809,6 +809,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (UsesHighContrastColors() && !IsForcedDarkMode())
      return false;
