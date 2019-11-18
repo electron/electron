@@ -28,6 +28,7 @@ NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
       base::BindOnce(&NodeStreamLoader::NotifyComplete,
                      weak_factory_.GetWeakPtr(), net::ERR_FAILED));
 
+  // NB: this can `delete this` on failure so it must come last in ctor
   Start(std::move(head));
 }
 
