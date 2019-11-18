@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "emmanuel.kimmerlin@thomsonreuters.com"
+ <emmanuel.kimmerlin@thomsonreuters.com>
+Date: Mon, 18 Nov 2019 12:42:23 +0100
+Subject: Expose a method for invalidating internal cache
+
+
+diff --git a/base/path_service.cc b/base/path_service.cc
+index cc29cab2f1ffb0264cbb307e10da690d2a8e7863..3be206a4c3d3f4b12211ba222878c69af09c1666 100644
+--- a/base/path_service.cc
++++ b/base/path_service.cc
+@@ -326,6 +326,15 @@ void PathService::RegisterProvider(ProviderFunc func, int key_start,
+   path_data->providers = p;
+ }
+ 
++// static
++void PathService::InvalidateCache() {
++  PathData * path_data = GetPathData();
++  DCHECK(path_data);
++
++  AutoLock scoped_lock(path_data->lock);
++  path_data->cache.clear();
++}
++
+ // static
+ void PathService::DisableCache() {
+   PathData* path_data = GetPathData();
+diff --git a/base/path_service.h b/base/path_service.h
+index 9b4715f073c0b52157ba6a9a524ad5b702215f43..c3f3efed3ba66cac219cf647b00af21373dd7b9d 100644
+--- a/base/path_service.h
++++ b/base/path_service.h
+@@ -79,6 +79,9 @@ class BASE_EXPORT PathService {
+   // Disable internal cache.
+   static void DisableCache();
+ 
++  // Clear cache
++  static void InvalidateCache();
++
+  private:
+   friend class ScopedPathOverride;
+   FRIEND_TEST_ALL_PREFIXES(PathServiceTest, RemoveOverride);
