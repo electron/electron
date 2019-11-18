@@ -927,7 +927,7 @@ void AtomBrowserClient::OnNetworkServiceCreated(
 std::vector<base::FilePath>
 AtomBrowserClient::GetNetworkContextsParentDirectory() {
   base::FilePath user_data_dir;
-  AppPathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
   DCHECK(!user_data_dir.empty());
 
   return {user_data_dir};
@@ -1076,7 +1076,7 @@ std::string AtomBrowserClient::GetApplicationLocale() {
 
 base::FilePath AtomBrowserClient::GetFontLookupTableCacheDir() {
   base::FilePath user_data_dir;
-  AppPathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
   DCHECK(!user_data_dir.empty());
   return user_data_dir.Append(FILE_PATH_LITERAL("FontLookupTableCache"));
 }

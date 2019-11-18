@@ -162,13 +162,13 @@ void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
   // It does not prevent to explicitely changing userData/userCache later.
   // May be, would be fine to prevent such actions.
   base::FilePath user_data;
-  AppPathService::Get(DIR_USER_DATA, &user_data);
-  AppPathService::Override(DIR_USER_DATA, user_data);
+  base::PathService::Get(DIR_USER_DATA, &user_data);
+  base::PathService::Override(DIR_USER_DATA, user_data);
   base::CreateDirectoryAndGetError(user_data, nullptr);
 
   base::FilePath user_cache;
-  AppPathService::Get(DIR_USER_CACHE, &user_cache);
-  AppPathService::Override(DIR_USER_CACHE, user_cache);
+  base::PathService::Get(DIR_USER_CACHE, &user_cache);
+  base::PathService::Override(DIR_USER_CACHE, user_cache);
 
   is_ready_ = true;
   if (ready_promise_) {

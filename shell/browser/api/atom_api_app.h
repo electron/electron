@@ -44,8 +44,6 @@ namespace electron {
 enum class JumpListResult : int;
 #endif
 
-class AppPathService;
-
 namespace api {
 
 class App : public AtomBrowserClient::Delegate,

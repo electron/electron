@@ -51,16 +51,10 @@ enum {
 
 static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
 
-class AppPathService {
+class AtomPaths {
  public:
   static void Register();
 
-  static bool Get(const std::string& name, base::FilePath* path);
-  static bool Get(int key, base::FilePath* path);
-  static bool Override(const std::string& name, const base::FilePath& path);
-  static bool Override(int key, const base::FilePath& path);
-
-  static bool GetDefault(const std::string& name, base::FilePath* path);
   static bool GetDefault(int key, base::FilePath* path);
 };
 
