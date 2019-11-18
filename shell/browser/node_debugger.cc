@@ -41,7 +41,7 @@ void NodeDebugger::Start() {
   std::vector<std::string> v8_args;
   std::vector<std::string> errors;
 
-  // TODO(codebytere): refactor this
+  // TODO(codebytere): remove this parsing and use ProcessGlobalArgs
   node::options_parser::Parse(&args, &exec_args, &v8_args, &options,
                               node::kDisallowedInEnvironment, &errors);
 

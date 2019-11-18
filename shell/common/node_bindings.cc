@@ -8,6 +8,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -139,36 +140,43 @@ bool IsPackagedApp() {
 // Initialize Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
 void SetNodeCliFlags() {
-  // Only allow DebugOptions for now
-  const std::set<std::string> allowed = {"--inspect", "--inspect-brk",
-                                         "--debug", "--inspect-brk-node",
-                                         "--inspect-publish-uid"};
+  // Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode
+  const std::unordered_set<base::StringPiece, base::StringPieceHash> allowed = {
+      "--inspect",          "--inspect-brk",
+      "--inspect-port",     "--debug",
+      "--debug-brk",        "--debug-port",
+      "--inspect-brk-node", "--inspect-publish-uid",
+  };
 
+  const auto argv = base::CommandLine::ForCurrentProcess()->argv();
   std::vector<std::string> args;
-  for (const auto& arg : base::CommandLine::ForCurrentProcess()->argv()) {
-    auto stripped = arg.substr(0, arg.find("="));
+
+  // TODO(codebytere): We need to set the first entry in args to the
+  // process name owing to src/node_options-inl.h#L286-L290 but this is
+  // redundant and so should be refactored upstream.
+  args.reserve(argv.size() + 1);
+  args.emplace_back("electron");
+
+  for (const auto& arg : argv) {
 #if defined(OS_WIN)
-    std::string option = base::UTF16ToUTF8(stripped);
+    const auto& option = base::UTF16ToUTF8(arg);
 #else
-    std::string option = stripped;
+    const auto& option = arg;
 #endif
-    if (allowed.find(option) != allowed.end()) {
+    const auto stripped = base::StringPiece(option).substr(0, option.find('='));
+    if (allowed.count(stripped) != 0)
       args.push_back(option);
-    } else {
-      LOG(ERROR) << "The Node.js cli flag " << option
-                 << " is not supported in Electron";
-    }
   }
 
-  std::vector<std::string> exec_args;
   std::vector<std::string> errors;
-  const int exit_code = ProcessGlobalArgs(&args, &exec_args, &errors,
-                                          node::kAllowedInEnvironment);
+  const int exit_code = ProcessGlobalArgs(&args, nullptr, &errors,
+                                          node::kDisallowedInEnvironment);
+
   if (exit_code != 0) {
-    LOG(ERROR) << "Error parsing Node.js cli flags";
-  } else if (!errors.empty()) {
-    LOG(ERROR) << "Error parsing node cli flags: "
-               << base::JoinString(errors, " ");
+    if (!errors.empty())
+      LOG(INFO) << base::JoinString(errors, " ");
+    else
+      LOG(INFO) << "Error parsing Node.js cli flags";
   }
 }
 
@@ -194,7 +202,7 @@ void SetNodeOptions(base::Environment* env) {
 
     for (const auto& part : parts) {
       // Strip off values passed to individual NODE_OPTIONs
-      std::string option = part.substr(0, part.find("="));
+      std::string option = part.substr(0, part.find('='));
 
       if (is_packaged_app &&
           allowed_in_packaged.find(option) == allowed_in_packaged.end()) {

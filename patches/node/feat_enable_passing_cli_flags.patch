@@ -103,5 +103,6 @@ index c8b2e1699f26ac9bfeb373653d35271f9b6c841f..a4db86ad99c75e07960a95247a41ed78
 -using node::options_parser::kDisallowedInEnvironment;
 +using node::kDisallowedInEnvironment;
  using v8::Array;
- using v8::ArrayBuffer;
  using v8::Boolean;
+ using v8::Context;
+ 
