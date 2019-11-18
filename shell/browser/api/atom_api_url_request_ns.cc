@@ -53,8 +53,8 @@ namespace api {
 
 namespace {
 
-base::IDMap<URLRequest*>& GetAllRequests() {
-  static base::NoDestructor<base::IDMap<URLRequest*>> s_all_requests;
+base::IDMap<URLRequestNS*>& GetAllRequests() {
+  static base::NoDestructor<base::IDMap<URLRequestNS*>> s_all_requests;
   return *s_all_requests;
 }
 

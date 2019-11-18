@@ -33,7 +33,7 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
-  static URLRequest* FromID(uint32_t id);
+  static URLRequestNS* FromID(uint32_t id);
 
   void OnAuthRequired(
       const GURL& url,
