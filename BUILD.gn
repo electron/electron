@@ -35,6 +35,7 @@ if (is_mac) {
 
 if (is_linux) {
   import("//build/config/linux/pkg_config.gni")
+  import("//v8/gni/split_static_library.gni")
 
   pkg_config("gio_unix") {
     packages = [ "gio-unix-2.0" ]
@@ -338,8 +339,23 @@ templated_file("electron_version_header") {
   args_files = get_target_outputs(":electron_version_args")
 }
 
-source_set("electron_lib") {
-  configs += [ "//v8:external_startup_data" ]
+template("maybe_split_static_library") {
+  if (is_linux && (target_cpu == "arm" || target_cpu == "x86")) {
+    _target_type = "split_static_library"
+
+    # Split count is only used when calling split_static_library
+    split_count = 2
+  } else {
+    _target_type = "source_set"
+  }
+  target(_target_type, target_name) {
+    forward_variables_from(invoker, [ "visibility" ])
+    forward_variables_from(invoker, "*", [ "visibility" ])
+  }
+}
+
+maybe_split_static_library("electron_lib") {
+  configs = [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
 
   public_configs = [
