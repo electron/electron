@@ -55,7 +55,7 @@ build_script:
   - gclient sync --with_branch_heads --with_tags --reset
   - cd src
   - ps: $env:BUILD_CONFIG_PATH="//electron/build/args/%GN_CONFIG%.gn"
-  - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS%"
+  - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS% cc_wrapper=\"%SCCACHE_PATH%\""
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
   - gn check out/Default //electron:manifests
@@ -67,6 +67,7 @@ build_script:
   - ninja -C out/Default electron:electron_mksnapshot_zip
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
+  - cmd /C %SCCACHE_PATH% --show-stats
   - appveyor PushArtifact out/Default/dist.zip
   - appveyor PushArtifact out/Default/chromedriver.zip
   - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
