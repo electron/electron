@@ -829,7 +829,7 @@ describe('Menu module', function () {
 
       // Keep a weak reference to the menu.
       const v8Util = process.electronBinding('v8_util')
-      const map = (v8Util as any).createIDWeakMap() as any
+      const map = v8Util.createIDWeakMap<Electron.Menu>()
       map.set(0, menu)
 
       setTimeout(() => {
@@ -839,7 +839,7 @@ describe('Menu module', function () {
         setTimeout(() => {
           // Try to receive menu from weak reference.
           if (map.has(0)) {
-            map.get(0).closePopup()
+            map.get(0)!.closePopup()
             done()
           } else {
             done('Menu is garbage-collected while popuping')
