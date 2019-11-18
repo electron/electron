@@ -1,0 +1,99 @@
+From 1fc72276f91c7d378f14dfd0bb6b0ca8667e4bc5 Mon Sep 17 00:00:00 2001
+From: Ben Noordhuis <info@bnoordhuis.nl>
+Date: Fri, 9 Aug 2019 13:34:20 +0200
+Subject: [PATCH] win: fix uv_spawn() ENOMEM on empty env
+
+Commit ba780231 ("unix,win: handle zero-sized allocations uniformly")
+makes `uv__malloc()` return NULL when `size == 0`.
+
+That's exactly the size that is passed to it when uv_spawn() tries to
+spawn a process with an empty environment so handle that edge case.
+
+Fixes: https://github.com/nodejs/node/issues/29008
+PR-URL: https://github.com/libuv/libuv/pull/2408
+Reviewed-By: Anna Henningsen <anna@addaleax.net>
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: Jameson Nash <vtjnash+github@gmail.com>
+Reviewed-By: Bartosz Sosnowski <bartosz@janeasystems.com>
+
+diff --git a/deps/uv/src/win/process.c b/deps/uv/src/win/process.c
+index f9c53de0..9b7fdc1d 100644
+--- a/deps/uv/src/win/process.c
++++ b/deps/uv/src/win/process.c
+@@ -714,7 +714,7 @@ int make_program_env(char* env_block[], WCHAR** dst_ptr) {
+ 
+   /* second pass: copy to UTF-16 environment block */
+   dst_copy = (WCHAR*)uv__malloc(env_len * sizeof(WCHAR));
+-  if (!dst_copy) {
++  if (dst_copy == NULL && env_len > 0) {
+     return ERROR_OUTOFMEMORY;
+   }
+   env_copy = alloca(env_block_count * sizeof(WCHAR*));
+@@ -739,7 +739,7 @@ int make_program_env(char* env_block[], WCHAR** dst_ptr) {
+     }
+   }
+   *ptr_copy = NULL;
+-  assert(env_len == (size_t) (ptr - dst_copy));
++  assert(env_len == 0 || env_len == (size_t) (ptr - dst_copy));
+ 
+   /* sort our (UTF-16) copy */
+   qsort(env_copy, env_block_count-1, sizeof(wchar_t*), qsort_wcscmp);
+diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
+index 3f94360f..6eb8ecad 100644
+--- a/deps/uv/test/test-list.h
++++ b/deps/uv/test/test-list.h
+@@ -264,6 +264,7 @@ TEST_DECLARE   (spawn_fails)
+ #ifndef _WIN32
+ TEST_DECLARE   (spawn_fails_check_for_waitpid_cleanup)
+ #endif
++TEST_DECLARE   (spawn_empty_env)
+ TEST_DECLARE   (spawn_exit_code)
+ TEST_DECLARE   (spawn_stdout)
+ TEST_DECLARE   (spawn_stdin)
+@@ -829,6 +830,7 @@ TASK_LIST_START
+ #ifndef _WIN32
+   TEST_ENTRY  (spawn_fails_check_for_waitpid_cleanup)
+ #endif
++  TEST_ENTRY  (spawn_empty_env)
+   TEST_ENTRY  (spawn_exit_code)
+   TEST_ENTRY  (spawn_stdout)
+   TEST_ENTRY  (spawn_stdin)
+diff --git a/deps/uv/test/test-spawn.c b/deps/uv/test/test-spawn.c
+index fea1165d..fec610bf 100644
+--- a/deps/uv/test/test-spawn.c
++++ b/deps/uv/test/test-spawn.c
+@@ -232,6 +232,34 @@ TEST_IMPL(spawn_fails_check_for_waitpid_cleanup) {
+ #endif
+ 
+ 
++TEST_IMPL(spawn_empty_env) {
++  char* env[1];
++
++  /* The autotools dynamic library build requires the presence of
++   * DYLD_LIBARY_PATH (macOS) or LD_LIBRARY_PATH (other Unices)
++   * in the environment, but of course that doesn't work with
++   * the empty environment that we're testing here.
++   */
++  if (NULL != getenv("DYLD_LIBARY_PATH") ||
++      NULL != getenv("LD_LIBRARY_PATH")) {
++    RETURN_SKIP("doesn't work with DYLD_LIBRARY_PATH/LD_LIBRARY_PATH");
++  }
++
++  init_process_options("spawn_helper1", exit_cb);
++  options.env = env;
++  env[0] = NULL;
++
++  ASSERT(0 == uv_spawn(uv_default_loop(), &process, &options));
++  ASSERT(0 == uv_run(uv_default_loop(), UV_RUN_DEFAULT));
++
++  ASSERT(exit_cb_called == 1);
++  ASSERT(close_cb_called == 1);
++
++  MAKE_VALGRIND_HAPPY();
++  return 0;
++}
++
++
+ TEST_IMPL(spawn_exit_code) {
+   int r;
+ 
