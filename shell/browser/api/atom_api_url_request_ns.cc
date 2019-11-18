@@ -15,9 +15,9 @@
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/atom_browser_context.h"
+#include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
-#include "shell/common/native_mate_converters/callback.h"
 
 #include "shell/common/node_includes.h"
 
@@ -553,7 +553,8 @@ void URLRequestNS::EmitEvent(EventType type, Args&&... args) {
   const char* method =
       type == EventType::kRequest ? "_emitRequestEvent" : "_emitResponseEvent";
   v8::HandleScope handle_scope(isolate());
-  mate::CustomEmit(isolate(), GetWrapper(), method, std::forward<Args>(args)...);
+  mate::CustomEmit(isolate(), GetWrapper(), method,
+                   std::forward<Args>(args)...);
 }
 
 // static
