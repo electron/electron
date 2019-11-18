@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/containers/id_map.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
@@ -51,8 +52,8 @@ namespace api {
 
 namespace {
 
-base::IDMap<URLRequest*>& GetAllRequests() {
-  static base::NoDestructor<base::IDMap<URLRequest*>> s_all_requests;
+base::IDMap<URLRequestNS*>& GetAllRequests() {
+  static base::NoDestructor<base::IDMap<URLRequestNS*>> s_all_requests;
   return *s_all_requests;
 }
 
@@ -213,7 +214,7 @@ void URLRequestNS::OnAuthRequired(
   mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder(
       std::move(auth_challenge_responder));
   auth_responder.set_disconnect_handler(
-      base::BindOnce(&URLRequest::Cancel, weak_factory_.GetWeakPtr()));
+      base::BindOnce(&URLRequestNS::Cancel, weak_factory_.GetWeakPtr()));
   auto cb = base::BindOnce(
       [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
          mate::Arguments* args) {
