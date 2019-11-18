@@ -822,6 +822,31 @@ describe('Menu module', function () {
         menu.closePopup()
       })
     })
+
+    it('prevents menu from getting garbage-collected when popuping', (done) => {
+      let menu = Menu.buildFromTemplate([{role: 'paste'}])
+      menu.popup({ window: w })
+
+      // Keep a weak reference to the menu.
+      const v8Util = process.electronBinding('v8_util')
+      const map = (v8Util as any).createIDWeakMap() as any
+      map.set(0, menu)
+
+      setTimeout(() => {
+        // Do garbage collection, since |menu| is not referenced in this closure
+        // it would be gone after next call.
+        v8Util.requestGarbageCollectionForTesting()
+        setTimeout(() => {
+          // Try to receive menu from weak reference.
+          if (map.has(0)) {
+            map.get(0).closePopup()
+            done()
+          } else {
+            done('Menu is garbage-collected while popuping')
+          }
+        })
+      })
+    })
   })
 
   describe('Menu.setApplicationMenu', () => {
