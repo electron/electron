@@ -400,7 +400,7 @@ source_set("electron_lib") {
     "//third_party/electron_node:node_lib",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
-    "//third_party/webrtc_overrides:init_webrtc",
+    "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//ui/base/idle",
     "//ui/events:dom_keycode_converter",
