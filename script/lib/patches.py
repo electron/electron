@@ -9,7 +9,7 @@ def read_patch(patch_dir, patch_filename):
   metadata about the patch file it came from."""
   ret = []
   patch_path = os.path.join(patch_dir, patch_filename)
-  with codecs.open(patch_path, mode='rb', encoding='utf-8') as f:
+  with codecs.open(patch_path, encoding='utf-8') as f:
     for l in f.readlines():
       if l.startswith('diff -'):
         ret.append('Patch-Filename: {}\n'.format(patch_filename))

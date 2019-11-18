@@ -78,7 +78,7 @@ def split_patches(patch_data):
   """Split a concatenated series of patches into N separate patches"""
   patches = []
   patch_start = re.compile('^From [0-9a-f]+ ')
-  for line in patch_data.splitlines(True):
+  for line in patch_data.splitlines():
     if patch_start.match(line):
       patches.append([])
     patches[-1].append(line)
@@ -96,7 +96,7 @@ def get_file_name(patch):
   """Return the name of the file to which the patch should be written"""
   for line in patch:
     if line.startswith('Patch-Filename: '):
-      return line[len('Patch-Filename: '):].strip();
+      return line[len('Patch-Filename: '):]
   # If no patch-filename header, munge the subject.
   for line in patch:
     if line.startswith('Subject: '):
@@ -150,9 +150,10 @@ def main(argv):
   with open(os.path.join(out_dir, '.patches'), 'w') as pl:
     for patch in patches:
       filename = get_file_name(patch)
-      with open(os.path.join(out_dir, filename), 'wb') as f:
-        f.write(''.join(remove_patch_filename(patch)))
+      with open(os.path.join(out_dir, filename), 'w') as f:
+        f.write('\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n')
       pl.write(filename + '\n')
+
 
 if __name__ == '__main__':
   main(sys.argv[1:])
