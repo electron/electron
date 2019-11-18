@@ -354,8 +354,16 @@ template("maybe_split_static_library") {
   }
 }
 
+set_defaults("maybe_split_static_library") {
+  if (is_component_build) {
+    configs = default_shared_library_configs
+  } else {
+    configs = default_compiler_configs
+  }
+}
+
 maybe_split_static_library("electron_lib") {
-  configs = [ "//v8:external_startup_data" ]
+  configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
 
   public_configs = [
