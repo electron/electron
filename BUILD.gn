@@ -35,7 +35,7 @@ if (is_mac) {
 
 if (is_linux) {
   import("//build/config/linux/pkg_config.gni")
-  import("//v8/gni/split_static_library.gni")
+  import("//build/split_static_library.gni")
 
   pkg_config("gio_unix") {
     packages = [ "gio-unix-2.0" ]
@@ -344,7 +344,7 @@ template("maybe_split_static_library") {
     _target_type = "split_static_library"
 
     # Split count is only used when calling split_static_library
-    split_count = 2
+    split_count = 4
   } else {
     _target_type = "source_set"
   }
