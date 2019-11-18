@@ -152,7 +152,8 @@ Returns:
   sent, depending on the referrer policy.
 * `postBody` [PostBody](structures/post-body.md) (optional) - The post data that
   will be sent to the new window, along with the appropriate headers that will
-  be set. If no post data is to be sent, the value will be `null`.
+  be set. If no post data is to be sent, the value will be `null`. Only defined
+  when the window is being created by a form that set `target=_blank`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
