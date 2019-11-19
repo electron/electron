@@ -260,6 +260,8 @@ void URLRequest::Cancel() {
 }
 
 void URLRequest::Close() {
+  // When write called for is_last for upload, last_chunk_written is set already
+  // with pending bytes
   if (!pending_writes_.empty() && last_chunk_written_) {
     request_state_ |= STATE_PENDING_CLOSE;
     return;
@@ -572,6 +574,10 @@ void URLRequest::EmitError(EventType type, base::StringPiece message) {
 }
 
 void URLRequest::EmitFinished() {
+  // Finish only once.
+  if (request_state_ & (STATE_FINISHED))
+    return;
+
   request_state_ |= STATE_FINISHED;
   EmitEvent(EventType::kRequest, true, "finish");
 }
