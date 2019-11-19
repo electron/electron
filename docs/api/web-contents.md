@@ -134,7 +134,7 @@ Returns:
 
 Emitted when page receives favicon urls.
 
-#### Event: 'new-window'
+#### Event: 'new-window' _Deprecated_
 
 Returns:
 
@@ -187,6 +187,37 @@ myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition
   event.newGuest = win
 })
 ```
+
+#### Event: 'did-create-window'
+
+Returns:
+* `window` BrowserWindow
+* `info` Object
+    * `url` String - URL for the created window.
+    * `frameName` String - Name given to the created window in the
+      `window.open()` call.
+    * `options` BrowserWindowConstructorOptions - The options used to create the
+      BrowserWindow. These will be a combination of parsed options from the
+      `features` string from `window.open()`, options given by
+      `webContents.setWindowOpenOverride`, and options inherited from the
+      parent.
+    * `additionalFeatures` String[] - The non-standard features (features not
+      handled Chromium or Electron) _Deprecated_
+    * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
+      passed to the new window. May or may not result in the `Referer` header
+      being sent, depending on the referrer policy.
+    * `postBody` [PostBody](structures/post-body.md) (optional) - The post data
+      that will be sent to the new window, along with the appropriate headers
+      that will be set. If no post data is to be sent, the value will be `null`.
+      Only defined when the window is being created by a form that set
+      `target=_blank`.
+    * `disposition` String - Can be `default`, `foreground-tab`,
+      `background-tab`, `new-window`, `save-to-disk` and `other`.
+
+Similar to the deprecated `new-window` event, except it's emitted _after_ successful creation of a window via `window.open` in the renderer.
+Not emitted if the creation of the window is canceled from
+[`webContents.setWindowOpenOverride`](web-contents.md#contentssetwindowopenoverride-handler).
+
 
 #### Event: 'will-navigate'
 
@@ -1048,6 +1079,17 @@ contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1"
 * `ignore` Boolean
 
 Ignore application menu shortcuts while this web contents is focused.
+
+#### `contents.setWindowOpenOverride(handler)`
+
+* `handler` Function
+  * `options` Object
+    * `url` String - URL passed to `window.open()`
+    * `frameName` String - Name of the window provided in `window.open()`
+  Returns `Boolean | BrowserWindowConstructorOptions` - `false` cancels the creation of the new window. `true` or `undefined` result in the default behavior; a window is created. Returning `BrowserWindowConstructorOptions` allows customization of the created window.
+
+Called before creating a window when `window.open()` is called from the
+renderer. See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
 
 #### `contents.setAudioMuted(muted)`
 

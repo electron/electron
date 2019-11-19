@@ -1,34 +1,42 @@
-# `window.open` Function
+# Opening windows from the renderer
 
-> Open a new window and load a URL.
+Often, developers will want to control how windows are created from trusted or
+untrusted content within a renderer. Windows can be created from the renderer in two ways:
 
-When `window.open` is called to create a new window in a web page, a new instance
-of [`BrowserWindow`](browser-window.md) will be created for the `url` and a proxy will be returned
-to `window.open` to let the page have limited control over it.
+1. clicking on links or submitting forms adorned with `target=_blank`
+2. JavaScript calling `window.open()`
 
-The proxy has limited standard functionality implemented to be
-compatible with traditional web pages. For full control of the new window
-you should create a `BrowserWindow` directly.
+By default, this results in the creation of a
+[`BrowserWindowProxy`](browser-window-proxy.md), a light wrapper around
+`BrowserWindow`.
 
-The newly created `BrowserWindow` will inherit the parent window's options by
-default. To override inherited options you can set them in the `features`
-string.
+However, when the `contextIsolation` or `sandbox` (or directly,
+`nativeWindowOpen`) options are set, a `Window` instance is created, as you'd
+expect in the browser. For same-origin content, the new window is created within
+the same process, enabling the parent to affect the DOM directly. This can be
+very useful for app sub-windows that act as preference panels, or similar, as
+the parent can render to the sub-window directly, as if it were a `div` in the
+parent.
+
 
 ### `window.open(url[, frameName][, features])`
 
 * `url` String
 * `frameName` String (optional)
-* `features` String (optional)
+* `features` String (optional) -
 
-Returns [`BrowserWindowProxy`](browser-window-proxy.md) - Creates a new window
-and returns an instance of `BrowserWindowProxy` class.
+Returns [`BrowserWindowProxy`](browser-window-proxy.md) | [`Window`](https://developer.mozilla.org/en-US/docs/Web/API/Window)
 
-The `features` string follows the format of standard browser, but each feature
-has to be a field of `BrowserWindow`'s options. These are the features you can set via `features` string: `zoomFactor`, `nodeIntegration`, `preload`, `javascript`, `contextIsolation`, `webviewTag`.
+A comma-separated key-value list, following the standard format of the browser.
+Electron will parse `BrowserWindowConstructorOptions` out of this list where
+possible, for convenience. For full control, consider
+`webContents.setWindowOpenOverride`. A subset of `WebPreferences` can be set
+directly, unnested, from the features string: `zoomFactor`, `nodeIntegration`,
+`preload`, `javascript`, `contextIsolation`, and `webviewTag`.
 
 For example:
 ```js
-window.open('https://github.com', '_blank', 'nodeIntegration=no')
+window.open('https://github.com', '_blank', 'frame=false,nodeIntegration=no')
 ```
 
 **Notes:**
@@ -40,60 +48,71 @@ window.open('https://github.com', '_blank', 'nodeIntegration=no')
 * JavaScript will always be disabled in the opened `window` if it is disabled on
   the parent window.
 * Non-standard features (that are not handled by Chromium or Electron) given in
-  `features` will be passed to any registered `webContent`'s `new-window` event
-  handler in the `additionalFeatures` argument.
+  `features` will be passed to any registered `webContent`'s `did-create-window`
+  event handler in the `additionalFeatures` argument.
 
-### `window.opener.postMessage(message, targetOrigin)`
+To customize or cancel the creation of the window, you can optionally set an
+override handler with `webContents.setWindowOpenOverride()`. Returning `false`
+cancels the window, while returning an object sets the
+`BrowserWindowConstructorOptions` used when creating the window. Note that this
+is more powerful than passing options through the feature string, as the
+renderer has more limited privileges in deciding security preferences than the
+main process.
 
-* `message` String
-* `targetOrigin` String
-
-Sends a message to the parent window with the specified origin or `*` for no
-origin preference.
-
-### Using Chrome's `window.open()` implementation
-
-If you want to use Chrome's built-in `window.open()` implementation, set
-`nativeWindowOpen` to `true` in the `webPreferences` options object.
-
-Native `window.open()` allows synchronous access to opened windows so it is
-convenient choice if you need to open a dialog or a preferences window.
-
-This option can also be set on `<webview>` tags as well:
-
-```html
-<webview webpreferences="nativeWindowOpen=yes"></webview>
-```
-
-The creation of the `BrowserWindow` is customizable via `WebContents`'s
-`new-window` event.
+### `BrowserWindowProxy` example
 
 ```javascript
-// main process
+// main.js
+const mainWindow = new BrowserWindow()
+
+mainWindow.webContents.setWindowOpenOverride(({ url }) => {
+  if (url.startsWith('https://github.com/')) {
+    return true
+  }
+  return false
+})
+
+mainWindow.webContents.on('did-create-window', (window) => {
+  // For example...
+  window.webContents('will-navigate', (e) => {
+    e.preventDefault()
+  })
+})
+```
+
+```javascript
+// renderer.js
+const windowProxy = window.open('https://github.com/', null, 'minimizable=false')
+windowProxy.postMessage('hi', '*')
+```
+
+### Native `Window` example
+
+```javascript
+// main.js
 const mainWindow = new BrowserWindow({
-  width: 800,
-  height: 600,
   webPreferences: {
     nativeWindowOpen: true
   }
 })
-mainWindow.webContents.on('new-window', (event, url, frameName, disposition, options, additionalFeatures) => {
-  if (frameName === 'modal') {
-    // open window as modal
-    event.preventDefault()
-    Object.assign(options, {
-      modal: true,
-      parent: mainWindow,
-      width: 100,
-      height: 100
-    })
-    event.newGuest = new BrowserWindow(options)
+
+mainWindow.webContents.setWindowOpenOverride(({ url }) => {
+  if (url === 'about:blank') {
+    return {
+      frame: false,
+      fullscreenable: false,
+      backgroundColor: 'black',
+      webPreferences: {
+        preload: 'my-preload-script.js'
+      }
+    }
   }
+  return false
 })
 ```
 
 ```javascript
-// renderer process (mainWindow)
-let modal = window.open('', 'modal')
-modal.document.write('<h1>Hello</h1>')
+// renderer.js
+const childWindow = window.open('about:blank')
+childWindow.document.write('hello world')
 ```
