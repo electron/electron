@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+#include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "services/network/public/cpp/resource_response.h"
@@ -30,7 +32,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
  public:
   NodeStreamLoader(network::ResourceResponseHead head,
                    network::mojom::URLLoaderRequest loader,
-                   network::mojom::URLLoaderClientPtr client,
+                   mojo::PendingRemote<network::mojom::URLLoaderClient> client,
                    v8::Isolate* isolate,
                    v8::Local<v8::Object> emitter);
 
@@ -57,8 +59,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   void PauseReadingBodyFromNet() override {}
   void ResumeReadingBodyFromNet() override {}
 
-  mojo::Binding<network::mojom::URLLoader> binding_;
-  network::mojom::URLLoaderClientPtr client_;
+  mojo::Remote<network::mojom::URLLoaderClient> client_;
 
   v8::Isolate* isolate_;
   v8::Global<v8::Object> emitter_;

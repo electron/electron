@@ -13,6 +13,7 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/file_url_loader.h"
 #include "mojo/public/cpp/bindings/receiver.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/file_data_source.h"
 #include "net/base/filename_util.h"
@@ -102,9 +103,9 @@ class AsarURLLoader : public network::mojom::URLLoader {
     // Determine whether it is an asar file.
     base::FilePath asar_path, relative_path;
     if (!GetAsarArchivePath(path, &asar_path, &relative_path)) {
-      content::CreateFileURLLoader(request, std::move(loader),
-                                   std::move(client_), nullptr, false,
-                                   extra_response_headers);
+      // content::CreateFileURLLoader(request, std::move(loader),
+      //                              std::move(client_), nullptr, false,
+      //                              extra_response_headers);
       MaybeDeleteSelf();
       return;
     }
@@ -251,7 +252,9 @@ class AsarURLLoader : public network::mojom::URLLoader {
   }
 
   void OnClientComplete(net::Error net_error) {
-    client_->OnComplete(network::URLLoaderCompletionStatus(net_error));
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client_));
+    client_remote->OnComplete(network::URLLoaderCompletionStatus(net_error));
     client_.reset();
     MaybeDeleteSelf();
   }
@@ -266,14 +269,17 @@ class AsarURLLoader : public network::mojom::URLLoader {
     // be notified that there will be no more data to read from now.
     data_producer_.reset();
 
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client_));
     if (result == MOJO_RESULT_OK) {
       network::URLLoaderCompletionStatus status(net::OK);
       status.encoded_data_length = total_bytes_written_;
       status.encoded_body_length = total_bytes_written_;
       status.decoded_body_length = total_bytes_written_;
-      client_->OnComplete(status);
+      client_remote->OnComplete(status);
     } else {
-      client_->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+      client_remote->OnComplete(
+          network::URLLoaderCompletionStatus(net::ERR_FAILED));
     }
     client_.reset();
     MaybeDeleteSelf();
@@ -281,7 +287,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
   std::unique_ptr<mojo::DataPipeProducer> data_producer_;
   mojo::Receiver<network::mojom::URLLoader> receiver_{this};
-  network::mojom::URLLoaderClientPtr client_;
+  mojo::Remote<network::mojom::URLLoaderClient> client_;
 
   // In case of successful loads, this holds the total number of bytes written
   // to the response (this may be smaller than the total size of the file when
@@ -298,15 +304,15 @@ class AsarURLLoader : public network::mojom::URLLoader {
 void CreateAsarURLLoader(
     const network::ResourceRequest& request,
     network::mojom::URLLoaderRequest loader,
-    network::mojom::URLLoaderClientPtr client,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
   auto task_runner = base::CreateSequencedTaskRunner(
       {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_VISIBLE,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
   task_runner->PostTask(
-      FROM_HERE, base::BindOnce(&AsarURLLoader::CreateAndStart, request,
-                                std::move(loader), client.PassInterface(),
-                                std::move(extra_response_headers)));
+      FROM_HERE,
+      base::BindOnce(&AsarURLLoader::CreateAndStart, request, std::move(loader),
+                     std::move(client), std::move(extra_response_headers)));
 }
 
 }  // namespace asar
