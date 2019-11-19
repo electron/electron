@@ -329,9 +329,9 @@ can be called on empty images.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
 
-## Properties
+### Instance Properties
 
-### `nativeImage.isMacTemplateImage` _macOS_
+#### `nativeImage.isMacTemplateImage` _macOS_
 
 A `Boolean` property that determines whether the image is considered a [template image](https://developer.apple.com/documentation/appkit/nsimage/1520017-template).
 
