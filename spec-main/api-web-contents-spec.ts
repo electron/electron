@@ -219,6 +219,25 @@ describe('webContents module', () => {
     })
   })
 
+  describe('webContents.executeJavaScriptInIsolatedWorld', () => {
+    let w: BrowserWindow
+
+    before(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } })
+      await w.loadURL('about:blank')
+    })
+
+    it('resolves the returned promise with the result', async () => {
+      await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }])
+      const isolatedResult = await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X' }])
+      console.log(isolatedResult)
+      const mainWorldResult = await w.webContents.executeJavaScript('window.X')
+      console.log(mainWorldResult)
+      expect(isolatedResult).to.equal(123)
+      expect(mainWorldResult).to.equal(undefined)
+    })
+  })
+
   describe('loadURL() promise API', () => {
     let w: BrowserWindow
     beforeEach(async () => {
