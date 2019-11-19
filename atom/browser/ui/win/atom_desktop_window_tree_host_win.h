@@ -25,6 +25,8 @@ class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
                     LPARAM l_param,
                     LRESULT* result) override;
   bool HasNativeFrame() const override;
+  bool GetClientAreaInsets(gfx::Insets* insets,
+                           HMONITOR monitor) const override;
 
  private:
   NativeWindowViews* native_window_view_;  // weak ref
