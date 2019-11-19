@@ -383,7 +383,6 @@ source_set("electron_lib") {
     "//media/mojo/mojom",
     "//net:extras",
     "//net:net_resources",
-    "//net:net_with_v8",
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/shared_impl",
