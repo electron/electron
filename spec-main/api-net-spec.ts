@@ -311,7 +311,7 @@ describe('net module', () => {
         after(() => { server.close() })
       })
       const customSession = session.fromPartition(`net-proxy-test-${Math.random()}`)
-      await customSession.setProxy({ proxyRules: `127.0.0.1:${proxyPort}`, proxyBypassRules: '<-loopback>' })
+      await customSession.setProxy({ proxyRules: `127.0.0.1:${proxyPort}`, proxyBypassRules: '<-loopback>' } as any)
       const bw = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
       const loaded = bw.loadURL('http://127.0.0.1:9999')
       bw.webContents.on('login', (event, details, authInfo, cb) => {
