@@ -151,6 +151,10 @@ env-ninja-status: &env-ninja-status
 env-disable-run-as-node: &env-disable-run-as-node
   GN_BUILDFLAG_ARGS: 'enable_run_as_node = false'
 
+env-32bit-release: &env-32bit-release
+  # Set symbol level to 1 for 32 bit releases because of https://crbug.com/648948
+  GN_BUILDFLAG_ARGS: 'symbol_level = 1'
+
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
@@ -1428,6 +1432,7 @@ jobs:
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
@@ -1471,6 +1476,7 @@ jobs:
       <<: *env-arm
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-32bit-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
