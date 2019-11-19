@@ -1087,6 +1087,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-setup-env-for-build
     - *step-gn-gen-default
     - *step-delete-git-directories
+    - *step-minimize-workspace-size-from-checkout
 
     # Electron app
     - *step-electron-build
