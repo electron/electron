@@ -5,6 +5,7 @@
 #ifndef SHELL_BROWSER_UI_VIEWS_ATOM_VIEWS_DELEGATE_H_
 #define SHELL_BROWSER_UI_VIEWS_ATOM_VIEWS_DELEGATE_H_
 
+#include <map>
 #include <string>
 
 #include "base/compiler_specific.h"
@@ -37,6 +38,8 @@ class ViewsDelegate : public views::ViewsDelegate {
   HICON GetDefaultWindowIcon() const override;
   HICON GetSmallWindowIcon() const override;
   bool IsWindowInMetro(gfx::NativeWindow window) const override;
+  int GetAppbarAutohideEdges(HMONITOR monitor,
+                             base::OnceClosure callback) override;
 #elif defined(OS_LINUX) && !defined(OS_CHROMEOS)
   gfx::ImageSkia* GetDefaultWindowIcon() const override;
 #endif
@@ -50,6 +53,24 @@ class ViewsDelegate : public views::ViewsDelegate {
   bool WindowManagerProvidesTitleBar(bool maximized) override;
 
  private:
+#if defined(OS_WIN)
+  using AppbarAutohideEdgeMap = std::map<HMONITOR, int>;
+
+  // Callback on main thread with the edges. |returned_edges| is the value that
+  // was returned from the call to GetAutohideEdges() that initiated the lookup.
+  void OnGotAppbarAutohideEdges(base::OnceClosure callback,
+                                HMONITOR monitor,
+                                int returned_edges,
+                                int edges);
+
+  AppbarAutohideEdgeMap appbar_autohide_edge_map_;
+  // If true we're in the process of notifying a callback from
+  // GetAutohideEdges().start a new query.
+  bool in_autohide_edges_callback_ = false;
+
+  base::WeakPtrFactory<ViewsDelegate> weak_factory_{this};
+#endif
+
   DISALLOW_COPY_AND_ASSIGN(ViewsDelegate);
 };
 
