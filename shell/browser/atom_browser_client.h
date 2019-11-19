@@ -188,7 +188,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       network::mojom::NetworkContext* network_context,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,
-      const url::Origin& request_initiator,
+      const url::Origin& origin,
+      const url::Origin& main_world_origin,
       const base::Optional<net::NetworkIsolationKey>& network_isolation_key)
       override;
 #if defined(OS_WIN)
