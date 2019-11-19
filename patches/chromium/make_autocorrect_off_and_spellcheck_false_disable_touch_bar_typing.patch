@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Sidney=20San=20Mart=C3=ADn?= <sdy@chromium.org>
+Date: Thu, 14 Nov 2019 20:56:51 +0000
+Subject: Make autocorrect=off and spellcheck=false disable Touch Bar typing
+ suggestions.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Bug: 1024914
+Change-Id: I3ff68438b028fe38ad7270d7f90772b595f4f46e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1917603
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Sidney San Martín <sdy@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#715401}
+
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+index 9113fb00d144d6cee789f608f8b3761b93ca7ae8..1e92b2b515056235de6277a43be207f79c94dedf 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+@@ -2220,7 +2220,9 @@ - (void)invalidateTouchBar {
+ }
+ 
+ - (NSTouchBar*)makeTouchBar {
+-  if (textInputType_ != ui::TEXT_INPUT_TYPE_NONE) {
++  if (textInputType_ != ui::TEXT_INPUT_TYPE_NONE &&
++      !(textInputFlags_ & blink::kWebTextInputFlagAutocorrectOff) &&
++      !(textInputFlags_ & blink::kWebTextInputFlagSpellcheckOff)) {
+     candidateListTouchBarItem_.reset([[NSCandidateListTouchBarItem alloc]
+         initWithIdentifier:NSTouchBarItemIdentifierCandidateList]);
+     auto* candidateListItem = candidateListTouchBarItem_.get();

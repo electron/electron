@@ -28,10 +28,8 @@ NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
       base::BindOnce(&NodeStreamLoader::NotifyComplete,
                      weak_factory_.GetWeakPtr(), net::ERR_FAILED));
 
-  // PostTask since it might destruct.
-  base::SequencedTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::BindOnce(&NodeStreamLoader::Start,
-                                weak_factory_.GetWeakPtr(), std::move(head)));
+  // NB: this can `delete this` on failure so it must come last in ctor
+  Start(std::move(head));
 }
 
 NodeStreamLoader::~NodeStreamLoader() {
@@ -46,10 +44,6 @@ NodeStreamLoader::~NodeStreamLoader() {
     node::MakeCallback(isolate_, emitter_.Get(isolate_), "removeListener",
                        node::arraysize(args), args, {0, 0});
   }
-
-  // Release references.
-  emitter_.Reset();
-  buffer_.Reset();
 }
 
 void NodeStreamLoader::Start(network::ResourceResponseHead head) {

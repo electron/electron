@@ -11,7 +11,7 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    '78.0.3904.112',
+    '78.0.3904.113',
   'node_version':
     'v12.8.1',
   'nan_version':
@@ -114,7 +114,7 @@ hooks = [
     'pattern': 'src/electron/script/update-external-binaries.py',
     'condition': 'download_external_binaries',
     'action': [
-      'python',
+      'python3',
       'src/electron/script/update-external-binaries.py',
     ],
   },
