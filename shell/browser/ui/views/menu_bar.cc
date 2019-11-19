@@ -166,9 +166,8 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
             electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
 
         if (keycode == accelerator.key_code()) {
-          const gfx::Point p(0, 0);
           auto event = accelerator.ToKeyEvent();
-          OnMenuButtonClicked(button, p, &event);
+          ButtonPressed(button, event);
           return true;
         }
       }
@@ -255,9 +254,7 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
-void MenuBar::OnMenuButtonClicked(views::Button* source,
-                                  const gfx::Point& point,
-                                  const ui::Event* event) {
+void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
   // Hide the accelerator when a submenu is activated.
   SetAcceleratorVisibility(false);
 
