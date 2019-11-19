@@ -152,6 +152,7 @@ env-disable-run-as-node: &env-disable-run-as-node
   GN_BUILDFLAG_ARGS: 'enable_run_as_node = false'
 
 env-32bit-release: &env-32bit-release
+  # Set symbol level to 1 for 32 bit releases because of https://crbug.com/648948
   GN_BUILDFLAG_ARGS: 'symbol_level = 1'
 
 # Individual (shared) steps.
