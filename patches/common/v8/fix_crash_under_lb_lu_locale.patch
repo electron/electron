@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Frank Tang <ftang@chromium.org>
+Date: Fri, 23 Aug 2019 15:13:54 -0700
+Subject: Fix crash under lb_LU locale
+
+Bug: v8:9642
+Change-Id: I2dcd1c0e3c208b15b5c0ec0f08880744134f7474
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/1769479
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Frank Tang <ftang@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#63404}
+
+diff --git a/src/objects/js-date-time-format.cc b/src/objects/js-date-time-format.cc
+index 8730e0a39b8556fc581c1a01fdea34a2271e15c2..0a707d472e1296b04fec93b1943fb3435413f0be 100644
+--- a/src/objects/js-date-time-format.cc
++++ b/src/objects/js-date-time-format.cc
+@@ -8,8 +8,11 @@
+ 
+ #include "src/objects/js-date-time-format.h"
+ 
++#include <algorithm>
++#include <map>
+ #include <memory>
+ #include <string>
++#include <utility>
+ #include <vector>
+ 
+ #include "src/date/date.h"
+@@ -1142,6 +1145,12 @@ class DateTimePatternGeneratorCache {
+     UErrorCode status = U_ZERO_ERROR;
+     map_[key].reset(icu::DateTimePatternGenerator::createInstance(
+         icu::Locale(key.c_str()), status));
++    // Fallback to use "root".
++    if (U_FAILURE(status)) {
++      status = U_ZERO_ERROR;
++      map_[key].reset(
++          icu::DateTimePatternGenerator::createInstance("root", status));
++    }
+     CHECK(U_SUCCESS(status));
+     return map_[key]->clone();
+   }
+diff --git a/test/intl/regress-9642.js b/test/intl/regress-9642.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9091ffb12541a5cb240fc4c58784681a65320fbc
+--- /dev/null
++++ b/test/intl/regress-9642.js
+@@ -0,0 +1,8 @@
++// Copyright 2019 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Environment Variables: LANG=lb_LU
++// Test creation of Intl.DateTimeFormat under not installed locale.
++
++let dtf = new Intl.DateTimeFormat();
