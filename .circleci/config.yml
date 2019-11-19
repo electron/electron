@@ -267,7 +267,8 @@ step-delete-git-directories: &step-delete-git-directories
     name: Delete src/.git directory on MacOS to free space
     command: |
       if [ "`uname`" == "Darwin" ]; then
-        sudo rm -rf src/.git
+        cd src
+        ( find . -type d -name ".git" ) | xargs rm -rf
       fi
 
 # On macOS the yarn install command during gclient sync was run on a linux
