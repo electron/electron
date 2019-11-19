@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/win/atom_desktop_window_tree_host_win.h"
 
+#include "ui/base/win/hwnd_metrics.h"
+
 namespace electron {
 
 AtomDesktopWindowTreeHostWin::AtomDesktopWindowTreeHostWin(
@@ -27,6 +29,19 @@ bool AtomDesktopWindowTreeHostWin::HasNativeFrame() const {
   // that we use a native titlebar. This will disable the repaint locking when
   // DWM composition is disabled.
   return true;
+}
+
+bool AtomDesktopWindowTreeHostWin::GetClientAreaInsets(gfx::Insets* insets,
+                                                       HMONITOR monitor) const {
+  if (IsMaximized() && !native_window_view_->has_frame()) {
+    // Windows automatically adds a standard width border to all sides when a
+    // window is maximized.
+    int frame_thickness = ui::GetFrameThickness(monitor) - 1;
+    *insets = gfx::Insets(frame_thickness, frame_thickness, frame_thickness,
+                          frame_thickness);
+    return true;
+  }
+  return false;
 }
 
 }  // namespace electron
