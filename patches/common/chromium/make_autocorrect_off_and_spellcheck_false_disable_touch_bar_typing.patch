@@ -1,0 +1,140 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Sidney=20San=20Mart=C3=ADn?= <sdy@chromium.org>
+Date: Thu, 14 Nov 2019 20:56:51 +0000
+Subject: Make autocorrect=off and spellcheck=false disable Touch Bar typing
+ suggestions.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Bug: 1024914
+Change-Id: I3ff68438b028fe38ad7270d7f90772b595f4f46e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1917603
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Sidney San Martín <sdy@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#715401}
+
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_local.h b/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_local.h
+index 6f19cdac9ad482091fcad2f0daf090383b36edd7..df4eb2baac6c341c8ad3549967d54a331af63a57 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_local.h
++++ b/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_local.h
+@@ -50,7 +50,8 @@ class RenderWidgetHostNSViewBridgeLocal
+   void SetBackgroundColor(SkColor color) override;
+   void SetVisible(bool visible) override;
+   void SetTooltipText(const base::string16& display_text) override;
+-  void SetTextInputType(ui::TextInputType text_input_type) override;
++  void SetTextInputState(ui::TextInputType text_input_type,
++                         uint32_t flags) override;
+   void SetTextSelection(const base::string16& text,
+                         uint64_t offset,
+                         const gfx::Range& range) override;
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_local.mm b/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_local.mm
+index 2aa04c3764e6361fccec7ba47feb51fa40d99d3b..6bea303d86447f8a1311c67e183b4724b2e802e8 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_local.mm
++++ b/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_local.mm
+@@ -185,9 +185,11 @@
+   [cocoa_view_ cancelComposition];
+ }
+ 
+-void RenderWidgetHostNSViewBridgeLocal::SetTextInputType(
+-    ui::TextInputType text_input_type) {
++void RenderWidgetHostNSViewBridgeLocal::SetTextInputState(
++    ui::TextInputType text_input_type,
++    uint32_t flags) {
+   [cocoa_view_ setTextInputType:text_input_type];
++  [cocoa_view_ setTextInputFlags:flags];
+ }
+ 
+ void RenderWidgetHostNSViewBridgeLocal::SetTextSelection(
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h
+index b8eb5221fb86928779bea1b81a8d1e539214314a..ca52ac45704c61435240747f35279f71392482c1 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h
++++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h
+@@ -132,8 +132,6 @@ struct DidOverscrollParams;
+   // the whole content yet.
+   NSRange markedRange_;
+ 
+-  ui::TextInputType textInputType_;
+-
+   // The text selection, cached from the RenderWidgetHostView. This is only ever
+   // updated from the renderer.
+   base::string16 textSelectionText_;
+@@ -206,6 +204,7 @@ struct DidOverscrollParams;
+ 
+ @property(nonatomic, assign) NSRange markedRange;
+ @property(nonatomic, assign) ui::TextInputType textInputType;
++@property(nonatomic, assign) int textInputFlags;
+ 
+ @property(nonatomic, assign) NSSpellChecker* spellCheckerForTesting;
+ 
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+index 46fcb918f42654ec1d7d2c5c5ea70e4a402dede1..2815129bd44643fea242977a7f7dcf9d80cd2cc0 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+@@ -22,6 +22,7 @@
+ #import "content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper.h"
+ #import "content/public/browser/render_widget_host_view_mac_delegate.h"
+ #include "content/public/common/content_features.h"
++#include "third_party/blink/public/platform/web_text_input_type.h"
+ #include "ui/accessibility/platform/ax_platform_node.h"
+ #import "ui/base/clipboard/clipboard_util_mac.h"
+ #import "ui/base/cocoa/appkit_utils.h"
+@@ -190,6 +191,7 @@ - (void)candidateListTouchBarItem:(NSCandidateListTouchBarItem*)anItem
+ @implementation RenderWidgetHostViewCocoa
+ @synthesize markedRange = markedRange_;
+ @synthesize textInputType = textInputType_;
++@synthesize textInputFlags = textInputFlags_;
+ @synthesize spellCheckerForTesting = spellCheckerForTesting_;
+ 
+ - (id)initWithClient:(RenderWidgetHostNSViewClient*)client
+@@ -1945,7 +1947,9 @@ - (void)invalidateTouchBar {
+ 
+ - (NSTouchBar*)makeTouchBar {
+   if (textInputType_ != ui::TEXT_INPUT_TYPE_NONE &&
+-      textInputType_ != ui::TEXT_INPUT_TYPE_PASSWORD) {
++      textInputType_ != ui::TEXT_INPUT_TYPE_PASSWORD &&
++      !(textInputFlags_ & blink::kWebTextInputFlagAutocorrectOff) &&
++      !(textInputFlags_ & blink::kWebTextInputFlagSpellcheckOff)) {
+     candidateListTouchBarItem_.reset([[NSCandidateListTouchBarItem alloc]
+         initWithIdentifier:NSTouchBarItemIdentifierCandidateList]);
+     auto* candidateListItem = candidateListTouchBarItem_.get();
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
+index 48a71f0dba47fa34b537a2e955a1a1541659ece5..388550c791e0f033a0127946f4777aceb153a1d3 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac.mm
++++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
+@@ -564,7 +564,11 @@
+   if (!did_update_state)
+     return;
+ 
+-  ns_view_bridge_->SetTextInputType(GetTextInputType());
++  const TextInputState* state = text_input_manager->GetTextInputState();
++  if (state)
++    ns_view_bridge_->SetTextInputState(state->type, state->flags);
++  else
++    ns_view_bridge_->SetTextInputState(ui::TEXT_INPUT_TYPE_NONE, 0);
+ 
+   // |updated_view| is the last view to change its TextInputState which can be
+   // used to start/stop monitoring composition info when it has a focused
+@@ -580,7 +584,6 @@
+ 
+   // Set the monitor state based on the text input focus state.
+   const bool has_focus = HasFocus();
+-  const TextInputState* state = text_input_manager->GetTextInputState();
+   bool need_monitor_composition =
+       has_focus && state && state->type != ui::TEXT_INPUT_TYPE_NONE;
+ 
+diff --git a/content/common/render_widget_host_ns_view.mojom b/content/common/render_widget_host_ns_view.mojom
+index 48c46bd62bdac2b394dec0e04aacae3169fbd168..2d9e1bf5f78d07a254baccb36ef7dcd6b673a177 100644
+--- a/content/common/render_widget_host_ns_view.mojom
++++ b/content/common/render_widget_host_ns_view.mojom
+@@ -51,8 +51,8 @@ interface RenderWidgetHostNSViewBridge {
+   // Call the -[NSView setToolTipAtMousePoint] method.
+   SetTooltipText(mojo_base.mojom.String16 display_text);
+ 
+-  // Forward changes in ui::TextInputType.
+-  SetTextInputType(ui.mojom.TextInputType text_input_type);
++  // Forward changes in content::TextInputState.
++  SetTextInputState(ui.mojom.TextInputType text_input_type, uint32 flags);
+ 
+   // Forward the TextInputManager::TextSelection from the renderer.
+   SetTextSelection(mojo_base.mojom.String16 text,
