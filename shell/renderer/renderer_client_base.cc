@@ -156,7 +156,7 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   if (command_line->HasSwitch(switches::kEnableSpellcheck))
-    spellcheck_ = std::make_unique<SpellCheck>(&registry_, this);
+    spellcheck_ = std::make_unique<SpellCheck>(this);
 #endif
 
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
