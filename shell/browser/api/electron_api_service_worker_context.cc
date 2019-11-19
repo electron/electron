@@ -11,7 +11,8 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "shell/browser/electron_browser_context.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -51,11 +52,14 @@ std::string MessageSourceToString(
   return "other";
 }
 
-// base::DictionaryValue ServiceWorkerRunningInfoToDict(const
-// content::ServiceWorkerRunningInfo& info) {
-//   base::DictionaryValue dict;
-//   return dict;
-// }
+base::DictionaryValue ServiceWorkerRunningInfoToDict(
+    const content::ServiceWorkerRunningInfo& info) {
+  base::DictionaryValue dict;
+  dict.SetStringPath("scriptUrl", info.script_url.spec());
+  dict.SetStringPath("scope", info.scope.spec());
+  dict.SetIntPath("renderProcessId", info.render_process_id);
+  return dict;
+}
 
 }  // namespace
 
@@ -86,21 +90,30 @@ void ServiceWorkerContext::OnReportConsoleMessage(
   Emit("console-message", details);
 }
 
-// mate::Dictionary GetAllWorkers() {
+base::DictionaryValue ServiceWorkerContext::GetAllWorkerInfo() {
+  const base::flat_map<int64_t, content::ServiceWorkerRunningInfo>& info_map =
+      service_worker_context_->GetRunningServiceWorkerInfos();
+  base::DictionaryValue dict;
+  for (auto iter = info_map.begin(); iter != info_map.end(); ++iter) {
+    dict.Set(std::to_string(iter->first),
+             base::Value::ToUniquePtrValue(
+                 ServiceWorkerRunningInfoToDict(std::move(iter->second))));
+  }
+  return dict;
+}
 
-// }
-
-// base::DictionaryValue
-// ServiceWorkerContext::GetWorkerInfoFromID(gin_helper::ErrorThrower thrower,
-// int64_t version_id) {
-//   auto info_map = service_worker_context_->GetRunningServiceWorkerInfos();
-//   auto iter = info_map.find(version_id);
-//   if (iter == info_map.end()) {
-//     thrower.ThrowError("Could not find service worker with that version_id");
-//     return base::DictionaryValue();
-//   }
-//   return ServiceWorkerRunningInfoToDict(iter->second);
-// }
+base::DictionaryValue ServiceWorkerContext::GetWorkerInfoFromID(
+    gin_helper::ErrorThrower thrower,
+    int64_t version_id) {
+  const base::flat_map<int64_t, content::ServiceWorkerRunningInfo>& info_map =
+      service_worker_context_->GetRunningServiceWorkerInfos();
+  auto iter = info_map.find(version_id);
+  if (iter == info_map.end()) {
+    thrower.ThrowError("Could not find service worker with that version_id");
+    return base::DictionaryValue();
+  }
+  return ServiceWorkerRunningInfoToDict(std::move(iter->second));
+}
 
 // static
 mate::Handle<ServiceWorkerContext> ServiceWorkerContext::Create(
@@ -115,9 +128,10 @@ void ServiceWorkerContext::BuildPrototype(
     v8::Isolate* isolate,
     v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "ServiceWorkerContext"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate());
-  // .SetMethod("getWorkerInfoFromID",
-  // &ServiceWorkerContext::GetWorkerInfoFromID);
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("getAll", &ServiceWorkerContext::GetAllWorkerInfo)
+      .SetMethod("getFromVersionID",
+                 &ServiceWorkerContext::GetWorkerInfoFromID);
 }
 
 }  // namespace api

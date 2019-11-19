@@ -8,7 +8,7 @@
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/service_worker_context_observer.h"
 #include "native_mate/handle.h"
-#include "shell/browser/api/trackable_object.h"
+#include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
 
@@ -16,8 +16,9 @@ class AtomBrowserContext;
 
 namespace api {
 
-class ServiceWorkerContext : public mate::TrackableObject<ServiceWorkerContext>,
-                             public content::ServiceWorkerContextObserver {
+class ServiceWorkerContext
+    : public gin_helper::TrackableObject<ServiceWorkerContext>,
+      public content::ServiceWorkerContextObserver {
  public:
   static mate::Handle<ServiceWorkerContext> Create(
       v8::Isolate* isolate,
@@ -26,6 +27,7 @@ class ServiceWorkerContext : public mate::TrackableObject<ServiceWorkerContext>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  base::DictionaryValue GetAllWorkerInfo();
   base::DictionaryValue GetWorkerInfoFromID(gin_helper::ErrorThrower thrower,
                                             int64_t version_id);
 
