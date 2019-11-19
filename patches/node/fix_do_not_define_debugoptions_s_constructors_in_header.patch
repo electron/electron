@@ -15,7 +15,11 @@ By putting the definitions of constructors into the implementation file,
 we can avoid this problem.
 
 diff --git a/src/node_options.cc b/src/node_options.cc
+<<<<<<< HEAD
 index c0c15a88c028d9c70081aa75fabf63d1d78014e6..03919d450b3373983d647165ee93c006eb5f2902 100644
+=======
+index 2dd90e9a8cf9381c8608b73ead247bcf86b72ab9..051e7b084b6770215bd009b0e37feabbb7df7389 100644
+>>>>>>> chore: remove redundant patches
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -26,6 +26,12 @@ Mutex cli_options_mutex;
@@ -29,7 +33,7 @@ index c0c15a88c028d9c70081aa75fabf63d1d78014e6..03919d450b3373983d647165ee93c006
 +DebugOptions& DebugOptions::operator=(DebugOptions&&) = default;
 +
  void DebugOptions::CheckOptions(std::vector<std::string>* errors) {
- #if !NODE_USE_V8_PLATFORM
+ #if !NODE_USE_V8_PLATFORM && !HAVE_INSPECTOR
    if (inspector_enabled) {
 diff --git a/src/node_options.h b/src/node_options.h
 index 40c19ea6ff4d98a1a1da59bca76087209445af81..4ce5551284bb5b1b4194905a9fe619f852933405 100644
