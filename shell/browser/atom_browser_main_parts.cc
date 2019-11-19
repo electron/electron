@@ -32,6 +32,7 @@
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/network/public/cpp/features.h"
 #include "services/service_manager/public/cpp/connector.h"
+#include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/atom_main_delegate.h"
 #include "shell/browser/api/atom_api_app.h"
 #include "shell/browser/atom_browser_client.h"
@@ -387,6 +388,12 @@ int AtomBrowserMainParts::PreCreateThreads() {
   fake_browser_process_->PreCreateThreads();
 
   return 0;
+}
+
+void AtomBrowserMainParts::PostCreateThreads() {
+  base::PostTask(
+      FROM_HERE, {content::BrowserThread::IO},
+      base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
 }
 
 void AtomBrowserMainParts::PostDestroyThreads() {
