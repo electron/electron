@@ -53,22 +53,7 @@ void ViewsDelegate::NotifyMenuItemFocused(const base::string16& menu_name,
                                           int item_count,
                                           bool has_submenu) {}
 
-#if defined(OS_WIN)
-HICON ViewsDelegate::GetDefaultWindowIcon() const {
-  // Use current exe's icon as default window icon.
-  return LoadIcon(GetModuleHandle(NULL),
-                  MAKEINTRESOURCE(1 /* IDR_MAINFRAME */));
-}
-
-HICON ViewsDelegate::GetSmallWindowIcon() const {
-  return GetDefaultWindowIcon();
-}
-
-bool ViewsDelegate::IsWindowInMetro(gfx::NativeWindow window) const {
-  return false;
-}
-
-#elif defined(OS_LINUX) && !defined(OS_CHROMEOS)
+#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
 gfx::ImageSkia* ViewsDelegate::GetDefaultWindowIcon() const {
   return nullptr;
 }
