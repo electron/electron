@@ -9,7 +9,7 @@ failures, as it was unable to find max in the std namespace.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/1904823.
 
 diff --git a/media/base/byte_queue.cc b/media/base/byte_queue.cc
-index 245fafa668568fd308e5a2806dafc1c5f0bf3dbd..f9cd0c214ac6210d4332bad47b56ef8130be67a2 100644
+index 245fafa668568fd308e5a2806dafc1c5f0bf3dbd..c54ac79bdfbba4614b9944f73269f5f30ec9a80a 100644
 --- a/media/base/byte_queue.cc
 +++ b/media/base/byte_queue.cc
 @@ -4,6 +4,8 @@
