@@ -230,9 +230,7 @@ describe('webContents module', () => {
     it('resolves the returned promise with the result', async () => {
       await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }])
       const isolatedResult = await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X' }])
-      console.log(isolatedResult)
       const mainWorldResult = await w.webContents.executeJavaScript('window.X')
-      console.log(mainWorldResult)
       expect(isolatedResult).to.equal(123)
       expect(mainWorldResult).to.equal(undefined)
     })
