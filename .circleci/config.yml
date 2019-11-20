@@ -139,7 +139,10 @@ step-depot-tools-get: &step-depot-tools-get
   run:
     name: Get depot tools
     command: |
-      git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      cd depot_tools
+      git checkout 79d9e4b8508d5e9e93e37121295521223a5dd6ca
+      cd ..
 
 step-depot-tools-add-to-path: &step-depot-tools-add-to-path
   run:
