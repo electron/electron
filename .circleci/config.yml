@@ -264,7 +264,7 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
 
 step-delete-git-directories: &step-delete-git-directories
   run:
-    name: Delete src/.git directory on MacOS to free space
+    name: Delete all .git directories under src on MacOS to free space
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src
