@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Moshchuk <alexmos@chromium.org>
+Date: Tue, 19 Nov 2019 22:41:28 +0000
+Subject: Fix FocusOwningWebContents to handle RenderWidgetHosts for OOPIFs.
+
+Previously, FocusOwningWebContents() would not focus anything when
+called for an OOPIF's RenderWidgetHost.  This is because
+GetFocusedRenderWidgetHost() would always return that RWH back,
+causing FocusOwningWebContents() to skip the call to
+SetAsFocusedWebContentsIfNecessary() because the passed-in RWH matched
+the focused RWH.
+
+This is usually not a problem in Chrome, because inner WebContents
+can't have OOPIFs and so an inner WebContents would only need to be
+focused when this is called from a main frame's RenderWidgetHost, and
+the outermost WebContents would probably already be focused via other
+means.  However, apparently inner WebContents could have OOPIFs in
+embedders like Electron, and then this becomes problematic.  This CL
+fixes FocusOwningWebContents() to always pass in the main frame's
+RenderWidgetHost to GetFocusedRenderWidgetHost(), since the latter was
+never designed to take an OOPIF's RenderWidgetHost (it expects to take
+an event arriving at a main frame's RenderWidgetHostView and then
+target it to a subframe's RenderWidgetHost, if needed).
+
+The setup in the added test is similar to ProcessSwapOnInnerContents,
+which was also apparently added for an Electron-specific use case
+(cross-process navigations inside a <webview>) which isn't currently
+possible in regular Chrome.
+
+Change-Id: If9559caf53274d415a360a976ebddfcc323d37dd
+Bug: 1026056
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1922650
+Reviewed-by: James MacLean <wjmaclean@chromium.org>
+Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#716803}
+
+diff --git a/content/browser/site_per_process_browsertest.cc b/content/browser/site_per_process_browsertest.cc
+index 5a19ef3076dedf9b5fe8810048f6abf1faa3ee21..84ac2d871fd108c5864700507807bd92261b9be3 100644
+--- a/content/browser/site_per_process_browsertest.cc
++++ b/content/browser/site_per_process_browsertest.cc
+@@ -13755,6 +13755,52 @@ IN_PROC_BROWSER_TEST_F(SitePerProcessBrowserTest, ProcessSwapOnInnerContents) {
+   EXPECT_NE(a_view, b_view);
+ }
+ 
++// This test ensures that WebContentsImpl::FocusOwningWebContents() focuses an
++// inner WebContents when it is given an OOPIF's RenderWidgetHost inside that
++// inner WebContents.  This setup isn't currently supported in Chrome
++// (requiring issue 614463), but it can happen in embedders.  See
++// https://crbug.com/1026056.
++IN_PROC_BROWSER_TEST_F(SitePerProcessBrowserTest, FocusInnerContentsFromOOPIF) {
++  GURL main_url(embedded_test_server()->GetURL(
++      "a.com", "/cross_site_iframe_factory.html?a(a)"));
++  EXPECT_TRUE(NavigateToURL(shell(), main_url));
++
++  // Set up and attach an artificial inner WebContents.
++  FrameTreeNode* child_frame =
++      web_contents()->GetFrameTree()->root()->child_at(0);
++  WebContentsImpl* inner_contents =
++      static_cast<WebContentsImpl*>(CreateAndAttachInnerContents(
++          ToRenderFrameHost(child_frame).render_frame_host()));
++  FrameTreeNode* inner_contents_root = inner_contents->GetFrameTree()->root();
++
++  // Navigate inner WebContents to b.com, and then navigate a subframe on that
++  // page to c.com.
++  GURL b_url(embedded_test_server()->GetURL(
++      "b.com", "/cross_site_iframe_factory.html?b(b)"));
++  NavigateFrameToURL(inner_contents_root, b_url);
++  GURL c_url(embedded_test_server()->GetURL("c.com", "/title1.html"));
++  FrameTreeNode* inner_child = inner_contents_root->child_at(0);
++  NavigateFrameToURL(inner_child, c_url);
++
++  // Because |inner_contents| was set up without kGuestScheme, it can actually
++  // have OOPIFs.  Ensure that the subframe is in an OOPIF.
++  EXPECT_NE(inner_contents_root->current_frame_host()->GetSiteInstance(),
++            inner_child->current_frame_host()->GetSiteInstance());
++  EXPECT_TRUE(inner_child->current_frame_host()->IsCrossProcessSubframe());
++
++  // Make sure the outer WebContents is focused to start with.
++  web_contents()->Focus();
++  web_contents()->SetAsFocusedWebContentsIfNecessary();
++  EXPECT_EQ(web_contents(), web_contents()->GetFocusedWebContents());
++
++  // Focus the inner WebContents as if an event were received and dispatched
++  // directly on the |inner_child|'s RenderWidgetHost, and ensure that this
++  // took effect.
++  inner_contents->FocusOwningWebContents(
++      inner_child->current_frame_host()->GetRenderWidgetHost());
++  EXPECT_EQ(inner_contents, web_contents()->GetFocusedWebContents());
++}
++
+ // Check that a web frame can't navigate a remote subframe to a file: URL.  The
+ // frame should stay at the old URL, and the navigation attempt should produce
+ // a console error message.  See https://crbug.com/894399.
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 91424108450ee591539c9548b1201c2541fa3160..7e7f892a2ee28403678628a82fb85725b63e6d2c 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -6264,8 +6264,10 @@ void WebContentsImpl::FocusOwningWebContents(
+   if (!GuestMode::IsCrossProcessFrameGuest(this) && browser_plugin_guest_)
+     return;
+ 
++  RenderWidgetHostImpl* main_frame_widget_host =
++      GetMainFrame()->GetRenderWidgetHost();
+   RenderWidgetHostImpl* focused_widget =
+-      GetFocusedRenderWidgetHost(render_widget_host);
++      GetFocusedRenderWidgetHost(main_frame_widget_host);
+ 
+   if (focused_widget != render_widget_host &&
+       (!focused_widget ||
