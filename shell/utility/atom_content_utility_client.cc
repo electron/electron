@@ -9,9 +9,6 @@
 #include "base/command_line.h"
 #include "base/no_destructor.h"
 #include "base/threading/sequenced_task_runner_handle.h"
-#include "content/public/child/child_thread.h"
-#include "content/public/common/service_manager_connection.h"
-#include "content/public/common/simple_connection_filter.h"
 #include "content/public/utility/utility_thread.h"
 #include "mojo/public/cpp/bindings/service_factory.h"
 #include "services/proxy_resolver/proxy_resolver_factory_impl.h"
@@ -61,7 +58,8 @@ auto RunProxyResolver(
 
 }  // namespace
 
-AtomContentUtilityClient::AtomContentUtilityClient() : elevated_(false) {
+AtomContentUtilityClient::AtomContentUtilityClient()
+    : utility_process_running_elevated_(false) {
 #if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
   printing_handler_ = std::make_unique<printing::PrintingHandler>();
 #endif
@@ -72,40 +70,24 @@ AtomContentUtilityClient::~AtomContentUtilityClient() = default;
 // The guts of this came from the chromium implementation
 // https://cs.chromium.org/chromium/src/chrome/utility/
 // chrome_content_utility_client.cc?sq=package:chromium&dr=CSs&g=0&l=142
-void AtomContentUtilityClient::UtilityThreadStarted() {
+void AtomContentUtilityClient::ExposeInterfacesToBrowser(
+    mojo::BinderMap* binders) {
 #if defined(OS_WIN)
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  elevated_ = command_line->HasSwitch(
+  utility_process_running_elevated_ = command_line->HasSwitch(
       service_manager::switches::kNoSandboxAndElevatedPrivileges);
-#endif
 
-  content::ServiceManagerConnection* connection =
-      content::ChildThread::Get()->GetServiceManagerConnection();
-
-  // NOTE: Some utility process instances are not connected to the Service
-  // Manager. Nothing left to do in that case.
-  if (!connection)
-    return;
-
-  auto registry = std::make_unique<service_manager::BinderRegistry>();
   // If our process runs with elevated privileges, only add elevated Mojo
-  // interfaces to the interface registry.
-  if (!elevated_) {
-#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
-    // TODO(crbug.com/798782): remove when the Cloud print chrome/service is
-    // removed.
-    registry->AddInterface(
+  // interfaces to the BinderMap.
+  if (!utility_process_running_elevated_)
+    binders->Add(
         base::BindRepeating(printing::PdfToEmfConverterFactory::Create),
         base::ThreadTaskRunnerHandle::Get());
 #endif
-  }
-
-  connection->AddConnectionFilter(
-      std::make_unique<content::SimpleConnectionFilter>(std::move(registry)));
 }
 
 bool AtomContentUtilityClient::OnMessageReceived(const IPC::Message& message) {
-  if (elevated_)
+  if (utility_process_running_elevated_)
     return false;
 
 #if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
