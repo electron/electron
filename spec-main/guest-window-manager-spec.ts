@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron'
 import { writeFileSync, readFileSync } from 'fs'
 import { resolve } from 'path'
-import { expect } from 'chai'
+import { expect, assert } from 'chai'
 import { closeAllWindows } from './window-helpers'
 
 function genSnapshot (browserWindow: BrowserWindow, features: string) {
@@ -82,6 +82,90 @@ describe('new-window event', () => {
       after(() => {
         const shouldOverwriteSnapshot = false
         if (shouldOverwriteSnapshot) writeFileSync(snapshotFile, stringifySnapshots(newSnapshots, true))
+      })
+    })
+  }
+})
+
+describe('webContents.setWindowOpenOverride', () => {
+  const testConfig = {
+    native: {
+      browserWindowOptions: {
+        show: false,
+        webPreferences: {
+          nativeWindowOpen: true
+        }
+      }
+    },
+    proxy: {
+      browserWindowOptions: {
+        show: false
+      }
+    }
+  }
+
+  let testName : keyof typeof testConfig
+  for (testName in testConfig) {
+    let browserWindow: BrowserWindow
+    const { browserWindowOptions } = testConfig[testName]
+
+    describe(testName, () => {
+      beforeEach((done) => {
+        browserWindow = new BrowserWindow(browserWindowOptions)
+        browserWindow.loadURL('about:blank')
+        browserWindow.on('ready-to-show', () => done())
+      })
+
+      afterEach(closeAllWindows)
+
+      it('does not fire window creation events if an override returns false', (done) => {
+        browserWindow.webContents.setWindowOpenOverride(() => false)
+        browserWindow.webContents.on('new-window', () => {
+          assert.fail('new-window should not to be called with an overridden window.open')
+        })
+
+        browserWindow.webContents.on('did-create-window', () => {
+          assert.fail('did-create-window should not to be called with an overridden window.open')
+        })
+
+        browserWindow.webContents.executeJavaScript(`window.open('about:blank')`)
+
+        setTimeout(() => {
+          done()
+        }, 250)
+      })
+
+      it('does fire window creation events if an override returns true', (done) => {
+        browserWindow.webContents.setWindowOpenOverride(() => true)
+
+        let newWindowWasCalled = false
+        let didCreateWindowWasCalled = false
+        browserWindow.webContents.on('new-window', () => {
+          newWindowWasCalled = true
+        })
+
+        browserWindow.webContents.on('did-create-window', () => {
+          didCreateWindowWasCalled = true
+        })
+
+        browserWindow.webContents.executeJavaScript(`window.open('about:blank')`)
+
+        setTimeout(() => {
+          expect(newWindowWasCalled).to.be.true()
+          expect(didCreateWindowWasCalled).to.be.true()
+          done()
+        }, 250)
+      })
+
+      it('fires window creation event with new options', (done) => {
+        browserWindow.webContents.setWindowOpenOverride(() => ({ backgroundColor: 'pink' }))
+
+        browserWindow.webContents.on('did-create-window', (_window, { options }) => {
+          expect(options.backgroundColor).to.equal('pink')
+          done()
+        })
+
+        browserWindow.webContents.executeJavaScript(`window.open('about:blank')`)
       })
     })
   }
