@@ -16,11 +16,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-# Python 3 / 2 compat import
-try:
-  from urllib.request import urlopen
-except ImportError:
-  from urllib2 import urlopen
+import urllib2
 import zipfile
 
 from lib.config import is_verbose_mode, PLATFORM
@@ -69,13 +65,9 @@ def download(text, url, path):
     if hasattr(ssl, '_create_unverified_context'):
       ssl._create_default_https_context = ssl._create_unverified_context
 
-    print("Downloading %s to %s" % (url, path))
-    web_file = urlopen(url)
-    info = web_file.info()
-    if hasattr(info, 'getheader'):
-      file_size = int(info.getheaders("Content-Length")[0])
-    else:
-      file_size = int(info.get("Content-Length")[0])
+    print "Downloading %s to %s" % (url, path)
+    web_file = urllib2.urlopen(url)
+    file_size = int(web_file.info().getheaders("Content-Length")[0])
     downloaded_size = 0
     block_size = 4096
 

@@ -114,7 +114,7 @@ hooks = [
     'pattern': 'src/electron/script/update-external-binaries.py',
     'condition': 'download_external_binaries',
     'action': [
-      'python3',
+      'python',
       'src/electron/script/update-external-binaries.py',
     ],
   },
