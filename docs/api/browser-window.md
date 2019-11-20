@@ -513,7 +513,7 @@ Emitted when the window is restored from a minimized state.
 Returns:
 
 * `event` Event
-* `newBounds` [`Rectangle`](structures/rectangle.md) - Size the window is being resized to.
+* `newBounds` [Rectangle](structures/rectangle.md) - Size the window is being resized to.
 
 Emitted before the window is resized. Calling `event.preventDefault()` will prevent the window from being resized.
 
@@ -528,7 +528,7 @@ Emitted after the window has been resized.
 Returns:
 
 * `event` Event
-* `newBounds` [`Rectangle`](structures/rectangle.md) - Location the window is being moved to.
+* `newBounds` [Rectangle](structures/rectangle.md) - Location the window is being moved to.
 
 Emitted before the window is moved. Calling `event.preventDefault()` will prevent the window from being moved.
 
