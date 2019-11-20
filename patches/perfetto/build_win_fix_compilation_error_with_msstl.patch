@@ -22,23 +22,23 @@ gen/third_party/perfetto\protos/perfetto/common/descriptor.gen.h(34,7): note: fo
 class FieldDescriptorProto;
 
 diff --git a/src/protozero/protoc_plugin/cppgen_plugin.cc b/src/protozero/protoc_plugin/cppgen_plugin.cc
-index 98e6c470471db090e2b6bd0824b58adcfc15100f..2ce5abfd9cbdae8d1d7aeeebf5403cd382942869 100644
+index 51fb707ee5f0c036091080d9f33997989c07b5b5..21b55b58e97592c8287874dbde8dabffc6b3a261 100644
 --- a/src/protozero/protoc_plugin/cppgen_plugin.cc
 +++ b/src/protozero/protoc_plugin/cppgen_plugin.cc
-@@ -402,7 +402,7 @@ void CppObjGenerator::GenClassDecl(const Descriptor* msg, Printer* p) const {
-                GetCppType(field, false), "n", field->lowercase_name());
-       p->Print("void clear_$n$() { $n$_.clear(); }\n", "n",
-                field->lowercase_name());
+@@ -587,7 +587,7 @@ void CppObjGenerator::GenClassDecl(const Descriptor* msg, Printer* p) const {
+       // TODO(primiano): this should be done only for TYPE_MESSAGE. Unfortuntely
+       // we didn't realize before and now we have a bunch of code that does:
+       // *msg->add_int_value() = 42 instead of msg->add_int_value(42).
 -      p->Print("$t$* add_$n$() { $n$_.emplace_back(); return &$n$_.back(); }\n",
 +      p->Print("$t$* add_$n$();\n",
                 "t", GetCppType(field, false), "n", field->lowercase_name());
      }
    }
-@@ -461,6 +461,21 @@ void CppObjGenerator::GenClassDef(const Descriptor* msg, Printer* p) const {
+@@ -652,6 +652,21 @@ void CppObjGenerator::GenClassDef(const Descriptor* msg, Printer* p) const {
    p->Outdent();
    p->Print("\n}\n\n");
  
-+  // Generate Accessor Definitons for repeated field,
++  // Generate Accessor Definitions for repeated field,
 +  // worksaround incomplete type error with MSSTL.
 +  for (int i = 0; i < msg->field_count(); i++) {
 +    const FieldDescriptor* field = msg->field(i);
@@ -55,4 +55,5 @@ index 98e6c470471db090e2b6bd0824b58adcfc15100f..2ce5abfd9cbdae8d1d7aeeebf5403cd3
 +
    std::string proto_type = GetFullName(msg, true);
  
-   // Genrate the ParseRawProto() method definition.
+   // Generate the ParseRawProto() method definition.
+
