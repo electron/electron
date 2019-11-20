@@ -47,7 +47,7 @@ def get_env_var(name):
     # TODO Remove ATOM_SHELL_* fallback values
     value = os.environ.get('ATOM_SHELL_' + name, '')
     if value:
-      print("Warning: Use $ELECTRON_" + name + " instead of $ATOM_SHELL_" + name)
+      print 'Warning: Use $ELECTRON_' + name + ' instead of $ATOM_SHELL_' + name
   return value
 
 
@@ -63,7 +63,7 @@ def s3_config():
 
 
 def enable_verbose_mode():
-  print("Running in verbose mode")
+  print 'Running in verbose mode'
   global verbose_mode
   verbose_mode = True
 
