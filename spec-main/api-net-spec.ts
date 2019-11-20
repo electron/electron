@@ -181,17 +181,16 @@ describe('net module', () => {
 
         let chunkIndex = 0
         const chunkCount = 100
-        const sentChunks: Array<Buffer> = []
-        const receivedChunks: Array<Buffer> = []
+        let sent = Buffer.alloc(0)
+        let received = Buffer.alloc(0)
         urlRequest.on('response', (response) => {
           expect(response.statusCode).to.equal(200)
           response.on('data', (chunk) => {
-            receivedChunks.push(chunk)
+            received = Buffer.concat([received, chunk])
           })
           response.on('end', () => {
-            const sentData = Buffer.concat(sentChunks)
-            const receivedData = Buffer.concat(receivedChunks)
-            expect(sentData.toString()).to.equal(receivedData.toString())
+            console.log(sent, received)
+            expect(sent.equals(received)).to.be.true()
             expect(chunkIndex).to.be.equal(chunkCount)
             done()
           })
@@ -200,8 +199,8 @@ describe('net module', () => {
         while (chunkIndex < chunkCount) {
           chunkIndex += 1
           const chunk = randomBuffer(kOneKiloByte)
-          sentChunks.push(chunk)
-          expect(urlRequest.write(chunk)).to.equal(true)
+          sent = Buffer.concat([sent, chunk])
+          urlRequest.write(chunk)
         }
         urlRequest.end()
       })

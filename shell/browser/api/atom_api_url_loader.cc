@@ -6,6 +6,8 @@
 
 #include "base/memory/weak_ptr.h"
 #include "gin/handle.h"
+#include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
@@ -23,7 +25,7 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
  public:
   explicit BufferDataSource(base::span<char> buffer) {
     buffer_.resize(buffer.size());
-    memcpy(buffer.data(), buffer_.data(), buffer_.size());
+    memcpy(buffer_.data(), buffer.data(), buffer_.size());
   }
   ~BufferDataSource() override = default;
 
@@ -48,19 +50,42 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
   std::vector<char> buffer_;
 };
 
-class JSChunkedDataPipeGetter : public network::mojom::ChunkedDataPipeGetter {
+class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
+                                public network::mojom::ChunkedDataPipeGetter {
  public:
+  static gin::Handle<JSChunkedDataPipeGetter> Create(
+      v8::Isolate* isolate,
+      v8::Local<v8::Function> body_func,
+      mojo::PendingReceiver<network::mojom::ChunkedDataPipeGetter>
+          chunked_data_pipe_getter) {
+    return gin::CreateHandle(
+        isolate, new JSChunkedDataPipeGetter(
+                     isolate, body_func, std::move(chunked_data_pipe_getter)));
+  }
+
+  // gin::Wrappable
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override {
+    return gin::Wrappable<JSChunkedDataPipeGetter>::GetObjectTemplateBuilder(
+               isolate)
+        .SetMethod("write", &JSChunkedDataPipeGetter::WriteChunk)
+        .SetMethod("done", &JSChunkedDataPipeGetter::Done);
+  }
+
+  static gin::WrapperInfo kWrapperInfo;
+  ~JSChunkedDataPipeGetter() override = default;
+
+ private:
   JSChunkedDataPipeGetter(
       v8::Isolate* isolate,
       v8::Local<v8::Function> body_func,
       mojo::PendingReceiver<network::mojom::ChunkedDataPipeGetter>
           chunked_data_pipe_getter)
-      : isolate_(isolate), body_func_(isolate, body_func), weak_factory_(this) {
+      : isolate_(isolate),
+        body_func_(isolate, body_func) /*, weak_factory_(this)*/ {
     receiver_.Bind(std::move(chunked_data_pipe_getter));
   }
-  ~JSChunkedDataPipeGetter() override = default;
 
- private:
   // network::mojom::ChunkedDataPipeGetter:
   void GetSize(GetSizeCallback callback) override {
     size_callback_ = std::move(callback);
@@ -68,25 +93,25 @@ class JSChunkedDataPipeGetter : public network::mojom::ChunkedDataPipeGetter {
 
   void StartReading(mojo::ScopedDataPipeProducerHandle pipe) override {
     data_producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(pipe));
-    // TODO: do i need to Post the remainder of this to UI?
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
     v8::HandleScope handle_scope(isolate_);
     v8::MicrotasksScope script_scope(isolate_,
                                      v8::MicrotasksScope::kRunMicrotasks);
-    auto write_chunk = gin::ConvertToV8(
-        isolate_,
-        base::BindRepeating(&WriteChunkThunk, weak_factory_.GetWeakPtr()));
-    auto done = gin::ConvertToV8(
-        isolate_, base::BindRepeating(&JSChunkedDataPipeGetter::Done,
-                                      weak_factory_.GetWeakPtr()));
-    v8::Local<v8::Value> argv[] = {write_chunk, done};
+    auto maybe_wrapper = GetWrapper(isolate_);
+    v8::Local<v8::Value> wrapper;
+    if (!maybe_wrapper.ToLocal(&wrapper)) {
+      return;
+      // hopefully this just drops the pipe and we're good?
+    }
+    v8::Local<v8::Value> argv[] = {wrapper};
     node::Environment* env = node::Environment::GetCurrent(isolate_);
     auto global = env->context()->Global();
     node::MakeCallback(isolate_, global, body_func_.Get(isolate_),
                        node::arraysize(argv), argv, {0, 0});
   }
 
+  /*
   // base::Bind can't handle binding to a method on a weak ptr with a return
   // value
   static v8::Local<v8::Promise> WriteChunkThunk(
@@ -100,6 +125,7 @@ class JSChunkedDataPipeGetter : public network::mojom::ChunkedDataPipeGetter {
           isolate, "Writing to closed stream");
     }
   }
+  */
 
   v8::Local<v8::Promise> WriteChunk(v8::Local<v8::Value> buffer_val) {
     gin_helper::Promise<void> promise(isolate_);
@@ -108,7 +134,6 @@ class JSChunkedDataPipeGetter : public network::mojom::ChunkedDataPipeGetter {
       promise.RejectWithErrorMessage("Expected an ArrayBufferView");
       return handle;
     }
-    auto buffer = buffer_val.As<v8::ArrayBufferView>();
     if (is_writing_) {
       promise.RejectWithErrorMessage("Only one write can be pending at a time");
       return handle;
@@ -117,6 +142,7 @@ class JSChunkedDataPipeGetter : public network::mojom::ChunkedDataPipeGetter {
       promise.RejectWithErrorMessage("Can't write after calling done()");
       return handle;
     }
+    auto buffer = buffer_val.As<v8::ArrayBufferView>();
     is_writing_ = true;
     bytes_written_ += buffer->ByteLength();
     auto backing_store = buffer->Buffer()->GetBackingStore();
@@ -156,28 +182,16 @@ class JSChunkedDataPipeGetter : public network::mojom::ChunkedDataPipeGetter {
   GetSizeCallback size_callback_;
   mojo::Receiver<network::mojom::ChunkedDataPipeGetter> receiver_{this};
   std::unique_ptr<mojo::DataPipeProducer> data_producer_;
-  bool is_writing_;
-  uint64_t bytes_written_;
+  bool is_writing_ = false;
+  uint64_t bytes_written_ = 0;
 
   v8::Isolate* isolate_;
   v8::Global<v8::Function> body_func_;
-  base::WeakPtrFactory<JSChunkedDataPipeGetter> weak_factory_;
+  // base::WeakPtrFactory<JSChunkedDataPipeGetter> weak_factory_;
 };
 
-#if 0
-
-gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(network::ResourceRequest request) {
-  request.request_body = new network::ResourceRequestBody();
-  mojo::PendingRemote<mojom::ChunkedDataPipeGetter> data_pipe_getter;
-
-  // strong binding...?
-  new JSChunkedDataPipeGetter(std::move(data_pipe_getter.InitWithNewPipeAndPassReceiver()));
-  request.request_body.SetToChunkedDataPipe(std::move(data_pipe_getter));
-  auto loader = SimpleURLLoader::Create(std::move(request), kTrafficAnnotation);
-  loader_->DownloadAsStream(url_loader_factory, this);
-  // return ...
-}
-#endif
+gin::WrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 namespace electron {
 
@@ -257,9 +271,10 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
       mojo::PendingRemote<network::mojom::ChunkedDataPipeGetter>
           data_pipe_getter;
       // TODO: strong binding...?
-      new JSChunkedDataPipeGetter(
+      JSChunkedDataPipeGetter::Create(
           args->isolate(), body_func,
           data_pipe_getter.InitWithNewPipeAndPassReceiver());
+      request_ref->request_body = new network::ResourceRequestBody();
       request_ref->request_body->SetToChunkedDataPipe(
           std::move(data_pipe_getter));
     }
