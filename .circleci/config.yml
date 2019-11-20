@@ -160,6 +160,11 @@ step-gclient-sync: &step-gclient-sync
         "$CIRCLE_REPOSITORY_URL"
 
       gclient sync --with_branch_heads --with_tags
+      
+      # Manually run update-external-binaries.py for MacOS with system python
+      if [ "`uname`" == "Darwin" ]; then
+        python src/electron/script/update-external-binaries.py
+      fi
 
 step-setup-env-for-build: &step-setup-env-for-build
   run:
@@ -877,7 +882,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=download_external_binaries=false'
     <<: *steps-checkout
 
   # Layer 2: Builds.
@@ -1148,7 +1153,7 @@ jobs:
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True  --custom-var=download_external_binaries=false'
     <<: *steps-electron-build-for-publish
 
   mas-testing:
@@ -1209,7 +1214,7 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-mas
       <<: *env-release-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True  --custom-var=download_external_binaries=false'
     <<: *steps-electron-build-for-publish
 
   # Layer 3: Tests.
