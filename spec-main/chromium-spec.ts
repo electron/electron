@@ -476,37 +476,6 @@ describe('chromium features', () => {
       expect(preferences.javascript).to.be.false()
     })
 
-    it('handles cycles when merging the parent options into the child options', (done) => {
-      const foo = {} as any
-      foo.bar = foo
-      foo.baz = {
-        hello: {
-          world: true
-        }
-      }
-      foo.baz2 = foo.baz
-      const w = new BrowserWindow({ show: false, foo: foo } as any)
-
-      w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'))
-      w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-        expect(options.show).to.be.false()
-        expect((options as any).foo).to.deep.equal({
-          bar: undefined,
-          baz: {
-            hello: {
-              world: true
-            }
-          },
-          baz2: {
-            hello: {
-              world: true
-            }
-          }
-        })
-        done()
-      })
-    })
-
     it('defines a window.location getter', async () => {
       let targetURL: string
       if (process.platform === 'win32') {
