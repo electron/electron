@@ -203,9 +203,22 @@ URLRequest::URLRequest(gin::Arguments* args)
 
 URLRequest::~URLRequest() = default;
 
+// static
 URLRequest* URLRequest::FromID(uint32_t id) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   return GetAllRequests().Lookup(id);
+}
+
+void OnAuthCredentialsFromJS(
+    mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
+    gin::Arguments* args) {
+  base::string16 username_str, password_str;
+  if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
+    auth_responder->OnAuthCredentials(base::nullopt);
+    return;
+  }
+  auth_responder->OnAuthCredentials(
+      net::AuthCredentials(username_str, password_str));
 }
 
 void URLRequest::OnAuthRequired(
@@ -220,18 +233,7 @@ void URLRequest::OnAuthRequired(
       std::move(auth_challenge_responder));
   auth_responder.set_disconnect_handler(
       base::BindOnce(&URLRequest::Cancel, weak_factory_.GetWeakPtr()));
-  auto cb = base::BindOnce(
-      [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
-         gin::Arguments* args) {
-        base::string16 username_str, password_str;
-        if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
-          auth_responder->OnAuthCredentials(base::nullopt);
-          return;
-        }
-        auth_responder->OnAuthCredentials(
-            net::AuthCredentials(username_str, password_str));
-      },
-      std::move(auth_responder));
+  auto cb = base::BindOnce(OnAuthCredentialsFromJS, std::move(auth_responder));
   Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
 }
 
