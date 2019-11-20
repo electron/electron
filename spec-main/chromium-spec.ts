@@ -425,7 +425,7 @@ describe('chromium features', () => {
 
   describe('window.open', () => {
     for (const show of [true, false]) {
-      it(`inherits parent visibility over parent {show=${show}} option`, (done) => {
+      it(`does not inherit parent visibility {show=${show}}`, (done) => {
         const w = new BrowserWindow({ show })
 
         // toggle visibility
@@ -436,7 +436,7 @@ describe('chromium features', () => {
         }
 
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
-          expect(options.show).to.equal(w.isVisible())
+          expect(options.show).to.equal(true)
           w.close()
           done()
         })
