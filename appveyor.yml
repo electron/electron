@@ -53,6 +53,8 @@ build_script:
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags --reset
+  # Manually run update-external-binaries.py with system python
+  - python src/electron/script/update-external-binaries.py
   - cd src
   - ps: $env:BUILD_CONFIG_PATH="//electron/build/args/%GN_CONFIG%.gn"
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS%"

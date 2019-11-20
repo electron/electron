@@ -49,7 +49,7 @@ vars = {
 
   # It is always needed for normal Electron builds,
   # but might be impossible for custom in-house builds.
-  'download_external_binaries': True,
+  'download_external_binaries': False,
 
   'checkout_nacl':
     False,
