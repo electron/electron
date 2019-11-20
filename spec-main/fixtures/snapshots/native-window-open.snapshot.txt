@@ -2,23 +2,18 @@
   [
     "top=5,left=10,resizable=no",
     {
-      "sender": "[WebContents]",
-      "returnValue": 2
+      "sender": "[WebContents]"
     },
     "about:blank",
     "frame name",
     "new-window",
     {
       "show": true,
-      "width": 800,
+      "title": "cool",
+      "width": 200,
       "height": 600,
-      "webContents": "[WebContents]",
-      "top": "5",
-      "left": "10",
-      "resizable": false,
-      "x": 10,
-      "y": 5,
-      "title": "frame name",
+      "backgroundColor": "blue",
+      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -28,8 +23,12 @@
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "backgroundColor": "blue",
-      "focusable": false
+      "top": 5,
+      "left": 10,
+      "resizable": false,
+      "x": 10,
+      "y": 5,
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -41,33 +40,32 @@
   [
     "zoomFactor=2,resizable=0,x=0,y=10",
     {
-      "sender": "[WebContents]",
-      "returnValue": 4
+      "sender": "[WebContents]"
     },
     "about:blank",
     "frame name",
     "new-window",
     {
       "show": true,
-      "width": 800,
+      "title": "cool",
+      "width": 200,
       "height": 600,
-      "webContents": "[WebContents]",
+      "backgroundColor": "blue",
+      "focusable": false,
       "webPreferences": {
-        "zoomFactor": "2",
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "blue",
+        "zoomFactor": "2",
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
       "resizable": false,
-      "x": null,
+      "x": 0,
       "y": 10,
-      "title": "frame name",
-      "backgroundColor": "blue",
-      "focusable": false
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -79,21 +77,18 @@
   [
     "backgroundColor=gray,webPreferences=0,x=100,y=100",
     {
-      "sender": "[WebContents]",
-      "returnValue": 6
+      "sender": "[WebContents]"
     },
     "about:blank",
     "frame name",
     "new-window",
     {
       "show": true,
-      "width": 800,
+      "title": "cool",
+      "width": 200,
       "height": 600,
-      "webContents": "[WebContents]",
       "backgroundColor": "gray",
-      "x": 100,
-      "y": 100,
-      "title": "frame name",
+      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -103,7 +98,9 @@
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "focusable": false
+      "x": 100,
+      "y": 100,
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -115,20 +112,18 @@
   [
     "x=50,y=20,title=sup",
     {
-      "sender": "[WebContents]",
-      "returnValue": 8
+      "sender": "[WebContents]"
     },
     "about:blank",
     "frame name",
     "new-window",
     {
       "show": true,
-      "width": 800,
-      "height": 600,
-      "webContents": "[WebContents]",
-      "x": 50,
-      "y": 20,
       "title": "sup",
+      "width": 200,
+      "height": 600,
+      "backgroundColor": "blue",
+      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -138,8 +133,9 @@
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "backgroundColor": "blue",
-      "focusable": false
+      "x": 50,
+      "y": 20,
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -151,22 +147,18 @@
   [
     "show=false,top=1,left=1",
     {
-      "sender": "[WebContents]",
-      "returnValue": 10
+      "sender": "[WebContents]"
     },
     "about:blank",
     "frame name",
     "new-window",
     {
-      "show": "false",
-      "width": 800,
+      "show": false,
+      "title": "cool",
+      "width": 200,
       "height": 600,
-      "webContents": "[WebContents]",
-      "top": true,
-      "left": true,
-      "x": null,
-      "y": null,
-      "title": "frame name",
+      "backgroundColor": "blue",
+      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -176,8 +168,11 @@
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "backgroundColor": "blue",
-      "focusable": false
+      "top": 1,
+      "left": 1,
+      "x": 1,
+      "y": 1,
+      "webContents": "[WebContents]"
     },
     [],
     {
