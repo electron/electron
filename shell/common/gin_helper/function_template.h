@@ -5,6 +5,8 @@
 #ifndef SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 #define SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
+#include <utility>
+
 #include "base/bind.h"
 #include "base/callback.h"
 #include "gin/arguments.h"
@@ -199,7 +201,8 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   void DispatchToCallback(base::Callback<ReturnType(ArgTypes...)> callback) {
     v8::MicrotasksScope script_scope(args_->isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
-    args_->Return(callback.Run(ArgumentHolder<indices, ArgTypes>::value...));
+    args_->Return(
+        callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
 
   // In C++, you can declare the function foo(void), but you can't pass a void
@@ -208,7 +211,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   void DispatchToCallback(base::Callback<void(ArgTypes...)> callback) {
     v8::MicrotasksScope script_scope(args_->isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
-    callback.Run(ArgumentHolder<indices, ArgTypes>::value...);
+    callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 
  private:
