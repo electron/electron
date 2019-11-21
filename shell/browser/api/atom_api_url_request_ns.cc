@@ -232,7 +232,7 @@ void URLRequestNS::OnAuthRequired(
             net::AuthCredentials(username_str, password_str));
       },
       std::move(auth_responder));
-  Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
+  Emit("login", auth_info, std::move(cb));
 }
 
 bool URLRequestNS::NotStarted() const {
