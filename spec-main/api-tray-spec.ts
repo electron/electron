@@ -1,6 +1,7 @@
 import { expect } from 'chai'
 import { Menu, Tray, nativeImage } from 'electron'
 import { ifdescribe, ifit } from './spec-helpers'
+import * as path from 'path'
 
 describe('tray module', () => {
   let tray: Tray
@@ -10,6 +11,15 @@ describe('tray module', () => {
   afterEach(() => {
     tray.destroy()
     tray = null as any
+  })
+
+  describe('new Tray', () => {
+    it('throws a descriptive error for a missing file', () => {
+      const badPath = path.resolve('I', 'Do', 'Not', 'Exist')
+      expect(() => {
+        tray = new Tray(badPath)
+      }).to.throw(/Image could not be created from .*/)
+    })
   })
 
   ifdescribe(process.platform === 'darwin')('tray get/set ignoreDoubleClickEvents', () => {

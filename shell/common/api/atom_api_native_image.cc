@@ -12,6 +12,7 @@
 #include "base/files/file_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "net/base/data_url.h"
 #include "shell/common/asar/asar_util.h"
@@ -542,8 +543,18 @@ bool Converter<electron::api::NativeImage*>::FromV8(
   base::FilePath path;
   if (ConvertFromV8(isolate, val, &path)) {
     *out = electron::api::NativeImage::CreateFromPath(isolate, path).get();
-    // Should throw when failed to initialize from path.
-    return !(*out)->image().IsEmpty();
+    if ((*out)->image().IsEmpty()) {
+#if defined(OS_WIN)
+      const auto img_path = base::UTF16ToUTF8(path.value());
+#else
+      const auto img_path = path.value();
+#endif
+      isolate->ThrowException(v8::Exception::Error(
+          StringToV8(isolate, "Image could not be created from " + img_path)));
+      return false;
+    }
+
+    return true;
   }
 
   *out = static_cast<electron::api::NativeImage*>(
