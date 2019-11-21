@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_UI_MESSAGE_BOX_H_
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/callback_forward.h"
@@ -28,6 +29,8 @@ enum MessageBoxOptions {
   MESSAGE_BOX_NONE = 0,
   MESSAGE_BOX_NO_LINK = 1 << 0,
 };
+
+using DialogResult = std::pair<int, bool>;
 
 struct MessageBoxSettings {
   electron::NativeWindow* parent_window = nullptr;
