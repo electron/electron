@@ -4,7 +4,7 @@
 
 #include "shell/browser/api/atom_api_url_loader.h"
 
-#include "base/memory/weak_ptr.h"
+#include "base/containers/id_map.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
@@ -17,6 +17,7 @@
 #include "shell/browser/atom_browser_context.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -81,8 +82,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
       v8::Local<v8::Function> body_func,
       mojo::PendingReceiver<network::mojom::ChunkedDataPipeGetter>
           chunked_data_pipe_getter)
-      : isolate_(isolate),
-        body_func_(isolate, body_func) /*, weak_factory_(this)*/ {
+      : isolate_(isolate), body_func_(isolate, body_func) {
     receiver_.Bind(std::move(chunked_data_pipe_getter));
   }
 
@@ -110,22 +110,6 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     node::MakeCallback(isolate_, global, body_func_.Get(isolate_),
                        node::arraysize(argv), argv, {0, 0});
   }
-
-  /*
-  // base::Bind can't handle binding to a method on a weak ptr with a return
-  // value
-  static v8::Local<v8::Promise> WriteChunkThunk(
-      base::WeakPtr<JSChunkedDataPipeGetter> ptr,
-      v8::Isolate* isolate,
-      v8::Local<v8::Value> buffer) {
-    if (ptr) {
-      return ptr->WriteChunk(buffer);
-    } else {
-      return gin_helper::Promise<void>::RejectedPromise(
-          isolate, "Writing to closed stream");
-    }
-  }
-  */
 
   v8::Local<v8::Promise> WriteChunk(v8::Local<v8::Value> buffer_val) {
     gin_helper::Promise<void> promise(isolate_);
@@ -187,7 +171,6 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
 
   v8::Isolate* isolate_;
   v8::Global<v8::Function> body_func_;
-  // base::WeakPtrFactory<JSChunkedDataPipeGetter> weak_factory_;
 };
 
 gin::WrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
@@ -198,6 +181,7 @@ namespace electron {
 namespace api {
 
 namespace {
+
 const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
     net::DefineNetworkTrafficAnnotation("electron_net_module", R"(
         semantics {
@@ -214,12 +198,33 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
           cookies_store: "user"
           setting: "This feature cannot be disabled."
         })");
+
+base::IDMap<SimpleURLLoaderWrapper*>& GetAllRequests() {
+  static base::NoDestructor<base::IDMap<SimpleURLLoaderWrapper*>>
+      s_all_requests;
+  return *s_all_requests;
 }
 
+}  // namespace
+
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
-    std::unique_ptr<network::SimpleURLLoader> loader,
+    std::unique_ptr<network::ResourceRequest> request,
     network::mojom::URLLoaderFactory* url_loader_factory)
-    : loader_(std::move(loader)) {
+    : id_(GetAllRequests().Add(this)) {
+  // We slightly abuse the |render_frame_id| field in ResourceRequest so that
+  // we can correlate any authentication events that arrive with this request.
+  request->render_frame_id = id_;
+
+  // SimpleURLLoader wants to control the request body itself. We have other
+  // ideas.
+  auto request_body = std::move(request->request_body);
+  auto request_ref = request.get();
+  loader_ =
+      network::SimpleURLLoader::Create(std::move(request), kTrafficAnnotation);
+  if (request_body) {
+    request_ref->request_body = std::move(request_body);
+  }
+
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
   loader_->DownloadAsStream(url_loader_factory, this);
@@ -231,9 +236,48 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   loader_->SetOnDownloadProgressCallback(
       DownloadProgressCallback on_download_progress_callback) = 0;
   */
+
+  // Prevent ourselves from being GC'd until the request is complete.
   pinned_wrapper_.Reset(isolate(), GetWrapper());
 }
-SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
+
+SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() {
+  GetAllRequests().Remove(id_);
+}
+
+// static
+SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::FromID(uint32_t id) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  return GetAllRequests().Lookup(id);
+}
+
+void SimpleURLLoaderWrapper::OnAuthRequired(
+    const GURL& url,
+    bool first_auth_attempt,
+    net::AuthChallengeInfo auth_info,
+    network::mojom::URLResponseHeadPtr head,
+    mojo::PendingRemote<network::mojom::AuthChallengeResponder>
+        auth_challenge_responder) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder(
+      std::move(auth_challenge_responder));
+  // auth_responder.set_disconnect_handler(
+  //    base::BindOnce(&SimpleURLLoaderWrapper::Cancel,
+  //    weak_factory_.GetWeakPtr()));
+  auto cb = base::BindOnce(
+      [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
+         gin::Arguments* args) {
+        base::string16 username_str, password_str;
+        if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
+          auth_responder->OnAuthCredentials(base::nullopt);
+          return;
+        }
+        auth_responder->OnAuthCredentials(
+            net::AuthCredentials(username_str, password_str));
+      },
+      std::move(auth_responder));
+  Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
+}
 
 void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
@@ -264,20 +308,14 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
       }
     }
   }
-  // TODO:
-  // opts.Get("redirect", &request->redirect_mode);
-
-  network::ResourceRequest* request_ref = request.get();
-
-  auto loader =
-      network::SimpleURLLoader::Create(std::move(request), kTrafficAnnotation);
+  opts.Get("redirect", &request->redirect_mode);
 
   v8::Local<v8::Value> body;
   if (opts.Get("body", &body)) {
     if (body->IsArrayBufferView()) {
       auto buffer_body = body.As<v8::ArrayBufferView>();
       auto backing_store = buffer_body->Buffer()->GetBackingStore();
-      request_ref->request_body = network::ResourceRequestBody::CreateFromBytes(
+      request->request_body = network::ResourceRequestBody::CreateFromBytes(
           static_cast<char*>(backing_store->Data()) + buffer_body->ByteOffset(),
           buffer_body->ByteLength());
     } else if (body->IsFunction()) {
@@ -288,9 +326,8 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
       JSChunkedDataPipeGetter::Create(
           args->isolate(), body_func,
           data_pipe_getter.InitWithNewPipeAndPassReceiver());
-      request_ref->request_body = new network::ResourceRequestBody();
-      request_ref->request_body->SetToChunkedDataPipe(
-          std::move(data_pipe_getter));
+      request->request_body = new network::ResourceRequestBody();
+      request->request_body->SetToChunkedDataPipe(std::move(data_pipe_getter));
     }
   }
 
@@ -306,7 +343,7 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
   auto url_loader_factory = session->browser_context()->GetURLLoaderFactory();
 
   auto* ret =
-      new SimpleURLLoaderWrapper(std::move(loader), url_loader_factory.get());
+      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get());
   ret->InitWithArgs(args);
   return ret;
 }

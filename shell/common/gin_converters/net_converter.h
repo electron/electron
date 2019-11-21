@@ -6,6 +6,7 @@
 #define SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 
 #include "gin/converter.h"
+#include "services/network/public/mojom/fetch_api.mojom.h"
 #include "shell/browser/net/cert_verifier_client.h"
 
 namespace base {
@@ -94,6 +95,26 @@ template <>
 struct Converter<electron::VerifyRequestParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::VerifyRequestParams val);
+};
+
+template <>
+struct Converter<network::mojom::RedirectMode> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::RedirectMode* out) {
+    std::string mode;
+    if (!ConvertFromV8(isolate, val, &mode))
+      return false;
+    if (mode == "follow")
+      *out = network::mojom::RedirectMode::kFollow;
+    else if (mode == "error")
+      *out = network::mojom::RedirectMode::kError;
+    else if (mode == "manual")
+      *out = network::mojom::RedirectMode::kManual;
+    else
+      return false;
+    return true;
+  }
 };
 
 }  // namespace gin

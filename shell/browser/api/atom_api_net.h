@@ -18,7 +18,6 @@ class Net : public mate::Wrappable<Net> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  v8::Local<v8::Value> URLRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> URLLoader(v8::Isolate* isolate);
 
  protected:

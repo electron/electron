@@ -5,7 +5,9 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_URL_LOADER_H_
 #define SHELL_BROWSER_API_ATOM_API_URL_LOADER_H_
 
+#include "net/base/auth.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/common/gin_helper/event_emitter.h"
@@ -18,7 +20,8 @@ class Arguments;
 
 namespace network {
 class SimpleURLLoader;
-}
+struct ResourceRequest;
+}  // namespace network
 
 namespace electron {
 
@@ -35,12 +38,21 @@ class SimpleURLLoaderWrapper
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  static SimpleURLLoaderWrapper* FromID(uint32_t id);
+
+  void OnAuthRequired(
+      const GURL& url,
+      bool first_auth_attempt,
+      net::AuthChallengeInfo auth_info,
+      network::mojom::URLResponseHeadPtr head,
+      mojo::PendingRemote<network::mojom::AuthChallengeResponder>
+          auth_challenge_responder);
+
   void Cancel();
 
  private:
-  explicit SimpleURLLoaderWrapper(
-      std::unique_ptr<network::SimpleURLLoader> loader,
-      network::mojom::URLLoaderFactory* url_loader_factory);
+  SimpleURLLoaderWrapper(std::unique_ptr<network::ResourceRequest> loader,
+                         network::mojom::URLLoaderFactory* url_loader_factory);
 
   // SimpleURLLoaderStreamConsumer:
   void OnDataReceived(base::StringPiece string_piece,
@@ -52,6 +64,9 @@ class SimpleURLLoaderWrapper
   void OnResponseStarted(const GURL& final_url,
                          const network::mojom::URLResponseHead& response_head);
 
+  void Start();
+
+  uint32_t id_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   v8::Global<v8::Value> pinned_wrapper_;
 };

@@ -1032,9 +1032,13 @@ describe('net module', () => {
         })
         let redirectCount = 0
         urlRequest.on('response', (response) => {
-          expect(response.statusCode).to.equal(200)
-          expect(redirectCount).to.equal(2)
-          done()
+          try {
+            expect(response.statusCode).to.equal(200)
+            expect(redirectCount).to.equal(2)
+            done()
+          } catch (e) {
+            done(e)
+          }
         })
         urlRequest.on('redirect', (status, method, url) => {
           if (url === `${serverUrl}/301` || url === `${serverUrl}/200`) {
@@ -1071,8 +1075,12 @@ describe('net module', () => {
         })
         let redirectCount = 0
         urlRequest.on('close', () => {
-          expect(redirectCount).to.equal(1)
-          done()
+          try {
+            expect(redirectCount).to.equal(1)
+            done()
+          } catch (e) {
+            done(e)
+          }
         })
         urlRequest.on('redirect', (status, method, url) => {
           if (url === `${serverUrl}/200`) {
@@ -1106,8 +1114,12 @@ describe('net module', () => {
       const customHeaderName = 'Some-Custom-Header-Name'
       const customHeaderValue = 'Some-Customer-Header-Value'
       respondOnce.toURL('/', (request, response) => {
-        expect(request.method).to.equal('GET')
-        expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue)
+        try {
+          expect(request.method).to.equal('GET')
+          expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue)
+        } catch (e) {
+          return done(e)
+        }
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.end()
@@ -1182,8 +1194,12 @@ describe('net module', () => {
           requestErrorEventEmitted = true
         })
         urlRequest.on('close', () => {
-          expect(requestErrorEventEmitted).to.be.true('request error event was emitted')
-          done()
+          try {
+            expect(requestErrorEventEmitted).to.be.true('request error event was emitted')
+            done()
+          } catch (e) {
+            done(e)
+          }
         })
         urlRequest.end()
       })
@@ -1191,100 +1207,95 @@ describe('net module', () => {
   })
 
   describe('IncomingMessage API', () => {
-    it('response object should implement the IncomingMessage API', (done) => {
+    it('response object should implement the IncomingMessage API', async () => {
       const customHeaderName = 'Some-Custom-Header-Name'
       const customHeaderValue = 'Some-Customer-Header-Value'
 
-      respondOnce.toSingleURL((request, response) => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.setHeader(customHeaderName, customHeaderValue)
         response.end()
-      }).then(serverUrl => {
-        const urlRequest = net.request(serverUrl)
-
-        urlRequest.on('response', (response) => {
-          expect(response.statusCode).to.equal(200)
-          expect(response.statusMessage).to.equal('OK')
-
-          const headers = response.headers
-          expect(headers).to.be.an('object')
-          const headerValue = headers[customHeaderName.toLowerCase()]
-          expect(headerValue).to.equal(customHeaderValue)
-
-          const httpVersion = response.httpVersion
-          expect(httpVersion).to.be.a('string').and.to.have.lengthOf.at.least(1)
-
-          const httpVersionMajor = response.httpVersionMajor
-          expect(httpVersionMajor).to.be.a('number').and.to.be.at.least(1)
-
-          const httpVersionMinor = response.httpVersionMinor
-          expect(httpVersionMinor).to.be.a('number').and.to.be.at.least(0)
-
-          response.on('data', () => {})
-          response.on('end', () => { done() })
-        })
-        urlRequest.end()
       })
+
+      const urlRequest = net.request(serverUrl)
+      urlRequest.end()
+      const [response] = await emittedOnce(urlRequest, 'response')
+
+      expect(response.statusCode).to.equal(200)
+      expect(response.statusMessage).to.equal('OK')
+
+      const headers = response.headers
+      expect(headers).to.be.an('object')
+      const headerValue = headers[customHeaderName.toLowerCase()]
+      expect(headerValue).to.equal(customHeaderValue)
+
+      const httpVersion = response.httpVersion
+      expect(httpVersion).to.be.a('string').and.to.have.lengthOf.at.least(1)
+
+      const httpVersionMajor = response.httpVersionMajor
+      expect(httpVersionMajor).to.be.a('number').and.to.be.at.least(1)
+
+      const httpVersionMinor = response.httpVersionMinor
+      expect(httpVersionMinor).to.be.a('number').and.to.be.at.least(0)
+
+      response.on('data', () => {})
+      await emittedOnce(response, 'end')
     })
 
-    it('should discard duplicate headers', (done) => {
+    it('should discard duplicate headers', async () => {
       const includedHeader = 'max-forwards'
       const discardableHeader = 'Max-Forwards'
 
       const includedHeaderValue = 'max-fwds-val'
       const discardableHeaderValue = 'max-fwds-val-two'
 
-      respondOnce.toSingleURL((request, response) => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.setHeader(discardableHeader, discardableHeaderValue)
         response.setHeader(includedHeader, includedHeaderValue)
         response.end()
-      }).then(serverUrl => {
-        const urlRequest = net.request(serverUrl)
-
-        urlRequest.on('response', response => {
-          expect(response.statusCode).to.equal(200)
-          expect(response.statusMessage).to.equal('OK')
-
-          const headers = response.headers
-          expect(headers).to.be.an('object')
-
-          expect(headers).to.have.property(includedHeader)
-          expect(headers).to.not.have.property(discardableHeader)
-          expect(headers[includedHeader]).to.equal(includedHeaderValue)
-
-          response.on('data', () => {})
-          response.on('end', () => { done() })
-        })
-        urlRequest.end()
       })
+      const urlRequest = net.request(serverUrl)
+      urlRequest.end()
+
+      const [response] = await emittedOnce(urlRequest, 'response')
+      expect(response.statusCode).to.equal(200)
+      expect(response.statusMessage).to.equal('OK')
+
+      const headers = response.headers
+      expect(headers).to.be.an('object')
+
+      expect(headers).to.have.property(includedHeader)
+      expect(headers).to.not.have.property(discardableHeader)
+      expect(headers[includedHeader]).to.equal(includedHeaderValue)
+
+      response.on('data', () => {})
+      await emittedOnce(response, 'end')
     })
 
-    it('should join repeated non-discardable value with ,', (done) => {
-      respondOnce.toSingleURL((request, response) => {
+    it('should join repeated non-discardable value with ,', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.setHeader('referrer-policy', ['first-text', 'second-text'])
         response.end()
-      }).then(serverUrl => {
-        const urlRequest = net.request(serverUrl)
-
-        urlRequest.on('response', response => {
-          expect(response.statusCode).to.equal(200)
-          expect(response.statusMessage).to.equal('OK')
-
-          const headers = response.headers
-          expect(headers).to.be.an('object')
-          expect(headers).to.have.property('referrer-policy')
-          expect(headers['referrer-policy']).to.equal('first-text, second-text')
-
-          response.on('data', () => {})
-          response.on('end', () => { done() })
-        })
-        urlRequest.end()
       })
+      const urlRequest = net.request(serverUrl)
+      urlRequest.end()
+
+      const [response] = await emittedOnce(urlRequest, 'response')
+      expect(response.statusCode).to.equal(200)
+      expect(response.statusMessage).to.equal('OK')
+
+      const headers = response.headers
+      expect(headers).to.be.an('object')
+      expect(headers).to.have.property('referrer-policy')
+      expect(headers['referrer-policy']).to.equal('first-text, second-text')
+
+      response.on('data', () => {})
+      await emittedOnce(response, 'end')
     })
 
     it('should be able to pipe a net response into a writable stream', (done) => {
@@ -1335,7 +1346,11 @@ describe('net module', () => {
         let requestCloseEventEmitted = false
         const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
-          expect(requestCloseEventEmitted).to.be.false('request close event emitted')
+          try {
+            expect(requestCloseEventEmitted).to.be.false('request close event emitted')
+          } catch (e) {
+            return done(e)
+          }
           const statusCode = response.statusCode
           expect(statusCode).to.equal(200)
           response.on('data', () => { })
