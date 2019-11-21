@@ -362,7 +362,7 @@ class AuthResponder : public network::mojom::TrustedAuthClient {
       ::network::mojom::URLResponseHeadPtr head,
       mojo::PendingRemote<network::mojom::AuthChallengeResponder>
           auth_challenge_responder) override {
-    api::URLRequest* url_request = api::URLRequest::FromID(routing_id);
+    api::URLRequestNS* url_request = api::URLRequestNS::FromID(routing_id);
     if (url_request) {
       url_request->OnAuthRequired(url, first_auth_attempt, auth_info,
                                   std::move(head),
