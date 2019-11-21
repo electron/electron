@@ -3,6 +3,7 @@ import { net, session, ClientRequest, BrowserWindow } from 'electron'
 import * as http from 'http'
 import * as url from 'url'
 import { AddressInfo } from 'net'
+import { emittedOnce } from './events-helpers'
 
 const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
@@ -562,34 +563,37 @@ describe('net module', () => {
       })
     })
 
-    it('should be able to abort an HTTP request before first write', (done) => {
-      respondOnce.toSingleURL((request, response) => {
+    it('should be able to abort an HTTP request before first write', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.end()
         expect.fail('Unexpected request event')
-      }).then(serverUrl => {
-        let requestAbortEventEmitted = false
-
-        const urlRequest = net.request(serverUrl)
-        urlRequest.on('response', () => {
-          expect.fail('Unexpected response event')
-        })
-        urlRequest.on('finish', () => {
-          expect.fail('Unexpected finish event')
-        })
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event')
-        })
-        urlRequest.on('abort', () => {
-          requestAbortEventEmitted = true
-        })
-        urlRequest.on('close', () => {
-          expect(requestAbortEventEmitted).to.equal(true)
-          done()
-        })
-        urlRequest.abort()
-        urlRequest.write('')
-        urlRequest.end()
       })
+      let requestAbortEventEmitted = false
+      let responseEmitted = false
+      let finishEmitted = false
+      let errorEmitted = false
+
+      const urlRequest = net.request(serverUrl)
+      urlRequest.on('response', () => {
+        responseEmitted = true
+      })
+      urlRequest.on('finish', () => {
+        finishEmitted = true
+      })
+      urlRequest.on('error', () => {
+        errorEmitted = true
+      })
+      urlRequest.on('abort', () => {
+        requestAbortEventEmitted = true
+      })
+      urlRequest.abort()
+      urlRequest.write('')
+      urlRequest.end()
+      await emittedOnce(urlRequest, 'close')
+      expect(requestAbortEventEmitted).to.equal(true)
+      expect(responseEmitted).to.be.false()
+      expect(finishEmitted).to.be.false()
+      expect(errorEmitted).to.be.false()
     })
 
     it('it should be able to abort an HTTP request before request end', (done) => {
@@ -625,10 +629,10 @@ describe('net module', () => {
       })
     })
 
-    it('it should be able to abort an HTTP request after request end and before response', (done) => {
+    it('it should be able to abort an HTTP request after request end and before response', async () => {
       let requestReceivedByServer = false
       let urlRequest: ClientRequest | null = null
-      respondOnce.toSingleURL((request, response) => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
         requestReceivedByServer = true
         urlRequest!.abort()
         process.nextTick(() => {
@@ -636,120 +640,107 @@ describe('net module', () => {
           response.statusMessage = 'OK'
           response.end()
         })
-      }).then(serverUrl => {
-        let requestAbortEventEmitted = false
-        let requestFinishEventEmitted = false
-
-        urlRequest = net.request(serverUrl)
-        urlRequest.on('response', () => {
-          expect.fail('Unexpected response event')
-        })
-        urlRequest.on('finish', () => {
-          requestFinishEventEmitted = true
-        })
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event')
-        })
-        urlRequest.on('abort', () => {
-          requestAbortEventEmitted = true
-        })
-        urlRequest.on('close', () => {
-          expect(requestFinishEventEmitted).to.equal(true)
-          expect(requestReceivedByServer).to.equal(true)
-          expect(requestAbortEventEmitted).to.equal(true)
-          done()
-        })
-
-        urlRequest.end(randomString(kOneKiloByte))
       })
+      let requestAbortEventEmitted = false
+      let requestFinishEventEmitted = false
+
+      urlRequest = net.request(serverUrl)
+      urlRequest.on('response', () => {
+        expect.fail('Unexpected response event')
+      })
+      urlRequest.on('finish', () => {
+        requestFinishEventEmitted = true
+      })
+      urlRequest.on('error', () => {
+        expect.fail('Unexpected error event')
+      })
+      urlRequest.on('abort', () => {
+        requestAbortEventEmitted = true
+      })
+      urlRequest.end(randomString(kOneKiloByte))
+      await emittedOnce(urlRequest, 'close')
+      expect(requestFinishEventEmitted).to.equal(true)
+      expect(requestReceivedByServer).to.equal(true)
+      expect(requestAbortEventEmitted).to.equal(true)
     })
 
-    it('it should be able to abort an HTTP request after response start', (done) => {
+    it('it should be able to abort an HTTP request after response start', async () => {
       let requestReceivedByServer = false
-      respondOnce.toSingleURL((request, response) => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
         requestReceivedByServer = true
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.write(randomString(kOneKiloByte))
-      }).then(serverUrl => {
-        let requestFinishEventEmitted = false
-        let requestResponseEventEmitted = false
-        let requestAbortEventEmitted = false
-        let responseAbortedEventEmitted = false
+      })
+      let requestFinishEventEmitted = false
+      let requestResponseEventEmitted = false
+      let requestAbortEventEmitted = false
+      let responseAbortedEventEmitted = false
 
-        const urlRequest = net.request(serverUrl)
-        urlRequest.on('response', (response) => {
-          requestResponseEventEmitted = true
-          const statusCode = response.statusCode
-          expect(statusCode).to.equal(200)
-          response.on('data', () => {})
-          response.on('end', () => {
-            expect.fail('Unexpected end event')
-          })
-          response.on('error', () => {
-            expect.fail('Unexpected error event')
-          })
-          response.on('aborted', () => {
-            responseAbortedEventEmitted = true
-          })
-          urlRequest.abort()
+      const urlRequest = net.request(serverUrl)
+      urlRequest.on('response', (response) => {
+        requestResponseEventEmitted = true
+        const statusCode = response.statusCode
+        expect(statusCode).to.equal(200)
+        response.on('data', () => {})
+        response.on('end', () => {
+          expect.fail('Unexpected end event')
         })
-        urlRequest.on('finish', () => {
-          requestFinishEventEmitted = true
-        })
-        urlRequest.on('error', () => {
+        response.on('error', () => {
           expect.fail('Unexpected error event')
         })
-        urlRequest.on('abort', () => {
-          requestAbortEventEmitted = true
+        response.on('aborted', () => {
+          responseAbortedEventEmitted = true
         })
-        urlRequest.on('close', () => {
-          expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event')
-          expect(requestReceivedByServer).to.be.true('request should be received by the server')
-          expect(requestResponseEventEmitted).to.be.true('"response" event should be emitted')
-          expect(requestAbortEventEmitted).to.be.true('request should emit "abort" event')
-          expect(responseAbortedEventEmitted).to.be.true('response should emit "aborted" event')
-          done()
-        })
-        urlRequest.end(randomString(kOneKiloByte))
+        urlRequest.abort()
       })
+      urlRequest.on('finish', () => {
+        requestFinishEventEmitted = true
+      })
+      urlRequest.on('error', () => {
+        expect.fail('Unexpected error event')
+      })
+      urlRequest.on('abort', () => {
+        requestAbortEventEmitted = true
+      })
+      urlRequest.end(randomString(kOneKiloByte))
+      await emittedOnce(urlRequest, 'close')
+      expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event')
+      expect(requestReceivedByServer).to.be.true('request should be received by the server')
+      expect(requestResponseEventEmitted).to.be.true('"response" event should be emitted')
+      expect(requestAbortEventEmitted).to.be.true('request should emit "abort" event')
+      expect(responseAbortedEventEmitted).to.be.true('response should emit "aborted" event')
     })
 
-    it('abort event should be emitted at most once', (done) => {
+    it('abort event should be emitted at most once', async () => {
       let requestReceivedByServer = false
       let urlRequest: ClientRequest | null = null
-      respondOnce.toSingleURL(() => {
+      const serverUrl = await respondOnce.toSingleURL(() => {
         requestReceivedByServer = true
         urlRequest!.abort()
         urlRequest!.abort()
-      }).then(serverUrl => {
-        let requestFinishEventEmitted = false
-        let abortEmitted = false
-
-        urlRequest = net.request(serverUrl)
-        urlRequest.on('response', () => {
-          expect.fail('Unexpected response event')
-        })
-        urlRequest.on('finish', () => {
-          requestFinishEventEmitted = true
-        })
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event')
-        })
-        urlRequest.on('abort', () => {
-          expect(abortEmitted).to.be.false('abort event should not be emitted more than once')
-          abortEmitted = true
-          urlRequest!.abort()
-        })
-        urlRequest.on('close', () => {
-          expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event')
-          expect(requestReceivedByServer).to.be.true('request should be received by server')
-          expect(abortEmitted).to.be.true('request should emit "abort" event')
-          done()
-        })
-
-        urlRequest.end(randomString(kOneKiloByte))
       })
+      let requestFinishEventEmitted = false
+      let abortsEmitted = 0
+
+      urlRequest = net.request(serverUrl)
+      urlRequest.on('response', () => {
+        expect.fail('Unexpected response event')
+      })
+      urlRequest.on('finish', () => {
+        requestFinishEventEmitted = true
+      })
+      urlRequest.on('error', () => {
+        expect.fail('Unexpected error event')
+      })
+      urlRequest.on('abort', () => {
+        abortsEmitted++
+      })
+      urlRequest.end(randomString(kOneKiloByte))
+      await emittedOnce(urlRequest, 'close')
+      expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event')
+      expect(requestReceivedByServer).to.be.true('request should be received by server')
+      expect(abortsEmitted).to.equal(1, 'request should emit exactly 1 "abort" event')
     })
 
     describe('webRequest', () => {
