@@ -172,7 +172,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     }
   }
 
-  void Done() {
+  void Done() {  // TODO: accept net error?
     if (size_callback_) {
       std::move(size_callback_).Run(net::OK, bytes_written_);
       // ... delete this?
@@ -223,7 +223,6 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
   loader_->DownloadAsStream(url_loader_factory, this);
-  // TODO: pin this, to prevent getting GC'd until the request is finished
   /*
   loader_->SetOnRedirectCallback(
       const OnRedirectCallback& on_redirect_callback) = 0;
@@ -232,11 +231,13 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   loader_->SetOnDownloadProgressCallback(
       DownloadProgressCallback on_download_progress_callback) = 0;
   */
+  pinned_wrapper_.Reset(isolate(), GetWrapper());
 }
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
 
 void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
+  pinned_wrapper_.Reset();
   // This ensures that no further callbacks will be called, so there's no need
   // for additional guards.
 }
@@ -251,6 +252,20 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
   auto request = std::make_unique<network::ResourceRequest>();
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
+  std::map<std::string, std::string> extra_headers;
+  if (opts.Get("extraHeaders", &extra_headers)) {
+    for (const auto& it : extra_headers) {
+      if (net::HttpUtil::IsValidHeaderName(it.first) &&
+          net::HttpUtil::IsValidHeaderValue(it.second)) {
+        request->headers.SetHeader(it.first, it.second);
+      } else {
+        // TODO: warning...? or, better, warning when the user calls
+        // setHeader...
+      }
+    }
+  }
+  // TODO:
+  // opts.Get("redirect", &request->redirect_mode);
 
   network::ResourceRequest* request_ref = request.get();
 
@@ -270,7 +285,6 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
 
       mojo::PendingRemote<network::mojom::ChunkedDataPipeGetter>
           data_pipe_getter;
-      // TODO: strong binding...?
       JSChunkedDataPipeGetter::Create(
           args->isolate(), body_func,
           data_pipe_getter.InitWithNewPipeAndPassReceiver());
@@ -307,9 +321,17 @@ void SimpleURLLoaderWrapper::OnDataReceived(base::StringPiece string_piece,
   Emit("data", array_buffer);
   std::move(resume).Run();
 }
+
 void SimpleURLLoaderWrapper::OnComplete(bool success) {
-  Emit("complete", success);
+  if (success) {
+    Emit("complete");
+  } else {
+    Emit("error", net::ErrorToString(loader_->NetError()));
+  }
+  loader_.reset();
+  pinned_wrapper_.Reset();
 }
+
 void SimpleURLLoaderWrapper::OnRetry(base::OnceClosure start_retry) {}
 
 void SimpleURLLoaderWrapper::OnResponseStarted(

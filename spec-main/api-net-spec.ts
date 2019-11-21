@@ -1,21 +1,8 @@
 import { expect } from 'chai'
-import { net as originalNet, session, ClientRequest, BrowserWindow } from 'electron'
+import { net, session, ClientRequest, BrowserWindow } from 'electron'
 import * as http from 'http'
 import * as url from 'url'
 import { AddressInfo } from 'net'
-
-const outstandingRequests: ClientRequest[] = []
-const net: {request: (typeof originalNet)['request']} = {
-  request: (...args) => {
-    const r = originalNet.request(...args)
-    outstandingRequests.push(r)
-    return r
-  }
-}
-const abortOutstandingRequests = () => {
-  outstandingRequests.forEach(r => r.abort())
-  outstandingRequests.length = 0
-}
 
 const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
@@ -69,7 +56,6 @@ respondOnce.toSingleURL = (fn: http.RequestListener) => {
 }
 
 describe('net module', () => {
-  afterEach(abortOutstandingRequests)
   describe('HTTP basics', () => {
     it('should be able to issue a basic GET request', (done) => {
       respondOnce.toSingleURL((request, response) => {
@@ -189,7 +175,6 @@ describe('net module', () => {
             received = Buffer.concat([received, chunk])
           })
           response.on('end', () => {
-            console.log(sent, received)
             expect(sent.equals(received)).to.be.true()
             expect(chunkIndex).to.be.equal(chunkCount)
             done()
@@ -430,32 +415,31 @@ describe('net module', () => {
       })
     })
 
-    it('should be able to set a non-string object as a header value', (done) => {
+    it('should be able to set a non-string object as a header value', async () => {
       const customHeaderName = 'Some-Integer-Value'
       const customHeaderValue = 900
-      respondOnce.toSingleURL((request, response) => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
         expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue.toString())
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.end()
-      }).then(serverUrl => {
-        const urlRequest = net.request(serverUrl)
-        urlRequest.on('response', (response) => {
-          const statusCode = response.statusCode
-          expect(statusCode).to.equal(200)
-          response.on('data', () => {})
-          response.on('end', () => {
-            done()
-          })
-        })
-        urlRequest.setHeader(customHeaderName, customHeaderValue as any)
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
-        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
-        urlRequest.write('')
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
-        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
-        urlRequest.end()
       })
+      const urlRequest = net.request(serverUrl)
+      const complete = new Promise<number>(resolve => {
+        urlRequest.on('response', (response) => {
+          resolve(response.statusCode)
+          response.on('data', () => {})
+          response.on('end', () => {})
+        })
+      })
+      urlRequest.setHeader(customHeaderName, customHeaderValue as any)
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
+      urlRequest.write('')
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
+      urlRequest.end()
+      expect(await complete).to.equal(200)
     })
 
     it('should not be able to set a custom HTTP request header after first write', (done) => {
@@ -603,7 +587,7 @@ describe('net module', () => {
           done()
         })
         urlRequest.abort()
-        expect(urlRequest.write('')).to.equal(false)
+        urlRequest.write('')
         urlRequest.end()
       })
     })
@@ -1446,6 +1430,79 @@ describe('net module', () => {
           })
         })
         urlRequest.end()
+      })
+    })
+
+    it('should finish sending data when urlRequest is unreferenced', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        let received = Buffer.alloc(0)
+        request.on('data', (data) => {
+          received = Buffer.concat([received, data])
+        })
+        request.on('end', () => {
+          response.end()
+          expect(received.length).to.equal(kOneMegaByte)
+          done()
+        })
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => {})
+          response.on('end', () => {})
+        })
+        urlRequest.on('close', () => {
+          process.nextTick(() => {
+            const v8Util = process.electronBinding('v8_util')
+            v8Util.requestGarbageCollectionForTesting()
+          })
+        })
+        urlRequest.end(randomBuffer(kOneMegaByte))
+      })
+    })
+
+    it('should finish sending data when urlRequest is unreferenced for chunked encoding', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        let received = Buffer.alloc(0)
+        request.on('data', (data) => {
+          received = Buffer.concat([received, data])
+        })
+        request.on('end', () => {
+          response.end()
+          expect(received.length).to.equal(kOneMegaByte)
+          done()
+        })
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => {})
+          response.on('end', () => {})
+        })
+        urlRequest.on('close', () => {
+          process.nextTick(() => {
+            const v8Util = process.electronBinding('v8_util')
+            v8Util.requestGarbageCollectionForTesting()
+          })
+        })
+        urlRequest.chunkedEncoding = true
+        urlRequest.end(randomBuffer(kOneMegaByte))
+      })
+    })
+
+    it('should emit error if socket is unceremoniously closed', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        request.destroy()
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => {})
+          response.on('end', () => {})
+        })
+        urlRequest.on('error', (err) => {
+          console.log('error', err)
+          done()
+        })
+        urlRequest.end(randomBuffer(kOneMegaByte))
       })
     })
   })

@@ -24,6 +24,7 @@ namespace electron {
 
 namespace api {
 
+/** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper
     : public gin_helper::EventEmitter<SimpleURLLoaderWrapper>,
       public network::SimpleURLLoaderStreamConsumer {
@@ -52,6 +53,7 @@ class SimpleURLLoaderWrapper
                          const network::mojom::URLResponseHead& response_head);
 
   std::unique_ptr<network::SimpleURLLoader> loader_;
+  v8::Global<v8::Value> pinned_wrapper_;
 };
 
 }  // namespace api
@@ -59,59 +61,3 @@ class SimpleURLLoaderWrapper
 }  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_URL_LOADER_H_
-
-/*
- * js usage:
- *
- * new SimpleURLLoader({
- *   method: 'GET',
- *   url: 'https://...'
- * })
- *
- * new SimpleURLLoader({
- *   method: 'PUT',
- *   url: 'https://...',
- *   body: Buffer.from(...),
- * })
- *
- * new SimpleURLLoader({
- *   method: 'PUT',
- *   url: 'https://...',
- *   bodyFromFile: 'path/to/file',
- * })
- *
- * // Transfer-Encoding: chunked
- * new SimpleURLLoader({
- *   method: 'PUT',
- *   url: 'https://...',
- *   body: async function(write, done) {
- *     await write(Buffer.alloc(1024))
- *     await thing()
- *     await write(Buffer.alloc(1024*3))
- *     done()
- *   }
- * })
- *
- * // Streaming but not chunked
- * new SimpleURLLoader({
- *   method: 'PUT',
- *   url: 'https://...',
- *   body: {
- *     stream: someStream(),
- *     size: size_in_bytes
- *   }
- * })
- *
- *
- * // events
- * const loader = new SimpleURLLoader(params)
- * loader.on('response', ...)
- * loader.on('redirect', ...)
- * loader.on('upload-progress', ...)
- * loader.on('download-progress', ...)
- * loader.on('data', ...)
- * loader.on('complete', ...)
- * loader.on('retry', ...)
- * loader.on('error', ...)
- *
- */
