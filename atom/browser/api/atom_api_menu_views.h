@@ -27,11 +27,11 @@ class MenuViews : public Menu {
                int x,
                int y,
                int positioning_item,
-               const base::Closure& callback) override;
+               base::OnceClosure callback) override;
   void ClosePopupAt(int32_t window_id) override;
 
  private:
-  void OnClosed(int32_t window_id, base::Closure callback);
+  void OnClosed(int32_t window_id, base::OnceClosure callback);
 
   // window ID -> open context menu
   std::map<int32_t, std::unique_ptr<views::MenuRunner>> menu_runners_;

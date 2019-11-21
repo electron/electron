@@ -4,10 +4,12 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 
+#include <utility>
+
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/accelerator_converter.h"
-#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
@@ -187,6 +189,16 @@ void Menu::OnMenuWillClose() {
 
 void Menu::OnMenuWillShow() {
   Emit("menu-will-show");
+}
+
+base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
+  // return ((callback, ref) => { callback() }).bind(null, callback, this)
+  v8::Global<v8::Value> ref(isolate(), GetWrapper());
+  return base::BindOnce(
+      [](base::OnceClosure callback, v8::Global<v8::Value> ref) {
+        std::move(callback).Run();
+      },
+      std::move(callback), std::move(ref));
 }
 
 // static
