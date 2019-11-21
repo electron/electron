@@ -23,7 +23,7 @@ const FUNCTION_PROPERTIES = [
 
 // The remote functions in renderer processes.
 // id => Function
-const rendererFunctions = v8Util.createDoubleIDWeakMap()
+const rendererFunctions = v8Util.createDoubleIDWeakMap<(...args: any[]) => void>()
 
 type ObjectMember = {
   name: string,
@@ -289,7 +289,7 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
       case 'function': {
         // Merge contextId and meta.id, since meta.id can be the same in
         // different webContents.
-        const objectId = [contextId, meta.id]
+        const objectId: [string, number] = [contextId, meta.id]
 
         // Cache the callbacks in renderer.
         if (rendererFunctions.has(objectId)) {
@@ -373,12 +373,12 @@ const logStack = function (contents: electron.WebContents, code: string, stack: 
 }
 
 handleRemoteCommand('ELECTRON_BROWSER_WRONG_CONTEXT_ERROR', function (event, contextId, passedContextId, id) {
-  const objectId = [passedContextId, id]
+  const objectId: [string, number] = [passedContextId, id]
   if (!rendererFunctions.has(objectId)) {
     // Do nothing if the error has already been reported before.
     return
   }
-  removeRemoteListenersAndLogWarning(event.sender, rendererFunctions.get(objectId))
+  removeRemoteListenersAndLogWarning(event.sender, rendererFunctions.get(objectId)!)
 })
 
 handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, moduleName, stack) {
