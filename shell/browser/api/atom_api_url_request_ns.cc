@@ -203,7 +203,7 @@ URLRequestNS::URLRequestNS(gin::Arguments* args)
 
 URLRequestNS::~URLRequestNS() = default;
 
-URLRequest* URLRequest::FromID(uint32_t id) {
+URLRequestNS* URLRequestNS::FromID(uint32_t id) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   return GetAllRequests().Lookup(id);
 }
