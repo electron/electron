@@ -119,13 +119,12 @@ namespace gin {
 
 // A custom converter that allows converting path to NativeImage.
 template <>
-struct Converter<mate::Handle<electron::api::NativeImage>> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const mate::Handle<electron::api::NativeImage>& val);
+struct Converter<electron::api::NativeImage*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::NativeImage* val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     mate::Handle<electron::api::NativeImage>* out);
+                     electron::api::NativeImage** out);
 };
 
 }  // namespace gin
