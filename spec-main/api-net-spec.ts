@@ -1183,26 +1183,25 @@ describe('net module', () => {
       })
     })
 
-    it('should emit error event on server socket close', (done) => {
-      respondOnce.toSingleURL((request) => {
+    it('should emit error event on server socket destroy', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request) => {
         request.socket.destroy()
-      }).then(serverUrl => {
-        let requestErrorEventEmitted = false
-        const urlRequest = net.request(serverUrl)
-        urlRequest.on('error', (error) => {
-          expect(error).to.be.an('Error')
-          requestErrorEventEmitted = true
-        })
-        urlRequest.on('close', () => {
-          try {
-            expect(requestErrorEventEmitted).to.be.true('request error event was emitted')
-            done()
-          } catch (e) {
-            done(e)
-          }
-        })
-        urlRequest.end()
       })
+      const urlRequest = net.request(serverUrl)
+      urlRequest.end()
+      const [error] = await emittedOnce(urlRequest, 'error')
+      expect(error.message).to.equal('net::ERR_EMPTY_RESPONSE')
+    })
+
+    it('should emit error event on server request destroy', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        request.destroy()
+        response.end()
+      })
+      const urlRequest = net.request(serverUrl)
+      urlRequest.end(randomBuffer(kOneMegaByte))
+      const [error] = await emittedOnce(urlRequest, 'error')
+      expect(error.message).to.equal('net::ERR_CONNECTION_RESET')
     })
   })
 
@@ -1490,24 +1489,6 @@ describe('net module', () => {
           })
         })
         urlRequest.chunkedEncoding = true
-        urlRequest.end(randomBuffer(kOneMegaByte))
-      })
-    })
-
-    it('should emit error if socket is unceremoniously closed', (done) => {
-      respondOnce.toSingleURL((request, response) => {
-        request.destroy()
-        response.end()
-      }).then(serverUrl => {
-        const urlRequest = net.request(serverUrl)
-        urlRequest.on('response', (response) => {
-          response.on('data', () => {})
-          response.on('end', () => {})
-        })
-        urlRequest.on('error', (err) => {
-          console.log('error', err)
-          done()
-        })
         urlRequest.end(randomBuffer(kOneMegaByte))
       })
     })
