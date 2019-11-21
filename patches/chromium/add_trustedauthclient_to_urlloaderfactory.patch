@@ -1,0 +1,158 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Tue, 12 Nov 2019 11:50:16 -0800
+Subject: add TrustedAuthClient to URLLoaderFactory
+
+This allows intercepting authentication requests for the 'net' module.
+Without this, the 'login' event for electron.net.ClientRequest can't be
+implemented, because the existing path checks for the presence of a
+WebContents, and cancels the authentication if there's no WebContents
+available, which there isn't in the case of the 'net' module.
+
+diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
+index 0671ed5ff69a53e6793c7e33db092150fc783601..b577333983ac1268d3a568699d7cde7a375e0877 100644
+--- a/services/network/public/mojom/network_context.mojom
++++ b/services/network/public/mojom/network_context.mojom
+@@ -168,6 +168,25 @@ interface TrustedURLLoaderHeaderClient {
+                   pending_receiver<TrustedHeaderClient> header_client);
+ };
+ 
++interface TrustedAuthClient {
++  OnAuthRequired(
++      mojo_base.mojom.UnguessableToken? window_id,
++      uint32 process_id,
++      uint32 routing_id,
++      uint32 request_id,
++      url.mojom.Url url,
++      bool first_auth_attempt,
++      AuthChallengeInfo auth_info,
++      URLResponseHead? head,
++      pending_remote<AuthChallengeResponder> auth_challenge_responder);
++};
++interface TrustedURLLoaderAuthClient {
++  // When a new URLLoader is created, this will be called to pass a
++  // corresponding |auth_client|.
++  OnLoaderCreated(int32 request_id,
++                  pending_receiver<TrustedAuthClient> auth_client);
++};
++
+ interface CertVerifierClient {
+   Verify(
+     int32 default_error,
+@@ -535,6 +554,8 @@ struct URLLoaderFactoryParams {
+   // impact because of the extra process hops, so use should be minimized.
+   pending_remote<TrustedURLLoaderHeaderClient>? header_client;
+ 
++  pending_remote<TrustedURLLoaderAuthClient>? auth_client;
++
+   // If non-empty array is given, |factory_bound_allow_patterns| is used for
+   // CORS checks in addition to the per-context allow patterns that is managed
+   // via NetworkContext interface. This still respects the per-context block
+diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
+index 341e1c78acf41b42b4ff210af575bbe870d543cc..5c2b111cf98ec6577e94da9bf5991d1396a367a8 100644
+--- a/services/network/url_loader.cc
++++ b/services/network/url_loader.cc
+@@ -336,6 +336,7 @@ URLLoader::URLLoader(
+     base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
+     base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
+     mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
++    mojom::TrustedURLLoaderAuthClient* url_loader_auth_client,
+     mojom::OriginPolicyManager* origin_policy_manager)
+     : url_request_context_(url_request_context),
+       network_service_client_(network_service_client),
+@@ -386,6 +387,11 @@ URLLoader::URLLoader(
+     header_client_.set_disconnect_handler(
+         base::BindOnce(&URLLoader::OnConnectionError, base::Unretained(this)));
+   }
++  if (url_loader_auth_client) {
++    url_loader_auth_client->OnLoaderCreated(request_id_, auth_client_.BindNewPipeAndPassReceiver());
++    auth_client_.set_disconnect_handler(
++        base::BindOnce(&URLLoader::OnConnectionError, base::Unretained(this)));
++  }
+   if (want_raw_headers_) {
+     options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
+                 mojom::kURLLoadOptionSendSSLInfoForCertificateError;
+@@ -819,7 +825,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
+ 
+ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+                                const net::AuthChallengeInfo& auth_info) {
+-  if (!network_context_client_) {
++  if (!network_context_client_ && !auth_client_) {
+     OnAuthCredentials(base::nullopt);
+     return;
+   }
+@@ -835,10 +841,18 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+   if (url_request->response_headers())
+     head.headers = url_request->response_headers();
+   head.auth_challenge_info = auth_info;
+-  network_context_client_->OnAuthRequired(
+-      fetch_window_id_, factory_params_->process_id, render_frame_id_,
+-      request_id_, url_request_->url(), first_auth_attempt_, auth_info, head,
+-      auth_challenge_responder_receiver_.BindNewPipeAndPassRemote());
++
++  if (auth_client_) {
++    auth_client_->OnAuthRequired(
++        fetch_window_id_, factory_params_->process_id, render_frame_id_,
++        request_id_, url_request_->url(), first_auth_attempt_, auth_info, head,
++        auth_challenge_responder_receiver_.BindNewPipeAndPassRemote());
++  } else {
++    network_context_client_->OnAuthRequired(
++        fetch_window_id_, factory_params_->process_id, render_frame_id_,
++        request_id_, url_request_->url(), first_auth_attempt_, auth_info, head,
++        auth_challenge_responder_receiver_.BindNewPipeAndPassRemote());
++  }
+ 
+   auth_challenge_responder_receiver_.set_disconnect_handler(
+       base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
+diff --git a/services/network/url_loader.h b/services/network/url_loader.h
+index 302e469ad63bdb7fe5b4dea775079962df89efd3..92706003d7a0d8905cf27ad52972044354f03841 100644
+--- a/services/network/url_loader.h
++++ b/services/network/url_loader.h
+@@ -84,6 +84,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+       base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
+       base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
+       mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
++      mojom::TrustedURLLoaderAuthClient* url_loader_auth_client,
+       mojom::OriginPolicyManager* origin_policy_manager);
+   ~URLLoader() override;
+ 
+@@ -361,6 +362,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+   base::Optional<base::UnguessableToken> fetch_window_id_;
+ 
+   mojo::Remote<mojom::TrustedHeaderClient> header_client_;
++  mojo::Remote<mojom::TrustedAuthClient> auth_client_;
+ 
+   std::unique_ptr<FileOpenerForUpload> file_opener_for_upload_;
+ 
+diff --git a/services/network/url_loader_factory.cc b/services/network/url_loader_factory.cc
+index e01d555e62568a506ed8093e2e4c3ff61ffe4ac2..bccc9c79b4653371567f4ee479dcbd8aca5c7438 100644
+--- a/services/network/url_loader_factory.cc
++++ b/services/network/url_loader_factory.cc
+@@ -37,6 +37,7 @@ URLLoaderFactory::URLLoaderFactory(
+       params_(std::move(params)),
+       resource_scheduler_client_(std::move(resource_scheduler_client)),
+       header_client_(std::move(params_->header_client)),
++      auth_client_(std::move(params_->auth_client)),
+       cors_url_loader_factory_(cors_url_loader_factory) {
+   DCHECK(context);
+   DCHECK_NE(mojom::kInvalidProcessId, params_->process_id);
+@@ -147,6 +148,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
+       std::move(keepalive_statistics_recorder),
+       std::move(network_usage_accumulator),
+       header_client_.is_bound() ? header_client_.get() : nullptr,
++      auth_client_.is_bound() ? auth_client_.get() : nullptr,
+       context_->origin_policy_manager());
+   cors_url_loader_factory_->OnLoaderCreated(std::move(loader));
+ }
+diff --git a/services/network/url_loader_factory.h b/services/network/url_loader_factory.h
+index 30bdfafd8a951f35946c172e1bed0a8d7c367362..ec755f67f96422184d74d7b489f2887db12fb18c 100644
+--- a/services/network/url_loader_factory.h
++++ b/services/network/url_loader_factory.h
+@@ -70,6 +70,7 @@ class URLLoaderFactory : public mojom::URLLoaderFactory {
+   mojom::URLLoaderFactoryParamsPtr params_;
+   scoped_refptr<ResourceSchedulerClient> resource_scheduler_client_;
+   mojo::Remote<mojom::TrustedURLLoaderHeaderClient> header_client_;
++  mojo::Remote<mojom::TrustedURLLoaderAuthClient> auth_client_;
+ 
+   // |cors_url_loader_factory_| owns this.
+   cors::CorsURLLoaderFactory* cors_url_loader_factory_;

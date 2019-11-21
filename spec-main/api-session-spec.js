@@ -526,6 +526,7 @@ describe('session module', () => {
           })
           response.on('error', (error) => { reject(new Error(error)) })
         });
+        request.on('error', (error) => { reject(new Error(error)) })
         request.end()
       })
       // the first time should throw due to unauthenticated
