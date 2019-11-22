@@ -844,7 +844,7 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
     succeed = base::PathService::Get(key, &path);
     if (succeed && (name == "logs")) {
       base::ThreadRestrictions::ScopedAllowIO allow_io;
-      base::CreateDirectoryAndGetError(path);
+      base::CreateDirectoryAndGetError(path, nullptr);
     }
   }
   if (!succeed)
