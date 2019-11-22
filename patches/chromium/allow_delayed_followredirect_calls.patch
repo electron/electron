@@ -1,0 +1,204 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Fri, 22 Nov 2019 11:26:05 -0800
+Subject: allow delayed followRedirect calls
+
+partially upstreamed, see https://chromium-review.googlesource.com/c/chromium/src/+/1930096
+
+diff --git a/components/variations/net/variations_http_headers.cc b/components/variations/net/variations_http_headers.cc
+index b35f572a50d1d961890656ab17d676f9ed316ea5..74ba06e158515413d379b60d9e4b8b8683777f30 100644
+--- a/components/variations/net/variations_http_headers.cc
++++ b/components/variations/net/variations_http_headers.cc
+@@ -149,9 +149,11 @@ bool AppendVariationsHeaderUnknownSignedIn(const GURL& url,
+ void RemoveVariationsHeaderIfNeeded(
+     const net::RedirectInfo& redirect_info,
+     const network::mojom::URLResponseHead& response_head,
+-    std::vector<std::string>* to_be_removed_headers) {
++    base::OnceCallback<void(std::vector<std::string>)> follow_redirect) {
+   if (!ShouldAppendVariationsHeader(redirect_info.new_url))
+-    to_be_removed_headers->push_back(kClientDataHeader);
++    std::move(follow_redirect).Run({kClientDataHeader});
++  else
++    std::move(follow_redirect).Run({});
+ }
+ 
+ std::unique_ptr<network::SimpleURLLoader>
+@@ -165,8 +167,12 @@ CreateSimpleURLLoaderWithVariationsHeader(
+   std::unique_ptr<network::SimpleURLLoader> simple_url_loader =
+       network::SimpleURLLoader::Create(std::move(request), annotation_tag);
+   if (variation_headers_added) {
+-    simple_url_loader->SetOnRedirectCallback(
+-        base::BindRepeating(&RemoveVariationsHeaderIfNeeded));
++    simple_url_loader->SetOnRedirectCallback(base::BindRepeating([](
++        const net::RedirectInfo& redirect_info,
++        const network::mojom::URLResponseHead& response_head,
++        base::OnceCallback<void(std::vector<std::string>)> follow_redirect) {
++      RemoveVariationsHeaderIfNeeded(redirect_info, response_head, std::move(follow_redirect));
++    }));
+   }
+   return simple_url_loader;
+ }
+diff --git a/components/variations/service/variations_service.cc b/components/variations/service/variations_service.cc
+index 46dd8bbee71309be407fb7e0fc76f8c89634e446..5d62d6f46707f5b59d1641c28144a53216862a6b 100644
+--- a/components/variations/service/variations_service.cc
++++ b/components/variations/service/variations_service.cc
+@@ -687,9 +687,10 @@ void VariationsService::OnSimpleLoaderComplete(
+ void VariationsService::OnSimpleLoaderRedirect(
+     const net::RedirectInfo& redirect_info,
+     const network::mojom::URLResponseHead& response_head,
+-    std::vector<std::string>* to_be_removed_headers) {
++    base::OnceCallback<void(std::vector<std::string>)> follow_redirect) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   OnSimpleLoaderCompleteOrRedirect(nullptr, true);
++  // Don't follow the redirect.
+ }
+ 
+ void VariationsService::OnSimpleLoaderCompleteOrRedirect(
+diff --git a/components/variations/service/variations_service.h b/components/variations/service/variations_service.h
+index 43f89ad92e0a1bdd9348ac26236021dc299b8fc1..a32ddea8b8516108eed2d910aa18d39250891f38 100644
+--- a/components/variations/service/variations_service.h
++++ b/components/variations/service/variations_service.h
+@@ -318,7 +318,7 @@ class VariationsService
+   void OnSimpleLoaderRedirect(
+       const net::RedirectInfo& redirect_info,
+       const network::mojom::URLResponseHead& response_head,
+-      std::vector<std::string>* to_be_removed_headers);
++      base::OnceCallback<void(std::vector<std::string>)> follow_redirect);
+ 
+   // Handles post-fetch events.
+   void OnSimpleLoaderCompleteOrRedirect(
+diff --git a/services/network/cors/preflight_controller.cc b/services/network/cors/preflight_controller.cc
+index 48a08012fd006bba61823684c9a7fb94e43ec64c..339ecc179913bb24f567082ca3985ed949ddca2c 100644
+--- a/services/network/cors/preflight_controller.cc
++++ b/services/network/cors/preflight_controller.cc
+@@ -227,7 +227,7 @@ class PreflightController::PreflightLoader final {
+  private:
+   void HandleRedirect(const net::RedirectInfo& redirect_info,
+                       const network::mojom::URLResponseHead& response_head,
+-                      std::vector<std::string>* to_be_removed_headers) {
++                      base::OnceCallback<void(std::vector<std::string>)> follow_redirect) {
+     // Preflight should not allow any redirect.
+     FinalizeLoader();
+ 
+diff --git a/services/network/origin_policy/origin_policy_fetcher.cc b/services/network/origin_policy/origin_policy_fetcher.cc
+index 09160a099a3d7da8f7015a91dd1bcf993cca8fbb..b5b1acbae76e00391c75018a9592d676856ad96f 100644
+--- a/services/network/origin_policy/origin_policy_fetcher.cc
++++ b/services/network/origin_policy/origin_policy_fetcher.cc
+@@ -83,10 +83,11 @@ void OriginPolicyFetcher::OnPolicyHasArrived(
+ void OriginPolicyFetcher::OnPolicyRedirect(
+     const net::RedirectInfo& redirect_info,
+     const mojom::URLResponseHead& response_head,
+-    std::vector<std::string>* to_be_removed_headers) {
++    base::OnceCallback<void(std::vector<std::string>)> follow_redirect) {
+   if (IsValidRedirect(redirect_info)) {
+     must_redirect_ = false;
+     fetch_url_ = redirect_info.new_url;
++    std::move(follow_redirect).Run({});
+     return;
+   }
+ 
+diff --git a/services/network/origin_policy/origin_policy_fetcher.h b/services/network/origin_policy/origin_policy_fetcher.h
+index 38104127d821b149a28bb0282e484ea146fe265b..00c0a2f708bb3cabe363f683d745e3aa3aac3de9 100644
+--- a/services/network/origin_policy/origin_policy_fetcher.h
++++ b/services/network/origin_policy/origin_policy_fetcher.h
+@@ -55,12 +55,12 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) OriginPolicyFetcher {
+   using RedirectCallback =
+       base::RepeatingCallback<void(const net::RedirectInfo&,
+                                    const mojom::URLResponseHead&,
+-                                   std::vector<std::string>*)>;
++                                   base::OnceCallback<void(std::vector<std::string>)>)>;
+ 
+   void OnPolicyHasArrived(std::unique_ptr<std::string> policy_content);
+   void OnPolicyRedirect(const net::RedirectInfo& redirect_info,
+                         const mojom::URLResponseHead& response_head,
+-                        std::vector<std::string>* to_be_removed_headers);
++                        base::OnceCallback<void(std::vector<std::string>)> follow_redirect);
+   void FetchPolicy(mojom::URLLoaderFactory* factory);
+ 
+   void WorkDone(std::unique_ptr<std::string> policy_content,
+diff --git a/services/network/public/cpp/simple_url_loader.cc b/services/network/public/cpp/simple_url_loader.cc
+index 1cc4198e6057c3739d87db3e55a47026f8246f89..871e6bc00feaa5c2e5edd7e3080711e7de4b0330 100644
+--- a/services/network/public/cpp/simple_url_loader.cc
++++ b/services/network/public/cpp/simple_url_loader.cc
+@@ -257,6 +257,8 @@ class SimpleURLLoaderImpl : public SimpleURLLoader,
+   // will be invoked after this is called.
+   void FinishWithResult(int net_error);
+ 
++  void FollowRedirect(std::vector<std::string> removed_headers);
++
+  private:
+   // Per-request state values. This object is re-created for each retry.
+   // Separating out the values makes re-initializing them on retry simpler.
+@@ -333,7 +335,7 @@ class SimpleURLLoaderImpl : public SimpleURLLoader,
+   // closed.
+   void MaybeComplete();
+ 
+-  std::vector<OnRedirectCallback> on_redirect_callback_;
++  OnRedirectCallback on_redirect_callback_;
+   OnResponseStartedCallback on_response_started_callback_;
+   UploadProgressCallback on_upload_progress_callback_;
+   DownloadProgressCallback on_download_progress_callback_;
+@@ -1243,8 +1245,7 @@ void SimpleURLLoaderImpl::SetOnRedirectCallback(
+   // Check if a request has not yet been started.
+   DCHECK(!body_handler_);
+ 
+-  on_redirect_callback_.push_back(on_redirect_callback);
+-  DCHECK(on_redirect_callback);
++  on_redirect_callback_ = on_redirect_callback;
+ }
+ 
+ void SimpleURLLoaderImpl::SetOnResponseStartedCallback(
+@@ -1480,6 +1481,12 @@ void SimpleURLLoaderImpl::FinishWithResult(int net_error) {
+   body_handler_->NotifyConsumerOfCompletion(destroy_results);
+ }
+ 
++void SimpleURLLoaderImpl::FollowRedirect(std::vector<std::string> removed_headers) {
++  if (!url_loader_) return;
++  url_loader_->FollowRedirect(removed_headers, {} /* modified_headers */,
++                              {} /* new_url */);
++}
++
+ void SimpleURLLoaderImpl::Start(mojom::URLLoaderFactory* url_loader_factory) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(resource_request_);
+@@ -1609,20 +1616,16 @@ void SimpleURLLoaderImpl::OnReceiveRedirect(
+   }
+ 
+   std::vector<std::string> removed_headers;
+-  for (auto callback : on_redirect_callback_) {
+-    if (callback) {
+-      base::WeakPtr<SimpleURLLoaderImpl> weak_this =
+-          weak_ptr_factory_.GetWeakPtr();
+-      callback.Run(redirect_info, *response_head, &removed_headers);
+-      // If deleted by the callback, bail now.
+-      if (!weak_this)
+-        return;
+-    }
++  if (on_redirect_callback_) {
++    base::WeakPtr<SimpleURLLoaderImpl> weak_this =
++        weak_ptr_factory_.GetWeakPtr();
++    on_redirect_callback_.Run(redirect_info, *response_head, base::BindOnce(&SimpleURLLoaderImpl::FollowRedirect, weak_this));
++    // If deleted by the callback, bail now.
++    if (!weak_this)
++      return;
+   }
+ 
+   final_url_ = redirect_info.new_url;
+-  url_loader_->FollowRedirect(removed_headers, {} /* modified_headers */,
+-                              {} /* new_url */);
+ }
+ 
+ void SimpleURLLoaderImpl::OnReceiveCachedMetadata(mojo_base::BigBuffer data) {
+diff --git a/services/network/public/cpp/simple_url_loader.h b/services/network/public/cpp/simple_url_loader.h
+index 88d602b0915c63860b3384d18662161c01ab6d88..f7b2e941d1c02a9f5c0b93f86955e8f66e1a384a 100644
+--- a/services/network/public/cpp/simple_url_loader.h
++++ b/services/network/public/cpp/simple_url_loader.h
+@@ -116,7 +116,7 @@ class COMPONENT_EXPORT(NETWORK_CPP) SimpleURLLoader {
+   using OnRedirectCallback =
+       base::RepeatingCallback<void(const net::RedirectInfo& redirect_info,
+                                    const mojom::URLResponseHead& response_head,
+-                                   std::vector<std::string>* removed_headers)>;
++                                   base::OnceCallback<void(std::vector<std::string>)>)>;
+ 
+   // Callback used when a response is received. It is safe to delete the
+   // SimpleURLLoader during the callback.
