@@ -39,8 +39,8 @@ function RemoveDir (dir?: string) {
   if (dir && dir.length && fs.existsSync(dir)) {
     try {
       fs.unlinkSync(dir)
+    } catch (err) {
     }
-    catch (_) {}
   }
 }
 
@@ -102,17 +102,17 @@ describe('app path module', () => {
   describe(`computes 'userCache' from 'cache', 'appData' and app name`, () => {
     it('by default', async () => {
       const output = await runTestApp('app-custom-path', '-create-cache')
-      const expected_usercache = path.join(output.appCache, defaultAppName)
-      expect(output.userCache).to.equal(expected_usercache)
-      expect(ExistsCacheSync(expected_usercache))
+      const expectedUsercache = path.join(output.appCache, defaultAppName)
+      expect(output.userCache).to.equal(expectedUsercache)
+      expect(ExistsCacheSync(expectedUsercache))
       CleanUp(output)
     })
 
     it(`app.name='${appName}'`, async () => {
       const output = await runTestApp('app-custom-path', '-create-cache', `-custom-appname=${appName}`)
-      const expected_usercache = path.join(output.appCache, appName)
-      expect(output.userCache).to.equal(expected_usercache)
-      expect(ExistsCacheSync(expected_usercache))
+      const expectedUsercache = path.join(output.appCache, appName)
+      expect(output.userCache).to.equal(expectedUsercache)
+      expect(ExistsCacheSync(expectedUsercache))
     })
 
     it(`setPath('appData', '${appData}')`, async () => {
@@ -270,8 +270,7 @@ async function runTestApp (name: string, ...args: any[]) {
 
   try {
     return JSON.parse(output)
-  }
-  catch (err) {
+  } catch (err) {
     console.log(`Error ${err}) with ${output}`)
     throw err
   }

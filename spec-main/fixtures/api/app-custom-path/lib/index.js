@@ -62,8 +62,7 @@ app.on('ready', () => {
       exitApp()
     })
     w.loadURL('about:blank')
-  }
-  else {
+  } else {
     exitApp()
   }
 })
