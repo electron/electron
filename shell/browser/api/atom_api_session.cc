@@ -69,9 +69,16 @@
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_factory.h"
 #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
+#include "chrome/browser/spellchecker/spellcheck_service.h"
 #include "components/spellcheck/browser/pref_names.h"
 #include "components/spellcheck/common/spellcheck_common.h"
+
+#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+#include "components/spellcheck/browser/spellcheck_platform.h"
+#include "components/spellcheck/common/spellcheck_features.h"
+#endif
 #endif
 
 using content::BrowserThread;
@@ -700,6 +707,20 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
   }
   SpellcheckHunspellDictionary::SetDownloadURLForTesting(url);
 }
+
+bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
+#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+  if (spellcheck::UseBrowserSpellChecker()) {
+    spellcheck_platform::AddWord(base::UTF8ToUTF16(word));
+  }
+#endif
+  SpellcheckService* spellcheck =
+      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+  if (!spellcheck)
+    return false;
+
+  return spellcheck->GetCustomDictionary()->AddWord(word);
+}
 #endif
 
 // static
@@ -780,6 +801,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                    &spellcheck::SpellCheckLanguages)
       .SetMethod("setSpellCheckerDictionaryDownloadURL",
                  &SetSpellCheckerDictionaryDownloadURL)
+      .SetMethod("addWordToSpellCheckerDictionary",
+                 &Session::AddWordToSpellCheckerDictionary)
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
       .SetProperty("cookies", &Session::Cookies)
