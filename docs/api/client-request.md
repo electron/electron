@@ -29,11 +29,6 @@ the hostname and the port number 'hostname:port'.
   * `hostname` String (optional) - The server host name.
   * `port` Integer (optional) - The server's listening port number.
   * `path` String (optional) - The path part of the request URL.
-  * `redirect` String (optional) - The redirect mode for this request. Should be
-one of `follow`, `error` or `manual`. Defaults to `follow`. When mode is `error`,
-any redirection will be aborted. When mode is `manual` the redirection will be
-deferred until [`request.followRedirect`](#requestfollowredirect) is invoked. Listen for the [`redirect`](#event-redirect) event in
-this mode to get more details about the redirect request.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
 strictly follow the Node.js model as described in the
@@ -136,8 +131,10 @@ Returns:
 * `redirectUrl` String
 * `responseHeaders` Record<String, String[]>
 
-Emitted when there is redirection and the mode is `manual`. Calling
-[`request.followRedirect`](#requestfollowredirect) will continue with the redirection.
+Emitted when the server returns a redirect response (e.g. 301 Moved
+Permanently). Calling [`request.followRedirect`](#requestfollowredirect) will
+continue with the redirection. To cancel the redirect, abort the request with
+[`request.abort`](#requestabort).
 
 ### Instance Properties
 
@@ -214,7 +211,8 @@ response object,it will emit the `aborted` event.
 
 #### `request.followRedirect()`
 
-Continues any deferred redirection request when the redirection mode is `manual`.
+Continues any deferred redirection. Can only be called after a `'redirect'`
+event has been emitted.
 
 #### `request.getUploadProgress()`
 
