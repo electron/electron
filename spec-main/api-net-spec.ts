@@ -320,6 +320,36 @@ describe('net module', () => {
         request.end()
       })
     })
+
+    it('should upload body when 401', async () => {
+      const [user, pass] = ['user', 'pass']
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+        }
+        response.writeHead(200)
+        request.on('data', (chunk) => { response.write(chunk) })
+        request.on('end', () => {
+          response.end()
+        })
+      })
+      const requestData = randomString(kOneKiloByte)
+      const responseData = await new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: serverUrl })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          let data = ''
+          response.on('data', (chunk) => { data += chunk.toString() })
+          response.on('end', () => resolve(data))
+        })
+        request.on('login', (authInfo, cb) => {
+          cb(user, pass)
+        })
+        request.on('error', reject)
+        request.end(requestData)
+      })
+      expect(responseData).to.equal(requestData)
+    })
   })
 
   describe('ClientRequest API', () => {
