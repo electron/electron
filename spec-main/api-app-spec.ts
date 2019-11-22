@@ -9,7 +9,7 @@ import { app, BrowserWindow, Menu } from 'electron'
 import { emittedOnce } from './events-helpers'
 import { closeWindow, closeAllWindows } from './window-helpers'
 import { ifdescribe } from './spec-helpers'
-import split = require('split'); 
+import split = require('split')
 
 const features = process.electronBinding('features')
 
