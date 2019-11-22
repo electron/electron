@@ -376,6 +376,9 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
     const network::mojom::URLResponseHead& response_head) {
   gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate());
   dict.Set("statusCode", response_head.headers->response_code());
+  dict.Set("statusMessage", response_head.headers->GetStatusText());
+  dict.Set("headers", response_head.headers.get());
+  dict.Set("httpVersion", response_head.headers->GetHttpVersion());
   Emit("response-started", final_url, dict);
 }
 

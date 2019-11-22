@@ -20,6 +20,7 @@ class URLRequest;
 class X509Certificate;
 class HttpResponseHeaders;
 struct CertPrincipal;
+class HttpVersion;
 }  // namespace net
 
 namespace network {
@@ -115,6 +116,12 @@ struct Converter<network::mojom::RedirectMode> {
       return false;
     return true;
   }
+};
+
+template <>
+struct Converter<net::HttpVersion> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::HttpVersion& val);
 };
 
 }  // namespace gin
