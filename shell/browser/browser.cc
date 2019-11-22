@@ -123,8 +123,9 @@ std::string Browser::GetName() const {
 void Browser::SetName(const std::string& name) {
   OverrideApplicationName(name);
   if (!is_ready()) {
-    // DIR_USER_DATA, DIR_USER_CACHE and DIR_APP_LOGS depend on application name,
-    // we have to force re-computation
+    // DIR_USER_DATA, DIR_USER_CACHE and DIR_APP_LOGS depend
+    // on application name.
+    // We have to force re-computation
     base::PathService::InvalidateCache();
   }
 }
