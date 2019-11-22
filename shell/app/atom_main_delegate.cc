@@ -24,6 +24,7 @@
 #include "ipc/ipc_buildflags.h"
 #include "services/service_manager/embedder/switches.h"
 #include "services/service_manager/sandbox/switches.h"
+#include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/atom_content_client.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_gpu_client.h"
@@ -181,6 +182,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   if (env->HasVar("ELECTRON_DISABLE_SANDBOX"))
     command_line->AppendSwitch(service_manager::switches::kNoSandbox);
+
+  tracing_sampler_profiler_ =
+      tracing::TracingSamplerProfiler::CreateOnMainThread();
 
   chrome::RegisterPathProvider();
 
