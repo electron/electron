@@ -171,13 +171,10 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
   }
 
   int button_id;
-  bool cb_checked = false;
 
   int id = 0;
   BOOL verificationFlagChecked = FALSE;
   TaskDialogIndirect(&config, &id, nullptr, &verificationFlagChecked);
-  if (checkbox_checked)
-    cb_checked = verificationFlagChecked;
 
   if (id_map.find(id) != id_map.end())  // common button.
     button_id = id_map[id];
@@ -186,7 +183,8 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
   else
     button_id = cancel_id;
 
-  return std::make_pair(button_id, cb_checked);
+  return std::make_pair(button_id,
+                        checkbox_checked ? verificationFlagChecked : false);
 }
 
 DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings) {
