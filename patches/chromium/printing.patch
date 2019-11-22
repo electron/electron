@@ -63,7 +63,7 @@ index ab32d5475a0e269d32f6ab71f7dc82aa9e02035a..9ada750416f02d23c2f9faae0c41e4a7
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 81cb954f02363c829947dde830f340a761c80a77..98043d6ec0cb2c55493ef7446a6de0c4eeed184e 100644
+index 81cb954f02363c829947dde830f340a761c80a77..60ffae6ea08187e3ddf1d86ad48f2aeca3519d48 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -129,7 +129,7 @@ index 81cb954f02363c829947dde830f340a761c80a77..98043d6ec0cb2c55493ef7446a6de0c4
    DisconnectFromCurrentPrintJob();
  
    // Don't print / print preview interstitials or crashed tabs.
-@@ -131,7 +136,14 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
+@@ -131,7 +137,14 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
      return false;
  
    SetPrintingRFH(rfh);
@@ -145,7 +145,7 @@ index 81cb954f02363c829947dde830f340a761c80a77..98043d6ec0cb2c55493ef7446a6de0c4
    return true;
  }
  
-@@ -246,9 +258,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
+@@ -246,9 +259,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
  void PrintViewManagerBase::UpdatePrintingEnabled() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    // The Unretained() is safe because ForEachFrame() is synchronous.
@@ -158,7 +158,7 @@ index 81cb954f02363c829947dde830f340a761c80a77..98043d6ec0cb2c55493ef7446a6de0c4
  }
  
  void PrintViewManagerBase::NavigationStopped() {
-@@ -351,7 +363,7 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
+@@ -351,7 +364,7 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
    PrintManager::OnPrintingFailed(cookie);
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -167,7 +167,7 @@ index 81cb954f02363c829947dde830f340a761c80a77..98043d6ec0cb2c55493ef7446a6de0c4
  #endif
  
    ReleasePrinterQuery();
-@@ -449,9 +461,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -449,9 +462,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
            content::NotificationService::NoDetails());
        break;
      }
@@ -183,7 +183,7 @@ index 81cb954f02363c829947dde830f340a761c80a77..98043d6ec0cb2c55493ef7446a6de0c4
        NOTREACHED();
        break;
      }
-@@ -546,8 +562,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -546,8 +563,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -192,7 +192,7 @@ index 81cb954f02363c829947dde830f340a761c80a77..98043d6ec0cb2c55493ef7446a6de0c4
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetRenderViewHost() ||
-@@ -562,8 +576,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -562,8 +577,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    print_job_->SetSource(PrintJob::Source::PRINT_PREVIEW, /*source_id=*/"");
  #endif  // defined(OS_CHROMEOS)
  
@@ -201,7 +201,7 @@ index 81cb954f02363c829947dde830f340a761c80a77..98043d6ec0cb2c55493ef7446a6de0c4
    printing_succeeded_ = false;
    return true;
  }
-@@ -612,14 +624,24 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -612,14 +625,24 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -229,7 +229,7 @@ index 81cb954f02363c829947dde830f340a761c80a77..98043d6ec0cb2c55493ef7446a6de0c4
    print_job_ = nullptr;
  }
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index af49d3e2f8abaf7dc4d82dc3f9beccdf4fbd9f18..b99b5d0a4fce3b15484495948462ee2aa2e321c3 100644
+index af49d3e2f8abaf7dc4d82dc3f9beccdf4fbd9f18..c5ef1a4c1577c509e5fbe0fcf06e6dfdba30c92c 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -33,6 +33,8 @@ class PrintJob;
@@ -253,7 +253,7 @@ index af49d3e2f8abaf7dc4d82dc3f9beccdf4fbd9f18..b99b5d0a4fce3b15484495948462ee2a
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Prints the document in |print_data| with settings specified in
-@@ -206,9 +210,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -206,9 +211,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // The current RFH that is printing with a system printing dialog.
    content::RenderFrameHost* printing_rfh_;
  
@@ -270,7 +270,7 @@ index af49d3e2f8abaf7dc4d82dc3f9beccdf4fbd9f18..b99b5d0a4fce3b15484495948462ee2a
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index 40762a36024bc48dfe5259520161dc203197bfd0..8f2d0b808df1b68699bb946436b219315f1ea6d3 100644
+index 40762a36024bc48dfe5259520161dc203197bfd0..e38aa442df858ce362645230f7642b2eb48262ce 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -22,6 +22,7 @@
@@ -336,7 +336,7 @@ index 40762a36024bc48dfe5259520161dc203197bfd0..8f2d0b808df1b68699bb946436b21931
    std::unique_ptr<PrinterQuery> printer_query =
        queue_->PopPrinterQuery(document_cookie);
    if (!printer_query) {
-@@ -258,7 +267,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -258,7 +266,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
      std::unique_ptr<PrinterQuery> printer_query,
      IPC::Message* reply_msg) {
    PrintMsg_PrintPages_Params params;
@@ -347,7 +347,7 @@ index 40762a36024bc48dfe5259520161dc203197bfd0..8f2d0b808df1b68699bb946436b21931
      params.Reset();
    } else {
      RenderParamsFromPrintSettings(printer_query->settings(), &params.params);
-@@ -296,7 +307,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -296,7 +306,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
  void PrintingMessageFilter::OnCheckForCancel(const PrintHostMsg_PreviewIds& ids,
                                               bool* cancel) {
