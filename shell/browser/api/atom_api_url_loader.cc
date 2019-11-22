@@ -4,6 +4,13 @@
 
 #include "shell/browser/api/atom_api_url_loader.h"
 
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "base/containers/id_map.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"

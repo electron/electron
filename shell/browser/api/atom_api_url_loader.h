@@ -5,6 +5,10 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_URL_LOADER_H_
 #define SHELL_BROWSER_API_ATOM_API_URL_LOADER_H_
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "net/base/auth.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"

@@ -5,6 +5,8 @@
 #ifndef SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 #define SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 
+#include <string>
+
 #include "gin/converter.h"
 #include "services/network/public/mojom/fetch_api.mojom.h"
 #include "shell/browser/net/cert_verifier_client.h"
