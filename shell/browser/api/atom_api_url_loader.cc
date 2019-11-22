@@ -387,11 +387,9 @@ void SimpleURLLoaderWrapper::OnRedirect(
     const net::RedirectInfo& redirect_info,
     const network::mojom::URLResponseHead& response_head,
     base::OnceCallback<void(std::vector<std::string>)> follow_redirect) {
-  gin::Dictionary response_head_v8 =
-      gin::Dictionary::CreateEmpty(isolate());  // TODO
   v8::Local<v8::Value> callback =
       gin::ConvertToV8(isolate(), std::move(follow_redirect));
-  Emit("redirect", redirect_info, response_head_v8, callback);
+  Emit("redirect", redirect_info, response_head.headers.get(), callback);
 }
 
 // static

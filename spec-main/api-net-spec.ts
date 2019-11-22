@@ -986,9 +986,9 @@ describe('net module', () => {
       })
       const urlRequest = net.request(`${serverUrl}/redirectChain`)
       const redirects: string[] = []
-      urlRequest.on('redirect', (status, method, url, followRedirect) => {
+      urlRequest.on('redirect', (status, method, url) => {
         redirects.push(url)
-        ;(followRedirect as any)()
+        urlRequest.followRedirect()
       })
       urlRequest.end()
       const [response] = await emittedOnce(urlRequest, 'response')
