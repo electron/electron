@@ -1176,6 +1176,25 @@ describe('net module', () => {
       const [error] = await emittedOnce(urlRequest, 'error')
       expect(error.message).to.equal('net::ERR_CONNECTION_RESET')
     })
+
+    it('should not emit any event after close', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.end()
+      })
+
+      const urlRequest = net.request(serverUrl)
+      urlRequest.end()
+
+      await emittedOnce(urlRequest, 'close')
+      await new Promise((resolve, reject) => {
+        ['finish', 'abort', 'close', 'error'].forEach(evName => {
+          urlRequest.on(evName as any, () => {
+            reject(new Error(`Unexpected ${evName} event`))
+          })
+        })
+        setTimeout(resolve, 50)
+      })
+    })
   })
 
   describe('IncomingMessage API', () => {
@@ -1307,50 +1326,6 @@ describe('net module', () => {
           (netResponse as any).pipe(nodeRequest)
         })
         netRequest.end()
-      })
-    })
-
-    it('should not emit any event after close', (done) => {
-      const bodyData = randomString(kOneKiloByte)
-      respondOnce.toSingleURL((request, response) => {
-        response.end(bodyData)
-      }).then(serverUrl => {
-        let requestCloseEventEmitted = false
-        const urlRequest = net.request(serverUrl)
-        urlRequest.on('response', (response) => {
-          try {
-            expect(requestCloseEventEmitted).to.be.false('request close event emitted')
-          } catch (e) {
-            return done(e)
-          }
-          const statusCode = response.statusCode
-          expect(statusCode).to.equal(200)
-          response.on('data', () => { })
-          response.on('end', () => { })
-          response.on('error', () => {
-            expect(requestCloseEventEmitted).to.be.false('request close event emitted')
-          })
-          response.on('aborted', () => {
-            expect(requestCloseEventEmitted).to.be.false('request close event emitted')
-          })
-        })
-        urlRequest.on('finish', () => {
-          expect(requestCloseEventEmitted).to.be.false('request close event emitted')
-        })
-        urlRequest.on('error', () => {
-          expect(requestCloseEventEmitted).to.be.false('request close event emitted')
-        })
-        urlRequest.on('abort', () => {
-          expect(requestCloseEventEmitted).to.be.false('request close event emitted')
-        })
-        urlRequest.on('close', () => {
-          requestCloseEventEmitted = true
-          // Wait so that all async events get scheduled.
-          setTimeout(() => {
-            done()
-          }, 100)
-        })
-        urlRequest.end()
       })
     })
   })
