@@ -99,8 +99,14 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
   }
 
   void StartReading(mojo::ScopedDataPipeProducerHandle pipe) override {
-    data_producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(pipe));
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+    if (body_func_.IsEmpty()) {
+      LOG(ERROR) << "Tried to read twice from a JSChunkedDataPipeGetter";
+      // Drop the handle on the floor.
+      return;
+    }
+    data_producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(pipe));
 
     v8::HandleScope handle_scope(isolate_);
     v8::MicrotasksScope script_scope(isolate_,
@@ -109,7 +115,6 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     v8::Local<v8::Value> wrapper;
     if (!maybe_wrapper.ToLocal(&wrapper)) {
       return;
-      // hopefully this just drops the pipe and we're good?
     }
     v8::Local<v8::Value> argv[] = {wrapper};
     node::Environment* env = node::Environment::GetCurrent(isolate_);
@@ -137,16 +142,16 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     is_writing_ = true;
     bytes_written_ += buffer->ByteLength();
     auto backing_store = buffer->Buffer()->GetBackingStore();
+    auto buffer_span = base::make_span(
+        static_cast<char*>(backing_store->Data()) + buffer->ByteOffset(),
+        buffer->ByteLength());
+    auto buffer_source = std::make_unique<BufferDataSource>(buffer_span);
     data_producer_->Write(
-        std::make_unique<BufferDataSource>(base::make_span(
-            static_cast<char*>(backing_store->Data()) + buffer->ByteOffset(),
-            buffer->ByteLength())),
-        base::BindOnce(
-            &JSChunkedDataPipeGetter::OnWriteChunkComplete,
-            base::Unretained(
-                this),  // TODO: should this be a weak ptr? what do we do with
-                        // the promise if |this| goes away?
-            std::move(promise)));
+        std::move(buffer_source),
+        base::BindOnce(&JSChunkedDataPipeGetter::OnWriteChunkComplete,
+                       // We're OK to use Unretained here because we own
+                       // |data_producer_|.
+                       base::Unretained(this), std::move(promise)));
     return handle;
   }
 
@@ -158,16 +163,24 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
       promise.Resolve();
     } else {
       promise.RejectWithErrorMessage("mojo result not ok");
-      size_callback_.Reset();
-      // ... delete this?
+      Finished();
     }
   }
 
-  void Done() {  // TODO: accept net error?
+  // TODO(nornagon): accept a net error here to allow the data provider to
+  // cancel the request with an error.
+  void Done() {
     if (size_callback_) {
       std::move(size_callback_).Run(net::OK, bytes_written_);
-      // ... delete this?
+      Finished();
     }
+  }
+
+  void Finished() {
+    size_callback_.Reset();
+    body_func_.Reset();
+    receiver_.reset();
+    data_producer_.reset();
   }
 
   GetSizeCallback size_callback_;
@@ -225,7 +238,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   // SimpleURLLoader wants to control the request body itself. We have other
   // ideas.
   auto request_body = std::move(request->request_body);
-  auto request_ref = request.get();
+  auto* request_ref = request.get();
   loader_ =
       network::SimpleURLLoader::Create(std::move(request), kTrafficAnnotation);
   if (request_body) {
@@ -269,10 +282,11 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder(
       std::move(auth_challenge_responder));
-  // TODO
-  // auth_responder.set_disconnect_handler(
-  //    base::BindOnce(&SimpleURLLoaderWrapper::Cancel,
-  //    weak_factory_.GetWeakPtr()));
+  // WeakPtr because if we're Cancel()ed while waiting for auth, and the
+  // network service also decides to cancel at the same time and kill this
+  // pipe, we might end up trying to call Cancel again on dead memory.
+  auth_responder.set_disconnect_handler(base::BindOnce(
+      &SimpleURLLoaderWrapper::Cancel, weak_factory_.GetWeakPtr()));
   auto cb = base::BindOnce(
       [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
          gin::Arguments* args) {

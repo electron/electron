@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/weak_ptr.h"
 #include "net/base/auth.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -77,6 +78,8 @@ class SimpleURLLoaderWrapper
   uint32_t id_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   v8::Global<v8::Value> pinned_wrapper_;
+
+  base::WeakPtrFactory<SimpleURLLoaderWrapper> weak_factory_{this};
 };
 
 }  // namespace api
