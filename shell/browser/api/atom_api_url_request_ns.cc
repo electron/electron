@@ -232,7 +232,8 @@ void URLRequestNS::OnAuthRequired(
             net::AuthCredentials(username_str, password_str));
       },
       std::move(auth_responder));
-  Emit("login", auth_info, std::move(cb));
+  v8::Local<v8::Value> cb_v8 = gin::ConvertToV8(isolate(), std::move(cb));
+  Emit("login", auth_info, cb_v8);
 }
 
 bool URLRequestNS::NotStarted() const {
