@@ -833,7 +833,7 @@ describe('net module', () => {
         })
       })
 
-      it('should to able to create and intercept a request using a custom session object', (done) => {
+      it('should to able to create and intercept a request using a custom partition name', (done) => {
         const requestUrl = '/requestUrl'
         const redirectUrl = '/redirectUrl'
         const customPartitionName = 'custom-partition'
@@ -881,15 +881,6 @@ describe('net module', () => {
       })
     })
 
-    it('should throw if given an invalid redirect mode', () => {
-      expect(() => {
-        net.request({
-          url: 'https://test',
-          redirect: 'custom'
-        })
-      }).to.throw('redirect mode should be one of follow, error or manual')
-    })
-
     it('should throw when calling getHeader without a name', () => {
       expect(() => {
         (net.request({ url: 'https://test' }).getHeader as any)()
@@ -910,7 +901,7 @@ describe('net module', () => {
       }).to.throw(/`name` is required for removeHeader\(name\)/)
     })
 
-    it('should follow redirect when no redirect mode is provided', (done) => {
+    it('should follow redirect when no redirect handler is provided', (done) => {
       const requestUrl = '/301'
       respondOnce.toRoutes({
         '/301': (request, response) => {
@@ -934,7 +925,7 @@ describe('net module', () => {
       })
     })
 
-    it('should follow redirect chain when no redirect mode is provided', (done) => {
+    it('should follow redirect chain when no redirect handler is provided', (done) => {
       respondOnce.toRoutes({
         '/redirectChain': (request, response) => {
           response.statusCode = 301
@@ -962,28 +953,22 @@ describe('net module', () => {
       })
     })
 
-    it.skip('should not follow redirect when mode is error', (done) => {
-      respondOnce.toSingleURL((request, response) => {
+    it('should not follow redirect when request is canceled in redirect handler', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.statusCode = 301
         response.setHeader('Location', '/200')
         response.end()
-      }).then(serverUrl => {
-        const urlRequest = net.request({
-          url: serverUrl,
-          redirect: 'error'
-        })
-        urlRequest.on('error', (error) => {
-          expect(error.message).to.equal('Request cannot follow redirect with the current redirect mode')
-        })
-        urlRequest.on('close', () => {
-          done()
-        })
-        urlRequest.end()
       })
+      const urlRequest = net.request({
+        url: serverUrl
+      })
+      urlRequest.end()
+      urlRequest.on('redirect', () => { urlRequest.abort() })
+      await emittedOnce(urlRequest, 'abort')
     })
 
-    it('should allow follow redirect when mode is manual', (done) => {
-      respondOnce.toRoutes({
+    it('should follow redirect when handler calls callback', async () => {
+      const serverUrl = await respondOnce.toRoutes({
         '/redirectChain': (request, response) => {
           response.statusCode = 301
           response.setHeader('Location', '/301')
@@ -998,71 +983,20 @@ describe('net module', () => {
           response.statusCode = 200
           response.end()
         }
-      }).then(serverUrl => {
-        const urlRequest = net.request({
-          url: `${serverUrl}/redirectChain`,
-          redirect: 'manual'
-        })
-        let redirectCount = 0
-        urlRequest.on('response', (response) => {
-          try {
-            expect(response.statusCode).to.equal(200)
-            expect(redirectCount).to.equal(2)
-            done()
-          } catch (e) {
-            done(e)
-          }
-        })
-        urlRequest.on('redirect', (status, method, url) => {
-          if (url === `${serverUrl}/301` || url === `${serverUrl}/200`) {
-            redirectCount += 1
-            urlRequest.followRedirect()
-          }
-        })
-        urlRequest.end()
       })
-    })
-
-    it('should allow cancelling redirect when mode is manual', (done) => {
-      respondOnce.toRoutes({
-        '/redirect': (request, response) => {
-          response.statusCode = 301
-          response.setHeader('Location', '/200')
-          response.end()
-        },
-        '/200': (request, response) => {
-          response.statusCode = 200
-          response.end()
-        }
-      }).then(serverUrl => {
-        const urlRequest = net.request({
-          url: `${serverUrl}/redirect`,
-          redirect: 'manual'
-        })
-        urlRequest.on('response', (response) => {
-          expect(response.statusCode).that.equal(200)
-          response.on('data', () => {})
-          response.on('end', () => {
-            urlRequest.abort()
-          })
-        })
-        let redirectCount = 0
-        urlRequest.on('close', () => {
-          try {
-            expect(redirectCount).to.equal(1)
-            done()
-          } catch (e) {
-            done(e)
-          }
-        })
-        urlRequest.on('redirect', (status, method, url) => {
-          if (url === `${serverUrl}/200`) {
-            redirectCount += 1
-            urlRequest.followRedirect()
-          }
-        })
-        urlRequest.end()
+      const urlRequest = net.request(`${serverUrl}/redirectChain`)
+      const redirects: string[] = []
+      urlRequest.on('redirect', (status, method, url, followRedirect) => {
+        redirects.push(url)
+        ;(followRedirect as any)()
       })
+      urlRequest.end()
+      const [response] = await emittedOnce(urlRequest, 'response')
+      expect(response.statusCode).to.equal(200)
+      expect(redirects).to.deep.equal([
+        `${serverUrl}/301`,
+        `${serverUrl}/200`
+      ])
     })
 
     it('should throw if given an invalid session option', () => {

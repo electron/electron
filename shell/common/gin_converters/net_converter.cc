@@ -18,6 +18,7 @@
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
 #include "net/http/http_version.h"
+#include "net/url_request/redirect_info.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -367,6 +368,24 @@ v8::Local<v8::Value> Converter<net::HttpVersion>::ToV8(
   gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("major", static_cast<uint32_t>(val.major_value()));
   dict.Set("minor", static_cast<uint32_t>(val.minor_value()));
+  return ConvertToV8(isolate, dict);
+}
+
+// static
+v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
+    v8::Isolate* isolate,
+    const net::RedirectInfo& val) {
+  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+
+  dict.Set("statusCode", val.status_code);
+  dict.Set("newMethod", val.new_method);
+  dict.Set("newUrl", val.new_url);
+  dict.Set("newSiteForCookies", val.new_site_for_cookies);
+  dict.Set("newReferrer", val.new_referrer);
+  dict.Set("insecureSchemeWasUpgraded", val.insecure_scheme_was_upgraded);
+  dict.Set("isSignedExchangeFallbackRedirect",
+           val.is_signed_exchange_fallback_redirect);
+
   return ConvertToV8(isolate, dict);
 }
 

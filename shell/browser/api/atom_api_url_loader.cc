@@ -227,10 +227,11 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
 
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
+  loader_->SetOnRedirectCallback(base::BindRepeating(
+      &SimpleURLLoaderWrapper::OnRedirect, base::Unretained(this)));
+
   loader_->DownloadAsStream(url_loader_factory, this);
   /*
-  loader_->SetOnRedirectCallback(
-      const OnRedirectCallback& on_redirect_callback) = 0;
   loader_->SetOnUploadProgressCallback(
       UploadProgressCallback on_upload_progress_callback) = 0;
   loader_->SetOnDownloadProgressCallback(
@@ -261,6 +262,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder(
       std::move(auth_challenge_responder));
+  // TODO
   // auth_responder.set_disconnect_handler(
   //    base::BindOnce(&SimpleURLLoaderWrapper::Cancel,
   //    weak_factory_.GetWeakPtr()));
@@ -308,7 +310,6 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
       }
     }
   }
-  opts.Get("redirect", &request->redirect_mode);
 
   v8::Local<v8::Value> body;
   if (opts.Get("body", &body)) {
@@ -380,6 +381,17 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
   dict.Set("headers", response_head.headers.get());
   dict.Set("httpVersion", response_head.headers->GetHttpVersion());
   Emit("response-started", final_url, dict);
+}
+
+void SimpleURLLoaderWrapper::OnRedirect(
+    const net::RedirectInfo& redirect_info,
+    const network::mojom::URLResponseHead& response_head,
+    base::OnceCallback<void(std::vector<std::string>)> follow_redirect) {
+  gin::Dictionary response_head_v8 =
+      gin::Dictionary::CreateEmpty(isolate());  // TODO
+  v8::Local<v8::Value> callback =
+      gin::ConvertToV8(isolate(), std::move(follow_redirect));
+  Emit("redirect", redirect_info, response_head_v8, callback);
 }
 
 // static

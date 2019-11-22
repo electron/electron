@@ -124,6 +124,12 @@ struct Converter<net::HttpVersion> {
                                    const net::HttpVersion& val);
 };
 
+template <>
+struct Converter<net::RedirectInfo> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::RedirectInfo& val);
+};
+
 }  // namespace gin
 
 #endif  // SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
