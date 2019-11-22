@@ -842,6 +842,10 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
   int key = GetPathConstant(name);
   if (key >= 0) {
     succeed = base::PathService::Get(key, &path);
+    if (succeed && (name == "logs")) {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      CreateDirectoryAndGetError(path);
+    }
   }
   if (!succeed)
     thrower.ThrowError("Failed to get '" + name + "' path");
