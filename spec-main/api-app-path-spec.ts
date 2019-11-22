@@ -5,7 +5,7 @@ import * as cp from 'child_process'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
-import { emittedOnce } from './events-helpers';
+import { emittedOnce } from './events-helpers'
 
 const { expect } = chai
 
@@ -27,51 +27,51 @@ interface Payload {
   appLogs?: string
 }
 
-function ExistsCacheSync(cachedir: string): boolean {
-  return fs.existsSync(cachedir) 
-          && fs.existsSync(path.join(cachedir, 'Cookies'))
-          && fs.existsSync(path.join(cachedir, 'Cookies-journal'))
-          && fs.existsSync(path.join(cachedir, 'Cache'))
+function ExistsCacheSync (cachedir: string): boolean {
+  return fs.existsSync(cachedir) &&
+    fs.existsSync(path.join(cachedir, 'Cookies')) &&
+    fs.existsSync(path.join(cachedir, 'Cookies-journal')) &&
+    fs.existsSync(path.join(cachedir, 'Cache'))
 }
 
-function RemoveDir(dir?: string) {
+function RemoveDir (dir?: string) {
   // console.log(`RemoveDir ${dir}`)
   if (dir && dir.length && fs.existsSync(dir)) {
     try {
-      fs.unlinkSync(dir);
+      fs.unlinkSync(dir)
     }
     catch (_) {}
   }
 }
 
-function CleanUp(output: Payload) {
-  RemoveDir(output.userData);
-  RemoveDir(output.userCache);
-  RemoveDir(output.appLogs);
+function CleanUp (output: Payload) {
+  RemoveDir(output.userData)
+  RemoveDir(output.userCache)
+  RemoveDir(output.appLogs)
 }
 
 describe('app path module', () => {
   describe(`computes 'userData' from 'appData' and app name`, () => {
     it('by default', async () => {
       const output = await runTestApp('app-custom-path')
-      const expected_userdata = path.join(output.appData, defaultAppName)
-      expect(output.userData).to.equal(expected_userdata)
+      const expectedUserdata = path.join(output.appData, defaultAppName)
+      expect(output.userData).to.equal(expectedUserdata)
       CleanUp(output)
     })
 
     it(`app.name='${appName}'`, async () => {
       const output = await runTestApp('app-custom-path', `-custom-appname=${appName}`)
-      const expected_userdata = path.join(output.appData, appName)
-      expect(output.userData).to.equal(expected_userdata)
+      const expectedUserdata = path.join(output.appData, appName)
+      expect(output.userData).to.equal(expectedUserdata)
       CleanUp(output)
     })
 
     it(`setPath('appData', '${appData}')`, async () => {
       RemoveDir(appData)
       const output = await runTestApp('app-custom-path', `-custom-appdata=${appData}`)
-      const expected_userdata = path.join(appData, defaultAppName)
+      const expectedUserdata = path.join(appData, defaultAppName)
       expect(output.appData).to.equal(appData)
-      expect(output.userData).to.equal(expected_userdata)
+      expect(output.userData).to.equal(expectedUserdata)
       // On App ready event, the appData path is created
       expect(fs.existsSync(appData))
       CleanUp(output)
@@ -116,16 +116,16 @@ describe('app path module', () => {
     })
 
     it(`setPath('appData', '${appData}')`, async () => {
-      RemoveDir(appData);
+      RemoveDir(appData)
       const output = await runTestApp('app-custom-path', `-custom-appdata=${appData}`)
-      const expected_usercache = path.join(output.appCache, defaultAppName);
-      expect(output.userCache).to.equal(expected_usercache)
+      const expectedUsercache = path.join(output.appCache, defaultAppName)
+      expect(output.userCache).to.equal(expectedUsercache)
       // On Windows, 'cache' is equivalent to 'appData'
       if (process.platform === 'win32') {
         expect(output.userCache).to.contain(appData)
         expect(output.appCache).to.equal(appData)
       }
-      expect(ExistsCacheSync(expected_usercache))
+      expect(ExistsCacheSync(expectedUsercache))
       CleanUp(output)
       RemoveDir(appData)
     })
@@ -205,18 +205,18 @@ describe('app path module', () => {
       switch (process.platform) {
         case 'darwin':
           expect(output.appLogs).to.equal(path.join(os.homedir(), 'Library', 'Logs', 'Electron'))
-          break;
+          break
         case 'win32':
         default:
           expect(output.appLogs).to.equal(path.join(output.appData, defaultAppName, 'logs'))
           expect(output.appLogs).to.equal(path.join(output.userData, 'logs'))
-          break;
+          break
       }
     })
-      // Linux
-      // app path module setAppLogsPath() setAppLogsPath(/tmp/mylogs) - setAppLogsPath(/tmp/mylogs)
-      // /home/builduser/project/src/electron/spec-main/api-app-path-spec.ts
-      // AssertionError: expected '/home/builduser/.config/app-custom-path/logs' to equal '/tmp/mylogs'
+    // Linux
+    // app path module setAppLogsPath() setAppLogsPath(/tmp/mylogs) - setAppLogsPath(/tmp/mylogs)
+    // /home/builduser/project/src/electron/spec-main/api-app-path-spec.ts
+    // AssertionError: expected '/home/builduser/.config/app-custom-path/logs' to equal '/tmp/mylogs'
 
     // if (process.platform === 'win32') {
     //   it(`setAppLogsPath('${appLogsPath}')`, async () => {
@@ -227,10 +227,10 @@ describe('app path module', () => {
 
     // To review later
     it(`setAppLogsPath()`, async () => {
-      const defaultAppLogs = app.getPath('logs');
-      app.setAppLogsPath(appLogsPath);
+      const defaultAppLogs = app.getPath('logs')
+      app.setAppLogsPath(appLogsPath)
       expect(app.getPath('logs')).to.equal(appLogsPath)
-      app.setAppLogsPath();
+      app.setAppLogsPath()
       expect(app.getPath('logs')).to.equal(defaultAppLogs)
     })
   })
@@ -239,24 +239,22 @@ describe('app path module', () => {
     const logsPaths = {
       'darwin': path.resolve(os.homedir(), 'Library', 'Logs'),
       'linux': path.resolve(os.homedir(), 'AppData', app.name),
-      'win32': path.resolve(os.homedir(), 'AppData', app.name),
+      'win32': path.resolve(os.homedir(), 'AppData', app.name)
     }
 
     it('has no logs directory by default', () => {
       const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.false
+      expect(fs.existsSync(osLogPath)).to.be.false()
     })
 
     it('creates a new logs directory if one does not exist', () => {
       expect(() => { app.getPath('logs') }).to.not.throw()
 
       const osLogPath = (logsPaths as any)[process.platform]
-      expect(fs.existsSync(osLogPath)).to.be.true
+      expect(fs.existsSync(osLogPath)).to.be.true()
     })
   })
-  
 })
-
 
 async function runTestApp (name: string, ...args: any[]) {
   const appPath = path.join(fixturesPath, name)
@@ -274,7 +272,7 @@ async function runTestApp (name: string, ...args: any[]) {
     return JSON.parse(output)
   }
   catch (err) {
-    console.log(`Error ${err}) with ${output}`);
+    console.log(`Error ${err}) with ${output}`)
     throw err
   }
 }

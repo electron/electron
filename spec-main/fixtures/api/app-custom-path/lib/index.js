@@ -15,7 +15,7 @@ const defaultPayload = {
   defaultAppLogs: app.getPath('logs')
 }
 
-function exitApp() {
+function exitApp () {
   const payload = {
     ...defaultPayload,
     appName: app.name,
@@ -59,13 +59,11 @@ app.on('ready', () => {
       show: false
     })
     w.webContents.on('did-finish-load', () => {
-      exitApp();
-    });
+      exitApp()
+    })
     w.loadURL('about:blank')
   }
   else {
-    exitApp();
+    exitApp()
   }
 })
-
-

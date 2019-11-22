@@ -39,7 +39,6 @@ filenames = {
     "shell/app/uv_task_runner.h",
     "shell/browser/api/atom_api_app.cc",
     "shell/browser/api/atom_api_app.h",
-    "shell/browser/api/atom_api_app_mac.mm",
     "shell/browser/api/atom_api_auto_updater.cc",
     "shell/browser/api/atom_api_auto_updater.h",
     "shell/browser/api/atom_api_browser_view.cc",

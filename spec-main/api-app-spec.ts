@@ -645,8 +645,6 @@ describe('app module', () => {
     })
   })
 
-
-
   describe('select-client-certificate event', () => {
     let w: BrowserWindow
 
