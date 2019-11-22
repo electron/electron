@@ -126,7 +126,7 @@ async function getCircleCIWorkflowId (pipelineId) {
 }
 
 async function getCircleCIJobNumber (workflowId) {
-  const jobInfoUrl = `https://circleci.com/api/v2/workflow/${workflowId}/jobs`
+  const jobInfoUrl = `https://circleci.com/api/v2/workflow/${workflowId}/job`
   let jobNumber = 0
   while (jobNumber === 0) {
     const jobInfo = await circleCIRequest(jobInfoUrl, 'GET')

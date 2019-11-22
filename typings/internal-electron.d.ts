@@ -112,6 +112,13 @@ declare namespace ElectronInternal {
     appIcon: string | null;
   }
 
+  interface KeyWeakMap<K, V> {
+    set(key: K, value: V): void;
+    get(key: K): V | undefined;
+    has(key: K): boolean;
+    remove(key: K): void;
+  }
+
   // Internal IPC has _replyInternal and NO reply method
   interface IpcMainInternalEvent extends Omit<Electron.IpcMainEvent, 'reply'> {
     _replyInternal(...args: any[]): void;

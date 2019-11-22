@@ -96,7 +96,9 @@ build_script:
           if ($env:TARGET_ARCH -ne 'ia32') {
             # archive current source for future use 
             # only run on x64/woa to avoid contention saving
-            7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\WebKit\LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30
+            if ($(7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\WebKit\LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30;$LASTEXITCODE -ne 0)) {
+              Write-warning "Could not save source to shared drive; continuing anyway"
+            }
           }
         }
       }

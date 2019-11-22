@@ -5,6 +5,7 @@
 #include "shell/browser/api/atom_api_menu.h"
 
 #include <map>
+#include <utility>
 
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
@@ -215,6 +216,16 @@ void Menu::OnMenuWillClose() {
 void Menu::OnMenuWillShow() {
   g_menus[weak_map_id()] = v8::Global<v8::Object>(isolate(), GetWrapper());
   Emit("menu-will-show");
+}
+
+base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
+  // return ((callback, ref) => { callback() }).bind(null, callback, this)
+  v8::Global<v8::Value> ref(isolate(), GetWrapper());
+  return base::BindOnce(
+      [](base::OnceClosure callback, v8::Global<v8::Value> ref) {
+        std::move(callback).Run();
+      },
+      std::move(callback), std::move(ref));
 }
 
 // static

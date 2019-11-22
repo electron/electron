@@ -256,10 +256,11 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
 
 step-delete-git-directories: &step-delete-git-directories
   run:
-    name: Delete src/.git directory on MacOS to free space
+    name: Delete all .git directories under src on MacOS to free space
     command: |
       if [ "`uname`" == "Darwin" ]; then
-        sudo rm -rf src/.git
+        cd src
+        ( find . -type d -name ".git" ) | xargs rm -rf
       fi
 
 # On macOS the yarn install command during gclient sync was run on a linux
@@ -348,9 +349,18 @@ step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
     name: Strip electron binaries
     command: |
-      if [ "$STRIP_BINARIES" == "true" ] && [ "`uname`" != "Darwin" ]; then
+      if [ "$STRIP_BINARIES" == "true" ] && [ "`uname`" == "Linux" ]; then
+        if [ x"$TARGET_ARCH" == x ]; then
+          target_cpu=x64
+        elif [ "$TARGET_ARCH" == "ia32" ]; then
+          target_cpu=x86
+        else
+          target_cpu="$TARGET_ARCH"
+        fi
         cd src
-        electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH"
+        electron/script/copy-debug-symbols.py --target-cpu="$target_cpu" --out-dir=out/Default/debug --compress
+        electron/script/strip-binaries.py --target-cpu="$target_cpu"
+        electron/script/add-debug-link.py --target-cpu="$target_cpu" --debug-dir=out/Default/debug
       fi
 
 step-electron-dist-build: &step-electron-dist-build
@@ -907,8 +917,8 @@ steps-electron-build: &steps-electron-build
     - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync-on-mac
-    - *step-gn-gen-default
     - *step-delete-git-directories
+    - *step-gn-gen-default
 
     # Electron app
     - *step-electron-build
@@ -989,8 +999,8 @@ steps-electron-build-with-inline-checkout-for-tests: &steps-electron-build-with-
     - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync-on-mac
-    - *step-gn-gen-default
     - *step-delete-git-directories
+    - *step-gn-gen-default
 
     # Electron app
     - *step-electron-build
@@ -1085,8 +1095,9 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-get-more-space-on-mac
     - *step-gclient-sync
     - *step-setup-env-for-build
-    - *step-gn-gen-default
     - *step-delete-git-directories
+    - *step-minimize-workspace-size-from-checkout
+    - *step-gn-gen-default
 
     # Electron app
     - *step-electron-build

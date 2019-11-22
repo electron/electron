@@ -5,6 +5,7 @@
 #include "shell/browser/api/atom_api_menu_views.h"
 
 #include <memory>
+#include <utility>
 
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/unresponsive_suppressor.h"
@@ -24,10 +25,7 @@ void MenuViews::PopupAt(TopLevelWindow* window,
                         int x,
                         int y,
                         int positioning_item,
-                        const base::Closure& callback) {
-  gin_helper::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-
+                        base::OnceClosure callback) {
   auto* native_window = static_cast<NativeWindowViews*>(window->window());
   if (!native_window)
     return;
@@ -46,12 +44,21 @@ void MenuViews::PopupAt(TopLevelWindow* window,
   // Don't emit unresponsive event when showing menu.
   electron::UnresponsiveSuppressor suppressor;
 
+  // Make sure the Menu object would not be garbage-collected until the callback
+  // has run.
+  base::OnceClosure callback_with_ref = BindSelfToClosure(std::move(callback));
+
   // Show the menu.
+  //
+  // Note that while views::MenuRunner accepts RepeatingCallback as close
+  // callback, it is fine passing OnceCallback to it because we reset the
+  // menu runner immediately when the menu is closed.
   int32_t window_id = window->weak_map_id();
-  auto close_callback = base::BindRepeating(
-      &MenuViews::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
+  auto close_callback = base::AdaptCallbackForRepeating(
+      base::BindOnce(&MenuViews::OnClosed, weak_factory_.GetWeakPtr(),
+                     window_id, std::move(callback_with_ref)));
   menu_runners_[window_id] =
-      std::make_unique<MenuRunner>(model(), flags, close_callback);
+      std::make_unique<MenuRunner>(model(), flags, std::move(close_callback));
   menu_runners_[window_id]->RunMenuAt(
       native_window->widget(), nullptr, gfx::Rect(location, gfx::Size()),
       views::MenuAnchorPosition::kTopLeft, ui::MENU_SOURCE_MOUSE);
@@ -71,9 +78,9 @@ void MenuViews::ClosePopupAt(int32_t window_id) {
   }
 }
 
-void MenuViews::OnClosed(int32_t window_id, base::Closure callback) {
+void MenuViews::OnClosed(int32_t window_id, base::OnceClosure callback) {
   menu_runners_.erase(window_id);
-  callback.Run();
+  std::move(callback).Run();
 }
 
 // static
