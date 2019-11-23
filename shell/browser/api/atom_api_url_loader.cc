@@ -322,13 +322,12 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
   std::map<std::string, std::string> extra_headers;
   if (opts.Get("extraHeaders", &extra_headers)) {
     for (const auto& it : extra_headers) {
-      if (net::HttpUtil::IsValidHeaderName(it.first) &&
-          net::HttpUtil::IsValidHeaderValue(it.second)) {
-        request->headers.SetHeader(it.first, it.second);
-      } else {
-        // TODO: warning...? or, better, warning when the user calls
-        // setHeader...
+      if (!net::HttpUtil::IsValidHeaderName(it.first) ||
+          !net::HttpUtil::IsValidHeaderValue(it.second)) {
+        args->ThrowTypeError("Invalid header name or value");
+        return nullptr;
       }
+      request->headers.SetHeader(it.first, it.second);
     }
   }
 

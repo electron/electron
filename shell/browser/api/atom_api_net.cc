@@ -48,6 +48,14 @@ v8::Local<v8::Value> Net::URLLoader(v8::Isolate* isolate) {
 
 namespace {
 
+bool IsValidHeaderName(std::string header_name) {
+  return net::HttpUtil::IsValidHeaderName(header_name);
+}
+
+bool IsValidHeaderValue(std::string header_value) {
+  return net::HttpUtil::IsValidHeaderValue(header_value);
+}
+
 using electron::api::Net;
 using electron::api::SimpleURLLoaderWrapper;
 
@@ -64,6 +72,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set("net", Net::Create(isolate));
   dict.Set("Net",
            Net::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.SetMethod("_isValidHeaderName", &IsValidHeaderName);
+  dict.SetMethod("_isValidHeaderValue", &IsValidHeaderValue);
 }
 
 }  // namespace
