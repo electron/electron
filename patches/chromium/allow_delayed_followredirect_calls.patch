@@ -117,7 +117,7 @@ index 38104127d821b149a28bb0282e484ea146fe265b..00c0a2f708bb3cabe363f683d745e3aa
  
    void WorkDone(std::unique_ptr<std::string> policy_content,
 diff --git a/services/network/public/cpp/simple_url_loader.cc b/services/network/public/cpp/simple_url_loader.cc
-index 1cc4198e6057c3739d87db3e55a47026f8246f89..871e6bc00feaa5c2e5edd7e3080711e7de4b0330 100644
+index 1cc4198e6057c3739d87db3e55a47026f8246f89..4cbd5646da79fe0b91f02ba1c7ed8c70c062f82d 100644
 --- a/services/network/public/cpp/simple_url_loader.cc
 +++ b/services/network/public/cpp/simple_url_loader.cc
 @@ -257,6 +257,8 @@ class SimpleURLLoaderImpl : public SimpleURLLoader,
@@ -161,7 +161,7 @@ index 1cc4198e6057c3739d87db3e55a47026f8246f89..871e6bc00feaa5c2e5edd7e3080711e7
  void SimpleURLLoaderImpl::Start(mojom::URLLoaderFactory* url_loader_factory) {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
    DCHECK(resource_request_);
-@@ -1609,20 +1616,16 @@ void SimpleURLLoaderImpl::OnReceiveRedirect(
+@@ -1609,20 +1616,19 @@ void SimpleURLLoaderImpl::OnReceiveRedirect(
    }
  
    std::vector<std::string> removed_headers;
@@ -181,6 +181,9 @@ index 1cc4198e6057c3739d87db3e55a47026f8246f89..871e6bc00feaa5c2e5edd7e3080711e7
 +    // If deleted by the callback, bail now.
 +    if (!weak_this)
 +      return;
++  } else {
++    // Default behavior when no callback is set is to follow the redirect.
++    FollowRedirect({});
    }
  
    final_url_ = redirect_info.new_url;
