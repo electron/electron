@@ -249,14 +249,12 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
       &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
   loader_->SetOnRedirectCallback(base::BindRepeating(
       &SimpleURLLoaderWrapper::OnRedirect, base::Unretained(this)));
+  loader_->SetOnUploadProgressCallback(base::BindRepeating(
+      &SimpleURLLoaderWrapper::OnUploadProgress, base::Unretained(this)));
+  loader_->SetOnDownloadProgressCallback(base::BindRepeating(
+      &SimpleURLLoaderWrapper::OnDownloadProgress, base::Unretained(this)));
 
   loader_->DownloadAsStream(url_loader_factory, this);
-  /*
-  loader_->SetOnUploadProgressCallback(
-      UploadProgressCallback on_upload_progress_callback) = 0;
-  loader_->SetOnDownloadProgressCallback(
-      DownloadProgressCallback on_download_progress_callback) = 0;
-  */
 
   // Prevent ourselves from being GC'd until the request is complete.
   pinned_wrapper_.Reset(isolate(), GetWrapper());
@@ -410,6 +408,15 @@ void SimpleURLLoaderWrapper::OnRedirect(
   v8::Local<v8::Value> callback =
       gin::ConvertToV8(isolate(), std::move(follow_redirect));
   Emit("redirect", redirect_info, response_head.headers.get(), callback);
+}
+
+void SimpleURLLoaderWrapper::OnUploadProgress(uint64_t position,
+                                              uint64_t total) {
+  Emit("upload-progress", position, total);
+}
+
+void SimpleURLLoaderWrapper::OnDownloadProgress(uint64_t current) {
+  Emit("download-progress", current);
 }
 
 // static

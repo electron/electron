@@ -72,6 +72,8 @@ class SimpleURLLoaderWrapper
       const net::RedirectInfo& redirect_info,
       const network::mojom::URLResponseHead& response_head,
       base::OnceCallback<void(std::vector<std::string>)> follow_redirect);
+  void OnUploadProgress(uint64_t position, uint64_t total);
+  void OnDownloadProgress(uint64_t current);
 
   void Start();
 
