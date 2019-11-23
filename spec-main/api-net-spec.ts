@@ -1109,7 +1109,8 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl)
       urlRequest.end(randomBuffer(kOneMegaByte))
       const [error] = await emittedOnce(urlRequest, 'error')
-      expect(error.message).to.equal('net::ERR_CONNECTION_RESET')
+      const expectedErrorMessage = process.platform === 'win32' ? 'net::ERR_CONNECTION_ABORTED' : 'net::ERR_CONNECTION_RESET'
+      expect(error.message).to.equal(expectedErrorMessage)
     })
 
     it('should not emit any event after close', async () => {
