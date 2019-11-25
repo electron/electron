@@ -274,9 +274,9 @@ async function runTestApp (name: string, ...args: any[]) {
     // On Mac, paths may return symlinks so we need to work on realpath everywhere !
     const props = ['appData', 'appCache', 'userCache', 'userData', 'appLogs', 'appPath']
     props.forEach(prop => {
-        try {
-            outputJSON[prop] = fs.realpathSync(outputJSON[prop])
-        } catch (err) {}
+      try {
+        outputJSON[prop] = fs.realpathSync(outputJSON[prop])
+      } catch (err) {}
     })
     return outputJSON
   } catch (err) {
