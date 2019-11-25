@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/atom_api_net.h"
 
+#include <string>
+
 #include "gin/handle.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/atom_api_url_loader.h"
