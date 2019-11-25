@@ -19,12 +19,14 @@ const userData = path.join(os.tmpdir(), 'myuserdata')
 const userCache = path.join(os.tmpdir(), 'myusercache')
 
 interface Payload {
-  appName?: string,
-  appData?: string,
-  appCache?: string,
-  userCache?: string,
-  userData?: string,
-  appLogs?: string
+  appName: string,
+  appData: string,
+  appCache: string,
+  userCache: string,
+  userData: string,
+  appLogs: string,
+  appPath: string
+  [key: string]: string;
 }
 
 function ExistsCacheSync (cachedir: string): boolean {
@@ -267,9 +269,16 @@ async function runTestApp (name: string, ...args: any[]) {
   await emittedOnce(appProcess.stdout, 'end')
 
   // console.log(`ouput=${output}`)
-
   try {
-    return JSON.parse(output)
+    const outputJSON = JSON.parse(output) as Payload
+	// On Mac, paths may return symlinks so we need to work on realpath everywhere !
+	const props = ['appData', 'appCache', 'userCache', 'userData', 'appLogs', 'appPath']
+	props.forEach(prop => {
+		try {
+			outputJSON[prop] = fs.realpathSync(outputJSON[prop])
+		} catch (err) {}
+	})
+	return outputJSON
   } catch (err) {
     console.log(`Error ${err}) with ${output}`)
     throw err
