@@ -1355,6 +1355,12 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
   }
 
+  bool reload_ignoring_cache = false;
+  if (options.Get("reloadIgnoringCache", &reload_ignoring_cache) &&
+      reload_ignoring_cache) {
+    params.reload_type = content::ReloadType::BYPASSING_CACHE;
+  }
+
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
