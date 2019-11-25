@@ -92,6 +92,7 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   void PostMainMessageLoopStart() override;
   void PostMainMessageLoopRun() override;
   void PreMainMessageLoopStart() override;
+  void PostCreateThreads() override;
   void PostDestroyThreads() override;
 
  private:
