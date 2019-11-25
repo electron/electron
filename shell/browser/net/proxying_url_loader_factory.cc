@@ -6,13 +6,17 @@
 
 #include <utility>
 
+#include "base/command_line.h"
+#include "base/strings/string_util.h"
 #include "content/public/browser/browser_context.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "mojo/public/cpp/bindings/binding.h"
 #include "net/base/completion_repeating_callback.h"
+#include "net/base/load_flags.h"
 #include "net/http/http_util.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
+#include "shell/common/options_switches.h"
 
 namespace electron {
 
@@ -689,18 +693,40 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
 
   if (header_client_receiver)
     url_loader_header_client_receiver_.Bind(std::move(header_client_receiver));
+
+  ignore_connections_limit_domains_ = base::SplitString(
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kIgnoreConnectionsLimit),
+      ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 }
 
 ProxyingURLLoaderFactory::~ProxyingURLLoaderFactory() = default;
+
+bool ProxyingURLLoaderFactory::ShouldIgnoreConnectionsLimit(
+    const network::ResourceRequest& request) {
+  for (const auto& domain : ignore_connections_limit_domains_) {
+    if (request.url.DomainIs(domain)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     int32_t routing_id,
     int32_t request_id,
     uint32_t options,
-    const network::ResourceRequest& request,
+    const network::ResourceRequest& original_request,
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
+  // Take a copy so we can mutate the request.
+  network::ResourceRequest request = original_request;
+
+  if (ShouldIgnoreConnectionsLimit(request)) {
+    request.load_flags |= net::LOAD_IGNORE_LIMITS;
+  }
+
   // Check if user has intercepted this scheme.
   auto it = intercepted_handlers_.find(request.url.scheme());
   if (it != intercepted_handlers_.end()) {
