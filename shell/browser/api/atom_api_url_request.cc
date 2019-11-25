@@ -286,6 +286,8 @@ bool URLRequest::Write(v8::Local<v8::Value> data, bool is_last) {
     network::ResourceRequest* request_ref = request_.get();
     loader_ = network::SimpleURLLoader::Create(std::move(request_),
                                                kTrafficAnnotation);
+
+    loader_->SetAllowHttpErrorResults(true);
     loader_->SetOnResponseStartedCallback(
         base::Bind(&URLRequest::OnResponseStarted, weak_factory_.GetWeakPtr()));
     loader_->SetOnRedirectCallback(
