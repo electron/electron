@@ -40,6 +40,7 @@ class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
   void RunDestructor() override {
     if (node_->detached) {
       delete node_;
+      return;
     }
     if (node_->prev) {
       node_->prev->next = node_->next;
