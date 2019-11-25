@@ -1271,9 +1271,9 @@ describe('net module', () => {
       await emittedOnce(response, 'end')
     })
 
-    it('should be able to pipe a net response into a writable stream', (done) => {
+    it('should be able to pipe a net response into a writable stream', async () => {
       const bodyData = randomString(kOneKiloByte)
-      Promise.all([
+      const [netServerUrl, nodeServerUrl] = await Promise.all([
         respondOnce.toSingleURL((request, response) => response.end(bodyData)),
         respondOnce.toSingleURL((request, response) => {
           let receivedBodyData = ''
@@ -1288,8 +1288,10 @@ describe('net module', () => {
             response.end()
           })
         })
-      ]).then(([netServerUrl, nodeServerUrl]) => {
-        const netRequest = net.request(netServerUrl)
+      ])
+      const netRequest = net.request(netServerUrl)
+      netRequest.end()
+      await new Promise((resolve) => {
         netRequest.on('response', (netResponse) => {
           const serverUrl = url.parse(nodeServerUrl)
           const nodeOptions = {
@@ -1300,14 +1302,13 @@ describe('net module', () => {
           const nodeRequest = http.request(nodeOptions, res => {
             res.on('data', () => {})
             res.on('end', () => {
-              done()
+              resolve()
             })
           });
           // TODO: IncomingMessage should properly extend ReadableStream in the
           // docs
           (netResponse as any).pipe(nodeRequest)
         })
-        netRequest.end()
       })
     })
   })
@@ -1355,14 +1356,11 @@ describe('net module', () => {
         const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           response.on('data', () => {})
-          response.on('end', () => {})
+          response.on('end', () => { done() })
         })
-        urlRequest.on('close', () => {
-          process.nextTick(() => {
-            const v8Util = process.electronBinding('v8_util')
-            v8Util.requestGarbageCollectionForTesting()
-            done()
-          })
+        process.nextTick(() => {
+          const v8Util = process.electronBinding('v8_util')
+          v8Util.requestGarbageCollectionForTesting()
         })
         urlRequest.end()
       })
