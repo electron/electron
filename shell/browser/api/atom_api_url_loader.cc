@@ -245,6 +245,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     request_ref->request_body = std::move(request_body);
   }
 
+  loader_->SetAllowHttpErrorResults(true);
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
   loader_->SetOnRedirectCallback(base::BindRepeating(
