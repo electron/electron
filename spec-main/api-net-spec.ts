@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { net, session, ClientRequest, BrowserWindow } from 'electron'
 import * as http from 'http'
 import * as url from 'url'
-import { AddressInfo } from 'net'
+import { AddressInfo, Socket } from 'net'
 import { emittedOnce } from './events-helpers'
 
 const kOneKiloByte = 1024
@@ -22,6 +22,13 @@ function randomString (length: number) {
   return buffer.toString()
 }
 
+const cleanupTasks: (() => void)[] = []
+
+function cleanUp () {
+  cleanupTasks.forEach(t => t())
+  cleanupTasks.length = 0
+}
+
 function respondOnce (fn: http.RequestListener): Promise<string> {
   return new Promise((resolve) => {
     const server = http.createServer((request, response) => {
@@ -31,6 +38,12 @@ function respondOnce (fn: http.RequestListener): Promise<string> {
     })
     server.listen(0, '127.0.0.1', () => {
       resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)
+    })
+    const sockets: Socket[] = []
+    server.on('connection', s => sockets.push(s))
+    cleanupTasks.push(() => {
+      server.close()
+      sockets.forEach(s => s.destroy())
     })
   })
 }
@@ -57,6 +70,7 @@ respondOnce.toSingleURL = (fn: http.RequestListener) => {
 }
 
 describe('net module', () => {
+  afterEach(cleanUp)
   describe('HTTP basics', () => {
     it('should be able to issue a basic GET request', (done) => {
       respondOnce.toSingleURL((request, response) => {
