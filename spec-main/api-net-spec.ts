@@ -722,57 +722,51 @@ describe('net module', () => {
       expect(abortsEmitted).to.equal(1, 'request should emit exactly 1 "abort" event')
     })
 
-    it('shold allow to read response body from non-2xx response', (done) => {
+    it('should allow to read response body from non-2xx response', async () => {
       const bodyData = randomString(kOneKiloByte)
-      respondOnce.toSingleURL((request, response) => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.statusCode = 404
         response.end(bodyData)
-      }).then(serverUrl => {
-        let requestResponseEventEmitted = false
-        let responseDataEventEmitted = false
-        let responseEndEventEmitted = false
-        let requestCloseEventEmitted = false
-
-        function maybeDone (done: () => void) {
-          if (!requestCloseEventEmitted || !responseEndEventEmitted) {
-            return
-          }
-
-          expect(requestResponseEventEmitted).to.equal(true)
-          expect(responseDataEventEmitted).to.equal(true)
-          expect(requestCloseEventEmitted).to.equal(true)
-          expect(responseEndEventEmitted).to.equal(true)
-          done()
-        }
-
-        const urlRequest = net.request(serverUrl)
-        urlRequest.on('response', (response) => {
-          requestResponseEventEmitted = true
-          const statusCode = response.statusCode
-          expect(statusCode).to.equal(404)
-          const buffers: Buffer[] = []
-          response.on('data', (chunk) => {
-            buffers.push(chunk)
-            responseDataEventEmitted = true
-          })
-          response.on('error', () => {
-            expect.fail('error emitted')
-          })
-          response.on('end', () => {
-            const receivedBodyData = Buffer.concat(buffers)
-            expect(receivedBodyData.toString()).to.equal(bodyData)
-            responseEndEventEmitted = true
-            maybeDone(done)
-          })
-        })
-
-        urlRequest.on('close', () => {
-          requestCloseEventEmitted = true
-          maybeDone(done)
-        })
-
-        urlRequest.end()
       })
+
+      let requestResponseEventEmitted = false
+      let responseDataEventEmitted = false
+
+      const urlRequest = net.request(serverUrl)
+      const eventHandlers = Promise.all([
+        emittedOnce(urlRequest, 'response')
+          .then(async (params: any[]) => {
+            const response: Electron.IncomingMessage = params[0]
+            requestResponseEventEmitted = true
+            const statusCode = response.statusCode
+            expect(statusCode).to.equal(404)
+            const buffers: Buffer[] = []
+            response.on('data', (chunk) => {
+              buffers.push(chunk)
+              responseDataEventEmitted = true
+            })
+            await new Promise((resolve, reject) => {
+              response.on('error', () => {
+                reject(new Error('error emitted'))
+              })
+              emittedOnce(response, 'end')
+                .then(() => {
+                  const receivedBodyData = Buffer.concat(buffers)
+                  expect(receivedBodyData.toString()).to.equal(bodyData)
+                })
+                .then(resolve)
+                .catch(reject)
+            })
+          }),
+        emittedOnce(urlRequest, 'close')
+      ])
+
+      urlRequest.end()
+
+      await eventHandlers
+
+      expect(requestResponseEventEmitted).to.equal(true)
+      expect(responseDataEventEmitted).to.equal(true)
     })
 
     describe('webRequest', () => {
