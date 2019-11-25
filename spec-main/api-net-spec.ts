@@ -620,10 +620,11 @@ describe('net module', () => {
       urlRequest.on('response', () => {
         expect.fail('unexpected response event')
       })
+      const aborted = emittedOnce(urlRequest, 'abort')
       urlRequest.abort()
       urlRequest.write('')
       urlRequest.end()
-      await emittedOnce(urlRequest, 'abort')
+      await aborted
     })
 
     it('it should be able to abort an HTTP request before request end', (done) => {
@@ -1155,8 +1156,7 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl)
       urlRequest.end(randomBuffer(kOneMegaByte))
       const [error] = await emittedOnce(urlRequest, 'error')
-      const expectedErrorMessage = process.platform === 'win32' ? 'net::ERR_CONNECTION_ABORTED' : 'net::ERR_CONNECTION_RESET'
-      expect(error.message).to.equal(expectedErrorMessage)
+      expect(error.message).to.be.oneOf(['net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED'])
     })
 
     it('should not emit any event after close', async () => {
@@ -1309,6 +1309,7 @@ describe('net module', () => {
           // docs
           (netResponse as any).pipe(nodeRequest)
         })
+        netRequest.end()
       })
     })
   })
@@ -1363,6 +1364,61 @@ describe('net module', () => {
           v8Util.requestGarbageCollectionForTesting()
         })
         urlRequest.end()
+      })
+    })
+
+    it('should finish sending data when urlRequest is unreferenced', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        let received = Buffer.alloc(0)
+        request.on('data', (data) => {
+          received = Buffer.concat([received, data])
+        })
+        request.on('end', () => {
+          response.end()
+          expect(received.length).to.equal(kOneMegaByte)
+          done()
+        })
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => {})
+          response.on('end', () => {})
+        })
+        urlRequest.on('close', () => {
+          process.nextTick(() => {
+            const v8Util = process.electronBinding('v8_util')
+            v8Util.requestGarbageCollectionForTesting()
+          })
+        })
+        urlRequest.end(randomBuffer(kOneMegaByte))
+      })
+    })
+
+    it('should finish sending data when urlRequest is unreferenced for chunked encoding', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        let received = Buffer.alloc(0)
+        request.on('data', (data) => {
+          received = Buffer.concat([received, data])
+        })
+        request.on('end', () => {
+          response.end()
+          expect(received.length).to.equal(kOneMegaByte)
+          done()
+        })
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => {})
+          response.on('end', () => {})
+        })
+        urlRequest.on('close', () => {
+          process.nextTick(() => {
+            const v8Util = process.electronBinding('v8_util')
+            v8Util.requestGarbageCollectionForTesting()
+          })
+        })
+        urlRequest.chunkedEncoding = true
+        urlRequest.end(randomBuffer(kOneMegaByte))
       })
     })
 

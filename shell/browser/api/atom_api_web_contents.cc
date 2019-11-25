@@ -1383,6 +1383,12 @@ void WebContents::LoadURL(const GURL& url,
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
   }
 
+  bool reload_ignoring_cache = false;
+  if (options.Get("reloadIgnoringCache", &reload_ignoring_cache) &&
+      reload_ignoring_cache) {
+    params.reload_type = content::ReloadType::BYPASSING_CACHE;
+  }
+
   // Calling LoadURLWithParams() can trigger JS which destroys |this|.
   auto weak_this = GetWeakPtr();
 
