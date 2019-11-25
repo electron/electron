@@ -71,6 +71,9 @@ respondOnce.toSingleURL = (fn: http.RequestListener) => {
 
 describe('net module', () => {
   afterEach(cleanUp)
+  afterEach(async () => {
+    await session.defaultSession.clearCache()
+  })
   describe('HTTP basics', () => {
     it('should be able to issue a basic GET request', (done) => {
       respondOnce.toSingleURL((request, response) => {
@@ -946,10 +949,10 @@ describe('net module', () => {
     })
 
     it('should follow redirect when no redirect handler is provided', (done) => {
-      const requestUrl = '/301'
+      const requestUrl = '/302'
       respondOnce.toRoutes({
-        '/301': (request, response) => {
-          response.statusCode = 301
+        '/302': (request, response) => {
+          response.statusCode = 302
           response.setHeader('Location', '/200')
           response.end()
         },
@@ -972,12 +975,12 @@ describe('net module', () => {
     it('should follow redirect chain when no redirect handler is provided', (done) => {
       respondOnce.toRoutes({
         '/redirectChain': (request, response) => {
-          response.statusCode = 301
-          response.setHeader('Location', '/301')
+          response.statusCode = 302
+          response.setHeader('Location', '/302')
           response.end()
         },
-        '/301': (request, response) => {
-          response.statusCode = 301
+        '/302': (request, response) => {
+          response.statusCode = 302
           response.setHeader('Location', '/200')
           response.end()
         },
@@ -999,7 +1002,7 @@ describe('net module', () => {
 
     it('should not follow redirect when request is canceled in redirect handler', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
-        response.statusCode = 301
+        response.statusCode = 302
         response.setHeader('Location', '/200')
         response.end()
       })
@@ -1014,12 +1017,12 @@ describe('net module', () => {
     it('should follow redirect when handler calls callback', async () => {
       const serverUrl = await respondOnce.toRoutes({
         '/redirectChain': (request, response) => {
-          response.statusCode = 301
-          response.setHeader('Location', '/301')
+          response.statusCode = 302
+          response.setHeader('Location', '/302')
           response.end()
         },
-        '/301': (request, response) => {
-          response.statusCode = 301
+        '/302': (request, response) => {
+          response.statusCode = 302
           response.setHeader('Location', '/200')
           response.end()
         },
@@ -1038,7 +1041,7 @@ describe('net module', () => {
       const [response] = await emittedOnce(urlRequest, 'response')
       expect(response.statusCode).to.equal(200)
       expect(redirects).to.deep.equal([
-        `${serverUrl}/301`,
+        `${serverUrl}/302`,
         `${serverUrl}/200`
       ])
     })
