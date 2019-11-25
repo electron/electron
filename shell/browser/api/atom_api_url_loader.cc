@@ -255,8 +255,12 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
       &SimpleURLLoaderWrapper::OnDownloadProgress, base::Unretained(this)));
 
   loader_->DownloadAsStream(url_loader_factory, this);
+}
 
+void SimpleURLLoaderWrapper::Pin() {
   // Prevent ourselves from being GC'd until the request is complete.
+  // Must be called after InitWithArgs(), otherwise GetWrapper() isn't
+  // initialized.
   pinned_wrapper_.Reset(isolate(), GetWrapper());
 }
 
@@ -364,6 +368,7 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
   auto* ret =
       new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get());
   ret->InitWithArgs(args);
+  ret->Pin();
   return ret;
 }
 

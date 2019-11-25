@@ -76,6 +76,7 @@ class SimpleURLLoaderWrapper
   void OnDownloadProgress(uint64_t current);
 
   void Start();
+  void Pin();
 
   uint32_t id_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
