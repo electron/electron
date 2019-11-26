@@ -572,9 +572,9 @@ code to the `setSpellCheckerLanaguages` API that isn't in this array will result
 
 A [`Cookies`](cookies.md) object for this session.
 
-#### `ses.serviceWorkerContext` _Readonly_
+#### `ses.serviceWorkers` _Readonly_
 
-A [`ServiceWorkerContext`](service-worker-context.md) object for this session.
+A [`ServiceWorkers`](service-workers.md) object for this session.
 
 #### `ses.webRequest` _Readonly_
 

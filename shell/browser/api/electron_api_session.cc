@@ -957,7 +957,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
-      .SetProperty("serviceWorkerContext", &Session::ServiceWorkerContext)
+      .SetProperty("serviceWorkers", &Session::ServiceWorkerContext)
       .SetProperty("webRequest", &Session::WebRequest);
 }
 
