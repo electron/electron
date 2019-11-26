@@ -21,7 +21,7 @@ let win
 app.on('ready', () => {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
   win = new BrowserWindow({ width, height })
-  win.loadURL('https://github.com')
+  win.loadURL('https://electronjs.org')
 })
 ```
 
@@ -43,7 +43,7 @@ app.on('ready', () => {
       x: externalDisplay.bounds.x + 50,
       y: externalDisplay.bounds.y + 50
     })
-    win.loadURL('https://github.com')
+    win.loadURL('https://electronjs.org')
   }
 })
 ```
