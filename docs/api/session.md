@@ -491,7 +491,7 @@ to host here.
 
 Returns `Boolean` - Whether the word was successfully written to the custom dictionary.
 
-**Note:** On macOS this word will be written to the OS custom dictionary as well
+**Note:** On macOS and Windows 10 this word will be written to the OS custom dictionary as well
 
 ### Instance Properties
 
