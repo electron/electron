@@ -1064,6 +1064,7 @@ describe('net module', () => {
       })
       urlRequest.end()
       urlRequest.on('redirect', () => { urlRequest.abort() })
+      urlRequest.on('error', () => {})
       await emittedOnce(urlRequest, 'abort')
     })
 

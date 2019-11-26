@@ -421,10 +421,8 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
 void SimpleURLLoaderWrapper::OnRedirect(
     const net::RedirectInfo& redirect_info,
     const network::mojom::URLResponseHead& response_head,
-    base::OnceCallback<void(std::vector<std::string>)> follow_redirect) {
-  v8::Local<v8::Value> callback =
-      gin::ConvertToV8(isolate(), std::move(follow_redirect));
-  Emit("redirect", redirect_info, response_head.headers.get(), callback);
+    std::vector<std::string>* removed_headers) {
+  Emit("redirect", redirect_info, response_head.headers.get());
 }
 
 void SimpleURLLoaderWrapper::OnUploadProgress(uint64_t position,
