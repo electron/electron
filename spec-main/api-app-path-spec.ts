@@ -11,12 +11,15 @@ const { expect } = chai
 
 chai.use(chaiAsPromised)
 
+// Manage Mac symlink where /var = /private/var
+const realtmpdir = fs.realpathSync(os.tmpdir())
+
 const fixturesPath = path.join(__dirname, 'fixtures', 'api')
 const defaultAppName = 'app-custom-path'
 const appName = 'myAppName'
-const appData = path.join(os.tmpdir(), 'myappdata')
-const userData = path.join(os.tmpdir(), 'myuserdata')
-const userCache = path.join(os.tmpdir(), 'myusercache')
+const appData = path.join(realtmpdir, 'myappdata')
+const userData = path.join(realtmpdir, 'myuserdata')
+const userCache = path.join(realtmpdir, 'myusercache')
 
 interface Payload {
   appName: string,
@@ -26,7 +29,6 @@ interface Payload {
   userData: string,
   appLogs: string,
   appPath: string
-  [key: string]: string;
 }
 
 function ExistsCacheSync (cachedir: string): boolean {
@@ -57,7 +59,8 @@ describe('app path module', () => {
     it('by default', async () => {
       const output = await runTestApp('app-custom-path')
       const expectedUserdata = path.join(output.appData, defaultAppName)
-      expect(output.userData).to.equal(expectedUserdata)
+      expect(output.userData.).to.equal(expectedUserdata)
+      // expect(output.userData).to.equal(expectedUserdata)
       CleanUp(output)
     })
 
@@ -201,7 +204,7 @@ describe('app path module', () => {
   })
 
   describe('setAppLogsPath', () => {
-    const appLogsPath = path.join(os.tmpdir(), 'mylogs')
+    const appLogsPath = path.join(realtmpdir, 'mylogs')
     it('by default', async () => {
       const output = await runTestApp('app-custom-path')
       switch (process.platform) {
@@ -270,15 +273,8 @@ async function runTestApp (name: string, ...args: any[]) {
 
   // console.log(`ouput=${output}`)
   try {
-    const outputJSON = JSON.parse(output) as Payload
-    // On Mac, paths may return symlinks so we need to work on realpath everywhere !
-    const props = ['appData', 'appCache', 'userCache', 'userData', 'appLogs', 'appPath']
-    props.forEach(prop => {
-      try {
-        outputJSON[prop] = fs.realpathSync(outputJSON[prop])
-      } catch (err) {}
-    })
-    return outputJSON
+    const outputJSON = JSON.parse(output)
+    return outputJSON as Payload
   } catch (err) {
     console.log(`Error ${err}) with ${output}`)
     throw err
