@@ -3,6 +3,7 @@ import { net as originalNet, session, ClientRequest, BrowserWindow } from 'elect
 import * as http from 'http'
 import * as url from 'url'
 import { AddressInfo } from 'net'
+import { emittedOnce } from './events-helpers'
 
 const outstandingRequests: ClientRequest[] = []
 const net: {request: (typeof originalNet)['request']} = {
@@ -769,6 +770,53 @@ describe('net module', () => {
 
         urlRequest.end(randomString(kOneKiloByte))
       })
+    })
+
+    it('should allow to read response body from non-2xx response', async () => {
+      const bodyData = randomString(kOneKiloByte)
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 404
+        response.end(bodyData)
+      })
+
+      let requestResponseEventEmitted = false
+      let responseDataEventEmitted = false
+
+      const urlRequest = net.request(serverUrl)
+      const eventHandlers = Promise.all([
+        emittedOnce(urlRequest, 'response')
+          .then(async (params: any[]) => {
+            const response: Electron.IncomingMessage = params[0]
+            requestResponseEventEmitted = true
+            const statusCode = response.statusCode
+            expect(statusCode).to.equal(404)
+            const buffers: Buffer[] = []
+            response.on('data', (chunk) => {
+              buffers.push(chunk)
+              responseDataEventEmitted = true
+            })
+            await new Promise((resolve, reject) => {
+              response.on('error', () => {
+                reject(new Error('error emitted'))
+              })
+              emittedOnce(response, 'end')
+                .then(() => {
+                  const receivedBodyData = Buffer.concat(buffers)
+                  expect(receivedBodyData.toString()).to.equal(bodyData)
+                })
+                .then(resolve)
+                .catch(reject)
+            })
+          }),
+        emittedOnce(urlRequest, 'close')
+      ])
+
+      urlRequest.end()
+
+      await eventHandlers
+
+      expect(requestResponseEventEmitted).to.equal(true)
+      expect(responseDataEventEmitted).to.equal(true)
     })
 
     describe('webRequest', () => {

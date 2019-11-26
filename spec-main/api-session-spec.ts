@@ -511,12 +511,19 @@ describe('session module', () => {
       const fetch = (url: string) => new Promise((resolve, reject) => {
         const request = net.request({ url, session: ses })
         request.on('response', (response) => {
-          let data = ''
+          let data: string | null = null
           response.on('data', (chunk) => {
+            if (!data) {
+              data = ''
+            }
             data += chunk
           })
           response.on('end', () => {
-            resolve(data)
+            if (!data) {
+              reject(new Error('Empty response'))
+            } else {
+              resolve(data)
+            }
           })
           response.on('error', (error: any) => { reject(new Error(error)) })
         })
