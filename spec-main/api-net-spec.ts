@@ -1474,6 +1474,30 @@ describe('net module', () => {
       })
     })
 
+    it('should finish sending data when urlRequest is unreferenced before close event for chunked encoding', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        let received = Buffer.alloc(0)
+        request.on('data', (data) => {
+          received = Buffer.concat([received, data])
+        })
+        request.on('end', () => {
+          response.end()
+          expect(received.length).to.equal(kOneMegaByte)
+          done()
+        })
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => {})
+          response.on('end', () => {})
+        })
+        urlRequest.chunkedEncoding = true
+        urlRequest.end(randomBuffer(kOneMegaByte))
+        const v8Util = process.electronBinding('v8_util')
+        v8Util.requestGarbageCollectionForTesting()
+      })
+    })
+
     it('should finish sending data when urlRequest is unreferenced', (done) => {
       respondOnce.toSingleURL((request, response) => {
         let received = Buffer.alloc(0)

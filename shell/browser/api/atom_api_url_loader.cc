@@ -265,6 +265,10 @@ void SimpleURLLoaderWrapper::Pin() {
   pinned_wrapper_.Reset(isolate(), GetWrapper());
 }
 
+void SimpleURLLoaderWrapper::PinBodyGetter(v8::Local<v8::Value> body_getter) {
+  pinned_chunk_pipe_getter_.Reset(isolate(), body_getter);
+}
+
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() {
   GetAllRequests().Remove(id_);
 }
@@ -308,6 +312,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
 void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
   pinned_wrapper_.Reset();
+  pinned_chunk_pipe_getter_.Reset();
   // This ensures that no further callbacks will be called, so there's no need
   // for additional guards.
 }
@@ -335,6 +340,7 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
   }
 
   v8::Local<v8::Value> body;
+  v8::Local<v8::Value> chunk_pipe_getter;
   if (opts.Get("body", &body)) {
     if (body->IsArrayBufferView()) {
       auto buffer_body = body.As<v8::ArrayBufferView>();
@@ -347,9 +353,10 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
 
       mojo::PendingRemote<network::mojom::ChunkedDataPipeGetter>
           data_pipe_getter;
-      JSChunkedDataPipeGetter::Create(
-          args->isolate(), body_func,
-          data_pipe_getter.InitWithNewPipeAndPassReceiver());
+      chunk_pipe_getter = JSChunkedDataPipeGetter::Create(
+                              args->isolate(), body_func,
+                              data_pipe_getter.InitWithNewPipeAndPassReceiver())
+                              .ToV8();
       request->request_body = new network::ResourceRequestBody();
       request->request_body->SetToChunkedDataPipe(std::move(data_pipe_getter));
     }
@@ -370,6 +377,9 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
       new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get());
   ret->InitWithArgs(args);
   ret->Pin();
+  if (!chunk_pipe_getter.IsEmpty()) {
+    ret->PinBodyGetter(chunk_pipe_getter);
+  }
   return ret;
 }
 
@@ -392,6 +402,7 @@ void SimpleURLLoaderWrapper::OnComplete(bool success) {
   }
   loader_.reset();
   pinned_wrapper_.Reset();
+  pinned_chunk_pipe_getter_.Reset();
 }
 
 void SimpleURLLoaderWrapper::OnRetry(base::OnceClosure start_retry) {}

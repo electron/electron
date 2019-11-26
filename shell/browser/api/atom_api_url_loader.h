@@ -77,10 +77,12 @@ class SimpleURLLoaderWrapper
 
   void Start();
   void Pin();
+  void PinBodyGetter(v8::Local<v8::Value>);
 
   uint32_t id_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   v8::Global<v8::Value> pinned_wrapper_;
+  v8::Global<v8::Value> pinned_chunk_pipe_getter_;
 
   base::WeakPtrFactory<SimpleURLLoaderWrapper> weak_factory_{this};
 };
