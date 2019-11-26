@@ -56,12 +56,14 @@ Sets the maximum and minimum pinch-to-zoom level.
 > webFrame.setVisualZoomLevelLimits(1, 3)
 > ```
 
-### `webFrame.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
+### `webFrame.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)` _Deprecated_
 
 * `minimumLevel` Number
 * `maximumLevel` Number
 
 Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
+
+**Deprecated:** This API is no longer supported by Chromium.
 
 ### `webFrame.setSpellCheckProvider(language, provider)`
 

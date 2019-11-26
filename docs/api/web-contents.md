@@ -1113,7 +1113,7 @@ Sets the maximum and minimum pinch-to-zoom level.
 > contents.setVisualZoomLevelLimits(1, 3)
 > ```
 
-#### `contents.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
+#### `contents.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)` _Deprecated_
 
 * `minimumLevel` Number
 * `maximumLevel` Number
@@ -1121,6 +1121,8 @@ Sets the maximum and minimum pinch-to-zoom level.
 Returns `Promise<void>`
 
 Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
+
+**Deprecated:** This API is no longer supported by Chromium.
 
 #### `contents.undo()`
 
