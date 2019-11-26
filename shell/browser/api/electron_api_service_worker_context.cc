@@ -4,6 +4,9 @@
 
 #include "shell/browser/api/electron_api_service_worker_context.h"
 
+#include <string>
+#include <utility>
+
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/console_message.h"
 #include "content/public/browser/storage_partition.h"
