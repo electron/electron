@@ -101,26 +101,6 @@ struct Converter<electron::VerifyRequestParams> {
 };
 
 template <>
-struct Converter<network::mojom::RedirectMode> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     network::mojom::RedirectMode* out) {
-    std::string mode;
-    if (!ConvertFromV8(isolate, val, &mode))
-      return false;
-    if (mode == "follow")
-      *out = network::mojom::RedirectMode::kFollow;
-    else if (mode == "error")
-      *out = network::mojom::RedirectMode::kError;
-    else if (mode == "manual")
-      *out = network::mojom::RedirectMode::kManual;
-    else
-      return false;
-    return true;
-  }
-};
-
-template <>
 struct Converter<net::HttpVersion> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::HttpVersion& val);
