@@ -29,6 +29,11 @@ the hostname and the port number 'hostname:port'.
   * `hostname` String (optional) - The server host name.
   * `port` Integer (optional) - The server's listening port number.
   * `path` String (optional) - The path part of the request URL.
+  * `redirect` String (optional) - The redirect mode for this request. Should be
+one of `follow`, `error` or `manual`. Defaults to `follow`. When mode is `error`,
+any redirection will be aborted. When mode is `manual` the redirection will be
+cancelled unless [`request.followRedirect`](#requestfollowredirect) is invoked
+synchronously during the [`redirect`](#event-redirect) event.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
 strictly follow the Node.js model as described in the
@@ -212,8 +217,8 @@ response object,it will emit the `aborted` event.
 
 #### `request.followRedirect()`
 
-Continues any deferred redirection. Can only be called after a `'redirect'`
-event has been emitted.
+Continues any pending redirection. Can only be called during a `'redirect'`
+event.
 
 #### `request.getUploadProgress()`
 
