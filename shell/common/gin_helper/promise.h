@@ -58,14 +58,6 @@ class PromiseBase {
     }
   }
 
-  // Returns an already-rejected promise.
-  static v8::Local<v8::Promise> RejectedPromise(v8::Isolate* isolate,
-                                                base::StringPiece message) {
-    PromiseBase promise(isolate);
-    promise.RejectWithErrorMessage(message);
-    return promise.GetHandle();
-  }
-
   v8::Maybe<bool> Reject();
   v8::Maybe<bool> Reject(v8::Local<v8::Value> except);
   v8::Maybe<bool> RejectWithErrorMessage(base::StringPiece message);
