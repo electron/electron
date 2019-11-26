@@ -1,10 +1,10 @@
-## Class: ServiceWorkerContext
+## Class: ServiceWorkers
 
 > Query and receive events from a sessions active service workers.
 
 Process: [Main](../glossary.md#main-process)
 
-Instances of the `ServiceWorkerContext` class are accessed by using `serviceWorkerContext` property of
+Instances of the `ServiceWorkers` class are accessed by using `serviceWorkers` property of
 a `Session`.
 
 For example:
@@ -13,22 +13,22 @@ For example:
 const { session } = require('electron')
 
 // Get all service workers.
-console.log(session.defaultSession.serviceWorkerContext.getAll())
+console.log(session.defaultSession.serviceWorkers.getAll())
 
 // Handle logs and get service worker info
-session.defaultSession.serviceWorkerContext.on('console-message', (event, messageDetails) => {
+session.defaultSession.serviceWorkers.on('console-message', (event, messageDetails) => {
   console.log(
     'Got service worker message',
     messageDetails,
     'from',
-    session.defaultSession.serviceWorkerContext.getFromVersionID(messageDetails.versionId)
+    session.defaultSession.serviceWorkers.getFromVersionID(messageDetails.versionId)
   )
 })
 ```
 
 ### Instance Events
 
-The following events are available on instances of `ServiceWorkerContext`:
+The following events are available on instances of `ServiceWorkers`:
 
 #### Event: 'console-message'
 
@@ -45,13 +45,13 @@ Emitted when a service worker logs something to the console.
 
 ### Instance Methods
 
-The following methods are available on instances of `ServiceWorkerContext`:
+The following methods are available on instances of `ServiceWorkers`:
 
-#### `serviceWorkerContext.getAll()`
+#### `serviceWorkers.getAll()`
 
 Returns `Record<Number, ServiceWorkerInfo>` - A [ServiceWorkerInfo](structures/service-worker-info.md) object where the keys are the service worker version ID and the values are the information about that service worker.
 
-#### `serviceWorkerContext.getFromVersionID(versionId)`
+#### `serviceWorkers.getFromVersionID(versionId)`
 
 * `versionId` Number
 
