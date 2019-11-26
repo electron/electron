@@ -517,7 +517,7 @@ describe('session module', () => {
       const fetch = (url) => new Promise((resolve, reject) => {
         const request = net.request({ url, session: ses })
         request.on('response', (response) => {
-          let data: string | null = null
+          let data = null
           response.on('data', (chunk) => {
             if (!data) {
               data = ''
