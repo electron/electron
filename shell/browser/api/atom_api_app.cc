@@ -1326,6 +1326,9 @@ void App::SetBrowserClientCanUseCustomSiteInstance(bool should_disable) {
 bool App::CanBrowserClientUseCustomSiteInstance() {
   return AtomBrowserClient::Get()->CanUseCustomSiteInstance();
 }
+bool App::CanBrowserClientUseCustomSiteInstanceIsDefaultValue() {
+  return AtomBrowserClient::Get()->CanUseCustomSiteInstanceIsDefaultValue();
+}
 
 #if defined(OS_MACOSX)
 bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
@@ -1518,7 +1521,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetProperty("allowRendererProcessReuse",
                    &App::CanBrowserClientUseCustomSiteInstance,
-                   &App::SetBrowserClientCanUseCustomSiteInstance);
+                   &App::SetBrowserClientCanUseCustomSiteInstance)
+      .SetProperty("_allowRendererProcessReuseIsDefaultValue",
+                   &App::CanBrowserClientUseCustomSiteInstanceIsDefaultValue);
 }
 
 }  // namespace api

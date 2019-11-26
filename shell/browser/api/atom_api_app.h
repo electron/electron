@@ -203,6 +203,7 @@ class App : public AtomBrowserClient::Delegate,
   std::string GetUserAgentFallback();
   void SetBrowserClientCanUseCustomSiteInstance(bool should_disable);
   bool CanBrowserClientUseCustomSiteInstance();
+  bool CanBrowserClientUseCustomSiteInstanceIsDefaultValue();
 
 #if defined(OS_MACOSX)
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower,

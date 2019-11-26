@@ -422,10 +422,15 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
 
 void AtomBrowserClient::SetCanUseCustomSiteInstance(bool should_disable) {
   disable_process_restart_tricks_ = should_disable;
+  disable_process_restart_tricks_is_default_value_ = false;
 }
 
 bool AtomBrowserClient::CanUseCustomSiteInstance() {
   return disable_process_restart_tricks_;
+}
+
+bool AtomBrowserClient::CanUseCustomSiteInstanceIsDefaultValue() {
+  return disable_process_restart_tricks_is_default_value_;
 }
 
 content::ContentBrowserClient::SiteInstanceForNavigationType

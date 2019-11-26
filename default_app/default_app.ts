@@ -3,6 +3,8 @@ import * as path from 'path'
 
 let mainWindow: BrowserWindow | null = null
 
+app.allowRendererProcessReuse = true
+
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
   app.quit()
