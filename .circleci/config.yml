@@ -53,7 +53,7 @@ parameters:
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electronbuilds/electron:0.0.10
+    - image: electronjs/build:697b894f36d127155e020f4e8ad4b2e5f6a09613
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
@@ -878,7 +878,7 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
     - run:
         name: Move src folder to the cross-OS portal
         command: |
-          mkdir -p /portal
+          sudo mkdir -p /portal
           mv ./src /portal
     - *step-save-src-cache
     - *step-save-brew-cache
@@ -1197,11 +1197,7 @@ commands:
       - run:
           name: Prepare for cross-OS sync restore
           command: |
-            if [ "`uname`" == "Darwin" ]; then
-              sudo mkdir -p /portal
-            else
-              mkdir -p /portal
-            fi
+            sudo mkdir -p /portal
       - *step-maybe-restore-src-cache
       - run:
           name: Fix the src cache restore point on macOS
