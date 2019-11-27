@@ -672,10 +672,8 @@ step-touch-sync-done: &step-touch-sync-done
 # If a cache is matched EXACTLY then the .circle-sync-done file contains "done"
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
-    paths:
-      - ./src
     keys:
-      - v6-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v7-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -753,8 +751,8 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
 step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
-      - ./src
-    key: v6-src-cache-{{ checksum "src/electron/.depshash" }}
+      - /portal
+    key: v7-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Persisting src cache
 
 # Check for doc only change
@@ -861,7 +859,7 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
 
     - *step-generate-deps-hash
     - *step-touch-sync-done
-    - *step-maybe-restore-src-cache
+    - maybe-restore-portaled-src-cache
     - *step-maybe-restore-git-cache
     - *step-set-git-cache-path
     # This sync call only runs if .circle-sync-done is an EMPTY file
@@ -877,6 +875,11 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
     - *step-mark-sync-done
     - *step-minimize-workspace-size-from-checkout
     - *step-delete-git-directories
+    - run:
+        name: Move src folder to the cross-OS portal
+        command: |
+          mkdir -p /portal
+          mv ./src /portal
     - *step-save-src-cache
     - *step-save-brew-cache
 
@@ -961,7 +964,7 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-install-gnutar-on-mac
     - *step-generate-deps-hash
     - *step-touch-sync-done
-    - *step-maybe-restore-src-cache
+    - maybe-restore-portaled-src-cache
     - *step-maybe-restore-git-cache
     - *step-set-git-cache-path
     # This sync call only runs if .circle-sync-done is an EMPTY file
@@ -1189,6 +1192,25 @@ chromium-upgrade-branches: &chromium-upgrade-branches
 
 # Command Aliases
 commands:
+  maybe-restore-portaled-src-cache:
+    steps:
+      - run:
+          name: Prepare for cross-OS sync restore
+          command: |
+            if [ "`uname`" == "Darwin" ]; then
+              sudo mkdir -p /portal
+            else
+              mkdir -p /portal
+            fi
+      - *step-maybe-restore-src-cache
+      - run:
+          name: Fix the src cache restore point on macOS
+          command: |
+            if [ -d "/portal/src" ]; then
+              echo Relocating Cache
+              rm -rf src
+              mv /portal/src ./
+            fi
   checkout-from-cache:
     steps:
       - *step-checkout-electron
@@ -1196,21 +1218,7 @@ commands:
       - *step-depot-tools-get
       - *step-depot-tools-add-to-path
       - *step-generate-deps-hash
-      - run:
-          name: Prepare for cross-OS sync restore on macOS
-          command: |
-            if [ "`uname`" == "Darwin" ]; then
-              sudo mkdir -p /home/builduser/project/src
-            fi
-      - *step-maybe-restore-src-cache
-      - run:
-          name: Fix the src cache restore point on macOS
-          command: |
-            if [ "`uname`" == "Darwin" && -d "/home/builduser/project/src" ]; then
-              echo Relocating Cache
-              rm -rf src
-              mv /home/builduser/project/src ./
-            fi
+      - maybe-restore-portaled-src-cache
       - run:
           name: Ensure src checkout worked
           command: |
@@ -1269,7 +1277,7 @@ commands:
             - *step-install-gnutar-on-mac
             - *step-generate-deps-hash
             - *step-touch-sync-done
-            - *step-maybe-restore-src-cache
+            - maybe-restore-portaled-src-cache
             - *step-maybe-restore-git-cache
             - *step-set-git-cache-path
             # This sync call only runs if .circle-sync-done is an EMPTY file
