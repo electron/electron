@@ -876,6 +876,7 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
     - *step-generate-deps-hash-cleanly
     - *step-mark-sync-done
     - *step-minimize-workspace-size-from-checkout
+    - *step-delete-git-directories
     - *step-save-src-cache
     - *step-save-brew-cache
 
@@ -1195,7 +1196,21 @@ commands:
       - *step-depot-tools-get
       - *step-depot-tools-add-to-path
       - *step-generate-deps-hash
+      - run:
+          name: Prepare for cross-OS sync restore on macOS
+          command: |
+            if [ "`uname`" == "Darwin" ]; then
+              sudo mkdir -p /home/builduser/project/src
+            fi
       - *step-maybe-restore-src-cache
+      - run:
+          name: Fix the src cache restore point on macOS
+          command: |
+            if [ "`uname`" == "Darwin" && -d "/home/builduser/project/src" ]; then
+              echo Relocating Cache
+              rm -rf src
+              mv /home/builduser/project/src ./
+            fi
       - run:
           name: Ensure src checkout worked
           command: |
