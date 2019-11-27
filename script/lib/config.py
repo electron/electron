@@ -26,6 +26,17 @@ PLATFORM = {
   'win32': 'win32',
 }[sys.platform]
 
+LINUX_BINARIES = [
+  'electron',
+  'chrome-sandbox',
+  'libffmpeg.so',
+  'libGLESv2.so',
+  'libEGL.so',
+  'swiftshader/libGLESv2.so',
+  'swiftshader/libEGL.so',
+  'swiftshader/libvk_swiftshader.so'
+]
+
 verbose_mode = False
 
 
