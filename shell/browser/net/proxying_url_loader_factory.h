@@ -237,6 +237,8 @@ class ProxyingURLLoaderFactory
   void RemoveRequest(int32_t network_service_request_id, uint64_t request_id);
   void MaybeDeleteThis();
 
+  bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
+
   // Passed from api::WebRequestNS.
   WebRequestAPI* web_request_api_;
 
@@ -264,6 +266,8 @@ class ProxyingURLLoaderFactory
   // A mapping from the network stack's notion of request ID to our own
   // internally generated request ID for the same request.
   std::map<int32_t, uint64_t> network_request_id_to_web_request_id_;
+
+  std::vector<std::string> ignore_connections_limit_domains_;
 
   DISALLOW_COPY_AND_ASSIGN(ProxyingURLLoaderFactory);
 };
