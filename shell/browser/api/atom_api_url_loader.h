@@ -15,7 +15,7 @@
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
-#include "shell/common/gin_helper/event_emitter.h"
+#include "shell/browser/api/event_emitter.h"
 #include "url/gurl.h"
 #include "v8/include/v8.h"
 
@@ -34,7 +34,7 @@ namespace api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper
-    : public gin_helper::EventEmitter<SimpleURLLoaderWrapper>,
+    : public mate::EventEmitter<SimpleURLLoaderWrapper>,
       public network::SimpleURLLoaderStreamConsumer {
  public:
   ~SimpleURLLoaderWrapper() override;

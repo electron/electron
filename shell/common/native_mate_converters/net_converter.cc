@@ -306,7 +306,7 @@ v8::Local<v8::Value> Converter<net::HttpVersion>::ToV8(
   dict.Set("minor", static_cast<uint32_t>(val.minor_value()));
   return ConvertToV8(isolate, dict);
 }
-//
+
 // static
 v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
     v8::Isolate* isolate,

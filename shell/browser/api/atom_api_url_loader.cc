@@ -26,6 +26,7 @@
 #include "shell/common/gin_converters/gurl_converter_gin_adapter.h"
 #include "shell/common/gin_converters/net_converter_gin_adapter.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/promise_util.h"
 
 class BufferDataSource : public mojo::DataPipeProducer::DataSource {
  public:
@@ -122,7 +123,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
   }
 
   v8::Local<v8::Promise> WriteChunk(v8::Local<v8::Value> buffer_val) {
-    gin_helper::Promise<void> promise(isolate_);
+    util::Promise promise(isolate_);
     v8::Local<v8::Promise> handle = promise.GetHandle();
     if (!buffer_val->IsArrayBufferView()) {
       promise.RejectWithErrorMessage("Expected an ArrayBufferView");
@@ -153,8 +154,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     return handle;
   }
 
-  void OnWriteChunkComplete(gin_helper::Promise<void> promise,
-                            MojoResult result) {
+  void OnWriteChunkComplete(util::Promise promise, MojoResult result) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     is_writing_ = false;
     if (result == MOJO_RESULT_OK) {
