@@ -2368,7 +2368,12 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('beforeunload handler', () => {
+  describe('beforeunload handler', function () {
+    // TODO(nornagon): I feel like these tests _oughtn't_ be flakey, but
+    // beforeunload is in general not reliable on the web, so i'm not going to
+    // worry about it too much for now.
+    this.retries(3)
+
     let w: BrowserWindow = null as unknown as BrowserWindow
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
