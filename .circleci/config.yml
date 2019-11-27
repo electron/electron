@@ -752,7 +752,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /portal
-    key: v7-src-cache-{{ checksum "src/electron/.depshash" }}
+    key: v7-src-cache-{{ checksum "/portal/src/electron/.depshash" }}
     name: Persisting src cache
 
 # Check for doc only change
@@ -879,6 +879,7 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
         name: Move src folder to the cross-OS portal
         command: |
           sudo mkdir -p /portal
+          sudo chown -R $(id -u):$(id -g) /portal
           mv ./src /portal
     - *step-save-src-cache
     - *step-save-brew-cache
@@ -1198,6 +1199,7 @@ commands:
           name: Prepare for cross-OS sync restore
           command: |
             sudo mkdir -p /portal
+            sudo chown -R $(id -u):$(id -g) /portal
       - *step-maybe-restore-src-cache
       - run:
           name: Fix the src cache restore point on macOS
@@ -1254,6 +1256,8 @@ commands:
           steps:
             - attach_workspace:
                 at: .
+      - *step-restore-brew-cache
+      - *step-install-gnutar-on-mac
       - when:
           condition: << parameters.checkout-and-assume-cache >>
           steps:
@@ -1268,9 +1272,7 @@ commands:
             - *step-maybe-early-exit-doc-only-change
             - *step-depot-tools-get
             - *step-depot-tools-add-to-path
-            - *step-restore-brew-cache
             - *step-get-more-space-on-mac
-            - *step-install-gnutar-on-mac
             - *step-generate-deps-hash
             - *step-touch-sync-done
             - maybe-restore-portaled-src-cache
