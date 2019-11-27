@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "native_mate/wrappable.h"
 #include "net/base/auth.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -34,7 +35,7 @@ namespace api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper
-    : public gin_helper::EventEmitter<SimpleURLLoaderWrapper>,
+    : public gin_helper::EventEmitter<mate::Wrappable<SimpleURLLoaderWrapper>>,
       public network::SimpleURLLoaderStreamConsumer {
  public:
   ~SimpleURLLoaderWrapper() override;

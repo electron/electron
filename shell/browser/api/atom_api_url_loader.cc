@@ -124,7 +124,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
   }
 
   v8::Local<v8::Promise> WriteChunk(v8::Local<v8::Value> buffer_val) {
-    gin_helper::Promise<void> promise(isolate_);
+    electron::util::Promise<void*> promise(isolate_);
     v8::Local<v8::Promise> handle = promise.GetHandle();
     if (!buffer_val->IsArrayBufferView()) {
       promise.RejectWithErrorMessage("Expected an ArrayBufferView");
@@ -155,12 +155,12 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     return handle;
   }
 
-  void OnWriteChunkComplete(gin_helper::Promise<void> promise,
+  void OnWriteChunkComplete(electron::util::Promise<void*> promise,
                             MojoResult result) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     is_writing_ = false;
     if (result == MOJO_RESULT_OK) {
-      promise.Resolve();
+      electron::util::Promise<void*>::ResolveEmptyPromise(std::move(promise));
     } else {
       promise.RejectWithErrorMessage("mojo result not ok");
       Finished();
@@ -363,7 +363,7 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
   }
 
   std::string partition;
-  gin::Handle<Session> session;
+  mate::Handle<Session> session;
   if (!opts.Get("session", &session)) {
     if (opts.Get("partition", &partition))
       session = Session::FromPartition(args->isolate(), partition);
