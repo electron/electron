@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/atom_api_net.h"
 
+#include <string>
+
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "services/network/public/cpp/features.h"
