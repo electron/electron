@@ -123,7 +123,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
   }
 
   v8::Local<v8::Promise> WriteChunk(v8::Local<v8::Value> buffer_val) {
-    util::Promise promise(isolate_);
+    electron::util::Promise promise(isolate_);
     v8::Local<v8::Promise> handle = promise.GetHandle();
     if (!buffer_val->IsArrayBufferView()) {
       promise.RejectWithErrorMessage("Expected an ArrayBufferView");
@@ -154,7 +154,8 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     return handle;
   }
 
-  void OnWriteChunkComplete(util::Promise promise, MojoResult result) {
+  void OnWriteChunkComplete(electron::util::Promise promise,
+                            MojoResult result) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     is_writing_ = false;
     if (result == MOJO_RESULT_OK) {
