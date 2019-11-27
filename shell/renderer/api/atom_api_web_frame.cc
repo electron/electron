@@ -140,6 +140,47 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
   DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
 
+class ScriptSyncExecutionCallback : public blink::WebScriptExecutionCallback {
+ public:
+  bool completed_ = false;
+  bool delete_self_ = false;
+  v8::Global<v8::Value> result_;
+
+  std::string error_message_;
+
+  explicit ScriptSyncExecutionCallback(v8::Isolate* isolate)
+      : isolate_(isolate) {}
+
+  ~ScriptSyncExecutionCallback() override = default;
+
+  void Completed(
+      const blink::WebVector<v8::Local<v8::Value>>& result) override {
+    if (delete_self_) {
+      delete this;
+      return;
+    }
+    completed_ = true;
+    if (!result.empty()) {
+      if (!result[0].IsEmpty()) {
+        // Right now only single results per frame is supported.
+        result_ = v8::Global<v8::Value>(isolate_, result[0]);
+      } else {
+        error_message_ =
+            "Script failed to execute, this normally means an error "
+            "was thrown. Check the renderer console for the error.";
+      }
+    } else {
+      error_message_ =
+          "WebFrame was removed before script could run. This normally means "
+          "the underlying frame was destroyed";
+    }
+  }
+
+ private:
+  v8::Isolate* isolate_;
+  DISALLOW_COPY_AND_ASSIGN(ScriptSyncExecutionCallback);
+};
+
 class FrameSetSpellChecker : public content::RenderFrameVisitor {
  public:
   FrameSetSpellChecker(SpellCheckClient* spell_check_client,
@@ -436,6 +477,102 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
   return handle;
 }
 
+v8::Local<v8::Value> ExecuteJavaScriptSync(gin_helper::Arguments* args,
+                                           v8::Local<v8::Value> window,
+                                           const base::string16& code) {
+  v8::Isolate* isolate = args->isolate();
+  bool has_user_gesture = false;
+  args->GetNext(&has_user_gesture);
+
+  // return v8::Null(isolate);
+
+  ScriptSyncExecutionCallback* sync_callback =
+      new ScriptSyncExecutionCallback(isolate);
+
+  GetRenderFrame(window)->GetWebFrame()->RequestExecuteScriptAndReturnValue(
+      blink::WebScriptSource(blink::WebString::FromUTF16(code)),
+      has_user_gesture, sync_callback);
+
+  if (sync_callback->completed_) {
+    v8::Local<v8::Value> result =
+        v8::Local<v8::Value>::New(isolate, sync_callback->result_);
+    std::string error_message = sync_callback->error_message_;
+    delete sync_callback;
+    if (error_message.empty()) {
+      return result;
+    } else {
+      args->ThrowError(error_message);
+      return v8::Null(isolate);
+    }
+  } else {
+    sync_callback->delete_self_ = true;
+
+    // this can only happen if the frame is not in the
+    // mojom::FrameLifecycleState::kRunning state
+    args->ThrowError("execution did not complete synchronously");
+    return v8::Null(isolate);
+  }
+}
+
+v8::Local<v8::Value> ExecuteJavaScriptInIsolatedWorldSync(
+    gin_helper::Arguments* args,
+    v8::Local<v8::Value> window,
+    int world_id,
+    const std::vector<gin_helper::Dictionary>& scripts) {
+  v8::Isolate* isolate = args->isolate();
+  std::vector<blink::WebScriptSource> sources;
+
+  for (const auto& script : scripts) {
+    base::string16 code;
+    base::string16 url;
+    int start_line = 1;
+    script.Get("url", &url);
+    script.Get("startLine", &start_line);
+
+    if (!script.Get("code", &code)) {
+      args->ThrowError("Invalid 'code'");
+      return v8::Null(isolate);
+    }
+
+    sources.emplace_back(
+        blink::WebScriptSource(blink::WebString::FromUTF16(code),
+                               blink::WebURL(GURL(url)), start_line));
+  }
+
+  bool has_user_gesture = false;
+  args->GetNext(&has_user_gesture);
+
+  ScriptSyncExecutionCallback* sync_callback =
+      new ScriptSyncExecutionCallback(isolate);
+
+  // Debugging tip: if you see a crash stack trace beginning from this call,
+  // then it is very likely that some exception happened when executing the
+  // "content_script/init.js" script.
+  GetRenderFrame(window)->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
+      world_id, &sources.front(), sources.size(), has_user_gesture,
+      blink::WebLocalFrame::kSynchronous, sync_callback);
+
+  if (sync_callback->completed_) {
+    v8::Local<v8::Value> result =
+        v8::Local<v8::Value>::New(isolate, sync_callback->result_);
+    std::string error_message = sync_callback->error_message_;
+    delete sync_callback;
+    if (error_message.empty()) {
+      return result;
+    } else {
+      args->ThrowError(error_message);
+      return v8::Null(isolate);
+    }
+  } else {
+    sync_callback->delete_self_ = true;
+
+    // this can only happen if the frame is not in the
+    // mojom::FrameLifecycleState::kRunning state
+    args->ThrowError("execution did not complete synchronously");
+    return v8::Null(isolate);
+  }
+}
+
 void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
                           int world_id,
                           const gin_helper::Dictionary& options,
@@ -591,6 +728,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("executeJavaScript", &ExecuteJavaScript);
   dict.SetMethod("executeJavaScriptInIsolatedWorld",
                  &ExecuteJavaScriptInIsolatedWorld);
+  dict.SetMethod("executeJavaScriptSync", &ExecuteJavaScriptSync);
+  dict.SetMethod("executeJavaScriptInIsolatedWorldSync",
+                 &ExecuteJavaScriptInIsolatedWorldSync);
   dict.SetMethod("setIsolatedWorldInfo", &SetIsolatedWorldInfo);
   dict.SetMethod("getResourceUsage", &GetResourceUsage);
   dict.SetMethod("clearCache", &ClearCache);
