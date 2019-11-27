@@ -155,6 +155,10 @@ env-32bit-release: &env-32bit-release
   # Set symbol level to 1 for 32 bit releases because of https://crbug.com/648948
   GN_BUILDFLAG_ARGS: 'symbol_level = 1'
 
+env-macos-build: &env-macos-build
+  # Disable pre-compiled headers to reduce out size, only useful for rebuilds
+  GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
+
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
@@ -1303,9 +1307,7 @@ commands:
           steps:
             - *step-depot-tools-add-to-path
             - *step-setup-env-for-build
-            - *step-restore-brew-cache
             - *step-get-more-space-on-mac
-            - *step-install-npm-deps-on-mac
             - *step-fix-sync-on-mac
             - *step-delete-git-directories
             - *step-gn-gen-default
@@ -1445,6 +1447,7 @@ jobs:
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
+      <<: *env-macos-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
       - electron-build:
@@ -1458,6 +1461,7 @@ jobs:
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
+      <<: *env-macos-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     <<: *steps-checkout-and-save-cache
 
@@ -1682,6 +1686,7 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
+      <<: *env-macos-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
       - electron-build:
@@ -1733,6 +1738,7 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
+      <<: *env-macos-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
       - electron-build:
