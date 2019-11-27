@@ -67,9 +67,9 @@ class SimpleURLLoaderWrapper
 
   // SimpleURLLoader callbacks
   void OnResponseStarted(const GURL& final_url,
-                         const network::mojom::URLResponseHead& response_head);
+                         const network::ResourceResponseHead& response_head);
   void OnRedirect(const net::RedirectInfo& redirect_info,
-                  const network::mojom::URLResponseHead& response_head,
+                  const network::ResourceResponseHead& response_head,
                   std::vector<std::string>* removed_headers);
   void OnUploadProgress(uint64_t position, uint64_t total);
   void OnDownloadProgress(uint64_t current);

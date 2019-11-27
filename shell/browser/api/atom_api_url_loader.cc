@@ -408,7 +408,7 @@ void SimpleURLLoaderWrapper::OnRetry(base::OnceClosure start_retry) {}
 
 void SimpleURLLoaderWrapper::OnResponseStarted(
     const GURL& final_url,
-    const network::mojom::URLResponseHead& response_head) {
+    const network::ResourceResponseHead& response_head) {
   gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate());
   dict.Set("statusCode", response_head.headers->response_code());
   dict.Set("statusMessage", response_head.headers->GetStatusText());
@@ -419,7 +419,7 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
 
 void SimpleURLLoaderWrapper::OnRedirect(
     const net::RedirectInfo& redirect_info,
-    const network::mojom::URLResponseHead& response_head,
+    const network::ResourceResponseHead& response_head,
     std::vector<std::string>* removed_headers) {
   Emit("redirect", redirect_info, response_head.headers.get());
 }
