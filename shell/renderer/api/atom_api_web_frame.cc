@@ -436,6 +436,24 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
   return handle;
 }
 
+v8::Local<v8::Value> ExecuteJavaScriptSync(gin_helper::Arguments* args,
+                                           v8::Local<v8::Value> window,
+                                           const base::string16& code) {
+  return GetRenderFrame(window)->GetWebFrame()->ExecuteScriptAndReturnValue(
+      blink::WebScriptSource(blink::WebString::FromUTF16(code)));
+}
+
+v8::Local<v8::Value> ExecuteJavaScriptInIsolatedWorldSync(
+    gin_helper::Arguments* args,
+    v8::Local<v8::Value> window,
+    const int world_id,
+    const base::string16& code) {
+  return GetRenderFrame(window)
+      ->GetWebFrame()
+      ->ExecuteScriptInIsolatedWorldAndReturnValue(
+          world_id, blink::WebScriptSource(blink::WebString::FromUTF16(code)));
+}
+
 void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
                           int world_id,
                           const gin_helper::Dictionary& options,
@@ -591,6 +609,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("executeJavaScript", &ExecuteJavaScript);
   dict.SetMethod("executeJavaScriptInIsolatedWorld",
                  &ExecuteJavaScriptInIsolatedWorld);
+  dict.SetMethod("executeJavaScriptSync", &ExecuteJavaScriptSync);
+  dict.SetMethod("executeJavaScriptInIsolatedWorldSync",
+                 &ExecuteJavaScriptInIsolatedWorldSync);
   dict.SetMethod("setIsolatedWorldInfo", &SetIsolatedWorldInfo);
   dict.SetMethod("getResourceUsage", &GetResourceUsage);
   dict.SetMethod("clearCache", &ClearCache);

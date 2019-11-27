@@ -154,6 +154,23 @@ or is rejected if the result of the code is a rejected promise.
 
 Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
 
+### `webFrame.executeJavaScriptSync(code)`
+
+* `code` String
+
+Returns `any` - The result of the executed code.
+
+Evaluates `code` in page.
+
+### `webFrame.executeJavaScriptInIsolatedWorldSync(worldId, code)`
+
+* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature.  You can provide any integer here.
+* `code` String
+
+Returns `any` - The result of the executed code.
+
+Works like `executeJavaScriptSync` but evaluates `scripts` in an isolated context.
+
 ### `webFrame.setIsolatedWorldInfo(worldId, info)`
 * `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
 * `info` Object
