@@ -338,6 +338,12 @@ step-electron-build: &step-electron-build
     name: Electron build
     no_output_timeout: 30m
     command: |
+      # On arm platforms we generate a cross-arch ffmpeg that ninja does not seem
+      # to realize is not correct / should be rebuilt.  We delete it here so it is
+      # rebuilt
+      if [ "$TRIGGER_ARM_TEST" == "true" ]; then
+        rm -f src/out/Default/libffmpeg.so
+      fi
       cd src
       ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
 
