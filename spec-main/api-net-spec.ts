@@ -3,6 +3,7 @@ import { net, session, ClientRequest, BrowserWindow } from 'electron'
 import * as http from 'http'
 import * as url from 'url'
 import { AddressInfo } from 'net'
+import { emittedOnce } from './events-helpers'
 
 const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
@@ -221,26 +222,29 @@ describe('net module', () => {
       expect(loginAuthInfo.scheme).to.equal('basic')
     })
 
-    it('should produce an error on the response object when cancelling authentication', async () => {
+    it('should respond when cancelling authentication', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         if (!request.headers.authorization) {
-          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end('unauthenticated')
         }
         response.writeHead(200).end('ok')
       })
       await expect(new Promise((resolve, reject) => {
         const request = net.request({ method: 'GET', url: serverUrl })
         request.on('response', (response) => {
+          let data = ''
           response.on('error', reject)
-          response.on('data', () => {})
-          response.on('end', () => resolve())
+          response.on('data', (chunk) => {
+            data += chunk
+          })
+          response.on('end', () => resolve(data))
         })
         request.on('login', (authInfo, cb) => {
           cb()
         })
         request.on('error', reject)
         request.end()
-      })).to.eventually.be.rejectedWith('net::ERR_HTTP_RESPONSE_CODE_FAILURE')
+      })).to.eventually.equal('unauthenticated')
     })
 
     it('should share credentials with WebContents', async () => {
@@ -755,6 +759,53 @@ describe('net module', () => {
 
         urlRequest.end(randomString(kOneKiloByte))
       })
+    })
+
+    it('should allow to read response body from non-2xx response', async () => {
+      const bodyData = randomString(kOneKiloByte)
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 404
+        response.end(bodyData)
+      })
+
+      let requestResponseEventEmitted = false
+      let responseDataEventEmitted = false
+
+      const urlRequest = net.request(serverUrl)
+      const eventHandlers = Promise.all([
+        emittedOnce(urlRequest, 'response')
+          .then(async (params: any[]) => {
+            const response: Electron.IncomingMessage = params[0]
+            requestResponseEventEmitted = true
+            const statusCode = response.statusCode
+            expect(statusCode).to.equal(404)
+            const buffers: Buffer[] = []
+            response.on('data', (chunk) => {
+              buffers.push(chunk)
+              responseDataEventEmitted = true
+            })
+            await new Promise((resolve, reject) => {
+              response.on('error', () => {
+                reject(new Error('error emitted'))
+              })
+              emittedOnce(response, 'end')
+                .then(() => {
+                  const receivedBodyData = Buffer.concat(buffers)
+                  expect(receivedBodyData.toString()).to.equal(bodyData)
+                })
+                .then(resolve)
+                .catch(reject)
+            })
+          }),
+        emittedOnce(urlRequest, 'close')
+      ])
+
+      urlRequest.end()
+
+      await eventHandlers
+
+      expect(requestResponseEventEmitted).to.equal(true)
+      expect(responseDataEventEmitted).to.equal(true)
     })
 
     describe('webRequest', () => {
