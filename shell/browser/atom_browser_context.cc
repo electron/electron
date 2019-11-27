@@ -33,7 +33,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
-#include "shell/browser/api/atom_api_url_request.h"
+#include "shell/browser/api/atom_api_url_loader.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_download_manager_delegate.h"
@@ -362,11 +362,12 @@ class AuthResponder : public network::mojom::TrustedAuthClient {
       ::network::mojom::URLResponseHeadPtr head,
       mojo::PendingRemote<network::mojom::AuthChallengeResponder>
           auth_challenge_responder) override {
-    api::URLRequest* url_request = api::URLRequest::FromID(routing_id);
-    if (url_request) {
-      url_request->OnAuthRequired(url, first_auth_attempt, auth_info,
-                                  std::move(head),
-                                  std::move(auth_challenge_responder));
+    api::SimpleURLLoaderWrapper* url_loader =
+        api::SimpleURLLoaderWrapper::FromID(routing_id);
+    if (url_loader) {
+      url_loader->OnAuthRequired(url, first_auth_attempt, auth_info,
+                                 std::move(head),
+                                 std::move(auth_challenge_responder));
     }
   }
 };

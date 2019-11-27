@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { net, session, ClientRequest, BrowserWindow } from 'electron'
 import * as http from 'http'
 import * as url from 'url'
-import { AddressInfo } from 'net'
+import { AddressInfo, Socket } from 'net'
 import { emittedOnce } from './events-helpers'
 
 const kOneKiloByte = 1024
@@ -22,6 +22,13 @@ function randomString (length: number) {
   return buffer.toString()
 }
 
+const cleanupTasks: (() => void)[] = []
+
+function cleanUp () {
+  cleanupTasks.forEach(t => t())
+  cleanupTasks.length = 0
+}
+
 function respondOnce (fn: http.RequestListener): Promise<string> {
   return new Promise((resolve) => {
     const server = http.createServer((request, response) => {
@@ -31,6 +38,12 @@ function respondOnce (fn: http.RequestListener): Promise<string> {
     })
     server.listen(0, '127.0.0.1', () => {
       resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)
+    })
+    const sockets: Socket[] = []
+    server.on('connection', s => sockets.push(s))
+    cleanupTasks.push(() => {
+      server.close()
+      sockets.forEach(s => s.destroy())
     })
   })
 }
@@ -57,6 +70,10 @@ respondOnce.toSingleURL = (fn: http.RequestListener) => {
 }
 
 describe('net module', () => {
+  afterEach(cleanUp)
+  afterEach(async () => {
+    await session.defaultSession.clearCache()
+  })
   describe('HTTP basics', () => {
     it('should be able to issue a basic GET request', (done) => {
       respondOnce.toSingleURL((request, response) => {
@@ -324,6 +341,36 @@ describe('net module', () => {
         request.on('error', reject)
         request.end()
       })
+    })
+
+    it('should upload body when 401', async () => {
+      const [user, pass] = ['user', 'pass']
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end()
+        }
+        response.writeHead(200)
+        request.on('data', (chunk) => { response.write(chunk) })
+        request.on('end', () => {
+          response.end()
+        })
+      })
+      const requestData = randomString(kOneKiloByte)
+      const responseData = await new Promise((resolve, reject) => {
+        const request = net.request({ method: 'GET', url: serverUrl })
+        request.on('response', (response) => {
+          response.on('error', reject)
+          let data = ''
+          response.on('data', (chunk) => { data += chunk.toString() })
+          response.on('end', () => resolve(data))
+        })
+        request.on('login', (authInfo, cb) => {
+          cb(user, pass)
+        })
+        request.on('error', reject)
+        request.end(requestData)
+      })
+      expect(responseData).to.equal(requestData)
     })
   })
 
@@ -955,10 +1002,10 @@ describe('net module', () => {
     })
 
     it('should follow redirect when no redirect handler is provided', (done) => {
-      const requestUrl = '/301'
+      const requestUrl = '/302'
       respondOnce.toRoutes({
-        '/301': (request, response) => {
-          response.statusCode = 301
+        '/302': (request, response) => {
+          response.statusCode = 302
           response.setHeader('Location', '/200')
           response.end()
         },
@@ -981,12 +1028,12 @@ describe('net module', () => {
     it('should follow redirect chain when no redirect handler is provided', (done) => {
       respondOnce.toRoutes({
         '/redirectChain': (request, response) => {
-          response.statusCode = 301
-          response.setHeader('Location', '/301')
+          response.statusCode = 302
+          response.setHeader('Location', '/302')
           response.end()
         },
-        '/301': (request, response) => {
-          response.statusCode = 301
+        '/302': (request, response) => {
+          response.statusCode = 302
           response.setHeader('Location', '/200')
           response.end()
         },
@@ -1008,7 +1055,7 @@ describe('net module', () => {
 
     it('should not follow redirect when request is canceled in redirect handler', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
-        response.statusCode = 301
+        response.statusCode = 302
         response.setHeader('Location', '/200')
         response.end()
       })
@@ -1017,18 +1064,33 @@ describe('net module', () => {
       })
       urlRequest.end()
       urlRequest.on('redirect', () => { urlRequest.abort() })
+      urlRequest.on('error', () => {})
       await emittedOnce(urlRequest, 'abort')
+    })
+
+    it('should not follow redirect when mode is error', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 302
+        response.setHeader('Location', '/200')
+        response.end()
+      })
+      const urlRequest = net.request({
+        url: serverUrl,
+        redirect: 'error'
+      })
+      urlRequest.end()
+      await emittedOnce(urlRequest, 'error')
     })
 
     it('should follow redirect when handler calls callback', async () => {
       const serverUrl = await respondOnce.toRoutes({
         '/redirectChain': (request, response) => {
-          response.statusCode = 301
-          response.setHeader('Location', '/301')
+          response.statusCode = 302
+          response.setHeader('Location', '/302')
           response.end()
         },
-        '/301': (request, response) => {
-          response.statusCode = 301
+        '/302': (request, response) => {
+          response.statusCode = 302
           response.setHeader('Location', '/200')
           response.end()
         },
@@ -1037,7 +1099,7 @@ describe('net module', () => {
           response.end()
         }
       })
-      const urlRequest = net.request(`${serverUrl}/redirectChain`)
+      const urlRequest = net.request({ url: `${serverUrl}/redirectChain`, redirect: 'manual' })
       const redirects: string[] = []
       urlRequest.on('redirect', (status, method, url) => {
         redirects.push(url)
@@ -1047,7 +1109,7 @@ describe('net module', () => {
       const [response] = await emittedOnce(urlRequest, 'response')
       expect(response.statusCode).to.equal(200)
       expect(redirects).to.deep.equal([
-        `${serverUrl}/301`,
+        `${serverUrl}/302`,
         `${serverUrl}/200`
       ])
     })
@@ -1276,9 +1338,9 @@ describe('net module', () => {
       await emittedOnce(response, 'end')
     })
 
-    it('should be able to pipe a net response into a writable stream', (done) => {
+    it('should be able to pipe a net response into a writable stream', async () => {
       const bodyData = randomString(kOneKiloByte)
-      Promise.all([
+      const [netServerUrl, nodeServerUrl] = await Promise.all([
         respondOnce.toSingleURL((request, response) => response.end(bodyData)),
         respondOnce.toSingleURL((request, response) => {
           let receivedBodyData = ''
@@ -1293,8 +1355,10 @@ describe('net module', () => {
             response.end()
           })
         })
-      ]).then(([netServerUrl, nodeServerUrl]) => {
-        const netRequest = net.request(netServerUrl)
+      ])
+      const netRequest = net.request(netServerUrl)
+      netRequest.end()
+      await new Promise((resolve) => {
         netRequest.on('response', (netResponse) => {
           const serverUrl = url.parse(nodeServerUrl)
           const nodeOptions = {
@@ -1305,7 +1369,7 @@ describe('net module', () => {
           const nodeRequest = http.request(nodeOptions, res => {
             res.on('data', () => {})
             res.on('end', () => {
-              done()
+              resolve()
             })
           });
           // TODO: IncomingMessage should properly extend ReadableStream in the
@@ -1360,16 +1424,92 @@ describe('net module', () => {
         const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           response.on('data', () => {})
+          response.on('end', () => { done() })
+        })
+        process.nextTick(() => {
+          const v8Util = process.electronBinding('v8_util')
+          v8Util.requestGarbageCollectionForTesting()
+        })
+        urlRequest.end()
+      })
+    })
+
+    it('should finish sending data when urlRequest is unreferenced', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        let received = Buffer.alloc(0)
+        request.on('data', (data) => {
+          received = Buffer.concat([received, data])
+        })
+        request.on('end', () => {
+          response.end()
+          expect(received.length).to.equal(kOneMegaByte)
+          done()
+        })
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => {})
           response.on('end', () => {})
         })
         urlRequest.on('close', () => {
           process.nextTick(() => {
             const v8Util = process.electronBinding('v8_util')
             v8Util.requestGarbageCollectionForTesting()
-            done()
           })
         })
-        urlRequest.end()
+        urlRequest.end(randomBuffer(kOneMegaByte))
+      })
+    })
+
+    it('should finish sending data when urlRequest is unreferenced for chunked encoding', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        let received = Buffer.alloc(0)
+        request.on('data', (data) => {
+          received = Buffer.concat([received, data])
+        })
+        request.on('end', () => {
+          response.end()
+          expect(received.length).to.equal(kOneMegaByte)
+          done()
+        })
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => {})
+          response.on('end', () => {})
+        })
+        urlRequest.on('close', () => {
+          process.nextTick(() => {
+            const v8Util = process.electronBinding('v8_util')
+            v8Util.requestGarbageCollectionForTesting()
+          })
+        })
+        urlRequest.chunkedEncoding = true
+        urlRequest.end(randomBuffer(kOneMegaByte))
+      })
+    })
+
+    it('should finish sending data when urlRequest is unreferenced before close event for chunked encoding', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        let received = Buffer.alloc(0)
+        request.on('data', (data) => {
+          received = Buffer.concat([received, data])
+        })
+        request.on('end', () => {
+          response.end()
+          expect(received.length).to.equal(kOneMegaByte)
+          done()
+        })
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => {})
+          response.on('end', () => {})
+        })
+        urlRequest.chunkedEncoding = true
+        urlRequest.end(randomBuffer(kOneMegaByte))
+        const v8Util = process.electronBinding('v8_util')
+        v8Util.requestGarbageCollectionForTesting()
       })
     })
 

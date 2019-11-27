@@ -4,9 +4,11 @@
 
 #include "shell/browser/api/atom_api_net.h"
 
+#include <string>
+
 #include "gin/handle.h"
 #include "services/network/public/cpp/features.h"
-#include "shell/browser/api/atom_api_url_request.h"
+#include "shell/browser/api/atom_api_url_loader.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 
@@ -32,12 +34,12 @@ void Net::BuildPrototype(v8::Isolate* isolate,
                          v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "Net"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetProperty("URLRequest", &Net::URLRequest);
+      .SetProperty("URLLoader", &Net::URLLoader);
 }
 
-v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
+v8::Local<v8::Value> Net::URLLoader(v8::Isolate* isolate) {
   v8::Local<v8::FunctionTemplate> constructor;
-  constructor = URLRequest::GetConstructor(isolate);
+  constructor = SimpleURLLoaderWrapper::GetConstructor(isolate);
   return constructor->GetFunction(isolate->GetCurrentContext())
       .ToLocalChecked();
 }
@@ -48,8 +50,16 @@ v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
 
 namespace {
 
+bool IsValidHeaderName(std::string header_name) {
+  return net::HttpUtil::IsValidHeaderName(header_name);
+}
+
+bool IsValidHeaderValue(std::string header_value) {
+  return net::HttpUtil::IsValidHeaderValue(header_value);
+}
+
 using electron::api::Net;
-using electron::api::URLRequest;
+using electron::api::SimpleURLLoaderWrapper;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -57,12 +67,15 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
 
-  URLRequest::SetConstructor(isolate, base::BindRepeating(URLRequest::New));
+  SimpleURLLoaderWrapper::SetConstructor(
+      isolate, base::BindRepeating(SimpleURLLoaderWrapper::New));
 
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("net", Net::Create(isolate));
   dict.Set("Net",
            Net::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.SetMethod("_isValidHeaderName", &IsValidHeaderName);
+  dict.SetMethod("_isValidHeaderValue", &IsValidHeaderValue);
 }
 
 }  // namespace
