@@ -10,6 +10,7 @@
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/console_message.h"
 #include "content/public/browser/storage_partition.h"
+#include "gin/data_object_builder.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
@@ -55,13 +56,14 @@ std::string MessageSourceToString(
   return "other";
 }
 
-base::DictionaryValue ServiceWorkerRunningInfoToDict(
+v8::Local<v8::Value> ServiceWorkerRunningInfoToDict(
+    v8::Isolate* isolate,
     const content::ServiceWorkerRunningInfo& info) {
-  base::DictionaryValue dict;
-  dict.SetStringPath("scriptUrl", info.script_url.spec());
-  dict.SetStringPath("scope", info.scope.spec());
-  dict.SetIntPath("renderProcessId", info.render_process_id);
-  return dict;
+  return gin::DataObjectBuilder(isolate)
+      .Set("scriptUrl", info.script_url.spec())
+      .Set("scope", info.scope.spec())
+      .Set("renderProcessId", info.render_process_id)
+      .Build();
 }
 
 }  // namespace
@@ -83,29 +85,38 @@ ServiceWorkerContext::~ServiceWorkerContext() {
 void ServiceWorkerContext::OnReportConsoleMessage(
     int64_t version_id,
     const content::ConsoleMessage& message) {
-  base::DictionaryValue details;
-  details.SetDoublePath("versionId", static_cast<double>(version_id));
-  details.SetStringPath("source", MessageSourceToString(message.source));
-  details.SetIntPath("level", static_cast<int32_t>(message.message_level));
-  details.SetStringPath("message", message.message);
-  details.SetIntPath("lineNumber", message.line_number);
-  details.SetStringPath("sourceUrl", message.source_url.spec());
-  Emit("console-message", details);
+  Emit("console-message",
+       gin::DataObjectBuilder(v8::Isolate::GetCurrent())
+           .Set("versionId", version_id)
+           .Set("source", MessageSourceToString(message.source))
+           .Set("level", static_cast<int32_t>(message.message_level))
+           .Set("message", message.message)
+           .Set("lineNumber", message.line_number)
+           .Set("sourceUrl", message.source_url.spec())
+           .Build());
 }
 
-base::DictionaryValue ServiceWorkerContext::GetAllWorkerInfo() {
+void ServiceWorkerContext::OnDestruct(content::ServiceWorkerContext* context) {
+  if (context == service_worker_context_) {
+    delete this;
+  }
+}
+
+v8::Local<v8::Value> ServiceWorkerContext::GetAllRunningWorkerInfo(
+    v8::Isolate* isolate) {
+  gin::DataObjectBuilder builder(isolate);
   const base::flat_map<int64_t, content::ServiceWorkerRunningInfo>& info_map =
       service_worker_context_->GetRunningServiceWorkerInfos();
-  base::DictionaryValue dict;
   for (auto iter = info_map.begin(); iter != info_map.end(); ++iter) {
-    dict.Set(std::to_string(iter->first),
-             base::Value::ToUniquePtrValue(
-                 ServiceWorkerRunningInfoToDict(std::move(iter->second))));
+    builder.Set(
+        std::to_string(iter->first),
+        ServiceWorkerRunningInfoToDict(isolate, std::move(iter->second)));
   }
-  return dict;
+  return builder.Build();
+  ;
 }
 
-base::DictionaryValue ServiceWorkerContext::GetWorkerInfoFromID(
+v8::Local<v8::Value> ServiceWorkerContext::GetWorkerInfoFromID(
     gin_helper::ErrorThrower thrower,
     int64_t version_id) {
   const base::flat_map<int64_t, content::ServiceWorkerRunningInfo>& info_map =
@@ -113,9 +124,10 @@ base::DictionaryValue ServiceWorkerContext::GetWorkerInfoFromID(
   auto iter = info_map.find(version_id);
   if (iter == info_map.end()) {
     thrower.ThrowError("Could not find service worker with that version_id");
-    return base::DictionaryValue();
+    return v8::Local<v8::Value>();
   }
-  return ServiceWorkerRunningInfoToDict(std::move(iter->second));
+  return ServiceWorkerRunningInfoToDict(thrower.isolate(),
+                                        std::move(iter->second));
 }
 
 // static
@@ -132,7 +144,8 @@ void ServiceWorkerContext::BuildPrototype(
     v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "ServiceWorkerContext"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("getAll", &ServiceWorkerContext::GetAllWorkerInfo)
+      .SetMethod("getAllRunning",
+                 &ServiceWorkerContext::GetAllRunningWorkerInfo)
       .SetMethod("getFromVersionID",
                  &ServiceWorkerContext::GetWorkerInfoFromID);
 }

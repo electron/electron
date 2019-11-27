@@ -13,7 +13,7 @@ For example:
 const { session } = require('electron')
 
 // Get all service workers.
-console.log(session.defaultSession.serviceWorkers.getAll())
+console.log(session.defaultSession.serviceWorkers.getAllRunning())
 
 // Handle logs and get service worker info
 session.defaultSession.serviceWorkers.on('console-message', (event, messageDetails) => {
@@ -47,7 +47,7 @@ Emitted when a service worker logs something to the console.
 
 The following methods are available on instances of `ServiceWorkers`:
 
-#### `serviceWorkers.getAll()`
+#### `serviceWorkers.getAllRunning()`
 
 Returns `Record<Number, ServiceWorkerInfo>` - A [ServiceWorkerInfo](structures/service-worker-info.md) object where the keys are the service worker version ID and the values are the information about that service worker.
 
