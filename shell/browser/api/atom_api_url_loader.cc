@@ -15,7 +15,10 @@
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
+#include "native_mate/dictionary.h"
+#include "native_mate/handle.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
@@ -25,6 +28,8 @@
 #include "shell/common/gin_converters/callback_converter_gin_adapter.h"
 #include "shell/common/gin_converters/gurl_converter_gin_adapter.h"
 #include "shell/common/gin_converters/net_converter_gin_adapter.h"
+#include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/native_mate_converters/map_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 
@@ -140,9 +145,9 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     auto buffer = buffer_val.As<v8::ArrayBufferView>();
     is_writing_ = true;
     bytes_written_ += buffer->ByteLength();
-    auto backing_store = buffer->Buffer()->GetBackingStore();
+    auto contents = buffer->Buffer()->GetContents();
     auto buffer_span = base::make_span(
-        static_cast<char*>(backing_store->Data()) + buffer->ByteOffset(),
+        static_cast<char*>(contents.Data()) + buffer->ByteOffset(),
         buffer->ByteLength());
     auto buffer_source = std::make_unique<BufferDataSource>(buffer_span);
     data_producer_->Write(
@@ -295,7 +300,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
       &SimpleURLLoaderWrapper::Cancel, weak_factory_.GetWeakPtr()));
   auto cb = base::BindOnce(
       [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
-         gin::Arguments* args) {
+         mate::Arguments* args) {
         base::string16 username_str, password_str;
         if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
           auth_responder->OnAuthCredentials(base::nullopt);
@@ -317,8 +322,8 @@ void SimpleURLLoaderWrapper::Cancel() {
 }
 
 // static
-mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
-  gin_helper::Dictionary opts;
+mate::WrappableBase* SimpleURLLoaderWrapper::New(mate::Arguments* args) {
+  mate::Dictionary opts;
   if (!args->GetNext(&opts)) {
     args->ThrowTypeError("Expected a dictionary");
     return nullptr;
@@ -343,9 +348,9 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
   if (opts.Get("body", &body)) {
     if (body->IsArrayBufferView()) {
       auto buffer_body = body.As<v8::ArrayBufferView>();
-      auto backing_store = buffer_body->Buffer()->GetBackingStore();
+      auto contents = buffer_body->Buffer()->GetContents();
       request->request_body = network::ResourceRequestBody::CreateFromBytes(
-          static_cast<char*>(backing_store->Data()) + buffer_body->ByteOffset(),
+          static_cast<char*>(contents.Data()) + buffer_body->ByteOffset(),
           buffer_body->ByteLength());
     } else if (body->IsFunction()) {
       auto body_func = body.As<v8::Function>();
@@ -357,12 +362,14 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
                               data_pipe_getter.InitWithNewPipeAndPassReceiver())
                               .ToV8();
       request->request_body = new network::ResourceRequestBody();
-      request->request_body->SetToChunkedDataPipe(std::move(data_pipe_getter));
+      request->request_body->SetToChunkedDataPipe(
+          network::mojom::ChunkedDataPipeGetterPtr(
+              std::move(data_pipe_getter)));
     }
   }
 
   std::string partition;
-  gin::Handle<Session> session;
+  mate::Handle<Session> session;
   if (!opts.Get("session", &session)) {
     if (opts.Get("partition", &partition))
       session = Session::FromPartition(args->isolate(), partition);
@@ -374,7 +381,7 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
 
   auto* ret =
       new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get());
-  ret->InitWithArgs(args);
+  ret->Init(args->isolate());
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);
@@ -387,9 +394,9 @@ void SimpleURLLoaderWrapper::OnDataReceived(base::StringPiece string_piece,
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   v8::HandleScope handle_scope(isolate());
   auto array_buffer = v8::ArrayBuffer::New(isolate(), string_piece.size());
-  auto backing_store = array_buffer->GetBackingStore();
-  memcpy(backing_store->Data(), string_piece.data(), string_piece.size());
-  Emit("data", array_buffer);
+  auto contents = array_buffer->GetContents();
+  memcpy(contents.Data(), string_piece.data(), string_piece.size());
+  Emit("data", array_buffer.As<v8::Value>());
   std::move(resume).Run();
 }
 
@@ -409,7 +416,7 @@ void SimpleURLLoaderWrapper::OnRetry(base::OnceClosure start_retry) {}
 void SimpleURLLoaderWrapper::OnResponseStarted(
     const GURL& final_url,
     const network::ResourceResponseHead& response_head) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate());
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate());
   dict.Set("statusCode", response_head.headers->response_code());
   dict.Set("statusMessage", response_head.headers->GetStatusText());
   dict.Set("headers", response_head.headers.get());
@@ -438,7 +445,7 @@ void SimpleURLLoaderWrapper::BuildPrototype(
     v8::Isolate* isolate,
     v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "SimpleURLLoaderWrapper"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("cancel", &SimpleURLLoaderWrapper::Cancel);
 }
 

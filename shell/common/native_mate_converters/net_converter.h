@@ -24,6 +24,8 @@ class X509Certificate;
 class HttpResponseHeaders;
 class HttpRequestHeaders;
 struct CertPrincipal;
+class HttpVersion;
+struct RedirectInfo;
 }  // namespace net
 
 namespace network {

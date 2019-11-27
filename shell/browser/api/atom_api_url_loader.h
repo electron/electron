@@ -11,6 +11,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "net/base/auth.h"
+#include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
@@ -19,7 +20,7 @@
 #include "url/gurl.h"
 #include "v8/include/v8.h"
 
-namespace gin {
+namespace mate {
 class Arguments;
 }
 
@@ -38,7 +39,7 @@ class SimpleURLLoaderWrapper
       public network::SimpleURLLoaderStreamConsumer {
  public:
   ~SimpleURLLoaderWrapper() override;
-  static mate::WrappableBase* New(gin::Arguments* args);
+  static mate::WrappableBase* New(mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
