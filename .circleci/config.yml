@@ -205,7 +205,12 @@ step-depot-tools-get: &step-depot-tools-get
 step-depot-tools-add-to-path: &step-depot-tools-add-to-path
   run:
     name: Add depot tools to PATH
-    command: echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
+    command: |
+      if [ "`uname|cut -c 1-7`" == "MSYS_NT" ]; then
+        echo 'export PATH="'"$PWD"'/depot_tools:$PATH"' >> $BASH_ENV
+      else
+        echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
+      fi
 
 step-gclient-sync: &step-gclient-sync
   run:
@@ -743,7 +748,13 @@ step-save-out-cache: &step-save-out-cache
 step-run-electron-only-hooks: &step-run-electron-only-hooks
   run:
     name: Run Electron Only Hooks
-    command: gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+    command: |
+      # On windows we have to run gclient through cmd.exe
+      if [ "`uname|cut -c 1-7`" == "MSYS_NT" ]; then
+        cmd.exe /c "gclient runhooks --spec=\"solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]\""
+      else
+        gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+      fi
 
 step-generate-deps-hash-cleanly: &step-generate-deps-hash-cleanly
   run:
