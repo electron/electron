@@ -169,6 +169,9 @@ env-macos-build: &env-macos-build
   # Disable pre-compiled headers to reduce out size, only useful for rebuilds
   GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
 
+env-windows-build: &env-windows-build
+  NINJA_SUFFIX: '.exe'
+
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
@@ -360,7 +363,7 @@ step-electron-build: &step-electron-build
         rm -f src/out/Default/libffmpeg.so
       fi
       cd src
-      ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
+      ninja$NINJA_SUFFIX -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
 
 step-native-unittests-build: &step-native-unittests-build
   run:
@@ -368,7 +371,7 @@ step-native-unittests-build: &step-native-unittests-build
     no_output_timeout: 30m
     command: |
       cd src
-      ninja -C out/Default shell_browser_ui_unittests -j $NUMBER_OF_NINJA_PROCESSES
+      ninja$NINJA_SUFFIX -C out/Default shell_browser_ui_unittests -j $NUMBER_OF_NINJA_PROCESSES
 
 step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
@@ -394,7 +397,7 @@ step-electron-dist-build: &step-electron-dist-build
     command: |
       cd src
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
-        ninja -C out/Default electron:electron_dist_zip
+        ninja$NINJA_SUFFIX -C out/Default electron:electron_dist_zip
         if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
           if [ "`uname`" == "Darwin" ]; then
             target_os=mac
@@ -429,9 +432,9 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
     name: Build chromedriver.zip
     command: |
       cd src
-      ninja -C out/Default chrome/test/chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+      ninja$NINJA_SUFFIX -C out/Default chrome/test/chromedriver -j $NUMBER_OF_NINJA_PROCESSES
       electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/Default/chromedriver
-      ninja -C out/Default electron:electron_chromedriver_zip
+      ninja$NINJA_SUFFIX -C out/Default electron:electron_chromedriver_zip
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
@@ -443,7 +446,7 @@ step-nodejs-headers-build: &step-nodejs-headers-build
     name: Build Node.js headers
     command: |
       cd src
-      ninja -C out/Default third_party/electron_node:headers
+      ninja$NINJA_SUFFIX -C out/Default third_party/electron_node:headers
 
 step-nodejs-headers-store: &step-nodejs-headers-store
   store_artifacts:
@@ -517,7 +520,7 @@ step-ffmpeg-build: &step-ffmpeg-build
     name: Non proprietary ffmpeg build
     command: |
       cd src
-      ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+      ninja$NINJA_SUFFIX -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
 
 step-verify-ffmpeg: &step-verify-ffmpeg
   run:
@@ -559,7 +562,7 @@ step-mksnapshot-build: &step-mksnapshot-build
     name: mksnapshot build
     command: |
       cd src
-      ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+      ninja$NINJA_SUFFIX -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
@@ -571,7 +574,7 @@ step-mksnapshot-build: &step-mksnapshot-build
         fi
       fi
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
-        ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        ninja$NINJA_SUFFIX -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
       fi
 
 step-mksnapshot-store: &step-mksnapshot-store
@@ -585,7 +588,7 @@ step-hunspell-build: &step-hunspell-build
     command: |
       cd src
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
-        ninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+        ninja$NINJA_SUFFIX -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
       fi
 
 step-hunspell-store: &step-hunspell-store
@@ -599,7 +602,7 @@ step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
     command: |
       if [ "$GENERATE_SYMBOLS" == "true" ]; then
         cd src
-        ninja -C out/Default electron:electron_symbols
+        ninja$NINJA_SUFFIX -C out/Default electron:electron_symbols
       fi
 
 step-maybe-zip-symbols: &step-maybe-zip-symbols
@@ -608,8 +611,8 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
     command: |
       cd src
       export BUILD_PATH="$PWD/out/Default"
-      ninja -C out/Default electron:licenses
-      ninja -C out/Default electron:electron_version
+      ninja$NINJA_SUFFIX -C out/Default electron:licenses
+      ninja$NINJA_SUFFIX -C out/Default electron:electron_version
       electron/script/zip-symbols.py -b $BUILD_PATH
 
 step-symbols-store: &step-symbols-store
@@ -828,8 +831,8 @@ step-ts-compile: &step-ts-compile
     name: Run TS/JS compile on doc only change
     command: |
       cd src
-      ninja -C out/Default electron:default_app_js -j $NUMBER_OF_NINJA_PROCESSES
-      ninja -C out/Default electron:atom_js2c -j $NUMBER_OF_NINJA_PROCESSES
+      ninja$NINJA_SUFFIX -C out/Default electron:default_app_js -j $NUMBER_OF_NINJA_PROCESSES
+      ninja$NINJA_SUFFIX -C out/Default electron:atom_js2c -j $NUMBER_OF_NINJA_PROCESSES
 
 # Lists of steps.
 steps-lint: &steps-lint
@@ -1097,7 +1100,7 @@ steps-native-tests: &steps-native-tests
         name: Build tests
         command: |
           cd src
-          ninja -C out/Default $BUILD_TARGET
+          ninja$NINJA_SUFFIX -C out/Default $BUILD_TARGET
     - *step-show-sccache-stats
 
     - *step-setup-linux-for-headless-testing
@@ -1855,6 +1858,7 @@ jobs:
       <<: *env-testing-build
       # <<: *env-enable-sccache
       <<: *env-ninja-status
+      <<: *env-windows-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True --custom-var=host_os=win'
     steps:
       - electron-build:
