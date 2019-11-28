@@ -11,9 +11,13 @@ parameters:
 
   run-build-linux:
     type: boolean
-    default: true
+    default: false
 
   run-build-mac:
+    type: boolean
+    default: false
+
+  run-build-win:
     type: boolean
     default: true
 
@@ -71,6 +75,12 @@ machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
     xcode: "10.3.0"
+
+machine-windows-xlarge: &machine-windows-xlarge
+  machine:
+    image: 'windows-server-2019-vs2019:stable'
+    resource_class: windows.xlarge
+    shell: bash.exe
 
 # Build configurations options.
 env-testing-build: &env-testing-build
@@ -273,9 +283,9 @@ step-delete-git-directories: &step-delete-git-directories
 # we are on a macOS machine to get the correct state
 step-install-npm-deps-on-mac: &step-install-npm-deps-on-mac
   run:
-    name: Install node_modules on MacOS
+    name: Install node_modules for cross-OS checkout
     command: |
-      if [ "`uname`" == "Darwin" ]; then
+      if [ "`uname`" != "Linux" ]; then
         cd src/electron
         node script/yarn install
       fi
@@ -284,9 +294,9 @@ step-install-npm-deps-on-mac: &step-install-npm-deps-on-mac
 # and the expected state on macOS
 step-fix-sync-on-mac: &step-fix-sync-on-mac
   run:
-    name: Fix Sync on macOS
+    name: Fix Sync for cross-OS checkout
     command: |
-      if [ "`uname`" == "Darwin" ]; then
+      if [ "`uname`" != "Linux" ]; then
         # Fix Clang Install (wrong binary)
         rm -rf src/third_party/llvm-build
         python src/tools/clang/scripts/update.py
@@ -1208,19 +1218,34 @@ commands:
       - run:
           name: Prepare for cross-OS sync restore
           command: |
-            sudo mkdir -p /portal
-            sudo chown -R $(id -u):$(id -g) /portal
+            if [ "`uname|cut -c 1-7`" == "MSYS_NT" ]; then
+              mkdir -p /portal
+              chown -R $(id -u):$(id -g) /portal
+            else
+              sudo mkdir -p /portal
+              sudo chown -R $(id -u):$(id -g) /portal
+            fi
       - *step-maybe-restore-src-cache
       - run:
-          name: Fix the src cache restore point on macOS
+          name: Fix the src cache restore point for cross-OS cache restore
           command: |
             if [ -d "/portal/src" ]; then
               echo Relocating Cache
               rm -rf src
               mv /portal/src ./
             fi
+            # Handle cache restore point on windows
+            if [ -d "/c/portal/src" ]; then
+              echo Relocating Cache on Windows
+              rm -rf src
+              mv /c/portal/src ./
+            fi
   checkout-from-cache:
     steps:
+      - run:
+          name: Ensure LF on Windows
+          command: |
+            git config --global core.autocrlf false
       - *step-checkout-electron
       - *step-maybe-early-exit-doc-only-change
       - *step-depot-tools-get
@@ -1469,6 +1494,27 @@ jobs:
       <<: *env-testing-build
       <<: *env-macos-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    <<: *steps-checkout-and-save-cache
+
+  win-checkout-fast:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True --custom-var=host_os=win'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          persist-checkout: true
+
+  win-checkout-and-save-cache:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True --custom-var=host_os=win'
     <<: *steps-checkout-and-save-cache
 
   # Layer 2: Builds.
@@ -1790,6 +1836,21 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
+
+  win64-testing:
+    <<: *machine-windows-xlarge
+    environment:
+      <<: *env-mac-large
+      <<: *env-testing-build
+      # <<: *env-enable-sccache
+      <<: *env-ninja-status
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True --custom-var=host_os=win'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
+          checkout-and-assume-cache: true
+          attach: false
 
   # Layer 3: Tests.
   linux-x64-unittests:
@@ -2163,6 +2224,16 @@ workflows:
       - mas-testing-tests:
           requires:
             - mas-testing
+
+  build-win:
+    when: << pipeline.parameters.run-build-win >>
+    jobs:
+      - win-checkout-fast
+      - win-checkout-and-save-cache
+
+      - win64-testing:
+          requires:
+            - win-checkout-and-save-cache
 
   nightly-linux-release-test:
     triggers:

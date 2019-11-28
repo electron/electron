@@ -38,7 +38,7 @@ for (const file of filesToHash) {
 const extraArgs = process.env.GCLIENT_EXTRA_ARGS || 'no_extra_args'
 hasher.update(extraArgs)
 
-const effectivePlatform = extraArgs.includes('host_os=mac') ? 'darwin' : process.platform
+const effectivePlatform = extraArgs.includes('host_os=mac') ? 'darwin' : (extraArgs.includes('host_os=win') ? 'win32' : process.platform)
 
 // Write the hash to disk
 fs.writeFileSync(path.resolve(__dirname, '../.depshash'), hasher.digest('hex'))
