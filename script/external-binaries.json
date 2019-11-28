@@ -33,7 +33,7 @@
       "platform": "linux"
     },
     {
-      "url": "sccache-win32-x64.zip",
+      "url": "sccache-win32-x64-v2.zip",
       "platform": "win32"
     }
   ]

@@ -240,6 +240,9 @@ step-setup-env-for-build: &step-setup-env-for-build
       if [ "$USE_SCCACHE" == "true" ]; then
         # https://github.com/mozilla/sccache
         SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
+        if [ "`uname|cut -c 1-7`" == "MSYS_NT" ]; then
+          SCCACHE_PATH="C:\\\\Users\\circleci\\project\\src\\electron\\external_binaries\\sccache.exe"
+        fi
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
         if [ "$CIRCLE_PR_NUMBER" != "" ]; then
           #if building a fork set readonly access to sccache
@@ -1856,7 +1859,7 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
-      # <<: *env-enable-sccache
+      <<: *env-enable-sccache
       <<: *env-ninja-status
       <<: *env-windows-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True --custom-var=host_os=win'
