@@ -193,7 +193,7 @@ describe('net module', () => {
             received = Buffer.concat([received, chunk])
           })
           response.on('end', () => {
-            expect(sent.equals(received)).to.be.true()
+            expect(sent.equals(received)).to.be.true('sent equals received')
             expect(chunkIndex).to.be.equal(chunkCount)
             done()
           })
