@@ -1429,7 +1429,7 @@ commands:
             - run:
                 name: Remove the big things on macOS, this seems to be better on average
                 command: |
-                  if [ "`uname`" == "Darwin" ]; then
+                  if [ "`uname`" == "Darwin" ] || [ "`uname|cut -c 1-7`" == "MSYS_NT" ]; then
                     mkdir -p src/out/Default
                     cd src/out/Default
                     find . -type f -size +50M -delete
