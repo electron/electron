@@ -1868,7 +1868,7 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
-      # <<: *env-enable-sccache
+      <<: *env-enable-sccache
       <<: *env-ninja-status
       <<: *env-windows-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True --custom-var=host_os=win'
