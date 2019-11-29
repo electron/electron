@@ -465,6 +465,9 @@ step-nodejs-headers-build: &step-nodejs-headers-build
     command: |
       cd src
       ninja$NINJA_SUFFIX -C out/Default third_party/electron_node:headers
+      if [ "`uname|cut -c 1-7`" == "MSYS_NT" ]; then
+        cp out/Default/electron.lib out/Default/gen/node_headers/Release/node.lib
+      fi
 
 step-nodejs-headers-store: &step-nodejs-headers-store
   store_artifacts:
