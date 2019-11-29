@@ -162,12 +162,10 @@ void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 
-  // 'userData' (DIR_USER_DATA) and 'userCache' (DIR_USER_CACHE)
-  // can be customized changing the 'appData' or the application name.
-  // At this stage, it is no more allowed, paths must be frozen.
-  // So if it is not yet done, we 'override' the values.
-  // It does not prevent to explicitely changing userData/userCache later.
-  // May be, would be fine to prevent such actions.
+  // 'userData' (`DIR_USER_DATA) and `userCache` (DIR_USER_CACHE) can
+  // be customized by the user up until the `ready` event is fired.
+  // Now that we've reached that point, it's time to freeze their values.
+  // FIXME: setPath() should reject changes to these paths after this point
   base::FilePath user_data;
   base::PathService::Get(DIR_USER_DATA, &user_data);
   base::PathService::Override(DIR_USER_DATA, user_data);
