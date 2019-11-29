@@ -563,7 +563,7 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
     name: Setup for headless testing
     command: |
-      if [ "`uname`" != "Darwin" ]; then
+      if [ "`uname`" == "Linux" ]; then
         sh -e /etc/init.d/xvfb start
       fi
 
@@ -581,7 +581,7 @@ step-mksnapshot-build: &step-mksnapshot-build
     command: |
       cd src
       ninja$NINJA_SUFFIX -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
-      if [ "`uname`" != "Darwin" ]; then
+      if [ "`uname`" == "Linux" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
         elif [ "$TARGET_ARCH" == "arm64" ]; then
