@@ -122,10 +122,11 @@ std::string Browser::GetName() const {
 
 void Browser::SetName(const std::string& name) {
   OverrideApplicationName(name);
+
+  // Some of the paths in `app.getPath()` are based on `name` and should
+  // update when `name` is changed before `app.ready` is fired. So if app
+  // isn't ready yet, invalidate the PathService cache to ensure a refresh.
   if (!is_ready()) {
-    // DIR_USER_DATA, DIR_USER_CACHE and DIR_APP_LOGS depend
-    // on application name.
-    // We have to force re-computation
     base::PathService::InvalidateCache();
   }
 }

@@ -5,8 +5,6 @@
 #ifndef SHELL_BROWSER_ATOM_PATHS_H_
 #define SHELL_BROWSER_ATOM_PATHS_H_
 
-#include <string>
-
 #include "base/base_paths.h"
 
 #if defined(OS_WIN)

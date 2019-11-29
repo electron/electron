@@ -34,11 +34,6 @@ void GetLinuxAppDataPath(base::FilePath* path) {
 
 }  // namespace
 
-// We can not use PathService with a provider !
-// PathService caches the returned value of the first request
-// If the path depends on another values that changes later
-// PathService returns the cached value not the updated value
-
 // This cannot be done as a static initializer sadly since Visual Studio will
 // eliminate this object file if there is no direct entry point into it.
 void AtomPaths::Register() {
