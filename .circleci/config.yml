@@ -743,7 +743,7 @@ step-restore-out-cache: &step-restore-out-cache
     paths:
       - ./src/out/Default
     keys:
-      - v7-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+      - v8-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
     name: Restoring out cache
 
 step-set-git-cache-path: &step-set-git-cache-path
@@ -767,7 +767,7 @@ step-save-out-cache: &step-save-out-cache
   save_cache:
     paths:
       - ./src/out/Default
-    key: v7-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+    key: v8-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
     name: Persisting out cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
@@ -1436,11 +1436,16 @@ commands:
                   if [ "`uname`" == "Darwin" ] || [ "`uname|cut -c 1-7`" == "MSYS_NT" ]; then
                     mkdir -p src/out/Default
                     cd src/out/Default
-                    find . -type f -size +50M -delete
+                    FIND_CMD=find
+                    # For some reason "find" maps to the windows one not the bash one
+                    if [ "`uname|cut -c 1-7`" == "MSYS_NT" ]; then
+                      FIND_CMD='/c/Program Files/Git/usr/bin/find'
+                    fi
+                    "$FIND_CMD" . -type f -size +50M -delete
                     mkdir -p gen/electron
                     cd gen/electron
                     # These files do not seem to like being in a cache, let us remove them
-                    find . -type f -name '*_pkg_info' -delete
+                    "$FIND_CMD" . -type f -name '*_pkg_info' -delete
                   fi
             - *step-save-out-cache
 
