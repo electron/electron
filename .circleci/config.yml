@@ -926,7 +926,6 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
         name: Wipe Electron
         command: rm -rf src/electron
     - *step-checkout-electron
-    - *step-run-electron-only-hooks
     - *step-generate-deps-hash-cleanly
     - *step-mark-sync-done
     - *step-minimize-workspace-size-from-checkout
