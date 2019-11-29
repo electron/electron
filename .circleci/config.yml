@@ -76,6 +76,12 @@ machine-mac-large: &machine-mac-large
   macos:
     xcode: "10.3.0"
 
+machine-windows-medium: &machine-windows-medium
+  machine:
+    image: 'windows-server-2019-vs2019:stable'
+    resource_class: windows.medium
+    shell: bash.exe
+
 machine-windows-xlarge: &machine-windows-xlarge
   machine:
     image: 'windows-server-2019-vs2019:stable'
@@ -2083,6 +2089,14 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-mksnapshot
 
+  win64-testing-tests:
+    <<: *machine-windows-medium
+    environment:
+      <<: *env-mac-large
+      <<: *env-stack-dumping
+    parallelism: 2
+    <<: *steps-tests
+
   # Layer 4: Summary.
   linux-x64-release-summary:
     <<: *machine-linux-medium
@@ -2261,6 +2275,10 @@ workflows:
       - win64-testing:
           requires:
             - win-checkout-and-save-cache
+
+      - win64-testing-tests:
+          requires:
+            - win64-testing
 
   nightly-linux-release-test:
     triggers:
