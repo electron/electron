@@ -1869,6 +1869,23 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     <<: *steps-electron-build-for-publish
 
+  win32-testing:
+    <<: *machine-windows-xlarge
+    environment:
+      <<: *env-mac-large
+      <<: *env-testing-build
+      <<: *env-enable-sccache
+      <<: *env-ninja-status
+      <<: *env-windows-build
+      <<: *env-ia32
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True --custom-var=host_os=win'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
+          checkout-and-assume-cache: true
+          attach: false
+
   win64-testing:
     <<: *machine-windows-xlarge
     environment:
@@ -2089,6 +2106,14 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-mksnapshot
 
+  win32-testing-tests:
+    <<: *machine-windows-medium
+    environment:
+      <<: *env-mac-large
+      <<: *env-stack-dumping
+    parallelism: 2
+    <<: *steps-tests
+
   win64-testing-tests:
     <<: *machine-windows-medium
     environment:
@@ -2272,10 +2297,16 @@ workflows:
       - win-checkout-fast
       - win-checkout-and-save-cache
 
+      - win32-testing:
+          requires:
+            - win-checkout-and-save-cache
       - win64-testing:
           requires:
             - win-checkout-and-save-cache
 
+      - win32-testing-tests:
+          requires:
+            - win32-testing
       - win64-testing-tests:
           requires:
             - win64-testing
