@@ -59,7 +59,7 @@ describe('app path module', () => {
     it('by default', async () => {
       const output = await runTestApp('app-custom-path')
       const expectedUserdata = path.join(output.appData, defaultAppName)
-      expect(output.userData.).to.equal(expectedUserdata)
+      expect(output.userData).to.equal(expectedUserdata)
       // expect(output.userData).to.equal(expectedUserdata)
       CleanUp(output)
     })
