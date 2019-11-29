@@ -2,6 +2,7 @@
 
 import argparse
 import errno
+import hashlib
 import json
 import os
 
@@ -17,6 +18,7 @@ def parse_args():
 
   parser.add_argument('--base-url', required=False,
                       help="Base URL for all downloads")
+  parser.add_argument('--force', action='store_true', default=False, required=False)
 
   return parser.parse_args()
 
@@ -37,7 +39,7 @@ def main():
   output_dir = os.path.join(SOURCE_ROOT, 'external_binaries')
   version_file = os.path.join(output_dir, '.version')
 
-  if (is_updated(version_file, version)):
+  if (is_updated(version_file, version) and not args.force):
     return
 
   rm_rf(output_dir)
@@ -47,7 +49,7 @@ def main():
     if not binary_should_be_downloaded(binary):
       continue
 
-    temp_path = download_binary(base_url, version, binary['url'])
+    temp_path = download_binary(base_url, version, binary['url'], binary['sha'])
 
     # We assume that all binaries are in zip archives.
     extract_zip(temp_path, output_dir)
@@ -82,16 +84,31 @@ def binary_should_be_downloaded(binary):
   return True
 
 
-def download_binary(base_url, version, binary_url):
+def sha256(file_path):
+  hash_256 = hashlib.sha256()
+  with open(file_path, "rb") as f:
+      for chunk in iter(lambda: f.read(4096), b""):
+          hash_256.update(chunk)
+  return hash_256.hexdigest()
+
+
+def download_binary(base_url, version, binary_url, sha):
   full_url = '{0}/{1}/{2}'.format(base_url, version, binary_url)
-  temp_path = download_to_temp_dir(full_url, filename=binary_url)
+  temp_path = download_to_temp_dir(full_url, filename=binary_url, sha=sha)
   return temp_path
 
 
-def download_to_temp_dir(url, filename):
+def validate_sha(file_path, sha):
+  downloaded_sha = sha256(file_path)
+  if downloaded_sha != sha:
+    raise Exception("SHA for external binary file {} does not match expected '{}' != '{}'".format(file_path, downloaded_sha, sha))
+
+
+def download_to_temp_dir(url, filename, sha):
   download_dir = tempdir(prefix='electron-')
   file_path = os.path.join(download_dir, filename)
   download(text='Download ' + filename, url=url, path=file_path)
+  validate_sha(file_path, sha)
   return file_path
 
 
