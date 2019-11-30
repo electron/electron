@@ -69,9 +69,9 @@
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-#include "chrome/browser/spellchecker/spellcheck_factory.h"
-#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
-#include "chrome/browser/spellchecker/spellcheck_service.h"
+#include "chrome/browser/spellchecker/spellcheck_factory.h"  // nogncheck
+#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
+#include "chrome/browser/spellchecker/spellcheck_service.h"  // nogncheck
 #include "components/spellcheck/browser/pref_names.h"
 #include "components/spellcheck/common/spellcheck_common.h"
 

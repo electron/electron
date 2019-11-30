@@ -354,6 +354,7 @@ source_set("electron_lib") {
     ":resources",
     "buildflags",
     "chromium_src:chrome",
+    "chromium_src:chrome_spellchecker",
     "native_mate",
     "shell/common/api:mojo",
     "//base:base_static",
@@ -480,10 +481,6 @@ source_set("electron_lib") {
       "shell/browser/fake_location_provider.cc",
       "shell/browser/fake_location_provider.h",
     ]
-  }
-
-  if (enable_builtin_spellchecker) {
-    deps += [ "chromium_src:chrome_spellchecker" ]
   }
 
   if (is_mac) {

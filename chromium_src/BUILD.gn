@@ -308,44 +308,50 @@ source_set("plugins") {
 # You may have to add new files here during the upgrade if //chrome/browser/spellchecker
 # gets more files
 source_set("chrome_spellchecker") {
-  sources = [
-    "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
-    "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
-    "//chrome/browser/spellchecker/spellcheck_custom_dictionary.cc",
-    "//chrome/browser/spellchecker/spellcheck_custom_dictionary.h",
-    "//chrome/browser/spellchecker/spellcheck_factory.cc",
-    "//chrome/browser/spellchecker/spellcheck_factory.h",
-    "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc",
-    "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h",
-    "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.cc",
-    "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.h",
-    "//chrome/browser/spellchecker/spellcheck_language_policy_handler.cc",
-    "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
-    "//chrome/browser/spellchecker/spellcheck_service.cc",
-    "//chrome/browser/spellchecker/spellcheck_service.h",
-    "//chrome/common/pref_names.h",
-  ]
+  sources = []
+  deps = []
+  libs = []
 
-  if (has_spellcheck_panel) {
+  if (enable_builtin_spellchecker) {
     sources += [
-      "//chrome/browser/spellchecker/spell_check_panel_host_impl.cc",
-      "//chrome/browser/spellchecker/spell_check_panel_host_impl.h",
+      "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
+      "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
+      "//chrome/browser/spellchecker/spellcheck_custom_dictionary.cc",
+      "//chrome/browser/spellchecker/spellcheck_custom_dictionary.h",
+      "//chrome/browser/spellchecker/spellcheck_factory.cc",
+      "//chrome/browser/spellchecker/spellcheck_factory.h",
+      "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc",
+      "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h",
+      "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.cc",
+      "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.h",
+      "//chrome/browser/spellchecker/spellcheck_language_policy_handler.cc",
+      "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
+      "//chrome/browser/spellchecker/spellcheck_service.cc",
+      "//chrome/browser/spellchecker/spellcheck_service.h",
+      "//chrome/common/pref_names.h",
+    ]
+
+    if (has_spellcheck_panel) {
+      sources += [
+        "//chrome/browser/spellchecker/spell_check_panel_host_impl.cc",
+        "//chrome/browser/spellchecker/spell_check_panel_host_impl.h",
+      ]
+    }
+
+    if (use_browser_spellchecker) {
+      sources += [
+        "//chrome/browser/spellchecker/spelling_request.cc",
+        "//chrome/browser/spellchecker/spelling_request.h",
+      ]
+    }
+
+    deps += [
+      "//base:base_static",
+      "//components/language/core/browser",
+      "//components/spellcheck:buildflags",
+      "//components/sync",
     ]
   }
-
-  if (use_browser_spellchecker) {
-    sources += [
-      "//chrome/browser/spellchecker/spelling_request.cc",
-      "//chrome/browser/spellchecker/spelling_request.h",
-    ]
-  }
-
-  deps = [
-    "//base:base_static",
-    "//components/language/core/browser",
-    "//components/spellcheck:buildflags",
-    "//components/sync",
-  ]
 
   public_deps = [
     "//components/spellcheck/browser",
