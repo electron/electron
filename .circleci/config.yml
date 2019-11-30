@@ -427,8 +427,6 @@ step-electron-dist-build: &step-electron-dist-build
             target_os=win
             if [ x"$TARGET_ARCH" == x ]; then
               target_cpu=x64
-            elif [ "$TARGET_ARCH" == "ia32" ]; then
-              target_cpu=x86
             else
               target_cpu="$TARGET_ARCH"
             fi
