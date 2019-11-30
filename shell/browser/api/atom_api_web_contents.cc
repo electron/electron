@@ -863,10 +863,20 @@ void WebContents::BeforeUnloadFired(bool proceed,
 }
 
 void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  auto* impl = static_cast<content::RenderWidgetHostImpl*>(
-      render_view_host->GetWidget());
-  if (impl)
-    impl->disable_hidden_ = !background_throttling_;
+  if (!background_throttling_)
+    render_view_host->SetSchedulerThrottling(false);
+}
+
+void WebContents::RenderFrameCreated(
+    content::RenderFrameHost* render_frame_host) {
+  auto* rwhv = render_frame_host->GetView();
+  if (!rwhv)
+    return;
+
+  auto* rwh_impl =
+      static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
+  if (rwh_impl)
+    rwh_impl->disable_hidden_ = !background_throttling_;
 }
 
 void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
@@ -1286,27 +1296,25 @@ void WebContents::NavigationEntryCommitted(
 void WebContents::SetBackgroundThrottling(bool allowed) {
   background_throttling_ = allowed;
 
-  auto* contents = web_contents();
-  if (!contents)
+  auto* rfh = web_contents()->GetMainFrame();
+  if (!rfh)
     return;
 
-  auto* render_view_host = contents->GetRenderViewHost();
-  if (!render_view_host)
+  auto* rwhv = rfh->GetView();
+  if (!rwhv)
     return;
 
-  auto* render_process_host = render_view_host->GetProcess();
-  if (!render_process_host)
+  auto* rwh_impl =
+      static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
+  if (!rwh_impl)
     return;
 
-  auto* render_widget_host_impl = static_cast<content::RenderWidgetHostImpl*>(
-      render_view_host->GetWidget());
+  rwh_impl->disable_hidden_ = !background_throttling_;
+  web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
 
-  if (!render_widget_host_impl)
-    return;
-
-  render_widget_host_impl->disable_hidden_ = !background_throttling_;
-  if (render_widget_host_impl->is_hidden())
-    render_widget_host_impl->WasShown(base::nullopt);
+  if (rwh_impl->is_hidden()) {
+    rwh_impl->WasShown(base::nullopt);
+  }
 }
 
 int WebContents::GetProcessID() const {
