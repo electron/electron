@@ -2117,6 +2117,7 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
+      <<: *env-ia32
     parallelism: 2
     <<: *steps-tests
 
