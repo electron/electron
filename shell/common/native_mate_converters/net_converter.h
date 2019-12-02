@@ -24,6 +24,8 @@ class X509Certificate;
 class HttpResponseHeaders;
 class HttpRequestHeaders;
 struct CertPrincipal;
+class HttpVersion;
+struct RedirectInfo;
 }  // namespace net
 
 namespace network {
@@ -87,6 +89,18 @@ template <>
 struct Converter<electron::VerifyRequestParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::VerifyRequestParams val);
+};
+
+template <>
+struct Converter<net::HttpVersion> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::HttpVersion& val);
+};
+
+template <>
+struct Converter<net::RedirectInfo> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::RedirectInfo& val);
 };
 
 }  // namespace mate
