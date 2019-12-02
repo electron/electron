@@ -1017,34 +1017,17 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   return true;
 }
 
-mojo::PendingRemote<network::mojom::URLLoaderFactory>
-AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
+void AtomBrowserClient::OverrideURLLoaderFactoryParams(
     content::RenderProcessHost* process,
-    network::mojom::NetworkContext* network_context,
-    mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
-        header_client,
     const url::Origin& origin,
-    const url::Origin& main_world_origin,
-    const base::Optional<net::NetworkIsolationKey>& network_isolation_key) {
+    network::mojom::URLLoaderFactoryParams* factory_params) {
   auto render_process_id = process->GetID();
   auto it = process_preferences_.find(render_process_id);
   if (it != process_preferences_.end() && !it->second.web_security) {
     // bypass CORB
-    network::mojom::URLLoaderFactoryParamsPtr params =
-        network::mojom::URLLoaderFactoryParams::New();
-
-    if (header_client)
-      params->header_client = std::move(*header_client);
-    params->process_id = render_process_id;
-    params->is_corb_enabled = false;
-
-    // Create the URLLoaderFactory.
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> factory_remote;
-    network_context->CreateURLLoaderFactory(
-        factory_remote.InitWithNewPipeAndPassReceiver(), std::move(params));
-    return factory_remote;
+    factory_params->process_id = render_process_id;
+    factory_params->is_corb_enabled = false;
   }
-  return mojo::NullRemote();
 }
 
 #if defined(OS_WIN)
