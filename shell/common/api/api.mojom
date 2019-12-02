@@ -90,8 +90,6 @@ interface ElectronBrowser {
 
   SetTemporaryZoomLevel(double zoom_level);
 
-  SetZoomLimits(double min_zoom, double max_zoom);
-
   [Sync]
   DoGetZoomLevel() => (double result);
 };

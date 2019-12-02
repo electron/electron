@@ -2316,15 +2316,6 @@ double WebContents::GetZoomFactor() const {
   return blink::PageZoomLevelToZoomFactor(level);
 }
 
-void WebContents::SetZoomLimits(double min_zoom, double max_zoom) {
-  // Round the double to avoid returning incorrect minimum/maximum zoom
-  // percentages.
-  int minimum_percent = round(blink::PageZoomLevelToZoomFactor(min_zoom) * 100);
-  int maximum_percent = round(blink::PageZoomLevelToZoomFactor(max_zoom) * 100);
-  web_contents()->SetMinimumZoomPercent(minimum_percent);
-  web_contents()->SetMaximumZoomPercent(maximum_percent);
-}
-
 void WebContents::SetTemporaryZoomLevel(double level) {
   zoom_controller_->SetTemporaryZoomLevel(level);
 }

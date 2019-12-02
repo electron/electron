@@ -272,7 +272,6 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   double GetZoomLevel() const;
   void SetZoomFactor(double factor);
   double GetZoomFactor() const;
-  void SetZoomLimits(double min_zoom, double max_zoom) override;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
