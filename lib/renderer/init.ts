@@ -188,6 +188,8 @@ if (nodeIntegration) {
       delete global.setImmediate
       delete global.clearImmediate
       delete global.global
+      delete global.root
+      delete global.GLOBAL
     })
   }
 }
