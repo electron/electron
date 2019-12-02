@@ -381,7 +381,7 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(mate::Arguments* args) {
 
   auto* ret =
       new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get());
-  ret->Init(args->isolate());
+  ret->InitWith(args->isolate(), args->GetThis());
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);
