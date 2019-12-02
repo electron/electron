@@ -1,5 +1,6 @@
-import { EventEmitter } from 'events'
 import * as path from 'path'
+
+import { EventEmitter } from '@electron/internal/common/event-emitter'
 
 const Module = require('module')
 

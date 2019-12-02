@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import { EventEmitter } from '@electron/internal/common/event-emitter'
 
 const { createDesktopCapturer } = process.electronBinding('desktop_capturer')
 
