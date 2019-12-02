@@ -49,7 +49,7 @@ index 6b14d8354375377526e141ee499a7583be3f22b0..eeb9e19c0ecdf4631e596e7c0927693f
    // CORS checks in addition to the per-context allow patterns that is managed
    // via NetworkContext interface. This still respects the per-context block
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index d4e13ffaed76847b00cf98b248ba17ad70a9884c..33ab3ea9c60e097d8525f1066f3890a5bccd754a 100644
+index ad28fb98f55751341ccd9894683303b3f10e1367..041c7a207df32382fd0a88072ce38c384c5d15ba 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -335,6 +335,7 @@ URLLoader::URLLoader(
@@ -72,7 +72,7 @@ index d4e13ffaed76847b00cf98b248ba17ad70a9884c..33ab3ea9c60e097d8525f1066f3890a5
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -818,7 +824,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
+@@ -823,7 +829,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
  
  void URLLoader::OnAuthRequired(net::URLRequest* url_request,
                                 const net::AuthChallengeInfo& auth_info) {
@@ -81,7 +81,7 @@ index d4e13ffaed76847b00cf98b248ba17ad70a9884c..33ab3ea9c60e097d8525f1066f3890a5
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -834,10 +840,18 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -839,10 +845,18 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head.headers = url_request->response_headers();
    head.auth_challenge_info = auth_info;
