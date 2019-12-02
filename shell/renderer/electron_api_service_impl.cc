@@ -44,7 +44,8 @@ v8::Local<v8::Object> GetIpcObject(v8::Local<v8::Context> context) {
   return value->ToObject(context).ToLocalChecked();
 }
 
-void InvokeIpcCallback(v8::Local<v8::Context> context,
+void InvokeIpcCallback(blink::WebLocalFrame* frame,
+                       v8::Local<v8::Context> context,
                        const std::string& callback_name,
                        std::vector<v8::Local<v8::Value>> args) {
   TRACE_EVENT0("devtools.timeline", "FunctionCall");
@@ -54,24 +55,19 @@ void InvokeIpcCallback(v8::Local<v8::Context> context,
   if (ipcNative.IsEmpty())
     return;
 
-  // Only set up the node::CallbackScope if there's a node environment.
-  // Sandboxed renderers don't have a node environment.
-  node::Environment* env = node::Environment::GetCurrent(context);
-  std::unique_ptr<node::CallbackScope> callback_scope;
-  if (env) {
-    callback_scope.reset(new node::CallbackScope(isolate, ipcNative, {0, 0}));
-  }
-
   auto callback_key = gin::ConvertToV8(isolate, callback_name)
                           ->ToString(context)
                           .ToLocalChecked();
   auto callback_value = ipcNative->Get(context, callback_key).ToLocalChecked();
   DCHECK(callback_value->IsFunction());  // set by init.ts
   auto callback = callback_value.As<v8::Function>();
-  ignore_result(callback->Call(context, ipcNative, args.size(), args.data()));
+
+  frame->RequestExecuteV8Function(context, callback, ipcNative, args.size(),
+                                  args.data(), nullptr);
 }
 
-void EmitIPCEvent(v8::Local<v8::Context> context,
+void EmitIPCEvent(blink::WebLocalFrame* frame,
+                  v8::Local<v8::Context> context,
                   bool internal,
                   const std::string& channel,
                   v8::Local<v8::Value> args,
@@ -87,7 +83,7 @@ void EmitIPCEvent(v8::Local<v8::Context> context,
       gin::ConvertToV8(isolate, internal), gin::ConvertToV8(isolate, channel),
       args, gin::ConvertToV8(isolate, sender_id)};
 
-  InvokeIpcCallback(context, "onMessage", argv);
+  InvokeIpcCallback(frame, context, "onMessage", argv);
 }
 
 }  // namespace
@@ -161,7 +157,7 @@ void ElectronApiServiceImpl::Message(bool internal,
 
   v8::Local<v8::Value> args = gin::ConvertToV8(isolate, arguments);
 
-  EmitIPCEvent(context, internal, channel, args, sender_id);
+  EmitIPCEvent(frame, context, internal, channel, args, sender_id);
 
   // Also send the message to all sub-frames.
   // TODO(MarshallOfSound): Completely move this logic to the main process
@@ -169,9 +165,11 @@ void ElectronApiServiceImpl::Message(bool internal,
     for (blink::WebFrame* child = frame->FirstChild(); child;
          child = child->NextSibling())
       if (child->IsWebLocalFrame()) {
+        blink::WebLocalFrame* child_local = child->ToWebLocalFrame();
         v8::Local<v8::Context> child_context =
-            renderer_client_->GetContext(child->ToWebLocalFrame(), isolate);
-        EmitIPCEvent(child_context, internal, channel, args, sender_id);
+            renderer_client_->GetContext(child_local, isolate);
+        EmitIPCEvent(child_local, child_context, internal, channel, args,
+                     sender_id);
       }
   }
 }
@@ -198,7 +196,7 @@ void ElectronApiServiceImpl::DereferenceRemoteJSCallback(
   args.AppendInteger(object_id);
 
   v8::Local<v8::Value> v8_args = gin::ConvertToV8(isolate, args);
-  EmitIPCEvent(context, true /* internal */, channel, v8_args,
+  EmitIPCEvent(frame, context, true /* internal */, channel, v8_args,
                0 /* sender_id */);
 }
 #endif
