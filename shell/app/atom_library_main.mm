@@ -9,6 +9,7 @@
 #include "base/mac/bundle_locations.h"
 #include "base/mac/scoped_nsautorelease_pool.h"
 #include "content/public/app/content_main.h"
+#include "electron/orderfile_instrumentation.h"
 #include "shell/app/atom_main_delegate.h"
 #include "shell/app/node_main.h"
 #include "shell/common/atom_command_line.h"
@@ -20,6 +21,7 @@ int AtomMain(int argc, char* argv[]) {
   params.argc = argc;
   params.argv = const_cast<const char**>(argv);
   electron::AtomCommandLine::Init(argc, argv);
+  orderfile::StartDelayedDump();
   return content::ContentMain(params);
 }
 

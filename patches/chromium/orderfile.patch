@@ -1,0 +1,40 @@
+diff --git a/build/config/BUILD.gn b/build/config/BUILD.gn
+index 8b0501f238c0..7c7abfda83da 100644
+--- a/build/config/BUILD.gn
++++ b/build/config/BUILD.gn
+@@ -280,6 +280,7 @@ group("common_deps") {
+   if (is_android && use_order_profiling) {
+     public_deps += [ "//base/android/orderfile:orderfile_instrumentation" ]
+   }
++  public_deps += [ "//electron:orderfile_instrumentation" ]
+ 
+   if (is_win && generate_order_files && !is_nacl) {
+     public_deps += [ "//tools/cygprofile_win" ]
+diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
+index f8a611bf0676..e308e4500bf7 100644
+--- a/build/config/BUILDCONFIG.gn
++++ b/build/config/BUILDCONFIG.gn
+@@ -470,6 +470,11 @@ if (is_android) {
+       [ "//build/config/android:default_orderfile_instrumentation" ]
+ }
+ 
++if (is_mac) {
++  default_compiler_configs +=
++      [ "//build/config/mac:default_orderfile_instrumentation" ]
++}
++
+ if (is_win) {
+   default_compiler_configs +=
+       [ "//build/config/win:default_cygprofile_instrumentation" ]
+diff --git a/build/config/mac/BUILD.gn b/build/config/mac/BUILD.gn
+index 797e8cefb7cd..47414f46e03a 100644
+--- a/build/config/mac/BUILD.gn
++++ b/build/config/mac/BUILD.gn
+@@ -107,3 +107,7 @@ config("strip_all") {
+     ldflags = [ "-Wcrl,strip,-x,-S" ]
+   }
+ }
++
++config("default_orderfile_instrumentation") {
++  cflags = [ "-finstrument-function-entry-bare" ]
++}

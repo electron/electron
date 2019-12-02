@@ -863,6 +863,13 @@ if (is_mac) {
       "-rpath",
       "@loader_path/Libraries",
     ]
+    inputs = [
+      "framework.order",
+    ]
+    ldflags += [
+      "-Wl,-order_file",
+      "-Wl," + rebase_path("framework.order", root_build_dir),
+    ]
     if (is_component_build) {
       ldflags += [
         "-rpath",
@@ -1406,5 +1413,28 @@ dist_zip("hunspell_dictionaries_zip") {
 group("electron") {
   public_deps = [
     ":electron_app",
+  ]
+}
+
+static_library("orderfile_instrumentation") {
+  sources = [
+    "anchor_functions.cc",
+    "anchor_functions.h",
+    "orderfile_instrumentation.cc",
+    "orderfile_instrumentation.h",
+  ]
+  deps = [
+    "//base",
+  ]
+}
+
+executable("orderfile_test") {
+  sources = [
+    "orderfile_test.cc",
+  ]
+
+  cflags = [
+    "-finstrument-function-entry-bare",
+    "-O0",
   ]
 }

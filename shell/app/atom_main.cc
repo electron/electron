@@ -41,6 +41,7 @@
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/orderfile_instrumentation.h"
 #include "shell/app/node_main.h"
 #include "shell/common/atom_command_line.h"
 #include "shell/common/atom_constants.h"
