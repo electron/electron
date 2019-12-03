@@ -50,7 +50,7 @@ index 743d1364bcd13e24ecbe5ced730161d15b8c3e93..a5529ac8841b79f230f0fa8eae2b3cb2
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f5512d10f 100644
+index bc0abb7e9751d6d4c60cf5fc56c93356fee48c9e..4cc6eb16af370f9f083a7bf152255c5cceb56f67 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -207,6 +207,7 @@
@@ -140,7 +140,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
  
  - (NSNumber*)expanded {
    if (![self instanceActive])
-@@ -1440,6 +1454,8 @@ - (NSNumber*)index {
+@@ -1444,6 +1458,8 @@ - (NSNumber*)index {
    return nil;
  }
  
@@ -149,7 +149,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
  - (NSNumber*)insertionPointLineNumber {
    if (![self instanceActive])
      return nil;
-@@ -1462,6 +1478,7 @@ - (NSNumber*)insertionPointLineNumber {
+@@ -1466,6 +1482,7 @@ - (NSNumber*)insertionPointLineNumber {
                         caretPosition->AsTextPosition()->text_offset());
    return @(std::distance(lineBreaks.begin(), iterator));
  }
@@ -157,7 +157,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
  
  // Returns whether or not this node should be ignored in the
  // accessibility tree.
-@@ -2144,6 +2161,7 @@ - (NSArray*)selectedChildren {
+@@ -2148,6 +2165,7 @@ - (NSArray*)selectedChildren {
    return ret;
  }
  
@@ -165,7 +165,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
  - (NSString*)selectedText {
    if (![self instanceActive])
      return nil;
-@@ -2155,11 +2173,13 @@ - (NSString*)selectedText {
+@@ -2159,11 +2177,13 @@ - (NSString*)selectedText {
      return nil;
    return base::SysUTF16ToNSString(range.GetText());
  }
@@ -179,7 +179,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
  - (NSValue*)selectedTextRange {
    if (![self instanceActive])
      return nil;
-@@ -2180,12 +2200,15 @@ - (NSValue*)selectedTextRange {
+@@ -2184,12 +2204,15 @@ - (NSValue*)selectedTextRange {
    int selLength = range.GetText().length();
    return [NSValue valueWithRange:NSMakeRange(selStart, selLength)];
  }
@@ -195,7 +195,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
  
  - (NSValue*)size {
    if (![self instanceActive])
-@@ -2218,6 +2241,7 @@ - (NSString*)sortDirection {
+@@ -2222,6 +2245,7 @@ - (NSString*)sortDirection {
    return nil;
  }
  
@@ -203,7 +203,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
  // Returns a text marker that points to the first character in the document that
  // can be selected with VoiceOver.
  - (id)startTextMarker {
-@@ -2228,6 +2252,7 @@ - (id)startTextMarker {
+@@ -2232,6 +2256,7 @@ - (id)startTextMarker {
    BrowserAccessibilityPositionInstance position = root->CreatePositionAt(0);
    return CreateTextMarker(position->CreatePositionAtStartOfAnchor());
  }
@@ -211,7 +211,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
  
  // Returns a subrole based upon the role.
  - (NSString*)subrole {
-@@ -2519,11 +2544,13 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
+@@ -2523,11 +2548,13 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
    NSMutableAttributedString* attributedValue =
        [[[NSMutableAttributedString alloc] initWithString:value] autorelease];
  
@@ -225,7 +225,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
  
    return [attributedValue attributedSubstringFromRange:range];
  }
-@@ -2626,9 +2653,8 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -2630,9 +2657,8 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
        return ToBrowserAccessibilityCocoa(cell);
    }
  
@@ -237,7 +237,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
      BrowserAccessibilityPositionInstance position =
          CreatePositionFromTextMarker(parameter);
      if (!position->IsNullPosition())
-@@ -2939,6 +2965,7 @@ AXPlatformRange range(std::move(lineStartPosition),
+@@ -2943,6 +2969,7 @@ AXPlatformRange range(std::move(lineStartPosition),
  
      return CreateTextMarker(root->CreatePositionAt(index));
    }
@@ -245,7 +245,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
  
    if ([attribute isEqualToString:
                       NSAccessibilityBoundsForRangeParameterizedAttribute]) {
-@@ -2972,6 +2999,7 @@ AXPlatformRange range(std::move(lineStartPosition),
+@@ -2976,6 +3003,7 @@ AXPlatformRange range(std::move(lineStartPosition),
      return nil;
    }
  
@@ -253,7 +253,7 @@ index 074f8e8dbc27c81de07529740199874d8c5e19f2..07fbf55276722616458a96b5a5f3578f
    if ([attribute
            isEqualToString:
                NSAccessibilityLineTextMarkerRangeForTextMarkerParameterizedAttribute]) {
-@@ -3078,6 +3106,7 @@ AXPlatformRange range(position->CreatePreviousLineStartPosition(
+@@ -3082,6 +3110,7 @@ AXPlatformRange range(position->CreatePreviousLineStartPosition(
  
      return @(child->GetIndexInParent());
    }
@@ -314,7 +314,7 @@ index e59ac93d0e1554a2df5d8c74db2beba25d090228..6657c48664bdec4964b382f80309d1bf
  
  }  // namespace
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 8e4a469b6f0675dc7b82543d5758f0c2ec226809..2fcfb6edb5f57bd25756257b77361d25768f9abf 100644
+index b2425416b1993f037530619df0458d43d008bd03..39b096120b57c3192519a607d96c8a3ddab434e5 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -36,6 +36,7 @@
@@ -344,7 +344,7 @@ index 8e4a469b6f0675dc7b82543d5758f0c2ec226809..2fcfb6edb5f57bd25756257b77361d25
        should_update_name_(true),
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
-@@ -303,8 +307,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -307,8 +311,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -358,10 +358,10 @@ index 8e4a469b6f0675dc7b82543d5758f0c2ec226809..2fcfb6edb5f57bd25756257b77361d25
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index de4f3ceb0fb01bb924c19a576fc201a14a6470cd..10ca4b247e170cb9d17a1a3c6ecac2efbffb6a5d 100644
+index d8e556e18263864930c223235fe4ae475df7747b..ce01f4cd7c4debeb88eff7c593f835c9d78ed002 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -191,6 +191,12 @@ source_set("audio") {
+@@ -177,6 +177,12 @@ source_set("audio") {
        "mac/scoped_audio_unit.cc",
        "mac/scoped_audio_unit.h",
      ]

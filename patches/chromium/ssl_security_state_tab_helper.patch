@@ -6,10 +6,10 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index bc60f256d9d1a07d04a50ad245a5de6490f5091b..e29f4e910349440cd388227d36bf303c885a651d 100644
+index 3b2b3d50efed45b1cef7d652418b08ec969e3644..5733f367547f6389fd857e5bb884f3cae6553457 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
-@@ -13,21 +13,25 @@
+@@ -13,22 +13,26 @@
  #include "base/strings/pattern.h"
  #include "base/strings/string_util.h"
  #include "build/build_config.h"
@@ -19,6 +19,7 @@ index bc60f256d9d1a07d04a50ad245a5de6490f5091b..e29f4e910349440cd388227d36bf303c
  #include "chrome/browser/reputation/reputation_web_contents_observer.h"
  #include "chrome/browser/safe_browsing/safe_browsing_service.h"
  #include "chrome/browser/safe_browsing/ui_manager.h"
+ #include "chrome/browser/ssl/known_interception_disclosure_infobar_delegate.h"
 +#endif
  #include "chrome/browser/ssl/tls_deprecation_config.h"
  #include "chrome/common/chrome_features.h"
@@ -36,7 +37,7 @@ index bc60f256d9d1a07d04a50ad245a5de6490f5091b..e29f4e910349440cd388227d36bf303c
  #include "components/security_state/content/content_utils.h"
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/navigation_entry.h"
-@@ -50,7 +54,7 @@
+@@ -51,7 +55,7 @@
  #include "chrome/browser/chromeos/policy/policy_cert_service_factory.h"
  #endif  // defined(OS_CHROMEOS)
  
@@ -45,7 +46,7 @@ index bc60f256d9d1a07d04a50ad245a5de6490f5091b..e29f4e910349440cd388227d36bf303c
  #include "chrome/browser/safe_browsing/chrome_password_protection_service.h"
  #endif
  
-@@ -94,9 +98,12 @@ bool IsLegacyTLS(GURL url, int connection_status) {
+@@ -95,9 +99,12 @@ bool IsLegacyTLS(GURL url, int connection_status) {
    // default we treat TLS < 1.2 as Legacy, unless the "SSLVersionMin" policy is
    // set.
    std::string ssl_version_min_str = switches::kSSLVersionTLSv12;
@@ -61,7 +62,7 @@ index bc60f256d9d1a07d04a50ad245a5de6490f5091b..e29f4e910349440cd388227d36bf303c
    }
  
    // Convert the pref string to an SSLVersion, if it is valid. Otherwise use the
-@@ -113,8 +120,9 @@ bool IsLegacyTLS(GURL url, int connection_status) {
+@@ -114,8 +121,9 @@ bool IsLegacyTLS(GURL url, int connection_status) {
  
  }  // namespace
  
@@ -72,7 +73,7 @@ index bc60f256d9d1a07d04a50ad245a5de6490f5091b..e29f4e910349440cd388227d36bf303c
  
  SecurityStateTabHelper::SecurityStateTabHelper(
      content::WebContents* web_contents)
-@@ -158,6 +166,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
+@@ -159,6 +167,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
    // information is still being initialized, thus no need to check for that.
    state->malicious_content_status = GetMaliciousContentStatus();
  
@@ -80,7 +81,7 @@ index bc60f256d9d1a07d04a50ad245a5de6490f5091b..e29f4e910349440cd388227d36bf303c
    ReputationWebContentsObserver* reputation_web_contents_observer =
        ReputationWebContentsObserver::FromWebContents(web_contents());
    state->safety_tip_info =
-@@ -166,6 +175,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
+@@ -167,6 +176,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
                  ->GetSafetyTipInfoForVisibleNavigation()
            : security_state::SafetyTipInfo(
                  {security_state::SafetyTipStatus::kUnknown, GURL()});
@@ -88,7 +89,18 @@ index bc60f256d9d1a07d04a50ad245a5de6490f5091b..e29f4e910349440cd388227d36bf303c
    return state;
  }
  
-@@ -237,6 +247,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -216,8 +226,10 @@ void SecurityStateTabHelper::DidFinishNavigation(
+     UMA_HISTOGRAM_BOOLEAN("interstitial.ssl.visited_site_after_warning", true);
+   }
+ 
++#if 0
+   MaybeShowKnownInterceptionDisclosureDialog(
+       web_contents(), visible_security_state->cert_status);
++#endif
+ }
+ 
+ void SecurityStateTabHelper::DidChangeVisibleSecurityState() {
+@@ -241,6 +253,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
        web_contents()->GetController().GetVisibleEntry();
    if (!entry)
      return security_state::MALICIOUS_CONTENT_STATUS_NONE;
@@ -96,7 +108,7 @@ index bc60f256d9d1a07d04a50ad245a5de6490f5091b..e29f4e910349440cd388227d36bf303c
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -319,6 +330,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -323,6 +336,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }

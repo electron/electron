@@ -12,7 +12,7 @@ when we override ReallocateBufferMemory, so we therefore need to implement
 Realloc on the v8 side and correspondingly in gin.
 
 diff --git a/gin/array_buffer.cc b/gin/array_buffer.cc
-index a02797e94f61e8c71428633a4585a625dc5aadbd..305b7d307d233af699e3f495f85de0f8097ff311 100644
+index b94a71ef856f92404e16544e22ebbadf57cff363..b15685f6907bcafeb1acd62bfe76f0713dea27f3 100644
 --- a/gin/array_buffer.cc
 +++ b/gin/array_buffer.cc
 @@ -43,6 +43,10 @@ void* ArrayBufferAllocator::AllocateUninitialized(size_t length) {
@@ -54,10 +54,10 @@ index c69cfebccd7d7bff35d2292e61bf6008f0ca7940..2cb5f5d3f89f2af13221e66b2277a285
      ArrayBufferContents::FreeMemory(data);
    }
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-index a868934f025d3957419d71eeb4553ce23fcb4707..fd103b2bd1ffc30e95d34101bd1a1e6225f206d8 100644
+index bd781c2c8d42a8b4886a773333992cb932d24f6b..ea6d9e0f3a17899a4db19d09010bfb68ed10d5cd 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-@@ -147,6 +147,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
+@@ -149,6 +149,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
    return AllocateMemoryWithFlags(size, policy, base::PartitionAllocReturnNull);
  }
  
@@ -70,10 +70,10 @@ index a868934f025d3957419d71eeb4553ce23fcb4707..fd103b2bd1ffc30e95d34101bd1a1e62
    WTF::Partitions::ArrayBufferPartition()->Free(data);
  }
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
-index a597d88799bed96da654d0d6c387bf1cf3dd102b..1f8d9f232e253964dfb12cdda2052226ff6c606d 100644
+index 2e601017e41292fa4684df6b30f6357488b90a69..87a9c16cb864b4746fcf72a15362ac3ab4f8ac21 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
-@@ -101,6 +101,7 @@ class CORE_EXPORT ArrayBufferContents {
+@@ -105,6 +105,7 @@ class CORE_EXPORT ArrayBufferContents {
    void CopyTo(ArrayBufferContents& other);
  
    static void* AllocateMemoryOrNull(size_t, InitializationPolicy);

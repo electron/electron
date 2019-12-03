@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/chrome/browser/ui/libgtkui/native_theme_gtk.cc b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-index b411a3c3aaebc292648069bac52dbcc309c02f55..5a18349c932aebdfa82610835a4fe498486ccc23 100644
+index 517b3abee888592b34d2217af57b07d5ac622a80..36a3c2cf993d9580a4539e2b893cecaf9662e5e0 100644
 --- a/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 +++ b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-@@ -275,6 +275,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
+@@ -277,6 +277,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -40,10 +40,10 @@ index b411a3c3aaebc292648069bac52dbcc309c02f55..5a18349c932aebdfa82610835a4fe498
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 01b90235851a6be94eef921f9b2dbf825bacd14e..fc347d164cc87e197991d9393fd4cdbdc1f1304a 100644
+index a5dd51e594e20f671ec56281bea75d8162289072..a0bcf7f6c197214ef302a6df5e500f0df313ce6a 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -56,6 +56,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -58,6 +58,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
        case NativeTheme::kColorId_BubbleFooterBackground:
          return SkColorSetRGB(0x32, 0x36, 0x39);
  
@@ -58,9 +58,9 @@ index 01b90235851a6be94eef921f9b2dbf825bacd14e..fc347d164cc87e197991d9393fd4cdbd
        // FocusableBorder
        case NativeTheme::kColorId_FocusedBorderColor:
          return SkColorSetA(gfx::kGoogleBlue300, 0x4D);
-@@ -342,6 +350,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
-           .color;
-     }
+@@ -368,6 +376,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+     case NativeTheme::kColorId_UnfocusedBorderColor:
+       return gfx::kGoogleGrey300;
  
 +    // Results Tables
 +    case NativeTheme::kColorId_ResultsTableNormalBackground:
@@ -78,10 +78,10 @@ index 01b90235851a6be94eef921f9b2dbf825bacd14e..fc347d164cc87e197991d9393fd4cdbd
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index e604c2317cd333dc3b0012fe60149915aa40c8d1..71b1cea60023bc2ee3c4f6d79fd5695420aff230 100644
+index fd4d19fd02047bb4f627e0ff8ccb99e7cac051d9..7fb0b825b13f4e2fd0733a2034a92812a2de7668 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -388,6 +388,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -390,6 +390,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
      kColorId_TableHeaderText,
      kColorId_TableHeaderBackground,
      kColorId_TableHeaderSeparator,
@@ -94,11 +94,11 @@ index e604c2317cd333dc3b0012fe60149915aa40c8d1..71b1cea60023bc2ee3c4f6d79fd56954
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index cc2951d4437b34cd5ea7d1ea16e239d821d53c4d..8214352e3b7e7aaadf0a63004238da244ebc08d0 100644
+index a7c06b8a046bba7096bfb41c84d2073980ffa6d3..cff7681a4e0023a67edda37bf9865ab073b32549 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -672,6 +672,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
-     case kColorId_TableGroupingIndicatorColor:
+@@ -619,6 +619,18 @@ SkColor NativeThemeWin::GetPlatformHighContrastColor(ColorId color_id) const {
+     case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  
 +    // Results Tables
@@ -112,6 +112,7 @@ index cc2951d4437b34cd5ea7d1ea16e239d821d53c4d..8214352e3b7e7aaadf0a63004238da24
 +    case kColorId_ResultsTableDimmedText:
 +      return color_utils::AlphaBlend(system_colors_[SystemThemeColor::kWindowText],
 +                                     system_colors_[SystemThemeColor::kWindow], 0.5f);
-     default:
-       break;
-   }
++
+     // Button Background
+     case kColorId_MenuBackgroundColor:
+     case kColorId_HighlightedMenuItemBackgroundColor:

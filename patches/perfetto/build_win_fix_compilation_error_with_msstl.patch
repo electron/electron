@@ -22,10 +22,10 @@ gen/third_party/perfetto\protos/perfetto/common/descriptor.gen.h(34,7): note: fo
 class FieldDescriptorProto;
 
 diff --git a/src/protozero/protoc_plugin/cppgen_plugin.cc b/src/protozero/protoc_plugin/cppgen_plugin.cc
-index 51fb707ee5f0c036091080d9f33997989c07b5b5..21b55b58e97592c8287874dbde8dabffc6b3a261 100644
+index 060903f33a27c8d3fd2b7204aadce1a83d279ba8..703bb8d99fd1f2eaeecde9c8fc46b8014cb7c35a 100644
 --- a/src/protozero/protoc_plugin/cppgen_plugin.cc
 +++ b/src/protozero/protoc_plugin/cppgen_plugin.cc
-@@ -587,7 +587,7 @@ void CppObjGenerator::GenClassDecl(const Descriptor* msg, Printer* p) const {
+@@ -619,7 +619,7 @@ void CppObjGenerator::GenClassDecl(const Descriptor* msg, Printer* p) const {
        // TODO(primiano): this should be done only for TYPE_MESSAGE. Unfortuntely
        // we didn't realize before and now we have a bunch of code that does:
        // *msg->add_int_value() = 42 instead of msg->add_int_value(42).
@@ -34,7 +34,7 @@ index 51fb707ee5f0c036091080d9f33997989c07b5b5..21b55b58e97592c8287874dbde8dabff
                 "t", GetCppType(field, false), "n", field->lowercase_name());
      }
    }
-@@ -652,6 +652,21 @@ void CppObjGenerator::GenClassDef(const Descriptor* msg, Printer* p) const {
+@@ -684,6 +684,21 @@ void CppObjGenerator::GenClassDef(const Descriptor* msg, Printer* p) const {
    p->Outdent();
    p->Print("\n}\n\n");
  
@@ -55,5 +55,4 @@ index 51fb707ee5f0c036091080d9f33997989c07b5b5..21b55b58e97592c8287874dbde8dabff
 +
    std::string proto_type = GetFullName(msg, true);
  
-   // Generate the ParseRawProto() method definition.
-
+   // Generate the ParseFromArray() method definition.

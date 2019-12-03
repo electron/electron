@@ -7,10 +7,10 @@ This is used by editors to obtain the filesystem path from a dragged file. See
 documentation at https://electronjs.org/docs/api/file-object
 
 diff --git a/third_party/blink/renderer/core/fileapi/file.h b/third_party/blink/renderer/core/fileapi/file.h
-index 05e05fb1631851009897f3789d3e770475ce1363..e2ad5fef884532847d035430c14c25e042e2ab24 100644
+index acd4d5adfba441895bf7aeeead4c23877b6b26b1..3bb05ae0205bb2d0ce1b79f30ff98b78daa2cd4f 100644
 --- a/third_party/blink/renderer/core/fileapi/file.h
 +++ b/third_party/blink/renderer/core/fileapi/file.h
-@@ -201,6 +201,9 @@ class CORE_EXPORT File final : public Blob {
+@@ -191,6 +191,9 @@ class CORE_EXPORT File final : public Blob {
    }
    const String& name() const { return name_; }
  
@@ -21,7 +21,7 @@ index 05e05fb1631851009897f3789d3e770475ce1363..e2ad5fef884532847d035430c14c25e0
    // http://dev.w3.org/2006/webapi/FileAPI/#file-attrs
    int64_t lastModified() const;
 diff --git a/third_party/blink/renderer/core/fileapi/file.idl b/third_party/blink/renderer/core/fileapi/file.idl
-index 41b8183e858b6d955bacbb72281a08e750b6b29f..0db894ecfae63795724335d914f9f992c0755fd1 100644
+index e5cf6cc926ff2670f713018dd750e79c53ee76eb..60eca3cf100b31c3d2c0c68271d98c60321e69a7 100644
 --- a/third_party/blink/renderer/core/fileapi/file.idl
 +++ b/third_party/blink/renderer/core/fileapi/file.idl
 @@ -32,6 +32,7 @@
