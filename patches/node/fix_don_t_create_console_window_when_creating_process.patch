@@ -6,7 +6,7 @@ Subject: fix: don't create console window when creating process
 This commit prevents console windows from being spawned when creating processes to better align with what Windows users expect and should be removed when upgrading to a version that includes https://github.com/nodejs/node/pull/21316
 
 diff --git a/deps/uv/src/win/process.c b/deps/uv/src/win/process.c
-index f9c53de0af007961b0d269651d368fd83717976a..fa1a76a2e6626e15bdd0681626fc82c9ca6907fe 100644
+index 9b7fdc1dc1b4e2b9e16e053d1aca36ef5221c460..e1010d1248a95a3927d6ed1a1affbb545c1d7201 100644
 --- a/deps/uv/src/win/process.c
 +++ b/deps/uv/src/win/process.c
 @@ -1099,6 +1099,9 @@ int uv_spawn(uv_loop_t* loop,

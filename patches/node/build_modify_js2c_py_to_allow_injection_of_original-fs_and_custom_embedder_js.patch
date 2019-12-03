@@ -38,7 +38,7 @@ index fabaea75686161f488a03349e07049a513b98fad..5a6b01dc12fb77d5f8c26a1153ead2a1
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 7b3e90af88b873c32f8ed51712f7dfdff3c1c706..586d0f72dcb4215ce73c23b401bce7238ed5bb0d 100755
+index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c48e52b67c 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -187,13 +187,15 @@ namespace native_module {{
@@ -79,7 +79,7 @@ index 7b3e90af88b873c32f8ed51712f7dfdff3c1c706..586d0f72dcb4215ce73c23b401bce723
    if split[0] == 'deps':
      split = ['internal'] + split
    else:  # `lib/**/*.js` so drop the 'lib' part
-@@ -273,9 +275,9 @@ def NormalizeFileName(filename):
+@@ -274,9 +276,9 @@ def NormalizeFileName(filename):
  
    return os.path.splitext(filename)[0]
  
@@ -91,7 +91,7 @@ index 7b3e90af88b873c32f8ed51712f7dfdff3c1c706..586d0f72dcb4215ce73c23b401bce723
  
    # Build source code lines
    definitions = []
-@@ -283,14 +285,26 @@ def JS2C(source_files, target):
+@@ -284,14 +286,26 @@ def JS2C(source_files, target):
  
    for filename in source_files['.js']:
      AddModule(filename, consts, macros, definitions, initializers)
@@ -122,7 +122,7 @@ index 7b3e90af88b873c32f8ed51712f7dfdff3c1c706..586d0f72dcb4215ce73c23b401bce723
    write_if_chaged(out, target)
  
  
-@@ -343,17 +357,21 @@ def main():
+@@ -344,17 +358,21 @@ def main():
    )
    parser.add_argument('--target', help='output file')
    parser.add_argument('--verbose', action='store_true', help='output file')
