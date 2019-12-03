@@ -49,8 +49,7 @@ class WrappableBase {
   // This method should only be called by classes using Constructor.
   virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
-  // Helper to migrate from native_mate to gin.
-  // TODO(zcbenz): Remove this or |InitWith| after native_mate is removed.
+  // Helper to init with arguments.
   void InitWithArgs(gin::Arguments* args);
 
  private:
