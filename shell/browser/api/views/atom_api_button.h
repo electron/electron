@@ -5,7 +5,7 @@
 #ifndef SHELL_BROWSER_API_VIEWS_ATOM_API_BUTTON_H_
 #define SHELL_BROWSER_API_VIEWS_ATOM_API_BUTTON_H_
 
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "shell/browser/api/atom_api_view.h"
 #include "ui/views/controls/button/button.h"
 

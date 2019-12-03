@@ -4,8 +4,8 @@
 
 #include "shell/browser/api/views/atom_api_resize_area.h"
 
-#include "native_mate/dictionary.h"
 #include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -49,7 +49,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("ResizeArea", mate::CreateConstructor<ResizeArea>(
                              isolate, base::BindRepeating(&ResizeArea::New)));
 }

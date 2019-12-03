@@ -6,9 +6,9 @@
 
 #include <string>
 
-#include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_view.h"
 #include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace mate {
@@ -42,7 +42,7 @@ BoxLayout::BoxLayout(views::BoxLayout::Orientation orientation)
 
 BoxLayout::~BoxLayout() {}
 
-void BoxLayout::SetFlexForView(mate::Handle<View> view, int flex) {
+void BoxLayout::SetFlexForView(gin::Handle<View> view, int flex) {
   auto* box_layout = static_cast<views::BoxLayout*>(layout_manager());
   box_layout->SetFlexForView(view->view(), flex);
 }
@@ -76,7 +76,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("BoxLayout", mate::CreateConstructor<BoxLayout>(
                             isolate, base::BindRepeating(&BoxLayout::New)));
 }
