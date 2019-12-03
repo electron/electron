@@ -111,8 +111,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       const GURL& request_url,
       bool is_main_frame_request,
       bool strict_enforcement,
-      const base::Callback<void(content::CertificateRequestResultType)>&
-          callback) override;
+      base::OnceCallback<void(content::CertificateRequestResultType)> callback)
+      override;
   base::OnceClosure SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
@@ -204,7 +204,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   bool HandleExternalProtocol(
       const GURL& url,
-      content::WebContents::Getter web_contents_getter,
+      content::WebContents::OnceGetter web_contents_getter,
       int child_id,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
