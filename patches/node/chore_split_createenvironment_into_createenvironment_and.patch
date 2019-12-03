@@ -8,7 +8,7 @@ This allows us to run operations on a created but not yet bootstrapped
 environment such as setting up an InspectorAgent
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 443f49320b2e6720f932fcfcefdbe6e539594964..4d79af9ec2a7b476c5f86f3882f4fb63afafc53e 100644
+index ae26cb7e9ef55fc0b965e28de4686aec87f42522..50886f4a998f1e7f346a6b7fad91ce49c3a7cdff 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -263,7 +263,8 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
@@ -53,10 +53,10 @@ index 443f49320b2e6720f932fcfcefdbe6e539594964..4d79af9ec2a7b476c5f86f3882f4fb63
  
  void FreeEnvironment(Environment* env) {
 diff --git a/src/node.h b/src/node.h
-index c51fb1a6a6e497a091e2ba0b147e3d7b6a4d685c..211f00cca65eeba317a03af36411a19a6befae18 100644
+index 80a27dc734a81a7ca8d888d1d55fc8d24a536280..9c6dcbf7014f7cf87f7f66886cbf255978c244fa 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -330,7 +330,9 @@ NODE_EXTERN Environment* CreateEnvironment(IsolateData* isolate_data,
+@@ -326,7 +326,9 @@ NODE_EXTERN Environment* CreateEnvironment(IsolateData* isolate_data,
                                             int argc,
                                             const char* const* argv,
                                             int exec_argc,

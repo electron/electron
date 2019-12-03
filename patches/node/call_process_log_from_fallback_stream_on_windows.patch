@@ -6,7 +6,7 @@ Subject: Call process.log from fallback stream on Windows
 (cherry picked from commit d31e629b4f2daf3500a485caab2b2990a41e3ad4)
 
 diff --git a/lib/internal/process/stdio.js b/lib/internal/process/stdio.js
-index 61892165999d92704e49d0748c5e1d3d4d9582b7..0ea488c944b8fc8e21064476180c2b417c6e1125 100644
+index 08781547c489526834609861c5a906ef5183936b..e60ad6b0d4c634a8b0990da6ca090ea48715b830 100644
 --- a/lib/internal/process/stdio.js
 +++ b/lib/internal/process/stdio.js
 @@ -192,6 +192,11 @@ function createWritableStdioStream(fd) {

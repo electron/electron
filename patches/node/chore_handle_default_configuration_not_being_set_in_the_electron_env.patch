@@ -5,7 +5,7 @@ Subject: chore: handle default_configuration not being set in the electron env
 
 
 diff --git a/test/common/index.js b/test/common/index.js
-index 13604d06e14a3612e4d161ebbdda10912a46d3b0..0f1398ed665b66d4fe7778a33ceab5176c086ff4 100644
+index 00ebd283a0c3e960de2a7c4e3748561c499eb820..2ebec24f9e1f53306882e827a17925201cad0ea6 100644
 --- a/test/common/index.js
 +++ b/test/common/index.js
 @@ -118,7 +118,7 @@ const enoughTestCpu = Array.isArray(cpus) &&
