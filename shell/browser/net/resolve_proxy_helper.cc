@@ -56,6 +56,7 @@ void ResolveProxyHelper::StartPendingRequest() {
   content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->LookUpProxyForURL(pending_requests_.front().url,
+                          net::NetworkIsolationKey::Todo(),
                           std::move(proxy_lookup_client));
 }
 
