@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 4cfa0b7dd6f98df2ed2c6118423ac2d10c326da6..7d8b6dd422f2408f179aa6188897dea2b4a04c4e 100644
+index 91fc20e12735250daefb9f4be39b22786155f516..5cb4402167bc81a19a631bc3b70ca6b316ce66a0 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1822,6 +1822,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
+@@ -1816,6 +1816,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
  
  const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpaceAndId(
      int* id) const {
@@ -37,10 +37,10 @@ index 4cfa0b7dd6f98df2ed2c6118423ac2d10c326da6..7d8b6dd422f2408f179aa6188897dea2
    // The pending tree will have the most recently updated color space, so
    // prefer that.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 182eb5f68731afdaba5ce71d0fa67ea1051eb0dc..3dd350583c3f23445841c3e46122ae6e809508b2 100644
+index 20bf2b409d049699528c7f784e195d86e84933b4..40d3ac04264aeb07380cac40de9a291687065d04 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -96,6 +96,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -100,6 +100,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -83,7 +83,7 @@ index cb69e08c0185f55497089505ed5b226e57140321..362f28accc248248f3bcb54955c23528
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index bfa68438e8119bb1d2e5f4f656346b702b5def15..74517e894aeeb24cf491420d3e967ccda13beaf6 100644
+index 30533e787515416723ec41095119871a02fa7805..2682fb11f2c0049c3f3be9a34a2b319bc1a6ff15 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -83,6 +83,9 @@
@@ -182,7 +182,7 @@ index bfa68438e8119bb1d2e5f4f656346b702b5def15..74517e894aeeb24cf491420d3e967ccd
  
    if (current_program_->rounded_corner_rect_location() != -1) {
      SetShaderRoundedCorner(
-@@ -3237,7 +3242,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
+@@ -3239,7 +3244,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
  void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& src_color_space,
                                 const gfx::ColorSpace& dst_color_space) {
@@ -193,7 +193,7 @@ index bfa68438e8119bb1d2e5f4f656346b702b5def15..74517e894aeeb24cf491420d3e967ccd
  
    gfx::ColorSpace adjusted_color_space = src_color_space;
    float sdr_white_level = current_frame()->sdr_white_level;
-@@ -3632,7 +3639,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -3634,7 +3641,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
  
    *overlay_texture = FindOrCreateOverlayTexture(
        params.quad->render_pass_id, iosurface_width, iosurface_height,
@@ -202,7 +202,7 @@ index bfa68438e8119bb1d2e5f4f656346b702b5def15..74517e894aeeb24cf491420d3e967ccd
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -3851,8 +3858,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -3853,8 +3860,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -213,17 +213,17 @@ index bfa68438e8119bb1d2e5f4f656346b702b5def15..74517e894aeeb24cf491420d3e967ccd
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4012,3 +4019,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -4014,3 +4021,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index ff602d0c5a7a58b800d1473631b16a0c9ed64760..143308bc62df88ca46a852ee7eecd0e93ea18802 100644
+index bb814d78afc5dedbcf59ff0a9085d599385d222d..a9336275b2d2ec2d817e489a33ec831843b2cf05 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -190,6 +190,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -185,6 +185,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -232,10 +232,10 @@ index ff602d0c5a7a58b800d1473631b16a0c9ed64760..143308bc62df88ca46a852ee7eecd0e9
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 390170edf80cc2ca626f0be67885038eee304e6b..8278052c002d594558728859db5666fe4633d242 100644
+index 445e3b3654c8fe5855046be102b381e730c083cc..706d38c2bf06145038c99652dfdd9d3c74032a05 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -227,6 +227,7 @@
+@@ -228,6 +228,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
@@ -243,7 +243,7 @@ index 390170edf80cc2ca626f0be67885038eee304e6b..8278052c002d594558728859db5666fe
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3046,6 +3047,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3042,6 +3043,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -252,10 +252,10 @@ index 390170edf80cc2ca626f0be67885038eee304e6b..8278052c002d594558728859db5666fe
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index c45fd8d90f0cd79d87c0fb819c7409dcb6967387..15d47e6e66f6b73fdca94c934eb61c7b0660aab7 100644
+index b3ee921d5a8d1422bb0b0ee5da138ed1e0d6b50b..7cc63039a5c1a6236a6656458572fa00d7743183 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2959,6 +2959,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2958,6 +2958,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -266,7 +266,7 @@ index c45fd8d90f0cd79d87c0fb819c7409dcb6967387..15d47e6e66f6b73fdca94c934eb61c7b
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index f136d65f5ec53637fdfe6da65960c469c840aae9..163e2065f362da4eed3cd09b9d959ccf7d18977e 100644
+index a947db5fb562fb4ccbfb94df88f460f1da9451f4..77c816b2c5e98a4546c74d9358dfcf3f205f1781 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@

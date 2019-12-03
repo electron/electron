@@ -107,19 +107,19 @@ index 4bf25bf1fa69f7d3869369172d375e2e489e62a1..f80ef2cecc8b111dc54e109646573a59
        const url::Origin& origin,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
-diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index ca880850d5f538c6615fb8b3546d4726bf42b7f6..918448ace7c99bd406ff49d3903aeae98f4fc831 100644
---- a/content/browser/renderer_interface_binders.cc
-+++ b/content/browser/renderer_interface_binders.cc
-@@ -136,7 +136,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
-          RenderProcessHost* host, const url::Origin& origin) {
-         static_cast<StoragePartitionImpl*>(host->GetStoragePartition())
-             ->GetPlatformNotificationContext()
--            ->CreateService(origin, std::move(request));
-+            ->CreateService(host, origin, std::move(request));
-       }));
-   parameterized_binder_registry_.AddInterface(
-       base::BindRepeating(&QuotaDispatcherHost::CreateForWorker));
+diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
+index 7348ec228856932f876b0f749fadcad6ee1d1c96..63d1e8cfc01dbdc673b1d3cabf48a2106aa669a6 100644
+--- a/content/browser/renderer_host/render_process_host_impl.cc
++++ b/content/browser/renderer_host/render_process_host_impl.cc
+@@ -1974,7 +1974,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+     mojo::PendingReceiver<blink::mojom::NotificationService> receiver) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
+-      origin, std::move(receiver));
++      this, origin, std::move(receiver));
+ }
+ 
+ void RenderProcessHostImpl::CreateWebSocketConnector(
 diff --git a/content/public/browser/platform_notification_service.h b/content/public/browser/platform_notification_service.h
 index ca61088079c4150fcf389504ddcf26bcf6bf69cd..d9c034c39890eef1fe3d95c6d7c0ae68eb711a89 100644
 --- a/content/public/browser/platform_notification_service.h

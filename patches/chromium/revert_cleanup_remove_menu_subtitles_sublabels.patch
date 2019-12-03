@@ -112,7 +112,7 @@ index a258d038da4a2bbfc6ec13c250781166235c1fbc..f6dbaa19cdb8938204c3452622589708
 +  EXPECT_EQ(7, changed_count());
  }
 diff --git a/chrome/browser/ui/views/menu_item_view_interactive_uitest.cc b/chrome/browser/ui/views/menu_item_view_interactive_uitest.cc
-index 654d0bf906c4785321a1fcdad9e12a22dbbbc170..6159eca4a400112f10647defe857c72740ff2779 100644
+index 1d7f5dc3abe95ffaa847454e2be1e9872fedc287..6e67fff6631d2d5339df6a912d917862bce37f3d 100644
 --- a/chrome/browser/ui/views/menu_item_view_interactive_uitest.cc
 +++ b/chrome/browser/ui/views/menu_item_view_interactive_uitest.cc
 @@ -91,8 +91,8 @@ class MenuItemViewTestInsert : public MenuTestBase {
@@ -229,7 +229,7 @@ index 6a55c0f82ce3df3d8b2b31dbb67830bb5464019c..c42dee1fc9ddccf5b5556fff7282a64d
    return items_[ValidateItemIndex(index)].minor_text;
  }
 diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_model.h
-index 1ae8909a1404a43b34b9ef585511c7a3de39fa28..d4c93d6073c5471e4a6432a96c09d3c26e239b20 100644
+index 1ae8909a1404a43b34b9ef585511c7a3de39fa28..0d2a74ab5e9d55201a4992d81aecf9c2a83af5b8 100644
 --- a/ui/base/models/simple_menu_model.h
 +++ b/ui/base/models/simple_menu_model.h
 @@ -47,6 +47,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
@@ -250,7 +250,7 @@ index 1ae8909a1404a43b34b9ef585511c7a3de39fa28..d4c93d6073c5471e4a6432a96c09d3c2
    // Sets the minor text for the item at |index|.
    void SetMinorText(int index, const base::string16& minor_text);
  
-@@ -202,6 +206,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
+@@ -200,6 +204,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
    ui::MenuSeparatorType GetSeparatorTypeAt(int index) const override;
    int GetCommandIdAt(int index) const override;
    base::string16 GetLabelAt(int index) const override;
@@ -258,7 +258,7 @@ index 1ae8909a1404a43b34b9ef585511c7a3de39fa28..d4c93d6073c5471e4a6432a96c09d3c2
    base::string16 GetMinorTextAt(int index) const override;
    const gfx::VectorIcon* GetMinorIconAt(int index) const override;
    bool IsItemDynamicAt(int index) const override;
-@@ -237,6 +242,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
+@@ -235,6 +240,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
      int command_id = 0;
      ItemType type = TYPE_COMMAND;
      base::string16 label;
@@ -267,7 +267,7 @@ index 1ae8909a1404a43b34b9ef585511c7a3de39fa28..d4c93d6073c5471e4a6432a96c09d3c2
      const gfx::VectorIcon* minor_icon = nullptr;
      gfx::Image icon;
 diff --git a/ui/views/controls/menu/menu_item_view.cc b/ui/views/controls/menu/menu_item_view.cc
-index 32416b60f5e4a137bf5485493edc488570ce9cbb..2a03f04a1d84a5017c252d6aacf0b19d7b4f3b72 100644
+index e86941132ce80e262d1961ff3cdad79b44abb878..6e67ffea103e7169d35b37455ded83d8d812d77b 100644
 --- a/ui/views/controls/menu/menu_item_view.cc
 +++ b/ui/views/controls/menu/menu_item_view.cc
 @@ -278,6 +278,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
@@ -286,7 +286,7 @@ index 32416b60f5e4a137bf5485493edc488570ce9cbb..2a03f04a1d84a5017c252d6aacf0b19d
    item->SetMinorText(minor_text);
    item->SetMinorIcon(minor_icon);
    if (vector_icon) {
-@@ -339,21 +339,22 @@ void MenuItemView::RemoveAllMenuItems() {
+@@ -339,21 +341,22 @@ void MenuItemView::RemoveAllMenuItems() {
  MenuItemView* MenuItemView::AppendMenuItem(int item_id,
                                             const base::string16& label,
                                             const gfx::ImageSkia& icon) {
@@ -312,7 +312,7 @@ index 32416b60f5e4a137bf5485493edc488570ce9cbb..2a03f04a1d84a5017c252d6aacf0b19d
                  /*minor_text=*/base::string16(), /*minor_icon=*/nullptr,
                  /*icon=*/gfx::ImageSkia(), /*vector_icon=*/nullptr,
                  /*type=*/SEPARATOR,
-@@ -362,10 +363,11 @@ void MenuItemView::AddSeparatorAt(int index) {
+@@ -362,10 +365,11 @@ void MenuItemView::AddSeparatorAt(int index) {
  
  MenuItemView* MenuItemView::AppendMenuItemImpl(int item_id,
                                                 const base::string16& label,
@@ -325,7 +325,7 @@ index 32416b60f5e4a137bf5485493edc488570ce9cbb..2a03f04a1d84a5017c252d6aacf0b19d
                         nullptr, type, ui::NORMAL_SEPARATOR);
  }
  
-@@ -428,6 +435,11 @@ void MenuItemView::SetTitle(const base::string16& title) {
+@@ -398,6 +402,11 @@ void MenuItemView::SetTitle(const base::string16& title) {
    invalidate_dimensions();  // Triggers preferred size recalculation.
  }
  
@@ -337,7 +337,7 @@ index 32416b60f5e4a137bf5485493edc488570ce9cbb..2a03f04a1d84a5017c252d6aacf0b19d
  void MenuItemView::SetMinorText(const base::string16& minor_text) {
    minor_text_ = minor_text;
    invalidate_dimensions();  // Triggers preferred size recalculation.
-@@ -1017,13 +1029,23 @@ void MenuItemView::PaintButton(gfx::Canvas* canvas, PaintButtonMode mode) {
+@@ -987,13 +996,23 @@ void MenuItemView::PaintButton(gfx::Canvas* canvas, PaintButtonMode mode) {
        (!delegate ||
         delegate->ShouldReserveSpaceForSubmenuIndicator() ?
             item_right_margin_ : config.arrow_to_edge_padding);
@@ -362,7 +362,7 @@ index 32416b60f5e4a137bf5485493edc488570ce9cbb..2a03f04a1d84a5017c252d6aacf0b19d
    PaintMinorIconAndText(canvas, style);
  
    // Set the submenu indicator (arrow) image and color.
-@@ -1273,6 +1295,11 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
+@@ -1244,6 +1263,11 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
  
    // Determine the length of the label text.
    int string_width = gfx::GetStringWidth(title_, style.font_list);
@@ -374,7 +374,7 @@ index 32416b60f5e4a137bf5485493edc488570ce9cbb..2a03f04a1d84a5017c252d6aacf0b19d
    dimensions.standard_width = string_width + label_start +
        item_right_margin_;
    // Determine the length of the right-side text.
-@@ -1280,9 +1307,10 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
+@@ -1251,9 +1275,10 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
        minor_text.empty() ? 0 : gfx::GetStringWidth(minor_text, style.font_list);
  
    // Determine the height to use.
@@ -389,7 +389,7 @@ index 32416b60f5e4a137bf5485493edc488570ce9cbb..2a03f04a1d84a5017c252d6aacf0b19d
        std::max(dimensions.height, MenuConfig::instance().item_min_height);
  
 diff --git a/ui/views/controls/menu/menu_item_view.h b/ui/views/controls/menu/menu_item_view.h
-index 481075d52afa3dd9238f2d041788f95744eecbdd..c8cbf6eb77b2b1ed6d8ee35fe054a306bd00e1bd 100644
+index c453320c3fbd8ad5581a78b0b63d7a06cda4d542..b92470f17446698515ae2e973e51628023d075de 100644
 --- a/ui/views/controls/menu/menu_item_view.h
 +++ b/ui/views/controls/menu/menu_item_view.h
 @@ -152,6 +152,7 @@ class VIEWS_EXPORT MenuItemView : public View {
@@ -408,7 +408,7 @@ index 481075d52afa3dd9238f2d041788f95744eecbdd..c8cbf6eb77b2b1ed6d8ee35fe054a306
                                     const gfx::ImageSkia& icon,
                                     Type type);
  
-@@ -242,6 +244,9 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -218,6 +220,9 @@ class VIEWS_EXPORT MenuItemView : public View {
    void SetTitle(const base::string16& title);
    const base::string16& title() const { return title_; }
  
@@ -418,7 +418,7 @@ index 481075d52afa3dd9238f2d041788f95744eecbdd..c8cbf6eb77b2b1ed6d8ee35fe054a306
    // Sets the minor text.
    void SetMinorText(const base::string16& minor_text);
  
-@@ -452,7 +457,7 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -428,7 +433,7 @@ class VIEWS_EXPORT MenuItemView : public View {
    void DestroyAllMenuHosts();
  
    // Returns the text that should be displayed on the end (right) of the menu
@@ -427,7 +427,7 @@ index 481075d52afa3dd9238f2d041788f95744eecbdd..c8cbf6eb77b2b1ed6d8ee35fe054a306
    base::string16 GetMinorText() const;
  
    // Returns the icon that should be displayed to the left of the minor text.
-@@ -543,6 +548,9 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -519,6 +524,9 @@ class VIEWS_EXPORT MenuItemView : public View {
    // Title.
    base::string16 title_;
  
@@ -438,10 +438,10 @@ index 481075d52afa3dd9238f2d041788f95744eecbdd..c8cbf6eb77b2b1ed6d8ee35fe054a306
    base::string16 minor_text_;
  
 diff --git a/ui/views/controls/menu/menu_item_view_unittest.cc b/ui/views/controls/menu/menu_item_view_unittest.cc
-index f51bd9d85dad7771f18fc535b55b30a855eac48f..63aa8eddf51cb4821517902564e94813f6a42c02 100644
+index 27d189a5be20d001ac6c457f4540e5e5430dde37..5c749133714d40595ef804d56951eed35abee91e 100644
 --- a/ui/views/controls/menu/menu_item_view_unittest.cc
 +++ b/ui/views/controls/menu/menu_item_view_unittest.cc
-@@ -324,10 +324,10 @@ class MenuItemViewPaintUnitTest : public ViewsTestBase {
+@@ -322,10 +322,10 @@ class MenuItemViewPaintUnitTest : public ViewsTestBase {
  // Provides assertion coverage for painting minor text and icons.
  TEST_F(MenuItemViewPaintUnitTest, MinorTextAndIconAssertionCoverage) {
    auto AddItem = [this](auto label, auto minor_label, auto minor_icon) {

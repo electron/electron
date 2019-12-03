@@ -10,10 +10,10 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index c5ef43943dbadb3b7027e6aa577aeea8c7ba5095..f3a0f691a8d02a519c1cd4592252c6221e2ee0b5 100644
+index 1854d4205364e0350e2c944f04794e6d800169d6..ee7c36627fd063e85b05de95f70902bd658ac314 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -189,6 +189,25 @@ struct HttpAuthStaticNetworkContextParams {
+@@ -190,6 +190,25 @@ struct HttpAuthStaticNetworkContextParams {
       = DefaultCredentials.ALLOW_DEFAULT_CREDENTIALS;
  };
  
@@ -39,7 +39,7 @@ index c5ef43943dbadb3b7027e6aa577aeea8c7ba5095..f3a0f691a8d02a519c1cd4592252c622
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -572,6 +591,16 @@ struct URLLoaderFactoryParams {
+@@ -574,6 +593,16 @@ struct URLLoaderFactoryParams {
    // interface. This still respects the per-context block lists.
    CorsOriginAccessPatterns? factory_bound_access_patterns;
  
@@ -57,7 +57,7 @@ index c5ef43943dbadb3b7027e6aa577aeea8c7ba5095..f3a0f691a8d02a519c1cd4592252c622
    NetworkIsolationKey? network_isolation_key;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index c8910409f10b009d3876545c228d5adf33134fdc..4029a6870021b2416d32b846077acdf5375b0904 100644
+index b7c2669306ca76450891e8a4fd0bf7b274011cbb..bffcc38decdbad0e20b877559c264b9570b037fd 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -335,6 +335,7 @@ URLLoader::URLLoader(
@@ -68,7 +68,7 @@ index c8910409f10b009d3876545c228d5adf33134fdc..4029a6870021b2416d32b846077acdf5
      mojom::OriginPolicyManager* origin_policy_manager)
      : url_request_context_(url_request_context),
        network_service_client_(network_service_client),
-@@ -391,6 +392,11 @@ URLLoader::URLLoader(
+@@ -392,6 +393,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
    }
@@ -80,7 +80,7 @@ index c8910409f10b009d3876545c228d5adf33134fdc..4029a6870021b2416d32b846077acdf5
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -823,7 +829,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
+@@ -828,7 +834,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
  
  void URLLoader::OnAuthRequired(net::URLRequest* url_request,
                                 const net::AuthChallengeInfo& auth_info) {
@@ -89,7 +89,7 @@ index c8910409f10b009d3876545c228d5adf33134fdc..4029a6870021b2416d32b846077acdf5
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -839,10 +845,18 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -844,10 +850,18 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head.headers = url_request->response_headers();
    head.auth_challenge_info = auth_info;
@@ -113,10 +113,10 @@ index c8910409f10b009d3876545c228d5adf33134fdc..4029a6870021b2416d32b846077acdf5
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 72694ec84b4bec927bff7b13387a0227e308d53a..9c46870a46eed8b74ef5dce53effdb54384b9e21 100644
+index 20b178f167471d58dfc263d3f4b04771bc0da873..1f007d52a2fe68a9e682fe48ff9e7ad7262773a9 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -85,6 +85,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -86,6 +86,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
        base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
        base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
        mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -124,7 +124,7 @@ index 72694ec84b4bec927bff7b13387a0227e308d53a..9c46870a46eed8b74ef5dce53effdb54
        mojom::OriginPolicyManager* origin_policy_manager);
    ~URLLoader() override;
  
-@@ -362,6 +363,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -365,6 +366,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    base::Optional<base::UnguessableToken> fetch_window_id_;
  
    mojo::Remote<mojom::TrustedHeaderClient> header_client_;
@@ -133,7 +133,7 @@ index 72694ec84b4bec927bff7b13387a0227e308d53a..9c46870a46eed8b74ef5dce53effdb54
    std::unique_ptr<FileOpenerForUpload> file_opener_for_upload_;
  
 diff --git a/services/network/url_loader_factory.cc b/services/network/url_loader_factory.cc
-index 9f064f17a6827171cd24cff7eb8bede992348e0e..0ac9abc0a8c2a5ea15facdebaafe64bd092f46e1 100644
+index cc9213233dbb087570f46b220658f533f2610b5d..453652aaff0f4a3e786929685d36325a228a41be 100644
 --- a/services/network/url_loader_factory.cc
 +++ b/services/network/url_loader_factory.cc
 @@ -65,6 +65,7 @@ URLLoaderFactory::URLLoaderFactory(
@@ -153,10 +153,10 @@ index 9f064f17a6827171cd24cff7eb8bede992348e0e..0ac9abc0a8c2a5ea15facdebaafe64bd
    cors_url_loader_factory_->OnLoaderCreated(std::move(loader));
  }
 diff --git a/services/network/url_loader_factory.h b/services/network/url_loader_factory.h
-index 7b143aa49be833ddf05b7b99bea19ee0b674b79c..6d1fbca87e3827c953fdac2cfb96806114d8aea9 100644
+index 1b8a8d489e04c0fe4b48a5d4efe344168a92890e..47351e8bfd798d40f1951e6c3f4ecf2bc49135e7 100644
 --- a/services/network/url_loader_factory.h
 +++ b/services/network/url_loader_factory.h
-@@ -71,6 +71,7 @@ class URLLoaderFactory : public mojom::URLLoaderFactory {
+@@ -72,6 +72,7 @@ class URLLoaderFactory : public mojom::URLLoaderFactory {
    mojom::URLLoaderFactoryParamsPtr params_;
    scoped_refptr<ResourceSchedulerClient> resource_scheduler_client_;
    mojo::Remote<mojom::TrustedURLLoaderHeaderClient> header_client_;

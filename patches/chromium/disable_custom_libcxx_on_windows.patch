@@ -5,7 +5,7 @@ Subject: disable_custom_libcxx_on_windows.patch
 
 
 diff --git a/build/config/c++/c++.gni b/build/config/c++/c++.gni
-index 834a943deca28655f40490ab78a14496e253c143..7abf6d83b04b515881c8f797e1031082afe7a5c8 100644
+index d2416d14e1dbb0f987220448ec1330d6674b9e7e..eb2fb9aee35cf8eb8183d9fbbd2ff2a995b4d941 100644
 --- a/build/config/c++/c++.gni
 +++ b/build/config/c++/c++.gni
 @@ -12,7 +12,8 @@ declare_args() {

@@ -6,18 +6,13 @@ Subject: Revert "Remove ContentRendererClient::ShouldFork."
 This reverts commit 6b068eb8ca4a3c7350bdafa22fc0cf0636ef8b74.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index 4adb79bfc8e11d0b13b01f7858ee858a6c554f42..95bfeca43236c2d8b820324c1df8b8ea13b41fcf 100644
+index 2151bb70e8e6b88e851230fe67670a0d62372685..3f35dd651fc27ace7891a1d32e1cbb4efce68423 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1241,6 +1241,25 @@ bool ChromeContentRendererClient::AllowPopup() {
- #endif
- }
+@@ -1270,6 +1270,17 @@ bool ChromeContentRendererClient::ShouldFork(WebLocalFrame* frame,
+     return true;
+ #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
  
-+bool ChromeContentRendererClient::ShouldFork(WebLocalFrame* frame,
-+                                             const GURL& url,
-+                                             const std::string& http_method,
-+                                             bool is_initial_navigation,
-+                                             bool is_server_redirect) {
 +  DCHECK(!frame->Parent());
 +
 +  // If |url| matches one of the prerendered URLs, stop this navigation and try
@@ -29,87 +24,11 @@ index 4adb79bfc8e11d0b13b01f7858ee858a6c554f42..95bfeca43236c2d8b820324c1df8b8ea
 +    return true;
 +  }
 +
-+  return false;
-+}
-+
- void ChromeContentRendererClient::WillSendRequest(
-     WebLocalFrame* frame,
-     ui::PageTransition transition_type,
-diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/chrome_content_renderer_client.h
-index 17ba0e5654f75b2d6afb67b05321d3826715cbec..8c79599489cfa4d0a9f891984bd3f62717785db6 100644
---- a/chrome/renderer/chrome_content_renderer_client.h
-+++ b/chrome/renderer/chrome_content_renderer_client.h
-@@ -137,6 +137,11 @@ class ChromeContentRendererClient
-       base::SingleThreadTaskRunner* compositor_thread_task_runner) override;
-   bool RunIdleHandlerWhenWidgetsHidden() override;
-   bool AllowPopup() override;
-+  bool ShouldFork(blink::WebLocalFrame* frame,
-+                  const GURL& url,
-+                  const std::string& http_method,
-+                  bool is_initial_navigation,
-+                  bool is_server_redirect) override;
-   void WillSendRequest(blink::WebLocalFrame* frame,
-                        ui::PageTransition transition_type,
-                        const blink::WebURL& url,
-diff --git a/content/public/renderer/content_renderer_client.cc b/content/public/renderer/content_renderer_client.cc
-index ccd9c50b299b00936cce032b842e509eeb157ab0..ed275b4ab86fdad2af974746841111c7c231c04c 100644
---- a/content/public/renderer/content_renderer_client.cc
-+++ b/content/public/renderer/content_renderer_client.cc
-@@ -105,6 +105,14 @@ bool ContentRendererClient::HandleNavigation(
+   return false;
  }
- #endif
  
-+bool ContentRendererClient::ShouldFork(blink::WebLocalFrame* frame,
-+                                       const GURL& url,
-+                                       const std::string& http_method,
-+                                       bool is_initial_navigation,
-+                                       bool is_server_redirect) {
-+  return false;
-+}
-+
- void ContentRendererClient::WillSendRequest(blink::WebLocalFrame* frame,
-                                             ui::PageTransition transition_type,
-                                             const blink::WebURL& url,
-diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index b2d0ff76ef76a620032fdaaabcced6364da92973..a5cfab8e0033d821d4c5150d700fd3fcfb27e8d1 100644
---- a/content/public/renderer/content_renderer_client.h
-+++ b/content/public/renderer/content_renderer_client.h
-@@ -221,6 +221,13 @@ class CONTENT_EXPORT ContentRendererClient {
-                                 bool is_redirect);
- #endif
- 
-+  // Returns true if we should fork a new process for the given navigation.
-+  virtual bool ShouldFork(blink::WebLocalFrame* frame,
-+                          const GURL& url,
-+                          const std::string& http_method,
-+                          bool is_initial_navigation,
-+                          bool is_server_redirect);
-+
-   // Notifies the embedder that the given frame is requesting the resource at
-   // |url|. If the function returns a valid |new_url|, the request must be
-   // updated to use it. The |attach_same_site_cookies| output parameter
-diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 236179e8f5850e17d3066366b46ba9664fd785c3..a3243e2d5fafe9effc122e42eeadb43dcb8198fe 100644
---- a/content/renderer/render_frame_impl.cc
-+++ b/content/renderer/render_frame_impl.cc
-@@ -6028,6 +6028,15 @@ void RenderFrameImpl::BeginNavigation(
-     int cumulative_bindings = RenderProcess::current()->GetEnabledBindings();
-     bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
-                        (cumulative_bindings & kWebUIBindingsPolicyMask);
-+
-+    if (!should_fork) {
-+      // Give the embedder a chance.
-+      bool is_initial_navigation = render_view_->history_list_length_ == 0;
-+      should_fork = GetContentClient()->renderer()->ShouldFork(
-+          frame_, url, info->url_request.HttpMethod().Utf8(),
-+          is_initial_navigation, false /* is_redirect */);
-+    }
-+
-     if (should_fork) {
-       OpenURL(std::move(info));
-       return;  // Suppress the load here.
 diff --git a/content/renderer/render_view_browsertest.cc b/content/renderer/render_view_browsertest.cc
-index 2e4920b0535a22e99d0593d5f41f4953453a29cb..8ebf2cb860f06adefae515981e66697aab708c78 100644
+index 54cd786c8e79f08a1c3c15568f8d49e7a5f712b5..2a7a386e9c208d4960f0bcdb8b8c3efcd1ca412e 100644
 --- a/content/renderer/render_view_browsertest.cc
 +++ b/content/renderer/render_view_browsertest.cc
 @@ -989,6 +989,73 @@ TEST_F(RenderViewImplTest, BeginNavigationForWebUI) {
