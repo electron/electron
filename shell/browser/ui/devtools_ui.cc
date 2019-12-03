@@ -62,7 +62,7 @@ class BundledDataSource : public content::URLDataSource {
 
   void StartDataRequest(const GURL& url,
                         const content::WebContents::Getter& wc_getter,
-                        const GotDataCallback& callback) override {
+                        GotDataCallback callback) override {
     const std::string path = content::URLDataSource::URLToRequestPath(url);
     // Serve request from local bundle.
     std::string bundled_path_prefix(kChromeUIDevToolsBundledPath);
@@ -70,12 +70,12 @@ class BundledDataSource : public content::URLDataSource {
     if (base::StartsWith(path, bundled_path_prefix,
                          base::CompareCase::INSENSITIVE_ASCII)) {
       StartBundledDataRequest(path.substr(bundled_path_prefix.length()),
-                              callback);
+                              std::move(callback));
       return;
     }
 
     // We do not handle remote and custom requests.
-    callback.Run(nullptr);
+    std::move(callback).Run(nullptr);
   }
 
   std::string GetMimeType(const std::string& path) override {
@@ -89,7 +89,7 @@ class BundledDataSource : public content::URLDataSource {
   bool ShouldServeMimeTypeAsContentTypeHeader() override { return true; }
 
   void StartBundledDataRequest(const std::string& path,
-                               const GotDataCallback& callback) {
+                               GotDataCallback callback) {
     std::string filename = PathWithoutParams(path);
     scoped_refptr<base::RefCountedMemory> bytes =
         content::DevToolsFrontendHost::GetFrontendResourceBytes(filename);
@@ -98,7 +98,7 @@ class BundledDataSource : public content::URLDataSource {
         << "Unable to find dev tool resource: " << filename
         << ". If you compiled with debug_devtools=1, try running with "
            "--debug-devtools.";
-    callback.Run(bytes);
+    std::move(callback).Run(bytes);
   }
 
  private:
