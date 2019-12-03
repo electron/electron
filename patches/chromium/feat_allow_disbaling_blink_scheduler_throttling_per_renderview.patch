@@ -121,7 +121,7 @@ index f059a21e165ba12a6a9347c4036dcff1e8fa816f..cf2c1b434ebf2ac5e4e6a9c45a261f07
 +void WebViewImpl::SetSchedulerThrottling(bool allowed) {
 +  DCHECK(GetPage());
 +  scheduler_throttling_allowed_ = allowed;
-+  GetPage()->GetPageScheduler()->SetPageVisible(allowed ? GetVisibilityState() !== PageVisibilityState::kHidden : true);
++  GetPage()->GetPageScheduler()->SetPageVisible(allowed ? GetVisibilityState() != PageVisibilityState::kHidden : true);
 +}
 +
  PageVisibilityState WebViewImpl::GetVisibilityState() {
