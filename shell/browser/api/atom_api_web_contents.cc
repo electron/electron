@@ -399,7 +399,10 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
-  bool initially_shown = true;
+  // BrowserViews are not attached to a window initially so they should start
+  // off as hidden. This is also important for compositor recycling. See:
+  // https://github.com/electron/electron/pull/21372
+  bool initially_shown = type_ != Type::BROWSER_VIEW;
   options.Get(options::kShow, &initially_shown);
 
   // Obtain the session.
