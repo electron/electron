@@ -7,7 +7,7 @@
 #include <string>
 
 #include "shell/browser/api/atom_api_view.h"
-#include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
@@ -77,7 +77,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("BoxLayout", mate::CreateConstructor<BoxLayout>(
+  dict.Set("BoxLayout", gin_helper::CreateConstructor<BoxLayout>(
                             isolate, base::BindRepeating(&BoxLayout::New)));
 }
 

@@ -5,7 +5,7 @@
 #include "shell/browser/api/views/atom_api_md_text_button.h"
 
 #include "base/strings/utf_string_conversions.h"
-#include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
@@ -48,7 +48,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("MdTextButton",
-           mate::CreateConstructor<MdTextButton>(
+           gin_helper::CreateConstructor<MdTextButton>(
                isolate, base::BindRepeating(&MdTextButton::New)));
 }
 
