@@ -625,12 +625,11 @@ void AtomBrowserClient::AllowCertificateError(
     const GURL& request_url,
     bool is_main_frame_request,
     bool strict_enforcement,
-    const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
-        callback) {
+    base::OnceCallback<void(content::CertificateRequestResultType)> callback) {
   if (delegate_) {
     delegate_->AllowCertificateError(web_contents, cert_error, ssl_info,
                                      request_url, is_main_frame_request,
-                                     strict_enforcement, callback);
+                                     strict_enforcement, std::move(callback));
   }
 }
 
@@ -833,9 +832,9 @@ void OnOpenExternal(const GURL& escaped_url, bool allowed) {
 
 void HandleExternalProtocolInUI(
     const GURL& url,
-    const content::WebContents::Getter& web_contents_getter,
+    content::WebContents::OnceGetter web_contents_getter,
     bool has_user_gesture) {
-  content::WebContents* web_contents = web_contents_getter.Run();
+  content::WebContents* web_contents = std::move(web_contents_getter).Run();
   if (!web_contents)
     return;
 
@@ -852,7 +851,7 @@ void HandleExternalProtocolInUI(
 
 bool AtomBrowserClient::HandleExternalProtocol(
     const GURL& url,
-    content::WebContents::Getter web_contents_getter,
+    content::WebContents::OnceGetter web_contents_getter,
     int child_id,
     content::NavigationUIData* navigation_data,
     bool is_main_frame,
@@ -860,9 +859,10 @@ bool AtomBrowserClient::HandleExternalProtocol(
     bool has_user_gesture,
     const base::Optional<url::Origin>& initiating_origin,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
-  base::PostTask(FROM_HERE, {BrowserThread::UI},
-                 base::BindOnce(&HandleExternalProtocolInUI, url,
-                                web_contents_getter, has_user_gesture));
+  base::PostTask(
+      FROM_HERE, {BrowserThread::UI},
+      base::BindOnce(&HandleExternalProtocolInUI, url,
+                     std::move(web_contents_getter), has_user_gesture));
   return true;
 }
 
