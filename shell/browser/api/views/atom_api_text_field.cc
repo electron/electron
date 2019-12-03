@@ -27,7 +27,7 @@ base::string16 TextField::GetText() const {
 }
 
 // static
-mate::WrappableBase* TextField::New(mate::Arguments* args) {
+gin_helper::WrappableBase* TextField::New(gin_helper::Arguments* args) {
   // Constructor call.
   auto* view = new TextField();
   view->InitWith(args->isolate(), args->GetThis());
@@ -37,8 +37,8 @@ mate::WrappableBase* TextField::New(mate::Arguments* args) {
 // static
 void TextField::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "TextField"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "TextField"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setText", &TextField::SetText)
       .SetMethod("getText", &TextField::GetText);
 }

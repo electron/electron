@@ -6,9 +6,9 @@
 #define SHELL_COMMON_API_ATOM_API_KEY_WEAK_MAP_H_
 
 #include "gin/handle.h"
-#include "native_mate/wrappable.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/key_weak_map.h"
 
 namespace electron {
@@ -16,7 +16,7 @@ namespace electron {
 namespace api {
 
 template <typename K>
-class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
+class KeyWeakMap : public gin_helper::Wrappable<KeyWeakMap<K>> {
  public:
   static gin::Handle<KeyWeakMap<K>> Create(v8::Isolate* isolate) {
     return gin::CreateHandle(isolate, new KeyWeakMap<K>(isolate));
@@ -34,7 +34,7 @@ class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
 
  protected:
   explicit KeyWeakMap(v8::Isolate* isolate) {
-    mate::Wrappable<KeyWeakMap<K>>::Init(isolate);
+    gin_helper::Wrappable<KeyWeakMap<K>>::Init(isolate);
   }
   ~KeyWeakMap() override {}
 

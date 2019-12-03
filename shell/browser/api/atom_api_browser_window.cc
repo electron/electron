@@ -445,8 +445,8 @@ void BrowserWindow::OnWindowHide() {
 }
 
 // static
-mate::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
-                                        gin::Arguments* args) {
+gin_helper::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
+                                              gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create BrowserWindow before app is ready");
     return nullptr;

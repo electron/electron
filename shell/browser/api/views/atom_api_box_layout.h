@@ -17,8 +17,9 @@ class View;
 
 class BoxLayout : public LayoutManager {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args,
-                                  views::BoxLayout::Orientation orientation);
+  static gin_helper::WrappableBase* New(
+      gin_helper::Arguments* args,
+      views::BoxLayout::Orientation orientation);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

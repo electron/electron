@@ -216,7 +216,7 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
       void* ptr = object->GetAlignedPointerFromInternalField(0);
       if (!ptr)
         return;
-      delete static_cast<mate::WrappableBase*>(ptr);
+      delete static_cast<gin_helper::WrappableBase*>(ptr);
       object->SetAlignedPointerInInternalField(0, nullptr);
     }
   }

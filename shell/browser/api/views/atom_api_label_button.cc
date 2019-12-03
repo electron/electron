@@ -37,8 +37,8 @@ void LabelButton::SetIsDefault(bool is_default) {
 }
 
 // static
-mate::WrappableBase* LabelButton::New(mate::Arguments* args,
-                                      const std::string& text) {
+gin_helper::WrappableBase* LabelButton::New(gin_helper::Arguments* args,
+                                            const std::string& text) {
   // Constructor call.
   auto* view = new LabelButton(text);
   view->InitWith(args->isolate(), args->GetThis());
@@ -48,8 +48,8 @@ mate::WrappableBase* LabelButton::New(mate::Arguments* args,
 // static
 void LabelButton::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "LabelButton"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "LabelButton"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("getText", &LabelButton::GetText)
       .SetMethod("setText", &LabelButton::SetText)
       .SetMethod("isDefault", &LabelButton::IsDefault)

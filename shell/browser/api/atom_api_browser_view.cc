@@ -90,8 +90,8 @@ void BrowserView::WebContentsDestroyed() {
 }
 
 // static
-mate::WrappableBase* BrowserView::New(gin_helper::ErrorThrower thrower,
-                                      gin::Arguments* args) {
+gin_helper::WrappableBase* BrowserView::New(gin_helper::ErrorThrower thrower,
+                                            gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create BrowserView before app is ready");
     return nullptr;

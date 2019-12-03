@@ -23,7 +23,7 @@ void ResizeArea::OnResize(int resize_amount, bool done_resizing) {
 }
 
 // static
-mate::WrappableBase* ResizeArea::New(mate::Arguments* args) {
+gin_helper::WrappableBase* ResizeArea::New(gin_helper::Arguments* args) {
   // Constructor call.
   auto* view = new ResizeArea();
   view->InitWith(args->isolate(), args->GetThis());
@@ -33,7 +33,7 @@ mate::WrappableBase* ResizeArea::New(mate::Arguments* args) {
 // static
 void ResizeArea::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "ResizeArea"));
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "ResizeArea"));
 }
 
 }  // namespace api

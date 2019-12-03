@@ -25,7 +25,7 @@ void Button::ButtonPressed(views::Button* sender, const ui::Event& event) {
 }
 
 // static
-mate::WrappableBase* Button::New(mate::Arguments* args) {
+gin_helper::WrappableBase* Button::New(gin_helper::Arguments* args) {
   args->ThrowError("Button can not be created directly");
   return nullptr;
 }
@@ -33,7 +33,7 @@ mate::WrappableBase* Button::New(mate::Arguments* args) {
 // static
 void Button::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Button"));
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "Button"));
 }
 
 }  // namespace api

@@ -2,14 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#include "native_mate/wrappable.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 #include "base/logging.h"
-#include "gin/arguments.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder_deprecated.h"
+#include "shell/common/gin_helper/dictionary.h"
 
-namespace mate {
+namespace gin_helper {
 
 WrappableBase::WrappableBase() = default;
 
@@ -88,4 +86,4 @@ void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val) {
 
 }  // namespace internal
 
-}  // namespace mate
+}  // namespace gin_helper

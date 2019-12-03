@@ -355,7 +355,6 @@ source_set("electron_lib") {
     "buildflags",
     "chromium_src:chrome",
     "chromium_src:chrome_spellchecker",
-    "native_mate",
     "shell/common/api:mojo",
     "//base:base_static",
     "//base/allocator:buildflags",

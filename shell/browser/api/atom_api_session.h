@@ -108,7 +108,7 @@ class Session : public gin_helper::TrackableObject<Session>,
                          download::DownloadItem* item) override;
 
  private:
-  // Cached mate::Wrappable objects.
+  // Cached gin_helper::Wrappable objects.
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;
   v8::Global<v8::Value> net_log_;

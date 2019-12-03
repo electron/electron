@@ -19,8 +19,8 @@ MdTextButton::MdTextButton(const std::string& text)
 MdTextButton::~MdTextButton() {}
 
 // static
-mate::WrappableBase* MdTextButton::New(mate::Arguments* args,
-                                       const std::string& text) {
+gin_helper::WrappableBase* MdTextButton::New(gin_helper::Arguments* args,
+                                             const std::string& text) {
   // Constructor call.
   auto* view = new MdTextButton(text);
   view->InitWith(args->isolate(), args->GetThis());
@@ -30,7 +30,7 @@ mate::WrappableBase* MdTextButton::New(mate::Arguments* args,
 // static
 void MdTextButton::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "MdTextButton"));
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "MdTextButton"));
 }
 
 }  // namespace api

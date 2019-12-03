@@ -48,8 +48,9 @@ void BoxLayout::SetFlexForView(gin::Handle<View> view, int flex) {
 }
 
 // static
-mate::WrappableBase* BoxLayout::New(mate::Arguments* args,
-                                    views::BoxLayout::Orientation orientation) {
+gin_helper::WrappableBase* BoxLayout::New(
+    gin_helper::Arguments* args,
+    views::BoxLayout::Orientation orientation) {
   auto* layout = new BoxLayout(orientation);
   layout->InitWith(args->isolate(), args->GetThis());
   return layout;
@@ -58,8 +59,8 @@ mate::WrappableBase* BoxLayout::New(mate::Arguments* args,
 // static
 void BoxLayout::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "BoxLayout"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "BoxLayout"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setFlexForView", &BoxLayout::SetFlexForView);
 }
 

@@ -30,7 +30,7 @@ std::unique_ptr<views::LayoutManager> LayoutManager::TakeOver() {
 }
 
 // static
-mate::WrappableBase* LayoutManager::New(mate::Arguments* args) {
+gin_helper::WrappableBase* LayoutManager::New(gin_helper::Arguments* args) {
   args->ThrowError("LayoutManager can not be created directly");
   return nullptr;
 }

@@ -79,7 +79,7 @@ void WebContentsView::WebContentsDestroyed() {
 }
 
 // static
-mate::WrappableBase* WebContentsView::New(
+gin_helper::WrappableBase* WebContentsView::New(
     gin_helper::Arguments* args,
     gin::Handle<WebContents> web_contents) {
   // Currently we only support InspectableWebContents, e.g. the WebContents
