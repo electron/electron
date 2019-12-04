@@ -18,9 +18,6 @@ const argv = require('yargs')
 
 let window = null
 
-// will be used by crash-reporter spec.
-process.port = 0
-
 v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
 app.commandLine.appendSwitch('ignore-certificate-errors')
@@ -47,11 +44,6 @@ ipcMain.handle('get-modules', () => Object.keys(electron))
 ipcMain.handle('get-temp-dir', () => app.getPath('temp'))
 ipcMain.handle('ping', () => null)
 
-// Set productName so getUploadedReports() uses the right directory in specs
-if (process.platform !== 'darwin') {
-  crashReporter.productName = 'Zombies'
-}
-
 // Write output to file if OUTPUT_TO_FILE is defined.
 const outputToFile = process.env.OUTPUT_TO_FILE
 const print = function (_, method, args) {
@@ -76,7 +68,6 @@ ipcMain.on('echo', function (event, msg) {
   event.returnValue = msg
 })
 
-global.setTimeoutPromisified = util.promisify(setTimeout)
 global.returnAPromise = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 100))
 
 process.removeAllListeners('uncaughtException')
@@ -86,18 +77,6 @@ process.on('uncaughtException', function (error) {
 })
 
 global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
-
-// Register app as standard scheme.
-global.standardScheme = 'app'
-global.zoomScheme = 'zoom'
-protocol.registerSchemesAsPrivileged([
-  { scheme: global.standardScheme, privileges: { standard: true, secure: true } },
-  { scheme: global.zoomScheme, privileges: { standard: true, secure: true } },
-  { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
-  { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
-  { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
-  { scheme: 'no-fetch', privileges: { corsEnabled: true } }
-])
 
 app.on('window-all-closed', function () {
   app.quit()
@@ -114,11 +93,6 @@ app.on('renderer-process-crashed', (event, contents, killed) => {
 app.on('ready', function () {
   // Test if using protocol module would crash.
   electron.protocol.registerStringProtocol('test-if-crashes', function () {})
-
-  // Send auto updater errors to window to be verified in specs
-  electron.autoUpdater.on('error', function (error) {
-    window.send('auto-updater-error', error.message)
-  })
 
   window = new BrowserWindow({
     title: 'Electron Tests',
@@ -151,35 +125,6 @@ app.on('ready', function () {
     console.error('Renderer process crashed')
     process.exit(1)
   })
-})
-
-for (const eventName of [
-  'remote-get-guest-web-contents'
-]) {
-  ipcMain.on(`handle-next-${eventName}`, function (event, returnValue) {
-    event.sender.once(eventName, (event) => {
-      if (returnValue) {
-        event.returnValue = returnValue
-      } else {
-        event.preventDefault()
-      }
-    })
-  })
-}
-
-ipcMain.on('set-client-certificate-option', function (event, skip) {
-  app.once('select-client-certificate', function (event, webContents, url, list, callback) {
-    event.preventDefault()
-    if (skip) {
-      callback()
-    } else {
-      ipcMain.on('client-certificate-response', function (event, certificate) {
-        callback(certificate)
-      })
-      window.webContents.send('select-client-certificate', webContents.id, list)
-    }
-  })
-  event.returnValue = 'done'
 })
 
 ipcMain.on('prevent-next-will-attach-webview', (event) => {
