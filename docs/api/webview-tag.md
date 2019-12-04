@@ -635,17 +635,6 @@ Returns `Promise<void>`
 
 Sets the maximum and minimum pinch-to-zoom level.
 
-### `<webview>.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)` _Deprecated_
-
-* `minimumLevel` Number
-* `maximumLevel` Number
-
-Returns `Promise<void>`
-
-Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
-
-**Deprecated:** This API is no longer supported by Chromium.
-
 ### `<webview>.showDefinitionForSelection()` _macOS_
 
 Shows pop-up dictionary that searches the selected word on the page.
