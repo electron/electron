@@ -81,7 +81,6 @@ app.on('ready', () => {
   })
 
   mainWindow.webContents.setVisualZoomLevelLimits(50, 200)
-  mainWindow.webContents.setLayoutZoomLevelLimits(50, 200)
 
   mainWindow.webContents.print({ silent: true, printBackground: false })
   mainWindow.webContents.print()
