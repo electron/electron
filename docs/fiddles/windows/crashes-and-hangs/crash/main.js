@@ -35,8 +35,9 @@ function createWindow () {
       buttons: ['Reload', 'Close']
     }
 
-    dialog.showMessageBox(options, (index) => {
-      if (index === 0) {
+    dialog.showMessageBox(options)
+    .then((messageBoxReturn) => {
+      if (messageBoxReturn.response === 0) {
         app.relaunch()
         createWindow()
       }
