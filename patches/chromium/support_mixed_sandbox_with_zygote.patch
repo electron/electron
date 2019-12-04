@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 63d1e8cfc01dbdc673b1d3cabf48a2106aa669a6..445e3b3654c8fe5855046be102b381e730c083cc 100644
+index 05e39b91984dd2f4c5b1c17c83e57084de4c29d0..a0e381473712154ec0d511f5d859ef89cd8e60aa 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -413,6 +413,11 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -414,6 +414,11 @@ class RendererSandboxedProcessLauncherDelegate
    {
    }
  
@@ -37,7 +37,7 @@ index 63d1e8cfc01dbdc673b1d3cabf48a2106aa669a6..445e3b3654c8fe5855046be102b381e7
    ~RendererSandboxedProcessLauncherDelegate() override {}
  
  #if defined(OS_WIN)
-@@ -434,6 +439,9 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -435,6 +440,9 @@ class RendererSandboxedProcessLauncherDelegate
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
    service_manager::ZygoteHandle GetZygote() override {
@@ -47,7 +47,7 @@ index 63d1e8cfc01dbdc673b1d3cabf48a2106aa669a6..445e3b3654c8fe5855046be102b381e7
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -448,10 +456,13 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -449,10 +457,13 @@ class RendererSandboxedProcessLauncherDelegate
      return service_manager::SANDBOX_TYPE_RENDERER;
    }
  
@@ -62,7 +62,7 @@ index 63d1e8cfc01dbdc673b1d3cabf48a2106aa669a6..445e3b3654c8fe5855046be102b381e7
  };
  
  const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1718,11 +1729,18 @@ bool RenderProcessHostImpl::Init() {
+@@ -1719,11 +1730,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  
@@ -80,5 +80,5 @@ index 63d1e8cfc01dbdc673b1d3cabf48a2106aa669a6..445e3b3654c8fe5855046be102b381e7
 -        std::make_unique<RendererSandboxedProcessLauncherDelegate>(),
 +        std::move(delegate),
          std::move(cmd_line), GetID(), this, std::move(mojo_invitation_),
-         base::BindRepeating(&RenderProcessHostImpl::OnMojoError, id_),
-         GetV8SnapshotFilesToPreload());
+         base::BindRepeating(&RenderProcessHostImpl::OnMojoError, id_));
+     channel_->Pause();

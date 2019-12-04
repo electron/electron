@@ -50,7 +50,7 @@ index bfc8dff316375a466ccd0a1b06ad6ce87718f362..2c63333cc14290da413692de84dbbadd
        const blink::WebString& header_name) override;
  
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index fc8e2308a386570cc5100f95a4fd45a75fa59cc2..53bf291ba2e746a39d1a40ae50fba03c09d3136e 100644
+index eb4b94370b0b3ce334872a8e12b8db02e596588b..df4a4daef04b09f315a026784935dbb32ac17ae8 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
 @@ -628,6 +628,7 @@ class BLINK_PLATFORM_EXPORT Platform {

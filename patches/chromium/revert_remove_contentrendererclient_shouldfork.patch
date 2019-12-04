@@ -28,7 +28,7 @@ index 2151bb70e8e6b88e851230fe67670a0d62372685..3f35dd651fc27ace7891a1d32e1cbb4e
  }
  
 diff --git a/content/renderer/render_view_browsertest.cc b/content/renderer/render_view_browsertest.cc
-index 54cd786c8e79f08a1c3c15568f8d49e7a5f712b5..2a7a386e9c208d4960f0bcdb8b8c3efcd1ca412e 100644
+index 2880c65106122954fd065ab48f9526d8358cf616..88ec67a1eebebdecedbb124e902fba4d4dfadde2 100644
 --- a/content/renderer/render_view_browsertest.cc
 +++ b/content/renderer/render_view_browsertest.cc
 @@ -989,6 +989,73 @@ TEST_F(RenderViewImplTest, BeginNavigationForWebUI) {
