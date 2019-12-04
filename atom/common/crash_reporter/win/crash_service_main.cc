@@ -7,7 +7,6 @@
 #include <string>
 
 #include "atom/common/crash_reporter/crash_reporter.h"
-#include "atom/common/crash_reporter/win/crash_service.h"
 #include "base/at_exit.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
