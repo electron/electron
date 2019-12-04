@@ -30,7 +30,7 @@ session.defaultSession.cookies.get({ url: 'http://www.github.com' })
 
 // Set a cookie with the given cookie data;
 // may overwrite equivalent cookies if they exist.
-const cookie = { url: 'http://www.github.com', name: 'dummy_name', value: 'dummy' }
+const cookie = { url: 'http://www.github.com', name: 'dummy_name', value: 'dummy', expirationDate: Date.now() + 600000 }
 session.defaultSession.cookies.set(cookie)
   .then(() => {
     // success
@@ -85,7 +85,7 @@ the response.
 
 * `details` Object
   * `url` String - The URL to associate the cookie with. The promise will be rejected if the URL is invalid.
-  * `name` String (optional) - The name of the cookie. Empty by default if omitted.
+  * `name` String - The name of the cookie. Empty by default if omitted.
   * `value` String (optional) - The value of the cookie. Empty by default if omitted.
   * `domain` String (optional) - The domain of the cookie; this will be normalized with a preceding dot so that it's also valid for subdomains. Empty by default if omitted.
   * `path` String (optional) - The path of the cookie. Empty by default if omitted.
@@ -93,7 +93,7 @@ the response.
     false.
   * `httpOnly` Boolean (optional) - Whether the cookie should be marked as HTTP only.
     Defaults to false.
-  * `expirationDate` Double (optional) - The expiration date of the cookie as the number of
+  * `expirationDate` Double - The expiration date of the cookie as the number of
     seconds since the UNIX epoch. If omitted then the cookie becomes a session
     cookie and will not be retained between sessions.
 
