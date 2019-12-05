@@ -5,7 +5,7 @@ import * as path from 'path'
 import { session, WebContents, webContents } from 'electron'
 import { AddressInfo } from 'net'
 
-const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
+const fixturesPath = path.resolve(__dirname, 'fixtures')
 
 describe('webRequest module', () => {
   const ses = session.defaultSession

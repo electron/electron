@@ -309,7 +309,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false })
       w.webContents.once('did-finish-load', () => { done() })
       w.webContents.once('crashed', () => done(new Error('WebContents crashed.')))
-      w.loadFile(path.join(fixturesPath, 'pages', 'jquery.html'))
+      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'))
     })
   })
 
