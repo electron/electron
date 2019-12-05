@@ -91,7 +91,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
 })
 
 ifdescribe(!process.electronBinding('features').isExtensionsEnabled())('chrome extensions', () => {
-  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
+  const fixtures = path.resolve(__dirname, 'fixtures')
   let w: BrowserWindow
 
   before(() => {
