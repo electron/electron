@@ -18,11 +18,12 @@ NodeStreamLoader::NodeStreamLoader(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     v8::Isolate* isolate,
     v8::Local<v8::Object> emitter)
-    : client_(std::move(client)),
+    : binding_(this, std::move(loader)),
+      client_(std::move(client)),
       isolate_(isolate),
       emitter_(isolate, emitter),
       weak_factory_(this) {
-  client_.set_disconnect_handler(
+  binding_.set_connection_error_handler(
       base::BindOnce(&NodeStreamLoader::NotifyComplete,
                      weak_factory_.GetWeakPtr(), net::ERR_FAILED));
 
@@ -53,10 +54,8 @@ void NodeStreamLoader::Start(network::ResourceResponseHead head) {
   }
 
   producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
-  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-      std::move(client_));
-  client_remote->OnReceiveResponse(head);
-  client_remote->OnStartLoadingResponseBody(std::move(consumer));
+  client_->OnReceiveResponse(head);
+  client_->OnStartLoadingResponseBody(std::move(consumer));
 
   auto weak = weak_factory_.GetWeakPtr();
   On("end",
@@ -80,8 +79,7 @@ void NodeStreamLoader::NotifyComplete(int result) {
     return;
   }
 
-  mojo::Remote<network::mojom::URLLoaderClient>(std::move(client_))
-      ->OnComplete(network::URLLoaderCompletionStatus(result));
+  client_->OnComplete(network::URLLoaderCompletionStatus(result));
   delete this;
 }
 

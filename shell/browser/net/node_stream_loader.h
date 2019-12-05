@@ -59,6 +59,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   void PauseReadingBodyFromNet() override {}
   void ResumeReadingBodyFromNet() override {}
 
+  mojo::Binding<network::mojom::URLLoader> binding_;
   mojo::Remote<network::mojom::URLLoaderClient> client_;
 
   v8::Isolate* isolate_;
