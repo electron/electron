@@ -111,7 +111,7 @@ index 0981d5a42683aa61dc6c58ec1c4118d768fb6321..d052a65492ebf4a994f3135fad946fee
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index f059a21e165ba12a6a9347c4036dcff1e8fa816f..cf2c1b434ebf2ac5e4e6a9c45a261f07cf38f9a7 100644
+index f059a21e165ba12a6a9347c4036dcff1e8fa816f..711009df5a43c41bc873bbcb0b55dbc2c4469772 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3382,6 +3382,12 @@ void WebViewImpl::SetVisibilityState(PageVisibilityState visibility_state,

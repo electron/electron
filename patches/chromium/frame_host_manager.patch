@@ -48,14 +48,14 @@ index 496292bd1689607722d4bb27c829d3d7704b9d3c..54bb3a0ebcb2bceb4c1f94f3e38927cf
 @@ -1209,6 +1209,8 @@ void NavigationRequest::BeginNavigation() {
      TRACE_EVENT_ASYNC_STEP_INTO0("navigation", "NavigationRequest", this,
                                   "ResponseStarted");
-
+ 
 +    state_ = WILL_PROCESS_RESPONSE;
 +
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index d5733dc4ac12c851d4b62d9954abca30ad9a5b9b..6797d3ca1957dd126c6f890bb93c274e6f71b1e9 100644
+index d5733dc4ac12c851d4b62d9954abca30ad9a5b9b..ea55bd893611379e108b7e17f90bf18559383050 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2142,6 +2142,16 @@ bool RenderFrameHostManager::InitRenderView(
