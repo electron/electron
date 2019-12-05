@@ -93,6 +93,7 @@ class NativeWindowMac : public NativeWindow {
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
   void SetBackgroundColor(SkColor color) override;
+  SkColor GetBackgroundColor() override;
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
   void SetOpacity(const double opacity) override;

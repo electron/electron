@@ -123,6 +123,10 @@ void BrowserView::SetBackgroundColor(const std::string& color_name) {
   view_->SetBackgroundColor(ParseHexColor(color_name));
 }
 
+SkColor BrowserView::GetBackgroundColor() {
+  return view_->GetBackgroundColor();
+}
+
 v8::Local<v8::Value> BrowserView::GetWebContents() {
   if (web_contents_.IsEmpty()) {
     return v8::Null(isolate());
@@ -141,6 +145,7 @@ void BrowserView::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBounds", &BrowserView::SetBounds)
       .SetMethod("getBounds", &BrowserView::GetBounds)
       .SetMethod("setBackgroundColor", &BrowserView::SetBackgroundColor)
+      .SetMethod("getBackgroundColor", &BrowserView::GetBackgroundColor)
       .SetProperty("webContents", &BrowserView::GetWebContents)
       .SetProperty("id", &BrowserView::ID);
 }

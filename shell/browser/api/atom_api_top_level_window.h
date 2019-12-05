@@ -155,6 +155,7 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
   void SetKiosk(bool kiosk);
   bool IsKiosk();
   virtual void SetBackgroundColor(const std::string& color_name);
+  std::string GetBackgroundColor();
   void SetHasShadow(bool has_shadow);
   bool HasShadow();
   void SetOpacity(const double opacity);
