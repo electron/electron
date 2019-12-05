@@ -558,4 +558,50 @@ describe('<webview> tag', function () {
       expect(error).to.equal('denied')
     })
   })
+
+  describe('enableremotemodule attribute', () => {
+    let w: BrowserWindow
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true } })
+      await w.loadURL('about:blank')
+    })
+    afterEach(closeAllWindows)
+
+    const generateSpecs = (description: string, sandbox: boolean) => {
+      describe(description, () => {
+        const preload = `file://${fixtures}/module/preload-disable-remote.js`
+        const src = `file://${fixtures}/api/blank.html`
+
+        it('enables the remote module by default', async () => {
+          loadWebView(w.webContents, {
+            preload,
+            src,
+            sandbox: sandbox.toString()
+          })
+          const [, webViewContents] = await emittedOnce(app, 'web-contents-created')
+          const [, , message] = await emittedOnce(webViewContents, 'console-message')
+
+          const typeOfRemote = JSON.parse(message)
+          expect(typeOfRemote).to.equal('object')
+        })
+
+        it('disables the remote module when false', async () => {
+          loadWebView(w.webContents, {
+            preload,
+            src,
+            sandbox: sandbox.toString(),
+            enableremotemodule: 'false'
+          })
+          const [, webViewContents] = await emittedOnce(app, 'web-contents-created')
+          const [, , message] = await emittedOnce(webViewContents, 'console-message')
+
+          const typeOfRemote = JSON.parse(message)
+          expect(typeOfRemote).to.equal('undefined')
+        })
+      })
+    }
+
+    generateSpecs('without sandbox', false)
+    generateSpecs('with sandbox', true)
+  })
 })

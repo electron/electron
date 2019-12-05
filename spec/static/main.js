@@ -127,6 +127,7 @@ app.on('ready', function () {
     webPreferences: {
       backgroundThrottling: false,
       nodeIntegration: true,
+      enableRemoteModule: false,
       webviewTag: true
     }
   })
