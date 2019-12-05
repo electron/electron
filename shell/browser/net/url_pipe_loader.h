@@ -67,6 +67,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
   void PauseReadingBodyFromNet() override {}
   void ResumeReadingBodyFromNet() override {}
 
+  mojo::Binding<network::mojom::URLLoader> binding_;
   mojo::Remote<network::mojom::URLLoaderClient> client_;
 
   std::unique_ptr<mojo::DataPipeProducer> producer_;
