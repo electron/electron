@@ -13,7 +13,7 @@ so it's better to start code signing as early as possible.
 
 While it is possible to distribute unsigned apps, it is not recommended. Both
 Windows and macOS will, by default, prevent either the download or the
-execution of unsigned applications. In fact, starting with macOS Catalina,
+execution of unsigned applications. Starting with macOS Catalina (version 10.15),
 users have to go through multiple manual steps to open unsigned applications.
 
 ![macOS Catalina Gatekeeper warning: The app cannot be opened because the developer cannot be verified](../images/gatekeeper.png)
