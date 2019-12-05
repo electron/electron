@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 05e39b91984dd2f4c5b1c17c83e57084de4c29d0..a0e381473712154ec0d511f5d859ef89cd8e60aa 100644
+index 2a29ea2048246b3014b763b922ba95d96a635852..3820d3767cb67d7ac702cadc6a7103b11ead8171 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -414,6 +414,11 @@ class RendererSandboxedProcessLauncherDelegate
@@ -80,5 +80,5 @@ index 05e39b91984dd2f4c5b1c17c83e57084de4c29d0..a0e381473712154ec0d511f5d859ef89
 -        std::make_unique<RendererSandboxedProcessLauncherDelegate>(),
 +        std::move(delegate),
          std::move(cmd_line), GetID(), this, std::move(mojo_invitation_),
-         base::BindRepeating(&RenderProcessHostImpl::OnMojoError, id_));
-     channel_->Pause();
+         base::BindRepeating(&RenderProcessHostImpl::OnMojoError, id_),
+         GetV8SnapshotFilesToPreload());

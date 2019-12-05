@@ -5,7 +5,7 @@ Subject: network_service_allow_remote_certificate_verification_logic.patch
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 53c5dd4ac82ce4e8e3f3700089fca22acadd189f..1287f3ae7badb3ac4382fc1dfe75ec45ea4c7416 100644
+index b61c0d698095f9f1702e94492a6806c0f7d221e7..c52d9ffb35ecc7e607cf9ecff8c4270d14286fe3 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -92,6 +92,11 @@
@@ -188,7 +188,7 @@ index cf066176ce310cb731bd20c53bb92cd19fa33755..b63c1ba5fa5b775462b5a3c5acdddef9
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<cert_verifier::CertNetFetcherURLLoader> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index b744cbb0ad7c587b9842ce9a401e93c908b5b265..fd80b4882da0da107a1cfaefd9a118dd47797dde 100644
+index 580a3c5cb5da1ca0baf92cb3fefb60e5d605e25e..0ac25118c5c0dbbd816160f58fc85d9b29fb31eb 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -190,6 +190,17 @@ struct HttpAuthStaticNetworkContextParams {
@@ -209,7 +209,7 @@ index b744cbb0ad7c587b9842ce9a401e93c908b5b265..fd80b4882da0da107a1cfaefd9a118dd
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -767,6 +778,9 @@ interface NetworkContext {
+@@ -793,6 +804,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

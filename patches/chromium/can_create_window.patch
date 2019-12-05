@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 9320b6e1660f1ef58c3edb6555915128ecb162a8..49fad611a13a45425ec1e21f97d14eb925e74b6f 100644
+index 3d2992aace4fa468332f7ff5712aff84d2222f00..d13229948c4a56891a012b3efe932015315f68be 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4359,6 +4359,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4352,6 +4352,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -32,7 +32,7 @@ index 310e6195e56f19616318aa8c4e5e89c21e84a2d8..82f017687438d73dcc6c2017e2303b98
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index a9e1fd367ed0234808d9ab7a34644f551475dc4a..dd936a7c1dd2c90bf642be663f309b075cefadd7 100644
+index bcb85464359ce2f1c2b46e7bd86f71cbeaebb25d..53bafb5b97034078784f8ebb43212b792f6a5d17 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -514,6 +514,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -45,7 +45,7 @@ index a9e1fd367ed0234808d9ab7a34644f551475dc4a..dd936a7c1dd2c90bf642be663f309b07
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index bc4e6588f1176d663b30654ae8ced27d57df71ce..a687e72d4a365bdd6dc9ab91377a8dae4f046db0 100644
+index 0a09d0752726ec5a1602800279ebbd41b6c09f44..a15ca0cbb3fe5d74021e20b03249150feada5503 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -134,6 +134,7 @@ class NetworkService;
