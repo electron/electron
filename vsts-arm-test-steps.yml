@@ -69,6 +69,8 @@ steps:
     DISPLAY: ":99.0"
 
 - bash: |
+    # Next line needed to avoid crash on arm32
+    sudo gdk-pixbuf-query-loaders --update-cache
     cd src
     export ELECTRON_OUT_DIR=Default
     (cd electron && node script/yarn test -- --enable-logging)
