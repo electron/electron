@@ -10,8 +10,8 @@
 
 #include "base/values.h"
 #include "gin/handle.h"
-#include "native_mate/wrappable.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
@@ -38,7 +38,7 @@ namespace electron {
 
 namespace api {
 
-class NativeImage : public mate::Wrappable<NativeImage> {
+class NativeImage : public gin_helper::Wrappable<NativeImage> {
  public:
   static gin::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
   static gin::Handle<NativeImage> Create(v8::Isolate* isolate,

@@ -10,8 +10,8 @@
 
 #include "content/public/browser/browser_thread.h"
 #include "electron/shell/common/api/api.mojom.h"
-#include "native_mate/wrappable.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace content {
 class RenderFrameHost;
@@ -36,9 +36,9 @@ v8::Local<v8::Object> CreateNativeEvent(
 
 // Provide helperers to emit event in JavaScript.
 template <typename T>
-class EventEmitter : public mate::Wrappable<T> {
+class EventEmitter : public gin_helper::Wrappable<T> {
  public:
-  using Base = mate::Wrappable<T>;
+  using Base = gin_helper::Wrappable<T>;
   using ValueArray = std::vector<v8::Local<v8::Value>>;
 
   // Make the convinient methods visible:

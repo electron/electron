@@ -16,9 +16,9 @@
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
-#include "shell/common/api/constructor.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -445,8 +445,8 @@ void BrowserWindow::OnWindowHide() {
 }
 
 // static
-mate::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
-                                        gin::Arguments* args) {
+gin_helper::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
+                                              gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create BrowserWindow before app is ready");
     return nullptr;
@@ -502,7 +502,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow",
-           mate::CreateConstructor<BrowserWindow>(
+           gin_helper::CreateConstructor<BrowserWindow>(
                isolate, base::BindRepeating(&BrowserWindow::New)));
 }
 

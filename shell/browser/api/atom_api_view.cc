@@ -43,7 +43,7 @@ void View::AddChildViewAt(gin::Handle<View> child, size_t index) {
 #endif
 
 // static
-mate::WrappableBase* View::New(gin::Arguments* args) {
+gin_helper::WrappableBase* View::New(gin::Arguments* args) {
   auto* view = new View();
   view->InitWithArgs(args);
   return view;
