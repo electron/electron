@@ -41,8 +41,21 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // Adds the given SiteInstance to our map, to ensure that we do not create
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
+diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
+index 496292bd1689607722d4bb27c829d3d7704b9d3c..54bb3a0ebcb2bceb4c1f94f3e38927cf82f039c5 100644
+--- a/content/browser/frame_host/navigation_request.cc
++++ b/content/browser/frame_host/navigation_request.cc
+@@ -1209,6 +1209,8 @@ void NavigationRequest::BeginNavigation() {
+     TRACE_EVENT_ASYNC_STEP_INTO0("navigation", "NavigationRequest", this,
+                                  "ResponseStarted");
+ 
++    state_ = WILL_PROCESS_RESPONSE;
++
+     // Select an appropriate RenderFrameHost.
+     render_frame_host_ =
+         frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index d5733dc4ac12c851d4b62d9954abca30ad9a5b9b..6797d3ca1957dd126c6f890bb93c274e6f71b1e9 100644
+index d5733dc4ac12c851d4b62d9954abca30ad9a5b9b..3f0e3993e8cd3d8caeacdfedbe45da26938c3237 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2142,6 +2142,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -76,8 +89,8 @@ index d5733dc4ac12c851d4b62d9954abca30ad9a5b9b..6797d3ca1957dd126c6f890bb93c274e
 +        delegate_->GetControllerForRenderManager().GetBrowserContext();
 +    bool has_navigation_started = request->state() != NavigationRequest::NOT_STARTED;
 +    bool has_response_started =
-+        (request->state() == NavigationRequest::READY_TO_COMMIT ||
-+        request->state() == NavigationRequest::CANCELING) &&
++        (request->state() == NavigationRequest::WILL_PROCESS_RESPONSE ||
++         request->state() >= NavigationRequest::CANCELING) &&
 +        !speculative_render_frame_host_;
 +    // Gives user a chance to choose a custom site instance.
 +    SiteInstance* affinity_site_instance = nullptr;
