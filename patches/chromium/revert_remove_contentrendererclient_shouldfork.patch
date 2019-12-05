@@ -6,10 +6,10 @@ Subject: Revert "Remove ContentRendererClient::ShouldFork."
 This reverts commit 6b068eb8ca4a3c7350bdafa22fc0cf0636ef8b74.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index 2151bb70e8e6b88e851230fe67670a0d62372685..3f35dd651fc27ace7891a1d32e1cbb4efce68423 100644
+index f9f5e217c8da2a9f4f81df4556bb5a834b19765b..f21cd6f12e74e3df2e88851e719a2610baee0777 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1270,6 +1270,17 @@ bool ChromeContentRendererClient::ShouldFork(WebLocalFrame* frame,
+@@ -1269,6 +1269,17 @@ bool ChromeContentRendererClient::ShouldFork(WebLocalFrame* frame,
      return true;
  #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
  
