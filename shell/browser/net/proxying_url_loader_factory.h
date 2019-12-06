@@ -210,6 +210,7 @@ class ProxyingURLLoaderFactory
       const HandlersMap& intercepted_handlers,
       content::BrowserContext* browser_context,
       int render_process_id,
+      base::Optional<int64_t> navigation_id,
       network::mojom::URLLoaderFactoryRequest loader_request,
       mojo::PendingRemote<network::mojom::URLLoaderFactory>
           target_factory_remote,
@@ -267,6 +268,7 @@ class ProxyingURLLoaderFactory
 
   content::BrowserContext* const browser_context_;
   const int render_process_id_;
+  base::Optional<int64_t> navigation_id_;
   mojo::ReceiverSet<network::mojom::URLLoaderFactory> proxy_receivers_;
   mojo::Remote<network::mojom::URLLoaderFactory> target_factory_;
   mojo::Receiver<network::mojom::TrustedURLLoaderHeaderClient>
