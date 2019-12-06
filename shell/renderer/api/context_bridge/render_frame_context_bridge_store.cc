@@ -20,7 +20,7 @@ class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
  public:
   static void BindTo(v8::Isolate* isolate,
                      v8::Local<v8::Object> target,
-                     RenderFramePersistenceStore* store,
+                     base::WeakPtr<RenderFramePersistenceStore> store,
                      WeakGlobalPairNode* node,
                      int hash) {
     new CachedProxyLifeMonitor(isolate, target, store, node, hash);
@@ -29,7 +29,7 @@ class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
  protected:
   CachedProxyLifeMonitor(v8::Isolate* isolate,
                          v8::Local<v8::Object> target,
-                         RenderFramePersistenceStore* store,
+                         base::WeakPtr<RenderFramePersistenceStore> store,
                          WeakGlobalPairNode* node,
                          int hash)
       : ObjectLifeMonitor(isolate, target),
@@ -38,6 +38,9 @@ class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
         hash_(hash) {}
 
   void RunDestructor() override {
+    if (!store_)
+      return;
+
     if (node_->detached) {
       delete node_;
       return;
@@ -56,7 +59,7 @@ class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
   }
 
  private:
-  RenderFramePersistenceStore* store_;
+  base::WeakPtr<RenderFramePersistenceStore> store_;
   WeakGlobalPairNode* node_;
   int hash_;
 };
@@ -98,11 +101,11 @@ void RenderFramePersistenceStore::CacheProxiedObject(
     auto iter = proxy_map_.find(hash);
     auto* node = new WeakGlobalPairNode(
         std::make_tuple(std::move(global_from), std::move(global_proxy)));
-    CachedProxyLifeMonitor::BindTo(v8::Isolate::GetCurrent(), obj, this, node,
-                                   hash);
+    CachedProxyLifeMonitor::BindTo(v8::Isolate::GetCurrent(), obj,
+                                   weak_factory_.GetWeakPtr(), node, hash);
     CachedProxyLifeMonitor::BindTo(v8::Isolate::GetCurrent(),
                                    v8::Local<v8::Object>::Cast(proxy_value),
-                                   this, node, hash);
+                                   weak_factory_.GetWeakPtr(), node, hash);
     if (iter == proxy_map_.end()) {
       proxy_map_.emplace(hash, node);
     } else {
