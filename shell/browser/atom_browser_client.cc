@@ -989,7 +989,8 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
         header_client,
-    bool* bypass_redirect_checks) {
+    bool* bypass_redirect_checks,
+    network::mojom::URLLoaderFactoryOverridePtr* factory_override) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   api::ProtocolNS* protocol =
       api::ProtocolNS::FromWrappedClass(isolate, browser_context);
