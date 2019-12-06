@@ -5,8 +5,8 @@
 #include "shell/browser/api/views/atom_api_label_button.h"
 
 #include "base/strings/utf_string_conversions.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/constructor.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -37,8 +37,8 @@ void LabelButton::SetIsDefault(bool is_default) {
 }
 
 // static
-mate::WrappableBase* LabelButton::New(mate::Arguments* args,
-                                      const std::string& text) {
+gin_helper::WrappableBase* LabelButton::New(gin_helper::Arguments* args,
+                                            const std::string& text) {
   // Constructor call.
   auto* view = new LabelButton(text);
   view->InitWith(args->isolate(), args->GetThis());
@@ -48,8 +48,8 @@ mate::WrappableBase* LabelButton::New(mate::Arguments* args,
 // static
 void LabelButton::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "LabelButton"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "LabelButton"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("getText", &LabelButton::GetText)
       .SetMethod("setText", &LabelButton::SetText)
       .SetMethod("isDefault", &LabelButton::IsDefault)
@@ -69,8 +69,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("LabelButton", mate::CreateConstructor<LabelButton>(
+  gin_helper::Dictionary dict(isolate, exports);
+  dict.Set("LabelButton", gin_helper::CreateConstructor<LabelButton>(
                               isolate, base::BindRepeating(&LabelButton::New)));
 }
 

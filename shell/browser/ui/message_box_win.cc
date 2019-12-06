@@ -83,7 +83,7 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
                                  const std::vector<base::string16>& buttons,
                                  int default_id,
                                  int cancel_id,
-                                 int options,
+                                 bool no_link,
                                  const base::string16& title,
                                  const base::string16& message,
                                  const base::string16& detail,
@@ -156,7 +156,7 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
   // and custom buttons in pButtons.
   std::map<int, int> id_map;
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
-  if (options & MESSAGE_BOX_NO_LINK) {
+  if (no_link) {
     for (size_t i = 0; i < buttons.size(); ++i)
       dialog_buttons.push_back(
           {static_cast<int>(i + kIDStart), buttons[i].c_str()});
@@ -166,7 +166,7 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
   if (dialog_buttons.size() > 0) {
     config.pButtons = &dialog_buttons.front();
     config.cButtons = dialog_buttons.size();
-    if (!(options & MESSAGE_BOX_NO_LINK))
+    if (!no_link)
       config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
   }
 
@@ -200,7 +200,7 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings) {
 
   return ShowTaskDialogUTF16(
       settings.parent_window, settings.type, utf16_buttons, settings.default_id,
-      settings.cancel_id, settings.options, title_16, message_16, detail_16,
+      settings.cancel_id, settings.no_link, title_16, message_16, detail_16,
       checkbox_label_16, settings.checkbox_checked, settings.icon);
 }
 
@@ -242,8 +242,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   electron::UnresponsiveSuppressor suppressor;
-  ShowTaskDialogUTF16(nullptr, MessageBoxType::kError, {}, -1, 0, 0, L"Error",
-                      title, content, L"", false, gfx::ImageSkia());
+  ShowTaskDialogUTF16(nullptr, MessageBoxType::kError, {}, -1, 0, false,
+                      L"Error", title, content, L"", false, gfx::ImageSkia());
 }
 
 }  // namespace electron

@@ -1055,7 +1055,7 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
 }
 
 // static
-mate::WrappableBase* TopLevelWindow::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* TopLevelWindow::New(gin_helper::Arguments* args) {
   gin_helper::Dictionary options =
       gin::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);

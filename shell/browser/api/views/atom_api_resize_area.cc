@@ -4,8 +4,8 @@
 
 #include "shell/browser/api/views/atom_api_resize_area.h"
 
-#include "native_mate/dictionary.h"
-#include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/constructor.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -23,7 +23,7 @@ void ResizeArea::OnResize(int resize_amount, bool done_resizing) {
 }
 
 // static
-mate::WrappableBase* ResizeArea::New(mate::Arguments* args) {
+gin_helper::WrappableBase* ResizeArea::New(gin_helper::Arguments* args) {
   // Constructor call.
   auto* view = new ResizeArea();
   view->InitWith(args->isolate(), args->GetThis());
@@ -33,7 +33,7 @@ mate::WrappableBase* ResizeArea::New(mate::Arguments* args) {
 // static
 void ResizeArea::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "ResizeArea"));
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "ResizeArea"));
 }
 
 }  // namespace api
@@ -49,8 +49,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("ResizeArea", mate::CreateConstructor<ResizeArea>(
+  gin_helper::Dictionary dict(isolate, exports);
+  dict.Set("ResizeArea", gin_helper::CreateConstructor<ResizeArea>(
                              isolate, base::BindRepeating(&ResizeArea::New)));
 }
 

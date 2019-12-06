@@ -5,7 +5,7 @@
 #ifndef SHELL_BROWSER_API_VIEWS_ATOM_API_TEXT_FIELD_H_
 #define SHELL_BROWSER_API_VIEWS_ATOM_API_TEXT_FIELD_H_
 
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "shell/browser/api/atom_api_view.h"
 #include "ui/views/controls/textfield/textfield.h"
 
@@ -15,7 +15,7 @@ namespace api {
 
 class TextField : public View {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args);
+  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

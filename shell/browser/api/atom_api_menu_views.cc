@@ -84,7 +84,7 @@ void MenuViews::OnClosed(int32_t window_id, base::OnceClosure callback) {
 }
 
 // static
-mate::WrappableBase* Menu::New(gin::Arguments* args) {
+gin_helper::WrappableBase* Menu::New(gin::Arguments* args) {
   return new MenuViews(args);
 }
 
