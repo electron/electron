@@ -16,8 +16,8 @@ namespace api {
 
 class MdTextButton : public LabelButton {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args,
-                                  const std::string& text);
+  static gin_helper::WrappableBase* New(gin_helper::Arguments* args,
+                                        const std::string& text);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

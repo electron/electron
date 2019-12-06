@@ -65,9 +65,9 @@ Tray::Tray(gin::Handle<NativeImage> image, gin_helper::Arguments* args)
 Tray::~Tray() = default;
 
 // static
-mate::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
-                               gin::Handle<NativeImage> image,
-                               gin_helper::Arguments* args) {
+gin_helper::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
+                                     gin::Handle<NativeImage> image,
+                                     gin_helper::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
     return nullptr;

@@ -18,8 +18,8 @@ class WebContents;
 
 class WebContentsView : public View, public content::WebContentsObserver {
  public:
-  static mate::WrappableBase* New(gin_helper::Arguments* args,
-                                  gin::Handle<WebContents> web_contents);
+  static gin_helper::WrappableBase* New(gin_helper::Arguments* args,
+                                        gin::Handle<WebContents> web_contents);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

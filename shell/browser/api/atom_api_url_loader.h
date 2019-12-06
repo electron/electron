@@ -38,7 +38,7 @@ class SimpleURLLoaderWrapper
       public network::SimpleURLLoaderStreamConsumer {
  public:
   ~SimpleURLLoaderWrapper() override;
-  static mate::WrappableBase* New(gin::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

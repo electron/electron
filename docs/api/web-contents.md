@@ -1113,17 +1113,6 @@ Sets the maximum and minimum pinch-to-zoom level.
 > contents.setVisualZoomLevelLimits(1, 3)
 > ```
 
-#### `contents.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)` _Deprecated_
-
-* `minimumLevel` Number
-* `maximumLevel` Number
-
-Returns `Promise<void>`
-
-Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
-
-**Deprecated:** This API is no longer supported by Chromium.
-
 #### `contents.undo()`
 
 Executes the editing command `undo` in web page.
@@ -1240,7 +1229,7 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 
 Get the system printer list.
 
-Returns [`PrinterInfo[]`](structures/printer-info.md).
+Returns [`PrinterInfo[]`](structures/printer-info.md)
 
 #### `contents.print([options], [callback])`
 

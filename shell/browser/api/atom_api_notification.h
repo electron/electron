@@ -28,8 +28,8 @@ namespace api {
 class Notification : public gin_helper::TrackableObject<Notification>,
                      public NotificationDelegate {
  public:
-  static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
-                                  gin::Arguments* args);
+  static gin_helper::WrappableBase* New(gin_helper::ErrorThrower thrower,
+                                        gin::Arguments* args);
   static bool IsSupported();
 
   static void BuildPrototype(v8::Isolate* isolate,

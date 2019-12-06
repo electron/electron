@@ -60,6 +60,7 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
 
   // object_identity ==> [from_value, proxy_value]
   std::map<int, WeakGlobalPairNode*> proxy_map_;
+  base::WeakPtrFactory<RenderFramePersistenceStore> weak_factory_{this};
 };
 
 }  // namespace context_bridge
