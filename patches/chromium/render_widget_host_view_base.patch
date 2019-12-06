@@ -5,10 +5,10 @@ Subject: render_widget_host_view_base.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 394b9ec0b7409465b0f9700a2d4a1eb1cf538e1f..7e1c27d90255b7491fb0bc7fb7f04361ef88b4b5 100644
+index 394b9ec0b7409465b0f9700a2d4a1eb1cf538e1f..a34dcdd124746b04d116e207b10395fc02649ec1 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -619,6 +619,15 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
+@@ -619,6 +619,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
    return false;
  }
  
@@ -16,9 +16,7 @@ index 394b9ec0b7409465b0f9700a2d4a1eb1cf538e1f..7e1c27d90255b7491fb0bc7fb7f04361
 +    RenderWidgetHost* render_widget_host,
 +    RenderWidgetHost* embedder_render_widget_host,
 +    WebContentsView* web_contents_view) {
-+  return web_contents_view->CreateViewForWidget(
-+    render_widget_host,
-+    !!embedder_render_widget_host);
++  return web_contents_view->CreateViewForWidget(render_widget_host);
 +}
 +
  void RenderWidgetHostViewBase::ProcessMouseEvent(
