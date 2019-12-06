@@ -1,9 +1,6 @@
 import { EventEmitter } from 'events'
-import { deprecate } from 'electron'
 
 const binding = process.electronBinding('web_frame')
-
-const setLayoutZoomLevelLimitsWarning = deprecate.warnOnce('setLayoutZoomLevelLimits')
 
 class WebFrame extends EventEmitter {
   constructor (public context: Window) {
@@ -47,10 +44,6 @@ class WebFrame extends EventEmitter {
 
   get routingId () {
     return binding._getRoutingId(this.context)
-  }
-
-  setLayoutZoomLevelLimits () {
-    setLayoutZoomLevelLimitsWarning()
   }
 }
 
