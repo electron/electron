@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 6 Dec 2019 01:48:08 -0800
+Subject: fix: add missing <functional> header
+
+
+diff --git a/src/base/template-utils.h b/src/base/template-utils.h
+index 7098dc5d1b907e25d9d754583a520c70e0b8f8de..a6fa1ea8a3517e8dea59047f67cad0d26d06aa67 100644
+--- a/src/base/template-utils.h
++++ b/src/base/template-utils.h
+@@ -6,6 +6,7 @@
+ #define V8_BASE_TEMPLATE_UTILS_H_
+ 
+ #include <array>
++#include <functional>
+ #include <type_traits>
+ #include <utility>
+ 
