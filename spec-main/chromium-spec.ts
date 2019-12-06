@@ -766,22 +766,27 @@ describe('chromium features', () => {
 
     describe('when opened from main window', () => {
       for (const { parent, child, nodeIntegration, nativeWindowOpen, openerAccessible } of table) {
-        const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen}, child should ${openerAccessible ? '' : 'not '}be able to access opener`
-        it(description, async () => {
-          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen } })
-          await w.loadURL(parent)
-          const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
-            window.addEventListener('message', function f(e) {
-              resolve(e.data)
+        for (const sandboxPopup of [false, true]) {
+          const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`
+          it(description, async () => {
+            const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen } })
+            w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
+              options!.webPreferences!.sandbox = sandboxPopup
             })
-            window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}")
-          })`)
-          if (openerAccessible) {
-            expect(childOpenerLocation).to.be.a('string')
-          } else {
-            expect(childOpenerLocation).to.be.null()
-          }
-        })
+            await w.loadURL(parent)
+            const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
+              window.addEventListener('message', function f(e) {
+                resolve(e.data)
+              })
+              window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}")
+            })`)
+            if (openerAccessible) {
+              expect(childOpenerLocation).to.be.a('string')
+            } else {
+              expect(childOpenerLocation).to.be.null()
+            }
+          })
+        }
       }
     })
 

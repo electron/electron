@@ -141,12 +141,6 @@ void AtomSandboxedRendererClient::InitializeBindings(
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
   process.SetReadOnly("isMainFrame", is_main_frame);
-
-  // Pass in CLI flags needed to setup the renderer
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kGuestInstanceID))
-    b.Set(options::kGuestInstanceID,
-          command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
 }
 
 void AtomSandboxedRendererClient::RenderFrameCreated(
