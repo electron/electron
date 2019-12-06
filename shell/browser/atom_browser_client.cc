@@ -981,6 +981,7 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     int render_process_id,
     URLLoaderFactoryType type,
     const url::Origin& request_initiator,
+    base::Optional<int64_t> navigation_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
         header_client,
@@ -1002,11 +1003,11 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   if (header_client)
     header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
 
-  new ProxyingURLLoaderFactory(web_request.get(),
-                               protocol->intercept_handlers(), browser_context,
-                               render_process_id, std::move(proxied_receiver),
-                               std::move(target_factory_remote),
-                               std::move(header_client_receiver), type);
+  new ProxyingURLLoaderFactory(
+      web_request.get(), protocol->intercept_handlers(), browser_context,
+      render_process_id, std::move(navigation_id), std::move(proxied_receiver),
+      std::move(target_factory_remote), std::move(header_client_receiver),
+      type);
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
