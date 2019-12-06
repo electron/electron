@@ -16,6 +16,7 @@
 #include "content/public/browser/browser_main_parts.h"
 #include "content/public/common/main_function_params.h"
 #include "electron/buildflags/buildflags.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
 #include "ui/views/layout/layout_provider.h"
 
@@ -147,7 +148,7 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   // List of callbacks should be executed before destroying JS env.
   std::list<base::OnceClosure> destructors_;
 
-  device::mojom::GeolocationControlPtr geolocation_control_;
+  mojo::Remote<device::mojom::GeolocationControl> geolocation_control_;
 
   static AtomBrowserMainParts* self_;
 
