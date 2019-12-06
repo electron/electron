@@ -163,7 +163,7 @@ describe('net module', () => {
       })
     })
 
-    it.skip('should support chunked encoding', (done) => {
+    it('should support chunked encoding', (done) => {
       respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200
         response.statusMessage = 'OK'
@@ -1472,7 +1472,7 @@ describe('net module', () => {
       })
     })
 
-    it.skip('should finish sending data when urlRequest is unreferenced for chunked encoding', (done) => {
+    it('should finish sending data when urlRequest is unreferenced for chunked encoding', (done) => {
       respondOnce.toSingleURL((request, response) => {
         let received = Buffer.alloc(0)
         request.on('data', (data) => {
@@ -1500,7 +1500,7 @@ describe('net module', () => {
       })
     })
 
-    it.skip('should finish sending data when urlRequest is unreferenced before close event for chunked encoding', (done) => {
+    it('should finish sending data when urlRequest is unreferenced before close event for chunked encoding', (done) => {
       respondOnce.toSingleURL((request, response) => {
         let received = Buffer.alloc(0)
         request.on('data', (data) => {
@@ -1551,7 +1551,7 @@ describe('net module', () => {
       })
     })
 
-    it.skip('should finish sending data when urlRequest is unreferenced for chunked encoding', (done) => {
+    it('should finish sending data when urlRequest is unreferenced for chunked encoding', (done) => {
       respondOnce.toSingleURL((request, response) => {
         let received = Buffer.alloc(0)
         request.on('data', (data) => {
