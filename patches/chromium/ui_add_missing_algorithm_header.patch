@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 6 Dec 2019 01:47:14 -0800
+Subject: ui: add missing <algorithm> header
+
+
+diff --git a/ui/events/gestures/physics_based_fling_curve.cc b/ui/events/gestures/physics_based_fling_curve.cc
+index a46f783ffaec89929950435bbd5bfda2d2aeaf1e..0078be91fa408249af895e1ca5c9f40385095abe 100644
+--- a/ui/events/gestures/physics_based_fling_curve.cc
++++ b/ui/events/gestures/physics_based_fling_curve.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "ui/events/gestures/physics_based_fling_curve.h"
+ 
++#include <algorithm>
++
+ namespace {
+ 
+ // These constants are defined based on UX experiment.

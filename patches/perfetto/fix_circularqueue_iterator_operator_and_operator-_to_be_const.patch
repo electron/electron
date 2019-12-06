@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 6 Dec 2019 01:49:40 -0800
+Subject: fix: CircularQueue::Iterator operator*() and operator->() to be const
+
+Otherwise the following compile error happens with MSSTL,
+
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.23.28105\include\xutility(3269,19): error: indirection requires pointer operand ('const perfetto::base::CircularQueue<perfetto::trace_processor::TimestampedTracePiece>::Iterator' invalid)
+        if (_Pred(*_UMid, _Val)) { // try top half
+                  ^~~~~~
+../../third_party/perfetto/src/trace_processor/trace_sorter.cc(48,26): note: in instantiation of function template specialization 'std::lower_bound<perfetto::base::CircularQueue<perfetto::trace_processor::TimestampedTracePiece>::Iterator, long long, bool (*)(const perfetto::trace_processor::TimestampedTracePiece &, long long)>' requested here
+  auto sort_begin = std::lower_bound(events_.begin(), sort_end, sort_min_ts_,
+
+This is because MSSTL implementation of std::lower_bound
+expects const auto _UMid = _STD next(_UFirst, _Count2);
+vs _ForwardIterator __m = __first; in libc++ implementations of
+std::lower_bound.
+
+diff --git a/include/perfetto/ext/base/circular_queue.h b/include/perfetto/ext/base/circular_queue.h
+index 72f14d123731c57b80873dcf4dec4df89a277303..b629e0ebb36ffea011bfcaeb682efbd2540e5425 100644
+--- a/include/perfetto/ext/base/circular_queue.h
++++ b/include/perfetto/ext/base/circular_queue.h
+@@ -67,14 +67,14 @@ class CircularQueue {
+       ignore_result(generation);
+     }
+ 
+-    T* operator->() {
++    T* operator->() const {
+ #if PERFETTO_DCHECK_IS_ON()
+       PERFETTO_DCHECK(generation_ == queue_->generation());
+ #endif
+       return queue_->Get(pos_);
+     }
+ 
+-    T& operator*() { return *(operator->()); }
++    T& operator*() const { return *(operator->()); }
+ 
+     const value_type& operator[](difference_type i) const {
+       return *(*this + i);
