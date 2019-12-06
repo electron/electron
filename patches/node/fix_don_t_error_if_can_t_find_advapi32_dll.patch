@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 6 Dec 2019 09:44:19 -0800
+Subject: fix: don't error if can't find advapi32.dll
+
+Electron doesn't currently load advapi32.dll, so this patch fails gracefully if it
+doesn't exist. I plan to upstream it to libuv.
+
+diff --git a/deps/uv/src/win/winapi.c b/deps/uv/src/win/winapi.c
+index 85a9de8a2295ec3250f9ae41f5ef6dbe72dc2a8a..5a811fe82e83ce1e178893828565fefc2bedc45a 100644
+--- a/deps/uv/src/win/winapi.c
++++ b/deps/uv/src/win/winapi.c
+@@ -140,10 +140,8 @@ void uv_winapi_init(void) {
+   }
+ 
+   advapi32_module = GetModuleHandleA("advapi32.dll");
+-  if (advapi32_module == NULL) {
+-    uv_fatal_error(GetLastError(), "GetModuleHandleA");
+-  }
+-
+-  pRtlGenRandom =
++  if (advapi32_module != NULL) {
++    pRtlGenRandom =
+       (sRtlGenRandom) GetProcAddress(advapi32_module, "SystemFunction036");
++  }
+ }
