@@ -112,8 +112,7 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
       guest_contents->GetRenderViewHost()->GetWidget();
   auto* guest_contents_impl =
       static_cast<content::WebContentsImpl*>(guest_contents.release());
-  guest_contents_impl->GetView()->CreateViewForWidget(render_widget_host,
-                                                      false);
+  guest_contents_impl->GetView()->CreateViewForWidget(render_widget_host);
 
   return guest_contents_impl;
 }
