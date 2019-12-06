@@ -122,13 +122,20 @@ by its key, which is returned from `webFrame.insertCSS(css)`.
 
 Inserts `text` to the focused element.
 
-### `webFrame.executeJavaScript(code[, userGesture])`
+### `webFrame.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
 * `userGesture` Boolean (optional) - Default is `false`.
+* `callback` Function (optional) - Called after script has been executed. Unless
+  the frame is suspended (e.g. showing a modal alert), execution will be
+  synchronous and the callback will be invoked before the method returns. For
+  compatibility with an older version of this method, the error parameter is
+  second.
+  * `result` Any
+  * `error` Error
 
-Returns `Promise<any>` - A promise that resolves with the result of the executed code
-or is rejected if the result of the code is a rejected promise.
+Returns `Promise<any>` - A promise that resolves with the result of the executed
+code or is rejected if execution throws or results in a rejected promise.
 
 Evaluates `code` in page.
 
@@ -136,14 +143,24 @@ In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
 
-### `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture])`
+### `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])`
 
-* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature.  You can provide any integer here.
+* `worldId` Integer - The ID of the world to run the javascript
+            in, `0` is the default main world (where content runs), `999` is the
+            world used by Electron's `contextIsolation` feature. Accepts values
+            in the range 1..536870911.
 * `scripts` [WebSource[]](structures/web-source.md)
 * `userGesture` Boolean (optional) - Default is `false`.
+* `callback` Function (optional) - Called after script has been executed. Unless
+  the frame is suspended (e.g. showing a modal alert), execution will be
+  synchronous and the callback will be invoked before the method returns.  For
+  compatibility with an older version of this method, the error parameter is
+  second.
+  * `result` Any
+  * `error` Error
 
-Returns `Promise<any>` - A promise that resolves with the result of the executed code
-or is rejected if the result of the code is a rejected promise.
+Returns `Promise<any>` - A promise that resolves with the result of the executed
+code or is rejected if execution throws or results in a rejected promise.
 
 Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
 
