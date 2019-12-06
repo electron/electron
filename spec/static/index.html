@@ -85,7 +85,6 @@
     const runner = mocha.run(() => {
       // Ensure the callback is called after runner is defined
       setTimeout(() => {
-        Mocha.utils.highlightTags('code')
         ipcRenderer.send('process.exit', runner.failures)
       }, 0)
     })
