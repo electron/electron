@@ -11,6 +11,7 @@
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/wake_lock.mojom.h"
 
 namespace electron {
@@ -49,7 +50,7 @@ class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
   using WakeLockTypeMap = std::map<int, device::mojom::WakeLockType>;
   WakeLockTypeMap wake_lock_types_;
 
-  device::mojom::WakeLockPtr wake_lock_;
+  mojo::Remote<device::mojom::WakeLock> wake_lock_;
 
   DISALLOW_COPY_AND_ASSIGN(PowerSaveBlocker);
 };
