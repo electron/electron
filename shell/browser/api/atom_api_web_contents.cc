@@ -2036,7 +2036,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         &electron_renderer);
-    electron_renderer->Message(internal, false, channel, std::move(args),
+    electron_renderer->Message(internal, false, channel, args.ShallowClone(),
                                sender_id);
   }
   return true;
