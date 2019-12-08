@@ -29,7 +29,7 @@ index a489bf6ea2179059f53e53563e993db9c7cd123b..93e237569fe94ec8526f67d915e1a735
    virtual content::DesktopMediaID::Type GetMediaListType() const = 0;
  };
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 9d9b7435044c4b84f971bd94765eb875fbac1624..2918f91d8e1308bf5a47313e20ad3cec74918f3a 100644
+index ba64a40697c7bb91d6e944ad9ea8fa50dd970633..d2600791197082c8c2e179ee4df66965234c4542 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -22,6 +22,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period)
@@ -111,7 +111,7 @@ index ad7f766a36b1b6b2a8bc0f96369f1aaadf6681f7..f6c6c14a0937430df62c9b9c1132c591
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 2b109bd1dea2aed647ec01c0660b2d4c963312f2..8567b4c84b55f1f7774ef3755dca63e94ddd7a29 100644
+index d415675b3f7b757f2fb7a972e1bd96032f9ddd2c..b143433c995319e35216f359c1b57331917b1271 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -10,14 +10,15 @@
@@ -131,7 +131,7 @@ index 2b109bd1dea2aed647ec01c0660b2d4c963312f2..8567b4c84b55f1f7774ef3755dca63e9
  #include "media/base/video_util.h"
  #include "third_party/libyuv/include/libyuv/scale_argb.h"
  #include "third_party/skia/include/core/SkBitmap.h"
-@@ -220,6 +221,8 @@ void NativeDesktopMediaList::Worker::RefreshThumbnails(
+@@ -221,6 +222,8 @@ void NativeDesktopMediaList::Worker::RefreshThumbnails(
        FROM_HERE, {BrowserThread::UI},
        base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
                       media_list_));
