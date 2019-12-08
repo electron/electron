@@ -22,7 +22,7 @@ class Menu : public gin_helper::TrackableObject<Menu>,
              public AtomMenuModel::Delegate,
              public AtomMenuModel::Observer {
  public:
-  static mate::WrappableBase* New(gin::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -41,7 +41,7 @@ class Menu : public gin_helper::TrackableObject<Menu>,
   explicit Menu(gin::Arguments* args);
   ~Menu() override;
 
-  // mate::Wrappable:
+  // gin_helper::Wrappable:
   void AfterInit(v8::Isolate* isolate) override;
 
   // ui::SimpleMenuModel::Delegate:
@@ -149,18 +149,5 @@ struct Converter<electron::AtomMenuModel*> {
 };
 
 }  // namespace gin
-
-namespace mate {
-
-template <>
-struct Converter<electron::AtomMenuModel*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::AtomMenuModel** out) {
-    return gin::ConvertFromV8(isolate, val, out);
-  }
-};
-
-}  // namespace mate
 
 #endif  // SHELL_BROWSER_API_ATOM_API_MENU_H_

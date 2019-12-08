@@ -2,15 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_
-#define NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_
+#ifndef SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
+#define SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
+
+#include "v8/include/v8.h"
 
 namespace gin {
 class Arguments;
-struct Destroyable;
 }  // namespace gin
 
-namespace mate {
+namespace gin_helper {
 
 // Wrappable is a base class for C++ objects that have corresponding v8 wrapper
 // objects. To retain a Wrappable object on the stack, use a gin::Handle.
@@ -23,7 +24,7 @@ namespace mate {
 // };
 //
 // Subclasses should also typically have private constructors and expose a
-// static Create function that returns a mate::Handle. Forcing creators through
+// static Create function that returns a gin::Handle. Forcing creators through
 // this static Create function will enforce that clients actually create a
 // wrapper for the object. If clients fail to create a wrapper for a wrappable
 // object, the object will leak because we use the weak callback from the
@@ -48,12 +49,10 @@ class WrappableBase {
   // This method should only be called by classes using Constructor.
   virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
-  // Helper to migrate from native_mate to gin.
+  // Helper to init with arguments.
   void InitWithArgs(gin::Arguments* args);
 
  private:
-  friend struct gin::Destroyable;
-
   static void FirstWeakCallback(
       const v8::WeakCallbackInfo<WrappableBase>& data);
   static void SecondWeakCallback(
@@ -65,6 +64,6 @@ class WrappableBase {
   DISALLOW_COPY_AND_ASSIGN(WrappableBase);
 };
 
-}  // namespace mate
+}  // namespace gin_helper
 
-#endif  // NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_
+#endif  // SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_

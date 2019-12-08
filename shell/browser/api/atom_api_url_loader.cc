@@ -318,7 +318,7 @@ void SimpleURLLoaderWrapper::Cancel() {
 }
 
 // static
-mate::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
+gin_helper::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
   gin_helper::Dictionary opts;
   if (!args->GetNext(&opts)) {
     args->ThrowTypeError("Expected a dictionary");

@@ -42,8 +42,6 @@ Electron
 |   |   └── api/ - Javascript API implementation.
 |   └── renderer/ - Javascript renderer process initialization code.
 |       └── api/ - Javascript API implementation.
-├── native_mate/ - A fork of Chromium's gin library that makes it easier to marshal
-|                  types between C++ and JavaScript.
 ├── spec/ - Automatic tests.
 └── BUILD.gn - Building rules of Electron.
 ```

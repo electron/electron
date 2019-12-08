@@ -33,8 +33,8 @@ class WebContents;
 class BrowserView : public gin_helper::TrackableObject<BrowserView>,
                     public content::WebContentsObserver {
  public:
-  static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
-                                  gin::Arguments* args);
+  static gin_helper::WrappableBase* New(gin_helper::ErrorThrower thrower,
+                                        gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

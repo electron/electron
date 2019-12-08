@@ -80,8 +80,8 @@ Notification::~Notification() {
 }
 
 // static
-mate::WrappableBase* Notification::New(gin_helper::ErrorThrower thrower,
-                                       gin::Arguments* args) {
+gin_helper::WrappableBase* Notification::New(gin_helper::ErrorThrower thrower,
+                                             gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Notification before app is ready");
     return nullptr;

@@ -177,7 +177,7 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-mate::WrappableBase* Menu::New(gin::Arguments* args) {
+gin_helper::WrappableBase* Menu::New(gin::Arguments* args) {
   return new MenuMac(args);
 }
 

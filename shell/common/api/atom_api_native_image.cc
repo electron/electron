@@ -558,8 +558,8 @@ bool Converter<electron::api::NativeImage*>::FromV8(
   }
 
   *out = static_cast<electron::api::NativeImage*>(
-      static_cast<mate::WrappableBase*>(
-          mate::internal::FromV8Impl(isolate, val)));
+      static_cast<gin_helper::WrappableBase*>(
+          gin_helper::internal::FromV8Impl(isolate, val)));
   return *out != nullptr;
 }
 

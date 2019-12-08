@@ -8,7 +8,7 @@
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
-#include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
@@ -79,7 +79,7 @@ void WebContentsView::WebContentsDestroyed() {
 }
 
 // static
-mate::WrappableBase* WebContentsView::New(
+gin_helper::WrappableBase* WebContentsView::New(
     gin_helper::Arguments* args,
     gin::Handle<WebContents> web_contents) {
   // Currently we only support InspectableWebContents, e.g. the WebContents
@@ -121,7 +121,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContentsView",
-           mate::CreateConstructor<WebContentsView>(
+           gin_helper::CreateConstructor<WebContentsView>(
                isolate, base::BindRepeating(&WebContentsView::New)));
 }
 

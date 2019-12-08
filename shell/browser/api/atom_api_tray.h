@@ -34,9 +34,9 @@ class NativeImage;
 
 class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
  public:
-  static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
-                                  gin::Handle<NativeImage> image,
-                                  gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin_helper::ErrorThrower thrower,
+                                        gin::Handle<NativeImage> image,
+                                        gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
