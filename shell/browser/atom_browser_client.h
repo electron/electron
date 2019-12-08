@@ -94,9 +94,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::SiteInstance* pending_site_instance) override;
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
-  void AdjustUtilityServiceProcessCommandLine(
-      const service_manager::Identity& identity,
-      base::CommandLine* command_line) override;
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
   std::string GetGeolocationApiKey() override;
   scoped_refptr<content::QuotaPermissionContext> CreateQuotaPermissionContext()

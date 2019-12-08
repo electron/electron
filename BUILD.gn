@@ -387,7 +387,6 @@ source_set("electron_lib") {
     "//ppapi/proxy",
     "//ppapi/shared_impl",
     "//printing/buildflags",
-    "//services/audio/public/mojom:constants",
     "//services/device/public/cpp/geolocation",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
