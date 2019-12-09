@@ -367,6 +367,7 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     prefs.disable_popups = web_preferences->IsEnabled("disablePopups");
     prefs.web_security = web_preferences->IsEnabled(options::kWebSecurity,
                                                     true /* default value */);
+    prefs.browser_context = host->GetBrowserContext();
   }
 
   AddProcessPreferences(host->GetID(), prefs);
@@ -1005,15 +1006,19 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
 }
 
 void AtomBrowserClient::OverrideURLLoaderFactoryParams(
-    content::RenderProcessHost* process,
+    content::BrowserContext* browser_context,
     const url::Origin& origin,
+    bool is_for_isolated_world,
     network::mojom::URLLoaderFactoryParams* factory_params) {
-  auto render_process_id = process->GetID();
-  auto it = process_preferences_.find(render_process_id);
-  if (it != process_preferences_.end() && !it->second.web_security) {
-    // bypass CORB
-    factory_params->process_id = render_process_id;
-    factory_params->is_corb_enabled = false;
+  for (const auto& iter : process_preferences_) {
+    if (iter.second.browser_context != browser_context)
+      continue;
+
+    if (!iter.second.web_security) {
+      // bypass CORB
+      factory_params->process_id = iter.first;
+      factory_params->is_corb_enabled = false;
+    }
   }
 }
 
