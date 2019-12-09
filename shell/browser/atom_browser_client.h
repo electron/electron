@@ -183,8 +183,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool* bypass_redirect_checks,
       network::mojom::URLLoaderFactoryOverridePtr* factory_override) override;
   void OverrideURLLoaderFactoryParams(
-      content::RenderProcessHost* process,
+      content::BrowserContext* browser_context,
       const url::Origin& origin,
+      bool is_for_isolated_world,
       network::mojom::URLLoaderFactoryParams* factory_params) override;
 #if defined(OS_WIN)
   bool PreSpawnRenderer(sandbox::TargetPolicy* policy,
@@ -229,6 +230,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
     bool native_window_open = false;
     bool disable_popups = false;
     bool web_security = true;
+    content::BrowserContext* browser_context = nullptr;
   };
 
   bool ShouldForceNewSiteInstance(content::RenderFrameHost* current_rfh,
