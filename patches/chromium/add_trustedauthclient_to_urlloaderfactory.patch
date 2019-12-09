@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 691f9b0f6f658cc259cc9c4e8bb3abb15592e8a3..7f1dcd4b0f10af5882c275cc438cbb89048343bf 100644
+index 691f9b0f6f658cc259cc9c4e8bb3abb15592e8a3..09ecb3f3406da54440cdd977556f602496ec39a6 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -190,6 +190,25 @@ struct HttpAuthStaticNetworkContextParams {
@@ -39,19 +39,11 @@ index 691f9b0f6f658cc259cc9c4e8bb3abb15592e8a3..7f1dcd4b0f10af5882c275cc438cbb89
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -597,6 +616,16 @@ struct URLLoaderFactoryParams {
+@@ -597,6 +616,8 @@ struct URLLoaderFactoryParams {
    // interface. This still respects the per-context block lists.
    CorsOriginAccessPatterns? factory_bound_access_patterns;
  
 +  pending_remote<TrustedURLLoaderAuthClient>? auth_client;
-+
-+  // If non-empty array is given, |factory_bound_allow_patterns| is used for
-+  // CORS checks in addition to the per-context allow patterns that is managed
-+  // via NetworkContext interface. This still respects the per-context block
-+  // lists. To use this feature, caller should set |request_initiator_site_lock|
-+  // in order to bind the allow patterns to the factory specific initiator
-+  // origin.
-+  array<CorsOriginPattern> factory_bound_allow_patterns;
 +
    // Key used to isolate shared network resources like the cache.
    NetworkIsolationKey? network_isolation_key;
