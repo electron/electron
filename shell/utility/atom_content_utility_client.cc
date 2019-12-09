@@ -79,10 +79,13 @@ void AtomContentUtilityClient::ExposeInterfacesToBrowser(
 
   // If our process runs with elevated privileges, only add elevated Mojo
   // interfaces to the BinderMap.
-  if (!utility_process_running_elevated_)
+  if (!utility_process_running_elevated_) {
+#if BUILDFLAG(ENABLE_PRINTING)
     binders->Add(
         base::BindRepeating(printing::PdfToEmfConverterFactory::Create),
         base::ThreadTaskRunnerHandle::Get());
+#endif
+  }
 #endif
 }
 
