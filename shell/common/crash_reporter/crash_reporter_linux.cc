@@ -47,8 +47,11 @@ CrashReporterLinux::CrashReporterLinux() : pid_(getpid()) {
     process_start_time_ = ret;
   }
 
-  // Make base::g_linux_distro work.
-  base::SetLinuxDistro(base::GetLinuxDistro());
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    // Make base::g_linux_distro work.
+    base::SetLinuxDistro(base::GetLinuxDistro());
+  }
 }
 
 CrashReporterLinux::~CrashReporterLinux() = default;
