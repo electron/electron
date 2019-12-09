@@ -832,6 +832,23 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    describe('BrowserWindow.getBackgroundColor()', () => {
+      it('returns default value if no backgroundColor is set', () => {
+        w.destroy()
+        w = new BrowserWindow({})
+        expect(w.getBackgroundColor()).to.equal('#FFFFFF')
+      })
+      it('returns correct value if backgroundColor is set', () => {
+        const backgroundColor = '#BBAAFF'
+        w.destroy()
+        w = new BrowserWindow({
+          backgroundColor: backgroundColor
+        })
+        w.setBackgroundColor(backgroundColor)
+        expect(w.getBackgroundColor()).to.equal(backgroundColor)
+      })
+    })
+
     describe(`BrowserWindow.getNormalBounds()`, () => {
       describe(`Normal state`, () => {
         it(`checks normal bounds after resize`, (done) => {
