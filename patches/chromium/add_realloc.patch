@@ -54,10 +54,10 @@ index c69cfebccd7d7bff35d2292e61bf6008f0ca7940..2cb5f5d3f89f2af13221e66b2277a285
      ArrayBufferContents::FreeMemory(data);
    }
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-index bd781c2c8d42a8b4886a773333992cb932d24f6b..ea6d9e0f3a17899a4db19d09010bfb68ed10d5cd 100644
+index 095ca3db051362319611976b9052725ab16c1b3a..13e802a5732f0b04832d6dd8031ae43e1240b79a 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-@@ -149,6 +149,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
+@@ -126,6 +126,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
    return AllocateMemoryWithFlags(size, policy, base::PartitionAllocReturnNull);
  }
  
@@ -70,10 +70,10 @@ index bd781c2c8d42a8b4886a773333992cb932d24f6b..ea6d9e0f3a17899a4db19d09010bfb68
    WTF::Partitions::ArrayBufferPartition()->Free(data);
  }
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
-index 2e601017e41292fa4684df6b30f6357488b90a69..87a9c16cb864b4746fcf72a15362ac3ab4f8ac21 100644
+index 2e871b20c1e6fc3703178957fd03923f02ab1b47..8f2fd80130f1e7f957d642af4e5c22f9a5937ce4 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
-@@ -105,6 +105,7 @@ class CORE_EXPORT ArrayBufferContents {
+@@ -106,6 +106,7 @@ class CORE_EXPORT ArrayBufferContents {
    void CopyTo(ArrayBufferContents& other);
  
    static void* AllocateMemoryOrNull(size_t, InitializationPolicy);

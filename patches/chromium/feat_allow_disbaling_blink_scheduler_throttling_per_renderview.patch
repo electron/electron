@@ -5,10 +5,10 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 5304fc7951bc12c416e895b158210c0aa1a741c1..933eec28f206dfc8cb99ab0e87a62e6bd4084409 100644
+index 25b8cb4723e5fd7edd4711980f4484251391de85..42dcb4b6dc8aad2bb11ecfd7dc4825a92f93dc20 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -433,6 +433,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -432,6 +432,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    Send(new ViewMsg_SetBackgroundOpaque(GetRoutingID(), opaque));
  }
  
@@ -60,10 +60,10 @@ index 95679ab2915ad496ca0018aa13874b84eb11d7fd..c278e0fc072409677beafc7f252ebcf6
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index f815739a06a60e050003d2819ddab82be2abf3a6..0263848e99769af49641b2fad0575f714e797e5d 100644
+index 2ebac7d02b9645b9fa6256bb4e4104c7f14b300f..8195c7edb7bcbc6c770a5dd5278b305cbce535f5 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -1251,6 +1251,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -1252,6 +1252,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
      IPC_MESSAGE_HANDLER(ViewMsg_SetPageScale, OnSetPageScale)
      IPC_MESSAGE_HANDLER(ViewMsg_SetInitialFocus, OnSetInitialFocus)
@@ -72,7 +72,7 @@ index f815739a06a60e050003d2819ddab82be2abf3a6..0263848e99769af49641b2fad0575f71
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_ClosePage, OnClosePage)
-@@ -1843,6 +1845,12 @@ void RenderViewImpl::OnSetPageScale(float page_scale_factor) {
+@@ -1844,6 +1846,12 @@ void RenderViewImpl::OnSetPageScale(float page_scale_factor) {
    webview()->SetPageScaleFactor(page_scale_factor);
  }
  

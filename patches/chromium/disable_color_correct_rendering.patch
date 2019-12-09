@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 91fc20e12735250daefb9f4be39b22786155f516..5cb4402167bc81a19a631bc3b70ca6b316ce66a0 100644
+index 18ae9c1f1af64fd34998562ed1edba0b3b1c74a1..d59e618bbee4a31b0a95955204e7ad9e7b98bd9a 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1816,6 +1816,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
@@ -37,7 +37,7 @@ index 91fc20e12735250daefb9f4be39b22786155f516..5cb4402167bc81a19a631bc3b70ca6b3
    // The pending tree will have the most recently updated color space, so
    // prefer that.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 20bf2b409d049699528c7f784e195d86e84933b4..40d3ac04264aeb07380cac40de9a291687065d04 100644
+index 0743417d59c41ce2b4ba89f89f7f03db3849fc74..65f3ab8f48477908ed605f9c73d9d21f1a3709c3 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -100,6 +100,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -232,10 +232,10 @@ index bb814d78afc5dedbcf59ff0a9085d599385d222d..a9336275b2d2ec2d817e489a33ec8318
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 445e3b3654c8fe5855046be102b381e730c083cc..706d38c2bf06145038c99652dfdd9d3c74032a05 100644
+index dbdb8a42d2a7069425d0c81d5e6a01ad99b7f56b..c94f3ce3a1e9dc54cf83a031d086de3efd635607 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -228,6 +228,7 @@
+@@ -230,6 +230,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
@@ -243,7 +243,7 @@ index 445e3b3654c8fe5855046be102b381e730c083cc..706d38c2bf06145038c99652dfdd9d3c
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3042,6 +3043,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3080,6 +3081,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -252,10 +252,10 @@ index 445e3b3654c8fe5855046be102b381e730c083cc..706d38c2bf06145038c99652dfdd9d3c
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index b3ee921d5a8d1422bb0b0ee5da138ed1e0d6b50b..7cc63039a5c1a6236a6656458572fa00d7743183 100644
+index db473d9f155806d19d2fd4734821836bd8939267..12fd20c501c2643c79965bae534d904148e3d373 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2958,6 +2958,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2952,6 +2952,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
