@@ -173,14 +173,19 @@ describe('debugger module', () => {
         done(`unexpected error : ${err}`)
       }
 
+      let requestId : number
       w.webContents.debugger.on('message', (event, method, params) => {
-        if (method === 'Network.loadingFinished') {
+        if (method === 'Network.responseReceived' &&
+            params.response.url.startsWith('http://127.0.0.1')) {
+          requestId = params.requestId
+        } else if (method === 'Network.loadingFinished' &&
+                   params.requestId === requestId) {
           w.webContents.debugger.sendCommand('Network.getResponseBody', {
             requestId: params.requestId
           }).then(data => {
             expect(data.body).to.equal('\u0024')
             done()
-          })
+          }).catch(result => done(result))
         }
       })
 
