@@ -4,6 +4,7 @@ import { expect } from 'chai'
 import { BrowserWindow, globalShortcut, Menu, MenuItem } from 'electron'
 import { sortMenuItems } from '../lib/browser/api/menu-utils'
 import { emittedOnce } from './events-helpers'
+import { ifit } from './spec-helpers'
 import { closeWindow } from './window-helpers'
 
 const fixturesPath = path.resolve(__dirname, 'fixtures')
@@ -870,7 +871,7 @@ describe('Menu module', function () {
       expect(Menu.getApplicationMenu()).to.be.null('application menu')
     })
 
-    it('does not override menu visibility on startup', async () => {
+    ifit(process.platform !== 'darwin')('does not override menu visibility on startup', async () => {
       const appPath = path.join(fixturesPath, 'api', 'test-menu-visibility')
       const appProcess = cp.spawn(process.execPath, [appPath])
 
@@ -881,7 +882,7 @@ describe('Menu module', function () {
       expect(output).to.include('Window has no menu')
     })
 
-    it('does not override null menu on startup', async () => {
+    ifit(process.platform !== 'darwin')('does not override null menu on startup', async () => {
       const appPath = path.join(fixturesPath, 'api', 'test-menu-null')
       const appProcess = cp.spawn(process.execPath, [appPath])
 
