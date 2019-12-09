@@ -553,7 +553,7 @@ void Session::DownloadURL(const GURL& url) {
   auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
-      url, MISSING_TRAFFIC_ANNOTATION);
+      url, MISSING_TRAFFIC_ANNOTATION, net::NetworkIsolationKey());
   download_manager->DownloadUrl(std::move(download_params));
 }
 
