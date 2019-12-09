@@ -67,6 +67,10 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;
+  void RegisterBrowserInterfaceBindersForFrame(
+      content::RenderFrameHost* render_frame_host,
+      service_manager::BinderMapWithContext<content::RenderFrameHost*>* map)
+      override;
 
   std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);

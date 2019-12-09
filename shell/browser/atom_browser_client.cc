@@ -50,6 +50,7 @@
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request_body.h"
+#include "services/service_manager/public/cpp/binder_map.h"
 #include "shell/app/manifests.h"
 #include "shell/browser/api/atom_api_app.h"
 #include "shell/browser/api/atom_api_protocol_ns.h"
@@ -157,6 +158,12 @@ base::NoDestructor<std::string> g_application_locale;
 void SetApplicationLocaleOnIOThread(const std::string& locale) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   g_io_thread_application_locale.Get() = locale;
+}
+
+void BindNetworkHintsHandler(
+    content::RenderFrameHost* frame_host,
+    mojo::PendingReceiver<network_hints::mojom::NetworkHintsHandler> receiver) {
+  NetworkHintsHandlerImpl::Create(frame_host, std::move(receiver));
 }
 
 #if defined(OS_WIN)
@@ -1075,13 +1082,6 @@ bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {
 void AtomBrowserClient::BindHostReceiverForRenderer(
     content::RenderProcessHost* render_process_host,
     mojo::GenericPendingReceiver receiver) {
-  if (auto host_receiver =
-          receiver.As<network_hints::mojom::NetworkHintsHandler>()) {
-    NetworkHintsHandlerImpl::Create(render_process_host->GetID(),
-                                    std::move(host_receiver));
-    return;
-  }
-
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   if (auto host_receiver = receiver.As<spellcheck::mojom::SpellCheckHost>()) {
     SpellCheckHostChromeImpl::Create(render_process_host->GetID(),
@@ -1089,6 +1089,13 @@ void AtomBrowserClient::BindHostReceiverForRenderer(
     return;
   }
 #endif
+}
+
+void AtomBrowserClient::RegisterBrowserInterfaceBindersForFrame(
+    content::RenderFrameHost* render_frame_host,
+    service_manager::BinderMapWithContext<content::RenderFrameHost*>* map) {
+  map->Add<network_hints::mojom::NetworkHintsHandler>(
+      base::BindRepeating(&BindNetworkHintsHandler));
 }
 
 std::unique_ptr<content::LoginDelegate> AtomBrowserClient::CreateLoginDelegate(
