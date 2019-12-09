@@ -1,7 +1,13 @@
+import * as cp from 'child_process'
+import * as path from 'path'
 import { expect } from 'chai'
 import { BrowserWindow, Menu, MenuItem } from 'electron'
 import { sortMenuItems } from '../lib/browser/api/menu-utils'
+import { emittedOnce } from './events-helpers'
+import { ifit } from './spec-helpers'
 import { closeWindow } from './window-helpers'
+
+const fixturesPath = path.resolve(__dirname, 'fixtures')
 
 describe('Menu module', function () {
   this.timeout(5000)
@@ -863,6 +869,28 @@ describe('Menu module', function () {
     it('unsets a menu with null', () => {
       Menu.setApplicationMenu(null)
       expect(Menu.getApplicationMenu()).to.be.null('application menu')
+    })
+
+    ifit(process.platform !== 'darwin')('does not override menu visibility on startup', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'test-menu-visibility')
+      const appProcess = cp.spawn(process.execPath, [appPath])
+
+      let output = ''
+      appProcess.stdout.on('data', data => { output += data })
+
+      await emittedOnce(appProcess, 'close')
+      expect(output).to.include('Window has no menu')
+    })
+
+    ifit(process.platform !== 'darwin')('does not override null menu on startup', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'test-menu-null')
+      const appProcess = cp.spawn(process.execPath, [appPath])
+
+      let output = ''
+      appProcess.stdout.on('data', data => { output += data })
+
+      await emittedOnce(appProcess, 'close')
+      expect(output).to.include('Window has no menu')
     })
   })
 })
