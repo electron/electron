@@ -106,8 +106,9 @@ async function getCircleCIWorkflowId (pipelineId) {
     const pipelineInfo = await circleCIRequest(pipelineInfoUrl, 'GET')
     switch (pipelineInfo.state) {
       case 'created': {
-        if (pipelineInfo.workflows.length === 1) {
-          workflowId = pipelineInfo.workflows[0].id
+        const workflows = await circleCIRequest(`${pipelineInfoUrl}/workflow`, 'GET')
+        if (workflows.items.length === 1) {
+          workflowId = workflows.items[0].id
           break
         }
         console.log('Unxpected number of workflows, response was:', pipelineInfo)
