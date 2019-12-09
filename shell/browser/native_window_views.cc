@@ -1002,20 +1002,22 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 
 void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
 #if defined(USE_X11)
-  if (menu_model == nullptr) {
+  // Remove global menu bar.
+  if (global_menu_bar_ && menu_model == nullptr) {
     global_menu_bar_.reset();
     root_view_->UnregisterAcceleratorsWithFocusManager();
     return;
   }
 
-  if (!global_menu_bar_ && ShouldUseGlobalMenuBar())
-    global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
-
   // Use global application menu bar when possible.
-  if (global_menu_bar_ && global_menu_bar_->IsServerStarted()) {
-    root_view_->RegisterAcceleratorsWithFocusManager(menu_model);
-    global_menu_bar_->SetMenu(menu_model);
-    return;
+  if (ShouldUseGlobalMenuBar()) {
+    if (!global_menu_bar_)
+      global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
+    if (global_menu_bar_->IsServerStarted()) {
+      root_view_->RegisterAcceleratorsWithFocusManager(menu_model);
+      global_menu_bar_->SetMenu(menu_model);
+      return;
+    }
   }
 #endif
 

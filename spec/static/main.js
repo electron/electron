@@ -68,8 +68,6 @@ ipcMain.on('echo', function (event, msg) {
   event.returnValue = msg
 })
 
-global.returnAPromise = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 100))
-
 process.removeAllListeners('uncaughtException')
 process.on('uncaughtException', function (error) {
   console.error(error, error.stack)
@@ -102,6 +100,7 @@ app.on('ready', function () {
     webPreferences: {
       backgroundThrottling: false,
       nodeIntegration: true,
+      enableRemoteModule: false,
       webviewTag: true
     }
   })
