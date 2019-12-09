@@ -81,6 +81,7 @@ env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
   STRIP_BINARIES: true
   GENERATE_SYMBOLS: true
+  CHECK_DIST_MANIFEST: '1'
 
 env-headless-testing: &env-headless-testing
   DISPLAY: ':99.0'
