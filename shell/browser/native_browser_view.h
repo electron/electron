@@ -45,7 +45,6 @@ class NativeBrowserView {
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
   virtual gfx::Rect GetBounds() = 0;
   virtual void SetBackgroundColor(SkColor color) = 0;
-  virtual SkColor GetBackgroundColor() = 0;
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
