@@ -55,12 +55,20 @@
  * @param productIDs - The products' id to fetch.
  */
 - (void)getProducts:(NSSet*)productIDs {
-  SKProductsRequest* productsRequest;
-  productsRequest =
+  SKProductsRequest* productsRequest =
       [[SKProductsRequest alloc] initWithProductIdentifiers:productIDs];
 
   productsRequest.delegate = self;
   [productsRequest start];
+}
+
+/**
+ * Refresh the receipt for a given product.
+ */
+- (void)refreshReceipt {
+  SKReceiptRefreshRequest* request = [[SKReceiptRefreshRequest alloc] init];
+  [request setDelegate:self];
+  [request start];
 }
 
 /**
@@ -171,6 +179,9 @@ void GetProducts(const std::vector<std::string>& productIDs,
                  InAppPurchaseProductsCallback callback) {
   auto* iapProduct =
       [[InAppPurchaseProduct alloc] initWithCallback:std::move(callback)];
+
+  // Refresh the app's receipts
+  [iapProduct refreshReceipt];
 
   // Convert the products' id to NSSet.
   NSMutableSet* productsIDSet =
