@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Tue, 10 Dec 2019 15:02:21 -0800
+Subject: enable 31 bit smis on 64bit arch and ptr compression
+
+
+diff --git a/common.gypi b/common.gypi
+index 412f613e7cfcf563fa6a000b932723166ab567da..6adcc122cfeb14671472e9fb2137bd4d7292d0eb 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -281,6 +281,7 @@
+     'defines': [
+       'V8_DEPRECATION_WARNINGS',
+       'V8_IMMINENT_DEPRECATION_WARNINGS',
++      'V8_31BIT_SMIS_ON_64BIT_ARCH',
+     ],
+ 
+     # Forcibly disable -Werror.  We support a wide range of compilers, it's
+@@ -344,9 +345,11 @@
+       }],
+       [ 'target_arch=="x64"', {
+         'msvs_configuration_platform': 'x64',
++        'defines': [ 'V8_COMPRESS_POINTERS' ],
+       }],
+       [ 'target_arch=="arm64"', {
+         'msvs_configuration_platform': 'arm64',
++        'defines': [ 'V8_COMPRESS_POINTERS' ],
+       }],
+       ['asan == 1 and OS != "mac"', {
+         'cflags+': [

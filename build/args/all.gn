@@ -8,12 +8,6 @@ v8_promise_internal_field_count = 1
 v8_typed_array_max_size_in_heap = 0
 v8_embedder_string = "-electron.0"
 
-# TODO: this breaks native modules. See e.g. https://www.github.com/nodejs/node/pull/30463
-# We can probably enable this as long as we make sure node native modules
-# also build with the relevant #defines (V8_COMPRESS_POINTERS etc.)
-v8_enable_pointer_compression = false
-v8_enable_31bit_smis_on_64bit_arch = false
-
 # TODO: this breaks mksnapshot
 v8_enable_snapshot_native_code_counters = false
 
