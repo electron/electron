@@ -179,10 +179,6 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     Show();
 }
 
-SkColor NativeWindow::GetBackgroundColor() {
-  return;
-}
-
 bool NativeWindow::IsClosed() const {
   return is_closed_;
 }
