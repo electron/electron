@@ -58,6 +58,15 @@ describe('session module', () => {
     const value = '0'
     afterEach(closeAllWindows)
 
+    // Clear cookie of defaultSession after each test.
+    afterEach(async () => {
+      const { cookies } = session.defaultSession
+      const cs = await cookies.get({ url })
+      for (const c of cs) {
+        await cookies.remove(url, c.name)
+      }
+    })
+
     it('should get cookies', async () => {
       const server = http.createServer((req, res) => {
         res.setHeader('Set-Cookie', [`${name}=${value}`])
