@@ -103,8 +103,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (id)accessibilityAttributeValue:(NSString*)attribute {
-  if ([attribute isEqual:NSAccessibilityTitleAttribute])
-    return base::SysUTF8ToNSString(shell_->GetTitle());
   if ([attribute isEqual:NSAccessibilityEnabledAttribute])
     return [NSNumber numberWithBool:YES];
   if (![attribute isEqualToString:@"AXChildren"])
@@ -123,6 +121,10 @@ bool ScopedDisableResize::disable_resize_ = false;
 
   NSArray* children = [super accessibilityAttributeValue:attribute];
   return [children filteredArrayUsingPredicate:predicate];
+}
+
+- (NSString*)accessibilityTitle {
+  return base::SysUTF8ToNSString(shell_->GetTitle());
 }
 
 - (BOOL)canBecomeMainWindow {
