@@ -42,20 +42,36 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 3e1027545b127ac1559b2d33ab817642b91f90d9..b6fdfa4057af7e8919cf8d29658602ddac597faf 100644
+index 3e1027545b127ac1559b2d33ab817642b91f90d9..02b511e5568acb21c8cf255409c077292bbfc24c 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1214,6 +1214,8 @@ void NavigationRequest::BeginNavigation() {
+@@ -1214,6 +1214,24 @@ void NavigationRequest::BeginNavigation() {
      TRACE_EVENT_ASYNC_STEP_INTO0("navigation", "NavigationRequest", this,
                                   "ResponseStarted");
  
-+    state_ = WILL_PROCESS_RESPONSE;
++    // In Electron, a new process is started for every navigation when node is
++    // integrated in the renderer. Since GetFrameHostForNavigation is called more
++    // than once per navigation, we want to return the same frame host once
++    // the response has started, otherwise if the frame host that started the response
++    // and the frame host that is available for commit don't match then request will
++    // be cancelled. We rely on the NavigationRequest::state_ to determine this
++    // factor
++    //
++    // bool has_response_started =
++    //    (request->state() >= NavigationRequest::WILL_PROCESS_RESPONSE &&
++    //     !speculative_render_frame_host_);
++    //
++    // Hence this call is necesary before the call to GetFrameHostForNavigation. Also
++    // the state_ here is anyway going to end up being READY_TO_COMMIT because of
++    // ReadyToCommitNavigation a few lines later, so will not affect normal chromium
++    // request cycle.
++    state_ = READY_TO_COMMIT;
 +
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 9da233cc44b248effa1f2835e65aea02f33d38db..aadb6304a0c5124e7c73954ec5decc98d6fb84a8 100644
+index 9da233cc44b248effa1f2835e65aea02f33d38db..55c05e903e6e8f438c596be227b130f4ad336271 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2137,6 +2137,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -75,7 +91,7 @@ index 9da233cc44b248effa1f2835e65aea02f33d38db..aadb6304a0c5124e7c73954ec5decc98
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2156,10 +2166,61 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2156,10 +2166,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -89,9 +105,8 @@ index 9da233cc44b248effa1f2835e65aea02f33d38db..aadb6304a0c5124e7c73954ec5decc98
 +        delegate_->GetControllerForRenderManager().GetBrowserContext();
 +    bool has_navigation_started = request->state() != NavigationRequest::NOT_STARTED;
 +    bool has_response_started =
-+        (request->state() == NavigationRequest::WILL_PROCESS_RESPONSE ||
-+         request->state() >= NavigationRequest::CANCELING) &&
-+        !speculative_render_frame_host_;
++        (request->state() >= NavigationRequest::WILL_PROCESS_RESPONSE &&
++         !speculative_render_frame_host_);
 +    // Gives user a chance to choose a custom site instance.
 +    SiteInstance* affinity_site_instance = nullptr;
 +    scoped_refptr<SiteInstance> overriden_site_instance;
@@ -141,7 +156,7 @@ index 9da233cc44b248effa1f2835e65aea02f33d38db..aadb6304a0c5124e7c73954ec5decc98
  
    scoped_refptr<SiteInstance> dest_site_instance = GetSiteInstanceForNavigation(
        request->common_params().url, request->GetSourceSiteInstance(),
-@@ -2169,6 +2230,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2169,6 +2229,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
        request->GetRestoreType() != RestoreType::NONE, request->is_view_source(),
        request->WasServerRedirect());
  
