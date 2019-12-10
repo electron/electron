@@ -139,6 +139,17 @@ void FilterCookieWithStatuses(const base::Value& filter,
                 net::cookie_util::StripStatuses(list));
 }
 
+// Read date property from the dictionary.
+base::Time GetTimeFromDict(const base::DictionaryValue& dict,
+                           base::StringPiece key) {
+  base::Optional<double> value = dict.FindDoubleKey(key);
+  if (!value)  // empty time means ignoring the parameter
+    return base::Time();
+  if (*value == 0)  // FromDoubleT would convert 0 to empty Time
+    return base::Time::UnixEpoch();
+  return base::Time::FromDoubleT(*value);
+}
+
 std::string InclusionStatusToString(
     net::CanonicalCookie::CookieInclusionStatus status) {
   if (status.HasExclusionReason(
@@ -241,21 +252,9 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
   const std::string* path = details.FindStringKey("path");
   bool secure = details.FindBoolKey("secure").value_or(false);
   bool http_only = details.FindBoolKey("httpOnly").value_or(false);
-  base::Optional<double> creation_date = details.FindDoubleKey("creationDate");
-  base::Optional<double> expiration_date =
-      details.FindDoubleKey("expirationDate");
-  base::Optional<double> last_access_date =
-      details.FindDoubleKey("lastAccessDate");
-
-  base::Time creation_time = creation_date
-                                 ? base::Time::FromDoubleT(*creation_date)
-                                 : base::Time::UnixEpoch();
-  base::Time expiration_time = expiration_date
-                                   ? base::Time::FromDoubleT(*expiration_date)
-                                   : base::Time::UnixEpoch();
-  base::Time last_access_time = last_access_date
-                                    ? base::Time::FromDoubleT(*last_access_date)
-                                    : base::Time::UnixEpoch();
+  base::Time creation_time = GetTimeFromDict(details, "creationDate");
+  base::Time expiration_time = GetTimeFromDict(details, "expirationDate");
+  base::Time last_access_time = GetTimeFromDict(details, "lastAccessDate");
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
