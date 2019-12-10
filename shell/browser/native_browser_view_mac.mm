@@ -222,10 +222,6 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
 SkColor NativeBrowserViewMac::GetBackgroundColor() {
   NSView* view =
       GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
-<<<<<<< HEAD
-
-=======
->>>>>>> 0a1889afe8711eb9a05cd17c5b761d3ee6a82282
   return skia::CGColorRefToSkColor(view.layer.backgroundColor);
 }
 
