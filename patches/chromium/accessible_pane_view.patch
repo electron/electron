@@ -6,6 +6,8 @@ Subject: fix: add back virtual methods in AccessiblePaneView
 Mark SetPaneFocus and RemovePaneFocus as virtual in AccessiblePaneView, as we
 need to override them in MenuBar.
 
+Pending upstream patch: https://crrev.com/c/1959189
+
 diff --git a/ui/views/accessible_pane_view.h b/ui/views/accessible_pane_view.h
 index 813fd13860a8..990c905e8f19 100644
 --- a/ui/views/accessible_pane_view.h
