@@ -60,7 +60,7 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
       int* resource_id) const override;
   void LoadResourceFromResourceBundle(
       const network::ResourceRequest& request,
-      network::mojom::URLLoaderRequest loader,
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
       const base::FilePath& resource_relative_path,
       int resource_id,
       const std::string& content_security_policy,
@@ -117,6 +117,10 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
   bool IsLockScreenContext(content::BrowserContext* context) override;
   std::string GetApplicationLocale() override;
   std::string GetUserAgent() const override;
+  void RegisterBrowserInterfaceBindersForFrame(
+      service_manager::BinderMapWithContext<content::RenderFrameHost*>* map,
+      content::RenderFrameHost* render_frame_host,
+      const extensions::Extension* extension) const override;
 
   // |context| is the single BrowserContext used for IsValidContext().
   // |pref_service| is used for GetPrefServiceForContext().
