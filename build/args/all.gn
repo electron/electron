@@ -12,6 +12,7 @@ v8_embedder_string = "-electron.0"
 # We can probably enable this as long as we make sure node native modules
 # also build with the relevant #defines (V8_COMPRESS_POINTERS etc.)
 v8_enable_pointer_compression = false
+v8_enable_31bit_smis_on_64bit_arch = false
 
 # TODO: this breaks mksnapshot
 v8_enable_snapshot_native_code_counters = false
