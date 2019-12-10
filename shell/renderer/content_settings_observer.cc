@@ -21,8 +21,8 @@ ContentSettingsObserver::~ContentSettingsObserver() = default;
 
 bool ContentSettingsObserver::AllowDatabase() {
   blink::WebFrame* frame = render_frame()->GetWebFrame();
-  if (frame->GetSecurityOrigin().IsUnique() ||
-      frame->Top()->GetSecurityOrigin().IsUnique())
+  if (frame->GetSecurityOrigin().IsOpaque() ||
+      frame->Top()->GetSecurityOrigin().IsOpaque())
     return false;
   auto origin = blink::WebStringToGURL(frame->GetSecurityOrigin().ToString());
   if (!origin.IsStandard())
@@ -32,8 +32,8 @@ bool ContentSettingsObserver::AllowDatabase() {
 
 bool ContentSettingsObserver::AllowStorage(bool local) {
   blink::WebFrame* frame = render_frame()->GetWebFrame();
-  if (frame->GetSecurityOrigin().IsUnique() ||
-      frame->Top()->GetSecurityOrigin().IsUnique())
+  if (frame->GetSecurityOrigin().IsOpaque() ||
+      frame->Top()->GetSecurityOrigin().IsOpaque())
     return false;
   auto origin = blink::WebStringToGURL(frame->GetSecurityOrigin().ToString());
   if (!origin.IsStandard())
@@ -43,8 +43,8 @@ bool ContentSettingsObserver::AllowStorage(bool local) {
 
 bool ContentSettingsObserver::AllowIndexedDB() {
   blink::WebFrame* frame = render_frame()->GetWebFrame();
-  if (frame->GetSecurityOrigin().IsUnique() ||
-      frame->Top()->GetSecurityOrigin().IsUnique())
+  if (frame->GetSecurityOrigin().IsOpaque() ||
+      frame->Top()->GetSecurityOrigin().IsOpaque())
     return false;
   auto origin = blink::WebStringToGURL(frame->GetSecurityOrigin().ToString());
   if (!origin.IsStandard())

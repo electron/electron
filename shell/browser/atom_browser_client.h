@@ -187,9 +187,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool* bypass_redirect_checks,
       network::mojom::URLLoaderFactoryOverridePtr* factory_override) override;
   void OverrideURLLoaderFactoryParams(
-      content::BrowserContext* browser_context,
+      content::RenderProcessHost* process,
       const url::Origin& origin,
-      bool is_for_isolated_world,
       network::mojom::URLLoaderFactoryParams* factory_params) override;
 #if defined(OS_WIN)
   bool PreSpawnRenderer(sandbox::TargetPolicy* policy,

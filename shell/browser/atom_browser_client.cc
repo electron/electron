@@ -1018,19 +1018,14 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
 }
 
 void AtomBrowserClient::OverrideURLLoaderFactoryParams(
-    content::BrowserContext* browser_context,
+    content::RenderProcessHost* process,
     const url::Origin& origin,
-    bool is_for_isolated_world,
     network::mojom::URLLoaderFactoryParams* factory_params) {
-  for (const auto& iter : process_preferences_) {
-    if (iter.second.browser_context != browser_context)
-      continue;
-
-    if (!iter.second.web_security) {
-      // bypass CORB
-      factory_params->process_id = iter.first;
-      factory_params->is_corb_enabled = false;
-    }
+  const auto& iter = process_preferences_.find(process->GetID());
+  if (iter != process_preferences_.end() && !iter->second.web_security) {
+    // bypass CORB
+    factory_params->process_id = iter->first;
+    factory_params->is_corb_enabled = false;
   }
 }
 
