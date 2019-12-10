@@ -88,8 +88,10 @@ describe('session module', () => {
       const value = '1'
 
       await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 })
-      const cs = await cookies.get({ url })
-      expect(cs.some(c => c.name === name && c.value === value)).to.equal(true)
+      const c = (await cookies.get({ url }))[0]
+      expect(c.name).to.equal(name)
+      expect(c.value).to.equal(value)
+      expect(c.session).to.equal(false)
     })
 
     it('sets session cookies', async () => {
@@ -98,8 +100,10 @@ describe('session module', () => {
       const value = '1'
 
       await cookies.set({ url, name, value })
-      const cs = await cookies.get({ url })
-      expect(cs.some(c => c.name === name && c.value === value)).to.equal(true)
+      const c = (await cookies.get({ url }))[0]
+      expect(c.name).to.equal(name)
+      expect(c.value).to.equal(value)
+      expect(c.session).to.equal(true)
     })
 
     it('sets cookies without name', async () => {
