@@ -93,6 +93,15 @@ describe('session module', () => {
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true)
     })
 
+    it('sets cookies without name', async () => {
+      const { cookies } = session.defaultSession
+      const value = '3'
+
+      await cookies.set({ url, value })
+      const cs = await cookies.get({ url })
+      expect(cs.some(c => c.name === '' && c.value === value)).to.equal(true)
+    })
+
     it('gets cookies without url', async () => {
       const { cookies } = session.defaultSession
       const name = '1'

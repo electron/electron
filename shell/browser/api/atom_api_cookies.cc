@@ -265,18 +265,11 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
     return handle;
   }
 
-  if (!name || name->empty()) {
-    promise.RejectWithErrorMessage(
-        InclusionStatusToString(net::CanonicalCookie::CookieInclusionStatus(
-            net::CanonicalCookie::CookieInclusionStatus::
-                EXCLUDE_FAILURE_TO_STORE)));
-    return handle;
-  }
-
   auto canonical_cookie = net::CanonicalCookie::CreateSanitizedCookie(
-      url, *name, value ? *value : "", domain ? *domain : "", path ? *path : "",
-      creation_time, expiration_time, last_access_time, secure, http_only,
-      net::CookieSameSite::NO_RESTRICTION, net::COOKIE_PRIORITY_DEFAULT);
+      url, name ? *name : "", value ? *value : "", domain ? *domain : "",
+      path ? *path : "", creation_time, expiration_time, last_access_time,
+      secure, http_only, net::CookieSameSite::NO_RESTRICTION,
+      net::COOKIE_PRIORITY_DEFAULT);
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     promise.RejectWithErrorMessage(
         InclusionStatusToString(net::CanonicalCookie::CookieInclusionStatus(
