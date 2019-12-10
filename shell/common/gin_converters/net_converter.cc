@@ -256,14 +256,22 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
     gin::Dictionary upload_data(isolate, v8::Object::New(isolate));
     switch (element.type()) {
       case network::mojom::DataElementType::kFile:
+        upload_data.Set("type", "file");
         upload_data.Set("file", element.path().value());
+        upload_data.Set("filePath", base::Value(element.path().AsUTF8Unsafe()));
+        upload_data.Set("offset", static_cast<int>(element.offset()));
+        upload_data.Set("length", static_cast<int>(element.length()));
+        upload_data.Set("modificationTime",
+                        element.expected_modification_time().ToDoubleT());
         break;
       case network::mojom::DataElementType::kBytes:
+        upload_data.Set("type", "rawData");
         upload_data.Set("bytes", node::Buffer::Copy(isolate, element.bytes(),
                                                     element.length())
                                      .ToLocalChecked());
         break;
       case network::mojom::DataElementType::kDataPipe: {
+        upload_data.Set("type", "blob");
         // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
         // becomes unecessarily complex, we should deprecate the getBlobData API
         // and return the DataPipeHolder wrapper directly.
