@@ -844,7 +844,6 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           backgroundColor: backgroundColor
         })
-        w.setBackgroundColor(backgroundColor)
         expect(w.getBackgroundColor()).to.equal(backgroundColor)
       })
     })

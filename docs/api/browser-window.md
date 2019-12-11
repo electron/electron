@@ -1019,7 +1019,7 @@ console.log(win.getBounds())
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
 
-#### `win.getBackgroundColor()` _macOS_
+#### `win.getBackgroundColor()`
 
 Returns `String` - Gets the background color of the window. See [Setting
 `backgroundColor`](#setting-backgroundcolor).
