@@ -621,8 +621,7 @@ void TopLevelWindow::SetBackgroundColor(const std::string& color_name) {
 }
 
 std::string TopLevelWindow::GetBackgroundColor() {
-  SkColor color = window_->GetBackgroundColor();
-  return ToRGBHex(color);
+  return ToRGBHex(window_->GetBackgroundColor());
 }
 
 void TopLevelWindow::SetHasShadow(bool has_shadow) {

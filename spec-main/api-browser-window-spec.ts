@@ -846,6 +846,13 @@ describe('BrowserWindow module', () => {
         })
         expect(w.getBackgroundColor()).to.equal(backgroundColor)
       })
+      it('returns correct value from setBackgroundColor()', () => {
+        const backgroundColor = '#AABBFF'
+        w.destroy()
+        w = new BrowserWindow({})
+        w.setBackgroundColor(backgroundColor)
+        expect(w.getBackgroundColor()).to.equal(backgroundColor)
+      })
     })
 
     describe(`BrowserWindow.getNormalBounds()`, () => {
