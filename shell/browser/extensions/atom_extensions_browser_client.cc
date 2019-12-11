@@ -129,11 +129,11 @@ base::FilePath AtomExtensionsBrowserClient::GetBundleResourcePath(
 
 void AtomExtensionsBrowserClient::LoadResourceFromResourceBundle(
     const network::ResourceRequest& request,
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     const base::FilePath& resource_relative_path,
     int resource_id,
     const std::string& content_security_policy,
-    network::mojom::URLLoaderClientPtr client,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     bool send_cors_header) {
   NOTREACHED() << "Load resources from bundles not supported.";
 }
@@ -296,5 +296,10 @@ std::string AtomExtensionsBrowserClient::GetApplicationLocale() {
 std::string AtomExtensionsBrowserClient::GetUserAgent() const {
   return AtomBrowserClient::Get()->GetUserAgent();
 }
+
+void AtomExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(
+    service_manager::BinderMapWithContext<content::RenderFrameHost*>* map,
+    content::RenderFrameHost* render_frame_host,
+    const extensions::Extension* extension) const {}
 
 }  // namespace electron

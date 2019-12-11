@@ -400,7 +400,10 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
-  bool initially_shown = true;
+  // BrowserViews are not attached to a window initially so they should start
+  // off as hidden. This is also important for compositor recycling. See:
+  // https://github.com/electron/electron/pull/21372
+  bool initially_shown = type_ != Type::BROWSER_VIEW;
   options.Get(options::kShow, &initially_shown);
 
   // Obtain the session.
@@ -863,10 +866,20 @@ void WebContents::BeforeUnloadFired(bool proceed,
 }
 
 void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  auto* impl = static_cast<content::RenderWidgetHostImpl*>(
-      render_view_host->GetWidget());
-  if (impl)
-    impl->disable_hidden_ = !background_throttling_;
+  if (!background_throttling_)
+    render_view_host->SetSchedulerThrottling(false);
+}
+
+void WebContents::RenderFrameCreated(
+    content::RenderFrameHost* render_frame_host) {
+  auto* rwhv = render_frame_host->GetView();
+  if (!rwhv)
+    return;
+
+  auto* rwh_impl =
+      static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
+  if (rwh_impl)
+    rwh_impl->disable_hidden_ = !background_throttling_;
 }
 
 void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
@@ -1022,6 +1035,7 @@ void WebContents::OnElectronBrowserConnectionError() {
 void WebContents::Message(bool internal,
                           const std::string& channel,
                           blink::CloneableMessage arguments) {
+  TRACE_EVENT1("electron", "WebContents::Message", "channel", channel);
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
@@ -1032,6 +1046,7 @@ void WebContents::Invoke(bool internal,
                          const std::string& channel,
                          blink::CloneableMessage arguments,
                          InvokeCallback callback) {
+  TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
   EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
                  std::move(callback), internal, channel, std::move(arguments));
@@ -1041,6 +1056,7 @@ void WebContents::MessageSync(bool internal,
                               const std::string& channel,
                               blink::CloneableMessage arguments,
                               MessageSyncCallback callback) {
+  TRACE_EVENT1("electron", "WebContents::MessageSync", "channel", channel);
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
   EmitWithSender("-ipc-message-sync", bindings_.dispatch_context(),
@@ -1052,6 +1068,7 @@ void WebContents::MessageTo(bool internal,
                             int32_t web_contents_id,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
+  TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
   auto* web_contents = gin_helper::TrackableObject<WebContents>::FromWeakMapID(
       isolate(), web_contents_id);
 
@@ -1063,6 +1080,7 @@ void WebContents::MessageTo(bool internal,
 
 void WebContents::MessageHost(const std::string& channel,
                               blink::CloneableMessage arguments) {
+  TRACE_EVENT1("electron", "WebContents::MessageHost", "channel", channel);
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
                  InvokeCallback(), channel, std::move(arguments));
@@ -1286,31 +1304,24 @@ void WebContents::NavigationEntryCommitted(
 void WebContents::SetBackgroundThrottling(bool allowed) {
   background_throttling_ = allowed;
 
-  auto* contents = web_contents();
-  if (!contents) {
+  auto* rfh = web_contents()->GetMainFrame();
+  if (!rfh)
     return;
-  }
 
-  auto* render_view_host = contents->GetRenderViewHost();
-  if (!render_view_host) {
+  auto* rwhv = rfh->GetView();
+  if (!rwhv)
     return;
-  }
 
-  auto* render_process_host = render_view_host->GetProcess();
-  if (!render_process_host) {
+  auto* rwh_impl =
+      static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
+  if (!rwh_impl)
     return;
-  }
 
-  auto* render_widget_host_impl = content::RenderWidgetHostImpl::FromID(
-      render_process_host->GetID(), render_view_host->GetRoutingID());
-  if (!render_widget_host_impl) {
-    return;
-  }
+  rwh_impl->disable_hidden_ = !background_throttling_;
+  web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
 
-  render_widget_host_impl->disable_hidden_ = !background_throttling_;
-
-  if (render_widget_host_impl->is_hidden()) {
-    render_widget_host_impl->WasShown(base::nullopt);
+  if (rwh_impl->is_hidden()) {
+    rwh_impl->WasShown(base::nullopt);
   }
 }
 
@@ -1381,6 +1392,12 @@ void WebContents::LoadURL(const GURL& url,
   if (options.Get("baseURLForDataURL", &base_url_for_data_url)) {
     params.base_url_for_data_url = base_url_for_data_url;
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
+  }
+
+  bool reload_ignoring_cache = false;
+  if (options.Get("reloadIgnoringCache", &reload_ignoring_cache) &&
+      reload_ignoring_cache) {
+    params.reload_type = content::ReloadType::BYPASSING_CACHE;
   }
 
   // Calling LoadURLWithParams() can trigger JS which destroys |this|.
@@ -1851,7 +1868,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
-  auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
+  auto print_backend = printing::PrintBackend::CreateInstance(
+      nullptr, g_browser_process->GetApplicationLocale());
   {
     // TODO(deepak1556): Deprecate this api in favor of an
     // async version and post a non blocing task call.
@@ -2027,7 +2045,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         &electron_renderer);
-    electron_renderer->Message(internal, false, channel, std::move(args),
+    electron_renderer->Message(internal, false, channel, args.ShallowClone(),
                                sender_id);
   }
   return true;
@@ -2305,15 +2323,6 @@ void WebContents::SetZoomFactor(double factor) {
 double WebContents::GetZoomFactor() const {
   auto level = GetZoomLevel();
   return blink::PageZoomLevelToZoomFactor(level);
-}
-
-void WebContents::SetZoomLimits(double min_zoom, double max_zoom) {
-  // Round the double to avoid returning incorrect minimum/maximum zoom
-  // percentages.
-  int minimum_percent = round(blink::PageZoomLevelToZoomFactor(min_zoom) * 100);
-  int maximum_percent = round(blink::PageZoomLevelToZoomFactor(max_zoom) * 100);
-  web_contents()->SetMinimumZoomPercent(minimum_percent);
-  web_contents()->SetMaximumZoomPercent(maximum_percent);
 }
 
 void WebContents::SetTemporaryZoomLevel(double level) {

@@ -67,6 +67,10 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;
+  void RegisterBrowserInterfaceBindersForFrame(
+      content::RenderFrameHost* render_frame_host,
+      service_manager::BinderMapWithContext<content::RenderFrameHost*>* map)
+      override;
 
   std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);
@@ -94,9 +98,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::SiteInstance* pending_site_instance) override;
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
-  void AdjustUtilityServiceProcessCommandLine(
-      const service_manager::Identity& identity,
-      base::CommandLine* command_line) override;
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
   std::string GetGeolocationApiKey() override;
   scoped_refptr<content::QuotaPermissionContext> CreateQuotaPermissionContext()
@@ -110,8 +111,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       const GURL& request_url,
       bool is_main_frame_request,
       bool strict_enforcement,
-      const base::Callback<void(content::CertificateRequestResultType)>&
-          callback) override;
+      base::OnceCallback<void(content::CertificateRequestResultType)> callback)
+      override;
   base::OnceClosure SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
@@ -142,7 +143,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       std::vector<std::string>* additional_schemes) override;
   void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
   std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
-      content::ResourceContext* resource_context) override;
+      content::BrowserContext* browser_context) override;
   std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
       override;
   mojo::Remote<network::mojom::NetworkContext> CreateNetworkContext(
@@ -178,19 +179,17 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       int render_process_id,
       URLLoaderFactoryType type,
       const url::Origin& request_initiator,
+      base::Optional<int64_t> navigation_id,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,
-      bool* bypass_redirect_checks) override;
-  mojo::PendingRemote<network::mojom::URLLoaderFactory>
-  CreateURLLoaderFactoryForNetworkRequests(
-      content::RenderProcessHost* process,
-      network::mojom::NetworkContext* network_context,
-      mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
-          header_client,
-      const url::Origin& request_initiator,
-      const base::Optional<net::NetworkIsolationKey>& network_isolation_key)
-      override;
+      bool* bypass_redirect_checks,
+      network::mojom::URLLoaderFactoryOverridePtr* factory_override) override;
+  void OverrideURLLoaderFactoryParams(
+      content::BrowserContext* browser_context,
+      const url::Origin& origin,
+      bool is_for_isolated_world,
+      network::mojom::URLLoaderFactoryParams* factory_params) override;
 #if defined(OS_WIN)
   bool PreSpawnRenderer(sandbox::TargetPolicy* policy,
                         RendererSpawnFlags flags) override;
@@ -202,7 +201,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   bool HandleExternalProtocol(
       const GURL& url,
-      content::WebContents::Getter web_contents_getter,
+      content::WebContents::OnceGetter web_contents_getter,
       int child_id,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
@@ -234,6 +233,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
     bool native_window_open = false;
     bool disable_popups = false;
     bool web_security = true;
+    content::BrowserContext* browser_context = nullptr;
   };
 
   bool ShouldForceNewSiteInstance(content::RenderFrameHost* current_rfh,

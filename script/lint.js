@@ -55,7 +55,7 @@ function cpplint (args) {
 
 const LINTERS = [ {
   key: 'c++',
-  roots: ['shell', 'native_mate'],
+  roots: ['shell'],
   test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
   run: (opts, filenames) => {
     if (opts.fix) {

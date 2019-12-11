@@ -166,9 +166,8 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
             electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
 
         if (keycode == accelerator.key_code()) {
-          const gfx::Point p(0, 0);
           auto event = accelerator.ToKeyEvent();
-          OnMenuButtonClicked(button, p, &event);
+          ButtonPressed(button, event);
           return true;
         }
       }
@@ -255,9 +254,7 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
-void MenuBar::OnMenuButtonClicked(views::Button* source,
-                                  const gfx::Point& point,
-                                  const ui::Event* event) {
+void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
   // Hide the accelerator when a submenu is activated.
   SetAcceleratorVisibility(false);
 
@@ -276,10 +273,9 @@ void MenuBar::OnMenuButtonClicked(views::Button* source,
 
   // Deleted in MenuDelegate::OnMenuClosed
   MenuDelegate* menu_delegate = new MenuDelegate(this);
-  menu_delegate->RunMenu(menu_model_->GetSubmenuModelAt(id), source,
-                         event != nullptr && event->IsKeyEvent()
-                             ? ui::MENU_SOURCE_KEYBOARD
-                             : ui::MENU_SOURCE_MOUSE);
+  menu_delegate->RunMenu(
+      menu_model_->GetSubmenuModelAt(id), source,
+      event.IsKeyEvent() ? ui::MENU_SOURCE_KEYBOARD : ui::MENU_SOURCE_MOUSE);
   menu_delegate->AddObserver(this);
 }
 

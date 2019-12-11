@@ -1044,6 +1044,17 @@ contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1"
   })
 ```
 
+#### `contents.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture])`
+
+* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electron's `contextIsolation` feature.  You can provide any integer here.
+* `scripts` [WebSource[]](structures/web-source.md)
+* `userGesture` Boolean (optional) - Default is `false`.
+
+Returns `Promise<any>` - A promise that resolves with the result of the executed code
+or is rejected if the result of the code is a rejected promise.
+
+Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
+
 #### `contents.setIgnoreMenuShortcuts(ignore)` _Experimental_
 
 * `ignore` Boolean
@@ -1114,15 +1125,6 @@ Sets the maximum and minimum pinch-to-zoom level.
 > ```js
 > contents.setVisualZoomLevelLimits(1, 3)
 > ```
-
-#### `contents.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
-
-* `minimumLevel` Number
-* `maximumLevel` Number
-
-Returns `Promise<void>`
-
-Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
 #### `contents.undo()`
 
@@ -1240,7 +1242,7 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 
 Get the system printer list.
 
-Returns [`PrinterInfo[]`](structures/printer-info.md).
+Returns [`PrinterInfo[]`](structures/printer-info.md)
 
 #### `contents.print([options], [callback])`
 
@@ -1784,7 +1786,7 @@ Only applicable if *offscreen rendering* is enabled.
 
 #### `contents.id` _Readonly_
 
-A `Integer` representing the unique ID of this WebContents.
+A `Integer` representing the unique ID of this WebContents. Each ID is unique among all `WebContents` instances of the entire Electron application.
 
 #### `contents.session` _Readonly_
 

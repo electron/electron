@@ -17,6 +17,8 @@
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
+#include "net/http/http_version.h"
+#include "net/url_request/redirect_info.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "shell/browser/api/atom_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -254,14 +256,22 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
     gin::Dictionary upload_data(isolate, v8::Object::New(isolate));
     switch (element.type()) {
       case network::mojom::DataElementType::kFile:
+        upload_data.Set("type", "file");
         upload_data.Set("file", element.path().value());
+        upload_data.Set("filePath", base::Value(element.path().AsUTF8Unsafe()));
+        upload_data.Set("offset", static_cast<int>(element.offset()));
+        upload_data.Set("length", static_cast<int>(element.length()));
+        upload_data.Set("modificationTime",
+                        element.expected_modification_time().ToDoubleT());
         break;
       case network::mojom::DataElementType::kBytes:
+        upload_data.Set("type", "rawData");
         upload_data.Set("bytes", node::Buffer::Copy(isolate, element.bytes(),
                                                     element.length())
                                      .ToLocalChecked());
         break;
       case network::mojom::DataElementType::kDataPipe: {
+        upload_data.Set("type", "blob");
         // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
         // becomes unecessarily complex, we should deprecate the getBlobData API
         // and return the DataPipeHolder wrapper directly.
@@ -337,7 +347,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
 v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequest& val) {
-  gin::Dictionary dict(isolate, v8::Object::New(isolate));
+  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("method", val.method);
   dict.Set("url", val.url.spec());
   dict.Set("referrer", val.referrer.spec());
@@ -356,6 +366,34 @@ v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
   dict.Set("certificate", val.certificate);
   dict.Set("verificationResult", val.default_result);
   dict.Set("errorCode", val.error_code);
+  return ConvertToV8(isolate, dict);
+}
+
+// static
+v8::Local<v8::Value> Converter<net::HttpVersion>::ToV8(
+    v8::Isolate* isolate,
+    const net::HttpVersion& val) {
+  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.Set("major", static_cast<uint32_t>(val.major_value()));
+  dict.Set("minor", static_cast<uint32_t>(val.minor_value()));
+  return ConvertToV8(isolate, dict);
+}
+
+// static
+v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
+    v8::Isolate* isolate,
+    const net::RedirectInfo& val) {
+  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+
+  dict.Set("statusCode", val.status_code);
+  dict.Set("newMethod", val.new_method);
+  dict.Set("newUrl", val.new_url);
+  dict.Set("newSiteForCookies", val.new_site_for_cookies);
+  dict.Set("newReferrer", val.new_referrer);
+  dict.Set("insecureSchemeWasUpgraded", val.insecure_scheme_was_upgraded);
+  dict.Set("isSignedExchangeFallbackRedirect",
+           val.is_signed_exchange_fallback_redirect);
+
   return ConvertToV8(isolate, dict);
 }
 

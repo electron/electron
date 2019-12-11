@@ -4,8 +4,8 @@
 
 #include "shell/browser/api/views/atom_api_layout_manager.h"
 
-#include "native_mate/dictionary.h"
-#include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/constructor.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -30,7 +30,7 @@ std::unique_ptr<views::LayoutManager> LayoutManager::TakeOver() {
 }
 
 // static
-mate::WrappableBase* LayoutManager::New(mate::Arguments* args) {
+gin_helper::WrappableBase* LayoutManager::New(gin_helper::Arguments* args) {
   args->ThrowError("LayoutManager can not be created directly");
   return nullptr;
 }
@@ -52,9 +52,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("LayoutManager",
-           mate::CreateConstructor<LayoutManager>(
+           gin_helper::CreateConstructor<LayoutManager>(
                isolate, base::BindRepeating(&LayoutManager::New)));
 }
 

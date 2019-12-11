@@ -16,21 +16,20 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "v8/include/v8.h"
 
-NetworkHintsHandlerImpl::NetworkHintsHandlerImpl(int32_t render_process_id)
-    : network_hints::SimpleNetworkHintsHandlerImpl(render_process_id),
-      render_process_id_(render_process_id) {}
+NetworkHintsHandlerImpl::NetworkHintsHandlerImpl(
+    content::RenderFrameHost* frame_host)
+    : network_hints::SimpleNetworkHintsHandlerImpl(
+          frame_host->GetProcess()->GetID()),
+      render_frame_host_(frame_host) {}
 
 NetworkHintsHandlerImpl::~NetworkHintsHandlerImpl() = default;
 
-void NetworkHintsHandlerImpl::Preconnect(int32_t render_frame_id,
-                                         const GURL& url,
+void NetworkHintsHandlerImpl::Preconnect(const GURL& url,
                                          bool allow_credentials) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  content::RenderFrameHost* render_frame_host =
-      content::RenderFrameHost::FromID(render_process_id_, render_frame_id);
   content::BrowserContext* browser_context =
-      render_frame_host->GetProcess()->GetBrowserContext();
+      render_frame_host_->GetProcess()->GetBrowserContext();
   auto* session = electron::api::Session::FromWrappedClass(
       v8::Isolate::GetCurrent(),
       static_cast<electron::AtomBrowserContext*>(browser_context));
@@ -40,9 +39,9 @@ void NetworkHintsHandlerImpl::Preconnect(int32_t render_frame_id,
 }
 
 void NetworkHintsHandlerImpl::Create(
-    int32_t render_process_id,
+    content::RenderFrameHost* frame_host,
     mojo::PendingReceiver<network_hints::mojom::NetworkHintsHandler> receiver) {
   mojo::MakeSelfOwnedReceiver(
-      base::WrapUnique(new NetworkHintsHandlerImpl(render_process_id)),
+      base::WrapUnique(new NetworkHintsHandlerImpl(frame_host)),
       std::move(receiver));
 }

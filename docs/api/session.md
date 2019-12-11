@@ -464,11 +464,15 @@ The built in spellchecker does not automatically detect what language a user is 
 spell checker to correctly check their words you must call this API with an array of language codes.  You can
 get the list of supported language codes with the `ses.availableSpellCheckerLanguages` property.
 
+**Note:** On macOS the OS spellchecker is used and will detect your language automatically.  This API is a no-op on macOS.
+
 #### `ses.getSpellCheckerLanguages()`
 
 Returns `String[]` - An array of language codes the spellchecker is enabled for.  If this list is empty the spellchecker
 will fallback to using `en-US`.  By default on launch if this setting is an empty list Electron will try to populate this
 setting with the current OS locale.  This setting is persisted across restarts.
+
+**Note:** On macOS the OS spellchecker is used and has it's own list of languages.  This API is a no-op on macOS.
 
 #### `ses.setSpellCheckerDictionaryDownloadURL(url)`
 
@@ -478,6 +482,16 @@ By default Electron will download hunspell dictionaries from the Chromium CDN.  
 behavior you can use this API to point the dictionary downloader at your own hosted version of the hunspell
 dictionaries.  We publish a `hunspell_dictionaries.zip` file with each release which contains the files you need
 to host here.
+
+**Note:** On macOS the OS spellchecker is used and therefore we do not download any dictionary files.  This API is a no-op on macOS.
+
+#### `ses.addWordToSpellCheckerDictionary(word)`
+
+* `word` String - The word you want to add to the dictionary
+
+Returns `Boolean` - Whether the word was successfully written to the custom dictionary.
+
+**Note:** On macOS and Windows 10 this word will be written to the OS custom dictionary as well
 
 ### Instance Properties
 

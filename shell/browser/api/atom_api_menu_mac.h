@@ -27,20 +27,20 @@ class MenuMac : public Menu {
                int x,
                int y,
                int positioning_item,
-               const base::Closure& callback) override;
+               base::OnceClosure callback) override;
   void PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                  int32_t window_id,
                  int x,
                  int y,
                  int positioning_item,
-                 base::Closure callback);
+                 base::OnceClosure callback);
   void ClosePopupAt(int32_t window_id) override;
   void ClosePopupOnUI(int32_t window_id);
 
  private:
   friend class Menu;
 
-  void OnClosed(int32_t window_id, base::Closure callback);
+  void OnClosed(int32_t window_id, base::OnceClosure callback);
 
   scoped_nsobject<AtomMenuController> menu_controller_;
 

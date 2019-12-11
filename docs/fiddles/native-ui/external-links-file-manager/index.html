@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Open external links and the file manager</title>
+  </head>
+  <body>
+    <div>
+      <h1>  
+        Open external links and the file manager
+      </h1>
+      <h3>
+        The <code>shell</code> module in Electron allows you to access certain
+        native elements like the file manager and default web browser.
+      </h3>
+
+      <p>This module works in both the main and renderer process.</p>
+      <p>
+        Open the
+        <a href="http://electron.atom.io/docs/api/shell">
+          full API documentation (opens in new window)
+        </a>
+        in your browser.
+      </p>
+    </div>
+
+    <div>
+      <div>
+        <h2>Open Path in File Manager</h2>
+        <div>
+          <div>
+            <button id="open-file-manager">
+              View Demo
+            </button>
+          </div>
+          <p>
+            This demonstrates using the <code>shell</code> module to open the
+            system file manager at a particular location.
+          </p>
+          <p>
+            Clicking the demo button will open your file manager at the root.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div>
+        <h2>Open External Links</h2>
+        <div>
+          <div>
+            <button id="open-ex-links">View Demo</button>
+          </div>
+          <p>
+            If you do not want your app to open website links
+            <em>within</em> the app, you can use the <code>shell</code> module
+            to open them externally. When clicked, the links will open outside
+            of your app and in the user's default web browser.
+          </p>
+          <p>
+            When the demo button is clicked, the electron website will open in
+            your browser.
+          </p>
+          <p></p>
+
+          <div>
+            <h2>ProTip</h2>
+            <strong>Open all outbound links externally.</strong>
+            <p>
+              You may want to open all <code>http</code> and
+              <code>https</code> links outside of your app. To do this, query
+              the document and loop through each link and add a listener. This
+              app uses the code below which is located in
+              <code>assets/ex-links.js</code>.
+            </p>
+            <h5>Renderer Process</h5>
+            <pre>
+                <code>
+const shell = require('electron').shell
+
+const links = document.querySelectorAll('a[href]')
+
+Array.prototype.forEach.call(links, (link) => {
+  const url = link.getAttribute('href')
+  if (url.indexOf('http') === 0) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault()
+      shell.openExternal(url)
+    })
+  }
+})
+                </code>
+              </pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // You can also require other files to run in this process
+      require("./renderer.js");
+    </script>
+  </body>
+</html>

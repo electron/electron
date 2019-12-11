@@ -69,9 +69,16 @@
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
+#include "chrome/browser/spellchecker/spellcheck_factory.h"  // nogncheck
+#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
+#include "chrome/browser/spellchecker/spellcheck_service.h"  // nogncheck
 #include "components/spellcheck/browser/pref_names.h"
 #include "components/spellcheck/common/spellcheck_common.h"
+
+#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+#include "components/spellcheck/browser/spellcheck_platform.h"
+#include "components/spellcheck/common/spellcheck_features.h"
+#endif
 #endif
 
 using content::BrowserThread;
@@ -84,7 +91,7 @@ namespace predictors {
 // error. Probably upstream the constructor should be moved to
 // preconnect_manager.cc.
 PreconnectRequest::PreconnectRequest(
-    const GURL& origin,
+    const url::Origin& origin,
     int num_sockets,
     const net::NetworkIsolationKey& network_isolation_key)
     : origin(origin),
@@ -209,7 +216,7 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
       void* ptr = object->GetAlignedPointerFromInternalField(0);
       if (!ptr)
         return;
-      delete static_cast<mate::WrappableBase*>(ptr);
+      delete static_cast<gin_helper::WrappableBase*>(ptr);
       object->SetAlignedPointerInInternalField(0, nullptr);
     }
   }
@@ -546,7 +553,7 @@ void Session::DownloadURL(const GURL& url) {
   auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
-      url, MISSING_TRAFFIC_ANNOTATION);
+      url, MISSING_TRAFFIC_ANNOTATION, net::NetworkIsolationKey());
   download_manager->DownloadUrl(std::move(download_params));
 }
 
@@ -635,7 +642,8 @@ static void StartPreconnectOnUI(
     const GURL& url,
     int num_sockets_to_preconnect) {
   std::vector<predictors::PreconnectRequest> requests = {
-      {url.GetOrigin(), num_sockets_to_preconnect, net::NetworkIsolationKey()}};
+      {url::Origin::Create(url), num_sockets_to_preconnect,
+       net::NetworkIsolationKey()}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
@@ -699,6 +707,20 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
     return;
   }
   SpellcheckHunspellDictionary::SetDownloadURLForTesting(url);
+}
+
+bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
+#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+  if (spellcheck::UseBrowserSpellChecker()) {
+    spellcheck_platform::AddWord(base::UTF8ToUTF16(word));
+  }
+#endif
+  SpellcheckService* spellcheck =
+      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+  if (!spellcheck)
+    return false;
+
+  return spellcheck->GetCustomDictionary()->AddWord(word);
 }
 #endif
 
@@ -780,6 +802,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                    &spellcheck::SpellCheckLanguages)
       .SetMethod("setSpellCheckerDictionaryDownloadURL",
                  &SetSpellCheckerDictionaryDownloadURL)
+      .SetMethod("addWordToSpellCheckerDictionary",
+                 &Session::AddWordToSpellCheckerDictionary)
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
       .SetProperty("cookies", &Session::Cookies)

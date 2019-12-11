@@ -24,7 +24,7 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/env.cc b/src/env.cc
-index 257bf78519f32d690ea9cd5b9e21d3d863801c33..89e940cdc478df8a3be7738106a1c739542a7430 100644
+index 2400785ea82fe4e975d222214161a417d2e6c002..069cd137b35e748dd45e5c720ec71d4fe274562b 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -383,6 +383,12 @@ Environment::Environment(IsolateData* isolate_data,
@@ -107,7 +107,7 @@ index 572490730da5854ad1a79670564ad9705c86747b..9b43d7676e5e106318b58bfe443651cc
  
    // We should set node_is_initialized here instead of in node::Start,
 diff --git a/src/node.h b/src/node.h
-index f78c76023bb667031b46e5fac80028bc5fd5374c..42ad1a5aba3fb57e27a07689768fd0dc8dd37d6d 100644
+index 13d71d41398545963139e61488474e23fa0ebeea..2baf51c3181fe2d390246f655ad35c3aac51f229 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -203,6 +203,9 @@ namespace node {

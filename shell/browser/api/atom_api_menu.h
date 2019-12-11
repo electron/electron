@@ -12,7 +12,6 @@
 #include "gin/arguments.h"
 #include "shell/browser/api/atom_api_top_level_window.h"
 #include "shell/browser/ui/atom_menu_model.h"
-#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
@@ -23,7 +22,7 @@ class Menu : public gin_helper::TrackableObject<Menu>,
              public AtomMenuModel::Delegate,
              public AtomMenuModel::Observer {
  public:
-  static mate::WrappableBase* New(gin::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -42,7 +41,7 @@ class Menu : public gin_helper::TrackableObject<Menu>,
   explicit Menu(gin::Arguments* args);
   ~Menu() override;
 
-  // mate::Wrappable:
+  // gin_helper::Wrappable:
   void AfterInit(v8::Isolate* isolate) override;
 
   // ui::SimpleMenuModel::Delegate:
@@ -62,7 +61,7 @@ class Menu : public gin_helper::TrackableObject<Menu>,
                        int x,
                        int y,
                        int positioning_item,
-                       const base::Closure& callback) = 0;
+                       base::OnceClosure callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
 
   std::unique_ptr<AtomMenuModel> model_;
@@ -71,6 +70,11 @@ class Menu : public gin_helper::TrackableObject<Menu>,
   // Observable:
   void OnMenuWillClose() override;
   void OnMenuWillShow() override;
+
+ protected:
+  // Returns a new callback which keeps references of the JS wrapper until the
+  // passed |callback| is called.
+  base::OnceClosure BindSelfToClosure(base::OnceClosure callback);
 
  private:
   void InsertItemAt(int index, int command_id, const base::string16& label);
@@ -145,18 +149,5 @@ struct Converter<electron::AtomMenuModel*> {
 };
 
 }  // namespace gin
-
-namespace mate {
-
-template <>
-struct Converter<electron::AtomMenuModel*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::AtomMenuModel** out) {
-    return gin::ConvertFromV8(isolate, val, out);
-  }
-};
-
-}  // namespace mate
 
 #endif  // SHELL_BROWSER_API_ATOM_API_MENU_H_

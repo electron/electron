@@ -5,7 +5,10 @@
 #ifndef SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 #define SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 
+#include <string>
+
 #include "gin/converter.h"
+#include "services/network/public/mojom/fetch_api.mojom.h"
 #include "shell/browser/net/cert_verifier_client.h"
 
 namespace base {
@@ -19,6 +22,7 @@ class URLRequest;
 class X509Certificate;
 class HttpResponseHeaders;
 struct CertPrincipal;
+class HttpVersion;
 }  // namespace net
 
 namespace network {
@@ -94,6 +98,18 @@ template <>
 struct Converter<electron::VerifyRequestParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::VerifyRequestParams val);
+};
+
+template <>
+struct Converter<net::HttpVersion> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::HttpVersion& val);
+};
+
+template <>
+struct Converter<net::RedirectInfo> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::RedirectInfo& val);
 };
 
 }  // namespace gin

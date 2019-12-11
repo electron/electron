@@ -24,6 +24,7 @@
 #include "ipc/ipc_buildflags.h"
 #include "services/service_manager/embedder/switches.h"
 #include "services/service_manager/sandbox/switches.h"
+#include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/atom_content_client.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_gpu_client.h"
@@ -182,6 +183,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   if (env->HasVar("ELECTRON_DISABLE_SANDBOX"))
     command_line->AppendSwitch(service_manager::switches::kNoSandbox);
 
+  tracing_sampler_profiler_ =
+      tracing::TracingSamplerProfiler::CreateOnMainThread();
+
   chrome::RegisterPathProvider();
 
 #if defined(OS_MACOSX)
@@ -223,7 +227,7 @@ void AtomMainDelegate::PostEarlyInitialization(bool is_running_tests) {
   if (cmd_line->HasSwitch(::switches::kLang)) {
     const std::string locale = cmd_line->GetSwitchValueASCII(::switches::kLang);
     const base::FilePath locale_file_path =
-        ui::ResourceBundle::GetSharedInstance().GetLocaleFilePath(locale, true);
+        ui::ResourceBundle::GetSharedInstance().GetLocaleFilePath(locale);
     if (!locale_file_path.empty()) {
       custom_locale = locale;
 #if defined(OS_LINUX)

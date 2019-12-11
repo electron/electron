@@ -19,7 +19,7 @@ namespace api {
 
 class View : public gin_helper::TrackableObject<View> {
  public:
-  static mate::WrappableBase* New(gin::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

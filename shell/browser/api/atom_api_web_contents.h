@@ -18,12 +18,12 @@
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/browser/web_contents_binding_set.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
+#include "mojo/public/cpp/bindings/binding_set.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/binder_registry.h"
 #include "shell/browser/api/frame_subscriber.h"
@@ -273,7 +273,6 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   double GetZoomLevel() const;
   void SetZoomFactor(double factor);
   double GetZoomFactor() const;
-  void SetZoomLimits(double min_zoom, double max_zoom) override;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
@@ -423,7 +422,8 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // content::WebContentsObserver:
   void BeforeUnloadFired(bool proceed,
                          const base::TimeTicks& proceed_time) override;
-  void RenderViewCreated(content::RenderViewHost*) override;
+  void RenderViewCreated(content::RenderViewHost* render_view_host) override;
+  void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
   void RenderViewDeleted(content::RenderViewHost*) override;

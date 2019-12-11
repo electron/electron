@@ -2,13 +2,6 @@ const { expect } = require('chai')
 const { webFrame } = require('electron')
 
 describe('webFrame module', function () {
-  it('supports setting the visual and layout zoom level limits', function () {
-    expect(() => {
-      webFrame.setVisualZoomLevelLimits(1, 50)
-      webFrame.setLayoutZoomLevelLimits(0, 25)
-    }).to.not.throw()
-  })
-
   it('top is self for top frame', () => {
     expect(webFrame.top.context).to.equal(webFrame.context)
   })

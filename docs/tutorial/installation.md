@@ -66,7 +66,7 @@ url = ELECTRON_MIRROR + ELECTRON_CUSTOM_DIR + '/' + ELECTRON_CUSTOM_FILENAME
 For instance, to use the China mirror:
 
 ```plaintext
-ELECTRON_MIRROR="https://cdn.npm.taobao.org/dist/electron/"
+ELECTRON_MIRROR="https://npm.taobao.org/mirrors/electron/"
 ```
 
 #### Cache
@@ -82,7 +82,7 @@ with the network at all.
 On environments that have been using older versions of Electron, you might find the
 cache also in `~/.electron`.
 
-You can also override the local cache location by providing a `ELECTRON_CACHE`
+You can also override the local cache location by providing a `electron_config_cache`
 environment variable.
 
 The cache contains the version's official zip file as well as a checksum, stored as

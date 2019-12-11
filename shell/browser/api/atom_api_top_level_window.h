@@ -28,7 +28,7 @@ class View;
 class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
                        public NativeWindowObserver {
  public:
-  static mate::WrappableBase* New(gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

@@ -371,16 +371,42 @@ describe('chromium feature', () => {
   })
 
   describe('storage', () => {
-    describe('DOM storage quota override', () => {
+    describe('DOM storage quota increase', () => {
       ['localStorage', 'sessionStorage'].forEach((storageName) => {
-        it(`allows saving at least 50MiB in ${storageName}`, () => {
-          const storage = window[storageName]
-          const testKeyName = '_electronDOMStorageQuotaOverrideTest'
-          // 25 * 2^20 UTF-16 characters will require 50MiB
-          const arraySize = 25 * Math.pow(2, 20)
-          storage[testKeyName] = new Array(arraySize).fill('X').join('')
-          expect(storage[testKeyName]).to.have.lengthOf(arraySize)
-          delete storage[testKeyName]
+        const storage = window[storageName]
+        it(`allows saving at least 40MiB in ${storageName}`, (done) => {
+          // Although JavaScript strings use UTF-16, the underlying
+          // storage provider may encode strings differently, muddling the
+          // translation between character and byte counts. However,
+          // a string of 40 * 2^20 characters will require at least 40MiB
+          // and presumably no more than 80MiB, a size guaranteed to
+          // to exceed the original 10MiB quota yet stay within the
+          // new 100MiB quota.
+          // Note that both the key name and value affect the total size.
+          const testKeyName = '_electronDOMStorageQuotaIncreasedTest'
+          const length = 40 * Math.pow(2, 20) - testKeyName.length
+          storage.setItem(testKeyName, 'X'.repeat(length))
+          // Wait at least one turn of the event loop to help avoid false positives
+          // Although not entirely necessary, the previous version of this test case
+          // failed to detect a real problem (perhaps related to DOM storage data caching)
+          // wherein calling `getItem` immediately after `setItem` would appear to work
+          // but then later (e.g. next tick) it would not.
+          setTimeout(() => {
+            expect(storage.getItem(testKeyName)).to.have.lengthOf(length)
+            storage.removeItem(testKeyName)
+            done()
+          }, 1)
+        })
+        it(`throws when attempting to use more than 128MiB in ${storageName}`, () => {
+          expect(() => {
+            const testKeyName = '_electronDOMStorageQuotaStillEnforcedTest'
+            const length = 128 * Math.pow(2, 20) - testKeyName.length
+            try {
+              storage.setItem(testKeyName, 'X'.repeat(length))
+            } finally {
+              storage.removeItem(testKeyName)
+            }
+          }).to.throw()
         })
       })
     })

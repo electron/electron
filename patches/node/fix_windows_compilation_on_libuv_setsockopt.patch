@@ -7,7 +7,7 @@ Upstreamed in https://github.com/libuv/libuv/pull/2520.
 This patch should be removed when Node.js rolls onto libuv v1.33.0.
 
 diff --git a/deps/uv/src/win/tcp.c b/deps/uv/src/win/tcp.c
-index 81e48136a3b9ef13b1b95d87a68ab3ba98f9aeb9..41f8fcbe8361dc7c7a145b38094745cb0fcfa350 100644
+index 81e48136a3b9ef13b1b95d87a68ab3ba98f9aeb9..fd34c623d8c543a01b70a17184b09bb4e29081eb 100644
 --- a/deps/uv/src/win/tcp.c
 +++ b/deps/uv/src/win/tcp.c
 @@ -556,7 +556,7 @@ int uv_tcp_close_reset(uv_tcp_t* handle, uv_close_cb close_cb) {

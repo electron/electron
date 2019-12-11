@@ -12,11 +12,12 @@
 
 namespace electron {
 
-NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
-                                   network::mojom::URLLoaderRequest loader,
-                                   network::mojom::URLLoaderClientPtr client,
-                                   v8::Isolate* isolate,
-                                   v8::Local<v8::Object> emitter)
+NodeStreamLoader::NodeStreamLoader(
+    network::ResourceResponseHead head,
+    network::mojom::URLLoaderRequest loader,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> emitter)
     : binding_(this, std::move(loader)),
       client_(std::move(client)),
       isolate_(isolate),
@@ -26,10 +27,7 @@ NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
       base::BindOnce(&NodeStreamLoader::NotifyComplete,
                      weak_factory_.GetWeakPtr(), net::ERR_FAILED));
 
-  // PostTask since it might destruct.
-  base::SequencedTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::BindOnce(&NodeStreamLoader::Start,
-                                weak_factory_.GetWeakPtr(), std::move(head)));
+  Start(std::move(head));
 }
 
 NodeStreamLoader::~NodeStreamLoader() {
@@ -44,10 +42,6 @@ NodeStreamLoader::~NodeStreamLoader() {
     node::MakeCallback(isolate_, emitter_.Get(isolate_), "removeListener",
                        node::arraysize(args), args, {0, 0});
   }
-
-  // Release references.
-  emitter_.Reset();
-  buffer_.Reset();
 }
 
 void NodeStreamLoader::Start(network::ResourceResponseHead head) {
@@ -60,7 +54,6 @@ void NodeStreamLoader::Start(network::ResourceResponseHead head) {
   }
 
   producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
-
   client_->OnReceiveResponse(head);
   client_->OnStartLoadingResponseBody(std::move(consumer));
 

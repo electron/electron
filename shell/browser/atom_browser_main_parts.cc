@@ -22,16 +22,17 @@
 #include "chrome/browser/icon_manager.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/system_connector.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/result_codes.h"
-#include "content/public/common/service_manager_connection.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/localized_strings.h"
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/network/public/cpp/features.h"
 #include "services/service_manager/public/cpp/connector.h"
+#include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/atom_main_delegate.h"
 #include "shell/browser/api/atom_api_app.h"
 #include "shell/browser/atom_browser_client.h"
@@ -389,6 +390,12 @@ int AtomBrowserMainParts::PreCreateThreads() {
   return 0;
 }
 
+void AtomBrowserMainParts::PostCreateThreads() {
+  base::PostTask(
+      FROM_HERE, {content::BrowserThread::IO},
+      base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
+}
+
 void AtomBrowserMainParts::PostDestroyThreads() {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_browser_client_.reset();
@@ -555,13 +562,10 @@ AtomBrowserMainParts::GetGeolocationControl() {
   if (geolocation_control_)
     return geolocation_control_.get();
 
-  auto request = mojo::MakeRequest(&geolocation_control_);
-  if (!content::ServiceManagerConnection::GetForProcess())
-    return geolocation_control_.get();
-
-  service_manager::Connector* connector =
-      content::ServiceManagerConnection::GetForProcess()->GetConnector();
-  connector->BindInterface(device::mojom::kServiceName, std::move(request));
+  auto receiver = geolocation_control_.BindNewPipeAndPassReceiver();
+  service_manager::Connector* connector = content::GetSystemConnector();
+  if (connector)
+    connector->Connect(device::mojom::kServiceName, std::move(receiver));
   return geolocation_control_.get();
 }
 

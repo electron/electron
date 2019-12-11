@@ -92,6 +92,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,
                                 const std::vector<std::string>& languages);
+  bool AddWordToSpellCheckerDictionary(const std::string& word);
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -107,7 +108,7 @@ class Session : public gin_helper::TrackableObject<Session>,
                          download::DownloadItem* item) override;
 
  private:
-  // Cached mate::Wrappable objects.
+  // Cached gin_helper::Wrappable objects.
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;
   v8::Global<v8::Value> net_log_;
