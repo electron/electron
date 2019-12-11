@@ -423,6 +423,85 @@ describe('chromium features', () => {
     })
   })
 
+  describe('form submit', () => {
+    let server: http.Server
+    let serverUrl: string
+
+    before(async () => {
+      server = http.createServer((req, res) => {
+        let body = ''
+        req.on('data', (chunk) => {
+          body += chunk
+        })
+        res.setHeader('Content-Type', 'application/json')
+        req.on('end', () => {
+          res.end(`body:${body}`)
+        })
+      })
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+      serverUrl = `http://localhost:${(server.address() as any).port}`
+    })
+    after(async () => {
+      server.close()
+      await closeAllWindows()
+    });
+
+    [true, false].forEach((isSandboxEnabled) =>
+      describe(`sandbox=${isSandboxEnabled}`, () => {
+        it('posts data in the same window', () => {
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox: isSandboxEnabled
+            }
+          })
+
+          return new Promise(async (resolve) => {
+            await w.loadFile(path.join(fixturesPath, 'pages', 'form-with-data.html'))
+
+            w.webContents.once('did-finish-load', async () => {
+              const res = await w.webContents.executeJavaScript('document.body.innerText')
+              expect(res).to.equal('body:greeting=hello')
+              resolve()
+            })
+
+            w.webContents.executeJavaScript(`
+              const form = document.querySelector('form')
+              form.action = '${serverUrl}';
+              form.submit();
+            `)
+          })
+        })
+
+        it('posts data to a new window with target=_blank', () => {
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox: isSandboxEnabled
+            }
+          })
+
+          return new Promise(async (resolve) => {
+            await w.loadFile(path.join(fixturesPath, 'pages', 'form-with-data.html'))
+
+            app.once('browser-window-created', async (event, newWin) => {
+              const res = await newWin.webContents.executeJavaScript('document.body.innerText')
+              expect(res).to.equal('body:greeting=hello')
+              resolve()
+            })
+
+            w.webContents.executeJavaScript(`
+              const form = document.querySelector('form')
+              form.action = '${serverUrl}';
+              form.target = '_blank';
+              form.submit();
+            `)
+          })
+        })
+      })
+    )
+  })
+
   describe('window.open', () => {
     for (const show of [true, false]) {
       it(`inherits parent visibility over parent {show=${show}} option`, (done) => {
