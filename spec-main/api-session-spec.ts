@@ -111,8 +111,9 @@ describe('session module', () => {
       const value = '3'
 
       await cookies.set({ url, value })
-      const cs = await cookies.get({ url })
-      expect(cs.some(c => c.name === '' && c.value === value)).to.equal(true)
+      const c = (await cookies.get({ url }))[0]
+      expect(c.name).to.be.empty()
+      expect(c.value).to.equal(value)
     })
 
     it('gets cookies without url', async () => {

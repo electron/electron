@@ -139,10 +139,8 @@ void FilterCookieWithStatuses(const base::Value& filter,
                 net::cookie_util::StripStatuses(list));
 }
 
-// Read date property from the dictionary.
-base::Time GetTimeFromDict(const base::DictionaryValue& dict,
-                           base::StringPiece key) {
-  base::Optional<double> value = dict.FindDoubleKey(key);
+// Parse dictionary property to CanonicalCookie time correctly.
+base::Time ParseTimeProperty(const base::Optional<double>& value) {
   if (!value)  // empty time means ignoring the parameter
     return base::Time();
   if (*value == 0)  // FromDoubleT would convert 0 to empty Time
@@ -252,9 +250,6 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
   const std::string* path = details.FindStringKey("path");
   bool secure = details.FindBoolKey("secure").value_or(false);
   bool http_only = details.FindBoolKey("httpOnly").value_or(false);
-  base::Time creation_time = GetTimeFromDict(details, "creationDate");
-  base::Time expiration_time = GetTimeFromDict(details, "expirationDate");
-  base::Time last_access_time = GetTimeFromDict(details, "lastAccessDate");
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
@@ -267,8 +262,11 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
 
   auto canonical_cookie = net::CanonicalCookie::CreateSanitizedCookie(
       url, name ? *name : "", value ? *value : "", domain ? *domain : "",
-      path ? *path : "", creation_time, expiration_time, last_access_time,
-      secure, http_only, net::CookieSameSite::NO_RESTRICTION,
+      path ? *path : "",
+      ParseTimeProperty(details.FindDoubleKey("creationDate")),
+      ParseTimeProperty(details.FindDoubleKey("expirationDate")),
+      ParseTimeProperty(details.FindDoubleKey("lastAccessDate")), secure,
+      http_only, net::CookieSameSite::NO_RESTRICTION,
       net::COOKIE_PRIORITY_DEFAULT);
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     promise.RejectWithErrorMessage(
