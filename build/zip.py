@@ -16,6 +16,10 @@ PATHS_TO_SKIP = [
   './libVkICD_mock_', #Skipping because these are outputs that we don't need
   './VkICD_mock_', #Skipping because these are outputs that we don't need
 
+  # Skipping because its an output of create_bundle from //build/config/mac/rules.gni
+  # that we don't need
+  'Electron.dSYM',
+
   # //chrome/browser:resources depends on this via
   # //chrome/browser/resources/ssl/ssl_error_assistant, but we don't need to
   # ship it.
@@ -52,14 +56,13 @@ def main(argv):
   with open(runtime_deps) as f:
     for dep in f.readlines():
       dep = dep.strip()
-      dist_files.add(dep)
+      if not skip_path(dep, dist_zip, target_cpu):
+        dist_files.add(dep)
   if sys.platform == 'darwin' and not should_flatten:
     execute(['zip', '-r', '-y', dist_zip] + list(dist_files))
   else:
     with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as z:
       for dep in dist_files:
-        if skip_path(dep, dist_zip, target_cpu):
-          continue
         if os.path.isdir(dep):
           for root, dirs, files in os.walk(dep):
             for file in files:
