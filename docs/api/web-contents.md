@@ -178,8 +178,9 @@ myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition
       httpReferrer: referrer
     }
     if (postBody != null) {
+      const { data, contentType, boundary } = postBody
       loadOptions.postData = postBody.data
-      loadOptions.extraHeaders = postBody.headers
+      loadOptions.extraHeaders = `content-type: ${contentType}; boundary=${boundary}`
     }
 
     win.loadURL(url, loadOptions) // existing webContents will be navigated automatically
