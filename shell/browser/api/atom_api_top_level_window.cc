@@ -1150,7 +1150,6 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setKiosk", &TopLevelWindow::SetKiosk)
       .SetMethod("isKiosk", &TopLevelWindow::IsKiosk)
       .SetMethod("setBackgroundColor", &TopLevelWindow::SetBackgroundColor)
-      .SetMethod("getBackgroundColor", &TopLevelWindow::GetBackgroundColor)
       .SetMethod("setHasShadow", &TopLevelWindow::SetHasShadow)
       .SetMethod("hasShadow", &TopLevelWindow::HasShadow)
       .SetMethod("setOpacity", &TopLevelWindow::SetOpacity)
@@ -1182,6 +1181,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
                  &TopLevelWindow::IsVisibleOnAllWorkspaces)
 #if defined(OS_MACOSX)
       .SetMethod("setAutoHideCursor", &TopLevelWindow::SetAutoHideCursor)
+      .SetMethod("getBackgroundColor", &TopLevelWindow::GetBackgroundColor)
 #endif
       .SetMethod("setVibrancy", &TopLevelWindow::SetVibrancy)
       .SetMethod("_setTouchBarItems", &TopLevelWindow::SetTouchBar)
