@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 691f9b0f6f658cc259cc9c4e8bb3abb15592e8a3..09ecb3f3406da54440cdd977556f602496ec39a6 100644
+index def2cb5e252389879c6287d44d29e704703841cb..98d64785240bde3e182268e453dced41b432df9a 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -190,6 +190,25 @@ struct HttpAuthStaticNetworkContextParams {
@@ -39,7 +39,7 @@ index 691f9b0f6f658cc259cc9c4e8bb3abb15592e8a3..09ecb3f3406da54440cdd977556f6024
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -597,6 +616,8 @@ struct URLLoaderFactoryParams {
+@@ -596,6 +615,8 @@ struct URLLoaderFactoryParams {
    // interface. This still respects the per-context block lists.
    CorsOriginAccessPatterns? factory_bound_access_patterns;
  
@@ -49,7 +49,7 @@ index 691f9b0f6f658cc259cc9c4e8bb3abb15592e8a3..09ecb3f3406da54440cdd977556f6024
    NetworkIsolationKey? network_isolation_key;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 486c92182695958a0c97d48d55ebd23e0bd5f3de..acd6c63eff1f94cc9fa8490610e571a73764369a 100644
+index 79b1a5757eadeddd315a605831c5d9c8cbc6a1b4..f6477623faa096cc11ebdf739574e1cb0b422d8f 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -333,6 +333,7 @@ URLLoader::URLLoader(
@@ -72,7 +72,7 @@ index 486c92182695958a0c97d48d55ebd23e0bd5f3de..acd6c63eff1f94cc9fa8490610e571a7
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -824,7 +830,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
+@@ -825,7 +831,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
  
  void URLLoader::OnAuthRequired(net::URLRequest* url_request,
                                 const net::AuthChallengeInfo& auth_info) {
@@ -81,7 +81,7 @@ index 486c92182695958a0c97d48d55ebd23e0bd5f3de..acd6c63eff1f94cc9fa8490610e571a7
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -840,10 +846,18 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -841,10 +847,18 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head.headers = url_request->response_headers();
    head.auth_challenge_info = auth_info;

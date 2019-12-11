@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 88d49b1374df0856980adbf5de6d611b7b3332db..9c8a4dd1bc3c5b4de865e862238b8fd8febf956b 100644
+index 99e4e46512a15b35b60a281abc347de50fd94a6a..6542d5761bc2fa18a73ac78c90863b7f27b5eedf 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -415,6 +415,11 @@ class RendererSandboxedProcessLauncherDelegate
@@ -48,7 +48,7 @@ index 88d49b1374df0856980adbf5de6d611b7b3332db..9c8a4dd1bc3c5b4de865e862238b8fd8
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
 @@ -450,10 +458,13 @@ class RendererSandboxedProcessLauncherDelegate
-     return service_manager::SANDBOX_TYPE_RENDERER;
+     return service_manager::SandboxType::kRenderer;
    }
  
 -#if defined(OS_WIN)
@@ -62,7 +62,7 @@ index 88d49b1374df0856980adbf5de6d611b7b3332db..9c8a4dd1bc3c5b4de865e862238b8fd8
  };
  
  const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1724,11 +1735,18 @@ bool RenderProcessHostImpl::Init() {
+@@ -1725,11 +1736,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  
