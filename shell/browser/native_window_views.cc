@@ -904,7 +904,7 @@ bool NativeWindowViews::IsKiosk() {
 }
 
 SkColor NativeWindowViews::GetBackgroundColor() {
-  return root_view_->GetBackground;
+  return root_view_->get_color();
 }
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
