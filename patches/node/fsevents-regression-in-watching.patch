@@ -1,7 +1,10 @@
-From ae12376dbb56fa080b699f00840c7b9c5230a85f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jameson Nash <vtjnash@gmail.com>
 Date: Sat, 7 Sep 2019 20:45:39 -0400
-Subject: [PATCH] fsevents: regression in watching /
+Subject: fsevents: regression in watching /
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 This case got lost by accident in
 https://github.com/libuv/libuv/pull/2082,
@@ -13,7 +16,7 @@ Reviewed-By: Ben Noordhuis <info@bnoordhuis.nl>
 Reviewed-By: Saúl Ibarra Corretgé <s@saghul.net>
 
 diff --git a/deps/uv/src/unix/fsevents.c b/deps/uv/src/unix/fsevents.c
-index ddacda31..deeaa63d 100644
+index ddacda31fef87eee131fc2ee2ff46cc88be429d9..deeaa63d4730de9aa17ee87923acd96d6507a55d 100644
 --- a/deps/uv/src/unix/fsevents.c
 +++ b/deps/uv/src/unix/fsevents.c
 @@ -263,10 +263,12 @@ static void uv__fsevents_event_cb(ConstFSEventStreamRef streamRef,
@@ -32,7 +35,7 @@ index ddacda31..deeaa63d 100644
  
        if (memcmp(path, handle->realpath, handle->realpath_len) != 0)
 diff --git a/deps/uv/test/test-fs-event.c b/deps/uv/test/test-fs-event.c
-index 4b8bb1ef..7725c3af 100644
+index 4b8bb1ef03e54407cba8eef85179039632cc3f28..7725c3af94edd5d62bb960912262d38aefa6676e 100644
 --- a/deps/uv/test/test-fs-event.c
 +++ b/deps/uv/test/test-fs-event.c
 @@ -47,6 +47,7 @@ static const char file_prefix[] = "fsevent-";

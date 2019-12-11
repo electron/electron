@@ -227,7 +227,7 @@ void AtomMainDelegate::PostEarlyInitialization(bool is_running_tests) {
   if (cmd_line->HasSwitch(::switches::kLang)) {
     const std::string locale = cmd_line->GetSwitchValueASCII(::switches::kLang);
     const base::FilePath locale_file_path =
-        ui::ResourceBundle::GetSharedInstance().GetLocaleFilePath(locale, true);
+        ui::ResourceBundle::GetSharedInstance().GetLocaleFilePath(locale);
     if (!locale_file_path.empty()) {
       custom_locale = locale;
 #if defined(OS_LINUX)

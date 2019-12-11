@@ -6,8 +6,6 @@ is_official_build = false
 dcheck_always_on = true
 symbol_level = 1
 
-strip_absolute_paths_from_debug_symbols = false
-
 # This may be guarded behind is_chrome_branded alongside
 # proprietary_codecs https://webrtc-review.googlesource.com/c/src/+/36321,
 # explicitly override here to build OpenH264 encoder/FFmpeg decoder.

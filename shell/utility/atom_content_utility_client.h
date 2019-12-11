@@ -11,6 +11,7 @@
 
 #include "base/compiler_specific.h"
 #include "content/public/utility/content_utility_client.h"
+#include "mojo/public/cpp/bindings/binder_map.h"
 #include "printing/buildflags/buildflags.h"
 
 #if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
@@ -24,7 +25,7 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   AtomContentUtilityClient();
   ~AtomContentUtilityClient() override;
 
-  void UtilityThreadStarted() override;
+  void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   bool OnMessageReceived(const IPC::Message& message) override;
   mojo::ServiceFactory* GetMainThreadServiceFactory() override;
   mojo::ServiceFactory* GetIOThreadServiceFactory() override;
@@ -34,7 +35,8 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   std::unique_ptr<printing::PrintingHandler> printing_handler_;
 #endif
 
-  bool elevated_;
+  // True if the utility process runs with elevated privileges.
+  bool utility_process_running_elevated_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomContentUtilityClient);
 };

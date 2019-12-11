@@ -44,7 +44,7 @@ void WebViewGuestDelegate::AttachToIframe(
   // frame |embedder_frame| hosts the inner WebContents.
   embedder_web_contents_->AttachInnerWebContents(
       base::WrapUnique<content::WebContents>(guest_web_contents),
-      embedder_frame);
+      embedder_frame, false);
 
   ResetZoomController();
 
@@ -112,8 +112,7 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
       guest_contents->GetRenderViewHost()->GetWidget();
   auto* guest_contents_impl =
       static_cast<content::WebContentsImpl*>(guest_contents.release());
-  guest_contents_impl->GetView()->CreateViewForWidget(render_widget_host,
-                                                      false);
+  guest_contents_impl->GetView()->CreateViewForWidget(render_widget_host);
 
   return guest_contents_impl;
 }
