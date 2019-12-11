@@ -591,7 +591,8 @@ describe('net module', () => {
         customSession.cookies.set({
           url: `${serverUrl}`,
           name: 'test',
-          value: '11111'
+          value: '11111',
+          expirationDate: 0
         }).then(() => { // resolved
           const urlRequest = net.request({
             method: 'GET',
