@@ -11,10 +11,13 @@
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/bindings/shared_remote.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -49,11 +52,16 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     // Bind the interface on the background runner. All accesses will be via
     // the thread-safe pointer. This is to support our "fake-sync"
     // MessageSync() hack; see the comment in IPCRenderer::SendSync.
-    electron::mojom::ElectronBrowserPtrInfo info;
-    render_frame->GetRemoteInterfaces()->GetInterface(mojo::MakeRequest(&info));
+    mojo::PendingRemote<electron::mojom::ElectronBrowser> pending_browser;
+    render_frame->GetRemoteInterfaces()->GetInterface(
+        pending_browser.InitWithNewPipeAndPassReceiver());
     electron_browser_ptr_ =
-        electron::mojom::ThreadSafeElectronBrowserPtr::Create(std::move(info),
-                                                              task_runner_);
+        mojo::SharedRemote<electron::mojom::ElectronBrowser>(
+            std::move(pending_browser), task_runner_);
+    electron_browser_ptr_.set_disconnect_handler(
+        base::BindOnce(&IPCRenderer::HandleMojoConnectionError,
+                       base::Unretained(this)),
+        task_runner_);
   }
 
   // gin::Wrappable:
@@ -78,8 +86,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     if (!gin::ConvertFromV8(isolate, arguments, &message)) {
       return;
     }
-    electron_browser_ptr_->get()->Message(internal, channel,
-                                          std::move(message));
+    electron_browser_ptr_->Message(internal, channel, std::move(message));
   }
 
   v8::Local<v8::Promise> Invoke(v8::Isolate* isolate,
@@ -93,7 +100,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     gin_helper::Promise<blink::CloneableMessage> p(isolate);
     auto handle = p.GetHandle();
 
-    electron_browser_ptr_->get()->Invoke(
+    electron_browser_ptr_->Invoke(
         internal, channel, std::move(message),
         base::BindOnce(
             [](gin_helper::Promise<blink::CloneableMessage> p,
@@ -113,8 +120,8 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     if (!gin::ConvertFromV8(isolate, arguments, &message)) {
       return;
     }
-    electron_browser_ptr_->get()->MessageTo(
-        internal, send_to_all, web_contents_id, channel, std::move(message));
+    electron_browser_ptr_->MessageTo(internal, send_to_all, web_contents_id,
+                                     channel, std::move(message));
   }
 
   void SendToHost(v8::Isolate* isolate,
@@ -124,13 +131,14 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     if (!gin::ConvertFromV8(isolate, arguments, &message)) {
       return;
     }
-    electron_browser_ptr_->get()->MessageHost(channel, std::move(message));
+    electron_browser_ptr_->MessageHost(channel, std::move(message));
   }
 
   blink::CloneableMessage SendSync(v8::Isolate* isolate,
                                    bool internal,
                                    const std::string& channel,
                                    v8::Local<v8::Value> arguments) {
+    gin_helper::ErrorThrower thrower(isolate);
     blink::CloneableMessage message;
     if (!gin::ConvertFromV8(isolate, arguments, &message)) {
       return blink::CloneableMessage();
@@ -185,41 +193,48 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
 
     // A task is posted to a worker thread to execute the request so that
     // this thread may block on a waitable event. It is safe to pass raw
-    // pointers to |result| and |response_received_event| as this stack frame
-    // will survive until the request is complete.
+    // pointers to |result| and |pending_sync_response_event_| as this stack
+    // frame will survive until the request is complete.
 
-    base::WaitableEvent response_received_event;
     task_runner_->PostTask(
-        FROM_HERE, base::BindOnce(&IPCRenderer::SendMessageSyncOnWorkerThread,
-                                  base::Unretained(this),
-                                  base::Unretained(&response_received_event),
-                                  base::Unretained(&result), internal, channel,
-                                  std::move(message)));
-    response_received_event.Wait();
+        FROM_HERE,
+        base::BindOnce(&IPCRenderer::SendMessageSyncOnWorkerThread,
+                       base::Unretained(this), base::Unretained(&result),
+                       internal, channel, std::move(message)));
+    pending_sync_response_event_.Wait();
+    if (!mojo_connection_error_msg_.empty()) {
+      LOG(INFO) << "Mojo connection interuppted, likely due to the Mojo "
+                   "receiver process crashing.";
+      thrower.ThrowError(mojo_connection_error_msg_);
+    }
+    pending_sync_response_event_.Reset();
     return result;
   }
 
-  void SendMessageSyncOnWorkerThread(base::WaitableEvent* event,
-                                     blink::CloneableMessage* result,
+  void SendMessageSyncOnWorkerThread(blink::CloneableMessage* result,
                                      bool internal,
                                      const std::string& channel,
                                      blink::CloneableMessage arguments) {
-    electron_browser_ptr_->get()->MessageSync(
+    electron_browser_ptr_->MessageSync(
         internal, channel, std::move(arguments),
         base::BindOnce(&IPCRenderer::ReturnSyncResponseToMainThread,
-                       base::Unretained(event), base::Unretained(result)));
+                       base::Unretained(this), base::Unretained(result)));
   }
 
-  static void ReturnSyncResponseToMainThread(base::WaitableEvent* event,
-                                             blink::CloneableMessage* result,
-                                             blink::CloneableMessage response) {
+  void ReturnSyncResponseToMainThread(blink::CloneableMessage* result,
+                                      blink::CloneableMessage response) {
     *result = std::move(response);
-    event->Signal();
+    pending_sync_response_event_.Signal();
+  }
+  void HandleMojoConnectionError() {
+    mojo_connection_error_msg_ = "IPC connection fatally interrupted.";
+    pending_sync_response_event_.Signal();
   }
 
+  base::WaitableEvent pending_sync_response_event_;
+  std::string mojo_connection_error_msg_;
   scoped_refptr<base::SequencedTaskRunner> task_runner_;
-  scoped_refptr<electron::mojom::ThreadSafeElectronBrowserPtr>
-      electron_browser_ptr_;
+  mojo::SharedRemote<electron::mojom::ElectronBrowser> electron_browser_ptr_;
 };
 
 gin::WrapperInfo IPCRenderer::kWrapperInfo = {gin::kEmbedderNativeGin};
