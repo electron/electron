@@ -34,8 +34,6 @@ namespace {
 // certain initialization task may still be pending, and quitting at that time
 // could end up with crash on exit.
 void RunQuitClosure(base::OnceClosure quit) {
-  // Consume remaining tasks in message loop.
-  base::RunLoop().RunUntilIdle();
   // On Linux/Windows the "ready" event is emitted in "PreMainMessageLoopRun",
   // make sure we quit after message loop has run for once.
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(quit));
