@@ -21,7 +21,7 @@
 #include "net/base/mime_util.h"
 #include "net/http/http_byte_range.h"
 #include "net/http/http_util.h"
-#include "services/network/public/cpp/resource_response.h"
+#include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
 
@@ -87,10 +87,10 @@ class AsarURLLoader : public network::mojom::URLLoader {
              mojo::PendingReceiver<network::mojom::URLLoader> loader,
              mojo::PendingRemote<network::mojom::URLLoaderClient> client,
              scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
-    network::ResourceResponseHead head;
-    head.request_start = base::TimeTicks::Now();
-    head.response_start = base::TimeTicks::Now();
-    head.headers = extra_response_headers;
+    auto head = network::mojom::URLResponseHead::New();
+    head->request_start = base::TimeTicks::Now();
+    head->response_start = base::TimeTicks::Now();
+    head->headers = extra_response_headers;
 
     base::FilePath path;
     if (!net::FileURLToFilePath(request.url, &path)) {
@@ -188,7 +188,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     total_bytes_written_ = total_bytes_to_send;
 
-    head.content_length = base::saturated_cast<int64_t>(total_bytes_to_send);
+    head->content_length = base::saturated_cast<int64_t>(total_bytes_to_send);
 
     if (first_byte_to_send < read_result.bytes_read) {
       // Write any data we read for MIME sniffing, constraining by range where
@@ -211,20 +211,20 @@ class AsarURLLoader : public network::mojom::URLLoader {
       total_bytes_to_send -= write_size;
     }
 
-    if (!net::GetMimeTypeFromFile(path, &head.mime_type)) {
+    if (!net::GetMimeTypeFromFile(path, &head->mime_type)) {
       std::string new_type;
       net::SniffMimeType(initial_read_buffer.data(), read_result.bytes_read,
-                         request.url, head.mime_type,
+                         request.url, head->mime_type,
                          net::ForceSniffFileUrlsForHtml::kDisabled, &new_type);
-      head.mime_type.assign(new_type);
-      head.did_mime_sniff = true;
+      head->mime_type.assign(new_type);
+      head->did_mime_sniff = true;
     }
-    if (head.headers) {
-      head.headers->AddHeader(
+    if (head->headers) {
+      head->headers->AddHeader(
           base::StringPrintf("%s: %s", net::HttpRequestHeaders::kContentType,
-                             head.mime_type.c_str()));
+                             head->mime_type.c_str()));
     }
-    client_->OnReceiveResponse(head);
+    client_->OnReceiveResponse(std::move(head));
     client_->OnStartLoadingResponseBody(std::move(pipe.consumer_handle));
 
     if (total_bytes_to_send == 0) {
