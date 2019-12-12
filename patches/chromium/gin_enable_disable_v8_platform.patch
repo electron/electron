@@ -3,6 +3,8 @@ From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:47:44 -0700
 Subject: gin_enable_disable_v8_platform.patch
 
+We don't use gin to create the V8 platform, because we need to inject Node
+things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
 index ee74e6ea92c64d0e95a4988557b236667f5b7e42..c3ae4c6221686479d05800c51d17d581c095e397 100644

@@ -3,6 +3,11 @@ From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:47:12 -0700
 Subject: worker_context_will_destroy.patch
 
+This adds a hook for worker context destruction, which we use in Electron to
+shutdown node integration in the worker if relevant.
+
+An attempt to upstream this was made, but rejected:
+https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
 index 6002ce70bb173f441f269ea2dc6e61716c424196..2c372d68dace9c546eae3bdbd4994ec261a6fa22 100644

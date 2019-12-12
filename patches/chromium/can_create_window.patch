@@ -3,6 +3,10 @@ From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:45:32 -0700
 Subject: can_create_window.patch
 
+This adds a hook to the window creation flow so that Electron can intercede and
+potentially prevent a window from being created.
+
+TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
 index 6e38ffd5a29e09d6214fab4013c7f4f8287f17c4..30e3604d100bb16680e4236c48cc4f32cb25ac61 100644

@@ -3,6 +3,8 @@ From: Samuel Attard <sattard@slack-corp.com>
 Date: Mon, 22 Apr 2019 13:23:37 -0700
 Subject: refactor: allow embedder overriding of internal FS calls
 
+We use this to allow node's 'fs' module to read from ASAR files as if they were
+a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
 index 18acd9d2b64774efdb9261e69923a5ba320a7f0e..0f36697ce5ed0b5bb6df74ceca219574da7eea53 100644

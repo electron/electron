@@ -3,6 +3,8 @@ From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Wed, 8 May 2019 17:25:55 -0700
 Subject: network_service_allow_remote_certificate_verification_logic.patch
 
+This adds a callback from the network service that's used to implement
+session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
 index 0d00958c9d318b9d1f34c0f1c1be1f6d6fa35d17..1e2d8401083906b5a07c9044cf72ea6d49a9edaa 100644
