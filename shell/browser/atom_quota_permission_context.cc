@@ -4,6 +4,8 @@
 
 #include "shell/browser/atom_quota_permission_context.h"
 
+#include <utility>
+
 namespace electron {
 
 AtomQuotaPermissionContext::AtomQuotaPermissionContext() = default;
