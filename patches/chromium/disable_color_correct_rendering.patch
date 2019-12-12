@@ -220,10 +220,10 @@ index 30533e787515416723ec41095119871a02fa7805..2682fb11f2c0049c3f3be9a34a2b319b
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index f4038bc60baa9f8ffd7c9c6a8dd491f8920bf7f7..9b63e9c140d0c85ce42e715ad6530229a99dc10b 100644
+index afda4382cde0e00a8ed19983b498c57bdf3a1cfe..347165e1806425c6bd6fe9573834fa7fb42ccafa 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -199,6 +199,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -193,6 +193,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -232,10 +232,10 @@ index f4038bc60baa9f8ffd7c9c6a8dd491f8920bf7f7..9b63e9c140d0c85ce42e715ad6530229
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 6542d5761bc2fa18a73ac78c90863b7f27b5eedf..b99fa8528c6744af7452d3cf9c7c1c7b51429962 100644
+index 89a77a7c263eccbf4d6dd29bbfd7924647bd5f2e..db1201218322a3bb3955aeea6f1f2e74abc9b898 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -230,6 +230,7 @@
+@@ -228,6 +228,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
@@ -243,7 +243,7 @@ index 6542d5761bc2fa18a73ac78c90863b7f27b5eedf..b99fa8528c6744af7452d3cf9c7c1c7b
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -2974,6 +2975,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2988,6 +2989,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

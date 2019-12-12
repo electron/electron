@@ -7,7 +7,7 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
-index 743d1364bcd13e24ecbe5ced730161d15b8c3e93..a5529ac8841b79f230f0fa8eae2b3cb226beb7d7 100644
+index 9cc52238971a095421c3cde01a5df24a2f6f92cd..0216501dda1dc8b8fb4307785a0dab868bc3315a 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.h
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.h
 @@ -109,7 +109,9 @@ struct AXTextEdit {
@@ -50,7 +50,7 @@ index 743d1364bcd13e24ecbe5ced730161d15b8c3e93..a5529ac8841b79f230f0fa8eae2b3cb2
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 48beb5b150d487a574fadb6ae883021335c901d0..041ab1f23dc8f6c13ed0b3497c7ac1721bd5d9fb 100644
+index 9ed2e56e9ebad1f084074c37484f7f68c8f98460..91ec30df10337f96151e4b2ee1c3182048109de2 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -207,6 +207,7 @@
@@ -189,7 +189,7 @@ index 48beb5b150d487a574fadb6ae883021335c901d0..041ab1f23dc8f6c13ed0b3497c7ac172
  - (id)selectedTextMarkerRange {
    if (![self instanceActive])
      return nil;
-   return CreateTextMarkerRange(GetSelectedRange(*owner_));
+   return CreateTextMarkerRange(GetSelectedRange(*_owner));
  }
 +#endif
  
@@ -216,9 +216,9 @@ index 48beb5b150d487a574fadb6ae883021335c901d0..041ab1f23dc8f6c13ed0b3497c7ac172
        [[[NSMutableAttributedString alloc] initWithString:value] autorelease];
  
 +#ifndef MAS_BUILD
-   if (!owner_->IsTextOnlyObject()) {
-     AXPlatformRange ax_range(owner_->CreatePositionAt(0),
-                              owner_->CreatePositionAt(int{text.length()}));
+   if (!_owner->IsTextOnlyObject()) {
+     AXPlatformRange ax_range(_owner->CreatePositionAt(0),
+                              _owner->CreatePositionAt(int{text.length()}));
      AddMisspelledTextAttributes(ax_range, attributedValue);
    }
 +#endif

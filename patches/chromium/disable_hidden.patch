@@ -5,10 +5,10 @@ Subject: disable_hidden.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 729d35901a258045556fc81e0dd223219c7c0d77..065a20a4fad938f5578f5728c9f49595e83908e6 100644
+index fd91861198a0cd1724a8702ba436e63644d2360e..5d591ea96af1f26664fc39baf8fdc18938e7cf7a 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -647,6 +647,9 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -636,6 +636,9 @@ void RenderWidgetHostImpl::WasHidden() {
    if (is_hidden_)
      return;
  
