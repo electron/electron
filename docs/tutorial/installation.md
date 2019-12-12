@@ -89,16 +89,26 @@ The cache contains the version's official zip file as well as a checksum, stored
 a text file. A typical cache might look like this:
 
 ```sh
-├── electron-v1.7.9-darwin-x64.zip
-├── electron-v1.8.1-darwin-x64.zip
-├── electron-v1.8.2-beta.1-darwin-x64.zip
-├── electron-v1.8.2-beta.2-darwin-x64.zip
-├── electron-v1.8.2-beta.3-darwin-x64.zip
-├── SHASUMS256.txt-1.7.9
-├── SHASUMS256.txt-1.8.1
-├── SHASUMS256.txt-1.8.2-beta.1
-├── SHASUMS256.txt-1.8.2-beta.2
-├── SHASUMS256.txt-1.8.2-beta.3
+├── httpsgithub.comelectronelectronreleasesdownloadv1.7.9electron-v1.7.9-darwin-x64.zip
+│   └── electron-v1.7.9-darwin-x64.zip
+├── httpsgithub.comelectronelectronreleasesdownloadv1.7.9SHASUMS256.txt
+│   └── SHASUMS256.txt
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.1electron-v1.8.1-darwin-x64.zip
+│   └── electron-v1.8.1-darwin-x64.zip
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.1SHASUMS256.txt
+│   └── SHASUMS256.txt
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.1electron-v1.8.2-beta.1-darwin-x64.zip
+│   └── electron-v1.8.2-beta.1-darwin-x64.zip
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.1SHASUMS256.txt
+│   └── SHASUMS256.txt
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.2electron-v1.8.2-beta.2-darwin-x64.zip
+│   └── electron-v1.8.2-beta.2-darwin-x64.zip
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.2SHASUMS256.txt
+│   └── SHASUMS256.txt
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.3electron-v1.8.2-beta.3-darwin-x64.zip
+│   └── electron-v1.8.2-beta.3-darwin-x64.zip
+└── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.3SHASUMS256.txt
+    └── SHASUMS256.txt
 ```
 
 ## Skip binary download
