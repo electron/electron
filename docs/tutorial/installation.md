@@ -56,7 +56,7 @@ can do so by either providing a mirror or an existing cache directory.
 
 #### Mirror
 You can use environment variables to override the base URL, the path at which to
-look for Electron binaries, and the binary filename. The url used by `electron-download`
+look for Electron binaries, and the binary filename. The url used by `@electron/get`
 is composed as follows:
 
 ```plaintext
@@ -70,7 +70,7 @@ ELECTRON_MIRROR="https://cdn.npm.taobao.org/dist/electron/"
 ```
 
 #### Cache
-Alternatively, you can override the local cache. `electron-download` will cache
+Alternatively, you can override the local cache. `@electron/get` will cache
 downloaded binaries in a local directory to not stress your network. You can use
 that cache folder to provide custom builds of Electron or to avoid making contact
 with the network at all.
