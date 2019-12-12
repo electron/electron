@@ -20,7 +20,6 @@
 #include "extensions/browser/component_extension_resource_manager.h"
 #include "extensions/browser/core_extensions_browser_api_provider.h"
 #include "extensions/browser/event_router.h"
-#include "extensions/browser/mojo/interface_registration.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
@@ -215,9 +214,7 @@ void AtomExtensionsBrowserClient::RegisterExtensionInterfaces(
     service_manager::BinderRegistryWithArgs<content::RenderFrameHost*>*
         registry,
     content::RenderFrameHost* render_frame_host,
-    const extensions::Extension* extension) const {
-  RegisterInterfacesForExtension(registry, render_frame_host, extension);
-}
+    const extensions::Extension* extension) const {}
 
 std::unique_ptr<extensions::RuntimeAPIDelegate>
 AtomExtensionsBrowserClient::CreateRuntimeAPIDelegate(
