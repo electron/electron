@@ -2090,14 +2090,6 @@ workflows:
           requires:
             - mac-checkout-fast
 
-      - osx-debug:
-          requires:
-            - mac-checkout-fast
-
-      - osx-debug-gn-check:
-          requires:
-            - mac-checkout-fast
-
       - osx-testing-gn-check:
           requires:
             - mac-checkout-fast
@@ -2107,14 +2099,6 @@ workflows:
             - osx-testing
 
       - mas-testing:
-          requires:
-            - mac-checkout-fast
-
-      - mas-debug:
-          requires:
-            - mac-checkout-fast
-
-      - mas-debug-gn-check:
           requires:
             - mac-checkout-fast
 
