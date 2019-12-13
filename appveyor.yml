@@ -78,7 +78,7 @@ build_script:
       "https://github.com/electron/electron"
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
-        gclient sync --with_branch_heads --with_tags --ignore_locks --break_repo_locks
+        $env:RUN_GCLIENT_SYNC="true"
       } else {
         cd src\electron
         node script\generate-deps-hash.js
@@ -92,14 +92,20 @@ build_script:
           python src/electron/script/update-external-binaries.py
         } else {    
           # file does not exist, gclient sync, then zip
-          gclient sync --with_branch_heads --with_tags --ignore_locks --break_repo_locks
+          $env:RUN_GCLIENT_SYNC="true"
           if ($env:TARGET_ARCH -ne 'ia32') {
-            # archive current source for future use 
-            # only run on x64/woa to avoid contention saving
-            if ($(7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\WebKit\LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30;$LASTEXITCODE -ne 0)) {
-              Write-warning "Could not save source to shared drive; continuing anyway"
-            }
+            # only save on x64/woa to avoid contention saving
+            $env:SAVE_GCLIENT_SRC="true"
           }
+        }
+      }
+  - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags --ignore_locks)
+  - ps: >-
+      if ($env:SAVE_GCLIENT_SRC -eq 'true') {
+        # archive current source for future use 
+        # only run on x64/woa to avoid contention saving
+        if ($(7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\WebKit\LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30;$LASTEXITCODE -ne 0)) {
+          Write-warning "Could not save source to shared drive; continuing anyway"
         }
       }
   - cd src
