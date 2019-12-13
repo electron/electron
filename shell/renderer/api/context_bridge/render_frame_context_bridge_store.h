@@ -58,7 +58,7 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
   // proxy maps are weak globals, i.e. these are not retained beyond
   // there normal JS lifetime.  You must check IsEmpty()
 
-  int32_t routing_id_;
+  const int32_t routing_id_;
 
   // object_identity ==> [from_value, proxy_value]
   std::map<int, WeakGlobalPairNode*> proxy_map_;
