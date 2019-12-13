@@ -3,6 +3,7 @@ From: deepak1556 <hop2deep@gmail.com>
 Date: Fri, 29 Nov 2019 16:08:14 -0800
 Subject: feat: allow disabling blink scheduler throttling per RenderView
 
+This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
 index eba0e7ff3344f571ca827f06615f0a4201ada435..f31f39afcdeb65aa4033045ac49cc7e3625a3ac8 100644

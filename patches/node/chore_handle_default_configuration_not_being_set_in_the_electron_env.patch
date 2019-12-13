@@ -3,6 +3,10 @@ From: Samuel Attard <sattard@slack-corp.com>
 Date: Tue, 23 Jul 2019 11:36:48 -0700
 Subject: chore: handle default_configuration not being set in the electron env
 
+We don't set the `default_configuration` key in our config.gypi, this allows
+the tests to run in spite of that.
+
+TODO(marshallofsound/nornagon): Just add this key to config.gypi.
 
 diff --git a/test/common/index.js b/test/common/index.js
 index 00ebd283a0c3e960de2a7c4e3748561c499eb820..2ebec24f9e1f53306882e827a17925201cad0ea6 100644

@@ -3,6 +3,15 @@ From: Ales Pergl <alpergl@microsoft.com>
 Date: Thu, 20 Sep 2018 17:44:29 -0700
 Subject: build_gn.patch
 
+These are variables we add to the root BUILDCONFIG so that they're available
+everywhere, without having to import("//electron/.../flags.gni").
+
+Additionally, we add the `:mas_build` config to every compiled file so that
+the `MAS_BUILD` #define is available everywhere. This produces fewer patch
+conflicts when upgrading than it would if we added a specific config dependency
+only to those targets which had MAS_BUILD-relevant content in them. The
+tradeoff is that switching from MAS_BUILD to !MAS_BUILD or vice-versa will
+rebuild the entire tree.
 
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
 index f89e7e831b79f82bd11a5dd8cee6ab49d8de724e..f8a611bf0676ce323cdbb5d639333df9875dd0ca 100644

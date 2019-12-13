@@ -3,6 +3,7 @@ From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Tue, 26 Feb 2019 17:07:45 -0800
 Subject: build: add GN build files
 
+This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644

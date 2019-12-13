@@ -3,6 +3,10 @@ From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:46:53 -0700
 Subject: web_contents.patch
 
+This allows overriding the RenderViewHostDelegateView of a WebContents, which
+is needed for OSR.
+
+Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
 index 565b430d05c7188edf08df6bb334d9f865f11e65..14827b17504ead746ce2f9fce82f2e9530a824e4 100644

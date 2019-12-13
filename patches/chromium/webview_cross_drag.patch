@@ -3,6 +3,9 @@ From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:47:04 -0700
 Subject: webview_cross_drag.patch
 
+This allows dragging and dropping between <webview>s.
+
+Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
 index 75972bb7f6ccfe5cf7d1bd78e154f7835312fda1..5368aafddd91cc75075700c8f93e3d7ea8f6435b 100644
