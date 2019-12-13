@@ -12,11 +12,12 @@
 
 namespace electron {
 
-NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
-                                   network::mojom::URLLoaderRequest loader,
-                                   network::mojom::URLLoaderClientPtr client,
-                                   v8::Isolate* isolate,
-                                   v8::Local<v8::Object> emitter)
+NodeStreamLoader::NodeStreamLoader(
+    network::ResourceResponseHead head,
+    network::mojom::URLLoaderRequest loader,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> emitter)
     : binding_(this, std::move(loader)),
       client_(std::move(client)),
       isolate_(isolate),
@@ -53,7 +54,6 @@ void NodeStreamLoader::Start(network::ResourceResponseHead head) {
   }
 
   producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
-
   client_->OnReceiveResponse(head);
   client_->OnStartLoadingResponseBody(std::move(consumer));
 

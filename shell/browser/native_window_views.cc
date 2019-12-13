@@ -174,7 +174,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   params.remove_standard_frame = !has_frame();
 
   if (transparent())
-    params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
+    params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
 
   // The given window is most likely not rectangular since it uses
   // transparency and has no standard frame, don't show a shadow for it.

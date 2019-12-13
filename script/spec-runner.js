@@ -208,7 +208,7 @@ async function runMainProcessElectronTests () {
     stdio: 'inherit'
   })
   if (status !== 0) {
-    const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString()
+    const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : `${status}`
     console.log(`${fail} Electron tests failed with code ${textStatus}.`)
     process.exit(1)
   }

@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Mon, 2 Dec 2019 17:25:38 -0800
+Subject: refactor: TransferrableModule is deprecated, use CompiledWasmModule
+ instead
+
+This will be upstreamed to nodejs/node
+
+diff --git a/src/node_messaging.cc b/src/node_messaging.cc
+index 19065fdb7d1be5adb0f521dd27df08e5263fa40d..de92a9cc3d8cb57c2ce2a315f868b01ea9aba368 100644
+--- a/src/node_messaging.cc
++++ b/src/node_messaging.cc
+@@ -58,7 +58,7 @@ class DeserializerDelegate : public ValueDeserializer::Delegate {
+       Environment* env,
+       const std::vector<MessagePort*>& message_ports,
+       const std::vector<Local<SharedArrayBuffer>>& shared_array_buffers,
+-      const std::vector<WasmModuleObject::TransferrableModule>& wasm_modules)
++      const std::vector<v8::CompiledWasmModule>& wasm_modules)
+       : message_ports_(message_ports),
+         shared_array_buffers_(shared_array_buffers),
+         wasm_modules_(wasm_modules) {}
+@@ -82,7 +82,7 @@ class DeserializerDelegate : public ValueDeserializer::Delegate {
+   MaybeLocal<WasmModuleObject> GetWasmModuleFromId(
+       Isolate* isolate, uint32_t transfer_id) override {
+     CHECK_LE(transfer_id, wasm_modules_.size());
+-    return WasmModuleObject::FromTransferrableModule(
++    return WasmModuleObject::FromCompiledModule(
+         isolate, wasm_modules_[transfer_id]);
+   }
+ 
+@@ -91,7 +91,7 @@ class DeserializerDelegate : public ValueDeserializer::Delegate {
+  private:
+   const std::vector<MessagePort*>& message_ports_;
+   const std::vector<Local<SharedArrayBuffer>>& shared_array_buffers_;
+-  const std::vector<WasmModuleObject::TransferrableModule>& wasm_modules_;
++  const std::vector<v8::CompiledWasmModule>& wasm_modules_;
+ };
+ 
+ }  // anonymous namespace
+@@ -181,7 +181,7 @@ void Message::AddMessagePort(std::unique_ptr<MessagePortData>&& data) {
+   message_ports_.emplace_back(std::move(data));
+ }
+ 
+-uint32_t Message::AddWASMModule(WasmModuleObject::TransferrableModule&& mod) {
++uint32_t Message::AddWASMModule(v8::CompiledWasmModule&& mod) {
+   wasm_modules_.emplace_back(std::move(mod));
+   return wasm_modules_.size() - 1;
+ }
+@@ -264,7 +264,7 @@ class SerializerDelegate : public ValueSerializer::Delegate {
+ 
+   Maybe<uint32_t> GetWasmModuleTransferId(
+       Isolate* isolate, Local<WasmModuleObject> module) override {
+-    return Just(msg_->AddWASMModule(module->GetTransferrableModule()));
++    return Just(msg_->AddWASMModule(module->GetCompiledModule()));
+   }
+ 
+   void Finish() {
+diff --git a/src/node_messaging.h b/src/node_messaging.h
+index 054521b0563c4256f65d6f01eeeb108e3a515d86..53c766da554452c635a3bdfb38b75c0492bbfb5e 100644
+--- a/src/node_messaging.h
++++ b/src/node_messaging.h
+@@ -58,7 +58,7 @@ class Message : public MemoryRetainer {
+   void AddMessagePort(std::unique_ptr<MessagePortData>&& data);
+   // Internal method of Message that is called when a new WebAssembly.Module
+   // object is encountered in the incoming value's structure.
+-  uint32_t AddWASMModule(v8::WasmModuleObject::TransferrableModule&& mod);
++  uint32_t AddWASMModule(v8::CompiledWasmModule&& mod);
+ 
+   // The MessagePorts that will be transferred, as recorded by Serialize().
+   // Used for warning user about posting the target MessagePort to itself,
+@@ -77,7 +77,7 @@ class Message : public MemoryRetainer {
+   std::vector<MallocedBuffer<char>> array_buffer_contents_;
+   std::vector<SharedArrayBufferMetadataReference> shared_array_buffers_;
+   std::vector<std::unique_ptr<MessagePortData>> message_ports_;
+-  std::vector<v8::WasmModuleObject::TransferrableModule> wasm_modules_;
++  std::vector<v8::CompiledWasmModule> wasm_modules_;
+ 
+   friend class MessagePort;
+ };

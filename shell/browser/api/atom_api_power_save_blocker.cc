@@ -9,7 +9,7 @@
 #include "base/bind_helpers.h"
 #include "base/task/post_task.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "content/public/common/service_manager_connection.h"
+#include "content/public/browser/system_connector.h"
 #include "gin/dictionary.h"
 #include "gin/function_template.h"
 #include "services/device/public/mojom/constants.mojom.h"
@@ -87,17 +87,16 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
 
 device::mojom::WakeLock* PowerSaveBlocker::GetWakeLock() {
   if (!wake_lock_) {
-    device::mojom::WakeLockProviderPtr wake_lock_provider;
-    DCHECK(content::ServiceManagerConnection::GetForProcess());
-    auto* connector =
-        content::ServiceManagerConnection::GetForProcess()->GetConnector();
-    connector->BindInterface(device::mojom::kServiceName,
-                             mojo::MakeRequest(&wake_lock_provider));
+    mojo::Remote<device::mojom::WakeLockProvider> wake_lock_provider;
+    DCHECK(content::GetSystemConnector());
+    content::GetSystemConnector()->Connect(
+        device::mojom::kServiceName,
+        wake_lock_provider.BindNewPipeAndPassReceiver());
 
     wake_lock_provider->GetWakeLockWithoutContext(
         device::mojom::WakeLockType::kPreventAppSuspension,
         device::mojom::WakeLockReason::kOther, ELECTRON_PRODUCT_NAME,
-        mojo::MakeRequest(&wake_lock_));
+        wake_lock_.BindNewPipeAndPassReceiver());
   }
   return wake_lock_.get();
 }

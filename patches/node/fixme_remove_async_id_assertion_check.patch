@@ -5,10 +5,10 @@ Subject: FIXME: remove async_id assertion check
 
 
 diff --git a/src/api/callback.cc b/src/api/callback.cc
-index 52a8da35b671d196331b858ba46be04aecf1e0be..43ccfafd9f2c85e23a9ea6277e88e4864e287905 100644
+index e6098d5921a038063bf8255f8af6f000becf76a0..3c518870c9c8d92f3dfcd6c270f5e023e3b69633 100644
 --- a/src/api/callback.cc
 +++ b/src/api/callback.cc
-@@ -103,12 +103,14 @@ void InternalCallbackScope::Close() {
+@@ -104,12 +104,14 @@ void InternalCallbackScope::Close() {
      MicrotasksScope::PerformCheckpoint(env_->isolate());
    }
  

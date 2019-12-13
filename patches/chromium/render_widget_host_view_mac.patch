@@ -5,7 +5,7 @@ Subject: render_widget_host_view_mac.patch
 
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index d8de080eb6a30f16282661941b9a95da4fa41d70..326c5a13f6924643c699ca3cc2f98262a21fd907 100644
+index 320287e7cc5a2f11f135494a11e0a51d3818d41c..e88ed7afb6ea20c7a5cebba6cfe8c0b5fef1a52c 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -153,6 +153,11 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -66,7 +66,7 @@ index d8de080eb6a30f16282661941b9a95da4fa41d70..326c5a13f6924643c699ca3cc2f98262
    return validAttributesForMarkedText_.get();
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 4549c3d871d4c07333a557e311e38755c116fe45..de722efe61cb6823e62f1101b5aa3447f6795687 100644
+index 275caf58aa73b1a775554753ad1ffe55fd93d45d..b6897c88c2c433e73f092f2ccebf29f097db35b0 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -63,6 +63,7 @@

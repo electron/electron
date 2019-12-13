@@ -85,7 +85,7 @@ namespace predictors {
 // error. Probably upstream the constructor should be moved to
 // preconnect_manager.cc.
 PreconnectRequest::PreconnectRequest(
-    const GURL& origin,
+    const url::Origin& origin,
     int num_sockets,
     const net::NetworkIsolationKey& network_isolation_key)
     : origin(origin),
@@ -544,7 +544,7 @@ void Session::DownloadURL(const GURL& url) {
   auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
-      url, MISSING_TRAFFIC_ANNOTATION);
+      url, MISSING_TRAFFIC_ANNOTATION, net::NetworkIsolationKey());
   download_manager->DownloadUrl(std::move(download_params));
 }
 
@@ -638,7 +638,8 @@ static void StartPreconnectOnUI(
     const GURL& url,
     int num_sockets_to_preconnect) {
   std::vector<predictors::PreconnectRequest> requests = {
-      {url.GetOrigin(), num_sockets_to_preconnect, net::NetworkIsolationKey()}};
+      {url::Origin::Create(url), num_sockets_to_preconnect,
+       net::NetworkIsolationKey()}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
