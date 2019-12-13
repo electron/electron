@@ -598,6 +598,25 @@ void WebContents::WebContentsCreated(content::WebContents* source_contents,
   tracker->frame_name = frame_name;
 }
 
+bool WebContents::ShouldCreateWebContents(
+    content::WebContents* web_contents,
+    content::RenderFrameHost* opener,
+    content::SiteInstance* source_site_instance,
+    int32_t route_id,
+    int32_t main_frame_route_id,
+    int32_t main_frame_widget_route_id,
+    content::mojom::WindowContainerType window_container_type,
+    const GURL& opener_url,
+    const std::string& frame_name,
+    const GURL& target_url,
+    const std::string& partition_id,
+    content::SessionStorageNamespace* session_storage_namespace) {
+  if (Emit("-will-add-new-contents", target_url, frame_name)) {
+    return false;
+  }
+  return true;
+}
+
 void WebContents::AddNewContents(
     content::WebContents* source,
     std::unique_ptr<content::WebContents> new_contents,
