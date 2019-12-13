@@ -3,6 +3,7 @@ From: Nitish Sakhawalkar <nitsakh@icloud.com>
 Date: Thu, 11 Apr 2019 11:50:49 -0700
 Subject: fix: export DebugOptions
 
+This exports DebugOptions so we can parse args like `--inspect-brk`.
 
 diff --git a/src/node_options.cc b/src/node_options.cc
 index d53ab2a4bfe87321e899b431eac262223e532335..c0c15a88c028d9c70081aa75fabf63d1d78014e6 100644

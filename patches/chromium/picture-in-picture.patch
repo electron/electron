@@ -3,6 +3,10 @@ From: Heilig Benedek <benecene@gmail.com>
 Date: Sat, 10 Aug 2019 00:41:50 +0200
 Subject: feat: enable picture in picture mode for video players
 
+These files are needed to implement PiP, but the Electron build patches out
+chrome's generated resources for our own. This updates the #include so that we
+don't get errors for Chrome's generated resources, which are non-existent
+because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
 index 8e4deafa1746eeb48802a0503fefb37bedb33d04..127c62efd2327e1f3f09e9b93a0b8344e2714f80 100644

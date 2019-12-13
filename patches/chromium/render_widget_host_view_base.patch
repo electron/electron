@@ -3,6 +3,7 @@ From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:46:21 -0700
 Subject: render_widget_host_view_base.patch
 
+... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
 index 394b9ec0b7409465b0f9700a2d4a1eb1cf538e1f..a34dcdd124746b04d116e207b10395fc02649ec1 100644

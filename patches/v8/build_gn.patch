@@ -3,6 +3,10 @@ From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Tue, 16 Apr 2019 10:43:04 -0700
 Subject: build_gn.patch
 
+We force V8 into 'shared library' mode so that it exports its symbols, which is
+necessary for native modules to load.
+
+Also, some fixes relating to mksnapshot on ARM.
 
 diff --git a/BUILD.gn b/BUILD.gn
 index 3a7a9736f8859abc0204f02edca040fda7e22e9d..0264637ec51c26aa924e6809e313678e9b4ac8ea 100644

@@ -3,6 +3,8 @@ From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:45:11 -0700
 Subject: blink_world_context.patch
 
+This exposes a method for obtaining a reference to an isolated world, which is
+otherwise not available in the Blink API.
 
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
 index 05a33b9a2cbed57e4e037428397b59f30f83ce66..0cd308b38a158a016b099beed6a31fa1c5a487ad 100644

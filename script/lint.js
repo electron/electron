@@ -184,7 +184,7 @@ const LINTERS = [ {
     let ok = true
     filenames.filter(f => f.endsWith('.patch')).forEach(f => {
       const patchText = fs.readFileSync(f, 'utf8')
-      if (/^Subject: .*$\s+^diff/.test(patchText)) {
+      if (/^Subject: .*$\s+^diff/m.test(patchText)) {
         console.warn(`Patch file '${f}' has no description. Every patch must contain a justification for why the patch exists and the plan for its removal.`)
         ok = false
       }
@@ -246,7 +246,7 @@ async function findFiles (args, linter) {
       return []
     }
   } else if (args.only) {
-    whitelist = new Set(args._)
+    whitelist = new Set(args._.map(p => path.resolve(p)))
   }
 
   // accumulate the raw list of files

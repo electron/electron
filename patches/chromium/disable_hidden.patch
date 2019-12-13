@@ -3,6 +3,7 @@ From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:45:47 -0700
 Subject: disable_hidden.patch
 
+Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
 index a91a66bca29de8dc1e719f25c276fd33f2e4da20..3a20fad22d4e54192e1d9e4163ed4dc7d55d3324 100644
