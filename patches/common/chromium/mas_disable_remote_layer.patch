@@ -1,0 +1,186 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:48:49 -0700
+Subject: mas_disable_remote_layer.patch
+
+Disable remote layer APIs (CAContext and CALayerHost) for MAS build.
+
+diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
+index 5d68c4f9944b..d4869147f74f 100644
+--- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
++++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
+@@ -16,7 +16,9 @@
+ #include "ui/gl/gl_surface.h"
+ #include "ui/gl/gpu_switching_observer.h"
+ 
++#ifndef MAS_BUILD
+ @class CAContext;
++#endif
+ @class CALayer;
+ 
+ namespace ui {
+@@ -84,7 +86,9 @@ class ImageTransportSurfaceOverlayMac : public gl::GLSurface,
+   base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
+ 
+   bool use_remote_layer_api_;
++#ifndef MAS_BUILD
+   base::scoped_nsobject<CAContext> ca_context_;
++#endif
+   std::unique_ptr<ui::CALayerTreeCoordinator> ca_layer_tree_coordinator_;
+ 
+   gfx::Size pixel_size_;
+diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
+index 3884df87a49f..0604876a93ec 100644
+--- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
++++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
+@@ -56,6 +56,7 @@
+ }
+ 
+ bool ImageTransportSurfaceOverlayMac::Initialize(gl::GLSurfaceFormat format) {
++#ifndef MAS_BUILD
+   // Create the CAContext to send this to the GPU process, and the layer for
+   // the context.
+   if (use_remote_layer_api_) {
+@@ -64,6 +65,7 @@
+         [CAContext contextWithCGSConnection:connection_id options:@{}] retain]);
+     [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
+   }
++#endif
+   return true;
+ }
+ 
+@@ -122,7 +124,9 @@
+                          "GLImpl", static_cast<int>(gl::GetGLImplementation()),
+                          "width", pixel_size_.width());
+     if (use_remote_layer_api_) {
++#ifndef MAS_BUILD
+       params.ca_layer_params.ca_context_id = [ca_context_ contextId];
++#endif
+     } else {
+       IOSurfaceRef io_surface =
+           ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
+diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
+index 60abe639bd9c..c38eed5fbdef 100644
+--- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
++++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
+@@ -98,6 +98,7 @@ - (void)setContentsChanged;
+ }
+ 
+ void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
++#ifndef MAS_BUILD
+   // Early-out if the remote layer has not changed.
+   if ([remote_layer_ contextId] == ca_context_id)
+     return;
+@@ -122,6 +123,9 @@ - (void)setContentsChanged;
+     [io_surface_layer_ removeFromSuperlayer];
+     io_surface_layer_.reset();
+   }
++#else
++  NOTREACHED() << "Remote layer is being used in MAS build";
++#endif
+ }
+ 
+ void DisplayCALayerTree::GotIOSurfaceFrame(
+diff --git a/ui/base/cocoa/remote_layer_api.h b/ui/base/cocoa/remote_layer_api.h
+index 291a11b4d13b..c35919922fa2 100644
+--- a/ui/base/cocoa/remote_layer_api.h
++++ b/ui/base/cocoa/remote_layer_api.h
+@@ -13,6 +13,7 @@
+ 
+ #include "ui/base/ui_base_export.h"
+ 
++#ifndef MAS_BUILD
+ // The CGSConnectionID is used to create the CAContext in the process that is
+ // going to share the CALayers that it is rendering to another process to
+ // display.
+@@ -50,6 +51,8 @@ typedef uint32_t CAContextID;
+ 
+ #endif // __OBJC__
+ 
++#endif // MAS_BUILD
++
+ namespace ui {
+ 
+ // This function will check if all of the interfaces listed above are supported
+diff --git a/ui/base/cocoa/remote_layer_api.mm b/ui/base/cocoa/remote_layer_api.mm
+index bbaf9f466f49..8c846ce9523a 100644
+--- a/ui/base/cocoa/remote_layer_api.mm
++++ b/ui/base/cocoa/remote_layer_api.mm
+@@ -12,6 +12,7 @@
+ namespace ui {
+ 
+ bool RemoteLayerAPISupported() {
++#ifndef MAS_BUILD
+   static bool disabled_at_command_line =
+       base::CommandLine::ForCurrentProcess()->HasSwitch(
+           switches::kDisableRemoteCoreAnimation);
+@@ -46,6 +47,9 @@ bool RemoteLayerAPISupported() {
+ 
+   // If everything is there, we should be able to use the API.
+   return true;
++#else
++  return false;
++#endif  // MAS_BUILD
+ }
+ 
+ }  // namespace
+diff --git a/ui/views/cocoa/bridged_native_widget_host_impl.h b/ui/views/cocoa/bridged_native_widget_host_impl.h
+index 2214108d4c75..f37b520f49ed 100644
+--- a/ui/views/cocoa/bridged_native_widget_host_impl.h
++++ b/ui/views/cocoa/bridged_native_widget_host_impl.h
+@@ -426,11 +426,13 @@ class VIEWS_EXPORT BridgedNativeWidgetHostImpl
+   // Display link for getting vsync info for |display_|.
+   scoped_refptr<ui::DisplayLinkMac> display_link_;
+ 
++#ifndef MAS_BUILD
+   // Structure to avoid sending IOSurface mach ports over mojo.
+   // https://crbug.com/942213
+   class IOSurfaceToRemoteLayerInterceptor;
+   std::unique_ptr<IOSurfaceToRemoteLayerInterceptor>
+       io_surface_to_remote_layer_interceptor_;
++#endif
+ 
+   // The geometry of the window and its contents view, in screen coordinates.
+   gfx::Rect window_bounds_in_screen_;
+diff --git a/ui/views/cocoa/bridged_native_widget_host_impl.mm b/ui/views/cocoa/bridged_native_widget_host_impl.mm
+index 37206fa1e261..8004f676b09c 100644
+--- a/ui/views/cocoa/bridged_native_widget_host_impl.mm
++++ b/ui/views/cocoa/bridged_native_widget_host_impl.mm
+@@ -208,6 +208,8 @@ bool PositionWindowInScreenCoordinates(Widget* widget,
+ 
+ }  // namespace
+ 
++#ifndef MAS_BUILD
++
+ // A gfx::CALayerParams may pass the content to be drawn across processes via
+ // either an IOSurface (sent as mach port) or a CAContextID (which is an
+ // integer). For historical reasons, software compositing uses IOSurfaces.
+@@ -262,6 +264,8 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+   base::scoped_nsobject<CALayer> io_surface_layer_;
+ };
+ 
++#endif  // MAS_BUILD
++
+ // static
+ BridgedNativeWidgetHostImpl* BridgedNativeWidgetHostImpl::GetFromNativeWindow(
+     gfx::NativeWindow native_window) {
+@@ -1413,6 +1417,7 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+   const gfx::CALayerParams* ca_layer_params =
+       compositor_->widget()->GetCALayerParams();
+   if (ca_layer_params) {
++#ifndef MAS_BUILD
+     // Replace IOSurface mach ports with CAContextIDs only when using the
+     // out-of-process bridge (to reduce risk, because this workaround is being
+     // merged to late-life-cycle release branches) and when an IOSurface
+@@ -1429,8 +1434,11 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+           &updated_ca_layer_params);
+       bridge_ptr_->SetCALayerParams(updated_ca_layer_params);
+     } else {
++#endif  // MAS_BUILD
+       bridge()->SetCALayerParams(*ca_layer_params);
++#ifndef MAS_BUILD
+     }
++#endif  // MAS_BUILD
+   }
+ 
+   // Take this opportunity to update the VSync parameters, if needed.
