@@ -903,6 +903,10 @@ bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
 }
 
+SkColor NativeWindowViews::GetBackgroundColor() {
+  return root_view_->background()->get_color();
+}
+
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
   // web views' background color.
   root_view_->SetBackground(views::CreateSolidBackground(background_color));
