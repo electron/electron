@@ -19,7 +19,7 @@ class AtomQuotaPermissionContext : public content::QuotaPermissionContext {
   // content::QuotaPermissionContext:
   void RequestQuotaPermission(const content::StorageQuotaParams& params,
                               int render_process_id,
-                              const PermissionCallback& callback) override;
+                              PermissionCallback callback) override;
 
  private:
   ~AtomQuotaPermissionContext() override;

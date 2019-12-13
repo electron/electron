@@ -13,7 +13,7 @@
 namespace electron {
 
 NodeStreamLoader::NodeStreamLoader(
-    network::ResourceResponseHead head,
+    network::mojom::URLResponseHeadPtr head,
     network::mojom::URLLoaderRequest loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     v8::Isolate* isolate,
@@ -44,7 +44,7 @@ NodeStreamLoader::~NodeStreamLoader() {
   }
 }
 
-void NodeStreamLoader::Start(network::ResourceResponseHead head) {
+void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
   MojoResult rv = mojo::CreateDataPipe(nullptr, &producer, &consumer);
@@ -54,7 +54,7 @@ void NodeStreamLoader::Start(network::ResourceResponseHead head) {
   }
 
   producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
-  client_->OnReceiveResponse(head);
+  client_->OnReceiveResponse(std::move(head));
   client_->OnStartLoadingResponseBody(std::move(consumer));
 
   auto weak = weak_factory_.GetWeakPtr();

@@ -14,8 +14,8 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
-#include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
+#include "services/network/public/mojom/url_response_head.mojom.h"
 #include "v8/include/v8.h"
 
 namespace electron {
@@ -30,7 +30,7 @@ namespace electron {
 // the passed |Buffer| is alive while writing data to pipe.
 class NodeStreamLoader : public network::mojom::URLLoader {
  public:
-  NodeStreamLoader(network::ResourceResponseHead head,
+  NodeStreamLoader(network::mojom::URLResponseHeadPtr head,
                    network::mojom::URLLoaderRequest loader,
                    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
                    v8::Isolate* isolate,
@@ -41,7 +41,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
 
   using EventCallback = base::RepeatingCallback<void()>;
 
-  void Start(network::ResourceResponseHead head);
+  void Start(network::mojom::URLResponseHeadPtr head);
   void NotifyReadable();
   void NotifyComplete(int result);
   void ReadMore();

@@ -30,11 +30,11 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
   void Shutdown() override;
   bool DetermineDownloadTarget(
       download::DownloadItem* download,
-      const content::DownloadTargetCallback& callback) override;
+      content::DownloadTargetCallback* callback) override;
   bool ShouldOpenDownload(
       download::DownloadItem* download,
-      const content::DownloadOpenDelayedCallback& callback) override;
-  void GetNextId(const content::DownloadIdCallback& callback) override;
+      content::DownloadOpenDelayedCallback callback) override;
+  void GetNextId(content::DownloadIdCallback callback) override;
 
  private:
   // Get the save path set on the associated api::DownloadItem object
@@ -43,12 +43,12 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
                                 file_dialog::DialogSettings* settings);
 
   void OnDownloadPathGenerated(uint32_t download_id,
-                               const content::DownloadTargetCallback& callback,
+                               content::DownloadTargetCallback callback,
                                const base::FilePath& default_path);
 
   void OnDownloadSaveDialogDone(
       uint32_t download_id,
-      const content::DownloadTargetCallback& download_callback,
+      content::DownloadTargetCallback download_callback,
       gin_helper::Dictionary result);
 
   content::DownloadManager* download_manager_;

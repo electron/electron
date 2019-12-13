@@ -14,8 +14,8 @@
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/url_request/url_request_job_factory.h"
-#include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
+#include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/common/gin_helper/dictionary.h"
 
 namespace electron {
@@ -72,11 +72,11 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
  private:
   static void StartLoadingBuffer(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-      network::ResourceResponseHead head,
+      network::mojom::URLResponseHeadPtr head,
       const gin_helper::Dictionary& dict);
   static void StartLoadingString(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-      network::ResourceResponseHead head,
+      network::mojom::URLResponseHeadPtr head,
       const gin_helper::Dictionary& dict,
       v8::Isolate* isolate,
       v8::Local<v8::Value> response);
@@ -84,7 +84,7 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
       network::ResourceRequest request,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-      network::ResourceResponseHead head,
+      network::mojom::URLResponseHeadPtr head,
       const gin_helper::Dictionary& dict,
       v8::Isolate* isolate,
       v8::Local<v8::Value> response);
@@ -97,13 +97,13 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   static void StartLoadingStream(
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-      network::ResourceResponseHead head,
+      network::mojom::URLResponseHeadPtr head,
       const gin_helper::Dictionary& dict);
 
   // Helper to send string as response.
   static void SendContents(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-      network::ResourceResponseHead head,
+      network::mojom::URLResponseHeadPtr head,
       std::string data);
 
   // TODO(zcbenz): This comes from extensions/browser/extension_protocols.cc
