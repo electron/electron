@@ -4,7 +4,5 @@ app.on('ready', () => {
   process.stdout.write(JSON.stringify(ipcMain.eventNames()))
   process.stdout.end()
 
-  setImmediate(() => {
-    app.quit()
-  })
+  app.quit()
 })
