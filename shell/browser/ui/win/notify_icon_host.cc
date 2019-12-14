@@ -78,28 +78,18 @@ NotifyIconHost::~NotifyIconHost() {
 
   if (atom_)
     UnregisterClass(MAKEINTATOM(atom_), instance_);
-
-  for (NotifyIcon* ptr : notify_icons_)
-    delete ptr;
 }
 
 NotifyIcon* NotifyIconHost::CreateNotifyIcon() {
-  NotifyIcon* notify_icon =
-      new NotifyIcon(this, NextIconId(), window_, kNotifyIconMessage);
-  notify_icons_.push_back(notify_icon);
-  return notify_icon;
+  const auto id = NextIconId();
+  auto result = base::TryEmplace(notify_icons_, id, this, id, window_,
+                                 kNotifyIconMessage);
+  return &*result.first;
 }
 
 void NotifyIconHost::Remove(NotifyIcon* icon) {
-  NotifyIcons::iterator i(
-      std::find(notify_icons_.begin(), notify_icons_.end(), icon));
-
-  if (i == notify_icons_.end()) {
-    NOTREACHED();
-    return;
-  }
-
-  notify_icons_.erase(i);
+  const auto n_removed = notify_icons_.erase(icon->icon_id());
+  DCHECK(n_removed > 0);
 }
 
 LRESULT CALLBACK NotifyIconHost::WndProcStatic(HWND hwnd,
@@ -120,42 +110,33 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
                                          LPARAM lparam) {
   if (message == taskbar_created_message_) {
     // We need to reset all of our icons because the taskbar went away.
-    for (NotifyIcons::const_iterator i(notify_icons_.begin());
-         i != notify_icons_.end(); ++i) {
-      NotifyIcon* win_icon = static_cast<NotifyIcon*>(*i);
-      win_icon->ResetIcon();
+    for (auto it : notify_icons_) {
+      it.second.ResetIcon();
     }
     return TRUE;
-  } else if (message == kNotifyIconMessage) {
-    NotifyIcon* win_icon = NULL;
+  }
 
-    // Find the selected status icon.
-    for (NotifyIcons::const_iterator i(notify_icons_.begin());
-         i != notify_icons_.end(); ++i) {
-      NotifyIcon* current_win_icon = static_cast<NotifyIcon*>(*i);
-      if (current_win_icon->icon_id() == wparam) {
-        win_icon = current_win_icon;
-        break;
-      }
-    }
+  if (message == kNotifyIconMessage) {
+    const auto icon_id = wparam;
 
-    // It is possible for this procedure to be called with an obsolete icon
-    // id.  In that case we should just return early before handling any
-    // actions.
-    if (!win_icon)
+    // It is possible for this procedure to be called with an obsolete icon id.
+    // In that case we should just return early before handling any actions.
+    auto it = notify_icons_.find(icon_id);
+    if (it == notify_icons_.end())
       return TRUE;
 
+    NotifyIcon& win_icon = it.second;
     switch (lparam) {
       case NIN_BALLOONSHOW:
-        win_icon->NotifyBalloonShow();
+        win_icon.NotifyBalloonShow();
         return TRUE;
 
       case NIN_BALLOONUSERCLICK:
-        win_icon->NotifyBalloonClicked();
+        win_icon.NotifyBalloonClicked();
         return TRUE;
 
       case NIN_BALLOONTIMEOUT:
-        win_icon->NotifyBalloonClosed();
+        win_icon.NotifyBalloonClosed();
         return TRUE;
 
       case WM_LBUTTONDOWN:
@@ -165,14 +146,14 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
       case WM_CONTEXTMENU:
         // Walk our icons, find which one was clicked on, and invoke its
         // HandleClickEvent() method.
-        win_icon->HandleClickEvent(
+        win_icon.HandleClickEvent(
             GetKeyboardModifers(),
             (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
             (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK));
         return TRUE;
 
       case WM_MOUSEMOVE:
-        win_icon->HandleMouseMoveEvent(GetKeyboardModifers());
+        win_icon.HandleMouseMoveEvent(GetKeyboardModifers());
         return TRUE;
     }
   }

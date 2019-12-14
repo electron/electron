@@ -7,7 +7,7 @@
 
 #include <windows.h>
 
-#include <vector>
+#include <map>
 
 #include "base/macros.h"
 
@@ -24,8 +24,6 @@ class NotifyIconHost {
   void Remove(NotifyIcon* notify_icon);
 
  private:
-  typedef std::vector<NotifyIcon*> NotifyIcons;
-
   // Static callback invoked when a message comes in to our messaging window.
   static LRESULT CALLBACK WndProcStatic(HWND hwnd,
                                         UINT message,
@@ -42,8 +40,8 @@ class NotifyIconHost {
   // The unique icon ID we will assign to the next icon.
   UINT next_icon_id_ = 1;
 
-  // List containing all active NotifyIcons.
-  NotifyIcons notify_icons_;
+  // All active NotifyIcons.
+  std::map<UINT /*icon_id*/, NotifyIcon> notify_icons_;
 
   // The window class of |window_|.
   ATOM atom_ = 0;
