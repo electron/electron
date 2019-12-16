@@ -16,20 +16,21 @@ amount of chromium code that needs to be changed for Electron
 as well as keeps these storage areas limited to a bounded
 size meanwhile giving application developers more space to work with.
 
-diff --git a/content/browser/dom_storage/dom_storage_types.h b/content/browser/dom_storage/dom_storage_types.h
-index 6c0b831ebaaa2c1749bbc7436ce1025656588310..96d1c73adb09d33cf591ca569f46de9b21f9a4df 100644
---- a/content/browser/dom_storage/dom_storage_types.h
-+++ b/content/browser/dom_storage/dom_storage_types.h
-@@ -21,7 +21,8 @@ typedef std::map<base::string16, base::NullableString16> DOMStorageValuesMap;
+diff --git a/components/services/storage/dom_storage/dom_storage_constants.cc b/components/services/storage/dom_storage/dom_storage_constants.cc
+index 3fd108c89c3b070a08790850db4dfd6cc8a3ce44..c393f51709efd8b28b07edfe452d2b84b14983ae 100644
+--- a/components/services/storage/dom_storage/dom_storage_constants.cc
++++ b/components/services/storage/dom_storage/dom_storage_constants.cc
+@@ -6,7 +6,9 @@
  
- // The quota for each storage area.
- // This value is enforced in renderer processes and the browser process.
+ namespace storage {
+ 
 -const size_t kPerStorageAreaQuota = 10 * 1024 * 1024;
 +// Electron's dom_storage_limits.patch increased this value from 10MiB to 100MiB
 +const size_t kPerStorageAreaQuota = 100 * 1024 * 1024;
++
+ const size_t kPerStorageAreaOverQuotaAllowance = 100 * 1024;
  
- // In the browser process we allow some overage to
- // accomodate concurrent writes from different renderers
+ }  // namespace storage
 diff --git a/third_party/blink/public/mojom/dom_storage/storage_area.mojom b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 index 1f1b2c6fa109aa52c4e7c7f5fcaac91beb538449..d8f15eed9be83340ffd1f2400df08558e9554710 100644
 --- a/third_party/blink/public/mojom/dom_storage/storage_area.mojom

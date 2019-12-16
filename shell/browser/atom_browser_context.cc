@@ -322,7 +322,8 @@ AtomBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), &factory_receiver, &header_client, nullptr);
+          url::Origin(), base::nullopt, &factory_receiver, &header_client,
+          nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();

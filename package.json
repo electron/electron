@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "9.0.0-nightly.20191210",
+  "version": "9.0.0-nightly.20191212",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -129,6 +129,9 @@
       "node script/gen-filenames.js",
       "python script/check-trailing-whitespace.py --fix",
       "git add filenames.auto.gni"
+    ],
+    "{*.patch,.patches}": [
+      "node script/lint.js --patches --only --"
     ],
     "DEPS": [
       "node script/gen-hunspell-filenames.js"

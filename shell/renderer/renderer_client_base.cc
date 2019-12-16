@@ -156,7 +156,7 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   if (command_line->HasSwitch(switches::kEnableSpellcheck))
-    spellcheck_ = std::make_unique<SpellCheck>(&registry_, this);
+    spellcheck_ = std::make_unique<SpellCheck>(this);
 #endif
 
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
@@ -338,12 +338,11 @@ void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 #endif
 }
 
-blink::WebPrescientNetworking* RendererClientBase::GetPrescientNetworking() {
-  if (!web_prescient_networking_impl_) {
-    web_prescient_networking_impl_ =
-        std::make_unique<network_hints::WebPrescientNetworkingImpl>();
-  }
-  return web_prescient_networking_impl_.get();
+std::unique_ptr<blink::WebPrescientNetworking>
+RendererClientBase::CreatePrescientNetworking(
+    content::RenderFrame* render_frame) {
+  return std::make_unique<network_hints::WebPrescientNetworkingImpl>(
+      render_frame);
 }
 
 void RendererClientBase::RunScriptsAtDocumentStart(

@@ -243,7 +243,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
     // Already closed by renderer
     return;
 
-  if (web_contents()->NeedToFireBeforeUnload())
+  if (web_contents()->NeedToFireBeforeUnloadOrUnload())
     web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
   else
     web_contents()->Close();

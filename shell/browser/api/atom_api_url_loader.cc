@@ -46,7 +46,9 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
       size_t readable_size = buffer_.size() - offset;
       size_t writable_size = buffer.size();
       size_t copyable_size = std::min(readable_size, writable_size);
-      memcpy(buffer.data(), &buffer_[offset], copyable_size);
+      if (copyable_size > 0) {
+        memcpy(buffer.data(), &buffer_[offset], copyable_size);
+      }
       result.bytes_read = copyable_size;
     } else {
       NOTREACHED();

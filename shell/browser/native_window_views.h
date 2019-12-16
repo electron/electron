@@ -66,6 +66,7 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect GetContentBounds() override;
   gfx::Size GetContentSize() override;
   gfx::Rect GetNormalBounds() override;
+  SkColor GetBackgroundColor() override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;

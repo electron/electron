@@ -3,6 +3,13 @@ From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Fri, 18 Jan 2019 14:23:28 -0800
 Subject: expose aes-{128,256}-cfb
 
+This exposes AES-CFB ciphers through the EVP APIs. BoringSSL has
+implementations for these ciphers, but Node doesn't realise that because
+without this patch, they're not listed in the APIs that Node uses.
+
+This should be upstreamed. See e.g.
+https://boringssl-review.googlesource.com/c/boringssl/+/33984 for a
+similar patch that was merged upstream.
 
 diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
 index b132265bc103658dba3de6e0c3dc50d3634da5b0..588a4773437c311877f275bf3679f9688cda3c46 100644

@@ -11,10 +11,10 @@ test/parallel/test-inspector-connect-main-thread.js.
 Upstreamed at https://github.com/nodejs/node/pull/30029.
 
 diff --git a/src/env.h b/src/env.h
-index 5b8465c8ba5335c8706b54dcf6e4ed46af31bcf0..d83fc3ab8d997e8044c5ee5ef12dcba3c44bb1a1 100644
+index 1df2907fe0bc8a4a2bee3c569bfa535465d9f289..084833e467fb815adbd7ee39c2cfd2e79ba96f62 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -868,7 +868,7 @@ class Environment : public MemoryRetainer {
+@@ -869,7 +869,7 @@ class Environment : public MemoryRetainer {
    void CreateProperties();
    // Should be called before InitializeInspector()
    void InitializeDiagnostics();

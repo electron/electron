@@ -174,7 +174,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.remove_standard_frame = !has_frame();
 
   if (transparent())
-    params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
+    params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
 
   // The given window is most likely not rectangular since it uses
   // transparency and has no standard frame, don't show a shadow for it.
@@ -901,6 +901,10 @@ void NativeWindowViews::SetKiosk(bool kiosk) {
 
 bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
+}
+
+SkColor NativeWindowViews::GetBackgroundColor() {
+  return root_view_->background()->get_color();
 }
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {

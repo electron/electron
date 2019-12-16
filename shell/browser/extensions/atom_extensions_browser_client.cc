@@ -20,7 +20,6 @@
 #include "extensions/browser/component_extension_resource_manager.h"
 #include "extensions/browser/core_extensions_browser_api_provider.h"
 #include "extensions/browser/event_router.h"
-#include "extensions/browser/mojo/interface_registration.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
@@ -129,11 +128,11 @@ base::FilePath AtomExtensionsBrowserClient::GetBundleResourcePath(
 
 void AtomExtensionsBrowserClient::LoadResourceFromResourceBundle(
     const network::ResourceRequest& request,
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     const base::FilePath& resource_relative_path,
     int resource_id,
     const std::string& content_security_policy,
-    network::mojom::URLLoaderClientPtr client,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     bool send_cors_header) {
   NOTREACHED() << "Load resources from bundles not supported.";
 }
@@ -215,9 +214,7 @@ void AtomExtensionsBrowserClient::RegisterExtensionInterfaces(
     service_manager::BinderRegistryWithArgs<content::RenderFrameHost*>*
         registry,
     content::RenderFrameHost* render_frame_host,
-    const extensions::Extension* extension) const {
-  RegisterInterfacesForExtension(registry, render_frame_host, extension);
-}
+    const extensions::Extension* extension) const {}
 
 std::unique_ptr<extensions::RuntimeAPIDelegate>
 AtomExtensionsBrowserClient::CreateRuntimeAPIDelegate(
@@ -296,5 +293,10 @@ std::string AtomExtensionsBrowserClient::GetApplicationLocale() {
 std::string AtomExtensionsBrowserClient::GetUserAgent() const {
   return AtomBrowserClient::Get()->GetUserAgent();
 }
+
+void AtomExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(
+    service_manager::BinderMapWithContext<content::RenderFrameHost*>* map,
+    content::RenderFrameHost* render_frame_host,
+    const extensions::Extension* extension) const {}
 
 }  // namespace electron
