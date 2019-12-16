@@ -173,11 +173,11 @@ action("atom_js2c") {
 
   webpack_sources = [
     "$target_gen_dir/js2c/browser_init.js",
-    "$target_gen_dir/js2c/renderer_init.js",
-    "$target_gen_dir/js2c/worker_init.js",
     "$target_gen_dir/js2c/content_script_bundle.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
+    "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
+    "$target_gen_dir/js2c/worker_init.js",
   ]
 
   sources = webpack_sources + [
@@ -1321,8 +1321,8 @@ copy("chromium_licenses") {
 
 group("licenses") {
   data_deps = [
-    ":electron_license",
     ":chromium_licenses",
+    ":electron_license",
   ]
 }
 
@@ -1338,8 +1338,8 @@ copy("electron_version") {
 dist_zip("electron_dist_zip") {
   data_deps = [
     ":electron_app",
-    ":licenses",
     ":electron_version",
+    ":licenses",
   ]
   if (is_linux) {
     data_deps += [ "//sandbox/linux:chrome_sandbox" ]
@@ -1361,8 +1361,8 @@ dist_zip("electron_ffmpeg_zip") {
 dist_zip("electron_chromedriver_zip") {
   testonly = true
   data_deps = [
-    "//chrome/test/chromedriver",
     ":licenses",
+    "//chrome/test/chromedriver",
   ]
   outputs = [
     "$root_build_dir/chromedriver.zip",
