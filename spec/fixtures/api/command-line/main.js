@@ -9,7 +9,5 @@ app.on('ready', () => {
   process.stdout.write(JSON.stringify(payload))
   process.stdout.end()
 
-  setImmediate(() => {
-    app.quit()
-  })
+  app.quit()
 })
