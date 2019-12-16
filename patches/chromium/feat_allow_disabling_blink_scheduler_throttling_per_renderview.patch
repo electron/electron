@@ -61,7 +61,7 @@ index 95679ab2915ad496ca0018aa13874b84eb11d7fd..c278e0fc072409677beafc7f252ebcf6
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index f815739a06a60e050003d2819ddab82be2abf3a6..0263848e99769af49641b2fad0575f714e797e5d 100644
+index 2bcc889950d776e0623a3527fcadfab9624617a6..3ba9fdca41d8ceaeddca26b522808611ce7c2a22 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -1251,6 +1251,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
@@ -99,10 +99,10 @@ index 87994092a9b0e7ea0d33675c502408a5a47eac87..5d08253ed69e9a180251ad9693335c4a
    void OnUpdateTargetURLAck();
    void OnUpdateWebPreferences(const WebPreferences& prefs);
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 53d6d4ebd22ad8f3dd9badba7601dcc27a002a2a..7abf1c05c8e821de8df26938e4f098a58a06655b 100644
+index 6f68388ccf9fe0ff295a307e98c75505ee1e61d2..3706f4e3de94692f9360a99b3c43fe8f1328269f 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -404,6 +404,7 @@ class WebView {
+@@ -399,6 +399,7 @@ class WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -111,10 +111,10 @@ index 53d6d4ebd22ad8f3dd9badba7601dcc27a002a2a..7abf1c05c8e821de8df26938e4f098a5
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 2e2b95750635fa5aedc17eabcd84fa97ed0c951a..7649f65d5f05c4609c495ddf4d47f640a010d7e4 100644
+index ca8b4705b0f2dbf9d203389e8de9c94e552478ee..f8a350c6a3b72fc621724d9722763cc145a2d948 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3364,12 +3364,20 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3338,12 +3338,20 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -138,10 +138,10 @@ index 2e2b95750635fa5aedc17eabcd84fa97ed0c951a..7649f65d5f05c4609c495ddf4d47f640
  
  PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 7161adf93687544024d7cc9d23fe423bb4e9eca3..d55296a159e9453add9a8a63058b5a5647cf5b3e 100644
+index 46bf1d96622b0ee3c7d5759a56029b8c44278ddd..ceb0978fd8ee0f99df4ea7d799c600818f37a465 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -310,6 +310,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -309,6 +309,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -149,7 +149,7 @@ index 7161adf93687544024d7cc9d23fe423bb4e9eca3..d55296a159e9453add9a8a63058b5a56
    void SetVisibilityState(PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    PageVisibilityState GetVisibilityState() override;
-@@ -682,6 +683,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -681,6 +682,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // WebViewImpl::Close while handling an input event.
    bool debug_inside_input_handling_ = false;
  

@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 413050e4779fc471da1d2219a55f0dc8378174b4..93aeacdab1e365d7dce4c6eb1c3da5916a0d05aa 100644
+index b8ca1b4536004cd51e4c2da90400260f2b865386..71fbc11696102f3e8efa396eb3a008a066d23489 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1214,6 +1214,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1213,6 +1213,24 @@ void NavigationRequest::BeginNavigation() {
      TRACE_EVENT_ASYNC_STEP_INTO0("navigation", "NavigationRequest", this,
                                   "ResponseStarted");
  
@@ -194,7 +194,7 @@ index 59edc1fe0c22e82225bd2a3d8059f386d97db127..6bc92bbb5604111ecdc6b78be025bb7e
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 76261e6b09094527327e068e183d3d3b2665467b..fbd1be0f69aabdda47315e54518c0567b6aec3b8 100644
+index b3260021516ee2ee16347cde803dfe4c76881306..4c662819d326f8e94f720857b1608a11dac5d36d 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -49,6 +49,21 @@
@@ -220,10 +220,10 @@ index 76261e6b09094527327e068e183d3d3b2665467b..fbd1be0f69aabdda47315e54518c0567
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 2196584c127c8a3f80bfe55aaff3187372c19b1e..b391bacc010ad973ae38e70cd56f33949ee0bd20 100644
+index e041e6eed95787e9360a2f36ee1050485cde207e..2591bbed364918d866e7a5621fe1d69bc398c357 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -216,8 +216,45 @@ struct WebPreferences;
+@@ -217,8 +217,45 @@ struct WebPreferences;
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:

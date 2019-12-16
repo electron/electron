@@ -17,7 +17,7 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
-index aacac1dc1e6c70e63dce08e81327db9fbabb5148..49ac1945ccb523dff61caf5b88a2bbc906b6fd09 100644
+index 0a1227d51c2413ec8467932cea294b988899778a..3ac22203ce7e435f0a31fe60e2605cb7ed074a86 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
 +++ b/content/browser/frame_host/navigation_controller_impl.cc
 @@ -1250,8 +1250,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
@@ -46,7 +46,7 @@ index aacac1dc1e6c70e63dce08e81327db9fbabb5148..49ac1945ccb523dff61caf5b88a2bbc9
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 00a096c43f13d8addcf202545ac2aef97ef9c556..0145c63c41ba67b260b5df273d04e5b87c22af23 100644
+index 6be2086e8256f2647cdc4f1ac60d982454874ac2..8ad40569547a7f6c0babfacaca12a34d2eb3a6e7 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
 @@ -744,9 +744,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,

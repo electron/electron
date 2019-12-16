@@ -49,7 +49,7 @@ index def2cb5e252389879c6287d44d29e704703841cb..98d64785240bde3e182268e453dced41
    NetworkIsolationKey? network_isolation_key;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 96ea5f62e5796810f87abfb2a3c400ffcc024ff0..d50831adb6ba65ece49b62ec4a8cd1a92fdb0d28 100644
+index 79b8f3c3fd9c44c36f8c1d567160ac62348b7049..370674fbba899b5b9a72cbfcbec85d11b7a71419 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -334,6 +334,7 @@ URLLoader::URLLoader(
@@ -72,7 +72,7 @@ index 96ea5f62e5796810f87abfb2a3c400ffcc024ff0..d50831adb6ba65ece49b62ec4a8cd1a9
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -826,7 +832,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
+@@ -825,7 +831,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
  
  void URLLoader::OnAuthRequired(net::URLRequest* url_request,
                                 const net::AuthChallengeInfo& auth_info) {
@@ -81,7 +81,7 @@ index 96ea5f62e5796810f87abfb2a3c400ffcc024ff0..d50831adb6ba65ece49b62ec4a8cd1a9
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -842,11 +848,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -841,11 +847,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;

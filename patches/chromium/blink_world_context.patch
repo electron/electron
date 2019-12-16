@@ -21,10 +21,10 @@ index 05a33b9a2cbed57e4e037428397b59f30f83ce66..0cd308b38a158a016b099beed6a31fa1
    // that the script evaluated to with callback. Script execution can be
    // suspend.
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 8c984ae92de2a53e59782bea94a143ee7fde2248..105e1e92002adde207db5c770197547ab6b55f97 100644
+index 27fadd01aeeabaaaae6483c8e2e4d824d9890590..6b6a15e3999ec58239fe6f8181f0c59415a9bc7d 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -935,6 +935,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
+@@ -934,6 +934,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
    return MainWorldScriptContext()->Global();
  }
  

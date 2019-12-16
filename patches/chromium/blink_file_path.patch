@@ -21,12 +21,12 @@ index 7ea8ad8fd162fd6a97052188a8e8868dab1c1fe9..a64966e2db0e2e7b0390a322525522e0
    // http://dev.w3.org/2006/webapi/FileAPI/#file-attrs
    int64_t lastModified() const;
 diff --git a/third_party/blink/renderer/core/fileapi/file.idl b/third_party/blink/renderer/core/fileapi/file.idl
-index e5cf6cc926ff2670f713018dd750e79c53ee76eb..60eca3cf100b31c3d2c0c68271d98c60321e69a7 100644
+index 8113ac9050c25a675eb20c90fdb4d037e171a5b6..9ca2d532dc4694d7a68ebd6b7988907132dae0e9 100644
 --- a/third_party/blink/renderer/core/fileapi/file.idl
 +++ b/third_party/blink/renderer/core/fileapi/file.idl
-@@ -32,6 +32,7 @@
-     Serializable
+@@ -31,6 +31,7 @@
  ] interface File : Blob {
+     [CallWith=ExecutionContext] constructor(sequence<BlobPart> fileBits, USVString fileName, optional FilePropertyBag options);
      readonly attribute DOMString name;
 +    readonly attribute DOMString path;
      readonly attribute long long lastModified;
