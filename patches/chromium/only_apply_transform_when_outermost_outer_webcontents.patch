@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "W. James MacLean" <wjmaclean@chromium.org>
+Date: Mon, 28 Oct 2019 16:24:21 +0000
+Subject: Only apply transform when outermost != outer WebContents.
+
+In applying the fix for Issue 1002598, we changed behaviour by
+transforming coordinates for the case where outer and outer-most
+WebContents are the same, and this seems to cause Issue 1015298.
+This CL makes it so we only transform when there are different
+outer and outer-most WebContents.
+
+Bug: 1015298
+Change-Id: I390bf37ca72cdfb5a2596721046e2c9937496df1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1879597
+Commit-Queue: James MacLean <wjmaclean@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#709924}
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 3863d5e9dfe970f0b893a1b060c85a5572cf26cd..f1c8f675d53c97f87f81705e07a9ade2de957f26 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -3083,12 +3083,22 @@ void WebContentsImpl::ShowCreatedWidget(int process_id,
+     return;
+ 
+   // GetOutermostWebContents() returns |this| if there are no outer WebContents.
++  auto* outer_web_contents = GetOuterWebContents();
++  auto* outermost_web_contents = GetOutermostWebContents();
+   RenderWidgetHostView* view =
+-      GetOutermostWebContents()->GetRenderWidgetHostView();
++      outermost_web_contents->GetRenderWidgetHostView();
++  // It's not entirely obvious why we need the transform only in the case where
++  // the outer webcontents is not the same as the outermost webcontents. It may
++  // be due to the fact that oopifs that are children of the mainframe get
++  // correct values for their screenrects, but deeper cross-process frames do
++  // not. Hopefully this can be resolved with https://crbug.com/928825.
++  // Handling these cases separately is needed for http://crbug.com/1015298.
++  bool needs_transform = this != outermost_web_contents &&
++                         outermost_web_contents != outer_web_contents;
+ 
+   gfx::Rect transformed_rect(initial_rect);
+   RenderWidgetHostView* this_view = GetRenderWidgetHostView();
+-  if (this_view != view) {
++  if (needs_transform) {
+     // We need to transform the coordinates of initial_rect.
+     gfx::Point origin =
+         this_view->TransformPointToRootCoordSpace(initial_rect.origin());
