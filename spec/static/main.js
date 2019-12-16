@@ -2,7 +2,7 @@
 process.throwDeprecation = false
 
 const electron = require('electron')
-const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents } = electron
+const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents, session } = electron
 
 const fs = require('fs')
 const path = require('path')
@@ -88,7 +88,9 @@ app.on('renderer-process-crashed', (event, contents, killed) => {
   console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`)
 })
 
-app.on('ready', function () {
+app.on('ready', async function () {
+  await session.defaultSession.clearCache()
+  await session.defaultSession.clearStorageData()
   // Test if using protocol module would crash.
   electron.protocol.registerStringProtocol('test-if-crashes', function () {})
 

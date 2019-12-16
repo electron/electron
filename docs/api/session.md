@@ -126,9 +126,10 @@ Clears the session’s HTTP cache.
     `scheme://host:port`.
   * `storages` String[] (optional) - The types of storages to clear, can contain:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
-    `shadercache`, `websql`, `serviceworkers`, `cachestorage`.
+    `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
+    specified, clear all storage types.
   * `quotas` String[] (optional) - The types of quotas to clear, can contain:
-    `temporary`, `persistent`, `syncable`.
+    `temporary`, `persistent`, `syncable`. If not specified, clear all quotas.
 
 Returns `Promise<void>` - resolves when the storage data has been cleared.
 
