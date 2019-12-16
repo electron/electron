@@ -22,6 +22,8 @@ declare_args() {
 
   enable_picture_in_picture = true
 
+  enable_media_key_overrides = true
+
   # Provide a fake location provider for mocking
   # the geolocation responses. Disable it if you
   # need to test with chromium's location provider.
