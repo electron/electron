@@ -4,6 +4,12 @@ process.throwDeprecation = false
 const electron = require('electron')
 const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents, session } = electron
 
+try {
+  require('fs').rmdirSync(app.getPath('userData'), { recursive: true })
+} catch (e) {
+  console.warn(`Warning: couldn't clear user data directory:`, e)
+}
+
 const fs = require('fs')
 const path = require('path')
 const util = require('util')
