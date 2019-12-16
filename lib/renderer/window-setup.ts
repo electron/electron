@@ -242,7 +242,8 @@ export const windowSetup = (
   Object.defineProperty(window.history, 'length', {
     get: function () {
       return ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH')
-    }
+    },
+    set () {}
   })
 
   if (guestInstanceId != null) {
