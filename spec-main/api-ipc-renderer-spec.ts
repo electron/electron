@@ -52,22 +52,15 @@ describe('ipcRenderer module', () => {
       expect(Buffer.from(data).equals(received)).to.be.true()
     })
 
-    // TODO(nornagon): Change this test to expect an exception to be thrown in
-    // Electron 9.
-    it('can send objects with DOM class prototypes', async () => {
-      w.webContents.executeJavaScript(`{
+    it('throws when sending objects with DOM class prototypes', async () => {
+      await expect(w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('message', document.location)
-      }`)
-      const [, value] = await emittedOnce(ipcMain, 'message')
-      expect(value.protocol).to.equal('about:')
-      expect(value.hostname).to.equal('')
+      }`)).to.eventually.be.rejected()
     })
 
-    // TODO(nornagon): Change this test to expect an exception to be thrown in
-    // Electron 9.
     it('does not crash when sending external objects', async () => {
-      w.webContents.executeJavaScript(`{
+      await expect(w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
         const http = require('http')
 
@@ -75,10 +68,7 @@ describe('ipcRenderer module', () => {
         const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream
 
         ipcRenderer.send('message', stream)
-      }`)
-      const [, externalStreamValue] = await emittedOnce(ipcMain, 'message')
-
-      expect(externalStreamValue).to.be.null()
+      }`)).to.eventually.be.rejected()
     })
 
     it('can send objects that both reference the same object', async () => {
