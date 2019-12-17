@@ -4,6 +4,7 @@ const http = require('http')
 const url = require('url')
 const { ipcRenderer } = require('electron')
 const { emittedOnce, waitForEvent } = require('./events-helpers')
+const { ifdescribe, ifit } = require('./spec-helpers')
 
 const features = process.electronBinding('features')
 const nativeModulesEnabled = process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
@@ -469,7 +470,7 @@ describe('<webview> tag', function () {
       })
     })
 
-    it('can disable the remote module', async () => {
+    ifit(features.isRemoteModuleEnabled())('can disable the remote module', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         preload: `${fixtures}/module/preload-disable-remote.js`,
         src: `file://${fixtures}/api/blank.html`,
