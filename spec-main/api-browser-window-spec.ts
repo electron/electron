@@ -595,13 +595,11 @@ describe('BrowserWindow module', () => {
     })
 
     describe('BrowserWindow.getFocusedWindow()', () => {
-      it('returns the opener window when dev tools window is focused', (done) => {
+      it('returns the opener window when dev tools window is focused', async () => {
         w.show()
-        w.webContents.once('devtools-focused', () => {
-          expect(BrowserWindow.getFocusedWindow()).to.equal(w)
-          done()
-        })
         w.webContents.openDevTools({ mode: 'undocked' })
+        await emittedOnce(w.webContents, 'devtools-focused')
+        expect(BrowserWindow.getFocusedWindow()).to.equal(w)
       })
     })
 
