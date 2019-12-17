@@ -21,6 +21,7 @@ buildflag_header("buildflags") {
     "ENABLE_ELECTRON_EXTENSIONS=$enable_electron_extensions",
     "ENABLE_BUILTIN_SPELLCHECKER=$enable_builtin_spellchecker",
     "ENABLE_PICTURE_IN_PICTURE=$enable_picture_in_picture",
+    "ENABLE_MEDIA_KEY_OVERRIDES=$enable_media_key_overrides",
     "OVERRIDE_LOCATION_PROVIDER=$enable_fake_location_provider",
   ]
 }
