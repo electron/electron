@@ -23,11 +23,23 @@ function getElectronExec () {
   }
 }
 
-function getOutDir (shouldLog) {
-  if (process.env.ELECTRON_OUT_DIR) {
-    return process.env.ELECTRON_OUT_DIR
+function getOutDir (options = {}) {
+  const shouldLog = options.shouldLog || false
+
+  if (options.outDir || process.env.ELECTRON_OUT_DIR) {
+    const outDir = options.outDir || process.env.ELECTRON_OUT_DIR
+    const outPath = path.resolve(SRC_DIR, 'out', outDir)
+
+    // Check that user-set variable is a valid/existing directory
+    if (fs.existsSync(outPath)) {
+      if (shouldLog) console.log(`OUT_DIR is: ${outDir}`)
+      return outDir
+    }
+
+    // Throw error if user passed/set nonexistent directory.
+    throw new Error(`${outDir} directory not configured on your machine.`)
   } else {
-    for (const buildType of ['Testing', 'Release', 'Default']) {
+    for (const buildType of ['Testing', 'Release', 'Default', 'Debug']) {
       const outPath = path.resolve(SRC_DIR, 'out', buildType)
       if (fs.existsSync(outPath)) {
         if (shouldLog) console.log(`OUT_DIR is: ${buildType}`)

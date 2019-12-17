@@ -146,7 +146,7 @@ async function runRemoteBasedElectronTests () {
 
 async function runNativeElectronTests () {
   let testTargets = require('./native-test-targets.json')
-  const outDir = `out/${utils.getOutDir(false)}`
+  const outDir = `out/${utils.getOutDir()}`
 
   // If native tests are being run, only one arg would be relevant
   if (args.target && !testTargets.includes(args.target)) {
@@ -216,7 +216,7 @@ async function runMainProcessElectronTests () {
 }
 
 async function installSpecModules (dir) {
-  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir(true)}/gen/node_headers`)
+  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2019'
