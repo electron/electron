@@ -45,6 +45,12 @@ struct Converter<mojo::InlinedStructPtr<network::mojom::HttpRawHeaderPair>> {
 
 }  // namespace gin
 
+namespace electron {
+
+namespace api {
+
+namespace {
+
 class BufferDataSource : public mojo::DataPipeProducer::DataSource {
  public:
   explicit BufferDataSource(base::span<char> buffer) {
@@ -213,12 +219,6 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
 
 gin::WrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
     gin::kEmbedderNativeGin};
-
-namespace electron {
-
-namespace api {
-
-namespace {
 
 const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
     net::DefineNetworkTrafficAnnotation("electron_net_module", R"(
