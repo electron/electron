@@ -21,12 +21,12 @@ If your app has its own dark mode you should toggle it on and off in sync with t
 this by listening for the theme changed event on Electron's `systemPreferences` module.  E.g.
 
 ```js
-const { systemPreferences } = require('electron')
+const { nativeTheme } = require('electron')
 
 systemPreferences.subscribeNotification(
   'AppleInterfaceThemeChangedNotification',
   function theThemeHasChanged () {
-    updateMyAppTheme(systemPreferences.isDarkMode())
+    updateMyAppTheme(nativeTheme.shouldUseDarkColors)
   }
 )
 ```
