@@ -29,6 +29,22 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
+namespace gin {
+
+template <>
+struct Converter<mojo::InlinedStructPtr<network::mojom::HttpRawHeaderPair>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const mojo::InlinedStructPtr<network::mojom::HttpRawHeaderPair>& pair) {
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.Set("key", base::ToLowerASCII(pair->key));
+    dict.Set("value", pair->value);
+    return dict.GetHandle();
+  }
+};
+
+}  // namespace gin
+
 class BufferDataSource : public mojo::DataPipeProducer::DataSource {
  public:
   explicit BufferDataSource(base::span<char> buffer) {
@@ -341,6 +357,10 @@ gin_helper::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
     }
   }
 
+  // Chromium filters headers using browser rules, while for net module we have
+  // every header passed.
+  request->report_raw_headers = true;
+
   v8::Local<v8::Value> body;
   v8::Local<v8::Value> chunk_pipe_getter;
   if (opts.Get("body", &body)) {
@@ -415,8 +435,12 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
   gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate());
   dict.Set("statusCode", response_head.headers->response_code());
   dict.Set("statusMessage", response_head.headers->GetStatusText());
-  dict.Set("headers", response_head.headers.get());
   dict.Set("httpVersion", response_head.headers->GetHttpVersion());
+  // Note that |response_head.headers| are filtered by Chromium and should not
+  // be used here.
+  DCHECK(response_head.raw_request_response_info);
+  dict.Set("rawHeaders",
+           response_head.raw_request_response_info->response_headers);
   Emit("response-started", final_url, dict);
 }
 
