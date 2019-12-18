@@ -7,7 +7,7 @@ import { closeAllWindows } from './window-helpers'
 import { emittedOnce } from './events-helpers'
 
 describe('debugger module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures')
+  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
   let w: BrowserWindow
 
   beforeEach(() => {
@@ -132,8 +132,8 @@ describe('debugger module', () => {
 
     it('fires message event', done => {
       const url = process.platform !== 'win32'
-        ? `file://${path.join(fixtures, 'blank.html')}`
-        : `file:///${path.join(fixtures, 'blank.html').replace(/\\/g, '/')}`
+        ? `file://${path.join(fixtures, 'pages', 'a.html')}`
+        : `file:///${path.join(fixtures, 'pages', 'a.html').replace(/\\/g, '/')}`
       w.webContents.loadURL(url)
 
       try {
@@ -144,16 +144,19 @@ describe('debugger module', () => {
 
       w.webContents.debugger.on('message', (e, method, params) => {
         if (method === 'Console.messageAdded') {
-          expect(params.message.level).to.equal('log')
-          expect(params.message.url).to.equal(url)
-          expect(params.message.text).to.equal('a')
-
-          w.webContents.debugger.detach()
-          done()
+          try {
+            expect(params.message.level).to.equal('log')
+            expect(params.message.url).to.equal(url)
+            expect(params.message.text).to.equal('a')
+            done()
+          } catch (e) {
+            done(e)
+          } finally {
+            w.webContents.debugger.detach()
+          }
         }
       })
       w.webContents.debugger.sendCommand('Console.enable')
-      w.webContents.executeJavaScript('console.log("a")')
     })
 
     it('returns error message when command fails', async () => {
