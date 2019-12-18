@@ -29,7 +29,6 @@
 #include "content/public/common/result_codes.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/localized_strings.h"
-#include "services/device/public/mojom/constants.mojom.h"
 #include "services/network/public/cpp/features.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
@@ -49,6 +48,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/asar/asar_util.h"
+#include "shell/common/atom_constants.h"
 #include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -562,7 +562,7 @@ AtomBrowserMainParts::GetGeolocationControl() {
   auto receiver = geolocation_control_.BindNewPipeAndPassReceiver();
   service_manager::Connector* connector = content::GetSystemConnector();
   if (connector)
-    connector->Connect(device::mojom::kServiceName, std::move(receiver));
+    connector->Connect(electron::kDeviceServiceName, std::move(receiver));
   return geolocation_control_.get();
 }
 

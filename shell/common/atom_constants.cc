@@ -26,6 +26,7 @@ const char kSecureProtocol[] = "Secure TLS connection";
 const char kSecureProtocolDescription[] =
     "The connection to this site is using a strong protocol version "
     "and cipher suite.";
+const char kDeviceServiceName[] = "device";
 
 #if defined(OS_WIN)
 const char kCrashpadPipeName[] = "ELECTRON_CRASHPAD_PIPE_NAME";

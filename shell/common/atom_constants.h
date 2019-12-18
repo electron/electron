@@ -26,6 +26,7 @@ extern const char kValidCertificate[];
 extern const char kValidCertificateDescription[];
 extern const char kSecureProtocol[];
 extern const char kSecureProtocolDescription[];
+extern const char kDeviceServiceName[];
 
 #if defined(OS_WIN)
 // Crashpad pipe name.
