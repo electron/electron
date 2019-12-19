@@ -592,9 +592,9 @@ void InspectableWebContentsImpl::LoadCompleted() {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 void InspectableWebContentsImpl::AddDevToolsExtensionsToClient() {
   // get main browser context
-  auto main_browser_context = AtomBrowserContext::From("", false);
+  auto* browser_context = web_contents_->GetBrowserContext();
   const extensions::ExtensionRegistry* registry =
-      extensions::ExtensionRegistry::Get(main_browser_context.get());
+      extensions::ExtensionRegistry::Get(browser_context);
   if (!registry)
     return;
 

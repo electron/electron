@@ -1,3 +1,9 @@
-<script>
-  chrome.devtools.panels.create('Foo', 'icon.png', 'index.html')
-</script>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>foo</title>
+    <!-- can't be inline, because of CSP -->
+    <script src="foo.js"></script>
+  </head>
+</html>

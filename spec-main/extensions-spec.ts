@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { session, BrowserWindow, ipcMain } from 'electron'
+import { session, BrowserWindow, ipcMain, WebContents } from 'electron'
 import { closeAllWindows, closeWindow } from './window-helpers'
 import * as http from 'http'
 import { AddressInfo } from 'net'
@@ -90,12 +90,40 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   })
 
   describe('devtools extensions', () => {
+    let showPanelTimeoutId: any = null
+    afterEach(() => {
+      if (showPanelTimeoutId) clearTimeout(showPanelTimeoutId)
+    })
+    const showLastDevToolsPanel = (w: BrowserWindow) => {
+      w.webContents.once('devtools-opened', () => {
+        const show = () => {
+          if (w == null || w.isDestroyed()) return
+          const { devToolsWebContents } = w as unknown as { devToolsWebContents: WebContents | undefined }
+          if (devToolsWebContents == null || devToolsWebContents.isDestroyed()) {
+            return
+          }
+
+          const showLastPanel = () => {
+            // this is executed in the devtools context, where UI is a global
+            const { UI } = (window as any)
+            const lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id
+            UI.inspectorView.showPanel(lastPanelId)
+          }
+          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false).then(() => {
+            showPanelTimeoutId = setTimeout(show, 100)
+          })
+        }
+        showPanelTimeoutId = setTimeout(show, 100)
+      })
+    }
+
     it('loads a devtools extension', async () => {
-      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
-      // (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'devtools-extension'))
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+      (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'devtools-extension'))
       const w = new BrowserWindow({ show: true, webPreferences: { session: customSession, nodeIntegration: true } })
       await w.loadURL('data:text/html,hello')
       w.webContents.openDevTools()
+      showLastDevToolsPanel(w)
       await emittedOnce(ipcMain, 'winning')
     })
   })
