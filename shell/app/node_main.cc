@@ -137,7 +137,7 @@ int NodeMain(int argc, char* argv[]) {
         // Emit `beforeExit` if the loop became alive either after emitting
         // event, or after running some callbacks.
         more = uv_loop_alive(env->event_loop());
-      } while (more == true && !env->is_stopping());
+      } while (more && !env->is_stopping());
     }
 
     node_debugger.Stop();
