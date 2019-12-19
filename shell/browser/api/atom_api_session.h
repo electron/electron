@@ -96,7 +96,12 @@ class Session : public gin_helper::TrackableObject<Session>,
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  void LoadChromeExtension(const base::FilePath extension_path);
+  v8::Local<v8::Promise> LoadExtension(const base::FilePath extension_path);
+  void RemoveExtension(const std::string& extension_id);
+  void EnableExtension(const std::string& extension_id);
+  void DisableExtension(const std::string& extension_id);
+  v8::Local<v8::Value> GetExtension(const std::string& extension_id);
+  v8::Local<v8::Value> GetLoadedExtensions();
 #endif
 
  protected:
