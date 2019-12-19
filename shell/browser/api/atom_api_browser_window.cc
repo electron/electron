@@ -439,7 +439,7 @@ void BrowserWindow::OnWindowShow() {
 }
 
 void BrowserWindow::OnWindowHide() {
-  web_contents()->WasHidden();
+  web_contents()->WasOccluded();
   TopLevelWindow::OnWindowHide();
 }
 
