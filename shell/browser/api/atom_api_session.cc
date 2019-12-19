@@ -521,6 +521,7 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
   network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
       network::mojom::HttpAuthDynamicParams::New();
   auth_dynamic_params->server_allowlist = domains;
+  auth_dynamic_params->enable_negotiate_port = false;
   content::GetNetworkService()->ConfigureHttpAuthPrefs(
       std::move(auth_dynamic_params));
 }
