@@ -141,6 +141,12 @@ class AtomBrowserContext
     return weak_factory_.GetWeakPtr();
   }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::AtomExtensionSystem* extension_system() {
+    return extension_system_;
+  }
+#endif
+
  protected:
   AtomBrowserContext(const std::string& partition,
                      bool in_memory,

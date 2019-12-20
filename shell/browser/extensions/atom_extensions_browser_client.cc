@@ -35,6 +35,8 @@
 // #include "shell/browser/extensions/atom_extensions_browser_api_provider.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "shell/browser/extensions/atom_navigation_ui_data.h"
+#include "shell/browser/extensions/electron_extensions_api_client.h"
+#include "shell/browser/extensions/electron_process_manager_delegate.h"
 
 using content::BrowserContext;
 using content::BrowserThread;
@@ -42,10 +44,10 @@ using content::BrowserThread;
 namespace electron {
 
 AtomExtensionsBrowserClient::AtomExtensionsBrowserClient()
-    : api_client_(new extensions::ExtensionsAPIClient),
-      // : api_client_(new extensions::AtomExtensionsAPIClient),
+    : api_client_(new extensions::ElectronExtensionsAPIClient),
+      process_manager_delegate_(new extensions::ElectronProcessManagerDelegate),
       extension_cache_(new extensions::NullExtensionCache()) {
-  // app_shell does not have a concept of channel yet, so leave UNKNOWN to
+  // Electron does not have a concept of channel, so leave UNKNOWN to
   // enable all channel-dependent extension APIs.
   extensions::SetCurrentChannel(version_info::Channel::UNKNOWN);
 
@@ -168,7 +170,7 @@ void AtomExtensionsBrowserClient::GetEarlyExtensionPrefsObservers(
 
 extensions::ProcessManagerDelegate*
 AtomExtensionsBrowserClient::GetProcessManagerDelegate() const {
-  return NULL;
+  return process_manager_delegate_.get();
 }
 
 std::unique_ptr<extensions::ExtensionHostDelegate> AtomExtensionsBrowserClient::

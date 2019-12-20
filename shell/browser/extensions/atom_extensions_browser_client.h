@@ -21,6 +21,7 @@ namespace extensions {
 class ExtensionsAPIClient;
 class KioskDelegate;
 class ProcessManagerDelegate;
+class ElectronProcessManagerDelegate;
 class ProcessMap;
 }  // namespace extensions
 
@@ -133,6 +134,10 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
  private:
   // Support for extension APIs.
   std::unique_ptr<extensions::ExtensionsAPIClient> api_client_;
+
+  // Support for ProcessManager.
+  std::unique_ptr<extensions::ElectronProcessManagerDelegate>
+      process_manager_delegate_;
 
   // The extension cache used for download and installation.
   std::unique_ptr<extensions::ExtensionCache> extension_cache_;

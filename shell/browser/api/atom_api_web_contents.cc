@@ -358,6 +358,10 @@ WebContents::WebContents(v8::Isolate* isolate,
   Init(isolate);
   AttachAsUserData(web_contents);
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+      web_contents);
+#endif
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
   bindings_.set_connection_error_handler(base::BindRepeating(

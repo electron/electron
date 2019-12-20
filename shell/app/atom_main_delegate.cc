@@ -19,8 +19,10 @@
 #include "base/mac/bundle_locations.h"
 #include "base/path_service.h"
 #include "chrome/common/chrome_paths.h"
+#include "components/content_settings/core/common/content_settings_pattern.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
+#include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
 #include "services/service_manager/embedder/switches.h"
 #include "services/service_manager/sandbox/switches.h"
@@ -131,6 +133,11 @@ AtomMainDelegate::AtomMainDelegate() = default;
 
 AtomMainDelegate::~AtomMainDelegate() = default;
 
+const char* const AtomMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
+    extensions::kExtensionScheme};
+const size_t AtomMainDelegate::kNonWildcardDomainNonPortSchemesSize =
+    base::size(kNonWildcardDomainNonPortSchemes);
+
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
@@ -187,6 +194,10 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
       tracing::TracingSamplerProfiler::CreateOnMainThread();
 
   chrome::RegisterPathProvider();
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  ContentSettingsPattern::SetNonWildcardDomainNonPortSchemes(
+      kNonWildcardDomainNonPortSchemes, kNonWildcardDomainNonPortSchemesSize);
+#endif
 
 #if defined(OS_MACOSX)
   OverrideChildProcessPath();

@@ -1,0 +1,26 @@
+#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_API_CLIENT_H_
+#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_API_CLIENT_H_
+
+#include "extensions/browser/api/extensions_api_client.h"
+
+namespace extensions {
+
+class ElectronMessagingDelegate;
+
+class ElectronExtensionsAPIClient : public ExtensionsAPIClient {
+ public:
+  ElectronExtensionsAPIClient();
+  ~ElectronExtensionsAPIClient() override;
+
+  // ExtensionsAPIClient
+  MessagingDelegate* GetMessagingDelegate() override;
+  void AttachWebContentsHelpers(
+      content::WebContents* web_contents) const override;
+
+ private:
+  std::unique_ptr<ElectronMessagingDelegate> messaging_delegate_;
+};
+
+}  // namespace extensions
+
+#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_API_CLIENT_H_

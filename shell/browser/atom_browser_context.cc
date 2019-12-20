@@ -146,14 +146,13 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
 AtomBrowserContext::~AtomBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   NotifyWillBeDestroyed(this);
+  // Notify any keyed services of browser context destruction.
+  BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
+      this);
   ShutdownStoragePartitions();
 
   BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
                             std::move(resource_context_));
-
-  // Notify any keyed services of browser context destruction.
-  BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
-      this);
 }
 
 void AtomBrowserContext::InitPrefs() {

@@ -28,6 +28,7 @@ scoped_refptr<const Extension> LoadUnpacked(
   // app_shell only supports unpacked extensions.
   // NOTE: If you add packed extension support consider removing the flag
   // FOLLOW_SYMLINKS_ANYWHERE below. Packed extensions should not have symlinks.
+  // TODO(nornagon): these LOG()s should surface as JS exceptions
   if (!base::DirectoryExists(extension_dir)) {
     LOG(ERROR) << "Extension directory not found: "
                << extension_dir.AsUTF8Unsafe();
