@@ -13,7 +13,7 @@ Iframes in Electron behave like iframes in regular browsers. An `<iframe>` eleme
 WebViews are a custom element (`<webview>`) that will only work inside Electron.
 They are implemented as an "out-of-process iframe". This means that all communication with the `<webview>` is done asynchronously using IPC. The `<webview>` element has many custom methods and events, similar to `webContents`, that allow you much greater control over the contents.
 
-Compared to an `<iframe>`, `<webview>` tend to be slightly slower but offer much greater control in loading and communicating with the third party content and handling various events.
+Compared to an `<iframe>`, `<webview>` tends to be slightly slower but offers much greater control in loading and communicating with the third party content and handling various events.
 
 ## BrowserViews
 
