@@ -1,4 +1,10 @@
+// Copyright (c) 2019 Slack Technologies, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #include "shell/browser/extensions/electron_extensions_api_client.h"
+
+#include <memory>
 
 #include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"

@@ -1,5 +1,11 @@
+// Copyright (c) 2019 Slack Technologies, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_API_CLIENT_H_
 #define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_API_CLIENT_H_
+
+#include <memory>
 
 #include "extensions/browser/api/extensions_api_client.h"
 

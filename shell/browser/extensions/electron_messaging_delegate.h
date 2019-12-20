@@ -1,5 +1,12 @@
+// Copyright (c) 2019 Slack Technologies, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_MESSAGING_DELEGATE_H_
 #define SHELL_BROWSER_EXTENSIONS_ELECTRON_MESSAGING_DELEGATE_H_
+
+#include <memory>
+#include <string>
 
 #include "extensions/browser/api/messaging/messaging_delegate.h"
 
