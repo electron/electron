@@ -88,7 +88,7 @@ NotifyIcon* NotifyIconHost::CreateNotifyIcon() {
 }
 
 void NotifyIconHost::Remove(NotifyIcon* icon) {
-  const auto n_removed = notify_icons_.erase(icon->icon_id());
+  const int n_removed = notify_icons_.erase(icon->icon_id());
   DCHECK_GT(n_removed, 0);
 }
 
