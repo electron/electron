@@ -84,7 +84,7 @@ NotifyIcon* NotifyIconHost::CreateNotifyIcon() {
   const auto id = NextIconId();
   auto result = base::TryEmplace(notify_icons_, id, this, id, window_,
                                  kNotifyIconMessage);
-  return &*result.first;
+  return &(result.first->second);
 }
 
 void NotifyIconHost::Remove(NotifyIcon* icon) {
@@ -110,7 +110,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
                                          LPARAM lparam) {
   if (message == taskbar_created_message_) {
     // We need to reset all of our icons because the taskbar went away.
-    for (auto it : notify_icons_) {
+    for (auto& it : notify_icons_) {
       it.second.ResetIcon();
     }
     return TRUE;
@@ -125,7 +125,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     if (it == notify_icons_.end())
       return TRUE;
 
-    NotifyIcon& win_icon = it.second;
+    NotifyIcon& win_icon = it->second;
     switch (lparam) {
       case NIN_BALLOONSHOW:
         win_icon.NotifyBalloonShow();
