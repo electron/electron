@@ -47,9 +47,11 @@ class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
     }
     if (node_->prev) {
       node_->prev->next = node_->next;
+      node_->prev = nullptr;
     }
     if (node_->next) {
       node_->next->prev = node_->prev;
+      node_->next = nullptr;
     }
     if (!node_->prev && !node_->next) {
       // Must be a single length linked list
