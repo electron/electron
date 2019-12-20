@@ -23,4 +23,4 @@ struct Converter<const extensions::Extension*> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
+#endif  // SHELL_COMMON_GIN_CONVERTERS_EXTENSION_CONVERTER_H_

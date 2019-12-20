@@ -57,12 +57,12 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     }
   })
 
-  it('lists loaded extensions in getLoadedExtensions', async () => {
+  it('lists loaded extensions in getAllExtensions', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
     const e = await (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
-    expect((customSession as any).getLoadedExtensions()).to.deep.equal([e]);
+    expect((customSession as any).getAllExtensions()).to.deep.equal([e]);
     (customSession as any).removeExtension(e.id)
-    expect((customSession as any).getLoadedExtensions()).to.deep.equal([])
+    expect((customSession as any).getAllExtensions()).to.deep.equal([])
   })
 
   it('gets an extension by id', async () => {

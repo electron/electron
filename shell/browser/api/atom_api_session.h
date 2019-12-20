@@ -101,7 +101,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   void EnableExtension(const std::string& extension_id);
   void DisableExtension(const std::string& extension_id);
   v8::Local<v8::Value> GetExtension(const std::string& extension_id);
-  v8::Local<v8::Value> GetLoadedExtensions();
+  v8::Local<v8::Value> GetAllExtensions();
 #endif
 
  protected:

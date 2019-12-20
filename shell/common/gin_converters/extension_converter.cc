@@ -15,7 +15,6 @@ v8::Local<v8::Value> Converter<const extensions::Extension*>::ToV8(
     const extensions::Extension* extension) {
   auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("id", extension->id());
-  // TODO
   return gin::ConvertToV8(isolate, dict);
 }
 

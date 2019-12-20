@@ -653,7 +653,7 @@ v8::Local<v8::Value> Session::GetExtension(const std::string& extension_id) {
   }
 }
 
-v8::Local<v8::Value> Session::GetLoadedExtensions() {
+v8::Local<v8::Value> Session::GetAllExtensions() {
   auto* registry = extensions::ExtensionRegistry::Get(browser_context());
   auto installed_extensions = registry->GenerateInstalledExtensionsSet();
   std::vector<const extensions::Extension*> extensions_vector;
@@ -853,7 +853,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("enableExtension", &Session::EnableExtension)
       .SetMethod("disableExtension", &Session::DisableExtension)
       .SetMethod("getExtension", &Session::GetExtension)
-      .SetMethod("getLoadedExtensions", &Session::GetLoadedExtensions)
+      .SetMethod("getAllExtensions", &Session::GetAllExtensions)
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
       .SetMethod("getSpellCheckerLanguages", &Session::GetSpellCheckerLanguages)
