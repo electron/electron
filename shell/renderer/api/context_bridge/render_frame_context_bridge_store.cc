@@ -78,11 +78,7 @@ WeakGlobalPairNode::WeakGlobalPairNode(WeakGlobalPair pair) {
   this->pair = std::move(pair);
 }
 
-WeakGlobalPairNode::~WeakGlobalPairNode() {
-  if (next) {
-    delete next;
-  }
-}
+WeakGlobalPairNode::~WeakGlobalPairNode() {}
 
 RenderFramePersistenceStore::RenderFramePersistenceStore(
     content::RenderFrame* render_frame)
