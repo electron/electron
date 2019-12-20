@@ -88,6 +88,24 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       }
     })
   })
+
+  describe('background pages', () => {
+    it('loads a lazy background page when sending a message', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      ;(customSession as any).loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'))
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
+      try {
+        w.loadURL(url)
+        const [, resp] = await emittedOnce(ipcMain, 'bg-page-message-response')
+        expect(resp.message).to.deep.equal({ some: 'message' })
+        expect(resp.sender.id).to.be.a('string')
+        expect(resp.sender.origin).to.equal(url)
+        expect(resp.sender.url).to.equal(url + '/')
+      } finally {
+        w.destroy()
+      }
+    })
+  })
 })
 
 ifdescribe(!process.electronBinding('features').isExtensionsEnabled())('chrome extensions', () => {
