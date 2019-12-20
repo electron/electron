@@ -46,11 +46,7 @@ function isInstalled () {
   
   const electronPath = process.env.ELECTRON_OVERRIDE_DIST_PATH || path.join(__dirname, 'dist', platformPath)
   
-  if (!fs.existsSync(electronPath)) {
-    return false
-  }
-
-  return true
+  return fs.existsSync(electronPath)
 }
 
 // unzips and makes path.txt point at the correct executable
