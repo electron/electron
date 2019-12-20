@@ -948,7 +948,7 @@ AtomBrowserClient::CreateThrottlesForNavigation(
   std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
   throttles.push_back(std::make_unique<AtomNavigationThrottle>(handle));
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   throttles.push_back(
       std::make_unique<extensions::ExtensionNavigationThrottle>(handle));
 #endif
