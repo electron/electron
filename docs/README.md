@@ -127,6 +127,7 @@ These individual tutorials expand on topics discussed in the guide above.
 * [BrowserView](api/browser-view.md)
 * [BrowserWindow](api/browser-window.md)
 * [contentTracing](api/content-tracing.md)
+* [Cookies](api/cookies.md)
 * [dialog](api/dialog.md)
 * [globalShortcut](api/global-shortcut.md)
 * [inAppPurchase](api/in-app-purchase.md)
