@@ -59,9 +59,11 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   int button_count = static_cast<int>([ns_buttons count]);
 
   if (settings.default_id >= 0 && settings.default_id < button_count) {
-    // Focus the button at default_id if the user opted to do so.
-    // The first button added gets set as the default selected.
-    // So remove that default, and make the requested button the default.
+    // Highlight the button at default_id
+    [[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
+
+    // The first button added gets set as the default selected, so remove
+    // that and set the button @ default_id to be default.
     [[ns_buttons objectAtIndex:0] setKeyEquivalent:@""];
     [[ns_buttons objectAtIndex:settings.default_id] setKeyEquivalent:@"\r"];
   }
