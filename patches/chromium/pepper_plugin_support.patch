@@ -7,7 +7,7 @@ This tweaks Chrome's pepper flash and PDF plugin support to make it
 usable from Electron.
 
 diff --git a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
-index 4bb88c55a82a83cef8330ec8157b49d5adb097ce..48f4e385a57eb0e00c90488fbf052900b6884775 100644
+index d72a867594acee97d50c5f905fc1a4df9aa9352e..8a4cc159cb490ebadbb1b54aa88223c0cbf8ffdb 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 @@ -7,10 +7,12 @@
@@ -237,7 +237,7 @@ index b9d2ce7f7f6837ee7b304daac82d21a3147c6faf..4d4b023d62d12b4d119acbfdee64f415
  
    base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_{this};
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index 0fa0fa341e93bd089ef2a22f74450af55db69f5b..9a6d8e5740d6ccede998efd3a96496acd9efabfb 100644
+index c94e1947dc1b1ea83b27107c36e87c3dad5a61b1..b38862b776713958c54c3523b61a36f99fd42e9e 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -8,17 +8,21 @@
@@ -337,7 +337,7 @@ index 0fa0fa341e93bd089ef2a22f74450af55db69f5b..9a6d8e5740d6ccede998efd3a96496ac
  int32_t PepperIsolatedFileSystemMessageFilter::OpenPluginPrivateFileSystem(
      ppapi::host::HostMessageContext* context) {
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-index b36248debee4f5e0503e7611f7d1c47d59650f5b..7af31ee0d2cbb4c8fc7cd41c356305d6476815c5 100644
+index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec89599280 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 @@ -20,7 +20,9 @@

@@ -9,10 +9,10 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0e6546d69fd69d8673e3f512c6c0a8e6841a8bc4..9fc5979b54715ffac8984bd27893c3c088b7ed77 100644
+index 3eac125ee70503d904914d8bc918baed2fae3b4f..ccf54b6f2c0458975ad27b7dcf6e4fd9b54810e3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2033,6 +2033,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2043,6 +2043,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    std::string unique_name;
    frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
  
@@ -25,7 +25,7 @@ index 0e6546d69fd69d8673e3f512c6c0a8e6841a8bc4..9fc5979b54715ffac8984bd27893c3c0
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -2043,6 +2049,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2053,6 +2059,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
      view_.reset(CreateWebContentsView(this, delegate,
                                        &render_view_host_delegate_view_));
    }
@@ -34,7 +34,7 @@ index 0e6546d69fd69d8673e3f512c6c0a8e6841a8bc4..9fc5979b54715ffac8984bd27893c3c0
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index ee46225097d87474664f34b10738b8025e473701..44ac0df5107debd331ccb749937bc4c5c505b924 100644
+index 03df27a158b23bc3898c395a03df1376d08d08b3..1e3b367c8306d5208fcd08921d100106a9992fa9 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -79,9 +79,12 @@ class BrowserPluginGuestDelegate;
@@ -49,7 +49,7 @@ index ee46225097d87474664f34b10738b8025e473701..44ac0df5107debd331ccb749937bc4c5
 +class WebContentsView;
  struct CustomContextMenuContext;
  struct DropData;
- struct MHTMLGenerationParams;
+ struct FaviconURL;
 @@ -214,6 +217,10 @@ class WebContents : public PageNavigator,
        kInitializeAndWarmupRendererProcess,
      } desired_renderer_state;
