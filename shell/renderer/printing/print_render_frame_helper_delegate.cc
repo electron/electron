@@ -14,11 +14,6 @@ PrintRenderFrameHelperDelegate::PrintRenderFrameHelperDelegate() = default;
 
 PrintRenderFrameHelperDelegate::~PrintRenderFrameHelperDelegate() = default;
 
-bool PrintRenderFrameHelperDelegate::CancelPrerender(
-    content::RenderFrame* render_frame) {
-  return false;
-}
-
 // Return the PDF object element if |frame| is the out of process PDF extension.
 blink::WebElement PrintRenderFrameHelperDelegate::GetPdfElement(
     blink::WebLocalFrame* frame) {
