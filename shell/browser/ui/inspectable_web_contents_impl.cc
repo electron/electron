@@ -12,6 +12,7 @@
 #include "base/guid.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
+#include "base/json/string_escape.h"
 #include "base/metrics/histogram.h"
 #include "base/stl_util.h"
 #include "base/strings/pattern.h"
@@ -830,7 +831,8 @@ void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
   }
 
   if (agent_host_)
-    agent_host_->DispatchProtocolMessage(this, message);
+    agent_host_->DispatchProtocolMessage(
+        this, base::as_bytes(base::make_span(message)));
 }
 
 void InspectableWebContentsImpl::SendJsonRequest(
@@ -902,21 +904,26 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(
 
 void InspectableWebContentsImpl::DispatchProtocolMessage(
     content::DevToolsAgentHost* agent_host,
-    const std::string& message) {
+    base::span<const uint8_t> message) {
   if (!frontend_loaded_)
     return;
 
-  if (message.length() < kMaxMessageChunkSize) {
+  base::StringPiece str_message(reinterpret_cast<const char*>(message.data()),
+                                message.size());
+  if (str_message.size() < kMaxMessageChunkSize) {
+    std::string param;
+    base::EscapeJSONString(str_message, true, &param);
     base::string16 javascript =
-        base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + message + ");");
+        base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + param + ");");
     GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
     return;
   }
 
-  base::Value total_size(static_cast<int>(message.length()));
-  for (size_t pos = 0; pos < message.length(); pos += kMaxMessageChunkSize) {
-    base::Value message_value(message.substr(pos, kMaxMessageChunkSize));
+  base::Value total_size(static_cast<int>(str_message.length()));
+  for (size_t pos = 0; pos < str_message.length();
+       pos += kMaxMessageChunkSize) {
+    base::Value message_value(str_message.substr(pos, kMaxMessageChunkSize));
     CallClientFunction("DevToolsAPI.dispatchMessageChunk", &message_value,
                        pos ? nullptr : &total_size, nullptr);
   }

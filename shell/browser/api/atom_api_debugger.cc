@@ -38,14 +38,17 @@ void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host) {
 }
 
 void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
-                                       const std::string& message) {
+                                       base::span<const uint8_t> message) {
   DCHECK(agent_host == agent_host_);
 
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
+  base::StringPiece message_str(reinterpret_cast<const char*>(message.data()),
+                                message.size());
   std::unique_ptr<base::Value> parsed_message =
-      base::JSONReader::ReadDeprecated(message);
+      base::JSONReader::ReadDeprecated(message_str,
+                                       base::JSON_REPLACE_INVALID_CHARACTERS);
   if (!parsed_message || !parsed_message->is_dict())
     return;
   base::DictionaryValue* dict =
@@ -157,7 +160,8 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin_helper::Arguments* args) {
 
   std::string json_args;
   base::JSONWriter::Write(request, &json_args);
-  agent_host_->DispatchProtocolMessage(this, json_args);
+  agent_host_->DispatchProtocolMessage(
+      this, base::as_bytes(base::make_span(json_args)));
 
   return handle;
 }
