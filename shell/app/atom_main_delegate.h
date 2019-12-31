@@ -42,7 +42,9 @@ class AtomMainDelegate : public content::ContentMainDelegate {
 #if defined(OS_MACOSX)
   bool DelaySandboxInitialization(const std::string& process_type) override;
 #endif
-  bool ShouldLockSchemeRegistry() override;
+  // TODO(jkleinsc) update for changes made in
+  // https://chromium.googlesource.com/chromium/src/+/19be6547a9a898104cd172de77184e243643ee19
+  // bool ShouldLockSchemeRegistry() override;
   bool ShouldCreateFeatureList() override;
 
  private:

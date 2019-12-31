@@ -341,9 +341,11 @@ bool AtomMainDelegate::DelaySandboxInitialization(
 }
 #endif
 
-bool AtomMainDelegate::ShouldLockSchemeRegistry() {
+// TODO(jkleinsc) update for changes made in
+// https://chromium.googlesource.com/chromium/src/+/19be6547a9a898104cd172de77184e243643ee19
+/* bool AtomMainDelegate::ShouldLockSchemeRegistry() {
   return false;
-}
+} */
 
 bool AtomMainDelegate::ShouldCreateFeatureList() {
   return false;
