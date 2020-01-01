@@ -1122,7 +1122,12 @@ describe('webContents module', () => {
       { name: 'did-fail-load', url: '/net-error' }
     ]
     for (const e of events) {
-      it(`should not crash when invoked synchronously inside ${e.name} handler`, async () => {
+      it(`should not crash when invoked synchronously inside ${e.name} handler`, async function () {
+        // This test is flaky on Windows CI and we don't know why, but the
+        // purpose of this test is to make sure Electron does not crash so it
+        // is fine to retry this test for a few times.
+        this.retries(3)
+
         const contents = (webContents as any).create() as WebContents
         const originalEmit = contents.emit.bind(contents)
         contents.emit = (...args) => { return originalEmit(...args) }
