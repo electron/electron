@@ -422,8 +422,6 @@ on a page directly in the markup using a `<meta>` tag:
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'">
 ```
 
-#### `webRequest.onHeadersReceived([filter, ]listener)`
-
 
 ## 7) Do Not Set `allowRunningInsecureContent` to `true`
 
