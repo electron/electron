@@ -241,7 +241,7 @@ prevent the use of Node primitives, `contextIsolation` must also be used.
 
 ### Why?
 
-Context isolation allows each the scripts on running in the renderer to make
+Context isolation allows each of the scripts running in the renderer to make
 changes to its JavaScript environment without worrying about conflicting with
 the scripts in the Electron API or the preload script.
 
@@ -421,8 +421,6 @@ on a page directly in the markup using a `<meta>` tag:
 ```html
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'">
 ```
-
-#### `webRequest.onHeadersReceived([filter, ]listener)`
 
 
 ## 7) Do Not Set `allowRunningInsecureContent` to `true`
