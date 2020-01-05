@@ -181,6 +181,9 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   void SetEmbedder(const WebContents* embedder);
   void SetDevToolsWebContents(const WebContents* devtools);
   v8::Local<v8::Value> GetNativeView() const;
+  void IncrementCapturerCount(gin_helper::Arguments* args);
+  void DecrementCapturerCount(gin_helper::Arguments* args);
+  bool IsBeingCaptured();
 
 #if BUILDFLAG(ENABLE_PRINTING)
   void Print(gin_helper::Arguments* args);
