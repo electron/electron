@@ -987,7 +987,7 @@ Injects CSS into the current web page and returns a unique key for the inserted
 stylesheet.
 
 ```js
-contents.on('did-finish-load', function () {
+contents.on('did-finish-load', () => {
   contents.insertCSS('html, body { background-color: #f00; }')
 })
 ```
@@ -1002,7 +1002,7 @@ Removes the inserted CSS from the current web page. The stylesheet is identified
 by its key, which is returned from `contents.insertCSS(css)`.
 
 ```js
-contents.on('did-finish-load', async function () {
+contents.on('did-finish-load', async () => {
   const key = await contents.insertCSS('html, body { background-color: #f00; }')
   contents.removeInsertedCSS(key)
 })
