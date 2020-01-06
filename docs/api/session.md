@@ -522,7 +522,7 @@ const path = require('path')
 app.on('ready', function () {
   const protocol = session.fromPartition('some-partition').protocol
   protocol.registerFileProtocol('atom', function (request, callback) {
-    var url = request.url.substr(7)
+    let url = request.url.substr(7)
     callback({ path: path.normalize(`${__dirname}/${url}`) })
   }, function (error) {
     if (error) console.error('Failed to register protocol')
