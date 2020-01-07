@@ -5,6 +5,7 @@ import errno
 import hashlib
 import json
 import os
+import tarfile
 
 from lib.config import PLATFORM, get_target_arch
 from lib.util import add_exec_bit, download, extract_zip, rm_rf, \
@@ -51,8 +52,12 @@ def main():
 
     temp_path = download_binary(base_url, version, binary['url'], binary['sha'])
 
-    # We assume that all binaries are in zip archives.
-    extract_zip(temp_path, output_dir)
+    if temp_path.endswith('.zip'):
+      extract_zip(temp_path, output_dir)
+    else:
+      tar = tarfile.open(temp_path, "r:gz")
+      tar.extractall(output_dir)
+      tar.close()
 
     # Hack alert. Set exec bit for sccache binaries.
     # https://bugs.python.org/issue15795
