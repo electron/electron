@@ -96,6 +96,7 @@ auto_filenames = {
     "docs/api/structures/mime-typed-buffer.md",
     "docs/api/structures/mouse-input-event.md",
     "docs/api/structures/mouse-wheel-input-event.md",
+    "docs/api/structures/new-window-event.md",
     "docs/api/structures/notification-action.md",
     "docs/api/structures/point.md",
     "docs/api/structures/printer-info.md",
