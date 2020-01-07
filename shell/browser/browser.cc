@@ -26,6 +26,21 @@
 
 namespace electron {
 
+namespace {
+
+// Call |quit| after Chromium is fully started.
+//
+// This is important for quitting immediately in the "ready" event, when
+// certain initialization task may still be pending, and quitting at that time
+// could end up with crash on exit.
+void RunQuitClosure(base::OnceClosure quit) {
+  // On Linux/Windows the "ready" event is emitted in "PreMainMessageLoopRun",
+  // make sure we quit after message loop has run for once.
+  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(quit));
+}
+
+}  // namespace
+
 Browser::LoginItemSettings::LoginItemSettings() = default;
 Browser::LoginItemSettings::~LoginItemSettings() = default;
 Browser::LoginItemSettings::LoginItemSettings(const LoginItemSettings& other) =
@@ -94,7 +109,7 @@ void Browser::Shutdown() {
     observer.OnQuit();
 
   if (quit_main_message_loop_) {
-    std::move(quit_main_message_loop_).Run();
+    RunQuitClosure(std::move(quit_main_message_loop_));
   } else {
     // There is no message loop available so we are in early stage, wait until
     // the quit_main_message_loop_ is available.
@@ -189,7 +204,7 @@ void Browser::PreMainMessageLoopRun() {
 
 void Browser::SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure) {
   if (is_shutdown_)
-    std::move(quit_closure).Run();
+    RunQuitClosure(std::move(quit_closure));
   else
     quit_main_message_loop_ = std::move(quit_closure);
 }

@@ -48,11 +48,12 @@ function makeWindow () {
   before(async () => {
     w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } })
     await w.loadURL('about:blank')
-    await w.webContents.executeJavaScript(`
+    await w.webContents.executeJavaScript(`{
       const chai_1 = window.chai_1 = require('chai')
       chai_1.use(require('chai-as-promised'))
       chai_1.use(require('dirty-chai'))
-    `)
+      null
+    }`)
   })
   after(closeAllWindows)
   return () => w
@@ -63,11 +64,12 @@ function makeEachWindow () {
   beforeEach(async () => {
     w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } })
     await w.loadURL('about:blank')
-    await w.webContents.executeJavaScript(`
+    await w.webContents.executeJavaScript(`{
       const chai_1 = window.chai_1 = require('chai')
       chai_1.use(require('chai-as-promised'))
       chai_1.use(require('dirty-chai'))
-    `)
+      null
+    }`)
   })
   afterEach(closeAllWindows)
   return () => w

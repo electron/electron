@@ -445,6 +445,9 @@ step-electron-publish: &step-electron-publish
   run:
     name: Publish Electron Dist
     command: |
+      if [ "`uname`" == "Darwin" ]; then
+        rm -rf src/out/Default/obj
+      fi
       cd src/electron
       if [ "$UPLOAD_TO_S3" == "1" ]; then
         echo 'Uploading Electron release distribution to S3'

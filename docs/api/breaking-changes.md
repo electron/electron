@@ -28,6 +28,22 @@ Electron 8.x, and has been removed in Electron 9.x. The layout zoom level limits
 are now fixed at a minimum of 0.25 and a maximum of 5.0, as defined
 [here](https://chromium.googlesource.com/chromium/src/+/938b37a6d2886bf8335fc7db792f1eb46c65b2ae/third_party/blink/common/page/page_zoom.cc#11).
 
+### Sending non-JS objects over IPC now throws an exception
+
+In Electron 8.0, IPC was changed to use the Structured Clone Algorithm,
+bringing significant performance improvements. To help ease the transition, the
+old IPC serialization algorithm was kept and used for some objects that aren't
+serializable with Structured Clone. In particular, DOM objects (e.g. `Element`,
+`Location` and `DOMMatrix`), Node.js objects backed by C++ classes (e.g.
+`process.env`, some members of `Stream`), and Electron objects backed by C++
+classes (e.g. `WebContents`, `BrowserWindow` and `WebFrame`) are not
+serializable with Structured Clone. Whenever the old algorithm was invoked, a
+deprecation warning was printed.
+
+In Electron 9.0, the old serialization algorithm has been removed, and sending
+such non-serializable objects will now throw an "object could not be cloned"
+error.
+
 ## Planned Breaking API Changes (8.0)
 
 ### Values sent over IPC are now serialized with Structured Clone Algorithm

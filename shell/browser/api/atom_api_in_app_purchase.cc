@@ -85,6 +85,8 @@ void InAppPurchase::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(gin::StringToV8(isolate, "InAppPurchase"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("canMakePayments", &in_app_purchase::CanMakePayments)
+      .SetMethod("restoreCompletedTransactions",
+                 &in_app_purchase::RestoreCompletedTransactions)
       .SetMethod("getReceiptURL", &in_app_purchase::GetReceiptURL)
       .SetMethod("purchaseProduct", &InAppPurchase::PurchaseProduct)
       .SetMethod("finishAllTransactions",

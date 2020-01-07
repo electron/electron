@@ -26,10 +26,10 @@ index d9175ae9661218b58e9b587ad3a9dbd540bfd384..ed178ea7b3d7f8039f47402bc08cae20
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 6d23820c16e017ea621e6404bc9e90ae9656651f..ccdc504dd2f21a6ff7fa26fafb88b4ab233279a7 100644
+index 183fe5b316697e9478751bab4766238ec8e29bd2..b3855befd3586af8a36917f5a3a61b2a220842a5 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -433,6 +433,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -437,6 +437,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
        ColorId color_id,
        ColorScheme color_scheme = ColorScheme::kDefault) const = 0;
  
@@ -52,7 +52,7 @@ index 6d23820c16e017ea621e6404bc9e90ae9656651f..ccdc504dd2f21a6ff7fa26fafb88b4ab
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -557,6 +573,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -561,6 +577,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredColorScheme preferred_color_scheme_ =
        PreferredColorScheme::kNoPreference;
  

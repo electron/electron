@@ -3,6 +3,9 @@ From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:47:04 -0700
 Subject: webview_cross_drag.patch
 
+This allows dragging and dropping between <webview>s.
+
+Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
 index 75972bb7f6ccfe5cf7d1bd78e154f7835312fda1..5368aafddd91cc75075700c8f93e3d7ea8f6435b 100644
@@ -17,7 +20,7 @@ index 75972bb7f6ccfe5cf7d1bd78e154f7835312fda1..5368aafddd91cc75075700c8f93e3d7e
        GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
        drag_start_view_id_;
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index c4638ac6e86d6a816848cdbbdfa3e70d45086d90..18bd2fb8171568745549d490ee93887418890157 100644
+index c09646513c3958e037385b98c6568e29986f9831..96d6d7633a487a5c62ab17735c016b7289b2e594 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
 @@ -336,6 +336,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
@@ -25,6 +28,6 @@ index c4638ac6e86d6a816848cdbbdfa3e70d45086d90..18bd2fb8171568745549d490ee938874
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {
 +  return YES;
-   return targetRWH->GetProcess()->GetID() == dragStartProcessID_ ||
-          GetRenderViewHostID(webContents_->GetRenderViewHost()) !=
-              dragStartViewID_;
+   return targetRWH->GetProcess()->GetID() == _dragStartProcessID ||
+          GetRenderViewHostID(_webContents->GetRenderViewHost()) !=
+              _dragStartViewID;

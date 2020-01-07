@@ -595,13 +595,11 @@ describe('BrowserWindow module', () => {
     })
 
     describe('BrowserWindow.getFocusedWindow()', () => {
-      it('returns the opener window when dev tools window is focused', (done) => {
+      it('returns the opener window when dev tools window is focused', async () => {
         w.show()
-        w.webContents.once('devtools-focused', () => {
-          expect(BrowserWindow.getFocusedWindow()).to.equal(w)
-          done()
-        })
         w.webContents.openDevTools({ mode: 'undocked' })
+        await emittedOnce(w.webContents, 'devtools-focused')
+        expect(BrowserWindow.getFocusedWindow()).to.equal(w)
       })
     })
 
@@ -831,6 +829,29 @@ describe('BrowserWindow module', () => {
           })
         })
         w.setContentBounds(bounds)
+      })
+    })
+
+    describe('BrowserWindow.getBackgroundColor()', () => {
+      it('returns default value if no backgroundColor is set', () => {
+        w.destroy()
+        w = new BrowserWindow({})
+        expect(w.getBackgroundColor()).to.equal('#FFFFFF')
+      })
+      it('returns correct value if backgroundColor is set', () => {
+        const backgroundColor = '#BBAAFF'
+        w.destroy()
+        w = new BrowserWindow({
+          backgroundColor: backgroundColor
+        })
+        expect(w.getBackgroundColor()).to.equal(backgroundColor)
+      })
+      it('returns correct value from setBackgroundColor()', () => {
+        const backgroundColor = '#AABBFF'
+        w.destroy()
+        w = new BrowserWindow({})
+        w.setBackgroundColor(backgroundColor)
+        expect(w.getBackgroundColor()).to.equal(backgroundColor)
       })
     })
 

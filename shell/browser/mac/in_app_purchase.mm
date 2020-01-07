@@ -141,6 +141,10 @@ bool CanMakePayments() {
   return [SKPaymentQueue canMakePayments];
 }
 
+void RestoreCompletedTransactions() {
+  [[SKPaymentQueue defaultQueue] restoreCompletedTransactions];
+}
+
 void FinishAllTransactions() {
   for (SKPaymentTransaction* transaction in SKPaymentQueue.defaultQueue
            .transactions) {

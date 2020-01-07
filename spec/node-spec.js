@@ -146,7 +146,7 @@ describe('node feature', () => {
       (process.platform === 'linux' ? it : it.skip)('allows executing a setuid binary from non-sandboxed renderer', () => {
         // Chrome uses prctl(2) to set the NO_NEW_PRIVILEGES flag on Linux (see
         // https://github.com/torvalds/linux/blob/40fde647cc/Documentation/userspace-api/no_new_privs.rst).
-        // We disable this for unsandboxed processes, which the remote tests
+        // We disable this for unsandboxed processes, which the renderer tests
         // are running in. If this test fails with an error like 'effective uid
         // is not 0', then it's likely that our patch to prevent the flag from
         // being set has become ineffective.

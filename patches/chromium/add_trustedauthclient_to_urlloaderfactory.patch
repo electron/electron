@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 691f9b0f6f658cc259cc9c4e8bb3abb15592e8a3..09ecb3f3406da54440cdd977556f602496ec39a6 100644
+index def2cb5e252389879c6287d44d29e704703841cb..98d64785240bde3e182268e453dced41b432df9a 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -190,6 +190,25 @@ struct HttpAuthStaticNetworkContextParams {
@@ -39,7 +39,7 @@ index 691f9b0f6f658cc259cc9c4e8bb3abb15592e8a3..09ecb3f3406da54440cdd977556f6024
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -597,6 +616,8 @@ struct URLLoaderFactoryParams {
+@@ -596,6 +615,8 @@ struct URLLoaderFactoryParams {
    // interface. This still respects the per-context block lists.
    CorsOriginAccessPatterns? factory_bound_access_patterns;
  
@@ -49,10 +49,10 @@ index 691f9b0f6f658cc259cc9c4e8bb3abb15592e8a3..09ecb3f3406da54440cdd977556f6024
    NetworkIsolationKey? network_isolation_key;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 486c92182695958a0c97d48d55ebd23e0bd5f3de..acd6c63eff1f94cc9fa8490610e571a73764369a 100644
+index 96ea5f62e5796810f87abfb2a3c400ffcc024ff0..d50831adb6ba65ece49b62ec4a8cd1a92fdb0d28 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -333,6 +333,7 @@ URLLoader::URLLoader(
+@@ -334,6 +334,7 @@ URLLoader::URLLoader(
      base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
      base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
      mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -60,7 +60,7 @@ index 486c92182695958a0c97d48d55ebd23e0bd5f3de..acd6c63eff1f94cc9fa8490610e571a7
      mojom::OriginPolicyManager* origin_policy_manager)
      : url_request_context_(url_request_context),
        network_service_client_(network_service_client),
-@@ -390,6 +391,11 @@ URLLoader::URLLoader(
+@@ -391,6 +392,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
    }
@@ -72,7 +72,7 @@ index 486c92182695958a0c97d48d55ebd23e0bd5f3de..acd6c63eff1f94cc9fa8490610e571a7
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -824,7 +830,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
+@@ -826,7 +832,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
  
  void URLLoader::OnAuthRequired(net::URLRequest* url_request,
                                 const net::AuthChallengeInfo& auth_info) {
@@ -81,24 +81,27 @@ index 486c92182695958a0c97d48d55ebd23e0bd5f3de..acd6c63eff1f94cc9fa8490610e571a7
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -840,10 +846,18 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -842,11 +848,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
-     head.headers = url_request->response_headers();
-   head.auth_challenge_info = auth_info;
+     head->headers = url_request->response_headers();
+   head->auth_challenge_info = auth_info;
 -  network_context_client_->OnAuthRequired(
 -      fetch_window_id_, factory_params_->process_id, render_frame_id_,
--      request_id_, url_request_->url(), first_auth_attempt_, auth_info, head,
+-      request_id_, url_request_->url(), first_auth_attempt_, auth_info,
+-      std::move(head),
 -      auth_challenge_responder_receiver_.BindNewPipeAndPassRemote());
 +
 +  if (auth_client_) {
 +    auth_client_->OnAuthRequired(
 +        fetch_window_id_, factory_params_->process_id, render_frame_id_,
-+        request_id_, url_request_->url(), first_auth_attempt_, auth_info, head,
++        request_id_, url_request_->url(), first_auth_attempt_, auth_info,
++        std::move(head),
 +        auth_challenge_responder_receiver_.BindNewPipeAndPassRemote());
 +  } else {
 +    network_context_client_->OnAuthRequired(
 +        fetch_window_id_, factory_params_->process_id, render_frame_id_,
-+        request_id_, url_request_->url(), first_auth_attempt_, auth_info, head,
++        request_id_, url_request_->url(), first_auth_attempt_, auth_info,
++        std::move(head),
 +        auth_challenge_responder_receiver_.BindNewPipeAndPassRemote());
 +  }
  

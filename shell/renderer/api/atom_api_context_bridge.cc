@@ -47,20 +47,12 @@ content::RenderFrame* GetRenderFrame(const v8::Local<v8::Object>& value) {
   return content::RenderFrame::FromWebFrame(frame);
 }
 
-std::map<content::RenderFrame*, context_bridge::RenderFramePersistenceStore*>&
-GetStoreMap() {
-  static base::NoDestructor<std::map<
-      content::RenderFrame*, context_bridge::RenderFramePersistenceStore*>>
-      store_map;
-  return *store_map;
-}
-
 context_bridge::RenderFramePersistenceStore* GetOrCreateStore(
     content::RenderFrame* render_frame) {
-  auto it = GetStoreMap().find(render_frame);
-  if (it == GetStoreMap().end()) {
+  auto it = context_bridge::GetStoreMap().find(render_frame->GetRoutingID());
+  if (it == context_bridge::GetStoreMap().end()) {
     auto* store = new context_bridge::RenderFramePersistenceStore(render_frame);
-    GetStoreMap().emplace(render_frame, store);
+    context_bridge::GetStoreMap().emplace(render_frame->GetRoutingID(), store);
     return store;
   }
   return it->second;

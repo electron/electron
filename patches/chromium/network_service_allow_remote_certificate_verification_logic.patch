@@ -3,9 +3,11 @@ From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Wed, 8 May 2019 17:25:55 -0700
 Subject: network_service_allow_remote_certificate_verification_logic.patch
 
+This adds a callback from the network service that's used to implement
+session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 0d00958c9d318b9d1f34c0f1c1be1f6d6fa35d17..1e2d8401083906b5a07c9044cf72ea6d49a9edaa 100644
+index e12f76b1ca50efee574a7bbf852d2f6923d528cd..8b51dbe8f2859de3be2e6dc918f4eb535a8a5622 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -93,6 +93,11 @@
@@ -188,7 +190,7 @@ index 55d2de8f1e5d538f3168808c0b3c2a19520cf824..829a26f486e1e7c7a24f1d273e9af48d
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<cert_verifier::CertNetFetcherURLLoader> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 662496d972418f367bf608ba43233526d86363fc..1ba183b6e6caf064fd003d1cf5e8af4ebc4ba869 100644
+index ee5d5864eaf9fcb4bf5f13fc5e3a6ae70a6d7a86..f45ea3ba79d68d6d58aedba54c5bc9d7fc4935e9 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -190,6 +190,17 @@ struct HttpAuthStaticNetworkContextParams {
@@ -209,7 +211,7 @@ index 662496d972418f367bf608ba43233526d86363fc..1ba183b6e6caf064fd003d1cf5e8af4e
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -799,6 +810,9 @@ interface NetworkContext {
+@@ -798,6 +809,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

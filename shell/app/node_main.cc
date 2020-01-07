@@ -116,28 +116,40 @@ int NodeMain(int argc, char* argv[]) {
     }
 
     node::LoadEnvironment(env);
+    v8::Isolate* isolate = env->isolate();
 
-    bool more;
-    do {
-      more = uv_run(env->event_loop(), UV_RUN_ONCE);
-      gin_env.platform()->DrainTasks(env->isolate());
-      if (more == false) {
-        node::EmitBeforeExit(env);
+    {
+      v8::SealHandleScope seal(isolate);
+      bool more;
+      do {
+        uv_run(env->event_loop(), UV_RUN_DEFAULT);
+
+        gin_env.platform()->DrainTasks(env->isolate());
+
+        more = uv_loop_alive(env->event_loop());
+        if (more && !env->is_stopping())
+          continue;
+
+        if (!uv_loop_alive(env->event_loop())) {
+          EmitBeforeExit(env);
+        }
 
         // Emit `beforeExit` if the loop became alive either after emitting
         // event, or after running some callbacks.
         more = uv_loop_alive(env->event_loop());
-        if (uv_run(env->event_loop(), UV_RUN_NOWAIT) != 0)
-          more = true;
-      }
-    } while (more == true);
+      } while (more && !env->is_stopping());
+    }
 
     node_debugger.Stop();
     exit_code = node::EmitExit(env);
-    env->set_can_call_into_js(false);
-    node::RunAtExit(env);
 
-    v8::Isolate* isolate = env->isolate();
+    node::ResetStdio();
+
+    env->set_can_call_into_js(false);
+    env->stop_sub_worker_contexts();
+    env->RunCleanup();
+
+    node::RunAtExit(env);
     node::FreeEnvironment(env);
     node::FreeIsolateData(isolate_data);
 

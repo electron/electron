@@ -3,6 +3,8 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Tue, 2 Oct 2018 11:39:58 -0700
 Subject: feat: add new built_with_electron variable to config.gypi
 
+This allows 3rd-party native modules to know whether they're being built
+against Electron.
 
 diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
 index 01f62d4ae6e3b9d539444e3dff069f0011353caa..d8b279f590c115108d5dca879747de7b0c9f1934 100644

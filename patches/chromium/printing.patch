@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index aacffd44658cac701c9683fcb3b20135a64c18bd..01cd31eb174e198724cab082e50564445ee5c6fd 100644
+index 55469c2b13d43e788a85315cc14a9c6eabe8ad9b..453d6cbcad219d1ae3da285ec005b6a559452ead 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,7 +21,6 @@
@@ -30,7 +30,7 @@ index aacffd44658cac701c9683fcb3b20135a64c18bd..01cd31eb174e198724cab082e5056444
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
-@@ -221,9 +221,14 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
+@@ -222,9 +222,14 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
          print_backend->GetPrinterDriverInfo(printer_name));
    }
  
@@ -48,7 +48,7 @@ index aacffd44658cac701c9683fcb3b20135a64c18bd..01cd31eb174e198724cab082e5056444
  }
  
  #if defined(OS_CHROMEOS)
-@@ -239,6 +244,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -240,6 +245,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {

@@ -1,13 +1,5 @@
-<html>
-<head>
-  <meta name="referrer" content="always">
-  <link href="../node_modules/mocha/mocha.css" rel="stylesheet">
-  <script src="jquery-2.0.3.min.js"></script>
-</head>
 <body>
-
-<div id="mocha"></div>
-
+<script src="jquery-2.0.3.min.js"></script>
 <script type="text/javascript" charset="utf-8">
 (function() {
   // Deprecated APIs are still supported and should be tested.
@@ -93,7 +85,6 @@
     const runner = mocha.run(() => {
       // Ensure the callback is called after runner is defined
       setTimeout(() => {
-        Mocha.utils.highlightTags('code')
         ipcRenderer.send('process.exit', runner.failures)
       }, 0)
     })
@@ -101,4 +92,3 @@
 })()
 </script>
 </body>
-</html>

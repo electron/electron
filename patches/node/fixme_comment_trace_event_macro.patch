@@ -3,6 +3,8 @@ From: Nitish Sakhawalkar <nitsakh@icloud.com>
 Date: Tue, 26 Mar 2019 11:28:05 -0700
 Subject: fixme: Comment trace event macro
 
+This broke the build at some point. Does it still? We should probably remove
+this patch and find out!
 
 diff --git a/src/node_internals.h b/src/node_internals.h
 index fb1188a6bbce37b2bbaba0a815f2826dca60cf3b..843cbf1d253022c9601ceaf74022873a48ac0a5f 100644
