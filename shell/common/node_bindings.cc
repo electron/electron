@@ -144,7 +144,8 @@ void SetNodeOptions(base::Environment* env) {
       "--force-fips", "--enable-fips"};
 
   // Subset of options allowed in packaged apps
-  const std::set<std::string> allowed_in_packaged = {"--max-http-header-size"};
+  const std::set<std::string> allowed_in_packaged = {"--max-http-header-size",
+                                                     "--http-parser"};
 
   if (env->HasVar("NODE_OPTIONS")) {
     std::string options;
