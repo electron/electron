@@ -153,16 +153,14 @@ app._setDefaultAppPaths(packagePath);
 // Load the chrome devtools support.
 require('@electron/internal/browser/devtools');
 
-const features = process.electronBinding('features');
-
 // Load the chrome extension support.
-if (features.isExtensionsEnabled()) {
+if (BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)) {
   require('@electron/internal/browser/chrome-extension-shim');
 } else {
   require('@electron/internal/browser/chrome-extension');
 }
 
-if (features.isRemoteModuleEnabled()) {
+if (BUILDFLAG(ENABLE_REMOTE_MODULE)) {
   require('@electron/internal/browser/remote/server');
 }
 
