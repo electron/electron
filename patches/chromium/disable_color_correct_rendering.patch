@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 524b13090ab1d5f9784aee7e5690b5e290a516f1..3014be3773dc0664be6545fed8cc1d9d1a680bff 100644
+index 7eb7eba37f1e073b6c85a17921bd32eed3e7e069..455012abcce57fa26b7838d9b29a10dd2247605b 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1813,6 +1813,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
@@ -83,7 +83,7 @@ index cb69e08c0185f55497089505ed5b226e57140321..362f28accc248248f3bcb54955c23528
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 43c5e254d4c10c9edf8e4d93621320f3d43b649f..ef3e8562f2fdf8461cfecb5fc2dd63ec23cd1450 100644
+index 663f81a8ce1c3e1dc8d38de1c1b58e950eb5b525..6a160f7e44a0d1d15c51d6cf95ea9a79826df4e6 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -83,6 +83,9 @@
@@ -193,7 +193,7 @@ index 43c5e254d4c10c9edf8e4d93621320f3d43b649f..ef3e8562f2fdf8461cfecb5fc2dd63ec
  
    gfx::ColorSpace adjusted_color_space = src_color_space;
    float sdr_white_level = current_frame()->sdr_white_level;
-@@ -3625,7 +3632,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -3624,7 +3631,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
  
    *overlay_texture = FindOrCreateOverlayTexture(
        params.quad->render_pass_id, iosurface_width, iosurface_height,
@@ -202,7 +202,7 @@ index 43c5e254d4c10c9edf8e4d93621320f3d43b649f..ef3e8562f2fdf8461cfecb5fc2dd63ec
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -3844,8 +3851,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -3843,8 +3850,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -213,7 +213,7 @@ index 43c5e254d4c10c9edf8e4d93621320f3d43b649f..ef3e8562f2fdf8461cfecb5fc2dd63ec
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4005,3 +4012,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -4004,3 +4011,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
@@ -232,10 +232,10 @@ index 20a2cae2de196aede4314e0a94638fdc5be04b75..160092c7e996d0f0232eda91e7a62bb7
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index da5d9a398ed0b573e1de9d9196ee771dfa1a2a8c..7e74f31cdaaea164273556ba38b1e454d0a55f35 100644
+index 66df46bf5d9ac3eaff38991c2c73dc796a4a77a2..3941fdaea3376733a47623ccef5a1fe6d9f320e9 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -229,6 +229,7 @@
+@@ -228,6 +228,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
@@ -243,7 +243,7 @@ index da5d9a398ed0b573e1de9d9196ee771dfa1a2a8c..7e74f31cdaaea164273556ba38b1e454
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3033,6 +3034,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3064,6 +3065,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -252,10 +252,10 @@ index da5d9a398ed0b573e1de9d9196ee771dfa1a2a8c..7e74f31cdaaea164273556ba38b1e454
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 58e09d4bfd7c772e41219f286cd0b87cb396336c..da340e66ff0687e85683eab1057ee4e2b2e6a04c 100644
+index 2ab7bde880a33e65ac1fd7aa0801035fb8abf3f3..203502d96e8c82a3f95f6053fe8b204aa3cea0c6 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2955,6 +2955,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2945,6 +2945,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

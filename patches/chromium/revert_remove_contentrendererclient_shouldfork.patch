@@ -6,7 +6,7 @@ Subject: Revert "Remove ContentRendererClient::ShouldFork."
 This reverts commit 6b068eb8ca4a3c7350bdafa22fc0cf0636ef8b74.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index 1950be19dff0f559354bd57b3c5281b65e6c1c5e..00ff8aa9338f221b0cca3dcb807af7a3b176c4f7 100644
+index 9165e0a84a29aed3f0d995f5f670ff51d746f24d..1ed63c5e5023ebcafa61add35e7369618559f892 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
 @@ -1310,6 +1310,17 @@ bool ChromeContentRendererClient::ShouldFork(WebLocalFrame* frame,
@@ -28,10 +28,10 @@ index 1950be19dff0f559354bd57b3c5281b65e6c1c5e..00ff8aa9338f221b0cca3dcb807af7a3
  }
  
 diff --git a/content/renderer/render_view_browsertest.cc b/content/renderer/render_view_browsertest.cc
-index c86f6bda5d7efcb08992964e4576adcf4b2bd027..4d35bd5c076d18d792aabe5fbf5825ddeed10da9 100644
+index c20b747139d2931afeaa97ae8805a3aabfb4903e..303e00fd40155d00f6b3a9c1de89b60f05feeb60 100644
 --- a/content/renderer/render_view_browsertest.cc
 +++ b/content/renderer/render_view_browsertest.cc
-@@ -989,6 +989,73 @@ TEST_F(RenderViewImplTest, BeginNavigationForWebUI) {
+@@ -990,6 +990,73 @@ TEST_F(RenderViewImplTest, BeginNavigationForWebUI) {
        FrameHostMsg_OpenURL::ID));
  }
  

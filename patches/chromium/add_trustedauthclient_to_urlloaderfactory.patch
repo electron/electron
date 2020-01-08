@@ -10,10 +10,10 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index def2cb5e252389879c6287d44d29e704703841cb..98d64785240bde3e182268e453dced41b432df9a 100644
+index b5c1299cc61388cbb7b69f64b9dc47f5417d3051..fdb21e2fc42676dea5a2ce2dc0f7df14755c88df 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -190,6 +190,25 @@ struct HttpAuthStaticNetworkContextParams {
+@@ -191,6 +191,25 @@ struct HttpAuthStaticNetworkContextParams {
       = DefaultCredentials.ALLOW_DEFAULT_CREDENTIALS;
  };
  
@@ -39,7 +39,7 @@ index def2cb5e252389879c6287d44d29e704703841cb..98d64785240bde3e182268e453dced41
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -596,6 +615,8 @@ struct URLLoaderFactoryParams {
+@@ -597,6 +616,8 @@ struct URLLoaderFactoryParams {
    // interface. This still respects the per-context block lists.
    CorsOriginAccessPatterns? factory_bound_access_patterns;
  
@@ -49,7 +49,7 @@ index def2cb5e252389879c6287d44d29e704703841cb..98d64785240bde3e182268e453dced41
    NetworkIsolationKey? network_isolation_key;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 44ba9000cf42c444b45b091089d3b34fba469dfd..c1243714da265fd2975129b191e63d92c17594f6 100644
+index d415ca3bf5509723939824f65c52d17795916acf..28b81a81c633373e9da35388af0c1ecd7a06dda7 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -338,6 +338,7 @@ URLLoader::URLLoader(
@@ -108,7 +108,7 @@ index 44ba9000cf42c444b45b091089d3b34fba469dfd..c1243714da265fd2975129b191e63d92
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index f56c990f0a30c2ab699920eb7177c050698f7999..d7d902b7f4566ff6a0329858f441ccecd5bce339 100644
+index 532ecdc0a9b386eb9ea04a480b18aeb1ac32a059..b3ad0f42ab9c2f513d8c4a06683d1af6f0219a56 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -85,6 +85,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

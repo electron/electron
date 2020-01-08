@@ -6,7 +6,7 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index b9baf3cc836e04f3898b4f03b3bbf339e79ee3fc..9a7414a7323daa82b28b2894f455542551d60eac 100644
+index 22ca56c89a833459778501d31a46db9f5b9c17df..d3d82d4dbdab59d2f8ba83dceb649f803297324d 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -13,22 +13,26 @@
@@ -73,7 +73,7 @@ index b9baf3cc836e04f3898b4f03b3bbf339e79ee3fc..9a7414a7323daa82b28b2894f4555425
  
  SecurityStateTabHelper::SecurityStateTabHelper(
      content::WebContents* web_contents)
-@@ -160,6 +168,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
+@@ -159,6 +167,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
    // information is still being initialized, thus no need to check for that.
    state->malicious_content_status = GetMaliciousContentStatus();
  
@@ -81,7 +81,7 @@ index b9baf3cc836e04f3898b4f03b3bbf339e79ee3fc..9a7414a7323daa82b28b2894f4555425
    ReputationWebContentsObserver* reputation_web_contents_observer =
        ReputationWebContentsObserver::FromWebContents(web_contents());
    state->safety_tip_info =
-@@ -177,6 +186,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
+@@ -176,6 +185,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() {
            security_state::prefs::kStricterMixedContentTreatmentEnabled)) {
      state->should_suppress_mixed_content_warning = true;
    }
@@ -89,7 +89,7 @@ index b9baf3cc836e04f3898b4f03b3bbf339e79ee3fc..9a7414a7323daa82b28b2894f4555425
  
    return state;
  }
-@@ -227,8 +237,10 @@ void SecurityStateTabHelper::DidFinishNavigation(
+@@ -226,8 +236,10 @@ void SecurityStateTabHelper::DidFinishNavigation(
      UMA_HISTOGRAM_BOOLEAN("interstitial.ssl.visited_site_after_warning", true);
    }
  
@@ -100,7 +100,7 @@ index b9baf3cc836e04f3898b4f03b3bbf339e79ee3fc..9a7414a7323daa82b28b2894f4555425
  }
  
  void SecurityStateTabHelper::DidChangeVisibleSecurityState() {
-@@ -252,6 +264,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -251,6 +263,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
        web_contents()->GetController().GetVisibleEntry();
    if (!entry)
      return security_state::MALICIOUS_CONTENT_STATUS_NONE;
@@ -108,7 +108,7 @@ index b9baf3cc836e04f3898b4f03b3bbf339e79ee3fc..9a7414a7323daa82b28b2894f4555425
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -334,6 +347,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -333,6 +346,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }
