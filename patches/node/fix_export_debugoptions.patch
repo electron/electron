@@ -6,7 +6,7 @@ Subject: fix: export DebugOptions
 This exports DebugOptions so we can parse args like `--inspect-brk`.
 
 diff --git a/src/node_options.cc b/src/node_options.cc
-index d53ab2a4bfe87321e899b431eac262223e532335..c0c15a88c028d9c70081aa75fabf63d1d78014e6 100644
+index 35cac18a916c2ce104a3e7b6760d0280b33c2892..2dd90e9a8cf9381c8608b73ead247bcf86b72ab9 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -210,11 +210,6 @@ void EnvironmentOptions::CheckOptions(std::vector<std::string>* errors) {

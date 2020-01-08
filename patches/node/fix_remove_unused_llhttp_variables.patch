@@ -12,7 +12,7 @@ Fixed in https://github.com/nodejs/llparse/pull/34; this patch can be removed
 as soon as llparse v6.2.1 is rolled into Node.js
 
 diff --git a/deps/llhttp/src/llhttp.c b/deps/llhttp/src/llhttp.c
-index 698230f93f..664b563ad1 100644
+index 698230f93fe08f347a9e6e9f7194663c9b5318c3..664b563ad1ccf69794f0e86245e91d0bc26c1d58 100644
 --- a/deps/llhttp/src/llhttp.c
 +++ b/deps/llhttp/src/llhttp.c
 @@ -24,10 +24,6 @@ typedef int (*llhttp__internal__span_cb)(
