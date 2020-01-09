@@ -939,12 +939,10 @@ void WebContents::MediaStoppedPlaying(
   Emit("media-paused");
 }
 
-void WebContents::DidChangeThemeColor(base::Optional<SkColor> theme_color) {
-  if (theme_color) {
-    Emit("did-change-theme-color", electron::ToRGBHex(theme_color.value()));
-  } else {
-    Emit("did-change-theme-color", nullptr);
-  }
+void WebContents::DidChangeThemeColor() {
+  auto theme_color = web_contents()->GetThemeColor();
+  Emit("did-change-theme-color",
+       theme_color ? electron::ToRGBHex(theme_color.value()) : nullptr);
 }
 
 void WebContents::OnInterfaceRequestFromFrame(

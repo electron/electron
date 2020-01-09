@@ -468,7 +468,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       const MediaPlayerInfo& video_type,
       const content::MediaPlayerId& id,
       content::WebContentsObserver::MediaStoppedReason reason) override;
-  void DidChangeThemeColor(base::Optional<SkColor> theme_color) override;
+  void DidChangeThemeColor() override;
   void OnInterfaceRequestFromFrame(
       content::RenderFrameHost* render_frame_host,
       const std::string& interface_name,
