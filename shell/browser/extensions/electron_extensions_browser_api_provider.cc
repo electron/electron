@@ -6,14 +6,20 @@
 
 #include "extensions/browser/extension_function_registry.h"
 
-#include "shell/browser/api/atom_api_web_contents.h"
-
 //////////////////////////////////////////
+// TODO: Move to separate file
 
 #include "extensions/browser/api/execute_code_function.h"
+#include "extensions/browser/extension_api_frame_id_map.h"
 #include "extensions/browser/extension_function.h"
+#include "extensions/common/error_utils.h"
+#include "extensions/common/manifest_constants.h"
+#include "extensions/common/permissions/permissions_data.h"
+#include "shell/browser/api/atom_api_web_contents.h"
 
 namespace extensions {
+
+const char kFrameNotFoundError[] = "No frame with id * in tab *.";
 
 using api::extension_types::InjectDetails;
 
@@ -59,31 +65,19 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
   int tab_id = -1;
   if (args_->GetInteger(0, &tab_id) && tab_id < 0)
     return set_init_result(VALIDATION_FAILURE);
-  LOG(INFO) << "tab_id = " << tab_id;
 
   // |details| are not optional.
   base::DictionaryValue* details_value = NULL;
   if (!args_->GetDictionary(1, &details_value))
     return set_init_result(VALIDATION_FAILURE);
-  LOG(INFO) << "details_value = " << details_value;
   std::unique_ptr<InjectDetails> details(new InjectDetails());
   if (!InjectDetails::Populate(*details_value, details.get()))
     return set_init_result(VALIDATION_FAILURE);
 
-  // If the tab ID wasn't given then it needs to be converted to the
-  // currently active tab's ID.
   if (tab_id == -1) {
-    /*
-    Browser* browser = chrome_details_.GetCurrentBrowser();
-    // Can happen during shutdown.
-    if (!browser)
-      return set_init_result_error(tabs_constants::kNoCurrentWindowError);
-    content::WebContents* web_contents = NULL;
-    // Can happen during shutdown.
-    if (!ExtensionTabUtil::GetDefaultTab(browser, &web_contents, &tab_id))
-      return set_init_result_error(tabs_constants::kNoTabInBrowserWindowError);
-      */
-    // XXX: ???
+    // There's no useful concept of a "default tab" in Electron.
+    // TODO(nornagon): we could potentially kick this to an event to allow the
+    // app to decide what "default tab" means for them?
     return set_init_result(VALIDATION_FAILURE);
   }
 
@@ -94,27 +88,23 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
 }
 
 bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
-  /*
-  content::WebContents* contents = nullptr;
-
   // If |tab_id| is specified, look for the tab. Otherwise default to selected
   // tab in the current window.
   CHECK_GE(execute_tab_id_, 0);
-  if (!GetTabById(execute_tab_id_, browser_context(),
-                  include_incognito_information(), nullptr, nullptr, &contents,
-                  nullptr, error)) {
+  auto* contents = electron::api::WebContents::FromWeakMapID(
+      v8::Isolate::GetCurrent(), execute_tab_id_);
+  if (!contents) {
     return false;
   }
-
-  CHECK(contents);
 
   int frame_id = details_->frame_id ? *details_->frame_id
                                     : ExtensionApiFrameIdMap::kTopFrameId;
   content::RenderFrameHost* rfh =
-      ExtensionApiFrameIdMap::GetRenderFrameHostById(contents, frame_id);
+      ExtensionApiFrameIdMap::GetRenderFrameHostById(contents->web_contents(),
+                                                     frame_id);
   if (!rfh) {
     *error = ErrorUtils::FormatErrorMessage(
-        tabs_constants::kFrameNotFoundError, base::NumberToString(frame_id),
+        kFrameNotFoundError, base::NumberToString(frame_id),
         base::NumberToString(execute_tab_id_));
     return false;
   }
@@ -150,7 +140,6 @@ bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
     return false;
   }
 
-  */
   return true;
 }
 
@@ -161,20 +150,6 @@ ScriptExecutor* ExecuteCodeInTabFunction::GetScriptExecutor(
   if (!contents)
     return nullptr;
   return contents->script_executor();
-  /*
-  Browser* browser = nullptr;
-  content::WebContents* contents = nullptr;
-
-  bool success = GetTabById(execute_tab_id_, browser_context(),
-                            include_incognito_information(), &browser, nullptr,
-                            &contents, nullptr, error) &&
-                 contents && browser;
-
-  if (!success)
-    return nullptr;
-
-  return TabHelper::FromWebContents(contents)->script_executor();
-  */
 }
 
 bool ExecuteCodeInTabFunction::IsWebView() const {
