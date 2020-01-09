@@ -7,7 +7,7 @@ The libuv header uv.h was removed in
 https://github.com/nodejs/node/commit/3bb085dbad4d23030c731834e35b2804c8a50b23,
 but is necessary for Windows to understand what uv_lib_t is. 
 
-This patch will be upstreamed to Node.js.
+Upstreamed in https://github.com/nodejs/node/pull/31265.
 
 diff --git a/src/node_binding.h b/src/node_binding.h
 index cefb6419ebb7f5c5c79927d179eef0a790e234ad..5bced5b41431dc7838d1a30774a1a41ff797290e 100644
