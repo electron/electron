@@ -613,6 +613,8 @@ filenames = {
     "shell/browser/extensions/electron_process_manager_delegate.h",
     "shell/browser/extensions/electron_extensions_api_client.cc",
     "shell/browser/extensions/electron_extensions_api_client.h",
+    "shell/browser/extensions/electron_extensions_browser_api_provider.cc",
+    "shell/browser/extensions/electron_extensions_browser_api_provider.h",
     "shell/browser/extensions/electron_messaging_delegate.cc",
     "shell/browser/extensions/electron_messaging_delegate.h",
     "shell/common/extensions/atom_extensions_api_provider.cc",

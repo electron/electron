@@ -36,6 +36,8 @@
 #include "shell/browser/printing/print_preview_message_handler.h"
 #endif
 
+#include "extensions/browser/script_executor.h"
+
 namespace blink {
 struct WebDeviceEmulationParams;
 }
@@ -327,6 +329,10 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
 
   WebContents* embedder() { return embedder_; }
 
+  extensions::ScriptExecutor* script_executor() {
+    return script_executor_.get();
+  }
+
  protected:
   // Does not manage lifetime of |web_contents|.
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
@@ -536,6 +542,8 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
+
+  std::unique_ptr<extensions::ScriptExecutor> script_executor_;
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_ = nullptr;

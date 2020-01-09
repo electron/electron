@@ -36,6 +36,7 @@
 #include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #include "shell/browser/extensions/atom_navigation_ui_data.h"
 #include "shell/browser/extensions/electron_extensions_api_client.h"
+#include "shell/browser/extensions/electron_extensions_browser_api_provider.h"
 #include "shell/browser/extensions/electron_process_manager_delegate.h"
 
 using content::BrowserContext;
@@ -53,7 +54,8 @@ AtomExtensionsBrowserClient::AtomExtensionsBrowserClient()
 
   AddAPIProvider(
       std::make_unique<extensions::CoreExtensionsBrowserAPIProvider>());
-  // AddAPIProvider(std::make_unique<AtomExtensionsBrowserAPIProvider>());
+  AddAPIProvider(
+      std::make_unique<extensions::ElectronExtensionsBrowserAPIProvider>());
 }
 
 AtomExtensionsBrowserClient::~AtomExtensionsBrowserClient() {}
