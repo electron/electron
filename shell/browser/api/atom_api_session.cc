@@ -634,14 +634,6 @@ void Session::RemoveExtension(const std::string& extension_id) {
   extension_system->RemoveExtension(extension_id);
 }
 
-void Session::EnableExtension(const std::string& extension_id) {
-  NOTIMPLEMENTED() << "TODO(nornagon)";
-}
-
-void Session::DisableExtension(const std::string& extension_id) {
-  NOTIMPLEMENTED() << "TODO(nornagon)";
-}
-
 v8::Local<v8::Value> Session::GetExtension(const std::string& extension_id) {
   auto* registry = extensions::ExtensionRegistry::Get(browser_context());
   const extensions::Extension* extension =
@@ -850,8 +842,6 @@ void Session::BuildPrototype(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
       .SetMethod("loadExtension", &Session::LoadExtension)
       .SetMethod("removeExtension", &Session::RemoveExtension)
-      .SetMethod("enableExtension", &Session::EnableExtension)
-      .SetMethod("disableExtension", &Session::DisableExtension)
       .SetMethod("getExtension", &Session::GetExtension)
       .SetMethod("getAllExtensions", &Session::GetAllExtensions)
 #endif
