@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <andy@slack-corp.com>
+Date: Thu, 9 Jan 2020 15:48:36 -0800
+Subject: remove deprecated task API override removed in latest v8
+
+Node.js will pick this up when they roll next.
+
+CL: https://chromium-review.googlesource.com/c/v8/v8/+/1868620
+
+diff --git a/src/node_platform.h b/src/node_platform.h
+index d2eb325c12113e3066596cae4b0b0e9dce16c1b6..9a7395f6c93d7a90e41ad6f4263e6bdefdcc0824 100644
+--- a/src/node_platform.h
++++ b/src/node_platform.h
+@@ -145,14 +145,6 @@ class NodePlatform : public MultiIsolatePlatform {
+   void CallOnWorkerThread(std::unique_ptr<v8::Task> task) override;
+   void CallDelayedOnWorkerThread(std::unique_ptr<v8::Task> task,
+                                  double delay_in_seconds) override;
+-  void CallOnForegroundThread(v8::Isolate* isolate, v8::Task* task) override {
+-    UNREACHABLE();
+-  }
+-  void CallDelayedOnForegroundThread(v8::Isolate* isolate,
+-                                     v8::Task* task,
+-                                     double delay_in_seconds) override {
+-    UNREACHABLE();
+-  }
+   bool IdleTasksEnabled(v8::Isolate* isolate) override;
+   double MonotonicallyIncreasingTime() override;
+   double CurrentClockTimeMillis() override;
