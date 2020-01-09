@@ -7,7 +7,7 @@ import { emittedNTimes } from './events-helpers'
 import { BrowserWindow, ipcMain, WebContents } from 'electron'
 
 describe('chrome extension content scripts', () => {
-  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
+  const fixtures = path.resolve(__dirname, 'fixtures')
   const extensionPath = path.resolve(fixtures, 'extensions')
 
   const addExtension = (name: string) => BrowserWindow.addExtension(path.resolve(extensionPath, name))

@@ -82,7 +82,7 @@ describe('protocol module', () => {
     // Note that we need to do navigation every time after a protocol is
     // registered or unregistered, otherwise the new protocol won't be
     // recognized by current page when NetworkService is used.
-    await contents.loadFile(path.join(fixturesPath, 'pages', 'jquery.html'))
+    await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'))
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`)
   }
 

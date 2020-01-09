@@ -161,7 +161,7 @@ describe('<webview> tag', function () {
     })
     BrowserWindow.removeDevToolsExtension('foo')
 
-    const extensionPath = path.join(fixtures, 'devtools-extensions', 'foo')
+    const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
     BrowserWindow.addDevToolsExtension(extensionPath)
 
     w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'))
