@@ -8,10 +8,10 @@ This works around a bug in grit's handling of generated .grd files.
 Should be removed once grit is fixed.
 
 diff --git a/tools/gritsettings/resource_ids.spec b/tools/gritsettings/resource_ids.spec
-index 1d7e991d68b040b41101f20322eecfaf8a170e95..32af87cfb473a419f6ee5e54431e68ffbaa95514 100644
+index 9f66e1221eda1fbb6e86a4d7541e07d222512171..f47f8edb54984f7497e7c69e2565abc83f58dc8b 100644
 --- a/tools/gritsettings/resource_ids.spec
 +++ b/tools/gritsettings/resource_ids.spec
-@@ -566,15 +566,16 @@
+@@ -569,15 +569,16 @@
      "includes": [3840],
    },
  

@@ -190,7 +190,7 @@ index 23a5fe596b2607fa2b95f601cb621e4e11f81d50..67f0e98426345beac34bfd41be384210
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<cert_verifier::CertNetFetcherURLLoader> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 3b7cee20573aacc1e35318fa5e151a43b908089d..9e37d14eeebfa03df6c727f6a744669b6f33ebcb 100644
+index 0b448742c3cb250fa2dcd7d4ddbf76d55a99620e..00850f3087d7756dd9b9a272d21222acfb49bb7c 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -191,6 +191,17 @@ struct HttpAuthStaticNetworkContextParams {
@@ -211,7 +211,7 @@ index 3b7cee20573aacc1e35318fa5e151a43b908089d..9e37d14eeebfa03df6c727f6a744669b
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -799,6 +810,9 @@ interface NetworkContext {
+@@ -802,6 +813,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

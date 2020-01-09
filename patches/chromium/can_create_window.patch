@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 0177050d037bb51d49489c81f202062c0af34c27..5993604970fdc200f8d1f9a7ca0811053c303504 100644
+index 35af015e274200df1f2727c1849798d63cd6b0a8..28b33d9d01d87e7bfac3ee1d9e1a8d2d16a287e4 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -4375,6 +4375,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -36,7 +36,7 @@ index 46d534b72813c8fb6dfa2ad42f2d81b983cfdf90..9c492e3c2ebd4f6e89ee883d08522145
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 591d9f70712cbd9b4eb2cc8f85261ec5b4677d2f..90f739333b1dbdfa1107dabb95fab165ea120601 100644
+index 074b20ab584095cdfb023e04175bdf35b3c3da05..680f68a0e8e1f23ac02bcdf99cbcf1eb6f250d39 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -501,6 +501,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -49,7 +49,7 @@ index 591d9f70712cbd9b4eb2cc8f85261ec5b4677d2f..90f739333b1dbdfa1107dabb95fab165
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index dd0f37681fe327b48253581744414bdaec785326..d4d4dc445ef53a37408ba9a0974d01e5b7e4c5d7 100644
+index cbe040b67429b3c374cb7158a5ce438fb3773930..0f728fb4ffe7ba0f9890ac81ed4f0f676c1ecbb3 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -137,6 +137,7 @@ class NetworkService;
@@ -70,7 +70,7 @@ index dd0f37681fe327b48253581744414bdaec785326..d4d4dc445ef53a37408ba9a0974d01e5
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 9725651b659cb7d0395d2d9ba48eb19f37517e33..8353835f8edc7bc07904269a6e8841d4a6de9b56 100644
+index b546a276a9f9f4f4e38a790c7242435b4ab7b8b4..17aa601bff05a0ff17f668c3f19e50f6c4acb42f 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -69,6 +69,7 @@
@@ -81,7 +81,7 @@ index 9725651b659cb7d0395d2d9ba48eb19f37517e33..8353835f8edc7bc07904269a6e8841d4
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
-@@ -1310,6 +1311,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1311,6 +1312,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  

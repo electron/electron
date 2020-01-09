@@ -194,7 +194,7 @@ index caa100b3889e17a9afdc8127e0e13bb6b86e8042..f08d3a2eb28f0f6fff89b5759eff5369
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 90f739333b1dbdfa1107dabb95fab165ea120601..02470e5c63eb07059bb0b84b9598920db89649ec 100644
+index 680f68a0e8e1f23ac02bcdf99cbcf1eb6f250d39..705b9278e82d19fa9c97095b2e413922964bc69d 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -50,6 +50,21 @@
@@ -220,7 +220,7 @@ index 90f739333b1dbdfa1107dabb95fab165ea120601..02470e5c63eb07059bb0b84b9598920d
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index d4d4dc445ef53a37408ba9a0974d01e5b7e4c5d7..12bea8b4f10fdb37031d2d6ba8e94e4c95d9042d 100644
+index 0f728fb4ffe7ba0f9890ac81ed4f0f676c1ecbb3..a1a8b5824882c75fd4496829f104962413616c24 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -217,8 +217,45 @@ struct WebPreferences;

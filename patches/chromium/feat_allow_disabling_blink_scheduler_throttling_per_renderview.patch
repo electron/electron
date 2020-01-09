@@ -61,10 +61,10 @@ index 95679ab2915ad496ca0018aa13874b84eb11d7fd..c278e0fc072409677beafc7f252ebcf6
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 8353835f8edc7bc07904269a6e8841d4a6de9b56..9cd9bdc2e9f9775e5ee5c4113aa32856f4ecab47 100644
+index 17aa601bff05a0ff17f668c3f19e50f6c4acb42f..112e4d7a54ee4dd4d215438b3acc668606420507 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -1226,6 +1226,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -1227,6 +1227,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
      IPC_MESSAGE_HANDLER(ViewMsg_SetPageScale, OnSetPageScale)
      IPC_MESSAGE_HANDLER(ViewMsg_SetInitialFocus, OnSetInitialFocus)
@@ -73,7 +73,7 @@ index 8353835f8edc7bc07904269a6e8841d4a6de9b56..9cd9bdc2e9f9775e5ee5c4113aa32856
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_ClosePage, OnClosePage)
-@@ -1820,6 +1822,12 @@ void RenderViewImpl::OnSetPageScale(float page_scale_factor) {
+@@ -1821,6 +1823,12 @@ void RenderViewImpl::OnSetPageScale(float page_scale_factor) {
    webview()->SetPageScaleFactor(page_scale_factor);
  }
  
@@ -87,10 +87,10 @@ index 8353835f8edc7bc07904269a6e8841d4a6de9b56..9cd9bdc2e9f9775e5ee5c4113aa32856
      PageVisibilityState visibility_state,
      bool initial_setting) {
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 8698972cc6fd395154e995967b02ecd405042daf..68b043ce1e65db29663e500524cb22987867010f 100644
+index e57f2d481f435829a594ab6110dbe6f2beb6144f..709c0beb6a2ab7b8c293c48a8cf039538ef47b1f 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -445,6 +445,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -454,6 +454,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
    void OnSetInitialFocus(bool reverse);
    void OnSetRendererPrefs(
        const blink::mojom::RendererPreferences& renderer_prefs);

@@ -10,7 +10,7 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= should show as Ctrl-+
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index a3e869a74c33b161215ab4eb6f6adc6a71c9fff5..83315ce63e7d39d3e47a8bb61ade728e20ac11c8 100644
+index 025a82c14dd379f82e6c8242727346bd21e768f3..8b8b0e77c355acd1ef22fb51b89f65f90bfe5cc6 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -74,7 +74,7 @@ index a3e869a74c33b161215ab4eb6f6adc6a71c9fff5..83315ce63e7d39d3e47a8bb61ade728e
 +          base::StringPrintf("F%d", key_code_ - VKEY_F1 + 1));
    }
  
-   // Checking whether the character used for the accelerator is alphanumeric.
+ #if defined(OS_MACOSX)
 @@ -356,7 +356,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())

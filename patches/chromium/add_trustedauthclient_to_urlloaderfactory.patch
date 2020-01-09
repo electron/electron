@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index b5c1299cc61388cbb7b69f64b9dc47f5417d3051..fdb21e2fc42676dea5a2ce2dc0f7df14755c88df 100644
+index 497b4cd6c83aa8da20866f2cc0771c96fe344b24..05fbec47581164177f470fb3a79e78458095a693 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -191,6 +191,25 @@ struct HttpAuthStaticNetworkContextParams {
@@ -49,7 +49,7 @@ index b5c1299cc61388cbb7b69f64b9dc47f5417d3051..fdb21e2fc42676dea5a2ce2dc0f7df14
    NetworkIsolationKey? network_isolation_key;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index d415ca3bf5509723939824f65c52d17795916acf..28b81a81c633373e9da35388af0c1ecd7a06dda7 100644
+index 4298888ddc49d8c2ca8292d6f42fd1f1587c75ed..70bb79ee3b28f481399a0adc11779c4391239bbd 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -338,6 +338,7 @@ URLLoader::URLLoader(
@@ -72,7 +72,7 @@ index d415ca3bf5509723939824f65c52d17795916acf..28b81a81c633373e9da35388af0c1ecd
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -828,7 +834,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
+@@ -830,7 +836,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
  
  void URLLoader::OnAuthRequired(net::URLRequest* url_request,
                                 const net::AuthChallengeInfo& auth_info) {
@@ -81,7 +81,7 @@ index d415ca3bf5509723939824f65c52d17795916acf..28b81a81c633373e9da35388af0c1ecd
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -844,11 +850,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -846,11 +852,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
