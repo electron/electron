@@ -20,6 +20,10 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
 
   const itWithOptions = (name: string, options: BrowserWindowConstructorOptions, fn: Mocha.Func) => {
     return it(name, async function (...args) {
+      // document.visibilityState tests are very flaky, this is probably because
+      // Electron implements it via async IPC messages.
+      this.retries(3)
+
       w = new BrowserWindow({
         ...options,
         paintWhenInitiallyHidden: false,
