@@ -7,7 +7,7 @@
 
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/service_worker_context_observer.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
@@ -20,7 +20,7 @@ class ServiceWorkerContext
     : public gin_helper::TrackableObject<ServiceWorkerContext>,
       public content::ServiceWorkerContextObserver {
  public:
-  static mate::Handle<ServiceWorkerContext> Create(
+  static gin::Handle<ServiceWorkerContext> Create(
       v8::Isolate* isolate,
       AtomBrowserContext* browser_context);
 
