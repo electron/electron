@@ -205,6 +205,7 @@ void Notification::NotificationClosed() {
 void Notification::Close() {
   if (notification_) {
     notification_->Dismiss();
+    notification_->set_delegate(nullptr);
     notification_.reset();
   }
 }
