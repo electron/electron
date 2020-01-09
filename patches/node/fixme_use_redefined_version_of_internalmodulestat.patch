@@ -9,7 +9,7 @@ this has to be done after the upgrade to the Node.js v8.7.0.  in the very beginn
 to a native Node.js implementation of the function.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 481d59594dbca27c8529a8b424ab3cb190dd8def..03247551074e1ad3cdd412e6adc0d865746225d1 100644
+index 112a35280391ac85665f119ded9c78e88f868542..fc0f953820fa6222ff8cca2e27d3087e05288ff5 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -120,6 +120,8 @@ function enrichCJSError(err) {
