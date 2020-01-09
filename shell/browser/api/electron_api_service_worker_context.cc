@@ -11,11 +11,10 @@
 #include "content/public/browser/console_message.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/data_object_builder.h"
-#include "native_mate/converter.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
@@ -113,7 +112,6 @@ v8::Local<v8::Value> ServiceWorkerContext::GetAllRunningWorkerInfo(
         ServiceWorkerRunningInfoToDict(isolate, std::move(iter->second)));
   }
   return builder.Build();
-  ;
 }
 
 v8::Local<v8::Value> ServiceWorkerContext::GetWorkerInfoFromID(
@@ -131,18 +129,18 @@ v8::Local<v8::Value> ServiceWorkerContext::GetWorkerInfoFromID(
 }
 
 // static
-mate::Handle<ServiceWorkerContext> ServiceWorkerContext::Create(
+gin::Handle<ServiceWorkerContext> ServiceWorkerContext::Create(
     v8::Isolate* isolate,
     AtomBrowserContext* browser_context) {
-  return mate::CreateHandle(isolate,
-                            new ServiceWorkerContext(isolate, browser_context));
+  return gin::CreateHandle(isolate,
+                           new ServiceWorkerContext(isolate, browser_context));
 }
 
 // static
 void ServiceWorkerContext::BuildPrototype(
     v8::Isolate* isolate,
     v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "ServiceWorkerContext"));
+  prototype->SetClassName(gin::StringToV8(isolate, "ServiceWorkerContext"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("getAllRunning",
                  &ServiceWorkerContext::GetAllRunningWorkerInfo)
