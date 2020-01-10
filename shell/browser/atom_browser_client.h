@@ -220,6 +220,13 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool first_auth_attempt,
       LoginAuthRequiredCallback auth_required_callback) override;
   void SiteInstanceGotProcess(content::SiteInstance* site_instance) override;
+  std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
+  CreateURLLoaderThrottles(
+      const network::ResourceRequest& request,
+      content::BrowserContext* browser_context,
+      const base::RepeatingCallback<content::WebContents*()>& wc_getter,
+      content::NavigationUIData* navigation_ui_data,
+      int frame_tree_node_id) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

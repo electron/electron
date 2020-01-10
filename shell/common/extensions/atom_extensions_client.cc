@@ -116,7 +116,7 @@ AtomExtensionsClient::GetScriptingWhitelist() const {
 extensions::URLPatternSet AtomExtensionsClient::GetPermittedChromeSchemeHosts(
     const extensions::Extension* extension,
     const extensions::APIPermissionSet& api_permissions) const {
-  NOTIMPLEMENTED();
+  // NOTIMPLEMENTED();
   return extensions::URLPatternSet();
 }
 

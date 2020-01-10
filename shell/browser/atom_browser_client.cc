@@ -136,6 +136,11 @@
 #include "shell/browser/extensions/atom_extension_system.h"
 #endif
 
+#include "ppapi/buildflags/buildflags.h"
+#if BUILDFLAG(ENABLE_PLUGINS)
+#include "shell/browser/plugins/plugin_response_interceptor_url_loader_throttle.h"
+#endif
+
 #if defined(OS_MACOSX)
 #include "content/common/mac_helpers.h"
 #include "content/public/common/child_process_host.h"
@@ -1201,6 +1206,25 @@ std::unique_ptr<content::LoginDelegate> AtomBrowserClient::CreateLoginDelegate(
   return std::make_unique<LoginHandler>(
       auth_info, web_contents, is_main_frame, url, response_headers,
       first_auth_attempt, std::move(auth_required_callback));
+}
+
+std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
+AtomBrowserClient::CreateURLLoaderThrottles(
+    const network::ResourceRequest& request,
+    content::BrowserContext* browser_context,
+    const base::RepeatingCallback<content::WebContents*()>& wc_getter,
+    content::NavigationUIData* navigation_ui_data,
+    int frame_tree_node_id) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
+  std::vector<std::unique_ptr<blink::URLLoaderThrottle>> result;
+
+#if BUILDFLAG(ENABLE_PLUGINS)
+  result.push_back(std::make_unique<PluginResponseInterceptorURLLoaderThrottle>(
+      request.resource_type, frame_tree_node_id));
+#endif
+
+  return result;
 }
 
 }  // namespace electron
