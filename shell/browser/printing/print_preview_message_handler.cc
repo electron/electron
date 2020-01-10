@@ -24,6 +24,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/common/gin_helper/locker.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 
 #include "shell/common/node_includes.h"
 
@@ -153,7 +154,10 @@ void PrintPreviewMessageHandler::PrintToPDF(
   auto* rfh = focused_frame && focused_frame->HasSelection()
                   ? focused_frame
                   : web_contents()->GetMainFrame();
-  rfh->Send(new PrintMsg_PrintPreview(rfh->GetRoutingID(), options));
+
+  if (!print_render_frame_.is_bound())
+    rfh->GetRemoteAssociatedInterfaces()->GetInterface(&print_render_frame_);
+  print_render_frame_->PrintPreview(options.Clone());
 }
 
 gin_helper::Promise<v8::Local<v8::Value>>

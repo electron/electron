@@ -9,9 +9,11 @@
 
 #include "base/memory/ref_counted_memory.h"
 #include "base/memory/weak_ptr.h"
+#include "components/printing/common/print.mojom.h"
 #include "components/services/pdf_compositor/public/mojom/pdf_compositor.mojom.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/common/gin_helper/promise.h"
 #include "v8/include/v8.h"
 
@@ -64,6 +66,8 @@ class PrintPreviewMessageHandler
 
   using PromiseMap = std::map<int, gin_helper::Promise<v8::Local<v8::Value>>>;
   PromiseMap promise_map_;
+
+  mojo::AssociatedRemote<printing::mojom::PrintRenderFrame> print_render_frame_;
 
   base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_;
 
