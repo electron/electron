@@ -22,7 +22,7 @@
 #include "chrome/browser/icon_manager.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
-#include "content/public/browser/system_connector.h"
+#include "content/public/browser/device_service.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
@@ -30,7 +30,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "media/base/localized_strings.h"
 #include "services/network/public/cpp/features.h"
-#include "services/service_manager/public/cpp/connector.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/atom_main_delegate.h"
 #include "shell/browser/api/atom_api_app.h"
@@ -556,13 +555,10 @@ void AtomBrowserMainParts::PreMainMessageLoopStartCommon() {
 
 device::mojom::GeolocationControl*
 AtomBrowserMainParts::GetGeolocationControl() {
-  if (geolocation_control_)
-    return geolocation_control_.get();
-
-  auto receiver = geolocation_control_.BindNewPipeAndPassReceiver();
-  service_manager::Connector* connector = content::GetSystemConnector();
-  if (connector)
-    connector->Connect(electron::kDeviceServiceName, std::move(receiver));
+  if (!geolocation_control_) {
+    content::GetDeviceService().BindGeolocationControl(
+        geolocation_control_.BindNewPipeAndPassReceiver());
+  }
   return geolocation_control_.get();
 }
 
