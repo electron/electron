@@ -941,8 +941,11 @@ void WebContents::MediaStoppedPlaying(
 
 void WebContents::DidChangeThemeColor() {
   auto theme_color = web_contents()->GetThemeColor();
-  Emit("did-change-theme-color",
-       theme_color ? electron::ToRGBHex(theme_color.value()) : nullptr);
+  if (theme_color) {
+    Emit("did-change-theme-color", electron::ToRGBHex(theme_color.value()));
+  } else {
+    Emit("did-change-theme-color", nullptr);
+  }
 }
 
 void WebContents::OnInterfaceRequestFromFrame(
