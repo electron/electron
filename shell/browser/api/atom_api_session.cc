@@ -609,7 +609,7 @@ std::vector<base::FilePath::StringType> Session::GetPreloads() const {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 v8::Local<v8::Promise> Session::LoadExtension(
-    const base::FilePath extension_path) {
+    const base::FilePath& extension_path) {
   gin_helper::Promise<const extensions::Extension*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
