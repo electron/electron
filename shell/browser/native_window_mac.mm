@@ -1373,21 +1373,21 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
     [effect_view setState:NSVisualEffectStateActive];
 
-    // The default corner radius of a macOS window.
-    CGFloat radius = 5.0f;
+    // Make frameless Vibrant windows have rounded corners.
+    CGFloat radius = 5.0f;  // default corner radius
     CGFloat dimension = 2 * radius + 1;
     NSSize size = NSMakeSize(dimension, dimension);
-    NSImage* maskImage = [[NSImage imageWithSize:size
-                                         flipped:NO
-                                  drawingHandler:^BOOL(NSRect rect) {
-                                    NSBezierPath* bezierPath = [NSBezierPath
-                                        bezierPathWithRoundedRect:rect
-                                                          xRadius:radius
-                                                          yRadius:radius];
-                                    [[NSColor blackColor] set];
-                                    [bezierPath fill];
-                                    return YES;
-                                  }] autorelease];
+    NSImage* maskImage = [NSImage imageWithSize:size
+                                        flipped:NO
+                                 drawingHandler:^BOOL(NSRect rect) {
+                                   NSBezierPath* bezierPath = [NSBezierPath
+                                       bezierPathWithRoundedRect:rect
+                                                         xRadius:radius
+                                                         yRadius:radius];
+                                   [[NSColor blackColor] set];
+                                   [bezierPath fill];
+                                   return YES;
+                                 }];
     [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
     [maskImage setResizingMode:NSImageResizingModeStretch];
 
