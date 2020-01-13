@@ -66,7 +66,7 @@ describe('session.serviceWorkers', () => {
   })
 
   describe('getFromVersionID()', () => {
-    it('should report the correct sciprt url and scope', async () => {
+    it('should report the correct script url and scope', async () => {
       const eventInfo = await emittedOnce(ses.serviceWorkers, 'console-message', () => w.loadURL(`${baseUrl}/index.html`))
       const details: Electron.MessageDetails = eventInfo[1]
       const worker = ses.serviceWorkers.getFromVersionID(details.versionId)
