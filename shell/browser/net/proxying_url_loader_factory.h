@@ -23,52 +23,11 @@
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "shell/browser/api/electron_api_web_request.h"
+#include "shell/browser/api/web_request_api.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 
 namespace electron {
-
-// Defines the interface for WebRequest API, implemented by api::WebRequest.
-class WebRequestAPI {
- public:
-  virtual ~WebRequestAPI() {}
-
-  using BeforeSendHeadersCallback =
-      base::OnceCallback<void(const std::set<std::string>& removed_headers,
-                              const std::set<std::string>& set_headers,
-                              int error_code)>;
-
-  virtual bool HasListener() const = 0;
-  virtual int OnBeforeRequest(extensions::WebRequestInfo* info,
-                              const network::ResourceRequest& request,
-                              net::CompletionOnceCallback callback,
-                              GURL* new_url) = 0;
-  virtual int OnBeforeSendHeaders(extensions::WebRequestInfo* info,
-                                  const network::ResourceRequest& request,
-                                  BeforeSendHeadersCallback callback,
-                                  net::HttpRequestHeaders* headers) = 0;
-  virtual int OnHeadersReceived(
-      extensions::WebRequestInfo* info,
-      const network::ResourceRequest& request,
-      net::CompletionOnceCallback callback,
-      const net::HttpResponseHeaders* original_response_headers,
-      scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
-      GURL* allowed_unsafe_redirect_url) = 0;
-  virtual void OnSendHeaders(extensions::WebRequestInfo* info,
-                             const network::ResourceRequest& request,
-                             const net::HttpRequestHeaders& headers) = 0;
-  virtual void OnBeforeRedirect(extensions::WebRequestInfo* info,
-                                const network::ResourceRequest& request,
-                                const GURL& new_location) = 0;
-  virtual void OnResponseStarted(extensions::WebRequestInfo* info,
-                                 const network::ResourceRequest& request) = 0;
-  virtual void OnErrorOccurred(extensions::WebRequestInfo* info,
-                               const network::ResourceRequest& request,
-                               int net_error) = 0;
-  virtual void OnCompleted(extensions::WebRequestInfo* info,
-                           const network::ResourceRequest& request,
-                           int net_error) = 0;
-  virtual void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) = 0;
-};
 
 // This class is responsible for following tasks when NetworkService is enabled:
 // 1. handling intercepted protocols;
@@ -206,6 +165,7 @@ class ProxyingURLLoaderFactory
   };
 
   ProxyingURLLoaderFactory(
+      scoped_refptr<api::RequestIDGenerator> request_id_generator,
       WebRequestAPI* web_request_api,
       const HandlersMap& intercepted_handlers,
       content::BrowserContext* browser_context,
@@ -254,6 +214,8 @@ class ProxyingURLLoaderFactory
   void MaybeDeleteThis();
 
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
+
+  scoped_refptr<api::RequestIDGenerator> request_id_generator_;
 
   // Passed from api::WebRequest.
   WebRequestAPI* web_request_api_;
