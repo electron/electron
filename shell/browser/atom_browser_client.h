@@ -219,6 +219,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       scoped_refptr<net::HttpResponseHeaders> response_headers,
       bool first_auth_attempt,
       LoginAuthRequiredCallback auth_required_callback) override;
+  void SiteInstanceGotProcess(content::SiteInstance* site_instance) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

@@ -27,6 +27,7 @@
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
+#include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -43,6 +44,8 @@
 #include "content/public/common/web_preferences.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
+#include "extensions/browser/extension_protocols.h"
+#include "extensions/common/constants.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
@@ -122,6 +125,16 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/printing_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/extension_message_filter.h"
+#include "extensions/browser/extension_navigation_throttle.h"
+#include "extensions/browser/extension_registry.h"
+#include "extensions/browser/info_map.h"
+#include "extensions/browser/process_map.h"
+#include "extensions/common/extension.h"
+#include "shell/browser/extensions/atom_extension_system.h"
+#endif
 
 #if defined(OS_MACOSX)
 #include "content/common/mac_helpers.h"
@@ -225,6 +238,8 @@ bool AtomBrowserClient::ShouldForceNewSiteInstance(
     bool has_response_started) const {
   if (url.SchemeIs(url::kJavaScriptScheme))
     // "javacript:" scheme should always use same SiteInstance
+    return false;
+  if (url.SchemeIs(extensions::kExtensionScheme))
     return false;
 
   content::SiteInstance* current_instance = current_rfh->GetSiteInstance();
@@ -359,9 +374,16 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   if (IsProcessObserved(process_id))
     return;
 
+  auto* browser_context = host->GetBrowserContext();
+
 #if BUILDFLAG(ENABLE_PRINTING)
-  host->AddFilter(new printing::PrintingMessageFilter(
-      process_id, host->GetBrowserContext()));
+  host->AddFilter(
+      new printing::PrintingMessageFilter(process_id, browser_context));
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  host->AddFilter(
+      new extensions::ExtensionMessageFilter(process_id, browser_context));
 #endif
 
   ProcessPreferences prefs;
@@ -708,6 +730,32 @@ void AtomBrowserClient::GetAdditionalWebUISchemes(
   additional_schemes->push_back(content::kChromeDevToolsScheme);
 }
 
+void AtomBrowserClient::SiteInstanceGotProcess(
+    content::SiteInstance* site_instance) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  auto* browser_context =
+      static_cast<AtomBrowserContext*>(site_instance->GetBrowserContext());
+  extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(browser_context);
+  const extensions::Extension* extension =
+      registry->enabled_extensions().GetExtensionOrAppByURL(
+          site_instance->GetSiteURL());
+  if (!extension)
+    return;
+
+  extensions::ProcessMap::Get(browser_context)
+      ->Insert(extension->id(), site_instance->GetProcess()->GetID(),
+               site_instance->GetId());
+
+  base::PostTask(
+      FROM_HERE, {BrowserThread::IO},
+      base::BindOnce(&extensions::InfoMap::RegisterExtensionProcess,
+                     browser_context->extension_system()->info_map(),
+                     extension->id(), site_instance->GetProcess()->GetID(),
+                     site_instance->GetId()));
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+}
+
 void AtomBrowserClient::SiteInstanceDeleting(
     content::SiteInstance* site_instance) {
   // We are storing weak_ptr, is it fundamental to maintain the map up-to-date
@@ -719,6 +767,34 @@ void AtomBrowserClient::SiteInstanceDeleting(
       break;
     }
   }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Don't do anything if we're shutting down.
+  if (content::BrowserMainRunner::ExitedMainMessageLoop())
+    return;
+
+  auto* browser_context =
+      static_cast<AtomBrowserContext*>(site_instance->GetBrowserContext());
+  // If this isn't an extension renderer there's nothing to do.
+  extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(browser_context);
+  const extensions::Extension* extension =
+      registry->enabled_extensions().GetExtensionOrAppByURL(
+          site_instance->GetSiteURL());
+  if (!extension)
+    return;
+
+  extensions::ProcessMap::Get(browser_context)
+      ->Remove(extension->id(), site_instance->GetProcess()->GetID(),
+               site_instance->GetId());
+
+  base::PostTask(
+      FROM_HERE, {BrowserThread::IO},
+      base::BindOnce(&extensions::InfoMap::UnregisterExtensionProcess,
+                     browser_context->extension_system()->info_map(),
+                     extension->id(), site_instance->GetProcess()->GetID(),
+                     site_instance->GetId()));
+#endif
 }
 
 std::unique_ptr<net::ClientCertStore> AtomBrowserClient::CreateClientCertStore(
@@ -869,6 +945,12 @@ AtomBrowserClient::CreateThrottlesForNavigation(
     content::NavigationHandle* handle) {
   std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
   throttles.push_back(std::make_unique<AtomNavigationThrottle>(handle));
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  throttles.push_back(
+      std::make_unique<extensions::ExtensionNavigationThrottle>(handle));
+#endif
+
   return throttles;
 }
 
