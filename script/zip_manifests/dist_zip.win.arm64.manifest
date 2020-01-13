@@ -67,5 +67,6 @@ swiftshader/libEGL.dll
 swiftshader/libGLESv2.dll
 vk_swiftshader_icd.json
 vk_swiftshader.dll
+vulkan-1.dll
 v8_context_snapshot.bin
 version
