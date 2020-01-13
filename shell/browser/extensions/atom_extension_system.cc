@@ -49,7 +49,7 @@ const Extension* AtomExtensionSystem::LoadExtension(
 }
 
 const Extension* AtomExtensionSystem::LoadApp(const base::FilePath& app_dir) {
-  CHECK(false);  // Should never call LoadApp
+  NOTIMPLEMENTED() << "Attempted to load platform app in Electron";
   return nullptr;
 }
 
@@ -64,6 +64,11 @@ void AtomExtensionSystem::FinishInitialization() {
 
 void AtomExtensionSystem::ReloadExtension(const ExtensionId& extension_id) {
   extension_loader_->ReloadExtension(extension_id);
+}
+
+void AtomExtensionSystem::RemoveExtension(const ExtensionId& extension_id) {
+  extension_loader_->UnloadExtension(
+      extension_id, extensions::UnloadedExtensionReason::UNINSTALL);
 }
 
 void AtomExtensionSystem::Shutdown() {

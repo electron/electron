@@ -66,7 +66,9 @@
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/extension_registry.h"
 #include "shell/browser/extensions/atom_extension_system.h"
+#include "shell/common/gin_converters/extension_converter.h"
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -606,10 +608,51 @@ std::vector<base::FilePath::StringType> Session::GetPreloads() const {
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-void Session::LoadChromeExtension(const base::FilePath extension_path) {
+v8::Local<v8::Promise> Session::LoadExtension(
+    const base::FilePath& extension_path) {
+  gin_helper::Promise<const extensions::Extension*> promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
-  extension_system->LoadExtension(extension_path);
+  // TODO(nornagon): make LoadExtension() asynchronous.
+  auto* extension = extension_system->LoadExtension(extension_path);
+
+  if (extension) {
+    promise.Resolve(extension);
+  } else {
+    // TODO(nornagon): plumb through error message from extension loader.
+    promise.RejectWithErrorMessage("Failed to load extension");
+  }
+
+  return handle;
+}
+
+void Session::RemoveExtension(const std::string& extension_id) {
+  auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
+      extensions::ExtensionSystem::Get(browser_context()));
+  extension_system->RemoveExtension(extension_id);
+}
+
+v8::Local<v8::Value> Session::GetExtension(const std::string& extension_id) {
+  auto* registry = extensions::ExtensionRegistry::Get(browser_context());
+  const extensions::Extension* extension =
+      registry->GetInstalledExtension(extension_id);
+  if (extension) {
+    return gin::ConvertToV8(isolate(), extension);
+  } else {
+    return v8::Null(isolate());
+  }
+}
+
+v8::Local<v8::Value> Session::GetAllExtensions() {
+  auto* registry = extensions::ExtensionRegistry::Get(browser_context());
+  auto installed_extensions = registry->GenerateInstalledExtensionsSet();
+  std::vector<const extensions::Extension*> extensions_vector;
+  for (const auto& extension : *installed_extensions) {
+    extensions_vector.emplace_back(extension.get());
+  }
+  return gin::ConvertToV8(isolate(), extensions_vector);
 }
 #endif
 
@@ -797,7 +840,10 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPreloads", &Session::SetPreloads)
       .SetMethod("getPreloads", &Session::GetPreloads)
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-      .SetMethod("loadChromeExtension", &Session::LoadChromeExtension)
+      .SetMethod("loadExtension", &Session::LoadExtension)
+      .SetMethod("removeExtension", &Session::RemoveExtension)
+      .SetMethod("getExtension", &Session::GetExtension)
+      .SetMethod("getAllExtensions", &Session::GetAllExtensions)
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
       .SetMethod("getSpellCheckerLanguages", &Session::GetSpellCheckerLanguages)

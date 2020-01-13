@@ -41,12 +41,15 @@ class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
   // reloading.
   // This may invalidate references to the old Extension object, so it takes the
   // ID by value.
-  void ReloadExtension(ExtensionId extension_id);
+  void ReloadExtension(const ExtensionId& extension_id);
+
+  void UnloadExtension(const ExtensionId& extension_id,
+                       extensions::UnloadedExtensionReason reason);
 
  private:
   // If the extension loaded successfully, enables it. If it's an app, launches
   // it. If the load failed, updates ShellKeepAliveRequester.
-  void FinishExtensionReload(const ExtensionId old_extension_id,
+  void FinishExtensionReload(const ExtensionId& old_extension_id,
                              scoped_refptr<const Extension> extension);
 
   // ExtensionRegistrar::Delegate:

@@ -78,7 +78,7 @@ const Extension* AtomExtensionLoader::LoadExtension(
   return extension.get();
 }
 
-void AtomExtensionLoader::ReloadExtension(ExtensionId extension_id) {
+void AtomExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
   const Extension* extension = ExtensionRegistry::Get(browser_context_)
                                    ->GetInstalledExtension(extension_id);
   // We shouldn't be trying to reload extensions that haven't been added.
@@ -94,8 +94,14 @@ void AtomExtensionLoader::ReloadExtension(ExtensionId extension_id) {
     return;
 }
 
+void AtomExtensionLoader::UnloadExtension(
+    const ExtensionId& extension_id,
+    extensions::UnloadedExtensionReason reason) {
+  extension_registrar_.RemoveExtension(extension_id, reason);
+}
+
 void AtomExtensionLoader::FinishExtensionReload(
-    const ExtensionId old_extension_id,
+    const ExtensionId& old_extension_id,
     scoped_refptr<const Extension> extension) {
   if (extension) {
     extension_registrar_.AddExtension(extension);
