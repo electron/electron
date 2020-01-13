@@ -75,6 +75,7 @@
 #include "shell/browser/net/network_context_service.h"
 #include "shell/browser/net/network_context_service_factory.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
+#include "shell/browser/net/proxying_websocket.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
@@ -268,6 +269,7 @@ void ElectronBrowserClient::SetApplicationLocale(const std::string& locale) {
 ElectronBrowserClient::ElectronBrowserClient() {
   DCHECK(!g_browser_client);
   g_browser_client = this;
+  request_id_generator_ = base::MakeRefCounted<api::RequestIDGenerator>();
 }
 
 ElectronBrowserClient::~ElectronBrowserClient() {
@@ -1167,6 +1169,43 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   }
 }
 
+bool ElectronBrowserClient::WillInterceptWebSocket(
+    content::RenderFrameHost* frame) {
+  if (!frame) {
+    return false;
+  }
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto* browser_context = frame->GetProcess()->GetBrowserContext();
+  auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
+
+  // NOTE: Some unit test environments do not initialize
+  // BrowserContextKeyedAPI factories for e.g. WebRequest.
+  if (!web_request.get())
+    return false;
+
+  return true;
+}
+
+void ElectronBrowserClient::CreateWebSocket(
+    content::RenderFrameHost* frame,
+    WebSocketFactory factory,
+    const GURL& url,
+    const net::SiteForCookies& site_for_cookies,
+    const base::Optional<std::string>& user_agent,
+    mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
+        handshake_client) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto* browser_context = frame->GetProcess()->GetBrowserContext();
+  auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
+  DCHECK(web_request.get());
+  ProxyingWebSocket::StartProxying(
+      web_request.get(), std::move(factory), url,
+      site_for_cookies.RepresentativeUrl(), user_agent,
+      std::move(handshake_client), true, frame->GetProcess()->GetID(),
+      frame->GetRoutingID(), frame->GetLastCommittedOrigin(),
+      frame->GetProcess()->GetBrowserContext(), request_id_generator_);
+}
+
 bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     content::BrowserContext* browser_context,
     content::RenderFrameHost* frame_host,
@@ -1208,8 +1247,8 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
 
   new ProxyingURLLoaderFactory(
-      web_request.get(), protocol->intercept_handlers(), browser_context,
-      render_process_id, std::move(navigation_ui_data),
+      request_id_generator_, web_request.get(), protocol->intercept_handlers(),
+      browser_context, render_process_id, std::move(navigation_ui_data),
       std::move(navigation_id), std::move(proxied_receiver),
       std::move(target_factory_remote), std::move(header_client_receiver),
       type);

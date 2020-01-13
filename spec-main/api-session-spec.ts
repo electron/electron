@@ -379,7 +379,7 @@ describe('session module', () => {
       server = http.createServer((req, res) => {
         const pac = `
           function FindProxyForURL(url, host) {
-            return "PROXY myproxy:8132";
+            return "PROXY myproxy:8132"
           }
         `
         res.writeHead(200, {
@@ -421,9 +421,9 @@ describe('session module', () => {
       })
       const content = `<html>
                        <script>
-                       let fd = new FormData();
-                       fd.append('file', new Blob(['${postData}'], {type:'application/json'}));
-                       fetch('${url}', {method:'POST', body: fd });
+                       let fd = new FormData()
+                       fd.append('file', new Blob(['${postData}'], {type:'application/json'}))
+                       fetch('${url}', {method:'POST', body: fd })
                        </script>
                        </html>`
 
