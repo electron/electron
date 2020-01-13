@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
@@ -71,7 +72,7 @@
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_factory.h"
-#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
+#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
 #include "chrome/browser/spellchecker/spellcheck_service.h"
 #include "components/spellcheck/browser/pref_names.h"
 #include "components/spellcheck/common/spellcheck_common.h"
@@ -92,7 +93,7 @@ namespace predictors {
 // error. Probably upstream the constructor should be moved to
 // preconnect_manager.cc.
 PreconnectRequest::PreconnectRequest(
-    const GURL& origin,
+    const url::Origin& origin,
     int num_sockets,
     const net::NetworkIsolationKey& network_isolation_key)
     : origin(origin),
@@ -519,6 +520,9 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
   network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
       network::mojom::HttpAuthDynamicParams::New();
   auth_dynamic_params->server_allowlist = domains;
+  auth_dynamic_params->enable_negotiate_port =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          electron::switches::kEnableAuthNegotiatePort);
   content::GetNetworkService()->ConfigureHttpAuthPrefs(
       std::move(auth_dynamic_params));
 }
@@ -551,7 +555,7 @@ void Session::DownloadURL(const GURL& url) {
   auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
-      url, MISSING_TRAFFIC_ANNOTATION);
+      url, MISSING_TRAFFIC_ANNOTATION, net::NetworkIsolationKey());
   download_manager->DownloadUrl(std::move(download_params));
 }
 
@@ -645,7 +649,8 @@ static void StartPreconnectOnUI(
     const GURL& url,
     int num_sockets_to_preconnect) {
   std::vector<predictors::PreconnectRequest> requests = {
-      {url.GetOrigin(), num_sockets_to_preconnect, net::NetworkIsolationKey()}};
+      {url::Origin::Create(url), num_sockets_to_preconnect,
+       net::NetworkIsolationKey()}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 

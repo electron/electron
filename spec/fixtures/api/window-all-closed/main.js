@@ -1,4 +1,6 @@
 const { app, BrowserWindow } = require('electron')
+// Suppress deprecation logs
+app.allowRendererProcessReuse = true
 
 let handled = false
 

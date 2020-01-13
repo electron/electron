@@ -17,7 +17,7 @@ namespace electron {
 class SubmenuButton : public views::MenuButton {
  public:
   SubmenuButton(const base::string16& title,
-                views::MenuButtonListener* menu_button_listener,
+                views::ButtonListener* button_listener,
                 const SkColor& background_color);
   ~SubmenuButton() override;
 

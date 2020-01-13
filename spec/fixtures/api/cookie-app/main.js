@@ -42,8 +42,6 @@ app.on('ready', async function () {
   } finally {
     process.stdout.end()
 
-    setImmediate(() => {
-      app.quit()
-    })
+    app.quit()
   }
 })

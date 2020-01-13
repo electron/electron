@@ -5,10 +5,10 @@ Subject: fixme: Comment trace event macro
 
 
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 2311036beadf7efaac4999ceef985566fe41c763..10fbbc1d8cf43f76248efdac9a2539a8c8287d71 100644
+index fb1188a6bbce37b2bbaba0a815f2826dca60cf3b..843cbf1d253022c9601ceaf74022873a48ac0a5f 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -348,10 +348,11 @@ class TraceEventScope {
+@@ -350,10 +350,11 @@ class TraceEventScope {
    TraceEventScope(const char* category,
                    const char* name,
                    void* id) : category_(category), name_(name), id_(id) {

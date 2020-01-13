@@ -118,8 +118,8 @@ class App : public AtomBrowserClient::Delegate,
       const GURL& request_url,
       bool is_main_frame_request,
       bool strict_enforcement,
-      const base::RepeatingCallback<
-          void(content::CertificateRequestResultType)>& callback) override;
+      base::OnceCallback<void(content::CertificateRequestResultType)> callback)
+      override;
   base::OnceClosure SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
@@ -203,6 +203,7 @@ class App : public AtomBrowserClient::Delegate,
   std::string GetUserAgentFallback();
   void SetBrowserClientCanUseCustomSiteInstance(bool should_disable);
   bool CanBrowserClientUseCustomSiteInstance();
+  bool CanBrowserClientUseCustomSiteInstanceIsDefaultValue();
 
 #if defined(OS_MACOSX)
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower,

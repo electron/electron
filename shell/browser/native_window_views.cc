@@ -174,7 +174,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   params.remove_standard_frame = !has_frame();
 
   if (transparent())
-    params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
+    params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
 
   // The given window is most likely not rectangular since it uses
   // transparency and has no standard frame, don't show a shadow for it.
@@ -990,20 +990,22 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 
 void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
 #if defined(USE_X11)
-  if (menu_model == nullptr) {
+  // Remove global menu bar.
+  if (global_menu_bar_ && menu_model == nullptr) {
     global_menu_bar_.reset();
     root_view_->UnregisterAcceleratorsWithFocusManager();
     return;
   }
 
-  if (!global_menu_bar_ && ShouldUseGlobalMenuBar())
-    global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
-
   // Use global application menu bar when possible.
-  if (global_menu_bar_ && global_menu_bar_->IsServerStarted()) {
-    root_view_->RegisterAcceleratorsWithFocusManager(menu_model);
-    global_menu_bar_->SetMenu(menu_model);
-    return;
+  if (ShouldUseGlobalMenuBar()) {
+    if (!global_menu_bar_)
+      global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
+    if (global_menu_bar_->IsServerStarted()) {
+      root_view_->RegisterAcceleratorsWithFocusManager(menu_model);
+      global_menu_bar_->SetMenu(menu_model);
+      return;
+    }
   }
 #endif
 

@@ -4,14 +4,14 @@ Date: Tue, 15 Oct 2019 11:30:27 -0700
 Subject: Revert "crypto: add oaepLabel option"
 
 This partially reverts https://github.com/nodejs/node/pull/29489.
-The BoringSSL incompatibilities (OPENSSL_memdup) will be shimmed in and this should 
+The BoringSSL incompatibilities (OPENSSL_memdup) will be shimmed in and this should
 be removed when the associated update is rolled into Chromium.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 63dd6a1863..1ca4c75d64 100644
+index d7eff663a5d7465d33f53930868edca6cb89bf49..863b48c614b331fa93a511b21b997891159bb86e 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -5188,17 +5188,6 @@ bool PublicKeyCipher::Cipher(Environment* env,
+@@ -5264,17 +5264,6 @@ bool PublicKeyCipher::Cipher(Environment* env,
        return false;
    }
  

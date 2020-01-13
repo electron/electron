@@ -353,6 +353,7 @@ source_set("electron_lib") {
     ":resources",
     "buildflags",
     "chromium_src:chrome",
+    "chromium_src:chrome_spellchecker",
     "native_mate",
     "shell/common/api:mojo",
     "//base:base_static",
@@ -382,12 +383,10 @@ source_set("electron_lib") {
     "//media/mojo/mojom",
     "//net:extras",
     "//net:net_resources",
-    "//net:net_with_v8",
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/shared_impl",
     "//printing/buildflags",
-    "//services/audio/public/mojom:constants",
     "//services/device/public/cpp/geolocation",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
@@ -399,7 +398,7 @@ source_set("electron_lib") {
     "//third_party/electron_node:node_lib",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
-    "//third_party/webrtc_overrides:init_webrtc",
+    "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//ui/base/idle",
     "//ui/events:dom_keycode_converter",
@@ -479,10 +478,6 @@ source_set("electron_lib") {
       "shell/browser/fake_location_provider.cc",
       "shell/browser/fake_location_provider.h",
     ]
-  }
-
-  if (enable_builtin_spellchecker) {
-    deps += [ "chromium_src:chrome_spellchecker" ]
   }
 
   if (is_mac) {

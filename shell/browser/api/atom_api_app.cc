@@ -699,8 +699,7 @@ void App::AllowCertificateError(
     const GURL& request_url,
     bool is_main_frame_request,
     bool strict_enforcement,
-    const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
-        callback) {
+    base::OnceCallback<void(content::CertificateRequestResultType)> callback) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   bool prevent_default = Emit(
@@ -709,7 +708,7 @@ void App::AllowCertificateError(
 
   // Deny the certificate by default.
   if (!prevent_default)
-    callback.Run(content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY);
+    std::move(callback).Run(content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY);
 }
 
 base::OnceClosure App::SelectClientCertificate(
@@ -1326,6 +1325,9 @@ void App::SetBrowserClientCanUseCustomSiteInstance(bool should_disable) {
 bool App::CanBrowserClientUseCustomSiteInstance() {
   return AtomBrowserClient::Get()->CanUseCustomSiteInstance();
 }
+bool App::CanBrowserClientUseCustomSiteInstanceIsDefaultValue() {
+  return AtomBrowserClient::Get()->CanUseCustomSiteInstanceIsDefaultValue();
+}
 
 #if defined(OS_MACOSX)
 bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
@@ -1518,7 +1520,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetProperty("allowRendererProcessReuse",
                    &App::CanBrowserClientUseCustomSiteInstance,
-                   &App::SetBrowserClientCanUseCustomSiteInstance);
+                   &App::SetBrowserClientCanUseCustomSiteInstance)
+      .SetProperty("_allowRendererProcessReuseIsDefaultValue",
+                   &App::CanBrowserClientUseCustomSiteInstanceIsDefaultValue);
 }
 
 }  // namespace api

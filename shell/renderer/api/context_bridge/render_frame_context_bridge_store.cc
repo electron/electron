@@ -20,7 +20,7 @@ class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
  public:
   static void BindTo(v8::Isolate* isolate,
                      v8::Local<v8::Object> target,
-                     RenderFramePersistenceStore* store,
+                     base::WeakPtr<RenderFramePersistenceStore> store,
                      WeakGlobalPairNode* node,
                      int hash) {
     new CachedProxyLifeMonitor(isolate, target, store, node, hash);
@@ -29,7 +29,7 @@ class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
  protected:
   CachedProxyLifeMonitor(v8::Isolate* isolate,
                          v8::Local<v8::Object> target,
-                         RenderFramePersistenceStore* store,
+                         base::WeakPtr<RenderFramePersistenceStore> store,
                          WeakGlobalPairNode* node,
                          int hash)
       : ObjectLifeMonitor(isolate, target),
@@ -38,15 +38,20 @@ class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
         hash_(hash) {}
 
   void RunDestructor() override {
+    if (!store_)
+      return;
+
     if (node_->detached) {
       delete node_;
       return;
     }
     if (node_->prev) {
       node_->prev->next = node_->next;
+      node_->prev = nullptr;
     }
     if (node_->next) {
       node_->next->prev = node_->prev;
+      node_->next = nullptr;
     }
     if (!node_->prev && !node_->next) {
       // Must be a single length linked list
@@ -56,30 +61,34 @@ class CachedProxyLifeMonitor final : public ObjectLifeMonitor {
   }
 
  private:
-  RenderFramePersistenceStore* store_;
+  base::WeakPtr<RenderFramePersistenceStore> store_;
   WeakGlobalPairNode* node_;
   int hash_;
 };
 
 }  // namespace
 
+std::map<int32_t, RenderFramePersistenceStore*>& GetStoreMap() {
+  static base::NoDestructor<std::map<int32_t, RenderFramePersistenceStore*>>
+      store_map;
+  return *store_map;
+}
+
 WeakGlobalPairNode::WeakGlobalPairNode(WeakGlobalPair pair) {
   this->pair = std::move(pair);
 }
 
-WeakGlobalPairNode::~WeakGlobalPairNode() {
-  if (next) {
-    delete next;
-  }
-}
+WeakGlobalPairNode::~WeakGlobalPairNode() {}
 
 RenderFramePersistenceStore::RenderFramePersistenceStore(
     content::RenderFrame* render_frame)
-    : content::RenderFrameObserver(render_frame) {}
+    : content::RenderFrameObserver(render_frame),
+      routing_id_(render_frame->GetRoutingID()) {}
 
 RenderFramePersistenceStore::~RenderFramePersistenceStore() = default;
 
 void RenderFramePersistenceStore::OnDestruct() {
+  GetStoreMap().erase(routing_id_);
   delete this;
 }
 
@@ -98,11 +107,11 @@ void RenderFramePersistenceStore::CacheProxiedObject(
     auto iter = proxy_map_.find(hash);
     auto* node = new WeakGlobalPairNode(
         std::make_tuple(std::move(global_from), std::move(global_proxy)));
-    CachedProxyLifeMonitor::BindTo(v8::Isolate::GetCurrent(), obj, this, node,
-                                   hash);
+    CachedProxyLifeMonitor::BindTo(v8::Isolate::GetCurrent(), obj,
+                                   weak_factory_.GetWeakPtr(), node, hash);
     CachedProxyLifeMonitor::BindTo(v8::Isolate::GetCurrent(),
                                    v8::Local<v8::Object>::Cast(proxy_value),
-                                   this, node, hash);
+                                   weak_factory_.GetWeakPtr(), node, hash);
     if (iter == proxy_map_.end()) {
       proxy_map_.emplace(hash, node);
     } else {

@@ -15,6 +15,7 @@
 #include "shell/browser/api/atom_api_view.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/color_util.h"
+#include "shell/common/deprecate_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
@@ -794,6 +795,13 @@ void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible,
   bool visibleOnFullScreen = false;
   args->GetNext(&options) &&
       options.Get("visibleOnFullScreen", &visibleOnFullScreen);
+  if (visibleOnFullScreen) {
+    node::Environment* env = node::Environment::GetCurrent(args->isolate());
+    EmitDeprecationWarning(
+        env, "visibleOnFullScreen is deprecated and will be removed",
+        "electron");
+  }
+
   return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
 }
 

@@ -89,6 +89,7 @@ env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
   STRIP_BINARIES: true
   GENERATE_SYMBOLS: true
+  CHECK_DIST_MANIFEST: '1'
 
 env-headless-testing: &env-headless-testing
   DISPLAY: ':99.0'
@@ -357,9 +358,18 @@ step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
     name: Strip electron binaries
     command: |
-      if [ "$STRIP_BINARIES" == "true" ] && [ "`uname`" != "Darwin" ]; then
+      if [ "$STRIP_BINARIES" == "true" ] && [ "`uname`" == "Linux" ]; then
+        if [ x"$TARGET_ARCH" == x ]; then
+          target_cpu=x64
+        elif [ "$TARGET_ARCH" == "ia32" ]; then
+          target_cpu=x86
+        else
+          target_cpu="$TARGET_ARCH"
+        fi
         cd src
-        electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH"
+        electron/script/copy-debug-symbols.py --target-cpu="$target_cpu" --out-dir=out/Default/debug --compress
+        electron/script/strip-binaries.py --target-cpu="$target_cpu"
+        electron/script/add-debug-link.py --target-cpu="$target_cpu" --debug-dir=out/Default/debug
       fi
 
 step-electron-dist-build: &step-electron-dist-build
@@ -433,6 +443,9 @@ step-electron-publish: &step-electron-publish
   run:
     name: Publish Electron Dist
     command: |
+      if [ "`uname`" == "Darwin" ]; then
+        rm -rf src/out/Default/obj
+      fi
       cd src/electron
       if [ "$UPLOAD_TO_S3" == "1" ]; then
         echo 'Uploading Electron release distribution to S3'
@@ -2081,14 +2094,6 @@ workflows:
           requires:
             - mac-checkout-fast
 
-      - osx-debug:
-          requires:
-            - mac-checkout-fast
-
-      - osx-debug-gn-check:
-          requires:
-            - mac-checkout-fast
-
       - osx-testing-gn-check:
           requires:
             - mac-checkout-fast
@@ -2098,14 +2103,6 @@ workflows:
             - osx-testing
 
       - mas-testing:
-          requires:
-            - mac-checkout-fast
-
-      - mas-debug:
-          requires:
-            - mac-checkout-fast
-
-      - mas-debug-gn-check:
           requires:
             - mac-checkout-fast
 
