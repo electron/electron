@@ -7,6 +7,8 @@ This works around a bug in grit's handling of generated .grd files.
 
 Should be removed once grit is fixed.
 
+Tracking bug: https://crbug.com/1040605
+
 diff --git a/tools/gritsettings/resource_ids.spec b/tools/gritsettings/resource_ids.spec
 index 9f66e1221eda1fbb6e86a4d7541e07d222512171..f47f8edb54984f7497e7c69e2565abc83f58dc8b 100644
 --- a/tools/gritsettings/resource_ids.spec
