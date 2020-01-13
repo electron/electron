@@ -149,7 +149,10 @@ function assetsForVersion (version, validatingRelease) {
     `mksnapshot-${version}-mas-x64.zip`,
     `mksnapshot-${version}-win32-ia32.zip`,
     `mksnapshot-${version}-win32-x64.zip`,
-    `mksnapshot-${version}-win32-arm64-x64.zip`
+    `mksnapshot-${version}-win32-arm64-x64.zip`,
+    `toolchain-profile-${version}-win32-ia32.zip`,
+    `toolchain-profile-${version}-win32-x64.zip`,
+    `toolchain-profile-${version}-win32-arm64.zip`
   ]
   if (!validatingRelease) {
     patterns.push('SHASUMS256.txt')

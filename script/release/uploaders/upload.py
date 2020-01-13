@@ -16,6 +16,7 @@ sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
 from io import StringIO
+from zipfile import ZipFile
 from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
                        get_zip_name
 from lib.util import get_electron_branding, execute, get_electron_version, \
@@ -36,6 +37,7 @@ SYMBOLS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
 DSYM_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
 PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
 DEBUG_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'debug')
+TOOLCHAIN_PROFILE_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'toolchain-profile')
 
 
 def main():
@@ -121,6 +123,12 @@ def main():
     run_python_upload_script('upload-symbols.py')
     if PLATFORM == 'win32':
       run_python_upload_script('upload-node-headers.py', '-v', args.version)
+
+  if PLATFORM == 'win32':
+    toolchain_profile_zip = os.path.join(OUT_DIR, TOOLCHAIN_PROFILE_NAME)
+    with ZipFile(toolchain_profile_zip, 'w') as myzip:
+      myzip.write(os.path.join(OUT_DIR, 'windows_toolchain_profile.json'), 'toolchain_profile.json')
+    upload_electron(release, toolchain_profile_zip, args)
 
 
 def parse_args():
