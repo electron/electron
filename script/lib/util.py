@@ -260,6 +260,7 @@ def get_buildtools_executable(name):
   buildtools = os.path.realpath(os.path.join(ELECTRON_DIR, '..', 'buildtools'))
   chromium_platform = {
     'darwin': 'mac',
+    'linux': 'linux64',
     'linux2': 'linux64',
     'win32': 'win',
   }[sys.platform]
