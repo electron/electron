@@ -8,7 +8,7 @@ const auth = require('basic-auth')
 const ChildProcess = require('child_process')
 const { closeAllWindows } = require('./window-helpers')
 const { emittedOnce } = require('./events-helpers')
-
+const WebSocket = require('ws')
 const { session, BrowserWindow, net, ipcMain } = require('electron')
 const { expect } = chai
 
@@ -917,6 +917,89 @@ describe('session module', () => {
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
       await w.loadURL(`http://127.0.0.1:${server.address().port}`)
       expect(headers['user-agent']).to.equal(userAgent)
+    })
+  })
+
+
+  describe('session.defaultSession.webRequest', () => {
+    afterEach(closeAllWindows)
+    let server = null, reqHeaders = {}, port = null
+    before(async () => {
+      server = http.createServer((req, res) => {
+        reqHeaders[req.url] = req.headers
+        res.setHeader("foo1", "bar1")
+        res.end('ok')
+      });
+      const wss = new WebSocket.Server({ noServer: true });
+      wss.on('connection', function connection(ws) {
+        ws.on('message', function incoming(message) {
+          if (message === "foo") {
+            ws.send('bar');
+          }
+        });
+
+      });
+      server.on('upgrade', function upgrade(request, socket, head) {
+        const pathname = require('url').parse(request.url).pathname;
+        if (pathname === '/websocket') {
+          reqHeaders[request.url] = request.headers
+          wss.handleUpgrade(request, socket, head, function done(ws) {
+            wss.emit('connection', ws, request);
+          });
+        }
+      });
+
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+      port = server.address().port
+    })
+    after(async () => {
+      await new Promise(resolve => server.close(resolve))
+    })
+    it('onHeadersReceived', function (done) {
+      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, webSecurity: false } })
+      let receivedHeaders = {};
+      session.defaultSession.webRequest.onHeadersReceived({ urls: ['<all_urls>'] }, (details, callback) => {
+        const pathname = require('url').parse(details.url).pathname
+        receivedHeaders[pathname] = details.responseHeaders
+        callback({ requestHeaders: details.requestHeaders })
+      });
+      session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['<all_urls>'] }, (details, callback) => {
+        details.requestHeaders.foo = "bar";
+        callback({ requestHeaders: details.requestHeaders });
+      });
+      session.defaultSession.webRequest.onResponseStarted({ urls: ['<all_urls>'] }, (details) => {
+        if (details.url.startsWith('ws://')) {
+          expect(details.responseHeaders['Connection'][0]).be.equal('Upgrade');
+        } else if (details.url.startsWith('http')) {
+          expect(details.responseHeaders['foo1'][0]).be.equal('bar1');
+        }
+      });
+      session.defaultSession.webRequest.onSendHeaders({ urls: ['<all_urls>'] }, (details) => {
+        if (details.url.startsWith('ws://')) {
+          expect(details.requestHeaders['foo']).be.equal('bar');
+          expect(details.requestHeaders['Upgrade']).be.equal('websocket');
+
+        } else if (details.url.startsWith('http')) {
+          expect(details.requestHeaders['foo']).be.equal('bar');
+        }
+      });
+      session.defaultSession.webRequest.onCompleted({ urls: ['<all_urls>'] }, (details) => {
+        if (details.url.startsWith('ws://')) {
+          expect(details['error']).be.equal('net::ERR_WS_UPGRADE');
+        } else if (details.url.startsWith('http')) {
+          expect(details['error']).be.equal('net::OK');
+        }
+      });    
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'success') {
+          expect(receivedHeaders['/websocket']['Upgrade'][0]).to.equal('websocket')
+          expect(receivedHeaders['/']['foo1'][0]).to.equal('bar1')
+          expect(reqHeaders['/websocket']['foo']).to.equal('bar')
+          expect(reqHeaders['/']['foo']).to.equal('bar')
+          done()
+        }
+      });
+      w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } })
     })
   })
 })

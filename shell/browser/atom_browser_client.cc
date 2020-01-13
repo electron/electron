@@ -67,6 +67,7 @@
 #include "shell/browser/net/network_context_service.h"
 #include "shell/browser/net/network_context_service_factory.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
+#include "shell/browser/net/proxying_websocket.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
@@ -183,6 +184,7 @@ void AtomBrowserClient::SetApplicationLocale(const std::string& locale) {
 AtomBrowserClient::AtomBrowserClient() {
   DCHECK(!g_browser_client);
   g_browser_client = this;
+  request_id_generator_ = base::MakeRefCounted<api::RequestIDGenerator>();
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -982,6 +984,42 @@ void AtomBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   }
 }
 
+bool AtomBrowserClient::WillInterceptWebSocket(
+    content::RenderFrameHost* frame) {
+  if (!frame) {
+    return false;
+  }
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto* browser_context = frame->GetProcess()->GetBrowserContext();
+  auto web_request = api::WebRequestNS::FromOrCreate(isolate, browser_context);
+
+  // NOTE: Some unit test environments do not initialize
+  // BrowserContextKeyedAPI factories for e.g. WebRequest.
+  if (!web_request.get())
+    return false;
+
+  return true;
+}
+
+void AtomBrowserClient::CreateWebSocket(
+    content::RenderFrameHost* frame,
+    WebSocketFactory factory,
+    const GURL& url,
+    const GURL& site_for_cookies,
+    const base::Optional<std::string>& user_agent,
+    mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
+        handshake_client) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto* browser_context = frame->GetProcess()->GetBrowserContext();
+  auto web_request = api::WebRequestNS::FromOrCreate(isolate, browser_context);
+  DCHECK(web_request.get());
+  ProxyingWebSocket::StartProxying(
+      web_request.get(), std::move(factory), url, site_for_cookies, user_agent,
+      std::move(handshake_client), true, frame->GetProcess()->GetID(),
+      frame->GetRoutingID(), frame->GetLastCommittedOrigin(),
+      frame->GetProcess()->GetBrowserContext(), request_id_generator_);
+}
+
 bool AtomBrowserClient::WillCreateURLLoaderFactory(
     content::BrowserContext* browser_context,
     content::RenderFrameHost* frame_host,
@@ -1009,9 +1047,9 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
 
   new ProxyingURLLoaderFactory(
-      web_request.get(), protocol->intercept_handlers(), render_process_id,
-      std::move(proxied_receiver), std::move(target_factory_info),
-      std::move(header_client_receiver), type);
+      request_id_generator_, web_request.get(), protocol->intercept_handlers(),
+      render_process_id, std::move(proxied_receiver),
+      std::move(target_factory_info), std::move(header_client_receiver), type);
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
