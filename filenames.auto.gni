@@ -165,6 +165,7 @@ auto_filenames = {
     "lib/renderer/web-view/web-view-element.ts",
     "lib/renderer/web-view/web-view-impl.ts",
     "lib/renderer/web-view/web-view-init.ts",
+    "lib/renderer/window-setup.ts",
     "lib/sandboxed_renderer/api/exports/electron.ts",
     "lib/sandboxed_renderer/api/module-list.ts",
     "lib/sandboxed_renderer/init.js",
