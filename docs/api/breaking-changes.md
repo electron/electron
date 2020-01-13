@@ -116,7 +116,7 @@ However, it is recommended to avoid using the `remote` module altogether.
 // main
 const { ipcMain, webContents } = require('electron')
 
-const getGuestForWebContents = function (webContentsId, contents) {
+const getGuestForWebContents = (webContentsId, contents) => {
   const guest = webContents.fromId(webContentsId)
   if (!guest) {
     throw new Error(`Invalid webContentsId: ${webContentsId}`)
