@@ -1627,7 +1627,7 @@ Returns `Boolean` - Whether the menu bar is visible.
 * `visible` Boolean
 * `options` Object (optional)
   * `visibleOnFullScreen` Boolean (optional) _macOS_ - Sets whether
-    the window should be visible above fullscreen windows
+    the window should be visible above fullscreen windows _deprecated_
 
 Sets whether the window should be visible on all workspaces.
 
