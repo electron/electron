@@ -32,10 +32,10 @@
 namespace gin {
 
 template <>
-struct Converter<mojo::InlinedStructPtr<network::mojom::HttpRawHeaderPair>> {
+struct Converter<network::mojom::HttpRawHeaderPairPtr> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const mojo::InlinedStructPtr<network::mojom::HttpRawHeaderPair>& pair) {
+      const network::mojom::HttpRawHeaderPairPtr& pair) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("key", base::ToLowerASCII(pair->key));
     dict.Set("value", pair->value);
