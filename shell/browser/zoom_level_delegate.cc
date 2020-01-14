@@ -17,7 +17,7 @@
 #include "components/prefs/pref_service_factory.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/common/page_zoom.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
 
 namespace electron {
 
@@ -50,10 +50,10 @@ ZoomLevelDelegate::ZoomLevelDelegate(PrefService* pref_service,
   partition_key_ = GetHash(partition_path);
 }
 
-ZoomLevelDelegate::~ZoomLevelDelegate() {}
+ZoomLevelDelegate::~ZoomLevelDelegate() = default;
 
 void ZoomLevelDelegate::SetDefaultZoomLevelPref(double level) {
-  if (content::ZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel()))
+  if (blink::PageZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel()))
     return;
 
   DictionaryPrefUpdate update(pref_service_, kPartitionDefaultZoomLevel);
@@ -83,7 +83,7 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
   DCHECK(host_zoom_dictionaries);
 
   bool modification_is_removal =
-      content::ZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel());
+      blink::PageZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel());
 
   base::DictionaryValue* host_zoom_dictionary = nullptr;
   if (!host_zoom_dictionaries->GetDictionary(partition_key_,
@@ -117,8 +117,8 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
     // will ignore type B values, thus, to have consistency with HostZoomMap's
     // internal state, these values must also be removed from Prefs.
     if (host.empty() || !has_valid_zoom_level ||
-        content::ZoomValuesEqual(zoom_level,
-                                 host_zoom_map_->GetDefaultZoomLevel())) {
+        blink::PageZoomValuesEqual(zoom_level,
+                                   host_zoom_map_->GetDefaultZoomLevel())) {
       keys_to_remove.push_back(host);
       continue;
     }

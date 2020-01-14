@@ -117,12 +117,14 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   dispatch_sync_main(^{
     std::string activity_type(
         base::SysNSStringToUTF8(userActivity.activityType));
-    std::unique_ptr<base::DictionaryValue> user_info =
+    base::DictionaryValue user_info =
         electron::NSDictionaryToDictionaryValue(userActivity.userInfo);
 
     electron::Browser* browser = electron::Browser::Get();
     shouldWait =
-        browser->UpdateUserActivityState(activity_type, *user_info) ? YES : NO;
+        browser->UpdateUserActivityState(activity_type, std::move(user_info))
+            ? YES
+            : NO;
   });
 
   if (shouldWait) {
@@ -144,16 +146,16 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   dispatch_async(dispatch_get_main_queue(), ^{
     std::string activity_type(
         base::SysNSStringToUTF8(userActivity.activityType));
-    std::unique_ptr<base::DictionaryValue> user_info =
+    base::DictionaryValue user_info =
         electron::NSDictionaryToDictionaryValue(userActivity.userInfo);
 
     electron::Browser* browser = electron::Browser::Get();
-    browser->UserActivityWasContinued(activity_type, *user_info);
+    browser->UserActivityWasContinued(activity_type, std::move(user_info));
   });
   [userActivity setNeedsSave:YES];
 }
 
-- (void)awakeFromNib {
+- (void)registerURLHandler {
   [[NSAppleEventManager sharedAppleEventManager]
       setEventHandler:self
           andSelector:@selector(handleURLEvent:withReplyEvent:)

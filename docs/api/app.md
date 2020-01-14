@@ -32,7 +32,7 @@ In most cases, you should do everything in the `ready` event handler.
 
 Returns:
 
-* `launchInfo` Object _macOS_
+* `launchInfo` unknown _macOS_
 
 Emitted when Electron has finished initializing. On macOS, `launchInfo` holds
 the `userInfo` of the `NSUserNotification` that was used to open the application,
@@ -146,7 +146,7 @@ Returns:
 * `event` Event
 * `type` String - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - Contains app-specific state stored by the activity on
+* `userInfo` unknown - Contains app-specific state stored by the activity on
   another device.
 
 Emitted during [Handoff][handoff] when an activity from a different device wants
@@ -189,7 +189,7 @@ Returns:
 * `event` Event
 * `type` String - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - Contains app-specific state stored by the activity.
+* `userInfo` unknown - Contains app-specific state stored by the activity.
 
 Emitted during [Handoff][handoff] after an activity from this device was successfully
 resumed on another one.
@@ -201,7 +201,7 @@ Returns:
 * `event` Event
 * `type` String - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - Contains app-specific state stored by the activity.
+* `userInfo` unknown - Contains app-specific state stored by the activity.
 
 Emitted when [Handoff][handoff] is about to be resumed on another device. If you need to update the state to be transferred, you should call `event.preventDefault()` immediately, construct a new `userInfo` dictionary and call `app.updateCurrentActiviy()` in a timely manner. Otherwise, the operation will fail and `continue-activity-error` will be called.
 
@@ -314,10 +314,8 @@ Returns:
 
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
-* `request` Object
-  * `method` String
+* `authenticationResponseDetails` Object
   * `url` URL
-  * `referrer` URL
 * `authInfo` Object
   * `isProxy` Boolean
   * `scheme` String
@@ -325,8 +323,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
-  * `username` String
-  * `password` String
+  * `username` String (optional)
+  * `password` String (optional)
 
 Emitted when `webContents` wants to do basic auth.
 
@@ -337,11 +335,15 @@ should prevent the default behavior with `event.preventDefault()` and call
 ```javascript
 const { app } = require('electron')
 
-app.on('login', (event, webContents, request, authInfo, callback) => {
+app.on('login', (event, webContents, details, authInfo, callback) => {
   event.preventDefault()
   callback('username', 'secret')
 })
 ```
+
+If `callback` is called without a username or password, the authentication
+request will be cancelled and the authentication error will be returned to the
+page.
 
 ### Event: 'gpu-info-update'
 
@@ -390,7 +392,7 @@ Emitted when Electron has created a new `session`.
 ```javascript
 const { app } = require('electron')
 
-app.on('session-created', (event, session) => {
+app.on('session-created', (session) => {
   console.log(session)
 })
 ```
@@ -485,18 +487,6 @@ Emitted when `remote.getCurrentWebContents()` is called in the renderer process 
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-### Event: 'remote-get-guest-web-contents'
-
-Returns:
-
-* `event` Event
-* `webContents` [WebContents](web-contents.md)
-* `guestWebContents` [WebContents](web-contents.md)
-
-Emitted when `<webview>.getWebContents()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
 ## Methods
 
 The `app` object has the following methods:
@@ -582,7 +572,7 @@ them.
 
 Sets or creates a directory your app's logs which can then be manipulated with `app.getPath()` or `app.setPath(pathName, newPath)`.
 
-On _macOS_, this directory will be set by default to `/Library/Logs/YourAppName`, and on _Linux_ and _Windows_ it will be placed inside your `userData` directory.
+Calling `app.setAppLogsPath()` without a `path` parameter will result in this directory being set to `~/Library/Logs/YourAppName` on _macOS_, and inside the `userData` directory on _Linux_ and _Windows_.
 
 ### `app.getAppPath()`
 
@@ -590,31 +580,31 @@ Returns `String` - The current application directory.
 
 ### `app.getPath(name)`
 
-* `name` String
+* `name` String - You can request the following paths by the name:
+  * `home` User's home directory.
+  * `appData` Per-user application data directory, which by default points to:
+    * `%APPDATA%` on Windows
+    * `$XDG_CONFIG_HOME` or `~/.config` on Linux
+    * `~/Library/Application Support` on macOS
+  * `userData` The directory for storing your app's configuration files, which by
+    default it is the `appData` directory appended with your app's name.
+  * `cache`
+  * `temp` Temporary directory.
+  * `exe` The current executable file.
+  * `module` The `libchromiumcontent` library.
+  * `desktop` The current user's Desktop directory.
+  * `documents` Directory for a user's "My Documents".
+  * `downloads` Directory for a user's downloads.
+  * `music` Directory for a user's music.
+  * `pictures` Directory for a user's pictures.
+  * `videos` Directory for a user's videos.
+  * `logs` Directory for your app's log folder.
+  * `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
 
 Returns `String` - A path to a special directory or file associated with `name`. On
 failure, an `Error` is thrown.
 
-You can request the following paths by the name:
-
-* `home` User's home directory.
-* `appData` Per-user application data directory, which by default points to:
-  * `%APPDATA%` on Windows
-  * `$XDG_CONFIG_HOME` or `~/.config` on Linux
-  * `~/Library/Application Support` on macOS
-* `userData` The directory for storing your app's configuration files, which by
-  default it is the `appData` directory appended with your app's name.
-* `temp` Temporary directory.
-* `exe` The current executable file.
-* `module` The `libchromiumcontent` library.
-* `desktop` The current user's Desktop directory.
-* `documents` Directory for a user's "My Documents".
-* `downloads` Directory for a user's downloads.
-* `music` Directory for a user's music.
-* `pictures` Directory for a user's pictures.
-* `videos` Directory for a user's videos.
-* `logs` Directory for your app's log folder.
-* `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
+If `app.getPath('logs')` is called without called `app.setAppLogsPath()` being called first, a default log directory will be created equivalent to calling `app.setAppLogsPath()` without a `path` parameter.
 
 ### `app.getFileIcon(path[, options])`
 
@@ -675,13 +665,15 @@ preferred over `name` by Electron.
 
 Overrides the current application's name.
 
+**Note:** This function overrides the name used internally by Electron; it does not affect the name that the OS uses.
+
 **[Deprecated](modernization/property-updates.md)**
 
 ### `app.getLocale()`
 
 Returns `String` - The current application locale. Possible return values are documented [here](locales.md).
 
-To set the locale, you'll want to use a command line switch at app startup, which may be found [here](https://github.com/electron/electron/blob/master/docs/api/chrome-command-line-switches.md).
+To set the locale, you'll want to use a command line switch at app startup, which may be found [here](https://github.com/electron/electron/blob/master/docs/api/command-line-switches.md).
 
 **Note:** When distributing your packaged app, you have to also ship the
 `locales` folder.
@@ -767,6 +759,21 @@ macOS machine. Please refer to
 [Apple's documentation][LSCopyDefaultHandlerForURLScheme] for details.
 
 The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
+
+### `app.getApplicationNameForProtocol(url)`
+
+* `url` String - a URL with the protocol name to check. Unlike the other
+  methods in this family, this accepts an entire URL, including `://` at a
+  minimum (e.g. `https://`).
+
+Returns `String` - Name of the application handling the protocol, or an empty
+  string if there is no handler. For instance, if Electron is the default
+  handler of the URL, this could be `Electron` on Windows and Mac. However,
+  don't rely on the precise format which is not guaranteed to remain unchanged.
+  Expect a different format on Linux, possibly with a `.desktop` suffix.
+
+This method returns the application name of the default handler for the protocol
+(aka URI scheme) of a URL.
 
 ### `app.setUserTasks(tasks)` _Windows_
 
@@ -951,7 +958,7 @@ allow multiple instances of the application to once again run side by side.
 
 * `type` String - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - App-specific state to store for use by another device.
+* `userInfo` any - App-specific state to store for use by another device.
 * `webpageURL` String (optional) - The webpage to load in a browser if no suitable app is
   installed on the resuming device. The scheme must be `http` or `https`.
 
@@ -974,7 +981,7 @@ Marks the current [Handoff][handoff] user activity as inactive without invalidat
 
 * `type` String - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - App-specific state to store for use by another device.
+* `userInfo` any - App-specific state to store for use by another device.
 
 Updates the current activity if its type matches `type`, merging the entries from
 `userInfo` into its current `userInfo` dictionary.
@@ -985,7 +992,7 @@ Updates the current activity if its type matches `type`, merging the entries fro
 
 Changes the [Application User Model ID][app-user-model-id] to `id`.
 
-### `app.importCertificate(options, callback)` _LINUX_
+### `app.importCertificate(options, callback)` _Linux_
 
 * `options` Object
   * `certificate` String - Path for the pkcs12 file.
@@ -1023,7 +1030,7 @@ Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Fe
 
 ### `app.getGPUInfo(infoType)`
 
-* `infoType` String - Values can be either `basic` for basic info or `complete` for complete info.
+* `infoType` String - Can be `basic` or `complete`.
 
 Returns `Promise<unknown>`
 
@@ -1168,21 +1175,21 @@ This API must be called after the `ready` event is emitted.
 
 **[Deprecated](modernization/property-updates.md)**
 
-### `app.showAboutPanel()` _macOS_ _Linux_
+### `app.showAboutPanel()`
 
 Show the app's about panel options. These options can be overridden with `app.setAboutPanelOptions(options)`.
 
-### `app.setAboutPanelOptions(options)` _macOS_ _Linux_
+### `app.setAboutPanelOptions(options)`
 
 * `options` Object
   * `applicationName` String (optional) - The app's name.
   * `applicationVersion` String (optional) - The app's version.
   * `copyright` String (optional) - Copyright information.
-  * `version` String (optional) - The app's build version number.
-  * `credits` String (optional) _macOS_ - Credit information.
+  * `version` String (optional) _macOS_ - The app's build version number.
+  * `credits` String (optional) _macOS_ _Windows_ - Credit information.
   * `authors` String[] (optional) _Linux_ - List of app authors.
   * `website` String (optional) _Linux_ - The app's website.
-  * `iconPath` String (optional) _Linux_ - Path to the app's icon. Will be shown as 64x64 pixels while retaining aspect ratio.
+  * `iconPath` String (optional) _Linux_ _Windows_ - Path to the app's icon. On Linux, will be shown as 64x64 pixels while retaining aspect ratio.
 
 Set the about panel options. This will override the values defined in the app's
 `.plist` file on MacOS. See the [Apple docs][about-panel-options] for more details. On Linux, values must be set in order to be shown; there are no defaults.
@@ -1195,7 +1202,7 @@ Returns `Boolean` - whether or not the current OS version allows for native emoj
 
 Show the platform's native emoji picker.
 
-### `app.startAccessingSecurityScopedResource(bookmarkData)` _macOS (mas)_
+### `app.startAccessingSecurityScopedResource(bookmarkData)` _mas_
 
 * `bookmarkData` String - The base64 encoded security scoped bookmark data returned by the `dialog.showOpenDialog` or `dialog.showSaveDialog` methods.
 
@@ -1223,7 +1230,11 @@ This method can only be called before app is ready.
 Returns `Boolean` - Whether the application is currently running from the
 systems Application folder. Use in combination with `app.moveToApplicationsFolder()`
 
-### `app.moveToApplicationsFolder()` _macOS_
+### `app.moveToApplicationsFolder([options])` _macOS_
+
+* `options` Object (optional)
+  * `conflictHandler` Function<Boolean> (optional) - A handler for potential conflict in move failure.
+    * `conflictType` String - The type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
 
 Returns `Boolean` - Whether the move was successful. Please note that if
 the move is successful, your application will quit and relaunch.
@@ -1236,7 +1247,28 @@ the user to confirm the operation, you may do so using the
 move to fail. For instance if the user cancels the authorization dialog, this
 method returns false. If we fail to perform the copy, then this method will
 throw an error. The message in the error should be informative and tell
-you exactly what went wrong
+you exactly what went wrong.
+
+By default, if an app of the same name as the one being moved exists in the Applications directory and is _not_ running, the existing app will be trashed and the active app moved into its place. If it _is_ running, the pre-existing running app will assume focus and the the previously active app will quit itself. This behavior can be changed by providing the optional conflict handler, where the boolean returned by the handler determines whether or not the move conflict is resolved with default behavior.  i.e. returning `false` will ensure no further action is taken, returning `true` will result in the default behavior and the method continuing.
+
+For example:
+
+```js
+app.moveToApplicationsFolder({
+  conflictHandler: (conflictType) => {
+    if (conflictType === 'exists') {
+      return dialog.showMessageBoxSync({
+        type: 'question',
+        buttons: ['Halt Move', 'Continue Move'],
+        defaultId: 0,
+        message: 'An app of this name already exists'
+      }) === 1
+    }
+  }
+})
+```
+
+Would mean that if an app already exists in the user directory, if the user chooses to 'Continue Move' then the function would continue with its default behavior and the existing app will be trashed and the active app moved into its place.
 
 ## Properties
 
@@ -1264,17 +1296,17 @@ On macOS, setting this with any nonzero integer shows on the dock icon. On Linux
 **Note:** Unity launcher requires the existence of a `.desktop` file to work,
 for more information please read [Desktop Environment Integration][unity-requirement].
 
-### `app.commandLine`
+### `app.commandLine` _Readonly_
 
 A [`CommandLine`](./command-line.md) object that allows you to read and manipulate the
 command line arguments that Chromium uses.
 
-### `app.dock` _macOS_
+### `app.dock` _macOS_ _Readonly_
 
-A [`Dock`](./dock.md) object that allows you to perform actions on your app icon in the user's
+A [`Dock`](./dock.md) `| undefined` object that allows you to perform actions on your app icon in the user's
 dock on macOS.
 
-### `app.isPackaged`
+### `app.isPackaged` _Readonly_
 
 A `Boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
 

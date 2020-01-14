@@ -15,6 +15,7 @@ const BLACKLIST = new Set([
   ['shell', 'browser', 'mac', 'atom_application_delegate.h'],
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_bundle_mover.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'atom_ns_window.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
@@ -22,7 +23,6 @@ const BLACKLIST = new Set([
   ['shell', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'atom_inspectable_web_contents_view.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'touch_bar_forward_declarations.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],
   ['shell', 'common', 'node_includes.h'],
@@ -55,7 +55,7 @@ function cpplint (args) {
 
 const LINTERS = [ {
   key: 'c++',
-  roots: ['shell', 'native_mate'],
+  roots: ['shell'],
   test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
   run: (opts, filenames) => {
     if (opts.fix) {
@@ -95,8 +95,8 @@ const LINTERS = [ {
   }
 }, {
   key: 'javascript',
-  roots: ['lib', 'spec', 'script', 'default_app'],
-  ignoreRoots: ['spec/node_modules'],
+  roots: ['lib', 'spec', 'spec-main', 'script', 'default_app'],
+  ignoreRoots: ['spec/node_modules', 'spec-main/node_modules'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: (opts, filenames) => {
     const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint')
@@ -137,7 +137,7 @@ const LINTERS = [ {
   key: 'patches',
   roots: ['patches'],
   test: () => true,
-  run: () => {
+  run: (opts, filenames) => {
     const patchesDir = path.resolve(__dirname, '../patches')
     for (const patchTarget of fs.readdirSync(patchesDir)) {
       const targetDir = path.resolve(patchesDir, patchTarget)
@@ -179,6 +179,18 @@ const LINTERS = [ {
           throw new Error(`Expected all the patch files listed in the .patches file at "${dotPatchesPath}" to exist but some did not:\n${JSON.stringify([...patchFileSet.values()], null, 2)}`)
         }
       }
+    }
+
+    let ok = true
+    filenames.filter(f => f.endsWith('.patch')).forEach(f => {
+      const patchText = fs.readFileSync(f, 'utf8')
+      if (/^Subject: .*$\s+^diff/m.test(patchText)) {
+        console.warn(`Patch file '${f}' has no description. Every patch must contain a justification for why the patch exists and the plan for its removal.`)
+        ok = false
+      }
+    })
+    if (!ok) {
+      process.exit(1)
     }
   }
 }]
@@ -234,7 +246,7 @@ async function findFiles (args, linter) {
       return []
     }
   } else if (args.only) {
-    whitelist = new Set(args._)
+    whitelist = new Set(args._.map(p => path.resolve(p)))
   }
 
   // accumulate the raw list of files

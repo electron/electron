@@ -4,7 +4,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-`DownloadItem` is an `EventEmitter` that represents a download item in Electron.
+`DownloadItem` is an [EventEmitter][event-emitter] that represents a download item in Electron.
 It is used in `will-download` event of `Session` class, and allows users to
 control the download item.
 
@@ -195,3 +195,5 @@ A `String` property that determines the save file path of the download item.
 The property is only available in session's `will-download` callback function.
 If user doesn't set the save path via the property, Electron will use the original
 routine to determine the save path; this usually prompts a save dialog.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

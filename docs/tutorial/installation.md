@@ -38,11 +38,15 @@ npm install --platform=win32 electron
 
 ## Proxies
 
-If you need to use an HTTP proxy you can [set these environment variables][proxy-env].
+If you need to use an HTTP proxy, you need to set the `ELECTRON_GET_USE_PROXY` variable to any
+value, plus additional environment variables depending on your host system's Node version:
+
+* [Node 10 and above][proxy-env-10]
+* [Before Node 10][proxy-env]
 
 ## Custom Mirrors and Caches
 During installation, the `electron` module will call out to
-[`electron-download`][electron-download] to download prebuilt binaries of
+[`@electron/get`][electron-get] to download prebuilt binaries of
 Electron for your platform. It will do so by contacting GitHub's
 release download page (`https://github.com/electron/electron/releases/tag/v$VERSION`,
 where `$VERSION` is the exact version of Electron).
@@ -52,21 +56,21 @@ can do so by either providing a mirror or an existing cache directory.
 
 #### Mirror
 You can use environment variables to override the base URL, the path at which to
-look for Electron binaries, and the binary filename. The url used by `electron-download`
+look for Electron binaries, and the binary filename. The url used by `@electron/get`
 is composed as follows:
 
-```txt
+```plaintext
 url = ELECTRON_MIRROR + ELECTRON_CUSTOM_DIR + '/' + ELECTRON_CUSTOM_FILENAME
 ```
 
 For instance, to use the China mirror:
 
-```txt
-ELECTRON_MIRROR="https://npm.taobao.org/mirrors/electron/"
+```plaintext
+ELECTRON_MIRROR="https://cdn.npm.taobao.org/dist/electron/"
 ```
 
 #### Cache
-Alternatively, you can override the local cache. `electron-download` will cache
+Alternatively, you can override the local cache. `@electron/get` will cache
 downloaded binaries in a local directory to not stress your network. You can use
 that cache folder to provide custom builds of Electron or to avoid making contact
 with the network at all.
@@ -78,23 +82,33 @@ with the network at all.
 On environments that have been using older versions of Electron, you might find the
 cache also in `~/.electron`.
 
-You can also override the local cache location by providing a `ELECTRON_CACHE`
+You can also override the local cache location by providing a `electron_config_cache`
 environment variable.
 
 The cache contains the version's official zip file as well as a checksum, stored as
 a text file. A typical cache might look like this:
 
 ```sh
-├── electron-v1.7.9-darwin-x64.zip
-├── electron-v1.8.1-darwin-x64.zip
-├── electron-v1.8.2-beta.1-darwin-x64.zip
-├── electron-v1.8.2-beta.2-darwin-x64.zip
-├── electron-v1.8.2-beta.3-darwin-x64.zip
-├── SHASUMS256.txt-1.7.9
-├── SHASUMS256.txt-1.8.1
-├── SHASUMS256.txt-1.8.2-beta.1
-├── SHASUMS256.txt-1.8.2-beta.2
-├── SHASUMS256.txt-1.8.2-beta.3
+├── httpsgithub.comelectronelectronreleasesdownloadv1.7.9electron-v1.7.9-darwin-x64.zip
+│   └── electron-v1.7.9-darwin-x64.zip
+├── httpsgithub.comelectronelectronreleasesdownloadv1.7.9SHASUMS256.txt
+│   └── SHASUMS256.txt
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.1electron-v1.8.1-darwin-x64.zip
+│   └── electron-v1.8.1-darwin-x64.zip
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.1SHASUMS256.txt
+│   └── SHASUMS256.txt
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.1electron-v1.8.2-beta.1-darwin-x64.zip
+│   └── electron-v1.8.2-beta.1-darwin-x64.zip
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.1SHASUMS256.txt
+│   └── SHASUMS256.txt
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.2electron-v1.8.2-beta.2-darwin-x64.zip
+│   └── electron-v1.8.2-beta.2-darwin-x64.zip
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.2SHASUMS256.txt
+│   └── SHASUMS256.txt
+├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.3electron-v1.8.2-beta.3-darwin-x64.zip
+│   └── electron-v1.8.2-beta.3-darwin-x64.zip
+└── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.3SHASUMS256.txt
+    └── SHASUMS256.txt
 ```
 
 ## Skip binary download
@@ -146,7 +160,8 @@ If you need to force a re-download of the asset and the SHASUM file set the
 [npm]: https://docs.npmjs.com
 [versioning]: ./electron-versioning.md
 [releases]: https://github.com/electron/electron/releases
-[proxy-env]: https://github.com/request/request/tree/f0c4ec061141051988d1216c24936ad2e7d5c45d#controlling-proxy-behaviour-using-environment-variables
-[electron-download]: https://github.com/electron-userland/electron-download
+[proxy-env-10]: https://github.com/gajus/global-agent/blob/v2.1.5/README.md#environment-variables
+[proxy-env]: https://github.com/np-maintain/global-tunnel/blob/v2.7.1/README.md#auto-config
+[electron-get]: https://github.com/electron/get
 [npm-permissions]: https://docs.npmjs.com/getting-started/fixing-npm-permissions
 [unsafe-perm]: https://docs.npmjs.com/misc/config#unsafe-perm

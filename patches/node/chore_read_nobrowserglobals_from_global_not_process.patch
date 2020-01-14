@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 15 Jul 2019 17:45:02 -0700
+Subject: chore: read _noBrowserGlobals from global not config
+
+This is used so that we can modify the flag at runtime where
+config can only be set at compile time.
+
+diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
+index 0f36697ce5ed0b5bb6df74ceca219574da7eea53..a7fc05a247bfcd2b6da048c9def3b78025bd43fe 100644
+--- a/lib/internal/bootstrap/node.js
++++ b/lib/internal/bootstrap/node.js
+@@ -167,7 +167,7 @@ const {
+   queueMicrotask
+ } = require('internal/process/task_queues');
+ 
+-if (!config.noBrowserGlobals) {
++if (!global._noBrowserGlobals) {
+   // Override global console from the one provided by the VM
+   // to the one implemented by Node.js
+   // https://console.spec.whatwg.org/#console-namespace

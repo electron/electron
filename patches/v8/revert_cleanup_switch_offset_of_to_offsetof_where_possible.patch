@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Tue, 17 Sep 2019 18:35:16 +0000
+Subject: Revert "[cleanup] Switch {OFFSET_OF} to {offsetof} where possible."
+
+This reverts commit d287e4bc46243841c77cf9798516ee4dcc54bf43.
+
+diff --git a/src/deoptimizer/deoptimizer.h b/src/deoptimizer/deoptimizer.h
+index beb2a9aa50e82640417ae0326f84faab3a0610a5..6d0a350aaceb59fa6486d41566ad22ee3fbe1bdd 100644
+--- a/src/deoptimizer/deoptimizer.h
++++ b/src/deoptimizer/deoptimizer.h
+@@ -488,14 +488,14 @@ class Deoptimizer : public Malloced {
+                                     DeoptimizeKind* type);
+ 
+   // Code generation support.
+-  static int input_offset() { return offsetof(Deoptimizer, input_); }
++  static int input_offset() { return OFFSET_OF(Deoptimizer, input_); }
+   static int output_count_offset() {
+-    return offsetof(Deoptimizer, output_count_);
++    return OFFSET_OF(Deoptimizer, output_count_);
+   }
+-  static int output_offset() { return offsetof(Deoptimizer, output_); }
++  static int output_offset() { return OFFSET_OF(Deoptimizer, output_); }
+ 
+   static int caller_frame_top_offset() {
+-    return offsetof(Deoptimizer, caller_frame_top_);
++    return OFFSET_OF(Deoptimizer, caller_frame_top_);
+   }
+ 
+   V8_EXPORT_PRIVATE static int GetDeoptimizedCodeCount(Isolate* isolate);
+@@ -731,11 +731,11 @@ class FrameDescription {
+   int parameter_count() { return parameter_count_; }
+ 
+   static int registers_offset() {
+-    return offsetof(FrameDescription, register_values_.registers_);
++    return OFFSET_OF(FrameDescription, register_values_.registers_);
+   }
+ 
+   static int double_registers_offset() {
+-    return offsetof(FrameDescription, register_values_.double_registers_);
++    return OFFSET_OF(FrameDescription, register_values_.double_registers_);
+   }
+ 
+   static int frame_size_offset() {

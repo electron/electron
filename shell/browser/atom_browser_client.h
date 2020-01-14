@@ -11,14 +11,17 @@
 #include <string>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
+#include "content/public/browser/web_contents.h"
+#include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 
 namespace content {
-class QuotaPermissionContext;
 class ClientCertificateDelegate;
+class QuotaPermissionContext;
 }  // namespace content
 
 namespace net {
@@ -59,9 +62,15 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
-
-  // content::ContentBrowserClient:
+  base::FilePath GetFontLookupTableCacheDir() override;
   bool ShouldEnableStrictSiteIsolation() override;
+  void BindHostReceiverForRenderer(
+      content::RenderProcessHost* render_process_host,
+      mojo::GenericPendingReceiver receiver) override;
+  void RegisterBrowserInterfaceBindersForFrame(
+      content::RenderFrameHost* render_frame_host,
+      service_manager::BinderMapWithContext<content::RenderFrameHost*>* map)
+      override;
 
   std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);
@@ -70,9 +79,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   bool CanUseCustomSiteInstance() override;
 
  protected:
-  void RenderProcessWillLaunch(
-      content::RenderProcessHost* host,
-      service_manager::mojom::ServiceRequest* service_request) override;
+  void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
   content::SpeechRecognitionManagerDelegate*
   CreateSpeechRecognitionManagerDelegate() override;
   content::TtsControllerDelegate* GetTtsControllerDelegate() override;
@@ -83,6 +90,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::RenderFrameHost* speculative_rfh,
       content::BrowserContext* browser_context,
       const GURL& url,
+      bool has_navigation_started,
       bool has_request_started,
       content::SiteInstance** affinity_site_instance) const override;
   void RegisterPendingSiteInstance(
@@ -90,9 +98,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::SiteInstance* pending_site_instance) override;
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
-  void AdjustUtilityServiceProcessCommandLine(
-      const service_manager::Identity& identity,
-      base::CommandLine* command_line) override;
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
   std::string GetGeolocationApiKey() override;
   scoped_refptr<content::QuotaPermissionContext> CreateQuotaPermissionContext()
@@ -106,9 +111,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       const GURL& request_url,
       bool is_main_frame_request,
       bool strict_enforcement,
-      bool expired_previous_decision,
-      const base::Callback<void(content::CertificateRequestResultType)>&
-          callback) override;
+      base::OnceCallback<void(content::CertificateRequestResultType)> callback)
+      override;
   base::OnceClosure SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
@@ -129,23 +133,26 @@ class AtomBrowserClient : public content::ContentBrowserClient,
                        bool user_gesture,
                        bool opener_suppressed,
                        bool* no_javascript_access) override;
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  std::unique_ptr<content::OverlayWindow> CreateWindowForPictureInPicture(
+      content::PictureInPictureWindowController* controller) override;
+#endif
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* additional_schemes) override;
   void GetAdditionalWebUISchemes(
       std::vector<std::string>* additional_schemes) override;
   void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
   std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
-      content::ResourceContext* resource_context) override;
+      content::BrowserContext* browser_context) override;
   std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
       override;
-  network::mojom::NetworkContextPtr CreateNetworkContext(
+  mojo::Remote<network::mojom::NetworkContext> CreateNetworkContext(
       content::BrowserContext* browser_context,
       bool in_memory,
       const base::FilePath& relative_partition_path) override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
   base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
-  std::vector<service_manager::Manifest> GetExtraServiceManifests() override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(
@@ -158,7 +165,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void OnNetworkServiceCreated(
       network::mojom::NetworkService* network_service) override;
   std::vector<base::FilePath> GetNetworkContextsParentDirectory() override;
-  bool ShouldBypassCORB(int render_process_id) const override;
   std::string GetProduct() override;
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
@@ -171,15 +177,49 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::BrowserContext* browser_context,
       content::RenderFrameHost* frame,
       int render_process_id,
-      bool is_navigation,
-      bool is_download,
+      URLLoaderFactoryType type,
       const url::Origin& request_initiator,
-      network::mojom::URLLoaderFactoryRequest* factory_request,
-      network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
-      bool* bypass_redirect_checks) override;
+      base::Optional<int64_t> navigation_id,
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
+      mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
+          header_client,
+      bool* bypass_redirect_checks,
+      network::mojom::URLLoaderFactoryOverridePtr* factory_override) override;
+  void OverrideURLLoaderFactoryParams(
+      content::BrowserContext* browser_context,
+      const url::Origin& origin,
+      bool is_for_isolated_world,
+      network::mojom::URLLoaderFactoryParams* factory_params) override;
 #if defined(OS_WIN)
-  bool PreSpawnRenderer(sandbox::TargetPolicy* policy) override;
+  bool PreSpawnRenderer(sandbox::TargetPolicy* policy,
+                        RendererSpawnFlags flags) override;
 #endif
+  bool BindAssociatedReceiverFromFrame(
+      content::RenderFrameHost* render_frame_host,
+      const std::string& interface_name,
+      mojo::ScopedInterfaceEndpointHandle* handle) override;
+
+  bool HandleExternalProtocol(
+      const GURL& url,
+      content::WebContents::OnceGetter web_contents_getter,
+      int child_id,
+      content::NavigationUIData* navigation_data,
+      bool is_main_frame,
+      ui::PageTransition page_transition,
+      bool has_user_gesture,
+      const base::Optional<url::Origin>& initiating_origin,
+      mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory)
+      override;
+  std::unique_ptr<content::LoginDelegate> CreateLoginDelegate(
+      const net::AuthChallengeInfo& auth_info,
+      content::WebContents* web_contents,
+      const content::GlobalRequestID& request_id,
+      bool is_main_frame,
+      const GURL& url,
+      scoped_refptr<net::HttpResponseHeaders> response_headers,
+      bool first_auth_attempt,
+      LoginAuthRequiredCallback auth_required_callback) override;
+  void SiteInstanceGotProcess(content::SiteInstance* site_instance) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
@@ -187,19 +227,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void RenderProcessExited(
       content::RenderProcessHost* host,
       const content::ChildProcessTerminationInfo& info) override;
-  bool HandleExternalProtocol(
-      const GURL& url,
-      content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
-      int child_id,
-      content::NavigationUIData* navigation_data,
-      bool is_main_frame,
-      ui::PageTransition page_transition,
-      bool has_user_gesture,
-      network::mojom::URLLoaderFactoryRequest* factory_request,
-      // clang-format off
-      network::mojom::URLLoaderFactory*& out_factory)  // NOLINT
-      // clang-format on
-      override;
 
  private:
   struct ProcessPreferences {
@@ -207,6 +234,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
     bool native_window_open = false;
     bool disable_popups = false;
     bool web_security = true;
+    content::BrowserContext* browser_context = nullptr;
   };
 
   bool ShouldForceNewSiteInstance(content::RenderFrameHost* current_rfh,
@@ -251,7 +279,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   Delegate* delegate_ = nullptr;
 
-  mutable base::Lock process_preferences_lock_;
   std::map<int, ProcessPreferences> process_preferences_;
 
   std::string user_agent_override_ = "";

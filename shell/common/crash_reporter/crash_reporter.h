@@ -12,7 +12,10 @@
 
 #include "base/files/file_path.h"
 #include "base/macros.h"
-#include "native_mate/dictionary.h"
+
+namespace gin_helper {
+class Dictionary;
+}
 
 namespace crash_reporter {
 
@@ -25,7 +28,10 @@ class CrashReporter {
   typedef std::pair<int, std::string> UploadReportResult;  // upload-date, id
 
   static CrashReporter* GetInstance();
-  static void StartInstance(const mate::Dictionary& options);
+  // FIXME(zcbenz): We should not do V8 in this file, this method should only
+  // accept C++ struct as parameter, and atom_api_crash_reporter.cc is
+  // responsible for parsing the parameter from JavaScript.
+  static void StartInstance(const gin_helper::Dictionary& options);
 
   bool IsInitialized();
   void Start(const std::string& product_name,

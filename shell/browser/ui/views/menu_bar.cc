@@ -12,6 +12,7 @@
 #include "shell/common/keyboard_util.h"
 #include "ui/aura/window.h"
 #include "ui/base/models/menu_model.h"
+#include "ui/native_theme/common_theme.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
 #include "ui/views/widget/widget.h"
@@ -38,7 +39,7 @@ const char MenuBar::kViewClassName[] = "ElectronMenuBar";
 MenuBarColorUpdater::MenuBarColorUpdater(MenuBar* menu_bar)
     : menu_bar_(menu_bar) {}
 
-MenuBarColorUpdater::~MenuBarColorUpdater() {}
+MenuBarColorUpdater::~MenuBarColorUpdater() = default;
 
 void MenuBarColorUpdater::OnDidChangeFocus(views::View* focused_before,
                                            views::View* focused_now) {
@@ -149,24 +150,24 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
       return true;
     case ui::VKEY_HOME:
       GetFocusManager()->SetFocusedViewWithReason(
-          GetFirstFocusableChild(), views::FocusManager::kReasonFocusTraversal);
+          GetFirstFocusableChild(),
+          views::FocusManager::FocusChangeReason::kFocusTraversal);
       return true;
     case ui::VKEY_END:
       GetFocusManager()->SetFocusedViewWithReason(
-          GetLastFocusableChild(), views::FocusManager::kReasonFocusTraversal);
+          GetLastFocusableChild(),
+          views::FocusManager::FocusChangeReason::kFocusTraversal);
       return true;
     default: {
-      auto children = GetChildrenInZOrder();
-      for (int i = 0, n = children.size(); i < n; ++i) {
-        auto* button = static_cast<SubmenuButton*>(children[i]);
+      for (auto* child : GetChildrenInZOrder()) {
+        auto* button = static_cast<SubmenuButton*>(child);
         bool shifted = false;
         auto keycode =
             electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
 
         if (keycode == accelerator.key_code()) {
-          const gfx::Point p(0, 0);
           auto event = accelerator.ToKeyEvent();
-          OnMenuButtonClicked(button, p, &event);
+          ButtonPressed(button, event);
           return true;
         }
       }
@@ -201,10 +202,9 @@ bool MenuBar::SetPaneFocus(views::View* initial_focus) {
   bool result = views::AccessiblePaneView::SetPaneFocus(initial_focus);
 
   if (result) {
-    auto children = GetChildrenInZOrder();
     std::set<ui::KeyboardCode> reg;
-    for (int i = 0, n = children.size(); i < n; ++i) {
-      auto* button = static_cast<SubmenuButton*>(children[i]);
+    for (auto* child : GetChildrenInZOrder()) {
+      auto* button = static_cast<SubmenuButton*>(child);
       bool shifted = false;
       auto keycode =
           electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
@@ -232,10 +232,9 @@ void MenuBar::RemovePaneFocus() {
   views::AccessiblePaneView::RemovePaneFocus();
   SetAcceleratorVisibility(false);
 
-  auto children = GetChildrenInZOrder();
   std::set<ui::KeyboardCode> unreg;
-  for (int i = 0, n = children.size(); i < n; ++i) {
-    auto* button = static_cast<SubmenuButton*>(children[i]);
+  for (auto* child : GetChildrenInZOrder()) {
+    auto* button = static_cast<SubmenuButton*>(child);
     bool shifted = false;
     auto keycode =
         electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
@@ -255,9 +254,7 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
-void MenuBar::OnMenuButtonClicked(views::Button* source,
-                                  const gfx::Point& point,
-                                  const ui::Event* event) {
+void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
   // Hide the accelerator when a submenu is activated.
   SetAcceleratorVisibility(false);
 
@@ -274,15 +271,11 @@ void MenuBar::OnMenuButtonClicked(views::Button* source,
     return;
   }
 
-  GetFocusManager()->SetFocusedViewWithReason(
-      source, views::FocusManager::kReasonFocusTraversal);
-
   // Deleted in MenuDelegate::OnMenuClosed
   MenuDelegate* menu_delegate = new MenuDelegate(this);
-  menu_delegate->RunMenu(menu_model_->GetSubmenuModelAt(id), source,
-                         event != nullptr && event->IsKeyEvent()
-                             ? ui::MENU_SOURCE_KEYBOARD
-                             : ui::MENU_SOURCE_MOUSE);
+  menu_delegate->RunMenu(
+      menu_model_->GetSubmenuModelAt(id), source,
+      event.IsKeyEvent() ? ui::MENU_SOURCE_KEYBOARD : ui::MENU_SOURCE_MOUSE);
   menu_delegate->AddObserver(this);
 }
 
@@ -297,12 +290,9 @@ void MenuBar::RefreshColorCache() {
         "GtkMenuBar#menubar GtkMenuItem#menuitem:disabled GtkLabel");
 #else
     background_color_ =
-        theme->GetSystemColor(ui::NativeTheme::kColorId_MenuBackgroundColor);
+        ui::GetAuraColor(ui::NativeTheme::kColorId_MenuBackgroundColor, theme);
 #endif
   }
-#if defined(OS_WIN)
-  background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
-#endif
 }
 
 void MenuBar::OnThemeChanged() {

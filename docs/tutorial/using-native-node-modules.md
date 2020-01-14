@@ -122,7 +122,7 @@ is built with another system, you'll need to ensure that you build with a
 delay-load hook installed in the main `.node` file. Your `link.exe` invocation
 should look like this:
 
-```text
+```plaintext
  link.exe /OUT:"foo.node" "...\node.lib" delayimp.lib /DELAYLOAD:node.exe /DLL
      "my_addon.obj" "win_delay_load_hook.obj"
 ```

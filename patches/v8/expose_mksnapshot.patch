@@ -6,14 +6,14 @@ Subject: expose_mksnapshot.patch
 Needed in order to target mksnapshot for mksnapshot zip.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 7f5730e3069626a9078a5faf15385bf18519fe12..77942b37474195ea07c59c67b1dda8ed8d14d751 100644
+index 0264637ec51c26aa924e6809e313678e9b4ac8ea..172f88265e57b209f5c2431fc8a77c4453f6be80 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -3799,7 +3799,6 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -3821,7 +3821,6 @@ if (current_toolchain == v8_generator_toolchain) {
  
- if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+ if (current_toolchain == v8_snapshot_toolchain) {
    v8_executable("mksnapshot") {
 -    visibility = [ ":*" ]  # Only targets in this file can depend on this.
  
      sources = [
-       "src/diagnostics/crash-key-noop.cc",
+       "src/snapshot/embedded/embedded-empty.cc",

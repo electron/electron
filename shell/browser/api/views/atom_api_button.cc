@@ -4,8 +4,8 @@
 
 #include "shell/browser/api/views/atom_api_button.h"
 
-#include "native_mate/dictionary.h"
-#include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/constructor.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -25,7 +25,7 @@ void Button::ButtonPressed(views::Button* sender, const ui::Event& event) {
 }
 
 // static
-mate::WrappableBase* Button::New(mate::Arguments* args) {
+gin_helper::WrappableBase* Button::New(gin_helper::Arguments* args) {
   args->ThrowError("Button can not be created directly");
   return nullptr;
 }
@@ -33,7 +33,7 @@ mate::WrappableBase* Button::New(mate::Arguments* args) {
 // static
 void Button::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Button"));
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "Button"));
 }
 
 }  // namespace api
@@ -49,8 +49,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("Button", mate::CreateConstructor<Button>(
+  gin_helper::Dictionary dict(isolate, exports);
+  dict.Set("Button", gin_helper::CreateConstructor<Button>(
                          isolate, base::BindRepeating(&Button::New)));
 }
 

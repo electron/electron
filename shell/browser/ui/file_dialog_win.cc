@@ -21,6 +21,7 @@
 #include "base/win/registry.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/unresponsive_suppressor.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 
 namespace file_dialog {
 
@@ -47,16 +48,14 @@ void ConvertFilters(const Filters& filters,
   }
 
   buffer->reserve(filters.size() * 2);
-  for (size_t i = 0; i < filters.size(); ++i) {
-    const Filter& filter = filters[i];
-
+  for (const Filter& filter : filters) {
     COMDLG_FILTERSPEC spec;
     buffer->push_back(base::UTF8ToWide(filter.first));
     spec.pszName = buffer->back().c_str();
 
     std::vector<std::string> extensions(filter.second);
-    for (size_t j = 0; j < extensions.size(); ++j)
-      extensions[j].insert(0, "*.");
+    for (std::string& extension : extensions)
+      extension.insert(0, "*.");
     buffer->push_back(base::UTF8ToWide(base::JoinString(extensions, ";")));
     spec.pszSpec = buffer->back().c_str();
 
@@ -81,18 +80,19 @@ bool CreateDialogThread(RunState* run_state) {
   return true;
 }
 
-void OnDialogOpened(electron::util::Promise promise,
+void OnDialogOpened(gin_helper::Promise<gin_helper::Dictionary> promise,
                     bool canceled,
                     std::vector<base::FilePath> paths) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("canceled", canceled);
   dict.Set("filePaths", paths);
-  promise.Resolve(dict.GetHandle());
+  promise.Resolve(dict);
 }
 
-void RunOpenDialogInNewThread(const RunState& run_state,
-                              const DialogSettings& settings,
-                              electron::util::Promise promise) {
+void RunOpenDialogInNewThread(
+    const RunState& run_state,
+    const DialogSettings& settings,
+    gin_helper::Promise<gin_helper::Dictionary> promise) {
   std::vector<base::FilePath> paths;
   bool result = ShowOpenDialogSync(settings, &paths);
   run_state.ui_task_runner->PostTask(
@@ -101,18 +101,19 @@ void RunOpenDialogInNewThread(const RunState& run_state,
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
 }
 
-void OnSaveDialogDone(electron::util::Promise promise,
+void OnSaveDialogDone(gin_helper::Promise<gin_helper::Dictionary> promise,
                       bool canceled,
                       const base::FilePath path) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("canceled", canceled);
   dict.Set("filePath", path);
-  promise.Resolve(dict.GetHandle());
+  promise.Resolve(dict);
 }
 
-void RunSaveDialogInNewThread(const RunState& run_state,
-                              const DialogSettings& settings,
-                              electron::util::Promise promise) {
+void RunSaveDialogInNewThread(
+    const RunState& run_state,
+    const DialogSettings& settings,
+    gin_helper::Promise<gin_helper::Dictionary> promise) {
   base::FilePath path;
   bool result = ShowSaveDialogSync(settings, &path);
   run_state.ui_task_runner->PostTask(
@@ -226,14 +227,16 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
     return false;
 
   DWORD options = FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST;
-  if (settings.properties & FILE_DIALOG_OPEN_DIRECTORY)
+  if (settings.properties & OPEN_DIALOG_OPEN_DIRECTORY)
     options |= FOS_PICKFOLDERS;
-  if (settings.properties & FILE_DIALOG_MULTI_SELECTIONS)
+  if (settings.properties & OPEN_DIALOG_MULTI_SELECTIONS)
     options |= FOS_ALLOWMULTISELECT;
-  if (settings.properties & FILE_DIALOG_SHOW_HIDDEN_FILES)
+  if (settings.properties & OPEN_DIALOG_SHOW_HIDDEN_FILES)
     options |= FOS_FORCESHOWHIDDEN;
-  if (settings.properties & FILE_DIALOG_PROMPT_TO_CREATE)
+  if (settings.properties & OPEN_DIALOG_PROMPT_TO_CREATE)
     options |= FOS_CREATEPROMPT;
+  if (settings.properties & FILE_DIALOG_DONT_ADD_TO_RECENT)
+    options |= FOS_DONTADDTORECENT;
   file_open_dialog->SetOptions(options);
 
   ApplySettings(file_open_dialog, settings);
@@ -272,13 +275,13 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise promise) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+                    gin_helper::Promise<gin_helper::Dictionary> promise) {
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   RunState run_state;
   if (!CreateDialogThread(&run_state)) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
-    promise.Resolve(dict.GetHandle());
+    promise.Resolve(dict);
   } else {
     run_state.dialog_thread->task_runner()->PostTask(
         FROM_HERE, base::BindOnce(&RunOpenDialogInNewThread, run_state,
@@ -292,8 +295,13 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   if (FAILED(hr))
     return false;
 
-  file_save_dialog->SetOptions(FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST |
-                               FOS_OVERWRITEPROMPT);
+  DWORD options = FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT;
+  if (settings.properties & SAVE_DIALOG_SHOW_HIDDEN_FILES)
+    options |= FOS_FORCESHOWHIDDEN;
+  if (settings.properties & SAVE_DIALOG_DONT_ADD_TO_RECENT)
+    options |= FOS_DONTADDTORECENT;
+
+  file_save_dialog->SetOptions(options);
   ApplySettings(file_save_dialog, settings);
   hr = ShowFileDialog(file_save_dialog, settings);
 
@@ -317,13 +325,14 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise promise) {
+                    gin_helper::Promise<gin_helper::Dictionary> promise) {
   RunState run_state;
   if (!CreateDialogThread(&run_state)) {
-    mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+    gin_helper::Dictionary dict =
+        gin::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
-    promise.Resolve(dict.GetHandle());
+    promise.Resolve(dict);
   } else {
     run_state.dialog_thread->task_runner()->PostTask(
         FROM_HERE, base::BindOnce(&RunSaveDialogInNewThread, run_state,

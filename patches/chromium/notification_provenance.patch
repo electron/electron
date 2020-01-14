@@ -1,12 +1,13 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <jeremya@chromium.org>
 Date: Fri, 5 Oct 2018 14:22:06 -0700
-Subject: pass RenderProcessHost through to PlatformNotificationService
+Subject: notification_provenance.patch
 
-this is so Electron can identify which renderer a notification came from
+Pass RenderProcessHost through to PlatformNotificationService
+so Electron can identify which renderer a notification came from.
 
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index 63a1fe8ebd1a59973748cf12d7a914c91a8e27f1..d2f7d4bdf41c71874849ccaeca13f2b8f9cfa483 100644
+index a717d9f3539dc0fe86b743c6e29e4311b8b5cec3..1351217319c57be414e6c66f8a01f71fe46d2c04 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -88,9 +88,11 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -15,14 +16,14 @@ index 63a1fe8ebd1a59973748cf12d7a914c91a8e27f1..d2f7d4bdf41c71874849ccaeca13f2b8
      scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
 +    RenderProcessHost* render_process_host,
      const url::Origin& origin,
-     mojo::InterfaceRequest<blink::mojom::NotificationService> request)
+     mojo::PendingReceiver<blink::mojom::NotificationService> receiver)
      : notification_context_(notification_context),
 +      render_process_host_(render_process_host),
        browser_context_(browser_context),
        service_worker_context_(std::move(service_worker_context)),
        origin_(origin),
-@@ -150,8 +152,9 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
-       notification_id, std::move(event_listener_ptr));
+@@ -151,8 +153,9 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
+       notification_id, std::move(event_listener_remote));
  
    GetNotificationService(browser_context_)
 -      ->DisplayNotification(notification_id, origin_.GetURL(),
@@ -34,18 +35,18 @@ index 63a1fe8ebd1a59973748cf12d7a914c91a8e27f1..d2f7d4bdf41c71874849ccaeca13f2b8
  
  void BlinkNotificationServiceImpl::CloseNonPersistentNotification(
 diff --git a/content/browser/notifications/blink_notification_service_impl.h b/content/browser/notifications/blink_notification_service_impl.h
-index 3b7875f0df1f96f98a6088a8899d86d9d19d8a42..097607d267d55675ab91ad21f126acb827dcc50f 100644
+index 5253f6be778cc78571b3df0a33d364a9b1e6ef52..dc5307e6500b0bfb5da83e8d8ff8886b91133522 100644
 --- a/content/browser/notifications/blink_notification_service_impl.h
 +++ b/content/browser/notifications/blink_notification_service_impl.h
-@@ -36,6 +36,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
+@@ -40,6 +40,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
        PlatformNotificationContextImpl* notification_context,
        BrowserContext* browser_context,
        scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
 +      RenderProcessHost* render_process_host,
        const url::Origin& origin,
-       mojo::InterfaceRequest<blink::mojom::NotificationService> request);
+       mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
    ~BlinkNotificationServiceImpl() override;
-@@ -94,6 +95,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
+@@ -99,6 +100,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
    // The notification context that owns this service instance.
    PlatformNotificationContextImpl* notification_context_;
  
@@ -54,40 +55,40 @@ index 3b7875f0df1f96f98a6088a8899d86d9d19d8a42..097607d267d55675ab91ad21f126acb8
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index cbac30fa7a12db927ba6a15173ba1181e03e0723..4d26fd795a7ce1ffd046c4a0f2ec17793bf33e6a 100644
+index 951dc88b44e76b6736aa0ff30d548022486f0f6a..ea7f72b7aa05c31972e4abbdc6529ab044117b0b 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -135,7 +135,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -139,7 +139,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
  
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
 -        embedded_worker_helper_->context_wrapper(),
 +        embedded_worker_helper_->context_wrapper(), nullptr,
          url::Origin::Create(GURL(kTestOrigin)),
-         mojo::MakeRequest(&notification_service_ptr_));
+         notification_service_remote_.BindNewPipeAndPassReceiver());
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 6ae821791660dfbda93430a937ba75b596332091..a17515d29eb5ed643e684d33a8ecd92b28902c13 100644
+index d68765bcd17e93cdbad875311375153133ee45d9..cefaac6dded65e57dced955ae9bfa2ff65bc4e66 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -207,12 +207,13 @@ void PlatformNotificationContextImpl::Shutdown() {
+@@ -208,12 +208,13 @@ void PlatformNotificationContextImpl::Shutdown() {
  }
  
  void PlatformNotificationContextImpl::CreateService(
 +    RenderProcessHost* render_process_host,
      const url::Origin& origin,
-     blink::mojom::NotificationServiceRequest request) {
+     mojo::PendingReceiver<blink::mojom::NotificationService> receiver) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    services_.push_back(std::make_unique<BlinkNotificationServiceImpl>(
 -      this, browser_context_, service_worker_context_, origin,
--      std::move(request)));
+-      std::move(receiver)));
 +      this, browser_context_, service_worker_context_, render_process_host,
-+      origin, std::move(request)));
++      origin, std::move(receiver)));
  }
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index f1710b69a91931021ba56db544fce551fad52f46..b116b89114a431f8e67a68e7f7cc1c65d33985c7 100644
+index 4bf25bf1fa69f7d3869369172d375e2e489e62a1..f80ef2cecc8b111dc54e109646573a5978d8ea9c 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -24,6 +24,7 @@
@@ -95,32 +96,30 @@ index f1710b69a91931021ba56db544fce551fad52f46..b116b89114a431f8e67a68e7f7cc1c65
  #include "content/public/browser/browser_thread.h"
  #include "content/public/browser/platform_notification_context.h"
 +#include "content/public/browser/render_process_host.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
  #include "third_party/blink/public/mojom/notifications/notification_service.mojom.h"
  
- class GURL;
-@@ -65,7 +66,8 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
-   void Shutdown();
+@@ -67,6 +68,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
  
    // Creates a BlinkNotificationServiceImpl that is owned by this context.
--  void CreateService(const url::Origin& origin,
-+  void CreateService(RenderProcessHost* render_process_host,
-+                     const url::Origin& origin,
-                      blink::mojom::NotificationServiceRequest request);
+   void CreateService(
++      RenderProcessHost* render_process_host,
+       const url::Origin& origin,
+       mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
-   // Removes |service| from the list of owned services, for example because the
-diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index 32e5aa4e90083a5b08f69433b93c97c25835209f..2b1674066136b1155c6d58c62e4c7c91c8960f35 100644
---- a/content/browser/renderer_interface_binders.cc
-+++ b/content/browser/renderer_interface_binders.cc
-@@ -198,7 +198,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
-                     RenderProcessHost* host, const url::Origin& origin) {
-         static_cast<StoragePartitionImpl*>(host->GetStoragePartition())
-             ->GetPlatformNotificationContext()
--            ->CreateService(origin, std::move(request));
-+            ->CreateService(host, origin, std::move(request));
-       }));
-   parameterized_binder_registry_.AddInterface(
-       base::BindRepeating(&BackgroundFetchServiceImpl::CreateForWorker));
+diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
+index d04fe57ac79c28307e119d068e3fcc16cc1560ae..3ff0d4050a9f6b960df5e02554217abbd350d817 100644
+--- a/content/browser/renderer_host/render_process_host_impl.cc
++++ b/content/browser/renderer_host/render_process_host_impl.cc
+@@ -2006,7 +2006,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+     mojo::PendingReceiver<blink::mojom::NotificationService> receiver) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
+-      origin, std::move(receiver));
++      this, origin, std::move(receiver));
+ }
+ 
+ void RenderProcessHostImpl::CreateWebSocketConnector(
 diff --git a/content/public/browser/platform_notification_service.h b/content/public/browser/platform_notification_service.h
 index ca61088079c4150fcf389504ddcf26bcf6bf69cd..d9c034c39890eef1fe3d95c6d7c0ae68eb711a89 100644
 --- a/content/public/browser/platform_notification_service.h
@@ -143,10 +142,10 @@ index ca61088079c4150fcf389504ddcf26bcf6bf69cd..d9c034c39890eef1fe3d95c6d7c0ae68
        const GURL& origin,
        const blink::PlatformNotificationData& notification_data,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index be4638a9a8c355353424c07b73583e01c5422192..92383a54a9f86f92846b34e15a3d4a5a4f9624d3 100644
+index 73a1af201b12bf818af2eafadad478b8c422826c..fc7e74c0bf900d475fc134a7b606c5f9e404f934 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
-@@ -29,6 +29,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(
+@@ -31,6 +31,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(
  MockPlatformNotificationService::~MockPlatformNotificationService() = default;
  
  void MockPlatformNotificationService::DisplayNotification(

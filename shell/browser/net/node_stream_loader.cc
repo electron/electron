@@ -6,18 +6,18 @@
 
 #include <utility>
 
-#include "shell/common/api/event_emitter_caller.h"
-#include "shell/common/native_mate_converters/callback.h"
-
+#include "mojo/public/cpp/system/string_data_source.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
 
-NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
-                                   network::mojom::URLLoaderRequest loader,
-                                   network::mojom::URLLoaderClientPtr client,
-                                   v8::Isolate* isolate,
-                                   v8::Local<v8::Object> emitter)
+NodeStreamLoader::NodeStreamLoader(
+    network::mojom::URLResponseHeadPtr head,
+    network::mojom::URLLoaderRequest loader,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> emitter)
     : binding_(this, std::move(loader)),
       client_(std::move(client)),
       isolate_(isolate),
@@ -27,10 +27,7 @@ NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
       base::BindOnce(&NodeStreamLoader::NotifyComplete,
                      weak_factory_.GetWeakPtr(), net::ERR_FAILED));
 
-  // PostTask since it might destruct.
-  base::SequencedTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::BindOnce(&NodeStreamLoader::Start,
-                                weak_factory_.GetWeakPtr(), std::move(head)));
+  Start(std::move(head));
 }
 
 NodeStreamLoader::~NodeStreamLoader() {
@@ -40,18 +37,14 @@ NodeStreamLoader::~NodeStreamLoader() {
 
   // Unsubscribe all handlers.
   for (const auto& it : handlers_) {
-    v8::Local<v8::Value> args[] = {mate::StringToV8(isolate_, it.first),
+    v8::Local<v8::Value> args[] = {gin::StringToV8(isolate_, it.first),
                                    it.second.Get(isolate_)};
     node::MakeCallback(isolate_, emitter_.Get(isolate_), "removeListener",
                        node::arraysize(args), args, {0, 0});
   }
-
-  // Release references.
-  emitter_.Reset();
-  buffer_.Reset();
 }
 
-void NodeStreamLoader::Start(network::ResourceResponseHead head) {
+void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
   MojoResult rv = mojo::CreateDataPipe(nullptr, &producer, &consumer);
@@ -60,10 +53,8 @@ void NodeStreamLoader::Start(network::ResourceResponseHead head) {
     return;
   }
 
-  producer_ =
-      std::make_unique<mojo::StringDataPipeProducer>(std::move(producer));
-
-  client_->OnReceiveResponse(head);
+  producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
+  client_->OnReceiveResponse(std::move(head));
   client_->OnStartLoadingResponseBody(std::move(consumer));
 
   auto weak = weak_factory_.GetWeakPtr();
@@ -71,12 +62,18 @@ void NodeStreamLoader::Start(network::ResourceResponseHead head) {
      base::BindRepeating(&NodeStreamLoader::NotifyComplete, weak, net::OK));
   On("error", base::BindRepeating(&NodeStreamLoader::NotifyComplete, weak,
                                   net::ERR_FAILED));
-  On("readable", base::BindRepeating(&NodeStreamLoader::ReadMore, weak));
+  On("readable", base::BindRepeating(&NodeStreamLoader::NotifyReadable, weak));
+}
+
+void NodeStreamLoader::NotifyReadable() {
+  if (!readable_)
+    ReadMore();
+  readable_ = true;
 }
 
 void NodeStreamLoader::NotifyComplete(int result) {
   // Wait until write finishes or fails.
-  if (is_writing_) {
+  if (is_reading_ || is_writing_) {
     ended_ = true;
     result_ = result;
     return;
@@ -87,26 +84,42 @@ void NodeStreamLoader::NotifyComplete(int result) {
 }
 
 void NodeStreamLoader::ReadMore() {
+  if (is_reading_) {
+    // Calling read() can trigger the "readable" event again, making this
+    // function re-entrant. If we're already reading, we don't want to start
+    // a nested read, so short-circuit.
+    return;
+  }
+  is_reading_ = true;
+  auto weak = weak_factory_.GetWeakPtr();
   // buffer = emitter.read()
   v8::MaybeLocal<v8::Value> ret = node::MakeCallback(
       isolate_, emitter_.Get(isolate_), "read", 0, nullptr, {0, 0});
+  DCHECK(weak) << "We shouldn't have been destroyed when calling read()";
 
   // If there is no buffer read, wait until |readable| is emitted again.
   v8::Local<v8::Value> buffer;
-  if (!ret.ToLocal(&buffer) || !node::Buffer::HasInstance(buffer))
+  if (!ret.ToLocal(&buffer) || !node::Buffer::HasInstance(buffer)) {
+    readable_ = false;
+    is_reading_ = false;
+    if (ended_) {
+      NotifyComplete(result_);
+    }
     return;
+  }
 
   // Hold the buffer until the write is done.
   buffer_.Reset(isolate_, buffer);
 
   // Write buffer to mojo pipe asyncronously.
+  is_reading_ = false;
   is_writing_ = true;
-  producer_->Write(
-      base::StringPiece(node::Buffer::Data(buffer),
-                        node::Buffer::Length(buffer)),
-      mojo::StringDataPipeProducer::AsyncWritingMode::
-          STRING_STAYS_VALID_UNTIL_COMPLETION,
-      base::BindOnce(&NodeStreamLoader::DidWrite, weak_factory_.GetWeakPtr()));
+  producer_->Write(std::make_unique<mojo::StringDataSource>(
+                       base::StringPiece(node::Buffer::Data(buffer),
+                                         node::Buffer::Length(buffer)),
+                       mojo::StringDataSource::AsyncWritingMode::
+                           STRING_STAYS_VALID_UNTIL_COMPLETION),
+                   base::BindOnce(&NodeStreamLoader::DidWrite, weak));
 }
 
 void NodeStreamLoader::DidWrite(MojoResult result) {
@@ -117,7 +130,7 @@ void NodeStreamLoader::DidWrite(MojoResult result) {
     return;
   }
 
-  if (result == MOJO_RESULT_OK)
+  if (result == MOJO_RESULT_OK && readable_)
     ReadMore();
   else
     NotifyComplete(net::ERR_FAILED);
@@ -130,8 +143,8 @@ void NodeStreamLoader::On(const char* event, EventCallback callback) {
 
   // emitter.on(event, callback)
   v8::Local<v8::Value> args[] = {
-      mate::StringToV8(isolate_, event),
-      mate::CallbackToV8(isolate_, std::move(callback)),
+      gin::StringToV8(isolate_, event),
+      gin_helper::CallbackToV8Leaked(isolate_, std::move(callback)),
   };
   handlers_[event].Reset(isolate_, args[1]);
   node::MakeCallback(isolate_, emitter_.Get(isolate_), "on",

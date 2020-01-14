@@ -3,25 +3,25 @@
 // found in the LICENSE file.
 
 #include "shell/browser/lib/bluetooth_chooser.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/native_mate_converters/once_callback.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
 
-namespace mate {
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+
+namespace gin {
 
 template <>
 struct Converter<electron::BluetoothChooser::DeviceInfo> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
       const electron::BluetoothChooser::DeviceInfo& val) {
-    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("deviceName", val.device_name);
     dict.Set("deviceId", val.device_id);
-    return mate::ConvertToV8(isolate, dict);
+    return gin::ConvertToV8(isolate, dict);
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -44,7 +44,7 @@ BluetoothChooser::BluetoothChooser(api::WebContents* contents,
                                    const EventHandler& event_handler)
     : api_web_contents_(contents), event_handler_(event_handler) {}
 
-BluetoothChooser::~BluetoothChooser() {}
+BluetoothChooser::~BluetoothChooser() = default;
 
 void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
   switch (presence) {
@@ -117,6 +117,7 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
 std::vector<electron::BluetoothChooser::DeviceInfo>
 BluetoothChooser::GetDeviceList() {
   std::vector<electron::BluetoothChooser::DeviceInfo> vec;
+  vec.reserve(device_map_.size());
   for (const auto& it : device_map_) {
     DeviceInfo info = {it.first, it.second};
     vec.push_back(info);

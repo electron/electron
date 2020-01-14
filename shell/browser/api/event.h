@@ -5,56 +5,50 @@
 #ifndef SHELL_BROWSER_API_EVENT_H_
 #define SHELL_BROWSER_API_EVENT_H_
 
-#include "base/optional.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "electron/shell/common/api/api.mojom.h"
-#include "native_mate/handle.h"
-#include "native_mate/wrappable.h"
+#include "gin/handle.h"
+#include "gin/wrappable.h"
 
 namespace IPC {
 class Message;
 }
 
-namespace mate {
+namespace gin_helper {
 
-class Event : public Wrappable<Event>, public content::WebContentsObserver {
+class Event : public gin::Wrappable<Event> {
  public:
-  using MessageSyncCallback =
-      electron::mojom::ElectronBrowser::MessageSyncCallback;
-  static Handle<Event> Create(v8::Isolate* isolate);
+  using InvokeCallback = electron::mojom::ElectronBrowser::InvokeCallback;
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  static gin::WrapperInfo kWrapperInfo;
 
-  // Pass the sender and message to be replied.
-  void SetSenderAndMessage(content::RenderFrameHost* sender,
-                           base::Optional<MessageSyncCallback> callback);
+  static gin::Handle<Event> Create(v8::Isolate* isolate);
+
+  // Pass the callback to be invoked.
+  void SetCallback(InvokeCallback callback);
 
   // event.PreventDefault().
   void PreventDefault(v8::Isolate* isolate);
 
   // event.sendReply(value), used for replying to synchronous messages and
   // `invoke` calls.
-  bool SendReply(const base::Value& result);
+  bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> result);
 
  protected:
-  explicit Event(v8::Isolate* isolate);
+  Event();
   ~Event() override;
 
-  // content::WebContentsObserver implementations:
-  void RenderFrameDeleted(content::RenderFrameHost* rfh) override;
-  void RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
-                              content::RenderFrameHost* new_rfh) override;
-  void FrameDeleted(content::RenderFrameHost* rfh) override;
+  // gin::Wrappable:
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  private:
   // Replyer for the synchronous messages.
-  content::RenderFrameHost* sender_ = nullptr;
-  base::Optional<MessageSyncCallback> callback_;
+  InvokeCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(Event);
 };
 
-}  // namespace mate
+}  // namespace gin_helper
 
 #endif  // SHELL_BROWSER_API_EVENT_H_

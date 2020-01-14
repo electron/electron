@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 #include "electron/buildflags/buildflags.h"
-#include "native_mate/dictionary.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace {
@@ -15,6 +15,10 @@ bool IsDesktopCapturerEnabled() {
 
 bool IsOffscreenRenderingEnabled() {
   return BUILDFLAG(ENABLE_OSR);
+}
+
+bool IsRemoteModuleEnabled() {
+  return BUILDFLAG(ENABLE_REMOTE_MODULE);
 }
 
 bool IsPDFViewerEnabled() {
@@ -41,6 +45,14 @@ bool IsPrintingEnabled() {
   return BUILDFLAG(ENABLE_PRINTING);
 }
 
+bool IsExtensionsEnabled() {
+  return BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS);
+}
+
+bool IsPictureInPictureEnabled() {
+  return BUILDFLAG(ENABLE_PICTURE_IN_PICTURE);
+}
+
 bool IsComponentBuild() {
 #if defined(COMPONENT_BUILD)
   return true;
@@ -53,9 +65,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("isDesktopCapturerEnabled", &IsDesktopCapturerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
+  dict.SetMethod("isRemoteModuleEnabled", &IsRemoteModuleEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
   dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);
   dict.SetMethod("isFakeLocationProviderEnabled",
@@ -63,7 +76,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
   dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
+  dict.SetMethod("isPictureInPictureEnabled", &IsPictureInPictureEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
+  dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
 }
 
 }  // namespace

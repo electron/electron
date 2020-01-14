@@ -16,11 +16,28 @@
 #include "url/gurl.h"
 
 #define ELECTRON_TRASH "ELECTRON_TRASH"
-#define ELECTRON_DEFAULT_TRASH "gio"
 
 namespace {
 
-bool XDGUtilV(const std::vector<std::string>& argv, const bool wait_for_exit) {
+// Descriptions pulled from https://linux.die.net/man/1/xdg-open
+std::string GetErrorDescription(int error_code) {
+  switch (error_code) {
+    case 1:
+      return "Error in command line syntax";
+    case 2:
+      return "The item does not exist";
+    case 3:
+      return "A required tool could not be found";
+    case 4:
+      return "The action failed";
+    default:
+      return "";
+  }
+}
+
+bool XDGUtil(const std::vector<std::string>& argv,
+             const bool wait_for_exit,
+             platform_util::OpenCallback callback) {
   base::LaunchOptions options;
   options.allow_new_privs = true;
   // xdg-open can fall back on mailcap which eventually might plumb through
@@ -35,103 +52,88 @@ bool XDGUtilV(const std::vector<std::string>& argv, const bool wait_for_exit) {
 
   if (wait_for_exit) {
     int exit_code = -1;
-    if (!process.WaitForExit(&exit_code))
-      return false;
-    return (exit_code == 0);
+    bool success = process.WaitForExit(&exit_code);
+    if (!callback.is_null())
+      std::move(callback).Run(GetErrorDescription(exit_code));
+    return success ? (exit_code == 0) : false;
   }
 
   base::EnsureProcessGetsReaped(std::move(process));
   return true;
 }
 
-bool XDGUtil(const std::string& util,
-             const std::string& arg,
-             const bool wait_for_exit) {
-  std::vector<std::string> argv;
-  argv.push_back(util);
-  argv.push_back(arg);
-
-  return XDGUtilV(argv, wait_for_exit);
-}
-
-bool XDGOpen(const std::string& path, const bool wait_for_exit) {
-  return XDGUtil("xdg-open", path, wait_for_exit);
+bool XDGOpen(const std::string& path,
+             const bool wait_for_exit,
+             platform_util::OpenCallback callback) {
+  return XDGUtil({"xdg-open", path}, wait_for_exit, std::move(callback));
 }
 
 bool XDGEmail(const std::string& email, const bool wait_for_exit) {
-  return XDGUtil("xdg-email", email, wait_for_exit);
+  return XDGUtil({"xdg-email", email}, wait_for_exit,
+                 platform_util::OpenCallback());
 }
 
 }  // namespace
 
 namespace platform_util {
 
-// TODO(estade): It would be nice to be able to select the file in the file
-// manager, but that probably requires extending xdg-open. For now just
-// show the folder.
 void ShowItemInFolder(const base::FilePath& full_path) {
   base::FilePath dir = full_path.DirName();
   if (!base::DirectoryExists(dir))
     return;
 
-  XDGOpen(dir.value(), false);
+  XDGOpen(dir.value(), false, platform_util::OpenCallback());
 }
 
-bool OpenItem(const base::FilePath& full_path) {
-  return XDGOpen(full_path.value(), false);
+void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
+  // This is async, so we don't care about the return value.
+  XDGOpen(full_path.value(), true, std::move(callback));
 }
 
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
-                  OpenExternalCallback callback) {
+                  OpenCallback callback) {
   // Don't wait for exit, since we don't want to wait for the browser/email
   // client window to close before returning
-  if (url.SchemeIs("mailto"))
-    std::move(callback).Run(XDGEmail(url.spec(), false) ? ""
-                                                        : "Failed to open");
-  else
-    std::move(callback).Run(XDGOpen(url.spec(), false) ? "" : "Failed to open");
+  if (url.SchemeIs("mailto")) {
+    bool success = XDGEmail(url.spec(), false);
+    std::move(callback).Run(success ? "" : "Failed to open path");
+  } else {
+    bool success = XDGOpen(url.spec(), false, platform_util::OpenCallback());
+    std::move(callback).Run(success ? "" : "Failed to open path");
+  }
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path) {
+bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+
+  // find the trash method
   std::string trash;
-  if (getenv(ELECTRON_TRASH) != NULL) {
-    trash = getenv(ELECTRON_TRASH);
-  } else {
+  if (!env->GetVar(ELECTRON_TRASH, &trash)) {
     // Determine desktop environment and set accordingly.
-    std::unique_ptr<base::Environment> env(base::Environment::Create());
-    base::nix::DesktopEnvironment desktop_env(
-        base::nix::GetDesktopEnvironment(env.get()));
+    const auto desktop_env(base::nix::GetDesktopEnvironment(env.get()));
     if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
         desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE5) {
       trash = "kioclient5";
     } else if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE3) {
       trash = "kioclient";
-    } else {
-      trash = ELECTRON_DEFAULT_TRASH;
     }
   }
 
+  // build the invocation
   std::vector<std::string> argv;
-
-  if (trash.compare("kioclient5") == 0 || trash.compare("kioclient") == 0) {
-    argv.push_back(trash);
-    argv.push_back("move");
-    argv.push_back(full_path.value());
-    argv.push_back("trash:/");
-  } else if (trash.compare("trash-cli") == 0) {
-    argv.push_back("trash-put");
-    argv.push_back(full_path.value());
-  } else if (trash.compare("gvfs-trash") == 0) {
-    // retain support for deprecated gvfs-trash
-    argv.push_back("gvfs-trash");
-    argv.push_back(full_path.value());
+  const auto& filename = full_path.value();
+  if (trash == "kioclient5" || trash == "kioclient") {
+    argv = {trash, "move", filename, "trash:/"};
+  } else if (trash == "trash-cli") {
+    argv = {"trash-put", filename};
+  } else if (trash == "gvfs-trash") {
+    argv = {"gvfs-trash", filename};  // deprecated, but still exists
   } else {
-    argv.push_back(ELECTRON_DEFAULT_TRASH);
-    argv.push_back("trash");
-    argv.push_back(full_path.value());
+    argv = {"gio", "trash", filename};
   }
-  return XDGUtilV(argv, true);
+
+  return XDGUtil(argv, true, platform_util::OpenCallback());
 }
 
 void Beep() {
@@ -147,17 +149,7 @@ void Beep() {
 }
 
 bool GetDesktopName(std::string* setme) {
-  bool found = false;
-
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  std::string desktop_id = libgtkui::GetDesktopName(env.get());
-  constexpr char const* libcc_default_id = "chromium-browser.desktop";
-  if (!desktop_id.empty() && (desktop_id != libcc_default_id)) {
-    *setme = desktop_id;
-    found = true;
-  }
-
-  return found;
+  return base::Environment::Create()->GetVar("CHROME_DESKTOP", setme);
 }
 
 }  // namespace platform_util

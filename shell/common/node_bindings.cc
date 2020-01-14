@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,11 +23,12 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
-#include "native_mate/dictionary.h"
-#include "shell/common/api/event_emitter_caller.h"
-#include "shell/common/api/locker.h"
 #include "shell/common/atom_command_line.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/locker.h"
+#include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 
 #define ELECTRON_BUILTIN_MODULES(V)  \
@@ -60,10 +62,12 @@
   V(atom_common_crash_reporter)      \
   V(atom_common_features)            \
   V(atom_common_native_image)        \
+  V(atom_common_native_theme)        \
   V(atom_common_notification)        \
   V(atom_common_screen)              \
   V(atom_common_shell)               \
   V(atom_common_v8_util)             \
+  V(atom_renderer_context_bridge)    \
   V(atom_renderer_ipc)               \
   V(atom_renderer_web_frame)
 
@@ -98,13 +102,14 @@ namespace {
 void stop_and_close_uv_loop(uv_loop_t* loop) {
   // Close any active handles
   uv_stop(loop);
-  uv_walk(loop,
-          [](uv_handle_t* handle, void*) {
-            if (!uv_is_closing(handle)) {
-              uv_close(handle, nullptr);
-            }
-          },
-          nullptr);
+  uv_walk(
+      loop,
+      [](uv_handle_t* handle, void*) {
+        if (!uv_is_closing(handle)) {
+          uv_close(handle, nullptr);
+        }
+      },
+      nullptr);
 
   // Run the loop to let it finish all the closing handles
   // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
@@ -117,6 +122,62 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
 }
 
 bool g_is_initialized = false;
+
+bool IsPackagedApp() {
+  base::FilePath exe_path;
+  base::PathService::Get(base::FILE_EXE, &exe_path);
+  base::FilePath::StringType base_name =
+      base::ToLowerASCII(exe_path.BaseName().value());
+
+#if defined(OS_WIN)
+  return base_name != FILE_PATH_LITERAL("electron.exe");
+#else
+  return base_name != FILE_PATH_LITERAL("electron");
+#endif
+}
+
+// Initialize NODE_OPTIONS to pass to Node.js
+void SetNodeOptions(base::Environment* env) {
+  // Options that are unilaterally disallowed
+  const std::set<std::string> disallowed = {
+      "--openssl-config", "--use-bundled-ca", "--use-openssl-ca",
+      "--force-fips", "--enable-fips"};
+
+  // Subset of options allowed in packaged apps
+  const std::set<std::string> allowed_in_packaged = {"--max-http-header-size",
+                                                     "--http-parser"};
+
+  if (env->HasVar("NODE_OPTIONS")) {
+    std::string options;
+    env->GetVar("NODE_OPTIONS", &options);
+    std::vector<std::string> parts = base::SplitString(
+        options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+
+    bool is_packaged_app = IsPackagedApp();
+
+    for (const auto& part : parts) {
+      // Strip off values passed to individual NODE_OPTIONs
+      std::string option = part.substr(0, part.find("="));
+
+      if (is_packaged_app &&
+          allowed_in_packaged.find(option) == allowed_in_packaged.end()) {
+        // Explicitly disallow majority of NODE_OPTIONS in packaged apps
+        LOG(ERROR) << "Most NODE_OPTIONs are not supported in packaged apps."
+                   << " See documentation for more details.";
+        options.erase(options.find(option), part.length());
+      } else if (disallowed.find(option) != disallowed.end()) {
+        // Remove NODE_OPTIONS specifically disallowed for use in Node.js
+        // through Electron owing to constraints like BoringSSL.
+        LOG(ERROR) << "The NODE_OPTION " << option
+                   << " is not supported in Electron";
+        options.erase(options.find(option), part.length());
+      }
+    }
+
+    // overwrite new NODE_OPTIONS without unsupported variables
+    env->SetVar("NODE_OPTIONS", options);
+  }
+}
 
 }  // namespace
 
@@ -136,21 +197,16 @@ std::unique_ptr<const char* []> StringVectorToArgArray(
   return array;
 }
 
-base::FilePath GetResourcesPath(bool is_browser) {
+base::FilePath GetResourcesPath() {
+#if defined(OS_MACOSX)
+  return MainApplicationBundlePath().Append("Contents").Append("Resources");
+#else
   auto* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath exec_path(command_line->GetProgram());
   base::PathService::Get(base::FILE_EXE, &exec_path);
 
-  base::FilePath resources_path =
-#if defined(OS_MACOSX)
-      is_browser
-          ? exec_path.DirName().DirName().Append("Resources")
-          : exec_path.DirName().DirName().DirName().DirName().DirName().Append(
-                "Resources");
-#else
-      exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
+  return exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
 #endif
-  return resources_path;
 }
 
 }  // namespace
@@ -199,10 +255,6 @@ bool NodeBindings::IsInitialized() {
   return g_is_initialized;
 }
 
-base::FilePath::StringType NodeBindings::GetHelperResourcesPath() {
-  return GetResourcesPath(false).value();
-}
-
 void NodeBindings::Initialize() {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
@@ -227,55 +279,7 @@ void NodeBindings::Initialize() {
   const char** exec_argv = nullptr;
 
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  if (env->HasVar("NODE_OPTIONS")) {
-    base::FilePath exe_path;
-    base::PathService::Get(base::FILE_EXE, &exe_path);
-#if defined(OS_WIN)
-    std::string path = base::UTF16ToUTF8(exe_path.value());
-#else
-    std::string path = exe_path.value();
-#endif
-    std::transform(path.begin(), path.end(), path.begin(), ::tolower);
-
-#if defined(OS_WIN)
-    const bool is_packaged_app = path == "electron.exe";
-#else
-    const bool is_packaged_app = path == "electron";
-#endif
-
-    // explicitly disallow NODE_OPTIONS in packaged apps
-    if (is_packaged_app) {
-      LOG(WARNING) << "NODE_OPTIONs are not supported in packaged apps";
-      env->SetVar("NODE_OPTIONS", "");
-    } else {
-      const std::vector<std::string> disallowed = {
-          "--openssl-config", "--use-bundled-ca", "--use-openssl-ca",
-          "--force-fips", "--enable-fips"};
-
-      std::string options;
-      env->GetVar("NODE_OPTIONS", &options);
-      std::vector<std::string> parts = base::SplitString(
-          options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-
-      // parse passed options for unsupported options
-      // and remove them from the options list
-      std::string new_options = options;
-      for (const auto& disallow : disallowed) {
-        for (const auto& part : parts) {
-          if (part.find(disallow) != std::string::npos) {
-            LOG(WARNING) << "The NODE_OPTION" << disallow
-                         << "is not supported in Electron";
-            new_options.erase(new_options.find(part), part.length());
-            break;
-          }
-        }
-      }
-
-      // overwrite new NODE_OPTIONS without unsupported variables
-      if (new_options != options)
-        env->SetVar("NODE_OPTIONS", new_options);
-    }
-  }
+  SetNodeOptions(env.get());
 
   // TODO(codebytere): this is going to be deprecated in the near future
   // in favor of Init(std::vector<std::string>* argv,
@@ -295,7 +299,8 @@ void NodeBindings::Initialize() {
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
-    node::MultiIsolatePlatform* platform) {
+    node::MultiIsolatePlatform* platform,
+    bool bootstrap_env) {
 #if defined(OS_WIN)
   auto& atom_args = AtomCommandLine::argv();
   std::vector<std::string> args(atom_args.size());
@@ -318,16 +323,35 @@ node::Environment* NodeBindings::CreateEnvironment(
       process_type = "worker";
       break;
   }
-  base::FilePath resources_path =
-      GetResourcesPath(browser_env_ == BrowserEnvironment::BROWSER);
+
+  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
+  // Do not set DOM globals for renderer process.
+  // We must set this before the node bootstrapper which is run inside
+  // CreateEnvironment
+  if (browser_env_ != BrowserEnvironment::BROWSER)
+    global.Set("_noBrowserGlobals", true);
+
+  base::FilePath resources_path = GetResourcesPath();
   std::string init_script = "electron/js2c/" + process_type + "_init";
 
   args.insert(args.begin() + 1, init_script);
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
-  node::Environment* env = node::CreateEnvironment(
-      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
-      context, args.size(), c_argv.get(), 0, nullptr);
+  isolate_data_ =
+      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
+  node::Environment* env =
+      node::CreateEnvironment(isolate_data_, context, args.size(), c_argv.get(),
+                              0, nullptr, bootstrap_env);
+  DCHECK(env);
+
+  // Clean up the global _noBrowserGlobals that we unironically injected into
+  // the global scope
+  if (browser_env_ != BrowserEnvironment::BROWSER) {
+    // We need to bootstrap the env in non-browser processes so that
+    // _noBrowserGlobals is read correctly before we remove it
+    DCHECK(bootstrap_env);
+    global.Delete("_noBrowserGlobals");
+  }
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
@@ -339,12 +363,9 @@ node::Environment* NodeBindings::CreateEnvironment(
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
   }
 
-  mate::Dictionary process(context->GetIsolate(), env->process_object());
+  gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
   process.Set("resourcesPath", resources_path);
-  // Do not set DOM globals for renderer process.
-  if (browser_env_ != BrowserEnvironment::BROWSER)
-    process.Set("_noBrowserGlobals", true);
   // The path to helper app.
   base::FilePath helper_exec_path;
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
@@ -355,7 +376,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
   node::LoadEnvironment(env);
-  mate::EmitEvent(env->isolate(), env->process_object(), "loaded");
+  gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
 void NodeBindings::PrepareMessageLoop() {
@@ -386,7 +407,7 @@ void NodeBindings::UvRunOnce() {
     return;
 
   // Use Locker in browser process.
-  mate::Locker locker(env->isolate());
+  gin_helper::Locker locker(env->isolate());
   v8::HandleScope handle_scope(env->isolate());
 
   // Enter node context while dealing with uv events.

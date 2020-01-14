@@ -17,13 +17,15 @@ typedef base::OnceCallback<void(bool isProductValid)> InAppPurchaseCallback;
 
 // --------------------------- Functions ---------------------------
 
-bool CanMakePayments(void);
+bool CanMakePayments();
 
-void FinishAllTransactions(void);
+void RestoreCompletedTransactions();
+
+void FinishAllTransactions();
 
 void FinishTransactionByDate(const std::string& date);
 
-std::string GetReceiptURL(void);
+std::string GetReceiptURL();
 
 void PurchaseProduct(const std::string& productID,
                      int quantity,

@@ -5,7 +5,7 @@
 #ifndef SHELL_BROWSER_MICROTASKS_RUNNER_H_
 #define SHELL_BROWSER_MICROTASKS_RUNNER_H_
 
-#include "base/message_loop/message_loop.h"
+#include "base/task/task_observer.h"
 
 namespace v8 {
 class Isolate;
@@ -19,12 +19,13 @@ namespace electron {
 // Node follows the kExplicit MicrotasksPolicy, and we do the same in browser
 // process. Hence, we need to have this task observer to flush the queued
 // microtasks.
-class MicrotasksRunner : public base::MessageLoop::TaskObserver {
+class MicrotasksRunner : public base::TaskObserver {
  public:
   explicit MicrotasksRunner(v8::Isolate* isolate);
 
-  // base::MessageLoop::TaskObserver
-  void WillProcessTask(const base::PendingTask& pending_task) override;
+  // base::TaskObserver
+  void WillProcessTask(const base::PendingTask& pending_task,
+                       bool was_blocked_or_low_priority) override;
   void DidProcessTask(const base::PendingTask& pending_task) override;
 
  private:

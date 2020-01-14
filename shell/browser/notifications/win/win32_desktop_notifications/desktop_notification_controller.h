@@ -28,39 +28,35 @@ class DesktopNotificationController {
 
   // Event handlers -- override to receive the events
  private:
+  class Toast;
+  DesktopNotificationController(const DesktopNotificationController&) = delete;
+
+  struct ToastInstance {
+    ToastInstance(HWND, std::shared_ptr<NotificationData>);
+    ~ToastInstance();
+    ToastInstance(ToastInstance&&);
+    ToastInstance(const ToastInstance&) = delete;
+    ToastInstance& operator=(ToastInstance&&) = default;
+
+    HWND hwnd;
+    std::shared_ptr<NotificationData> data;
+  };
+
   virtual void OnNotificationClosed(const Notification& notification) {}
   virtual void OnNotificationClicked(const Notification& notification) {}
   virtual void OnNotificationDismissed(const Notification& notification) {}
 
- private:
   static HINSTANCE RegisterWndClasses();
   void StartAnimation();
   HFONT GetCaptionFont();
   HFONT GetBodyFont();
-
- private:
-  enum TimerID { TimerID_Animate = 1 };
-
-  static constexpr int toast_margin_ = 20;
-
-  // Wrapper around `NotificationData` which makes sure that
-  // the `controller` member is cleared when the controller object
-  // stops tracking the notification
-  struct NotificationLink : std::shared_ptr<NotificationData> {
-    explicit NotificationLink(DesktopNotificationController* controller);
-    ~NotificationLink();
-
-    NotificationLink(NotificationLink&&) = default;
-    NotificationLink(const NotificationLink&) = delete;
-    NotificationLink& operator=(NotificationLink&&) = default;
-  };
-
-  struct ToastInstance {
-    HWND hwnd;
-    NotificationLink data;
-  };
-
-  class Toast;
+  void InitializeFonts();
+  void ClearAssets();
+  void AnimateAll();
+  void CheckQueue();
+  void CreateToast(std::shared_ptr<NotificationData>&& data);
+  HWND GetToast(const NotificationData* data) const;
+  void DestroyToast(ToastInstance* inst);
 
   static LRESULT CALLBACK WndProc(HWND hwnd,
                                   UINT message,
@@ -71,23 +67,13 @@ class DesktopNotificationController {
         GetWindowLongPtr(hwnd, 0));
   }
 
-  DesktopNotificationController(const DesktopNotificationController&) = delete;
-
-  void InitializeFonts();
-  void ClearAssets();
-  void AnimateAll();
-  void CheckQueue();
-  void CreateToast(NotificationLink&& data);
-  HWND GetToast(const NotificationData* data) const;
-  void DestroyToast(ToastInstance* inst);
-
- private:
+  static constexpr int toast_margin_ = 20;
   static const TCHAR class_name_[];
-
+  enum TimerID { TimerID_Animate = 1 };
   HWND hwnd_controller_ = NULL;
   HFONT caption_font_ = NULL, body_font_ = NULL;
   std::vector<ToastInstance> instances_;
-  std::deque<NotificationLink> queue_;
+  std::deque<std::shared_ptr<NotificationData>> queue_;
   bool is_animating_ = false;
 };
 

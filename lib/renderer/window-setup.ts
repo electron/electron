@@ -1,4 +1,5 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
+import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 
 // This file implements the following APIs:
 // - window.history.back()
@@ -17,8 +18,6 @@ import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-in
 // - document.hidden
 // - document.visibilityState
 
-const { defineProperty } = Object
-
 // Helper function to resolve relative url.
 const resolveURL = (url: string, base: string) => new URL(url, base).href
 
@@ -29,19 +28,19 @@ const toString = (value: any) => {
   return value != null ? `${value}` : value
 }
 
-const windowProxies: Record<number, BrowserWindowProxy> = {}
+const windowProxies = new Map<number, BrowserWindowProxy>()
 
 const getOrCreateProxy = (guestId: number) => {
-  let proxy = windowProxies[guestId]
+  let proxy = windowProxies.get(guestId)
   if (proxy == null) {
     proxy = new BrowserWindowProxy(guestId)
-    windowProxies[guestId] = proxy
+    windowProxies.set(guestId, proxy)
   }
   return proxy
 }
 
 const removeProxy = (guestId: number) => {
-  delete windowProxies[guestId]
+  windowProxies.delete(guestId)
 }
 
 type LocationProperties = 'hash' | 'href' | 'host' | 'hostname' | 'origin' | 'pathname' | 'port' | 'protocol' | 'search'
@@ -65,19 +64,19 @@ class LocationProxy {
    */
   private static ProxyProperty<T> (target: LocationProxy, propertyKey: LocationProperties) {
     Object.defineProperty(target, propertyKey, {
-      get: function (): T | string {
+      get: function (this: LocationProxy): T | string {
         const guestURL = this.getGuestURL()
         const value = guestURL ? guestURL[propertyKey] : ''
         return value === undefined ? '' : value
       },
-      set: function (newVal: T) {
+      set: function (this: LocationProxy, newVal: T) {
         const guestURL = this.getGuestURL()
         if (guestURL) {
           // TypeScript doesn't want us to assign to read-only variables.
           // It's right, that's bad, but we're doing it anway.
           (guestURL as any)[propertyKey] = newVal
 
-          return this._invokeWebContentsMethodSync('loadURL', guestURL.toString())
+          return this._invokeWebContentsMethod('loadURL', guestURL.toString())
         }
       }
     })
@@ -106,8 +105,12 @@ class LocationProxy {
     return null
   }
 
+  private _invokeWebContentsMethod (method: string, ...args: any[]) {
+    return ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
+  }
+
   private _invokeWebContentsMethodSync (method: string, ...args: any[]) {
-    return ipcRendererInternal.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, method, ...args)
+    return ipcRendererUtils.invokeSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
   }
 }
 
@@ -125,7 +128,7 @@ class BrowserWindowProxy {
   }
   public set location (url: string | any) {
     url = resolveURL(url, this.location.href)
-    this._invokeWebContentsMethodSync('loadURL', url)
+    this._invokeWebContentsMethod('loadURL', url)
   }
 
   constructor (guestId: number) {
@@ -139,7 +142,7 @@ class BrowserWindowProxy {
   }
 
   public close () {
-    ipcRendererInternal.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', this.guestId)
+    this._invokeWindowMethod('destroy')
   }
 
   public focus () {
@@ -154,8 +157,8 @@ class BrowserWindowProxy {
     this._invokeWebContentsMethod('print')
   }
 
-  public postMessage (message: any, targetOrigin: any) {
-    ipcRendererInternal.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin)
+  public postMessage (message: any, targetOrigin: string) {
+    ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin)
   }
 
   public eval (code: string) {
@@ -163,25 +166,21 @@ class BrowserWindowProxy {
   }
 
   private _invokeWindowMethod (method: string, ...args: any[]) {
-    return ipcRendererInternal.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, method, ...args)
+    return ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, method, ...args)
   }
 
   private _invokeWebContentsMethod (method: string, ...args: any[]) {
-    return ipcRendererInternal.send('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
-  }
-
-  private _invokeWebContentsMethodSync (method: string, ...args: any[]) {
-    return ipcRendererInternal.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, method, ...args)
+    return ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
   }
 }
 
 export const windowSetup = (
   guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
 ) => {
-  if (guestInstanceId == null) {
+  if (!process.sandboxed && guestInstanceId == null) {
     // Override default window.close.
     window.close = function () {
-      ipcRendererInternal.sendSync('ELECTRON_BROWSER_WINDOW_CLOSE')
+      ipcRendererInternal.send('ELECTRON_BROWSER_WINDOW_CLOSE')
     }
   }
 
@@ -198,10 +197,10 @@ export const windowSetup = (
         return null
       }
     }
+  }
 
-    if (openerId != null) {
-      window.opener = getOrCreateProxy(openerId)
-    }
+  if (openerId != null) {
+    window.opener = getOrCreateProxy(openerId)
   }
 
   // But we do not support prompt().
@@ -209,42 +208,47 @@ export const windowSetup = (
     throw new Error('prompt() is and will not be supported.')
   }
 
-  ipcRendererInternal.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
-    _event, sourceId: number, message: any, sourceOrigin: string
-  ) {
-    // Manually dispatch event instead of using postMessage because we also need to
-    // set event.source.
-    //
-    // Why any? We can't construct a MessageEvent and we can't
-    // use `as MessageEvent` because you're not supposed to override
-    // data, origin, and source
-    const event: any = document.createEvent('Event')
-    event.initEvent('message', false, false)
+  if (!usesNativeWindowOpen || openerId != null) {
+    ipcRendererInternal.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
+      _event, sourceId: number, message: any, sourceOrigin: string
+    ) {
+      // Manually dispatch event instead of using postMessage because we also need to
+      // set event.source.
+      //
+      // Why any? We can't construct a MessageEvent and we can't
+      // use `as MessageEvent` because you're not supposed to override
+      // data, origin, and source
+      const event: any = document.createEvent('Event')
+      event.initEvent('message', false, false)
 
-    event.data = message
-    event.origin = sourceOrigin
-    event.source = getOrCreateProxy(sourceId)
+      event.data = message
+      event.origin = sourceOrigin
+      event.source = getOrCreateProxy(sourceId)
 
-    window.dispatchEvent(event as MessageEvent)
-  })
-
-  window.history.back = function () {
-    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK')
+      window.dispatchEvent(event as MessageEvent)
+    })
   }
 
-  window.history.forward = function () {
-    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD')
-  }
-
-  window.history.go = function (offset: number) {
-    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', +offset)
-  }
-
-  defineProperty(window.history, 'length', {
-    get: function () {
-      return ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH')
+  if (!process.sandboxed) {
+    window.history.back = function () {
+      ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK')
     }
-  })
+
+    window.history.forward = function () {
+      ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD')
+    }
+
+    window.history.go = function (offset: number) {
+      ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', +offset)
+    }
+
+    Object.defineProperty(window.history, 'length', {
+      get: function () {
+        return ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH')
+      },
+      set () {}
+    })
+  }
 
   if (guestInstanceId != null) {
     // Webview `document.visibilityState` tracks window visibility (and ignores
@@ -265,13 +269,13 @@ export const windowSetup = (
     })
 
     // Make document.hidden and document.visibilityState return the correct value.
-    defineProperty(document, 'hidden', {
+    Object.defineProperty(document, 'hidden', {
       get: function () {
         return cachedVisibilityState !== 'visible'
       }
     })
 
-    defineProperty(document, 'visibilityState', {
+    Object.defineProperty(document, 'visibilityState', {
       get: function () {
         return cachedVisibilityState
       }

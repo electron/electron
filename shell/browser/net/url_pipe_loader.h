@@ -9,8 +9,10 @@
 #include <string>
 #include <vector>
 
+#include "mojo/public/cpp/bindings/receiver.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/bindings/strong_binding.h"
-#include "mojo/public/cpp/system/string_data_pipe_producer.h"
+#include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
@@ -34,7 +36,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
   URLPipeLoader(scoped_refptr<network::SharedURLLoaderFactory> factory,
                 std::unique_ptr<network::ResourceRequest> request,
                 network::mojom::URLLoaderRequest loader,
-                network::mojom::URLLoaderClientPtr client,
+                mojo::PendingRemote<network::mojom::URLLoaderClient> client,
                 const net::NetworkTrafficAnnotationTag& annotation,
                 base::DictionaryValue upload_data);
 
@@ -47,7 +49,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
              base::DictionaryValue upload_data);
   void NotifyComplete(int result);
   void OnResponseStarted(const GURL& final_url,
-                         const network::ResourceResponseHead& response_head);
+                         const network::mojom::URLResponseHead& response_head);
   void OnWrite(base::OnceClosure resume, MojoResult result);
 
   // SimpleURLLoaderStreamConsumer:
@@ -60,16 +62,15 @@ class URLPipeLoader : public network::mojom::URLLoader,
   void FollowRedirect(const std::vector<std::string>& removed_headers,
                       const net::HttpRequestHeaders& modified_headers,
                       const base::Optional<GURL>& new_url) override {}
-  void ProceedWithResponse() override {}
   void SetPriority(net::RequestPriority priority,
                    int32_t intra_priority_value) override {}
   void PauseReadingBodyFromNet() override {}
   void ResumeReadingBodyFromNet() override {}
 
   mojo::Binding<network::mojom::URLLoader> binding_;
-  network::mojom::URLLoaderClientPtr client_;
+  mojo::Remote<network::mojom::URLLoaderClient> client_;
 
-  std::unique_ptr<mojo::StringDataPipeProducer> producer_;
+  std::unique_ptr<mojo::DataPipeProducer> producer_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
 
   base::WeakPtrFactory<URLPipeLoader> weak_factory_;

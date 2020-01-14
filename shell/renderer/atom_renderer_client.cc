@@ -9,18 +9,19 @@
 
 #include "base/command_line.h"
 #include "content/public/renderer/render_frame.h"
-#include "native_mate/dictionary.h"
+#include "electron/buildflags/buildflags.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/api/event_emitter_caller.h"
 #include "shell/common/asar/asar_util.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/atom_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
-#include "third_party/electron_node/src/node_native_module.h"
 
 namespace electron {
 
@@ -50,40 +51,57 @@ void AtomRendererClient::RenderFrameCreated(
 
 void AtomRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentStart(render_frame);
   // Inform the document start pharse.
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
   if (env)
-    mate::EmitEvent(env->isolate(), env->process_object(), "document-start");
+    gin_helper::EmitEvent(env->isolate(), env->process_object(),
+                          "document-start");
 }
 
 void AtomRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
   // Inform the document end pharse.
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
   if (env)
-    mate::EmitEvent(env->isolate(), env->process_object(), "document-end");
+    gin_helper::EmitEvent(env->isolate(), env->process_object(),
+                          "document-end");
 }
 
 void AtomRendererClient::DidCreateScriptContext(
-    v8::Handle<v8::Context> context,
+    v8::Handle<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
-  RendererClientBase::DidCreateScriptContext(context, render_frame);
+  RendererClientBase::DidCreateScriptContext(renderer_context, render_frame);
 
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
 
-  // Do not load node if we're aren't a main frame or a devtools extension
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
+  // Only load node if we are a main frame or a devtools extension
   // unless node support has been explicitly enabled for sub frames
-  bool is_main_frame =
-      render_frame->IsMainFrame() && !render_frame->GetWebFrame()->Opener();
+  bool reuse_renderer_processes_enabled =
+      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides);
+  // Consider the window not "opened" if it does not have an Opener, or if a
+  // user has manually opted in to leaking node in the renderer
+  bool is_not_opened =
+      !render_frame->GetWebFrame()->Opener() ||
+      command_line->HasSwitch(switches::kEnableNodeLeakageInRenderers);
+  // Consider this the main frame if it is both a Main Frame and it wasn't
+  // opened.  We allow an opened main frame to have node if renderer process
+  // reuse is enabled as that will correctly free node environments prevent a
+  // leak in child windows.
+  bool is_main_frame = render_frame->IsMainFrame() &&
+                       (is_not_opened || reuse_renderer_processes_enabled);
   bool is_devtools = IsDevToolsExtension(render_frame);
   bool allow_node_in_subframes =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames);
+      command_line->HasSwitch(switches::kNodeIntegrationInSubFrames);
   bool should_load_node =
-      is_main_frame || is_devtools || allow_node_in_subframes;
+      (is_main_frame || is_devtools || allow_node_in_subframes) &&
+      !IsWebViewFrame(renderer_context, render_frame);
   if (!should_load_node) {
     return;
   }
@@ -103,8 +121,12 @@ void AtomRendererClient::DidCreateScriptContext(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
-  node::Environment* env = node_bindings_->CreateEnvironment(context);
-  auto* command_line = base::CommandLine::ForCurrentProcess();
+  bool initialized = node::InitializeContext(renderer_context);
+  CHECK(initialized);
+
+  node::Environment* env =
+      node_bindings_->CreateEnvironment(renderer_context, nullptr, true);
+
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
   if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
@@ -116,7 +138,7 @@ void AtomRendererClient::DidCreateScriptContext(
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());
   AddRenderBindings(env->isolate(), env->process_object());
-  mate::Dictionary process_dict(env->isolate(), env->process_object());
+  gin_helper::Dictionary process_dict(env->isolate(), env->process_object());
   process_dict.SetReadOnly("isMainFrame", render_frame->IsMainFrame());
 
   // Load everything.
@@ -134,16 +156,14 @@ void AtomRendererClient::DidCreateScriptContext(
 void AtomRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  if (injected_frames_.find(render_frame) == injected_frames_.end())
+  if (injected_frames_.erase(render_frame) == 0)
     return;
-  injected_frames_.erase(render_frame);
 
   node::Environment* env = node::Environment::GetCurrent(context);
-  if (environments_.find(env) == environments_.end())
+  if (environments_.erase(env) == 0)
     return;
-  environments_.erase(env);
 
-  mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+  gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
 
   // The main frame may be replaced.
   if (env == node_bindings_->uv_env())
@@ -156,8 +176,12 @@ void AtomRendererClient::WillReleaseScriptContext(
   // avoid memory leaks
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kNodeIntegrationInSubFrames) ||
-      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
+      command_line->HasSwitch(
+          switches::kDisableElectronSiteInstanceOverrides)) {
     node::FreeEnvironment(env);
+    if (env == node_bindings_->uv_env())
+      node::FreeIsolateData(node_bindings_->isolate_data());
+  }
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);
@@ -209,15 +233,17 @@ void AtomRendererClient::SetupMainWorldOverrides(
       env->process_object(),
       GetContext(render_frame->GetWebFrame(), isolate)->Global()};
 
-  node::per_process::native_module_loader.CompileAndCall(
-      context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
-      &isolated_bundle_args, nullptr);
+  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
+                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
 }
 
 void AtomRendererClient::SetupExtensionWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame,
     int world_id) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  NOTREACHED();
+#else
   auto* isolate = context->GetIsolate();
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
@@ -234,9 +260,9 @@ void AtomRendererClient::SetupExtensionWorldOverrides(
       GetContext(render_frame->GetWebFrame(), isolate)->Global(),
       v8::Integer::New(isolate, world_id)};
 
-  node::per_process::native_module_loader.CompileAndCall(
-      context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
-      &isolated_bundle_args, nullptr);
+  util::CompileAndCall(context, "electron/js2c/content_script_bundle",
+                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
+#endif
 }
 
 node::Environment* AtomRendererClient::GetEnvironment(

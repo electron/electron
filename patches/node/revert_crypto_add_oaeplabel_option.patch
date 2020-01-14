@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 15 Oct 2019 11:30:27 -0700
+Subject: Revert "crypto: add oaepLabel option"
+
+This partially reverts https://github.com/nodejs/node/pull/29489.
+The BoringSSL incompatibilities (OPENSSL_memdup) will be shimmed in and this should
+be removed when the associated update is rolled into Chromium.
+
+diff --git a/src/node_crypto.cc b/src/node_crypto.cc
+index 861d321d6170b25e874080d4c70dda201cab3248..ef96843c820a5361056022cea5546e94e5572918 100644
+--- a/src/node_crypto.cc
++++ b/src/node_crypto.cc
+@@ -5365,17 +5365,6 @@ bool PublicKeyCipher::Cipher(Environment* env,
+       return false;
+   }
+ 
+-  if (oaep_label_len != 0) {
+-    // OpenSSL takes ownership of the label, so we need to create a copy.
+-    void* label = OPENSSL_memdup(oaep_label, oaep_label_len);
+-    CHECK_NOT_NULL(label);
+-    if (0 >= EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(), label,
+-                                              oaep_label_len)) {
+-      OPENSSL_free(label);
+-      return false;
+-    }
+-  }
+-
+   size_t out_len = 0;
+   if (EVP_PKEY_cipher(ctx.get(), nullptr, &out_len, data, len) <= 0)
+     return false;

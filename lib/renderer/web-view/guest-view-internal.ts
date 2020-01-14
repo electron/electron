@@ -1,6 +1,5 @@
 import { webFrame, IpcMessageEvent } from 'electron'
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
-import { invoke, invokeSync } from '@electron/internal/renderer/ipc-renderer-internal-utils'
 
 import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl'
 
@@ -93,15 +92,7 @@ export function deregisterEvents (viewInstanceId: number) {
 }
 
 export function createGuest (params: Record<string, any>): Promise<number> {
-  return invoke('ELECTRON_GUEST_VIEW_MANAGER_CREATE_GUEST', params)
-}
-
-export function createGuestSync (params: Record<string, any>): number {
-  return invokeSync('ELECTRON_GUEST_VIEW_MANAGER_CREATE_GUEST', params)
-}
-
-export function destroyGuest (guestInstanceId: number): void {
-  invoke('ELECTRON_GUEST_VIEW_MANAGER_DESTROY_GUEST', guestInstanceId)
+  return ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CREATE_GUEST', params)
 }
 
 export function attachGuest (
@@ -111,13 +102,11 @@ export function attachGuest (
   if (embedderFrameId < 0) { // this error should not happen.
     throw new Error('Invalid embedder frame')
   }
-  invoke('ELECTRON_GUEST_VIEW_MANAGER_ATTACH_GUEST', embedderFrameId, elementInstanceId, guestInstanceId, params)
+  ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_ATTACH_GUEST', embedderFrameId, elementInstanceId, guestInstanceId, params)
 }
 
 export const guestViewInternalModule = {
   deregisterEvents,
   createGuest,
-  createGuestSync,
-  destroyGuest,
   attachGuest
 }

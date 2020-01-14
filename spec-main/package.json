@@ -2,5 +2,13 @@
   "name": "electron-test-main",
   "productName": "Electron Test Main",
   "main": "index.js",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "devDependencies": {
+    "echo": "file:fixtures/native-addon/echo",
+    "q": "^1.5.1"
+  },
+  "dependencies": {
+    "chai-as-promised": "^7.1.1",
+    "dirty-chai": "^2.0.1"
+  }
 }

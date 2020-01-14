@@ -44,6 +44,9 @@ class NotifyIcon : public TrayIcon {
                         bool left_button_click,
                         bool double_button_click);
 
+  // Handles a mouse move event from the user.
+  void HandleMouseMoveEvent(int modifiers);
+
   // Re-creates the status tray icon now after the taskbar has been created.
   void ResetIcon();
 
@@ -55,9 +58,9 @@ class NotifyIcon : public TrayIcon {
   void SetImage(HICON image) override;
   void SetPressedImage(HICON image) override;
   void SetToolTip(const std::string& tool_tip) override;
-  void DisplayBalloon(HICON icon,
-                      const base::string16& title,
-                      const base::string16& contents) override;
+  void DisplayBalloon(const BalloonOptions& options) override;
+  void RemoveBalloon() override;
+  void Focus() override;
   void PopUpContextMenu(const gfx::Point& pos,
                         AtomMenuModel* menu_model) override;
   void SetContextMenu(AtomMenuModel* menu_model) override;

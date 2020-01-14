@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 22 Apr 2019 13:23:37 -0700
+Subject: refactor: allow embedder overriding of internal FS calls
+
+We use this to allow node's 'fs' module to read from ASAR files as if they were
+a real filesystem.
+
+diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
+index 18acd9d2b64774efdb9261e69923a5ba320a7f0e..0f36697ce5ed0b5bb6df74ceca219574da7eea53 100644
+--- a/lib/internal/bootstrap/node.js
++++ b/lib/internal/bootstrap/node.js
+@@ -63,6 +63,10 @@ if (ownsProcessState) {
+   );
+ }
+ 
++// NOTE: Electron deletes this references before user code runs so that
++// internalBinding is not leaked to user code
++process.internalBinding = internalBinding;
++
+ // process.config is serialized config.gypi
+ process.config = JSON.parse(internalBinding('native_module').config);
+ 
+diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
+index fc0f953820fa6222ff8cca2e27d3087e05288ff5..2fddd3766ffb28dc9176ed1b7a4b01361dd72fcd 100644
+--- a/lib/internal/modules/cjs/loader.js
++++ b/lib/internal/modules/cjs/loader.js
+@@ -42,10 +42,7 @@ const assert = require('internal/assert');
+ const fs = require('fs');
+ const internalFS = require('internal/fs/utils');
+ const path = require('path');
+-const {
+-  internalModuleReadJSON,
+-  internalModuleStat
+-} = internalBinding('fs');
++const internalFsBinding = internalBinding('fs');
+ const { safeGetenv } = internalBinding('credentials');
+ const {
+   makeRequireFunction,
+@@ -120,14 +117,12 @@ function enrichCJSError(err) {
+ }
+ 
+ function stat(filename) {
+-  // FIXME(codebytere): determine why this needs to be done and remove
+-  const internalModuleStat = process.binding('fs').internalModuleStat;
+   filename = path.toNamespacedPath(filename);
+   if (statCache !== null) {
+     const result = statCache.get(filename);
+     if (result !== undefined) return result;
+   }
+-  const result = internalModuleStat(filename);
++  const result = internalFsBinding.internalModuleStat(filename);
+   if (statCache !== null) statCache.set(filename, result);
+   return result;
+ }
+@@ -233,7 +228,7 @@ function readPackage(requestPath) {
+   const existing = packageJsonCache.get(jsonPath);
+   if (existing !== undefined) return existing;
+ 
+-  const json = internalModuleReadJSON(path.toNamespacedPath(jsonPath));
++  const json = internalFsBinding.internalModuleReadJSON(path.toNamespacedPath(jsonPath));
+   if (json === undefined) {
+     packageJsonCache.set(jsonPath, false);
+     return false;

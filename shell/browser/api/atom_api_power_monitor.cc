@@ -6,30 +6,34 @@
 
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_monitor_device_source.h"
-#include "native_mate/dictionary.h"
+#include "gin/dictionary.h"
+#include "gin/handle.h"
 #include "shell/browser/browser.h"
-#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-namespace mate {
+namespace gin {
+
 template <>
 struct Converter<ui::IdleState> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const ui::IdleState& in) {
     switch (in) {
       case ui::IDLE_STATE_ACTIVE:
-        return mate::StringToV8(isolate, "active");
+        return StringToV8(isolate, "active");
       case ui::IDLE_STATE_IDLE:
-        return mate::StringToV8(isolate, "idle");
+        return StringToV8(isolate, "idle");
       case ui::IDLE_STATE_LOCKED:
-        return mate::StringToV8(isolate, "locked");
+        return StringToV8(isolate, "locked");
       case ui::IDLE_STATE_UNKNOWN:
       default:
-        return mate::StringToV8(isolate, "unknown");
+        return StringToV8(isolate, "unknown");
     }
   }
 };
-}  // namespace mate
+
+}  // namespace gin
 
 namespace electron {
 
@@ -88,7 +92,7 @@ ui::IdleState PowerMonitor::GetSystemIdleState(v8::Isolate* isolate,
   if (idle_threshold > 0) {
     return ui::CalculateIdleState(idle_threshold);
   } else {
-    isolate->ThrowException(v8::Exception::TypeError(mate::StringToV8(
+    isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
         isolate, "Invalid idle threshold, must be greater than 0")));
     return ui::IDLE_STATE_UNKNOWN;
   }
@@ -102,22 +106,21 @@ int PowerMonitor::GetSystemIdleTime() {
 v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(
-        mate::StringToV8(isolate,
-                         "The 'powerMonitor' module can't be used before the "
-                         "app 'ready' event")));
+        gin::StringToV8(isolate,
+                        "The 'powerMonitor' module can't be used before the "
+                        "app 'ready' event")));
     return v8::Null(isolate);
   }
 
-  return mate::CreateHandle(isolate, new PowerMonitor(isolate)).ToV8();
+  return gin::CreateHandle(isolate, new PowerMonitor(isolate)).ToV8();
 }
 
 // static
 void PowerMonitor::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "PowerMonitor"));
-
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
+  prototype->SetClassName(gin::StringToV8(isolate, "PowerMonitor"));
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
 #if defined(OS_LINUX)
       .SetMethod("blockShutdown", &PowerMonitor::BlockShutdown)
       .SetMethod("unblockShutdown", &PowerMonitor::UnblockShutdown)
@@ -139,9 +142,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("createPowerMonitor",
-           base::BindRepeating(&PowerMonitor::Create, isolate));
+  gin::Dictionary dict(isolate, exports);
+  dict.Set("createPowerMonitor", base::BindRepeating(&PowerMonitor::Create));
   dict.Set("PowerMonitor", PowerMonitor::GetConstructor(isolate)
                                ->GetFunction(context)
                                .ToLocalChecked());

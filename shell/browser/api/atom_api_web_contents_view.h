@@ -6,7 +6,6 @@
 #define SHELL_BROWSER_API_ATOM_API_WEB_CONTENTS_VIEW_H_
 
 #include "content/public/browser/web_contents_observer.h"
-#include "native_mate/handle.h"
 #include "shell/browser/api/atom_api_view.h"
 
 namespace electron {
@@ -19,15 +18,15 @@ class WebContents;
 
 class WebContentsView : public View, public content::WebContentsObserver {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args,
-                                  mate::Handle<WebContents> web_contents);
+  static gin_helper::WrappableBase* New(gin_helper::Arguments* args,
+                                        gin::Handle<WebContents> web_contents);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   WebContentsView(v8::Isolate* isolate,
-                  mate::Handle<WebContents> web_contents,
+                  gin::Handle<WebContents> web_contents,
                   InspectableWebContents* iwc);
   ~WebContentsView() override;
 

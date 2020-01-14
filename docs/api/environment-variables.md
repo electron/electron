@@ -44,7 +44,12 @@ Unsupported options are:
 --use-openssl-ca
 ```
 
-`NODE_OPTIONS` are explicitly disallowed in packaged apps.
+`NODE_OPTIONS` are explicitly disallowed in packaged apps, except for the following:
+
+```sh
+--max-http-header-size
+--http-parser
+```
 
 ### `GOOGLE_API_KEY`
 
@@ -121,5 +126,5 @@ the `electron` command to use the specified build of Electron instead of
 the one downloaded by `npm install`. Usage:
 
 ```sh
-export ELECTRON_OVERRIDE_DIST_PATH=/Users/username/projects/electron/out/Debug
+export ELECTRON_OVERRIDE_DIST_PATH=/Users/username/projects/electron/out/Testing
 ```

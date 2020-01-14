@@ -4,10 +4,12 @@
 
 #include "shell/browser/javascript_environment.h"
 
+#include <memory>
+
 #include <string>
 
 #include "base/command_line.h"
-#include "base/message_loop/message_loop.h"
+#include "base/message_loop/message_loop_current.h"
 #include "base/task/thread_pool/initialization_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/public/common/content_switches.h"
@@ -30,7 +32,7 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
       isolate_scope_(isolate_),
       locker_(isolate_),
       handle_scope_(isolate_),
-      context_(isolate_, v8::Context::New(isolate_)),
+      context_(isolate_, node::NewContext(isolate_)),
       context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {}
 
 JavascriptEnvironment::~JavascriptEnvironment() = default;
@@ -66,7 +68,7 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
 
 void JavascriptEnvironment::OnMessageLoopCreated() {
   DCHECK(!microtasks_runner_);
-  microtasks_runner_.reset(new MicrotasksRunner(isolate()));
+  microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
   base::MessageLoopCurrent::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 

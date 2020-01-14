@@ -8,6 +8,7 @@ icudtl.dat
 libEGL.so
 libGLESv2.so
 libffmpeg.so
+libvk_swiftshader.so
 locales/am.pak
 locales/ar.pak
 locales/bg.pak
@@ -61,12 +62,12 @@ locales/uk.pak
 locales/vi.pak
 locales/zh-CN.pak
 locales/zh-TW.pak
-natives_blob.bin
 resources.pak
 resources/default_app.asar
 snapshot_blob.bin
 swiftshader/libEGL.so
 swiftshader/libGLESv2.so
-swiftshader/libvulkan.so
+vk_swiftshader_icd.json
+crashpad_handler
 v8_context_snapshot.bin
 version

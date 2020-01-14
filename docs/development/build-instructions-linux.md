@@ -12,7 +12,7 @@ Follow the guidelines below for building Electron on Linux.
   For a quick test, run the following script:
 
   ```sh
-  $ npm run check-tls
+  $ npx @electron/check-python-tls
   ```
 
   If the script returns that your configuration is using an outdated security
@@ -31,7 +31,7 @@ On Ubuntu, install the following libraries:
 
 ```sh
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk-3-dev \
-                       libnotify-dev libgnome-keyring-dev libgconf2-dev \
+                       libnotify-dev libgnome-keyring-dev \
                        libasound2-dev libcap-dev libcups2-dev libxtst-dev \
                        libxss1 libnss3-dev gcc-multilib g++-multilib curl \
                        gperf bison python-dbusmock openjdk-8-jre
@@ -43,7 +43,7 @@ On RHEL / CentOS, install the following libraries:
 $ sudo yum install clang dbus-devel gtk3-devel libnotify-devel \
                    libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
                    cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
-                   GConf2-devel nss-devel python-dbusmock openjdk-8-jre
+                   nss-devel python-dbusmock openjdk-8-jre
 ```
 
 On Fedora, install the following libraries:
@@ -52,7 +52,7 @@ On Fedora, install the following libraries:
 $ sudo dnf install clang dbus-devel gtk3-devel libnotify-devel \
                    libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
                    cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
-                   GConf2-devel nss-devel python-dbusmock openjdk-8-jre
+                   nss-devel python-dbusmock openjdk-8-jre
 ```
 
 Other distributions may offer similar packages for installation via package
@@ -79,7 +79,7 @@ And to cross-compile for `arm` or `ia32` targets, you should pass the
 `target_cpu` parameter to `gn gen`:
 
 ```sh
-$ gn gen out/Debug --args='import(...) target_cpu="arm"'
+$ gn gen out/Testing --args='import(...) target_cpu="arm"'
 ```
 
 ## Building
@@ -114,7 +114,7 @@ GN args.
 For example if you installed `clang` under `/usr/local/bin/clang`:
 
 ```sh
-$ gn gen out/Debug --args='import("//electron/build/args/debug.gn") clang_base_path = "/usr/local/bin"'
+$ gn gen out/Testing --args='import("//electron/build/args/testing.gn") clang_base_path = "/usr/local/bin"'
 ```
 
 ### Using compilers other than `clang`

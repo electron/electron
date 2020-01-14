@@ -7,21 +7,20 @@
 
 #include <string>
 
-#include "native_mate/arguments.h"
-#include "native_mate/handle.h"
-#include "shell/browser/api/event_emitter.h"
+#include "gin/handle.h"
 #include "shell/browser/auto_updater.h"
 #include "shell/browser/window_list_observer.h"
+#include "shell/common/gin_helper/event_emitter.h"
 
 namespace electron {
 
 namespace api {
 
-class AutoUpdater : public mate::EventEmitter<AutoUpdater>,
+class AutoUpdater : public gin_helper::EventEmitter<AutoUpdater>,
                     public auto_updater::Delegate,
                     public WindowListObserver {
  public:
-  static mate::Handle<AutoUpdater> Create(v8::Isolate* isolate);
+  static gin::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -48,7 +47,7 @@ class AutoUpdater : public mate::EventEmitter<AutoUpdater>,
 
  private:
   std::string GetFeedURL();
-  void SetFeedURL(mate::Arguments* args);
+  void SetFeedURL(gin_helper::Arguments* args);
   void QuitAndInstall();
 
   DISALLOW_COPY_AND_ASSIGN(AutoUpdater);

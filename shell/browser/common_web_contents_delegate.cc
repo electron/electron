@@ -39,7 +39,7 @@
 #include "shell/browser/web_dialog_helper.h"
 #include "shell/common/atom_constants.h"
 #include "shell/common/options_switches.h"
-#include "storage/browser/fileapi/isolated_context.h"
+#include "storage/browser/file_system/isolated_context.h"
 
 #if BUILDFLAG(ENABLE_COLOR_CHOOSER)
 #include "chrome/browser/ui/color_chooser.h"
@@ -55,6 +55,15 @@
 #include "shell/browser/printing/print_preview_message_handler.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+#include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
+#include "shell/browser/electron_pdf_web_contents_helper_client.h"
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -64,7 +73,7 @@ namespace {
 const char kRootName[] = "<root>";
 
 struct FileSystem {
-  FileSystem() {}
+  FileSystem() = default;
   FileSystem(const std::string& type,
              const std::string& file_system_name,
              const std::string& root_url,
@@ -174,11 +183,11 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 
 CommonWebContentsDelegate::CommonWebContentsDelegate()
     : devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
-      file_task_runner_(
-          base::CreateSequencedTaskRunnerWithTraits({base::MayBlock()})),
+      file_task_runner_(base::CreateSequencedTaskRunner(
+          {base::ThreadPool(), base::MayBlock()})),
       weak_factory_(this) {}
 
-CommonWebContentsDelegate::~CommonWebContentsDelegate() {}
+CommonWebContentsDelegate::~CommonWebContentsDelegate() = default;
 
 void CommonWebContentsDelegate::InitWithWebContents(
     content::WebContents* web_contents,
@@ -192,6 +201,11 @@ void CommonWebContentsDelegate::InitWithWebContents(
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
   printing::CreateCompositeClientIfNeeded(web_contents,
                                           browser_context->GetUserAgent());
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  pdf::PDFWebContentsHelper::CreateForWebContentsWithClient(
+      web_contents, std::make_unique<ElectronPDFWebContentsHelperClient>());
 #endif
 
   // Determien whether the WebContents is offscreen.
@@ -214,7 +228,6 @@ void CommonWebContentsDelegate::SetOwnerWindow(
     NativeWindow* owner_window) {
   if (owner_window) {
     owner_window_ = owner_window->GetWeakPtr();
-    autofill_popup_.reset(new AutofillPopup());
     NativeWindowRelay::CreateForWebContents(web_contents,
                                             owner_window->GetWeakPtr());
   } else {
@@ -306,7 +319,8 @@ void CommonWebContentsDelegate::RunFileChooser(
     std::unique_ptr<content::FileSelectListener> listener,
     const blink::mojom::FileChooserParams& params) {
   if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(owner_window(), offscreen_));
+    web_dialog_helper_ =
+        std::make_unique<WebDialogHelper>(owner_window(), offscreen_);
   web_dialog_helper_->RunFileChooser(render_frame_host, std::move(listener),
                                      params);
 }
@@ -316,14 +330,15 @@ void CommonWebContentsDelegate::EnumerateDirectory(
     std::unique_ptr<content::FileSelectListener> listener,
     const base::FilePath& path) {
   if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(owner_window(), offscreen_));
+    web_dialog_helper_ =
+        std::make_unique<WebDialogHelper>(owner_window(), offscreen_);
   web_dialog_helper_->EnumerateDirectory(guest, std::move(listener), path);
 }
 
 void CommonWebContentsDelegate::EnterFullscreenModeForTab(
     content::WebContents* source,
     const GURL& origin,
-    const blink::WebFullscreenOptions& options) {
+    const blink::mojom::FullscreenOptions& options) {
   if (!owner_window_)
     return;
   if (IsFullscreenForTabOrPending(source)) {
@@ -340,6 +355,13 @@ void CommonWebContentsDelegate::ExitFullscreenModeForTab(
     return;
   SetHtmlApiFullscreen(false);
   owner_window_->NotifyWindowLeaveHtmlFullScreen();
+
+  if (native_fullscreen_) {
+    // Explicitly trigger a view resize, as the size is not actually changing if
+    // the browser is fullscreened, too. Chrome does this indirectly from
+    // `chrome/browser/ui/exclusive_access/fullscreen_controller.cc`.
+    source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
+  }
 }
 
 bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
@@ -347,7 +369,7 @@ bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
   return html_fullscreen_;
 }
 
-blink::WebSecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
+blink::SecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
     content::WebContents* web_contents,
     content::SecurityStyleExplanations* security_style_explanations) {
   SecurityStateTabHelper* helper =
@@ -455,7 +477,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
     file_dialog::DialogSettings settings;
     settings.parent_window = owner_window();
     settings.force_detached = offscreen_;
-    settings.properties = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
+    settings.properties = file_dialog::OPEN_DIALOG_OPEN_DIRECTORY;
     if (!file_dialog::ShowOpenDialogSync(settings, &paths))
       return;
 
@@ -637,24 +659,23 @@ void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
   native_fullscreen_ = false;
 }
 
-void CommonWebContentsDelegate::ShowAutofillPopup(
-    content::RenderFrameHost* frame_host,
-    content::RenderFrameHost* embedder_frame_host,
-    bool offscreen,
-    const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {
-  if (!owner_window())
-    return;
-
-  autofill_popup_->CreateView(frame_host, embedder_frame_host, offscreen,
-                              owner_window()->content_view(), bounds);
-  autofill_popup_->SetItems(values, labels);
+content::PictureInPictureResult
+CommonWebContentsDelegate::EnterPictureInPicture(
+    content::WebContents* web_contents,
+    const viz::SurfaceId& surface_id,
+    const gfx::Size& natural_size) {
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  return PictureInPictureWindowManager::GetInstance()->EnterPictureInPicture(
+      web_contents, surface_id, natural_size);
+#else
+  return content::PictureInPictureResult::kNotSupported;
+#endif
 }
 
-void CommonWebContentsDelegate::HideAutofillPopup() {
-  if (autofill_popup_)
-    autofill_popup_->Hide();
+void CommonWebContentsDelegate::ExitPictureInPicture() {
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  PictureInPictureWindowManager::GetInstance()->ExitPictureInPicture();
+#endif
 }
 
 }  // namespace electron

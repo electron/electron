@@ -1,5 +1,5 @@
 import { webFrame } from 'electron'
-import { invoke } from '@electron/internal/renderer/ipc-renderer-internal-utils'
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 
 let shouldLog: boolean | null = null
 
@@ -268,7 +268,9 @@ const warnAboutAllowedPopups = function () {
 // Logs a warning message about the remote module
 
 const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electron.WebPreferences) {
-  if (!webPreferences || !webPreferences.enableRemoteModule || isLocalhost()) return
+  if (!webPreferences || isLocalhost()) return
+  const remoteModuleEnabled = webPreferences.enableRemoteModule != null ? !!webPreferences.enableRemoteModule : true
+  if (!remoteModuleEnabled) return
 
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has "enableRemoteModule" enabled
@@ -299,7 +301,7 @@ const logSecurityWarnings = function (
 
 const getWebPreferences = async function () {
   try {
-    return invoke<Electron.WebPreferences>('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES')
+    return ipcRendererInternal.invoke<Electron.WebPreferences>('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES')
   } catch (error) {
     console.warn(`getLastWebPreferences() failed: ${error}`)
   }

@@ -39,6 +39,7 @@ an issue:
   * [Using Electron's APIs](tutorial/application-architecture.md#using-electron-apis)
   * [Using Node.js APIs](tutorial/application-architecture.md#using-nodejs-apis)
   * [Using Native Node.js Modules](tutorial/using-native-node-modules.md)
+  * [Performance Strategies](tutorial/performance.md)
 * Adding Features to Your App
   * [Notifications](tutorial/notifications.md)
   * [Recent Documents](tutorial/recent-documents.md)
@@ -52,6 +53,7 @@ an issue:
   * [Native File Drag & Drop](tutorial/native-file-drag-drop.md)
   * [Offscreen Rendering](tutorial/offscreen-rendering.md)
   * [Supporting macOS Dark Mode](tutorial/mojave-dark-mode-guide.md)
+  * [Web embeds in Electron](tutorial/web-embeds.md)
 * [Accessibility](tutorial/accessibility.md)
   * [Spectron](tutorial/accessibility.md#spectron)
   * [Devtron](tutorial/accessibility.md#devtron)
@@ -108,7 +110,7 @@ These individual tutorials expand on topics discussed in the guide above.
 
 * [Synopsis](api/synopsis.md)
 * [Process Object](api/process.md)
-* [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
+* [Supported Command Line Switches](api/command-line-switches.md)
 * [Environment Variables](api/environment-variables.md)
 * [Breaking API Changes](api/breaking-changes.md)
 
@@ -134,6 +136,7 @@ These individual tutorials expand on topics discussed in the guide above.
 * [MenuItem](api/menu-item.md)
 * [net](api/net.md)
 * [netLog](api/net-log.md)
+* [Notification](api/notification.md)
 * [powerMonitor](api/power-monitor.md)
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)

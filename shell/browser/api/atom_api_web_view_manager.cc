@@ -3,12 +3,12 @@
 // found in the LICENSE file.
 
 #include "content/public/browser/browser_context.h"
-#include "native_mate/dictionary.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_view_manager.h"
-#include "shell/common/native_mate_converters/content_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 
@@ -45,7 +45,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("addGuest", &AddGuest);
   dict.SetMethod("removeGuest", &RemoveGuest);
 }

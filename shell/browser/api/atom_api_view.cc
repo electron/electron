@@ -4,7 +4,8 @@
 
 #include "shell/browser/api/atom_api_view.h"
 
-#include "native_mate/dictionary.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -23,16 +24,16 @@ View::~View() {
 }
 
 #if BUILDFLAG(ENABLE_VIEW_API)
-void View::SetLayoutManager(mate::Handle<LayoutManager> layout_manager) {
+void View::SetLayoutManager(gin::Handle<LayoutManager> layout_manager) {
   layout_manager_.Reset(isolate(), layout_manager->GetWrapper());
   view()->SetLayoutManager(layout_manager->TakeOver());
 }
 
-void View::AddChildView(mate::Handle<View> child) {
+void View::AddChildView(gin::Handle<View> child) {
   AddChildViewAt(child, child_views_.size());
 }
 
-void View::AddChildViewAt(mate::Handle<View> child, size_t index) {
+void View::AddChildViewAt(gin::Handle<View> child, size_t index) {
   if (index > child_views_.size())
     return;
   child_views_.emplace(child_views_.begin() + index,     // index
@@ -42,18 +43,18 @@ void View::AddChildViewAt(mate::Handle<View> child, size_t index) {
 #endif
 
 // static
-mate::WrappableBase* View::New(mate::Arguments* args) {
+gin_helper::WrappableBase* View::New(gin::Arguments* args) {
   auto* view = new View();
-  view->InitWith(args->isolate(), args->GetThis());
+  view->InitWithArgs(args);
   return view;
 }
 
 // static
 void View::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "View"));
+  prototype->SetClassName(gin::StringToV8(isolate, "View"));
 #if BUILDFLAG(ENABLE_VIEW_API)
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setLayoutManager", &View::SetLayoutManager)
       .SetMethod("addChildView", &View::AddChildView)
       .SetMethod("addChildViewAt", &View::AddChildViewAt);
@@ -75,11 +76,11 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   View::SetConstructor(isolate, base::BindRepeating(&View::New));
 
-  mate::Dictionary constructor(
+  gin_helper::Dictionary constructor(
       isolate,
       View::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
 
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("View", constructor);
 }
 

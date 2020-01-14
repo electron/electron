@@ -15,13 +15,13 @@
 #include "content/public/common/content_features.h"
 #include "content/public/common/service_names.mojom.h"
 #include "mojo/public/cpp/bindings/associated_interface_ptr.h"
+#include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "net/net_buildflags.h"
 #include "services/network/network_service.h"
-#include "services/network/public/cpp/cross_thread_shared_url_loader_factory_info.h"
+#include "services/network/public/cpp/cross_thread_pending_shared_url_loader_factory.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "shell/browser/atom_browser_client.h"
-#include "shell/browser/io_thread.h"
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
@@ -41,18 +41,14 @@ network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
   return auth_static_params;
 }
 
-}  // namespace
-
-namespace electron {
-
 network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
       network::mojom::HttpAuthDynamicParams::New();
 
-  auth_dynamic_params->server_whitelist = command_line->GetSwitchValueASCII(
+  auth_dynamic_params->server_allowlist = command_line->GetSwitchValueASCII(
       electron::switches::kAuthServerWhitelist);
-  auth_dynamic_params->delegate_whitelist = command_line->GetSwitchValueASCII(
+  auth_dynamic_params->delegate_allowlist = command_line->GetSwitchValueASCII(
       electron::switches::kAuthNegotiateDelegateWhitelist);
   auth_dynamic_params->enable_negotiate_port =
       command_line->HasSwitch(electron::switches::kEnableAuthNegotiatePort);
@@ -60,7 +56,7 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
   return auth_dynamic_params;
 }
 
-}  // namespace electron
+}  // namespace
 
 // SharedURLLoaderFactory backed by a SystemNetworkContextManager and its
 // network context. Transparently handles crashes.
@@ -73,14 +69,15 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
   }
 
   // mojom::URLLoaderFactory implementation:
-  void CreateLoaderAndStart(network::mojom::URLLoaderRequest request,
-                            int32_t routing_id,
-                            int32_t request_id,
-                            uint32_t options,
-                            const network::ResourceRequest& url_request,
-                            network::mojom::URLLoaderClientPtr client,
-                            const net::MutableNetworkTrafficAnnotationTag&
-                                traffic_annotation) override {
+  void CreateLoaderAndStart(
+      mojo::PendingReceiver<network::mojom::URLLoader> request,
+      int32_t routing_id,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& url_request,
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
+      override {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
     if (!manager_)
       return;
@@ -89,17 +86,18 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
         std::move(client), traffic_annotation);
   }
 
-  void Clone(network::mojom::URLLoaderFactoryRequest request) override {
+  void Clone(mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver)
+      override {
     if (!manager_)
       return;
-    manager_->GetURLLoaderFactory()->Clone(std::move(request));
+    manager_->GetURLLoaderFactory()->Clone(std::move(receiver));
   }
 
   // SharedURLLoaderFactory implementation:
-  std::unique_ptr<network::SharedURLLoaderFactoryInfo> Clone() override {
+  std::unique_ptr<network::PendingSharedURLLoaderFactory> Clone() override {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    return std::make_unique<network::CrossThreadSharedURLLoaderFactoryInfo>(
+    return std::make_unique<network::CrossThreadPendingSharedURLLoaderFactory>(
         this);
   }
 
@@ -107,7 +105,7 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
 
  private:
   friend class base::RefCounted<URLLoaderFactoryForSystem>;
-  ~URLLoaderFactoryForSystem() override {}
+  ~URLLoaderFactoryForSystem() override = default;
 
   SEQUENCE_CHECKER(sequence_checker_);
   SystemNetworkContextManager* manager_;
@@ -116,14 +114,7 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
 };
 
 network::mojom::NetworkContext* SystemNetworkContextManager::GetContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    // SetUp should already have been called.
-    DCHECK(io_thread_network_context_);
-    return io_thread_network_context_.get();
-  }
-
-  if (!network_service_network_context_ ||
-      network_service_network_context_.encountered_error()) {
+  if (!network_context_ || !network_context_.is_connected()) {
     // This should call into OnNetworkServiceCreated(), which will re-create
     // the network service, if needed. There's a chance that it won't be
     // invoked, if the NetworkContext has encountered an error but the
@@ -131,15 +122,15 @@ network::mojom::NetworkContext* SystemNetworkContextManager::GetContext() {
     // trying to create a new NetworkContext would fail, anyways, and hopefully
     // a new NetworkContext will be created on the next GetContext() call.
     content::GetNetworkService();
-    DCHECK(network_service_network_context_);
+    DCHECK(network_context_);
   }
-  return network_service_network_context_.get();
+  return network_context_.get();
 }
 
 network::mojom::URLLoaderFactory*
 SystemNetworkContextManager::GetURLLoaderFactory() {
   // Create the URLLoaderFactory as needed.
-  if (url_loader_factory_ && !url_loader_factory_.encountered_error()) {
+  if (url_loader_factory_ && url_loader_factory_.is_connected()) {
     return url_loader_factory_.get();
   }
 
@@ -147,8 +138,9 @@ SystemNetworkContextManager::GetURLLoaderFactory() {
       network::mojom::URLLoaderFactoryParams::New();
   params->process_id = network::mojom::kBrowserProcessId;
   params->is_corb_enabled = false;
-  GetContext()->CreateURLLoaderFactory(mojo::MakeRequest(&url_loader_factory_),
-                                       std::move(params));
+  url_loader_factory_.reset();
+  GetContext()->CreateURLLoaderFactory(
+      url_loader_factory_.BindNewPipeAndPassReceiver(), std::move(params));
   return url_loader_factory_.get();
 }
 
@@ -174,23 +166,6 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 #endif
 
   return network_context_params;
-}
-
-void SystemNetworkContextManager::SetUp(
-    network::mojom::NetworkContextRequest* network_context_request,
-    network::mojom::NetworkContextParamsPtr* network_context_params,
-    network::mojom::HttpAuthStaticParamsPtr* http_auth_static_params,
-    network::mojom::HttpAuthDynamicParamsPtr* http_auth_dynamic_params) {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    *network_context_request = mojo::MakeRequest(&io_thread_network_context_);
-    *network_context_params = CreateNetworkContextParams();
-  } else {
-    // Just use defaults if the network service is enabled, since
-    // CreateNetworkContextParams() can only be called once.
-    *network_context_params = CreateDefaultNetworkContextParams();
-  }
-  *http_auth_static_params = CreateHttpAuthStaticParams();
-  *http_auth_dynamic_params = electron::CreateHttpAuthDynamicParams();
 }
 
 // static
@@ -225,17 +200,14 @@ SystemNetworkContextManager::~SystemNetworkContextManager() {
 
 void SystemNetworkContextManager::OnNetworkServiceCreated(
     network::mojom::NetworkService* network_service) {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
-    return;
-
   network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
-  network_service->ConfigureHttpAuthPrefs(
-      electron::CreateHttpAuthDynamicParams());
+  network_service->ConfigureHttpAuthPrefs(CreateHttpAuthDynamicParams());
 
   // The system NetworkContext must be created first, since it sets
   // |primary_network_context| to true.
+  network_context_.reset();
   network_service->CreateNetworkContext(
-      MakeRequest(&network_service_network_context_),
+      network_context_.BindNewPipeAndPassReceiver(),
       CreateNetworkContextParams());
 }
 

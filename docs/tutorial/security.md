@@ -27,18 +27,8 @@ see [SECURITY.md](https://github.com/electron/electron/tree/master/SECURITY.md)
 
 ## Chromium Security Issues and Upgrades
 
-While Electron strives to support new versions of Chromium as soon as possible,
-developers should be aware that upgrading is a serious undertaking - involving
-hand-editing dozens or even hundreds of files. Given the resources and
-contributions available today, Electron will often not be on the very latest
-version of Chromium, lagging behind by several weeks or a few months.
-
-We feel that our current system of updating the Chromium component strikes an
-appropriate balance between the resources we have available and the needs of
-the majority of applications built on top of the framework. We definitely are
-interested in hearing more about specific use cases from the people that build
-things on top of Electron. Pull requests and contributions supporting this
-effort are always very welcome.
+Electron keeps up to date with alternating Chromium releases. For more information,
+see the [Electron Release Cadence blog post](https://electronjs.org/blog/12-week-cadence).
 
 ## Security Is Everyone's Responsibility
 
@@ -53,7 +43,8 @@ When releasing your product, you’re also shipping a bundle composed of Electro
 Chromium shared library and Node.js. Vulnerabilities affecting these components
 may impact the security of your application. By updating Electron to the latest
 version, you ensure that critical vulnerabilities (such as *nodeIntegration bypasses*)
-are already patched and cannot be exploited in your application.
+are already patched and cannot be exploited in your application. For more information,
+see "[Use a current version of Electron](#17-use-a-current-version-of-electron)".
 
 * **Evaluate your dependencies.** While NPM provides half a million reusable packages,
 it is your responsibility to choose trusted 3rd-party libraries. If you use outdated
@@ -111,6 +102,7 @@ You should at least follow these steps to improve the security of your applicati
 14. [Do not use `openExternal` with untrusted content](#14-do-not-use-openexternal-with-untrusted-content)
 15. [Disable the `remote` module](#15-disable-the-remote-module)
 16. [Filter the `remote` module](#16-filter-the-remote-module)
+17. [Use a current version of Electron](#17-use-a-current-version-of-electron)
 
 To automate the detection of misconfigurations and insecure patterns, it is
 possible to use
@@ -171,7 +163,7 @@ for an attacker to harm your users should they gain the ability to execute
 JavaScript on your website.
 
 After this, you can grant additional permissions for specific hosts. For example,
-if you are opening a BrowserWindow pointed at `https://example.com/", you can
+if you are opening a BrowserWindow pointed at `https://example.com/`, you can
 give that website exactly the abilities it needs, but no more.
 
 ### Why?
@@ -249,7 +241,7 @@ prevent the use of Node primitives, `contextIsolation` must also be used.
 
 ### Why?
 
-Context isolation allows each the scripts on running in the renderer to make
+Context isolation allows each of the scripts running in the renderer to make
 changes to its JavaScript environment without worrying about conflicting with
 the scripts in the Electron API or the preload script.
 
@@ -391,7 +383,7 @@ easy way to improve your application's security.
 The following CSP will allow Electron to execute scripts from the current
 website and from `apis.example.com`.
 
-```txt
+```plaintext
 // Bad
 Content-Security-Policy: '*'
 
@@ -429,8 +421,6 @@ on a page directly in the markup using a `<meta>` tag:
 ```html
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'">
 ```
-
-#### `webRequest.onHeadersReceived([filter, ]listener)`
 
 
 ## 7) Do Not Set `allowRunningInsecureContent` to `true`
@@ -521,7 +511,7 @@ no circumstances should you enable features speculatively.
 // Bad
 const mainWindow = new BrowserWindow({
   webPreferences: {
-    enableBlinkFeatures: ['ExecCommandInJavaScript']
+    enableBlinkFeatures: 'ExecCommandInJavaScript'
   }
 })
 ```
@@ -834,11 +824,30 @@ app.on('remote-get-current-window', (event, webContents) => {
 app.on('remote-get-current-web-contents', (event, webContents) => {
   event.preventDefault()
 })
-
-app.on('remote-get-guest-web-contents', (event, webContents, guestWebContents) => {
-  event.preventDefault()
-})
 ```
+
+## 17) Use a current version of Electron
+
+You should strive for always using the latest available version of Electron.
+Whenever a new major version is released, you should attempt to update your
+app as quickly as possible.
+
+### Why?
+
+An application built with an older version of Electron, Chromium, and Node.js
+is an easier target than an application that is using more recent versions of
+those components. Generally speaking, security issues and exploits for older
+versions of Chromium and Node.js are more widely available.
+
+Both Chromium and Node.js are impressive feats of engineering built by
+thousands of talented developers. Given their popularity, their security is
+carefully tested and analyzed by equally skilled security researchers. Many of
+those researchers [disclose vulnerabilities responsibly][responsible-disclosure],
+which generally means that researchers will give Chromium and Node.js some time
+to fix issues before publishing them. Your application will be more secure if
+it is running a recent version of Electron (and thus, Chromium and Node.js) for
+which potential security issues are not as widely known.
+
 
 [browser-window]: ../api/browser-window.md
 [browser-view]: ../api/browser-view.md
@@ -848,3 +857,4 @@ app.on('remote-get-guest-web-contents', (event, webContents, guestWebContents) =
 [will-navigate]: ../api/web-contents.md#event-will-navigate
 [open-external]: ../api/shell.md#shellopenexternalurl-options-callback
 [sandbox]: ../api/sandbox-option.md
+[responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure

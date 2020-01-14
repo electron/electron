@@ -5,69 +5,45 @@
 #ifndef SHELL_BROWSER_LOGIN_HANDLER_H_
 #define SHELL_BROWSER_LOGIN_HANDLER_H_
 
-#include <memory>
-
-#include "base/callback.h"
-#include "base/memory/ref_counted.h"
-#include "base/memory/weak_ptr.h"
-#include "base/sequenced_task_runner_helpers.h"
-#include "base/strings/string16.h"
-#include "content/public/browser/resource_request_info.h"
-#include "net/base/network_delegate.h"
+#include "base/values.h"
+#include "content/public/browser/content_browser_client.h"
+#include "content/public/browser/login_delegate.h"
+#include "content/public/browser/web_contents_observer.h"
 
 namespace content {
 class WebContents;
 }
 
+namespace gin {
+class Arguments;
+}
+
 namespace electron {
 
-// Handles the HTTP basic auth, must be created on IO thread.
-class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
+// Handles HTTP basic auth.
+class LoginHandler : public content::LoginDelegate,
+                     public content::WebContentsObserver {
  public:
-  LoginHandler(net::URLRequest* request,
-               const net::AuthChallengeInfo& auth_info,
-               net::NetworkDelegate::AuthCallback callback,
-               net::AuthCredentials* credentials,
-               content::ResourceRequestInfo* resource_request_info);
-
-  // The auth is cancelled, must be called on UI thread.
-  void CancelAuth();
-
-  // The URLRequest associated with the auth is destroyed.
-  void NotifyRequestDestroyed();
-
-  // Login with |username| and |password|, must be called on UI thread.
-  void Login(const base::string16& username, const base::string16& password);
-
-  // Returns the WebContents associated with the request, must be called on UI
-  // thread.
-  content::WebContents* GetWebContents() const;
-
-  const net::AuthChallengeInfo* auth_info() const { return auth_info_.get(); }
+  LoginHandler(const net::AuthChallengeInfo& auth_info,
+               content::WebContents* web_contents,
+               bool is_main_frame,
+               const GURL& url,
+               scoped_refptr<net::HttpResponseHeaders> response_headers,
+               bool first_auth_attempt,
+               LoginAuthRequiredCallback auth_required_callback);
+  ~LoginHandler() override;
 
  private:
-  friend class base::RefCountedThreadSafe<LoginHandler>;
-  friend class base::DeleteHelper<LoginHandler>;
+  void EmitEvent(net::AuthChallengeInfo auth_info,
+                 bool is_main_frame,
+                 const GURL& url,
+                 scoped_refptr<net::HttpResponseHeaders> response_headers,
+                 bool first_auth_attempt);
+  void CallbackFromJS(gin::Arguments* args);
 
-  ~LoginHandler();
+  LoginAuthRequiredCallback auth_required_callback_;
 
-  // Must be called on IO thread.
-  void DoCancelAuth();
-  void DoLogin(const base::string16& username, const base::string16& password);
-
-  // Credentials to be used for the auth.
-  net::AuthCredentials* credentials_;
-
-  // Who/where/what asked for the authentication.
-  std::unique_ptr<const net::AuthChallengeInfo> auth_info_;
-
-  // WebContents associated with the login request.
-  content::ResourceRequestInfo::WebContentsGetter web_contents_getter_;
-
-  // Called with preferred value of net::NetworkDelegate::AuthRequiredResponse.
-  net::NetworkDelegate::AuthCallback auth_callback_;
-
-  base::WeakPtrFactory<LoginHandler> weak_factory_;
+  base::WeakPtrFactory<LoginHandler> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(LoginHandler);
 };

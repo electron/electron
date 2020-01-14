@@ -4,8 +4,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-The `ipcMain` module is an instance of the
-[EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter) class. When used in the main
+The `ipcMain` module is an [Event Emitter][event-emitter]. When used in the main
 process, it handles asynchronous and synchronous messages sent from a renderer
 process (web page). Messages sent from a renderer will be emitted to this
 module.
@@ -78,6 +77,7 @@ only the next time a message is sent to `channel`, after which it is removed.
 
 * `channel` String
 * `listener` Function
+  * `...args` any[]
 
 Removes the specified `listener` from the listener array for the specified
 `channel`.
@@ -91,7 +91,7 @@ Removes listeners of the specified `channel`.
 ### `ipcMain.handle(channel, listener)`
 
 * `channel` String
-* `listener` Function<Promise> | Function<any>
+* `listener` Function<Promise<void> | any>
   * `event` IpcMainInvokeEvent
   * `...args` any[]
 
@@ -123,7 +123,7 @@ WebContents is the source of the invoke request.
 ### `ipcMain.handleOnce(channel, listener)`
 
 * `channel` String
-* `listener` Function<Promise> | Function<any>
+* `listener` Function<Promise<void> | any>
   * `event` IpcMainInvokeEvent
   * `...args` any[]
 
@@ -146,3 +146,6 @@ in the [`ipc-main-event`](structures/ipc-main-event.md) structure docs.
 The documentation for the `event` object passed to `handle` callbacks can be
 found in the [`ipc-main-invoke-event`](structures/ipc-main-invoke-event.md)
 structure docs.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
+[web-contents-send]: web-contents.md#contentssendchannel-arg1-arg2-

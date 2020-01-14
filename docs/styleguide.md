@@ -116,7 +116,7 @@ Using the `Session` and `Cookies` classes as an example:
 
 ### session.fromPartition(partition)
 
-## Properties
+## Static Properties
 
 ### session.defaultSession
 

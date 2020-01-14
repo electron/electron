@@ -14,9 +14,10 @@
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "chrome/browser/media/webrtc/window_icon_util.h"
 #include "content/public/browser/desktop_capture.h"
-#include "native_mate/dictionary.h"
 #include "shell/common/api/atom_api_native_image.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
@@ -27,14 +28,14 @@
 #include "ui/display/win/display_info.h"
 #endif  // defined(OS_WIN)
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<electron::api::DesktopCapturer::Source> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
       const electron::api::DesktopCapturer::Source& source) {
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     content::DesktopMediaID id = source.media_list_source.id;
     dict.Set("name", base::UTF16ToUTF8(source.media_list_source.name));
     dict.Set("id", id.ToString());
@@ -52,7 +53,7 @@ struct Converter<electron::api::DesktopCapturer::Source> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -62,7 +63,7 @@ DesktopCapturer::DesktopCapturer(v8::Isolate* isolate) {
   Init(isolate);
 }
 
-DesktopCapturer::~DesktopCapturer() {}
+DesktopCapturer::~DesktopCapturer() = default;
 
 void DesktopCapturer::StartHandling(bool capture_window,
                                     bool capture_screen,
@@ -90,45 +91,31 @@ void DesktopCapturer::StartHandling(bool capture_window,
     // Initialize the source list.
     // Apply the new thumbnail size and restart capture.
     if (capture_window) {
-      window_capturer_.reset(new NativeDesktopMediaList(
+      window_capturer_ = std::make_unique<NativeDesktopMediaList>(
           content::DesktopMediaID::TYPE_WINDOW,
-          content::desktop_capture::CreateWindowCapturer()));
+          content::desktop_capture::CreateWindowCapturer());
       window_capturer_->SetThumbnailSize(thumbnail_size);
       window_capturer_->AddObserver(this);
-      window_capturer_->StartUpdating();
+      window_capturer_->Update(base::BindOnce(
+          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
+          window_capturer_.get()));
     }
 
     if (capture_screen) {
-      screen_capturer_.reset(new NativeDesktopMediaList(
+      screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
           content::DesktopMediaID::TYPE_SCREEN,
-          content::desktop_capture::CreateScreenCapturer()));
+          content::desktop_capture::CreateScreenCapturer());
       screen_capturer_->SetThumbnailSize(thumbnail_size);
       screen_capturer_->AddObserver(this);
-      screen_capturer_->StartUpdating();
+      screen_capturer_->Update(base::BindOnce(
+          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
+          screen_capturer_.get()));
     }
   }
 }
 
-void DesktopCapturer::OnSourceAdded(DesktopMediaList* list, int index) {}
-
-void DesktopCapturer::OnSourceRemoved(DesktopMediaList* list, int index) {}
-
-void DesktopCapturer::OnSourceMoved(DesktopMediaList* list,
-                                    int old_index,
-                                    int new_index) {}
-
-void DesktopCapturer::OnSourceNameChanged(DesktopMediaList* list, int index) {}
-
-void DesktopCapturer::OnSourceThumbnailChanged(DesktopMediaList* list,
-                                               int index) {}
-
 void DesktopCapturer::OnSourceUnchanged(DesktopMediaList* list) {
   UpdateSourcesList(list);
-}
-
-bool DesktopCapturer::ShouldScheduleNextRefresh(DesktopMediaList* list) {
-  UpdateSourcesList(list);
-  return false;
 }
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
@@ -201,16 +188,16 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
 }
 
 // static
-mate::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new DesktopCapturer(isolate));
+gin::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new DesktopCapturer(isolate));
 }
 
 // static
 void DesktopCapturer::BuildPrototype(
     v8::Isolate* isolate,
     v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "DesktopCapturer"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "DesktopCapturer"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("startHandling", &DesktopCapturer::StartHandling);
 }
 
@@ -224,8 +211,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createDesktopCapturer",
                  &electron::api::DesktopCapturer::Create);
 }

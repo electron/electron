@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
-index 818e8e456c4767987bbe0dbb3ee16669ec09620d..cdce8646f2c6c574aa1258917b77a9657c2dbf0d 100644
+index aacac1dc1e6c70e63dce08e81327db9fbabb5148..49ac1945ccb523dff61caf5b88a2bbc906b6fd09 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
 +++ b/content/browser/frame_host/navigation_controller_impl.cc
-@@ -1206,8 +1206,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1250,8 +1250,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -33,7 +33,7 @@ index 818e8e456c4767987bbe0dbb3ee16669ec09620d..cdce8646f2c6c574aa1258917b77a965
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1452,7 +1454,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+@@ -1507,7 +1509,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
      new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
    }
  
@@ -46,15 +46,15 @@ index 818e8e456c4767987bbe0dbb3ee16669ec09620d..cdce8646f2c6c574aa1258917b77a965
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 7ed451db1a95409492f231d6cdde0da4fe2d6123..51dd41bd85bdbbf125747d514ff52ca5debe3638 100644
+index 00a096c43f13d8addcf202545ac2aef97ef9c556..0145c63c41ba67b260b5df273d04e5b87c22af23 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -729,9 +729,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
+@@ -744,9 +744,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
  }
  
  void ClipboardWin::WriteToClipboard(unsigned int format, HANDLE handle) {
--  DCHECK(clipboard_owner_->hwnd() != NULL);
-+  // DCHECK(clipboard_owner_->hwnd() != NULL);
+-  DCHECK(clipboard_owner_->hwnd() != nullptr);
++  // DCHECK(clipboard_owner_->hwnd() != nullptr);
    if (handle && !::SetClipboardData(format, handle)) {
 -    DCHECK(ERROR_CLIPBOARD_NOT_OPEN != GetLastError());
 +    // DCHECK(ERROR_CLIPBOARD_NOT_OPEN != GetLastError());

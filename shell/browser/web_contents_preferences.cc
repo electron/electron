@@ -18,12 +18,13 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/web_preferences.h"
-#include "native_mate/dictionary.h"
+#include "electron/buildflags/buildflags.h"
 #include "net/base/filename_util.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/web_view_manager.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 
 #if defined(OS_WIN)
@@ -33,7 +34,7 @@
 namespace {
 
 bool GetAsString(const base::Value* val,
-                 const base::StringPiece& path,
+                 base::StringPiece path,
                  std::string* out) {
   if (val) {
     auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
@@ -46,7 +47,7 @@ bool GetAsString(const base::Value* val,
 }
 
 bool GetAsString(const base::Value* val,
-                 const base::StringPiece& path,
+                 base::StringPiece path,
                  base::string16* out) {
   if (val) {
     auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
@@ -58,9 +59,7 @@ bool GetAsString(const base::Value* val,
   return false;
 }
 
-bool GetAsInteger(const base::Value* val,
-                  const base::StringPiece& path,
-                  int* out) {
+bool GetAsInteger(const base::Value* val, base::StringPiece path, int* out) {
   if (val) {
     auto* found = val->FindKey(path);
     if (found && found->is_int()) {
@@ -74,7 +73,7 @@ bool GetAsInteger(const base::Value* val,
 }
 
 bool GetAsAutoplayPolicy(const base::Value* val,
-                         const base::StringPiece& path,
+                         base::StringPiece path,
                          content::AutoplayPolicy* out) {
   std::string policy_str;
   if (GetAsString(val, path, &policy_str)) {
@@ -102,16 +101,16 @@ std::vector<WebContentsPreferences*> WebContentsPreferences::instances_;
 
 WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
-    const mate::Dictionary& web_preferences)
+    const gin_helper::Dictionary& web_preferences)
     : web_contents_(web_contents) {
   v8::Isolate* isolate = web_preferences.isolate();
-  mate::Dictionary copied(isolate, web_preferences.GetHandle()->Clone());
+  gin_helper::Dictionary copied(isolate, web_preferences.GetHandle()->Clone());
   // Following fields should not be stored.
   copied.Delete("embedder");
   copied.Delete("session");
   copied.Delete("type");
 
-  mate::ConvertFromV8(isolate, copied.GetHandle(), &preference_);
+  gin::ConvertFromV8(isolate, copied.GetHandle(), &preference_);
   web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
 
   instances_.push_back(this);
@@ -126,7 +125,6 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
-  SetDefaultBoolIfUndefined(options::kEnableRemoteModule, true);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
@@ -146,8 +144,9 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
-
-  SetDefaults();
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SetDefaultBoolIfUndefined(options::kSpellcheck, true);
+#endif
 
   // If this is a <webview> tag, and the embedder is offscreen-rendered, then
   // this WebContents is also offscreen-rendered.
@@ -166,7 +165,7 @@ WebContentsPreferences::WebContentsPreferences(
     }
   }
 
-  last_preference_ = preference_.Clone();
+  SetDefaults();
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
@@ -178,11 +177,12 @@ void WebContentsPreferences::SetDefaults() {
   if (IsEnabled(options::kSandbox)) {
     SetBool(options::kNativeWindowOpen, true);
   }
+
+  last_preference_ = preference_.Clone();
 }
 
-bool WebContentsPreferences::SetDefaultBoolIfUndefined(
-    const base::StringPiece& key,
-    bool val) {
+bool WebContentsPreferences::SetDefaultBoolIfUndefined(base::StringPiece key,
+                                                       bool val) {
   auto* current_value =
       preference_.FindKeyOfType(key, base::Value::Type::BOOLEAN);
   if (current_value) {
@@ -193,11 +193,11 @@ bool WebContentsPreferences::SetDefaultBoolIfUndefined(
   }
 }
 
-void WebContentsPreferences::SetBool(const base::StringPiece& key, bool value) {
+void WebContentsPreferences::SetBool(base::StringPiece key, bool value) {
   preference_.SetKey(key, base::Value(value));
 }
 
-bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
+bool WebContentsPreferences::IsEnabled(base::StringPiece name,
                                        bool default_value) const {
   auto* current_value =
       preference_.FindKeyOfType(name, base::Value::Type::BOOLEAN);
@@ -218,13 +218,9 @@ void WebContentsPreferences::Clear() {
     static_cast<base::DictionaryValue*>(&preference_)->Clear();
 }
 
-bool WebContentsPreferences::GetPreference(const base::StringPiece& name,
+bool WebContentsPreferences::GetPreference(base::StringPiece name,
                                            std::string* value) const {
   return GetAsString(&preference_, name, value);
-}
-
-bool WebContentsPreferences::IsRemoteModuleEnabled() const {
-  return IsEnabled(options::kEnableRemoteModule, true);
 }
 
 bool WebContentsPreferences::GetPreloadPath(
@@ -329,9 +325,11 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
   // Whether to enable the remote module
-  if (!IsRemoteModuleEnabled())
-    command_line->AppendSwitch(switches::kDisableRemoteModule);
+  if (IsEnabled(options::kEnableRemoteModule, true))
+    command_line->AppendSwitch(switches::kEnableRemoteModule);
+#endif
 
   // Run Electron APIs and preload script in isolated world
   if (IsEnabled(options::kContextIsolation))
@@ -414,6 +412,12 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
   if (IsEnabled(options::kNodeIntegrationInSubFrames))
     command_line->AppendSwitch(switches::kNodeIntegrationInSubFrames);
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  if (IsEnabled(options::kSpellcheck)) {
+    command_line->AppendSwitch(switches::kEnableSpellcheck);
+  }
+#endif
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents

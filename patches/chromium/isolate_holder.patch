@@ -8,10 +8,10 @@ needs to register on an isolate so that it can be used later
 down in the initialization process of an isolate.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 2514f591208372d6654ff9c5be50a51a39a881cb..4dd48f6a871cccb374c58adacb8ad9a80da89a5a 100644
+index c3ae4c6221686479d05800c51d17d581c095e397..e4c8a194418dc62f0e0222c08fe9ad39a4b9b9af 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -52,7 +52,8 @@ IsolateHolder::IsolateHolder(
+@@ -53,7 +53,8 @@ IsolateHolder::IsolateHolder(
      AccessMode access_mode,
      AllowAtomicsWaitMode atomics_wait_mode,
      IsolateType isolate_type,
@@ -21,7 +21,7 @@ index 2514f591208372d6654ff9c5be50a51a39a881cb..4dd48f6a871cccb374c58adacb8ad9a8
      : access_mode_(access_mode), isolate_type_(isolate_type) {
    DCHECK(task_runner);
    DCHECK(task_runner->BelongsToCurrentThread());
-@@ -60,7 +61,11 @@ IsolateHolder::IsolateHolder(
+@@ -61,7 +62,11 @@ IsolateHolder::IsolateHolder(
    v8::ArrayBuffer::Allocator* allocator = g_array_buffer_allocator;
    CHECK(allocator) << "You need to invoke gin::IsolateHolder::Initialize first";
  
@@ -35,7 +35,7 @@ index 2514f591208372d6654ff9c5be50a51a39a881cb..4dd48f6a871cccb374c58adacb8ad9a8
        new PerIsolateData(isolate_, allocator, access_mode_, task_runner));
    if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 6c5d101fef97e880bee20d2f76e4b339a624eb6f..576086de0de0a6fea9e2f2077af3aff18fd3138a 100644
+index ede178acabc63c3c33d6ce93efd5632bec50ba89..ffe7331cf1806417a32e66970f81b7797b9b80fc 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
 @@ -75,7 +75,8 @@ class GIN_EXPORT IsolateHolder {

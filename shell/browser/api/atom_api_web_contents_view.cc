@@ -5,11 +5,11 @@
 #include "shell/browser/api/atom_api_web_contents_view.h"
 
 #include "content/public/browser/web_contents_user_data.h"
-#include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
-#include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/constructor.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 #if defined(OS_MACOSX)
@@ -22,7 +22,7 @@ namespace {
 class WebContentsViewRelay
     : public content::WebContentsUserData<WebContentsViewRelay> {
  public:
-  ~WebContentsViewRelay() override {}
+  ~WebContentsViewRelay() override = default;
 
  private:
   explicit WebContentsViewRelay(content::WebContents* contents) {}
@@ -44,7 +44,7 @@ namespace electron {
 namespace api {
 
 WebContentsView::WebContentsView(v8::Isolate* isolate,
-                                 mate::Handle<WebContents> web_contents,
+                                 gin::Handle<WebContents> web_contents,
                                  InspectableWebContents* iwc)
 #if defined(OS_MACOSX)
     : View(new DelayedNativeViewHost(iwc->GetView()->GetNativeView())),
@@ -79,29 +79,25 @@ void WebContentsView::WebContentsDestroyed() {
 }
 
 // static
-mate::WrappableBase* WebContentsView::New(
-    mate::Arguments* args,
-    mate::Handle<WebContents> web_contents) {
+gin_helper::WrappableBase* WebContentsView::New(
+    gin_helper::Arguments* args,
+    gin::Handle<WebContents> web_contents) {
   // Currently we only support InspectableWebContents, e.g. the WebContents
   // created by users directly. To support devToolsWebContents we need to create
   // a wrapper view.
   if (!web_contents->managed_web_contents()) {
-    const char* error = "The WebContents must be created by user";
-    args->isolate()->ThrowException(
-        v8::Exception::Error(mate::StringToV8(args->isolate(), error)));
+    args->ThrowError("The WebContents must be created by user");
     return nullptr;
   }
   // Check if the WebContents has already been added to a view.
   if (WebContentsViewRelay::FromWebContents(web_contents->web_contents())) {
-    const char* error = "The WebContents has already been added to a View";
-    args->isolate()->ThrowException(
-        v8::Exception::Error(mate::StringToV8(args->isolate(), error)));
+    args->ThrowError("The WebContents has already been added to a View");
     return nullptr;
   }
   // Constructor call.
   auto* view = new WebContentsView(args->isolate(), web_contents,
                                    web_contents->managed_web_contents());
-  view->InitWith(args->isolate(), args->GetThis());
+  view->InitWithArgs(args);
   return view;
 }
 
@@ -123,9 +119,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContentsView",
-           mate::CreateConstructor<WebContentsView>(
+           gin_helper::CreateConstructor<WebContentsView>(
                isolate, base::BindRepeating(&WebContentsView::New)));
 }
 

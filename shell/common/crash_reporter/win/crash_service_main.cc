@@ -13,7 +13,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/crash_reporter/crash_reporter.h"
-#include "shell/common/crash_reporter/win/crash_service.h"
 #include "third_party/crashpad/crashpad/handler/handler_main.h"
 
 namespace crash_service {
@@ -62,13 +61,13 @@ int Main(std::vector<char*>* args) {
   base::FilePath operating_dir(
       cmd_line->GetSwitchValueNative(crash_reporter::kCrashesDirectoryKey));
   CreateCrashServiceDirectory(operating_dir);
-  base::FilePath log_file = operating_dir.Append(kStandardLogFile);
+  base::FilePath log_file_path = operating_dir.Append(kStandardLogFile);
 
   // Logging to stderr (to help with debugging failures on the
   // buildbots) and to a file.
   logging::LoggingSettings settings;
   settings.logging_dest = logging::LOG_TO_ALL;
-  settings.log_file = log_file.value().c_str();
+  settings.log_file_path = log_file_path.value().c_str();
   logging::InitLogging(settings);
   // Logging with pid, tid and timestamp.
   logging::SetLogItems(true, true, true, false);

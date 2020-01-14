@@ -4,23 +4,32 @@
 
 #include "shell/browser/api/atom_api_menu.h"
 
-#include "native_mate/constructor.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include <map>
+#include <utility>
+
 #include "shell/browser/native_window.h"
-#include "shell/common/native_mate_converters/accelerator_converter.h"
-#include "shell/common/native_mate_converters/callback.h"
-#include "shell/common/native_mate_converters/image_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_converters/accelerator_converter.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+
+namespace {
+
+// We need this map to keep references to currently opened menus.
+// Without this menus would be destroyed by js garbage collector
+// even when they are still displayed.
+std::map<uint32_t, v8::Global<v8::Object>> g_menus;
+
+}  // unnamed namespace
 
 namespace electron {
 
 namespace api {
 
-Menu::Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : model_(new AtomMenuModel(this)) {
-  InitWith(isolate, wrapper);
+Menu::Menu(gin::Arguments* args) : model_(new AtomMenuModel(this)) {
+  InitWithArgs(args);
   model_->AddObserver(this);
 }
 
@@ -31,8 +40,8 @@ Menu::~Menu() {
 }
 
 void Menu::AfterInit(v8::Isolate* isolate) {
-  mate::Dictionary wrappable(isolate, GetWrapper());
-  mate::Dictionary delegate;
+  gin::Dictionary wrappable(isolate, GetWrapper());
+  gin::Dictionary delegate(nullptr);
   if (!wrappable.Get("delegate", &delegate))
     return;
 
@@ -79,7 +88,7 @@ bool Menu::GetAcceleratorForCommandIdWithParams(
   v8::HandleScope handle_scope(isolate());
   v8::Local<v8::Value> val =
       get_accelerator_.Run(GetWrapper(), command_id, use_default_accelerator);
-  return mate::ConvertFromV8(isolate(), val, accelerator);
+  return gin::ConvertFromV8(isolate(), val, accelerator);
 }
 
 bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
@@ -91,9 +100,9 @@ bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
 void Menu::ExecuteCommand(int command_id, int flags) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  execute_command_.Run(GetWrapper(),
-                       mate::internal::CreateEventFromFlags(isolate(), flags),
-                       command_id);
+  execute_command_.Run(
+      GetWrapper(),
+      gin_helper::internal::CreateEventFromFlags(isolate(), flags), command_id);
 }
 
 void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
@@ -141,6 +150,10 @@ void Menu::SetSublabel(int index, const base::string16& sublabel) {
   model_->SetSublabel(index, sublabel);
 }
 
+void Menu::SetToolTip(int index, const base::string16& toolTip) {
+  model_->SetToolTip(index, toolTip);
+}
+
 void Menu::SetRole(int index, const base::string16& role) {
   model_->SetRole(index, role);
 }
@@ -169,6 +182,10 @@ base::string16 Menu::GetSublabelAt(int index) const {
   return model_->GetSublabelAt(index);
 }
 
+base::string16 Menu::GetToolTipAt(int index) const {
+  return model_->GetToolTipAt(index);
+}
+
 base::string16 Menu::GetAcceleratorTextAt(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
@@ -192,19 +209,31 @@ bool Menu::WorksWhenHiddenAt(int index) const {
 }
 
 void Menu::OnMenuWillClose() {
+  g_menus.erase(weak_map_id());
   Emit("menu-will-close");
 }
 
 void Menu::OnMenuWillShow() {
+  g_menus[weak_map_id()] = v8::Global<v8::Object>(isolate(), GetWrapper());
   Emit("menu-will-show");
+}
+
+base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
+  // return ((callback, ref) => { callback() }).bind(null, callback, this)
+  v8::Global<v8::Value> ref(isolate(), GetWrapper());
+  return base::BindOnce(
+      [](base::OnceClosure callback, v8::Global<v8::Value> ref) {
+        std::move(callback).Run();
+      },
+      std::move(callback), std::move(ref));
 }
 
 // static
 void Menu::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Menu"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
+  prototype->SetClassName(gin::StringToV8(isolate, "Menu"));
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
       .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)
@@ -212,6 +241,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
       .SetMethod("setIcon", &Menu::SetIcon)
       .SetMethod("setSublabel", &Menu::SetSublabel)
+      .SetMethod("setToolTip", &Menu::SetToolTip)
       .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
@@ -219,6 +249,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
       .SetMethod("getLabelAt", &Menu::GetLabelAt)
       .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
+      .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
       .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
@@ -243,7 +274,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   Menu::SetConstructor(isolate, base::BindRepeating(&Menu::New));
 
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.Set(
       "Menu",
       Menu::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());

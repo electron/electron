@@ -1,0 +1,33 @@
+// Copyright (c) 2019 Slack Technologies, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef SHELL_BROWSER_NETWORK_HINTS_HANDLER_IMPL_H_
+#define SHELL_BROWSER_NETWORK_HINTS_HANDLER_IMPL_H_
+
+#include "components/network_hints/browser/simple_network_hints_handler_impl.h"
+
+namespace content {
+class RenderFrameHost;
+}
+
+class NetworkHintsHandlerImpl
+    : public network_hints::SimpleNetworkHintsHandlerImpl {
+ public:
+  ~NetworkHintsHandlerImpl() override;
+
+  static void Create(
+      content::RenderFrameHost* frame_host,
+      mojo::PendingReceiver<network_hints::mojom::NetworkHintsHandler>
+          receiver);
+
+  // network_hints::mojom::NetworkHintsHandler:
+  void Preconnect(const GURL& url, bool allow_credentials) override;
+
+ private:
+  explicit NetworkHintsHandlerImpl(content::RenderFrameHost*);
+
+  content::RenderFrameHost* render_frame_host_ = nullptr;
+};
+
+#endif  // SHELL_BROWSER_NETWORK_HINTS_HANDLER_IMPL_H_

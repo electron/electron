@@ -16,6 +16,7 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Librari
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libswiftshader_libGLESv2.dylib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/Info.plist
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/MainMenu.nib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/am.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/am.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ar.lproj/
@@ -85,7 +86,6 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resourc
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/mr.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ms.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ms.lproj/locale.pak
-Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/natives_blob.bin
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/nb.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/nb.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/nl.lproj/
@@ -135,6 +135,12 @@ Electron.app/Contents/Frameworks/Electron Helper.app/Contents/Info.plist
 Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/
 Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper
 Electron.app/Contents/Frameworks/Electron Helper.app/Contents/PkgInfo
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/Info.plist
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/MacOS/
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/MacOS/Electron Helper (GPU)
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/PkgInfo
 Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/
 Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/
 Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/Info.plist

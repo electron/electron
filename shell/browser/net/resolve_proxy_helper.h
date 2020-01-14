@@ -10,7 +10,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "base/optional.h"
-#include "mojo/public/cpp/bindings/binding.h"
+#include "mojo/public/cpp/bindings/receiver.h"
 #include "services/network/public/mojom/proxy_lookup_client.mojom.h"
 #include "url/gurl.h"
 
@@ -61,8 +61,8 @@ class ResolveProxyHelper
   scoped_refptr<ResolveProxyHelper> owned_self_;
 
   std::deque<PendingRequest> pending_requests_;
-  // Binding for the currently in-progress request, if any.
-  mojo::Binding<network::mojom::ProxyLookupClient> binding_;
+  // Receiver for the currently in-progress request, if any.
+  mojo::Receiver<network::mojom::ProxyLookupClient> receiver_{this};
 
   // Weak Ref
   AtomBrowserContext* browser_context_;

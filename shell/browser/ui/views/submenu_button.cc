@@ -9,6 +9,7 @@
 
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "ui/accessibility/ax_enums.mojom.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/text_utils.h"
@@ -20,10 +21,11 @@
 namespace electron {
 
 SubmenuButton::SubmenuButton(const base::string16& title,
-                             views::MenuButtonListener* menu_button_listener,
+                             views::ButtonListener* button_listener,
                              const SkColor& background_color)
-    : views::MenuButton(gfx::RemoveAcceleratorChar(title, '&', NULL, NULL),
-                        menu_button_listener),
+    : views::MenuButton(
+          gfx::RemoveAcceleratorChar(title, '&', nullptr, nullptr),
+          button_listener),
       background_color_(background_color) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
@@ -40,7 +42,7 @@ SubmenuButton::SubmenuButton(const base::string16& title,
       color_utils::BlendTowardMaxContrast(background_color_, 0x81));
 }
 
-SubmenuButton::~SubmenuButton() {}
+SubmenuButton::~SubmenuButton() = default;
 
 std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
     const {

@@ -12,7 +12,6 @@
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/atom_permission_manager.h"
 #include "shell/browser/media/media_stream_devices_controller.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
 
 namespace {
 
@@ -62,7 +61,7 @@ WebContentsPermissionHelper::WebContentsPermissionHelper(
     content::WebContents* web_contents)
     : web_contents_(web_contents) {}
 
-WebContentsPermissionHelper::~WebContentsPermissionHelper() {}
+WebContentsPermissionHelper::~WebContentsPermissionHelper() = default;
 
 void WebContentsPermissionHelper::RequestPermission(
     content::PermissionType permission,

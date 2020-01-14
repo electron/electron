@@ -5,7 +5,7 @@
 Process: [Main](../glossary.md#main-process)
 
 `ClientRequest` implements the [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams)
-interface and is therefore an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
+interface and is therefore an [EventEmitter][event-emitter].
 
 ### `new ClientRequest(options)`
 
@@ -16,7 +16,7 @@ following properties:
 method.
   * `url` String (optional) - The request URL. Must be provided in the absolute
 form with the protocol scheme specified as http or https.
-  * `session` Object (optional) - The [`Session`](session.md) instance with
+  * `session` Session (optional) - The [`Session`](session.md) instance with
 which the request is associated.
   * `partition` String (optional) - The name of the [`partition`](session.md)
   with which the request is associated. Defaults to the empty string. The
@@ -32,8 +32,8 @@ the hostname and the port number 'hostname:port'.
   * `redirect` String (optional) - The redirect mode for this request. Should be
 one of `follow`, `error` or `manual`. Defaults to `follow`. When mode is `error`,
 any redirection will be aborted. When mode is `manual` the redirection will be
-deferred until [`request.followRedirect`](#requestfollowredirect) is invoked. Listen for the [`redirect`](#event-redirect) event in
-this mode to get more details about the redirect request.
+cancelled unless [`request.followRedirect`](#requestfollowredirect) is invoked
+synchronously during the [`redirect`](#event-redirect) event.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
 strictly follow the Node.js model as described in the
@@ -70,8 +70,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
-  * `username` String
-  * `password` String
+  * `username` String (optional)
+  * `password` String (optional)
 
 Emitted when an authenticating proxy is asking for user credentials.
 
@@ -134,10 +134,13 @@ Returns:
 * `statusCode` Integer
 * `method` String
 * `redirectUrl` String
-* `responseHeaders` Object
+* `responseHeaders` Record<String, String[]>
 
-Emitted when there is redirection and the mode is `manual`. Calling
-[`request.followRedirect`](#requestfollowredirect) will continue with the redirection.
+Emitted when the server returns a redirect response (e.g. 301 Moved
+Permanently). Calling [`request.followRedirect`](#requestfollowredirect) will
+continue with the redirection.  If this event is handled,
+[`request.followRedirect`](#requestfollowredirect) must be called
+**synchronously**, otherwise the request will be cancelled.
 
 ### Instance Properties
 
@@ -158,7 +161,7 @@ internally buffered inside Electron process memory.
 #### `request.setHeader(name, value)`
 
 * `name` String - An extra HTTP header name.
-* `value` Object - An extra HTTP header value.
+* `value` String - An extra HTTP header value.
 
 Adds an extra HTTP header. The header name will be issued as-is without
 lowercasing. It can be called only before first write. Calling this method after
@@ -169,7 +172,7 @@ the first write will throw an error. If the passed value is not a `String`, its
 
 * `name` String - Specify an extra header name.
 
-Returns `Object` - The value of a previously set extra header name.
+Returns `String` - The value of a previously set extra header name.
 
 #### `request.removeHeader(name)`
 
@@ -214,7 +217,8 @@ response object,it will emit the `aborted` event.
 
 #### `request.followRedirect()`
 
-Continues any deferred redirection request when the redirection mode is `manual`.
+Continues any pending redirection. Can only be called during a `'redirect'`
+event.
 
 #### `request.getUploadProgress()`
 
@@ -229,3 +233,5 @@ no other properties will be set
 
 You can use this method in conjunction with `POST` requests to get the progress
 of a file upload or other data transfer.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

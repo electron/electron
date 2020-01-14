@@ -6,6 +6,8 @@
 
 #include <utility>
 
+#include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/system/string_data_source.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
 namespace electron {
@@ -14,7 +16,7 @@ URLPipeLoader::URLPipeLoader(
     scoped_refptr<network::SharedURLLoaderFactory> factory,
     std::unique_ptr<network::ResourceRequest> request,
     network::mojom::URLLoaderRequest loader,
-    network::mojom::URLLoaderClientPtr client,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::NetworkTrafficAnnotationTag& annotation,
     base::DictionaryValue upload_data)
     : binding_(this, std::move(loader)),
@@ -58,7 +60,7 @@ void URLPipeLoader::NotifyComplete(int result) {
 
 void URLPipeLoader::OnResponseStarted(
     const GURL& final_url,
-    const network::ResourceResponseHead& response_head) {
+    const network::mojom::URLResponseHead& response_head) {
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
   MojoResult rv = mojo::CreateDataPipe(nullptr, &producer, &consumer);
@@ -67,10 +69,9 @@ void URLPipeLoader::OnResponseStarted(
     return;
   }
 
-  producer_ =
-      std::make_unique<mojo::StringDataPipeProducer>(std::move(producer));
+  producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
 
-  client_->OnReceiveResponse(response_head);
+  client_->OnReceiveResponse(response_head.Clone());
   client_->OnStartLoadingResponseBody(std::move(consumer));
 }
 
@@ -84,9 +85,9 @@ void URLPipeLoader::OnWrite(base::OnceClosure resume, MojoResult result) {
 void URLPipeLoader::OnDataReceived(base::StringPiece string_piece,
                                    base::OnceClosure resume) {
   producer_->Write(
-      string_piece,
-      mojo::StringDataPipeProducer::AsyncWritingMode::
-          STRING_STAYS_VALID_UNTIL_COMPLETION,
+      std::make_unique<mojo::StringDataSource>(
+          string_piece, mojo::StringDataSource::AsyncWritingMode::
+                            STRING_STAYS_VALID_UNTIL_COMPLETION),
       base::BindOnce(&URLPipeLoader::OnWrite, weak_factory_.GetWeakPtr(),
                      std::move(resume)));
 }

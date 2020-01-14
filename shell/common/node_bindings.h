@@ -19,6 +19,7 @@ class MessageLoop;
 namespace node {
 class Environment;
 class MultiIsolatePlatform;
+class IsolateData;
 }  // namespace node
 
 namespace electron {
@@ -34,7 +35,6 @@ class NodeBindings {
   static NodeBindings* Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinModules();
   static bool IsInitialized();
-  static base::FilePath::StringType GetHelperResourcesPath();
 
   virtual ~NodeBindings();
 
@@ -42,9 +42,9 @@ class NodeBindings {
   void Initialize();
 
   // Create the environment and load node.js.
-  node::Environment* CreateEnvironment(
-      v8::Handle<v8::Context> context,
-      node::MultiIsolatePlatform* platform = nullptr);
+  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
+                                       node::MultiIsolatePlatform* platform,
+                                       bool bootstrap_env);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);
@@ -54,6 +54,8 @@ class NodeBindings {
 
   // Do message loop integration.
   virtual void RunMessageLoop();
+
+  node::IsolateData* isolate_data() const { return isolate_data_; }
 
   // Gets/sets the environment to wrap uv loop.
   void set_uv_env(node::Environment* env) { uv_env_ = env; }
@@ -106,6 +108,9 @@ class NodeBindings {
 
   // Environment that to wrap the uv loop.
   node::Environment* uv_env_ = nullptr;
+
+  // Isolate data used in creating the environment
+  node::IsolateData* isolate_data_ = nullptr;
 
   base::WeakPtrFactory<NodeBindings> weak_factory_;
 

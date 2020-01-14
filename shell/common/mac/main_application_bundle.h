@@ -6,7 +6,11 @@
 #ifndef SHELL_COMMON_MAC_MAIN_APPLICATION_BUNDLE_H_
 #define SHELL_COMMON_MAC_MAIN_APPLICATION_BUNDLE_H_
 
+#ifdef __OBJC__
 @class NSBundle;
+#else
+struct NSBundle;
+#endif
 
 namespace base {
 class FilePath;

@@ -21,9 +21,22 @@ BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
 PLATFORM = {
   'cygwin': 'win32',
   'darwin': 'darwin',
+  'linux': 'linux',
   'linux2': 'linux',
   'win32': 'win32',
 }[sys.platform]
+
+LINUX_BINARIES = [
+  'electron',
+  'chrome-sandbox',
+  'crashpad_handler',
+  'libffmpeg.so',
+  'libGLESv2.so',
+  'libEGL.so',
+  'swiftshader/libGLESv2.so',
+  'swiftshader/libEGL.so',
+  'libvk_swiftshader.so'
+]
 
 verbose_mode = False
 

@@ -1,28 +1,25 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2019 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
 #include "shell/browser/api/atom_api_protocol.h"
 
-#include "base/command_line.h"
-#include "base/strings/string_util.h"
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include "base/stl_util.h"
 #include "content/public/browser/child_process_security_policy.h"
-#include "native_mate/dictionary.h"
-#include "shell/browser/atom_browser_client.h"
-#include "shell/browser/atom_browser_main_parts.h"
+#include "shell/browser/atom_browser_context.h"
 #include "shell/browser/browser.h"
-#include "shell/browser/net/url_request_async_asar_job.h"
-#include "shell/browser/net/url_request_buffer_job.h"
-#include "shell/browser/net/url_request_fetch_job.h"
-#include "shell/browser/net/url_request_stream_job.h"
-#include "shell/browser/net/url_request_string_job.h"
-#include "shell/common/native_mate_converters/callback.h"
-#include "shell/common/native_mate_converters/value_converter.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/deprecate_util.h"
+#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/options_switches.h"
 #include "url/url_util.h"
-
-using content::BrowserThread;
 
 namespace {
 
@@ -45,19 +42,19 @@ struct CustomScheme {
 
 }  // namespace
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<CustomScheme> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      CustomScheme* out) {
-    mate::Dictionary dict;
+    gin::Dictionary dict(isolate);
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
     if (!dict.Get("scheme", &(out->scheme)))
       return false;
-    mate::Dictionary opt;
+    gin::Dictionary opt(isolate);
     // options are optional. Default values specified in SchemeOptions are used
     if (dict.Get("privileges", &opt)) {
       opt.Get("standard", &(out->options.standard));
@@ -72,21 +69,20 @@ struct Converter<CustomScheme> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
-
 namespace api {
 
 std::vector<std::string> GetStandardSchemes() {
   return g_standard_schemes;
 }
 
-void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
-                                 mate::Arguments* args) {
+void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
+                                 v8::Local<v8::Value> val) {
   std::vector<CustomScheme> custom_schemes;
-  if (!mate::ConvertFromV8(args->isolate(), val, &custom_schemes)) {
-    args->ThrowError("Argument must be an array of custom schemes.");
+  if (!gin::ConvertFromV8(thrower.isolate(), val, &custom_schemes)) {
+    thrower.ThrowError("Argument must be an array of custom schemes.");
     return;
   }
 
@@ -140,101 +136,15 @@ void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
                          g_standard_schemes);
 }
 
-Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
-    : browser_context_(browser_context), weak_factory_(this) {
-  Init(isolate);
-}
+namespace {
 
-Protocol::~Protocol() {}
-void Protocol::UnregisterProtocol(const std::string& scheme,
-                                  mate::Arguments* args) {
-  CompletionCallback callback;
-  args->GetNext(&callback);
-  auto* getter = static_cast<URLRequestContextGetter*>(
-      browser_context_->GetRequestContext());
-  base::PostTaskWithTraitsAndReplyWithResult(
-      FROM_HERE, {content::BrowserThread::IO},
-      base::BindOnce(&Protocol::UnregisterProtocolInIO,
-                     base::RetainedRef(getter), scheme),
-      base::BindOnce(&Protocol::OnIOCompleted, GetWeakPtr(), callback));
-}
+const char* kBuiltinSchemes[] = {
+    "about", "file", "http", "https", "data", "filesystem",
+};
 
-// static
-Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
-    scoped_refptr<URLRequestContextGetter> request_context_getter,
-    const std::string& scheme) {
-  auto* job_factory = request_context_getter->job_factory();
-  if (!job_factory->HasProtocolHandler(scheme))
-    return ProtocolError::NOT_REGISTERED;
-  job_factory->SetProtocolHandler(scheme, nullptr);
-  return ProtocolError::OK;
-}
-
-bool IsProtocolHandledInIO(
-    scoped_refptr<URLRequestContextGetter> request_context_getter,
-    const std::string& scheme) {
-  bool is_handled =
-      request_context_getter->job_factory()->IsHandledProtocol(scheme);
-  return is_handled;
-}
-
-v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme) {
-  util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
-  auto* getter = static_cast<URLRequestContextGetter*>(
-      browser_context_->GetRequestContext());
-
-  base::PostTaskWithTraitsAndReplyWithResult(
-      FROM_HERE, {content::BrowserThread::IO},
-      base::BindOnce(&IsProtocolHandledInIO, base::RetainedRef(getter), scheme),
-      base::BindOnce(util::Promise::ResolvePromise<bool>, std::move(promise)));
-
-  return handle;
-}
-
-void Protocol::UninterceptProtocol(const std::string& scheme,
-                                   mate::Arguments* args) {
-  CompletionCallback callback;
-  args->GetNext(&callback);
-  auto* getter = static_cast<URLRequestContextGetter*>(
-      browser_context_->GetRequestContext());
-  base::PostTaskWithTraitsAndReplyWithResult(
-      FROM_HERE, {content::BrowserThread::IO},
-      base::BindOnce(&Protocol::UninterceptProtocolInIO,
-                     base::RetainedRef(getter), scheme),
-      base::BindOnce(&Protocol::OnIOCompleted, GetWeakPtr(), callback));
-}
-
-// static
-Protocol::ProtocolError Protocol::UninterceptProtocolInIO(
-    scoped_refptr<URLRequestContextGetter> request_context_getter,
-    const std::string& scheme) {
-  return request_context_getter->job_factory()->UninterceptProtocol(scheme)
-             ? ProtocolError::OK
-             : ProtocolError::NOT_INTERCEPTED;
-}
-
-void Protocol::OnIOCompleted(const CompletionCallback& callback,
-                             ProtocolError error) {
-  // The completion callback is optional.
-  if (callback.is_null())
-    return;
-
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-
-  if (error == ProtocolError::OK) {
-    callback.Run(v8::Null(isolate()));
-  } else {
-    std::string str = ErrorCodeToString(error);
-    callback.Run(v8::Exception::Error(mate::StringToV8(isolate(), str)));
-  }
-}
-
-std::string Protocol::ErrorCodeToString(ProtocolError error) {
+// Convert error code to string.
+std::string ErrorCodeToString(ProtocolError error) {
   switch (error) {
-    case ProtocolError::FAIL:
-      return "Failed to manipulate protocol factory";
     case ProtocolError::REGISTERED:
       return "The scheme has been registered";
     case ProtocolError::NOT_REGISTERED:
@@ -248,58 +158,158 @@ std::string Protocol::ErrorCodeToString(ProtocolError error) {
   }
 }
 
+}  // namespace
+
+Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context) {
+  Init(isolate);
+  AttachAsUserData(browser_context);
+}
+
+Protocol::~Protocol() = default;
+
+void Protocol::RegisterURLLoaderFactories(
+    content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
+  for (const auto& it : handlers_) {
+    factories->emplace(it.first, std::make_unique<AtomURLLoaderFactory>(
+                                     it.second.first, it.second.second));
+  }
+}
+
+ProtocolError Protocol::RegisterProtocol(ProtocolType type,
+                                         const std::string& scheme,
+                                         const ProtocolHandler& handler) {
+  const bool added = base::TryEmplace(handlers_, scheme, type, handler).second;
+  return added ? ProtocolError::OK : ProtocolError::REGISTERED;
+}
+
+void Protocol::UnregisterProtocol(const std::string& scheme,
+                                  gin::Arguments* args) {
+  const bool removed = handlers_.erase(scheme) != 0;
+  const auto error =
+      removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED;
+  HandleOptionalCallback(args, error);
+}
+
+bool Protocol::IsProtocolRegistered(const std::string& scheme) {
+  return base::Contains(handlers_, scheme);
+}
+
+ProtocolError Protocol::InterceptProtocol(ProtocolType type,
+                                          const std::string& scheme,
+                                          const ProtocolHandler& handler) {
+  const bool added =
+      base::TryEmplace(intercept_handlers_, scheme, type, handler).second;
+  return added ? ProtocolError::OK : ProtocolError::INTERCEPTED;
+}
+
+void Protocol::UninterceptProtocol(const std::string& scheme,
+                                   gin::Arguments* args) {
+  const bool removed = intercept_handlers_.erase(scheme) != 0;
+  const auto error =
+      removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED;
+  HandleOptionalCallback(args, error);
+}
+
+bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
+  return base::Contains(intercept_handlers_, scheme);
+}
+
+v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
+                                                   gin::Arguments* args) {
+  node::Environment* env = node::Environment::GetCurrent(args->isolate());
+  EmitDeprecationWarning(
+      env,
+      "The protocol.isProtocolHandled API is deprecated, use "
+      "protocol.isProtocolRegistered or protocol.isProtocolIntercepted "
+      "instead.",
+      "ProtocolDeprecateIsProtocolHandled");
+  return gin_helper::Promise<bool>::ResolvedPromise(
+      isolate(), IsProtocolRegistered(scheme) ||
+                     IsProtocolIntercepted(scheme) ||
+                     // The |isProtocolHandled| should return true for builtin
+                     // schemes, however with NetworkService it is impossible to
+                     // know which schemes are registered until a real network
+                     // request is sent.
+                     // So we have to test against a hard-coded builtin schemes
+                     // list make it work with old code. We should deprecate
+                     // this API with the new |isProtocolRegistered| API.
+                     base::Contains(kBuiltinSchemes, scheme));
+}
+
+void Protocol::HandleOptionalCallback(gin::Arguments* args,
+                                      ProtocolError error) {
+  CompletionCallback callback;
+  if (args->GetNext(&callback)) {
+    node::Environment* env = node::Environment::GetCurrent(args->isolate());
+    EmitDeprecationWarning(
+        env,
+        "The callback argument of protocol module APIs is no longer needed.",
+        "ProtocolDeprecateCallback");
+    if (error == ProtocolError::OK)
+      callback.Run(v8::Null(args->isolate()));
+    else
+      callback.Run(v8::Exception::Error(
+          gin::StringToV8(isolate(), ErrorCodeToString(error))));
+  }
+}
+
 // static
-mate::Handle<Protocol> Protocol::Create(v8::Isolate* isolate,
-                                        AtomBrowserContext* browser_context) {
-  return mate::CreateHandle(isolate, new Protocol(isolate, browser_context));
+gin::Handle<Protocol> Protocol::Create(v8::Isolate* isolate,
+                                       AtomBrowserContext* browser_context) {
+  return gin::CreateHandle(isolate, new Protocol(isolate, browser_context));
 }
 
 // static
 void Protocol::BuildPrototype(v8::Isolate* isolate,
                               v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Protocol"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin::StringToV8(isolate, "Protocol"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("registerStringProtocol",
-                 &Protocol::RegisterProtocol<URLRequestStringJob>)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kString>)
       .SetMethod("registerBufferProtocol",
-                 &Protocol::RegisterProtocol<URLRequestBufferJob>)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kBuffer>)
       .SetMethod("registerFileProtocol",
-                 &Protocol::RegisterProtocol<URLRequestAsyncAsarJob>)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kFile>)
       .SetMethod("registerHttpProtocol",
-                 &Protocol::RegisterProtocol<URLRequestFetchJob>)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kHttp>)
       .SetMethod("registerStreamProtocol",
-                 &Protocol::RegisterProtocol<URLRequestStreamJob>)
+                 &Protocol::RegisterProtocolFor<ProtocolType::kStream>)
+      .SetMethod("registerProtocol",
+                 &Protocol::RegisterProtocolFor<ProtocolType::kFree>)
       .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
+      .SetMethod("isProtocolRegistered", &Protocol::IsProtocolRegistered)
       .SetMethod("isProtocolHandled", &Protocol::IsProtocolHandled)
       .SetMethod("interceptStringProtocol",
-                 &Protocol::InterceptProtocol<URLRequestStringJob>)
+                 &Protocol::InterceptProtocolFor<ProtocolType::kString>)
       .SetMethod("interceptBufferProtocol",
-                 &Protocol::InterceptProtocol<URLRequestBufferJob>)
+                 &Protocol::InterceptProtocolFor<ProtocolType::kBuffer>)
       .SetMethod("interceptFileProtocol",
-                 &Protocol::InterceptProtocol<URLRequestAsyncAsarJob>)
+                 &Protocol::InterceptProtocolFor<ProtocolType::kFile>)
       .SetMethod("interceptHttpProtocol",
-                 &Protocol::InterceptProtocol<URLRequestFetchJob>)
+                 &Protocol::InterceptProtocolFor<ProtocolType::kHttp>)
       .SetMethod("interceptStreamProtocol",
-                 &Protocol::InterceptProtocol<URLRequestStreamJob>)
-      .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol);
+                 &Protocol::InterceptProtocolFor<ProtocolType::kStream>)
+      .SetMethod("interceptProtocol",
+                 &Protocol::InterceptProtocolFor<ProtocolType::kFree>)
+      .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol)
+      .SetMethod("isProtocolIntercepted", &Protocol::IsProtocolIntercepted);
 }
 
 }  // namespace api
-
 }  // namespace electron
 
 namespace {
 
-void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
-                                 mate::Arguments* args) {
+void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
+                                 v8::Local<v8::Value> val) {
   if (electron::Browser::Get()->is_ready()) {
-    args->ThrowError(
+    thrower.ThrowError(
         "protocol.registerSchemesAsPrivileged should be called before "
         "app is ready");
     return;
   }
 
-  electron::api::RegisterSchemesAsPrivileged(val, args);
+  electron::api::RegisterSchemesAsPrivileged(thrower, val);
 }
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -307,7 +317,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
   dict.SetMethod("getStandardSchemes", &electron::api::GetStandardSchemes);
 }

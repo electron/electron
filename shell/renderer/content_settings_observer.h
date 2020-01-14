@@ -20,7 +20,7 @@ class ContentSettingsObserver : public content::RenderFrameObserver,
   // blink::WebContentSettingsClient implementation.
   bool AllowDatabase() override;
   bool AllowStorage(bool local) override;
-  bool AllowIndexedDB(const blink::WebSecurityOrigin& security_origin) override;
+  bool AllowIndexedDB() override;
 
  private:
   // content::RenderFrameObserver implementation.

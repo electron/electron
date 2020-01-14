@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index f1e287553244cfd1054c4949ffbb1acdaccbe1e2..94cbca68cedc314d55993375bc48159c9a9bfb3d 100644
+index 342db7adee575cc49a38bbdfcf1bbfcc0e30cf57..fc8e6b49d96534546dfa97846c2be79cff8a96e5 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -10,7 +10,9 @@
@@ -19,7 +19,7 @@ index f1e287553244cfd1054c4949ffbb1acdaccbe1e2..94cbca68cedc314d55993375bc48159c
  #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
  #include "content/public/browser/browser_thread.h"
  #include "mojo/public/cpp/bindings/associated_interface_ptr.h"
-@@ -19,12 +21,13 @@
+@@ -21,12 +23,13 @@
  #include "chrome/browser/chromeos/profiles/profile_helper.h"
  #endif  // defined(OS_CHROMEOS)
  
@@ -34,7 +34,7 @@ index f1e287553244cfd1054c4949ffbb1acdaccbe1e2..94cbca68cedc314d55993375bc48159c
  ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    DCHECK(profile);
-@@ -54,6 +57,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+@@ -56,6 +59,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
  
    proxy_config_service_->AddObserver(this);
  }
@@ -67,7 +67,7 @@ index f1e287553244cfd1054c4949ffbb1acdaccbe1e2..94cbca68cedc314d55993375bc48159c
  }
  #endif
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index 0f20947c7819c3be2086a69f5997412652a99915..a88a1e001a4c1b8d7bafdac74fb060a1ee30361d 100644
+index abffb6dbdbf730e2cc4423eaca6a9a8a9f8af582..7fe1badcdebebce9028825ac98d7ab6cfa65dcdd 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
 @@ -40,11 +40,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
@@ -84,11 +84,12 @@ index 0f20947c7819c3be2086a69f5997412652a99915..a88a1e001a4c1b8d7bafdac74fb060a1
    // Creates a ProxyConfigMonitor that gets proxy settings from the
    // |local_state|, for use with NetworkContexts not
    // associated with a profile. Must be destroyed before |local_state|.
-@@ -91,7 +92,6 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+@@ -91,7 +92,7 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
  #if BUILDFLAG(ENABLE_EXTENSIONS)
-   mojo::BindingSet<network::mojom::ProxyErrorClient> error_binding_set_;
+   mojo::ReceiverSet<network::mojom::ProxyErrorClient> error_receiver_set_;
 -  Profile* profile_ = nullptr;
++  // Profile* profile_ = nullptr;
  #endif
  
    DISALLOW_COPY_AND_ASSIGN(ProxyConfigMonitor);

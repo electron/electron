@@ -1,0 +1,55 @@
+import("//build/toolchain/toolchain.gni")
+
+# Extracts symbols from a binary into a symbol file using dump_syms.
+#
+# Args:
+#   binary: Path to the binary containing symbols to extract, e.g.:
+#       "$root_out_dir/electron"
+#   symbol_dir: Desired output directory for symbols, e.g.:
+#       "$root_out_dir/breakpad_symbols"
+
+if (host_os == "win") {
+  _host_executable_suffix = ".exe"
+} else {
+  _host_executable_suffix = ""
+}
+
+template("extract_symbols") {
+  action(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "testonly",
+                           ])
+    assert(defined(invoker.binary), "Need binary to dump")
+    assert(defined(invoker.symbol_dir), "Need directory for symbol output")
+
+    dump_syms_label = "//third_party/breakpad:dump_syms($host_toolchain)"
+    dump_syms_binary = get_label_info(dump_syms_label, "root_out_dir") +
+                       "/dump_syms$_host_executable_suffix"
+
+    script = "//electron/build/dump_syms.py"
+    inputs = [
+      invoker.binary,
+      dump_syms_binary,
+    ]
+    stamp_file = "${target_gen_dir}/${target_name}.stamp"
+    outputs = [
+      stamp_file,
+    ]
+    args = [
+      "./" + rebase_path(dump_syms_binary, root_build_dir),
+      rebase_path(invoker.binary, root_build_dir),
+      rebase_path(invoker.symbol_dir, root_build_dir),
+      rebase_path(stamp_file, root_build_dir),
+    ]
+    if (defined(invoker.dsym_file)) {
+      args += [ rebase_path(invoker.dsym_file, root_build_dir) ]
+    }
+
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [ dump_syms_label ]
+  }
+}

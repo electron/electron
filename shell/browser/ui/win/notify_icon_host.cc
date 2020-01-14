@@ -146,15 +146,15 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
       return TRUE;
 
     switch (lparam) {
-      case TB_CHECKBUTTON:
+      case NIN_BALLOONSHOW:
         win_icon->NotifyBalloonShow();
         return TRUE;
 
-      case TB_INDETERMINATE:
+      case NIN_BALLOONUSERCLICK:
         win_icon->NotifyBalloonClicked();
         return TRUE;
 
-      case TB_HIDEBUTTON:
+      case NIN_BALLOONTIMEOUT:
         win_icon->NotifyBalloonClosed();
         return TRUE;
 
@@ -169,6 +169,10 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
             GetKeyboardModifers(),
             (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
             (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK));
+        return TRUE;
+
+      case WM_MOUSEMOVE:
+        win_icon->HandleMouseMoveEvent(GetKeyboardModifers());
         return TRUE;
     }
   }

@@ -57,7 +57,6 @@ webFrame.setZoomLevel(200)
 console.log(webFrame.getZoomLevel())
 
 webFrame.setVisualZoomLevelLimits(50, 200)
-webFrame.setLayoutZoomLevelLimits(50, 200)
 
 webFrame.setSpellCheckProvider('en-US', {
   spellCheck (words, callback) {
@@ -257,7 +256,6 @@ webview.capturePage().then(image => { console.log(image) })
 {
   const opened: boolean = webview.isDevToolsOpened()
   const focused: boolean = webview.isDevToolsFocused()
-  const focused2: boolean = webview.getWebContents().isFocused()
 }
 
 // In guest page.

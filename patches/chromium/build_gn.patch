@@ -3,9 +3,18 @@ From: Ales Pergl <alpergl@microsoft.com>
 Date: Thu, 20 Sep 2018 17:44:29 -0700
 Subject: build_gn.patch
 
+These are variables we add to the root BUILDCONFIG so that they're available
+everywhere, without having to import("//electron/.../flags.gni").
+
+Additionally, we add the `:mas_build` config to every compiled file so that
+the `MAS_BUILD` #define is available everywhere. This produces fewer patch
+conflicts when upgrading than it would if we added a specific config dependency
+only to those targets which had MAS_BUILD-relevant content in them. The
+tradeoff is that switching from MAS_BUILD to !MAS_BUILD or vice-versa will
+rebuild the entire tree.
 
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 7063da0f26c5691f01214c2dc014128d7c8c5e09..b45c5adade6f68d5ba90ddbdf39755b53431b6f6 100644
+index f89e7e831b79f82bd11a5dd8cee6ab49d8de724e..f8a611bf0676ce323cdbb5d639333df9875dd0ca 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -123,6 +123,9 @@ if (current_os == "") {
@@ -18,8 +27,8 @@ index 7063da0f26c5691f01214c2dc014128d7c8c5e09..b45c5adade6f68d5ba90ddbdf39755b5
    # Set to enable the official build level of optimization. This has nothing
    # to do with branding, but enables an additional level of optimization above
    # release (!is_debug). This might be better expressed as a tri-state
-@@ -437,6 +440,7 @@ default_compiler_configs = [
-   "//build/config/compiler:thin_archive",
+@@ -438,6 +441,7 @@ default_compiler_configs = [
+   "//build/config/compiler:default_init_stack_vars",
    "//build/config/coverage:default_coverage",
    "//build/config/sanitizers:default_sanitizer_flags",
 +  "//electron/build/config:mas_build",

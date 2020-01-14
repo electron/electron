@@ -56,13 +56,6 @@ Sets the maximum and minimum pinch-to-zoom level.
 > webFrame.setVisualZoomLevelLimits(1, 3)
 > ```
 
-### `webFrame.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
-
-* `minimumLevel` Number
-* `maximumLevel` Number
-
-Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
-
 ### `webFrame.setSpellCheckProvider(language, provider)`
 
 * `language` String
@@ -73,6 +66,17 @@ Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
       * `misspeltWords` String[]
 
 Sets a provider for spell checking in input fields and text areas.
+
+If you want to use this method you must disable the builtin spellchecker when you
+construct the window.
+
+```js
+const mainWindow = new BrowserWindow({
+  webPreferences: {
+    spellcheck: false
+  }
+})
+```
 
 The `provider` must be an object that has a `spellCheck` method that accepts
 an array of individual words for spellchecking.
@@ -228,35 +232,35 @@ Returns `WebFrame` - that has the supplied `routingId`, `null` if not found.
 
 ## Properties
 
-### `webFrame.top`
+### `webFrame.top` _Readonly_
 
-A `WebFrame` representing top frame in frame hierarchy to which `webFrame`
+A `WebFrame | null` representing top frame in frame hierarchy to which `webFrame`
 belongs, the property would be `null` if top frame is not in the current
 renderer process.
 
-### `webFrame.opener`
+### `webFrame.opener` _Readonly_
 
-A `WebFrame` representing the frame which opened `webFrame`, the property would
+A `WebFrame | null` representing the frame which opened `webFrame`, the property would
 be `null` if there's no opener or opener is not in the current renderer process.
 
-### `webFrame.parent`
+### `webFrame.parent` _Readonly_
 
-A `WebFrame` representing parent frame of `webFrame`, the property would be
+A `WebFrame | null` representing parent frame of `webFrame`, the property would be
 `null` if `webFrame` is top or parent is not in the current renderer process.
 
-### `webFrame.firstChild`
+### `webFrame.firstChild` _Readonly_
 
-A `WebFrame` representing the first child frame of `webFrame`, the property
+A `WebFrame | null` representing the first child frame of `webFrame`, the property
 would be `null` if `webFrame` has no children or if first child is not in the
 current renderer process.
 
-### `webFrame.nextSibling`
+### `webFrame.nextSibling` _Readonly_
 
-A `WebFrame` representing next sibling frame, the property would be `null` if
+A `WebFrame | null` representing next sibling frame, the property would be `null` if
 `webFrame` is the last frame in its parent or if the next sibling is not in the
 current renderer process.
 
-### `webFrame.routingId`
+### `webFrame.routingId` _Readonly_
 
 An `Integer` representing the unique frame id in the current renderer process.
 Distinct WebFrame instances that refer to the same underlying frame will have

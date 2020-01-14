@@ -1,6 +1,6 @@
 <html>
 <body>
-<webview nodeintegration src="zoom://host1" id="view" partition="webview-temp"/>
+<webview nodeintegration src="app://host1" id="view" partition="webview-temp"/>
 </body>
 <script>
   const {ipcRenderer} = require('electron')
@@ -8,7 +8,7 @@
   const view2 = document.createElement('webview')
   view.addEventListener('dom-ready', () => {
     view.setZoomLevel(2.0)
-    view2.src = "zoom://host1"
+    view2.src = "app://host1"
     view2.partition = "webview-temp"
     document.body.appendChild(view2)
   })

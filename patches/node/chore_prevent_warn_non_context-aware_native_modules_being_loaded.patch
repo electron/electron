@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 22 May 2019 13:34:18 -0700
+Subject: chore: prevent / warn non context-aware native modules being loaded
+
+This should be updated to take advantage of https://github.com/nodejs/node/pull/29631
+once we stop warning and begin to unilaterally prevent non-context aware modules
+from being loaded.
+
+diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
+index e7bd18855fb98a822833b4366bfb595dccfc1b6f..a96f891f675cc598e912a5e010c24938a9f6fc98 100644
+--- a/lib/internal/bootstrap/pre_execution.js
++++ b/lib/internal/bootstrap/pre_execution.js
+@@ -80,8 +80,10 @@ function patchProcessObject(expandArgv1) {
+ 
+   if (expandArgv1 && process.argv[1] && !process.argv[1].startsWith('-')) {
+     // Expand process.argv[1] into a full path.
++    if (!process.argv[1] || !process.argv[1].startsWith('electron/js2c')) {
+     const path = require('path');
+     process.argv[1] = path.resolve(process.argv[1]);
++    }
+   }
+ 
+   // TODO(joyeecheung): most of these should be deprecated and removed,
+diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
+index 2fddd3766ffb28dc9176ed1b7a4b01361dd72fcd..c14cbe0279bbce98ea875bc3487996da679b4f40 100644
+--- a/lib/internal/modules/cjs/loader.js
++++ b/lib/internal/modules/cjs/loader.js
+@@ -932,6 +932,13 @@ Module.prototype._compile = function(content, filename) {
+   if (getOptionValue('--inspect-brk') && process._eval == null) {
+     if (!resolvedArgv) {
+       // We enter the repl if we're not given a filename argument.
++      // process._firstFileName is used by Embedders to tell node what
++      // the first "real" file is when they use themselves as the entry
++      // point
++      if (process._firstFileName) {
++        resolvedArgv = process._firstFileName
++        delete process._firstFileName
++      } else
+       if (process.argv[1]) {
+         resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
+       } else {
+diff --git a/src/env.h b/src/env.h
+index 60cb1b6d113e7e0687d96806f8940b5a715144cf..eef7b7bc244b4231419b4ec3013fa1cf700c97ef 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -914,6 +914,15 @@ class Environment : public MemoryRetainer {
+               uint64_t thread_id = kNoThreadId);
+   ~Environment();
+ 
++  void ForceOnlyContextAwareNativeModules() {
++    force_context_aware_ = true;
++  }
++  void WarnNonContextAwareNativeModules() {
++    warn_non_context_aware_ = true;
++  }
++  bool force_context_aware() { return force_context_aware_; }
++  bool warn_non_context_aware() { return warn_non_context_aware_; }
++
+   void InitializeLibuv(bool start_profiler_idle_notifier);
+   inline const std::vector<std::string>& exec_argv();
+   inline const std::vector<std::string>& argv();
+@@ -1268,6 +1277,9 @@ class Environment : public MemoryRetainer {
+   inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
+                          const char* errmsg);
+ 
++  bool force_context_aware_ = false;
++  bool warn_non_context_aware_ = false;
++
+   std::list<binding::DLib> loaded_addons_;
+   v8::Isolate* const isolate_;
+   IsolateData* const isolate_data_;
+diff --git a/src/node_binding.cc b/src/node_binding.cc
+index 4adb4b893925b1b0ebf6ba41040121438db56d1f..7c1dfaf06f1c7a08d9301d6d1837fa008b076cbd 100644
+--- a/src/node_binding.cc
++++ b/src/node_binding.cc
+@@ -3,6 +3,7 @@
+ #include <atomic>
+ #include "env-inl.h"
+ #include "node_native_module_env.h"
++#include "node_process.h"
+ #include "util.h"
+ 
+ #if HAVE_OPENSSL
+@@ -466,10 +467,12 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+ 
+     if (mp != nullptr) {
+       if (mp->nm_context_register_func == nullptr) {
+-        if (env->options()->force_context_aware) {
++        if (env->force_context_aware()) {
+           dlib->Close();
+-          THROW_ERR_NON_CONTEXT_AWARE_DISABLED(env);
++          env->ThrowError("Loading non context-aware native modules has been disabled in this process.  This means you have loaded a non context-aware native module with app.allowRendererProcessReuse set to true. See https://github.com/electron/electron/issues/18397 for more information");
+           return false;
++        } else if (env->warn_non_context_aware()) {
++          ProcessEmitWarningGeneric(env, "Loading non context-aware native modules in the renderer process is deprecated and will stop working at some point in the future, please see https://github.com/electron/electron/issues/18397 for more information", "Electron");
+         }
+       }
+       mp->nm_dso_handle = dlib->handle_;

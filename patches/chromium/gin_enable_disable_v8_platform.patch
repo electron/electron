@@ -3,12 +3,14 @@ From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:47:44 -0700
 Subject: gin_enable_disable_v8_platform.patch
 
+We don't use gin to create the V8 platform, because we need to inject Node
+things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 5f8aea7105a188846fd48d199bb4e0ca2017a0ab..2514f591208372d6654ff9c5be50a51a39a881cb 100644
+index ee74e6ea92c64d0e95a4988557b236667f5b7e42..c3ae4c6221686479d05800c51d17d581c095e397 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -98,9 +98,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -103,9 +103,10 @@ IsolateHolder::~IsolateHolder() {
  // static
  void IsolateHolder::Initialize(ScriptMode mode,
                                 v8::ArrayBuffer::Allocator* allocator,
@@ -22,10 +24,10 @@ index 5f8aea7105a188846fd48d199bb4e0ca2017a0ab..2514f591208372d6654ff9c5be50a51a
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 413e6c5bcc74cd01730c5d4dc66eb92aaf7df8de..6c5d101fef97e880bee20d2f76e4b339a624eb6f 100644
+index f23af2d9738f3aa76e3a49301e1c3216ee4a64b4..ede178acabc63c3c33d6ce93efd5632bec50ba89 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -91,7 +91,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -88,7 +88,8 @@ class GIN_EXPORT IsolateHolder {
    // reference pointers. Otherwise, it can be nullptr.
    static void Initialize(ScriptMode mode,
                           v8::ArrayBuffer::Allocator* allocator,
@@ -36,10 +38,10 @@ index 413e6c5bcc74cd01730c5d4dc66eb92aaf7df8de..6c5d101fef97e880bee20d2f76e4b339
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index aab46a000c5e9081440298ecef4844ead7a40b28..2cee8dee3f70148570613dc17827da19b193ff62 100644
+index 48bd647dcf7ecd121cd250bec1f7c2fc093a03fb..02468b82e0e304a76b9653c511ed0697dfd9b5f7 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -204,12 +204,14 @@ enum LoadV8FileResult {
+@@ -190,12 +190,14 @@ enum LoadV8FileResult {
  }  // namespace
  
  // static
@@ -57,7 +59,7 @@ index aab46a000c5e9081440298ecef4844ead7a40b28..2cee8dee3f70148570613dc17827da19
    if (!base::FeatureList::IsEnabled(features::kV8OptimizeJavascript)) {
      // We avoid explicitly passing --opt if kV8OptimizeJavascript is enabled
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index aa3863abe0ea71fc26222564425f54ff80077719..fbf84c00174cc081d71aff8a16d51d2211614ec7 100644
+index 2918c6235688ee4eb7c43387296e6d24145c14aa..069c2c96d5067f0444dac3c6ce6d83f75e770129 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
 @@ -20,7 +20,8 @@ namespace gin {

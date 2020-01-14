@@ -13,15 +13,12 @@
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "ipc/ipc_message_macros.h"
-#include "native_mate/dictionary.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
-#include "shell/common/api/event_emitter_caller.h"
-#include "shell/common/native_mate_converters/value_converter.h"
-#include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
@@ -36,14 +33,12 @@ namespace electron {
 
 namespace {
 
-base::StringPiece NetResourceProvider(int key) {
+scoped_refptr<base::RefCountedMemory> NetResourceProvider(int key) {
   if (key == IDR_DIR_HEADER_HTML) {
-    base::StringPiece html_data =
-        ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
-            IDR_DIR_HEADER_HTML);
-    return html_data;
+    return ui::ResourceBundle::GetSharedInstance().LoadDataResourceBytes(
+        IDR_DIR_HEADER_HTML);
   }
-  return base::StringPiece();
+  return nullptr;
 }
 
 }  // namespace
@@ -68,27 +63,39 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
   bool use_context_isolation = renderer_client_->isolated_world();
+  // This logic matches the EXPLAINED logic in atom_renderer_client.cc
+  // to avoid explaining it twice go check that implementation in
+  // DidCreateScriptContext();
   bool is_main_world = IsMainWorld(world_id);
   bool is_main_frame = render_frame_->IsMainFrame();
-  bool is_not_opened = !render_frame_->GetWebFrame()->Opener();
+  bool reuse_renderer_processes_enabled =
+      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides);
+  bool is_not_opened =
+      !render_frame_->GetWebFrame()->Opener() ||
+      command_line->HasSwitch(switches::kEnableNodeLeakageInRenderers);
   bool allow_node_in_sub_frames =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames);
+      command_line->HasSwitch(switches::kNodeIntegrationInSubFrames);
   bool should_create_isolated_context =
       use_context_isolation && is_main_world &&
-      (is_main_frame || allow_node_in_sub_frames) && is_not_opened;
+      (is_main_frame || allow_node_in_sub_frames) &&
+      (is_not_opened || reuse_renderer_processes_enabled);
 
   if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
-    renderer_client_->SetupMainWorldOverrides(context, render_frame_);
+    if (!renderer_client_->IsWebViewFrame(context, render_frame_))
+      renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
 
+#if !BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (world_id >= World::ISOLATED_WORLD_EXTENSIONS &&
       world_id <= World::ISOLATED_WORLD_EXTENSIONS_END) {
     renderer_client_->SetupExtensionWorldOverrides(context, render_frame_,
                                                    world_id);
   }
+#endif
 }
 
 void AtomRenderFrameObserver::DraggableRegionsChanged() {
@@ -97,8 +104,7 @@ void AtomRenderFrameObserver::DraggableRegionsChanged() {
   std::vector<mojom::DraggableRegionPtr> regions;
   for (auto& webregion : webregions) {
     auto region = mojom::DraggableRegion::New();
-    render_frame_->GetRenderView()->ConvertViewportToWindowViaWidget(
-        &webregion.bounds);
+    render_frame_->ConvertViewportToWindow(&webregion.bounds);
     region->bounds = webregion.bounds;
     region->draggable = webregion.draggable;
     regions.push_back(std::move(region));

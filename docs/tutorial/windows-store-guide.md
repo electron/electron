@@ -48,7 +48,7 @@ any module you don't actually need will increase your application's size.
 
 The output should look roughly like this:
 
-```text
+```plaintext
 ├── Ghost.exe
 ├── LICENSE
 ├── content_resources_200_percent.pak
@@ -62,7 +62,6 @@ The output should look roughly like this:
 │   ├── am.pak
 │   ├── ar.pak
 │   ├── [...]
-├── natives_blob.bin
 ├── node.dll
 ├── resources
 │   ├── app
@@ -152,7 +151,7 @@ Once installation succeeded, you can move on to compiling your Electron app.
 [windows-sdk]: https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk
 [app-converter]: https://docs.microsoft.com/en-us/windows/uwp/porting/desktop-to-uwp-run-desktop-app-converter
 [add-appxpackage]: https://technet.microsoft.com/en-us/library/hh856048.aspx
-[electron-packager]: https://github.com/electron-userland/electron-packager
+[electron-packager]: https://github.com/electron/electron-packager
 [electron-windows-store]: https://github.com/catalystcode/electron-windows-store
 [background-task]: https://github.com/felixrieseberg/electron-uwp-background
 [centennial-campaigns]: https://developer.microsoft.com/en-us/windows/projects/campaigns/desktop-bridge

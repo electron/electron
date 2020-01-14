@@ -266,7 +266,7 @@ Electron uses following cryptographic algorithms:
 [enable-app-sandbox]: https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html
 [create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
 [electron-osx-sign]: https://github.com/electron-userland/electron-osx-sign
-[electron-packager]: https://github.com/electron-userland/electron-packager
+[electron-packager]: https://github.com/electron/electron-packager
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
 [export-compliance]: https://help.apple.com/app-store-connect/#/devc3f64248f

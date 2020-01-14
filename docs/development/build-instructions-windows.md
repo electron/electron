@@ -5,8 +5,14 @@ Follow the guidelines below for building Electron on Windows.
 ## Prerequisites
 
 * Windows 10 / Server 2012 R2 or higher
-* Visual Studio 2017 15.7.2 or higher - [download VS 2017 Community Edition for
+* Visual Studio 2017 15.7.2 or higher - [download VS 2019 Community Edition for
   free](https://www.visualstudio.com/vs/)
+  * See [the Chromium build documentation](https://chromium.googlesource.com/chromium/src/+/master/docs/windows_build_instructions.md#visual-studio) for more details on which Visual Studio
+  components are required.
+  * If your Visual Studio is installed in a directory other than the default, you'll need to
+  set a few environment variables to point the toolchains to your installation path.
+    * `vs2019_install = DRIVE:\path\to\Microsoft Visual Studio\2019\Community`, replacing `2019` and `Community` with your installed versions and replacing `DRIVE:` with the drive that Visual Studio is on. Often, this will be `C:`.
+    * `WINDOWSSDKDIR = DRIVE:\path\to\Windows Kits\10`, replacing `DRIVE:` with the drive that Windows Kits is on. Often, this will be `C:`.
 * [Python 2.7.10 or higher](http://www.python.org/download/releases/2.7/)
   * Contrary to the `depot_tools` setup instructions linked below, you will need
   to use your locally installed Python with at least version 2.7.10 (with
@@ -67,7 +73,7 @@ To generate a Visual Studio project, you can pass the `--ide=vs2017` parameter
 to `gn gen`:
 
 ```powershell
-$ gn gen out/Debug --ide=vs2017
+$ gn gen out/Testing --ide=vs2017
 ```
 
 ## Troubleshooting
@@ -113,3 +119,10 @@ This can happen during build, when Debugging Tools for Windows has been installe
 ### ImportError: No module named win32file
 
 Make sure you have installed `pywin32` with `pip install pywin32`.
+
+### Build Scripts Hang Until Keypress
+
+This bug is a "feature" of Windows' command prompt. It happens when clicking inside the prompt window with
+`QuickEdit` enabled and is intended to allow selecting and copying output text easily.
+Since each accidental click will pause the build process, you might want to disable this
+feature in the command prompt properties.

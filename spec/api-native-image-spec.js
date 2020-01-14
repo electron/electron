@@ -1,12 +1,8 @@
 'use strict'
 
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+const { expect } = require('chai')
 const { nativeImage } = require('electron')
 const path = require('path')
-
-const { expect } = chai
-chai.use(dirtyChai)
 
 describe('nativeImage module', () => {
   const ImageFormat = {

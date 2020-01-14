@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "base/memory/ref_counted_memory.h"
 #include "base/strings/string_util.h"
@@ -54,28 +55,28 @@ std::string GetMimeTypeForPath(const std::string& path) {
 
 class BundledDataSource : public content::URLDataSource {
  public:
-  BundledDataSource() {}
-  ~BundledDataSource() override {}
+  BundledDataSource() = default;
+  ~BundledDataSource() override = default;
 
   // content::URLDataSource implementation.
   std::string GetSource() override { return kChromeUIDevToolsHost; }
 
-  void StartDataRequest(
-      const std::string& path,
-      const content::ResourceRequestInfo::WebContentsGetter& wc_getter,
-      const GotDataCallback& callback) override {
+  void StartDataRequest(const GURL& url,
+                        const content::WebContents::Getter& wc_getter,
+                        GotDataCallback callback) override {
+    const std::string path = content::URLDataSource::URLToRequestPath(url);
     // Serve request from local bundle.
     std::string bundled_path_prefix(kChromeUIDevToolsBundledPath);
     bundled_path_prefix += "/";
     if (base::StartsWith(path, bundled_path_prefix,
                          base::CompareCase::INSENSITIVE_ASCII)) {
       StartBundledDataRequest(path.substr(bundled_path_prefix.length()),
-                              callback);
+                              std::move(callback));
       return;
     }
 
     // We do not handle remote and custom requests.
-    callback.Run(nullptr);
+    std::move(callback).Run(nullptr);
   }
 
   std::string GetMimeType(const std::string& path) override {
@@ -89,18 +90,16 @@ class BundledDataSource : public content::URLDataSource {
   bool ShouldServeMimeTypeAsContentTypeHeader() override { return true; }
 
   void StartBundledDataRequest(const std::string& path,
-                               const GotDataCallback& callback) {
+                               GotDataCallback callback) {
     std::string filename = PathWithoutParams(path);
-    base::StringPiece resource =
-        content::DevToolsFrontendHost::GetFrontendResource(filename);
+    scoped_refptr<base::RefCountedMemory> bytes =
+        content::DevToolsFrontendHost::GetFrontendResourceBytes(filename);
 
-    DLOG_IF(WARNING, resource.empty())
+    DLOG_IF(WARNING, !bytes)
         << "Unable to find dev tool resource: " << filename
         << ". If you compiled with debug_devtools=1, try running with "
            "--debug-devtools.";
-    scoped_refptr<base::RefCountedStaticMemory> bytes(
-        new base::RefCountedStaticMemory(resource.data(), resource.length()));
-    callback.Run(bytes.get());
+    std::move(callback).Run(bytes);
   }
 
  private:

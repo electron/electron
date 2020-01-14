@@ -61,7 +61,7 @@ def am(repo, patch_data, threeway=False, directory=None, exclude=None,
   proc = subprocess.Popen(
       command,
       stdin=subprocess.PIPE)
-  proc.communicate(patch_data)
+  proc.communicate(patch_data.encode('utf-8'))
   if proc.returncode != 0:
     raise RuntimeError("Command {} returned {}".format(command,
       proc.returncode))

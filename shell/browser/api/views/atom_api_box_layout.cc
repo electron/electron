@@ -6,9 +6,9 @@
 
 #include <string>
 
-#include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_view.h"
-#include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/constructor.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace mate {
@@ -42,14 +42,15 @@ BoxLayout::BoxLayout(views::BoxLayout::Orientation orientation)
 
 BoxLayout::~BoxLayout() {}
 
-void BoxLayout::SetFlexForView(mate::Handle<View> view, int flex) {
+void BoxLayout::SetFlexForView(gin::Handle<View> view, int flex) {
   auto* box_layout = static_cast<views::BoxLayout*>(layout_manager());
   box_layout->SetFlexForView(view->view(), flex);
 }
 
 // static
-mate::WrappableBase* BoxLayout::New(mate::Arguments* args,
-                                    views::BoxLayout::Orientation orientation) {
+gin_helper::WrappableBase* BoxLayout::New(
+    gin_helper::Arguments* args,
+    views::BoxLayout::Orientation orientation) {
   auto* layout = new BoxLayout(orientation);
   layout->InitWith(args->isolate(), args->GetThis());
   return layout;
@@ -58,8 +59,8 @@ mate::WrappableBase* BoxLayout::New(mate::Arguments* args,
 // static
 void BoxLayout::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "BoxLayout"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "BoxLayout"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setFlexForView", &BoxLayout::SetFlexForView);
 }
 
@@ -76,8 +77,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("BoxLayout", mate::CreateConstructor<BoxLayout>(
+  gin_helper::Dictionary dict(isolate, exports);
+  dict.Set("BoxLayout", gin_helper::CreateConstructor<BoxLayout>(
                             isolate, base::BindRepeating(&BoxLayout::New)));
 }
 

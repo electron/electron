@@ -100,7 +100,9 @@ switch (window.location.protocol) {
   }
   case 'chrome-extension:': {
     // Inject the chrome.* APIs that chrome extensions require
-    require('@electron/internal/renderer/chrome-api').injectTo(window.location.hostname, window)
+    if (!process.electronBinding('features').isExtensionsEnabled()) {
+      require('@electron/internal/renderer/chrome-api').injectTo(window.location.hostname, window)
+    }
     break
   }
   case 'chrome:':
@@ -111,8 +113,10 @@ switch (window.location.protocol) {
     windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
 
     // Inject content scripts.
-    const contentScripts = ipcRendererUtils.invokeSync('ELECTRON_GET_CONTENT_SCRIPTS') as Electron.ContentScriptEntry[]
-    require('@electron/internal/renderer/content-scripts-injector')(contentScripts)
+    if (!process.electronBinding('features').isExtensionsEnabled()) {
+      const contentScripts = ipcRendererUtils.invokeSync('ELECTRON_GET_CONTENT_SCRIPTS') as Electron.ContentScriptEntry[]
+      require('@electron/internal/renderer/content-scripts-injector')(contentScripts)
+    }
   }
 }
 
@@ -188,11 +192,11 @@ if (nodeIntegration) {
       delete global.setImmediate
       delete global.clearImmediate
       delete global.global
+      delete global.root
+      delete global.GLOBAL
     })
   }
 }
-
-const errorUtils = require('@electron/internal/common/error-utils')
 
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {
@@ -200,9 +204,9 @@ for (const preloadScript of preloadScripts) {
     Module._load(preloadScript)
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`)
-    console.error(`${error}`)
+    console.error(error)
 
-    ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadScript, errorUtils.serialize(error))
+    ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadScript, error)
   }
 }
 

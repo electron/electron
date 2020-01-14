@@ -24,11 +24,21 @@
     <string>public.app-category.developer-tools</string>
     <key>LSMinimumSystemVersion</key>
     <string>10.10.0</string>
+    <key>NSMainNibFile</key>
+    <string>MainMenu</string>
     <key>NSPrincipalClass</key>
     <string>AtomApplication</string>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSRequiresAquaSystemAppearance</key>
+    <false/>
+    <key>NSQuitAlwaysKeepsWindows</key>
+    <false/>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>This app needs access to the microphone</string>
+    <key>NSCameraUsageDescription</key>
+    <string>This app needs access to the camera</string>
   </dict>
 </plist>

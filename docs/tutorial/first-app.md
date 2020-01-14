@@ -17,7 +17,7 @@ Node.js application. The starting point is a `package.json` that is identical
 to that of a Node.js module. A most basic Electron app would have the following
 folder structure:
 
-```text
+```plaintext
 your-app/
 ├── package.json
 ├── main.js
@@ -195,6 +195,8 @@ Finally the `index.html` is the web page you want to show:
   <head>
     <meta charset="UTF-8">
     <title>Hello World!</title>
+    <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
   </head>
   <body>
     <h1>Hello World!</h1>

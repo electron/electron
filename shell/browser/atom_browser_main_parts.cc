@@ -4,6 +4,8 @@
 
 #include "shell/browser/atom_browser_main_parts.h"
 
+#include <memory>
+
 #include <utility>
 
 #if defined(OS_LINUX)
@@ -20,19 +22,19 @@
 #include "chrome/browser/icon_manager.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/system_connector.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/result_codes.h"
-#include "content/public/common/service_manager_connection.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/localized_strings.h"
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/network/public/cpp/features.h"
 #include "services/service_manager/public/cpp/connector.h"
+#include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/atom_main_delegate.h"
 #include "shell/browser/api/atom_api_app.h"
-#include "shell/browser/api/trackable_object.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_paths.h"
@@ -47,6 +49,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/asar/asar_util.h"
+#include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/idle/idle.h"
@@ -90,6 +93,19 @@
 #if defined(OS_LINUX)
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "components/keyed_service/content/browser_context_dependency_manager.h"
+#include "extensions/browser/browser_context_keyed_service_factories.h"
+#include "extensions/common/extension_api.h"
+#include "shell/browser/extensions/atom_browser_context_keyed_service_factories.h"
+#include "shell/browser/extensions/atom_extensions_browser_client.h"
+#include "shell/common/extensions/atom_extensions_client.h"
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_factory.h"  // nogncheck
 #endif
 
 namespace electron {
@@ -280,17 +296,48 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
-  js_env_.reset(new JavascriptEnvironment(node_bindings_->uv_loop()));
+  js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
   node_bindings_->Initialize();
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
-      js_env_->context(), js_env_->platform());
-  node_env_.reset(new NodeEnvironment(env));
+      js_env_->context(), js_env_->platform(), false);
+  node_env_ = std::make_unique<NodeEnvironment>(env);
+
+  /**
+   * 🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨
+   * UNSAFE ENVIRONMENT BLOCK BEGINS
+   *
+   * DO NOT USE node::Environment inside this block, bad things will happen
+   * and you won't be able to figure out why.  Just don't touch it, the only
+   * thing that can use it is NodeDebugger and that is ONLY allowed to access
+   * the inspector agent.
+   *
+   * This is unsafe because the environment is not yet bootstrapped, it's a race
+   * condition where we can't bootstrap before intializing the inspector agent.
+   *
+   * Long term we should figure out how to get node to initialize the inspector
+   * agent in the correct place without us splitting the bootstrap up, but for
+   * now this works.
+   * 🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨
+   */
 
   // Enable support for v8 inspector
-  node_debugger_.reset(new NodeDebugger(env));
+  node_debugger_ = std::make_unique<NodeDebugger>(env);
   node_debugger_->Start();
+
+  // Only run the node bootstrapper after we have initialized the inspector
+  // TODO(MarshallOfSound): Figured out a better way to init the inspector
+  // before bootstrapping
+  node::BootstrapEnvironment(env);
+
+  /**
+   * ✅  ✅  ✅  ✅  ✅  ✅  ✅
+   * UNSAFE ENVIRONMENT BLOCK ENDS
+   *
+   * Do whatever you want now with that env, it's safe again
+   * ✅  ✅  ✅  ✅  ✅  ✅  ✅
+   */
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
@@ -322,7 +369,7 @@ int AtomBrowserMainParts::PreCreateThreads() {
 #endif
 
   if (!views::LayoutProvider::Get())
-    layout_provider_.reset(new views::LayoutProvider());
+    layout_provider_ = std::make_unique<views::LayoutProvider>();
 
   // Initialize the app locale.
   fake_browser_process_->SetApplicationLocale(
@@ -343,7 +390,17 @@ int AtomBrowserMainParts::PreCreateThreads() {
   return 0;
 }
 
+void AtomBrowserMainParts::PostCreateThreads() {
+  base::PostTask(
+      FROM_HERE, {content::BrowserThread::IO},
+      base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
+}
+
 void AtomBrowserMainParts::PostDestroyThreads() {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_browser_client_.reset();
+  extensions::ExtensionsBrowserClient::Set(nullptr);
+#endif
 #if defined(OS_LINUX)
   device::BluetoothAdapterFactory::Shutdown();
   bluez::DBusBluezManagerWrapperLinux::Shutdown();
@@ -359,7 +416,7 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 #endif
 
 #if defined(USE_AURA)
-  wm_state_.reset(new wm::WMState);
+  wm_state_ = std::make_unique<wm::WMState>();
 #endif
 
 #if defined(OS_WIN)
@@ -374,7 +431,7 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 #if defined(OS_MACOSX)
   views_delegate_.reset(new ViewsDelegateMac);
 #else
-  views_delegate_.reset(new ViewsDelegate);
+  views_delegate_ = std::make_unique<ViewsDelegate>();
 #endif
 }
 
@@ -383,6 +440,22 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_client_ = std::make_unique<AtomExtensionsClient>();
+  extensions::ExtensionsClient::Set(extensions_client_.get());
+
+  // BrowserContextKeyedAPIServiceFactories require an ExtensionsBrowserClient.
+  extensions_browser_client_ = std::make_unique<AtomExtensionsBrowserClient>();
+  extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
+
+  extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
+  extensions::electron::EnsureBrowserContextKeyedServiceFactoriesBuilt();
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SpellcheckServiceFactory::GetInstance();
+#endif
 
   // url::Add*Scheme are not threadsafe, this helps prevent data races.
   url::LockSchemeRegistries();
@@ -403,10 +476,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
     DevToolsManagerDelegate::StartHttpHandler();
-
-#if defined(USE_X11)
-  libgtkui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
-#endif
 
 #if !defined(OS_MACOSX)
   // The corresponding call in macOS is in AtomApplicationDelegate.
@@ -482,7 +551,8 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 
 void AtomBrowserMainParts::PreMainMessageLoopStartCommon() {
 #if defined(OS_MACOSX)
-  InitializeEmptyApplicationMenu();
+  InitializeMainNib();
+  RegisterURLHandler();
 #endif
   media::SetLocalizedStringProvider(MediaStringProvider);
 }
@@ -492,20 +562,17 @@ AtomBrowserMainParts::GetGeolocationControl() {
   if (geolocation_control_)
     return geolocation_control_.get();
 
-  auto request = mojo::MakeRequest(&geolocation_control_);
-  if (!content::ServiceManagerConnection::GetForProcess())
-    return geolocation_control_.get();
-
-  service_manager::Connector* connector =
-      content::ServiceManagerConnection::GetForProcess()->GetConnector();
-  connector->BindInterface(device::mojom::kServiceName, std::move(request));
+  auto receiver = geolocation_control_.BindNewPipeAndPassReceiver();
+  service_manager::Connector* connector = content::GetSystemConnector();
+  if (connector)
+    connector->Connect(device::mojom::kServiceName, std::move(receiver));
   return geolocation_control_.get();
 }
 
 IconManager* AtomBrowserMainParts::GetIconManager() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (!icon_manager_.get())
-    icon_manager_.reset(new IconManager);
+    icon_manager_ = std::make_unique<IconManager>();
   return icon_manager_.get();
 }
 

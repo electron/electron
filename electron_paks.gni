@@ -1,4 +1,5 @@
 import("//build/config/locales.gni")
+import("//electron/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//tools/grit/repack.gni")
 import("//ui/base/ui_features.gni")
@@ -87,6 +88,13 @@ template("electron_extra_paks") {
       sources += [ "$root_gen_dir/chrome/print_preview_resources.pak" ]
       deps += [ "//chrome/browser/resources:print_preview_resources" ]
     }
+    if (enable_electron_extensions) {
+      sources += [
+        "$root_gen_dir/extensions/extensions_renderer_resources.pak",
+        "$root_gen_dir/extensions/extensions_resources.pak",
+      ]
+      deps += [ "//extensions:extensions_resources" ]
+    }
   }
 }
 
@@ -147,7 +155,7 @@ template("electron_paks") {
     source_patterns = [
       "${root_gen_dir}/chrome/platform_locale_settings_",
       "${root_gen_dir}/components/strings/components_strings_",
-      "${root_gen_dir}/content/app/strings/content_strings_",
+      "${root_gen_dir}/third_party/blink/public/strings/blink_strings_",
       "${root_gen_dir}/device/bluetooth/strings/bluetooth_strings_",
       "${root_gen_dir}/services/strings/services_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
@@ -156,9 +164,9 @@ template("electron_paks") {
     deps = [
       "//chrome/app/resources:platform_locale_settings",
       "//components/strings:components_strings",
-      "//content/app/strings",
       "//device/bluetooth/strings",
       "//services/strings",
+      "//third_party/blink/public/strings",
       "//ui/strings:app_locale_settings",
       "//ui/strings:ui_strings",
     ]

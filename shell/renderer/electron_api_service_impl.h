@@ -7,10 +7,13 @@
 
 #include <string>
 
+#include "base/memory/weak_ptr.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
-#include "mojo/public/cpp/bindings/associated_binding.h"
+#include "mojo/public/cpp/bindings/associated_receiver.h"
+#include "mojo/public/cpp/bindings/pending_associated_receiver.h"
 
 namespace electron {
 
@@ -19,33 +22,45 @@ class RendererClientBase;
 class ElectronApiServiceImpl : public mojom::ElectronRenderer,
                                public content::RenderFrameObserver {
  public:
-  static void CreateMojoService(
-      content::RenderFrame* render_frame,
-      RendererClientBase* renderer_client,
-      mojom::ElectronRendererAssociatedRequest request);
+  ElectronApiServiceImpl(content::RenderFrame* render_frame,
+                         RendererClientBase* renderer_client);
+
+  void BindTo(
+      mojo::PendingAssociatedReceiver<mojom::ElectronRenderer> receiver);
 
   void Message(bool internal,
                bool send_to_all,
                const std::string& channel,
-               base::Value arguments,
+               blink::CloneableMessage arguments,
                int32_t sender_id) override;
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+  void DereferenceRemoteJSCallback(const std::string& context_id,
+                                   int32_t object_id) override;
+#endif
   void UpdateCrashpadPipeName(const std::string& pipe_name) override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,
                         TakeHeapSnapshotCallback callback) override;
 
+  base::WeakPtr<ElectronApiServiceImpl> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
  private:
   ~ElectronApiServiceImpl() override;
-  ElectronApiServiceImpl(content::RenderFrame* render_frame,
-                         RendererClientBase* renderer_client,
-                         mojom::ElectronRendererAssociatedRequest request);
 
   // RenderFrameObserver implementation.
+  void DidCreateDocumentElement() override;
   void OnDestruct() override;
 
-  mojo::AssociatedBinding<mojom::ElectronRenderer> binding_;
+  void OnConnectionError();
 
-  content::RenderFrame* render_frame_;
+  // Whether the DOM document element has been created.
+  bool document_created_ = false;
+
+  mojo::AssociatedReceiver<mojom::ElectronRenderer> receiver_{this};
+
   RendererClientBase* renderer_client_;
+  base::WeakPtrFactory<ElectronApiServiceImpl> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronApiServiceImpl);
 };

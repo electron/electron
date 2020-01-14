@@ -14,8 +14,7 @@ If you want to show Notifications from a renderer process you should use the [HT
 
 Process: [Main](../glossary.md#main-process)
 
-`Notification` is an
-[EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter).
+`Notification` is an [EventEmitter][event-emitter].
 
 It creates a new `Notification` with native properties as set by the `options`.
 
@@ -36,8 +35,10 @@ Returns `Boolean` - Whether or not desktop notifications are supported on the cu
   * `silent` Boolean (optional) - Whether or not to emit an OS notification noise when showing the notification.
   * `icon` (String | [NativeImage](native-image.md)) (optional) - An icon to use in the notification.
   * `hasReply` Boolean (optional) _macOS_ - Whether or not to add an inline reply option to the notification.
+  * `timeoutType` String (optional) _Linux_ _Windows_ - The timeout duration of the notification. Can be 'default' or 'never'.
   * `replyPlaceholder` String (optional) _macOS_ - The placeholder to write in the inline reply input field.
   * `sound` String (optional) _macOS_ - The name of the sound file to play when the notification is shown.
+  * `urgency` String (optional) _Linux_ - The urgency level of the notification. Can be 'normal', 'critical', or 'low'.
   * `actions` [NotificationAction[]](structures/notification-action.md) (optional) _macOS_ - Actions to add to the notification. Please read the available actions and limitations in the `NotificationAction` documentation.
   * `closeButtonText` String (optional) _macOS_ - A custom title for the close button of an alert. An empty string will cause the default localized text to be used.
 
@@ -111,6 +112,56 @@ shown notification and create a new one with identical properties.
 
 Dismisses the notification.
 
+### Instance Properties
+
+#### `notification.title`
+
+A `String` property representing the title of the notification.
+
+#### `notification.subtitle`
+
+A `String` property representing the subtitle of the notification.
+
+#### `notification.body`
+
+A `String` property representing the body of the notification.
+
+#### `notification.replyPlaceholder`
+
+A `String` property representing the reply placeholder of the notification.
+
+#### `notification.sound`
+
+A `String` property representing the sound of the notification.
+
+#### `notification.closeButtonText`
+
+A `String` property representing the close button text of the notification.
+
+#### `notification.silent`
+
+A `Boolean` property representing whether the notification is silent.
+
+#### `notification.hasReply`
+
+A `Boolean` property representing whether the notification has a reply action.
+
+#### `notification.urgency` _Linux_
+
+A `String` property representing the urgency level of the notification. Can be 'normal', 'critical', or 'low'.
+
+Default is 'low' - see [NotifyUrgency](https://developer.gnome.org/notification-spec/#urgency-levels) for more information.
+
+#### `notification.timeoutType` _Linux_ _Windows_
+
+A `String` property representing the type of timeout duration for the notification. Can be 'default' or 'never'.
+
+If `timeoutType` is set to 'never', the notification never expires. It stays open until closed by the calling API or the user.
+
+#### `notification.actions`
+
+A [`NotificationAction[]`](structures/notification-action.md) property representing the actions of the notification.
+
 ### Playing Sounds
 
 On macOS, you can specify the name of the sound you'd like to play when the
@@ -125,3 +176,5 @@ or one of the following locations:
 * `/System/Library/Sounds`
 
 See the [`NSSound`](https://developer.apple.com/documentation/appkit/nssound) docs for more information.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

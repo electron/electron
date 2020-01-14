@@ -13,6 +13,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/ui/inspectable_web_contents_impl.h"
 #include "shell/common/atom_constants.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
@@ -28,9 +29,17 @@ namespace {
 #if defined(_WIN64)
 int CrashForException(EXCEPTION_POINTERS* info) {
   auto* reporter = crash_reporter::CrashReporterWin::GetInstance();
-  if (reporter->IsInitialized())
+  if (reporter->IsInitialized()) {
     reporter->GetCrashpadClient().DumpAndCrash(info);
-  return EXCEPTION_CONTINUE_SEARCH;
+    return EXCEPTION_CONTINUE_SEARCH;
+  }
+
+  // When there is exception and we do not have crashReporter set up, we just
+  // let the execution continue and crash, which is the default behavior.
+  //
+  // We must not return EXCEPTION_CONTINUE_SEARCH here, as it would end up with
+  // busy loop when there is no exception handler in the program.
+  return EXCEPTION_CONTINUE_EXECUTION;
 }
 #endif
 
@@ -121,10 +130,10 @@ void CrashReporterWin::UpdatePipeName() {
     if (!frame_host)
       continue;
 
-    electron::mojom::ElectronRendererAssociatedPtr electron_ptr;
+    mojo::AssociatedRemote<electron::mojom::ElectronRenderer> electron_renderer;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-        mojo::MakeRequest(&electron_ptr));
-    electron_ptr->UpdateCrashpadPipeName(pipe_name);
+        &electron_renderer);
+    electron_renderer->UpdateCrashpadPipeName(pipe_name);
   }
 }
 

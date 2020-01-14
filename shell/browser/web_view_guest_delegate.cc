@@ -14,7 +14,7 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/atom_api_web_contents.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
 
 namespace electron {
 
@@ -44,7 +44,7 @@ void WebViewGuestDelegate::AttachToIframe(
   // frame |embedder_frame| hosts the inner WebContents.
   embedder_web_contents_->AttachInnerWebContents(
       base::WrapUnique<content::WebContents>(guest_web_contents),
-      embedder_frame);
+      embedder_frame, false);
 
   ResetZoomController();
 
@@ -76,7 +76,7 @@ void WebViewGuestDelegate::OnZoomLevelChanged(
       api_web_contents_->GetZoomController()->SetZoomLevel(level);
     }
     // Change the default zoom factor to match the embedders' new zoom level.
-    double zoom_factor = content::ZoomLevelToZoomFactor(level);
+    double zoom_factor = blink::PageZoomFactorToZoomLevel(level);
     api_web_contents_->GetZoomController()->SetDefaultZoomFactor(zoom_factor);
   }
 }
@@ -105,8 +105,6 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
   // Code below mirrors what content::WebContentsImpl::CreateNewWindow
   // does for non-guest sources
   content::WebContents::CreateParams guest_params(create_params);
-  guest_params.initial_size =
-      embedder_web_contents_->GetContainerBounds().size();
   guest_params.context = embedder_web_contents_->GetNativeView();
   std::unique_ptr<content::WebContents> guest_contents =
       content::WebContents::Create(guest_params);
@@ -114,8 +112,7 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
       guest_contents->GetRenderViewHost()->GetWidget();
   auto* guest_contents_impl =
       static_cast<content::WebContentsImpl*>(guest_contents.release());
-  guest_contents_impl->GetView()->CreateViewForWidget(render_widget_host,
-                                                      false);
+  guest_contents_impl->GetView()->CreateViewForWidget(render_widget_host);
 
   return guest_contents_impl;
 }

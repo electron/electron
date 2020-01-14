@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "electron/buildflags/buildflags.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "shell/browser/api/views/atom_api_layout_manager.h"
 #include "ui/views/view.h"
 
@@ -17,17 +17,17 @@ namespace electron {
 
 namespace api {
 
-class View : public mate::TrackableObject<View> {
+class View : public gin_helper::TrackableObject<View> {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
 #if BUILDFLAG(ENABLE_VIEW_API)
-  void SetLayoutManager(mate::Handle<LayoutManager> layout_manager);
-  void AddChildView(mate::Handle<View> view);
-  void AddChildViewAt(mate::Handle<View> view, size_t index);
+  void SetLayoutManager(gin::Handle<LayoutManager> layout_manager);
+  void AddChildView(gin::Handle<View> view);
+  void AddChildViewAt(gin::Handle<View> view, size_t index);
 #endif
 
   views::View* view() const { return view_; }
@@ -54,7 +54,7 @@ class View : public mate::TrackableObject<View> {
 
 }  // namespace electron
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<views::View*> {
@@ -69,6 +69,6 @@ struct Converter<views::View*> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ATOM_API_VIEW_H_

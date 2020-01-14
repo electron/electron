@@ -1,27 +1,30 @@
 {
   "name": "electron",
-  "version": "7.0.0-nightly.20190704",
+  "version": "9.0.0-nightly.20200113",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
-    "@electron/docs-parser": "^0.3.0",
-    "@electron/typescript-definitions": "^8.3.1",
+    "@electron/docs-parser": "^0.4.2",
+    "@electron/typescript-definitions": "^8.6.4",
     "@octokit/rest": "^16.3.2",
     "@primer/octicons": "^9.1.1",
+    "@types/basic-auth": "^1.1.2",
     "@types/chai": "^4.1.7",
     "@types/chai-as-promised": "^7.1.0",
+    "@types/dirty-chai": "^2.0.0",
     "@types/express": "^4.16.1",
     "@types/fs-extra": "^5.0.5",
     "@types/mocha": "^5.2.6",
     "@types/node": "^12.0.10",
+    "@types/semver": "^6.0.1",
+    "@types/send": "^0.14.5",
     "@types/split": "^1.0.0",
     "@types/webpack": "^4.4.32",
     "@types/webpack-env": "^1.13.9",
-    "@typescript-eslint/eslint-plugin": "^1.4.2",
-    "@typescript-eslint/parser": "^1.4.2",
+    "@typescript-eslint/eslint-plugin": "^2.6.0",
+    "@typescript-eslint/parser": "^2.6.0",
     "asar": "^1.0.0",
     "check-for-leaks": "^1.2.1",
-    "clang-format": "^1.2.3",
     "colors": "^1.1.2",
     "dotenv-safe": "^4.0.4",
     "dugite": "^1.45.0",
@@ -49,19 +52,18 @@
     "shx": "^0.3.2",
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
+    "tap-xunit": "^2.4.1",
     "temp": "^0.8.3",
     "timers-browserify": "1.4.2",
     "ts-loader": "^6.0.2",
     "ts-node": "^6.0.3",
-    "typescript": "~3.3.3333",
+    "typescript": "^3.5.2",
     "webpack": "^4.32.2",
     "webpack-cli": "^3.3.2"
   },
   "private": true,
   "scripts": {
     "asar": "asar",
-    "check-tls": "python ./script/tls.py",
-    "clang-format": "find atom/ chromium_src/ -iname *.h -o -iname *.cc -o -iname *.mm | xargs clang-format -i",
     "generate-version-json": "node script/generate-version-json.js",
     "lint": "node ./script/lint.js && npm run lint:clang-format && npm run lint:docs",
     "lint:js": "node ./script/lint.js --js",
@@ -78,6 +80,7 @@
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --api=electron-api.json && node spec/ts-smoke/runner.js",
     "gn-typescript-definitions": "npm run create-typescript-definitions && shx cp electron.d.ts",
     "pre-flight": "pre-flight",
+    "gn-check": "node ./script/gn-check.js",
     "preinstall": "node -e 'process.exit(0)'",
     "prepack": "check-for-leaks",
     "repl": "node ./script/start.js --interactive",
@@ -114,6 +117,7 @@
       "remark -qf"
     ],
     "*.{gn,gni}": [
+      "npm run gn-check",
       "python script/run-gn-format.py",
       "git add"
     ],
@@ -125,6 +129,16 @@
       "node script/gen-filenames.js",
       "python script/check-trailing-whitespace.py --fix",
       "git add filenames.auto.gni"
+    ],
+    "{*.patch,.patches}": [
+      "node script/lint.js --patches --only --"
+    ],
+    "DEPS": [
+      "node script/gen-hunspell-filenames.js"
     ]
+  },
+  "dependencies": {
+    "@types/multiparty": "^0.0.32",
+    "@types/temp": "^0.8.34"
   }
 }

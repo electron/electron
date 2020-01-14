@@ -49,7 +49,7 @@ your application's size.
 
 The output should look roughly like this:
 
-```text
+```plaintext
 .
 └── dist
     └── app-linux-x64
@@ -61,7 +61,6 @@ The output should look roughly like this:
         ├── libgcrypt.so.11
         ├── libnode.so
         ├── locales
-        ├── natives_blob.bin
         ├── resources
         ├── v8_context_snapshot.bin
         └── version
@@ -128,7 +127,6 @@ parts:
       - desktop-gtk3
     stage-packages:
       - libasound2
-      - libgconf2-4
       - libnotify4
       - libnspr4
       - libnss3
@@ -177,7 +175,7 @@ apps:
 [snapcraft.io]: https://snapcraft.io/
 [snapcraft-store]: https://snapcraft.io/store/
 [snapcraft-syntax]: https://docs.snapcraft.io/build-snaps/syntax
-[electron-packager]: https://github.com/electron-userland/electron-packager
+[electron-packager]: https://github.com/electron/electron-packager
 [electron-forge]: https://github.com/electron-userland/electron-forge
 [electron-builder]: https://github.com/electron-userland/electron-builder
 [electron-installer-debian]: https://github.com/unindented/electron-installer-debian

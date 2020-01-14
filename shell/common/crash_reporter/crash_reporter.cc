@@ -16,8 +16,8 @@
 #include "electron/electron_version.h"
 #include "shell/browser/browser.h"
 #include "shell/common/atom_constants.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/map_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace crash_reporter {
 
@@ -40,7 +40,7 @@ CrashReporter::CrashReporter() {
   // process_type_ will be empty for browser process
 }
 
-CrashReporter::~CrashReporter() {}
+CrashReporter::~CrashReporter() = default;
 
 bool CrashReporter::IsInitialized() {
   return is_initialized_;
@@ -93,8 +93,7 @@ CrashReporter::GetUploadedReports(const base::FilePath& crashes_dir) {
       int report_time = 0;
       if (report_item.size() >= 2 &&
           base::StringToInt(report_item[0], &report_time)) {
-        result.push_back(
-            CrashReporter::UploadReportResult(report_time, report_item[1]));
+        result.emplace_back(report_time, report_item[1]);
       }
     }
   }
@@ -127,7 +126,7 @@ CrashReporter* CrashReporter::GetInstance() {
 }
 #endif
 
-void CrashReporter::StartInstance(const mate::Dictionary& options) {
+void CrashReporter::StartInstance(const gin_helper::Dictionary& options) {
   auto* reporter = GetInstance();
   if (!reporter)
     return;

@@ -58,21 +58,21 @@ namespace {
 // Retrieved functions from libdbusmenu-glib.
 
 // DbusmenuMenuItem methods:
-dbusmenu_menuitem_new_func menuitem_new = NULL;
-dbusmenu_menuitem_new_with_id_func menuitem_new_with_id = NULL;
-dbusmenu_menuitem_get_id_func menuitem_get_id = NULL;
-dbusmenu_menuitem_get_children_func menuitem_get_children = NULL;
-dbusmenu_menuitem_get_children_func menuitem_take_children = NULL;
-dbusmenu_menuitem_child_append_func menuitem_child_append = NULL;
-dbusmenu_menuitem_property_set_func menuitem_property_set = NULL;
+dbusmenu_menuitem_new_func menuitem_new = nullptr;
+dbusmenu_menuitem_new_with_id_func menuitem_new_with_id = nullptr;
+dbusmenu_menuitem_get_id_func menuitem_get_id = nullptr;
+dbusmenu_menuitem_get_children_func menuitem_get_children = nullptr;
+dbusmenu_menuitem_get_children_func menuitem_take_children = nullptr;
+dbusmenu_menuitem_child_append_func menuitem_child_append = nullptr;
+dbusmenu_menuitem_property_set_func menuitem_property_set = nullptr;
 dbusmenu_menuitem_property_set_variant_func menuitem_property_set_variant =
-    NULL;
-dbusmenu_menuitem_property_set_bool_func menuitem_property_set_bool = NULL;
-dbusmenu_menuitem_property_set_int_func menuitem_property_set_int = NULL;
+    nullptr;
+dbusmenu_menuitem_property_set_bool_func menuitem_property_set_bool = nullptr;
+dbusmenu_menuitem_property_set_int_func menuitem_property_set_int = nullptr;
 
 // DbusmenuServer methods:
-dbusmenu_server_new_func server_new = NULL;
-dbusmenu_server_set_root_func server_set_root = NULL;
+dbusmenu_server_new_func server_new = nullptr;
+dbusmenu_server_set_root_func server_set_root = nullptr;
 
 // Properties that we set on menu items:
 const char kPropertyEnabled[] = "enabled";
@@ -141,7 +141,7 @@ AtomMenuModel* ModelForMenuItem(DbusmenuMenuitem* item) {
 
 bool GetMenuItemID(DbusmenuMenuitem* item, int* id) {
   gpointer id_ptr = g_object_get_data(G_OBJECT(item), "menu-id");
-  if (id_ptr != NULL) {
+  if (id_ptr != nullptr) {
     *id = GPOINTER_TO_INT(id_ptr) - 1;
     return true;
   }
@@ -326,7 +326,7 @@ void GlobalMenuBarX11::OnSubMenuShow(DbusmenuMenuitem* item) {
 
   // Clear children.
   GList* children = menuitem_take_children(item);
-  g_list_foreach(children, reinterpret_cast<GFunc>(g_object_unref), NULL);
+  g_list_foreach(children, reinterpret_cast<GFunc>(g_object_unref), nullptr);
   g_list_free(children);
 
   // Build children.

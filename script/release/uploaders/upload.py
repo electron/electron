@@ -16,6 +16,7 @@ sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
 from io import StringIO
+from zipfile import ZipFile
 from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
                        get_zip_name
 from lib.util import get_electron_branding, execute, get_electron_version, \
@@ -35,6 +36,8 @@ DIST_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
 SYMBOLS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
 DSYM_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
 PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
+DEBUG_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'debug')
+TOOLCHAIN_PROFILE_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'toolchain-profile')
 
 
 def main():
@@ -83,6 +86,10 @@ def main():
     pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
     upload_electron(release, pdb_zip, args)
+  elif PLATFORM == 'linux':
+    debug_zip = os.path.join(OUT_DIR, DEBUG_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'debug.zip'), debug_zip)
+    upload_electron(release, debug_zip, args)
 
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
@@ -106,11 +113,22 @@ def main():
   shutil.copy2(os.path.join(OUT_DIR, 'mksnapshot.zip'), mksnapshot_zip)
   upload_electron(release, mksnapshot_zip, args)
 
+  if PLATFORM == 'linux' and get_target_arch() == 'x64':
+    # Upload the hunspell dictionaries only from the linux x64 build
+    hunspell_dictionaries_zip = os.path.join(OUT_DIR, 'hunspell_dictionaries.zip')
+    upload_electron(release, hunspell_dictionaries_zip, args)
+
   if not tag_exists and not args.upload_to_s3:
     # Upload symbols to symbol server.
     run_python_upload_script('upload-symbols.py')
     if PLATFORM == 'win32':
       run_python_upload_script('upload-node-headers.py', '-v', args.version)
+
+  if PLATFORM == 'win32':
+    toolchain_profile_zip = os.path.join(OUT_DIR, TOOLCHAIN_PROFILE_NAME)
+    with ZipFile(toolchain_profile_zip, 'w') as myzip:
+      myzip.write(os.path.join(OUT_DIR, 'windows_toolchain_profile.json'), 'toolchain_profile.json')
+    upload_electron(release, toolchain_profile_zip, args)
 
 
 def parse_args():

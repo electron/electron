@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Manage window state</title>
+  </head>
+
+  <body>
+    <div>
+      <h1>Create and Manage Windows</h1>
+
+      <h3>
+        The <code>BrowserWindow</code> module in Electron allows you to create a
+        new browser window or manage an existing one.
+      </h3>
+
+      <p>
+        Each browser window is a separate process, known as the renderer
+        process. This process, like the main process that controls the life
+        cycle of the app, has full access to the Node.js APIs.
+      </p>
+
+      <p>
+        Open the
+        <a href="http://electron.atom.io/docs/api/browser-window">
+          full API documentation (opens in new window)
+        </a>
+        in your browser.
+      </p>
+    </div>
+
+    <div>
+      <div>
+        <h2>Manage window state</h2>
+        <div>
+          <div>
+            <button id="manage-window">View Demo</button>
+            <span id="manage-window-reply"></span>
+          </div>
+          <p>
+            In this demo we create a new window and listen for
+            <code>move</code> and <code>resize</code> events on it. Click the
+            demo button, change the new window and see the dimensions and
+            position update here, above.
+          </p>
+          <p>
+            There are a lot of methods for controlling the state of the window
+            such as the size, location, and focus status as well as events to
+            listen to for window changes. Visit the
+            <a href="http://electron.atom.io/docs/api/browser-window">
+              documentation (opens in new window)
+            </a>
+            for the full list.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // You can also require other files to run in this process
+      require("./renderer.js");
+    </script>
+  </body>
+</html>

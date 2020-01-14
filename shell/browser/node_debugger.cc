@@ -13,14 +13,14 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "libplatform/libplatform.h"
-#include "native_mate/dictionary.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
 
 NodeDebugger::NodeDebugger(node::Environment* env) : env_(env) {}
 
-NodeDebugger::~NodeDebugger() {}
+NodeDebugger::~NodeDebugger() = default;
 
 void NodeDebugger::Start() {
   auto* inspector = env_->inspector_agent();
@@ -37,13 +37,13 @@ void NodeDebugger::Start() {
   }
 
   node::DebugOptions options;
-  node::options_parser::DebugOptionsParser options_parser;
   std::vector<std::string> exec_args;
   std::vector<std::string> v8_args;
   std::vector<std::string> errors;
 
-  options_parser.Parse(&args, &exec_args, &v8_args, &options,
-                       node::options_parser::kDisallowedInEnvironment, &errors);
+  node::options_parser::Parse(&args, &exec_args, &v8_args, &options,
+                              node::options_parser::kDisallowedInEnvironment,
+                              &errors);
 
   if (!errors.empty()) {
     // TODO(jeremy): what's the appropriate behaviour here?
@@ -60,8 +60,10 @@ void NodeDebugger::Start() {
 
 void NodeDebugger::Stop() {
   auto* inspector = env_->inspector_agent();
-  if (inspector && inspector->IsListening())
+  if (inspector && inspector->IsListening()) {
+    inspector->WaitForDisconnect();
     inspector->Stop();
+  }
 }
 
 }  // namespace electron

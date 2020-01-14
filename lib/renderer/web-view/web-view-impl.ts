@@ -1,9 +1,12 @@
-import { remote, webFrame } from 'electron'
+import * as electron from 'electron'
 
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal'
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants'
 import { syncMethods, asyncMethods } from '@electron/internal/common/web-view-methods'
+import { deserialize } from '@electron/internal/common/type-utils'
+const { webFrame } = electron
 
 const v8Util = process.electronBinding('v8_util')
 
@@ -69,7 +72,6 @@ export class WebViewImpl {
     // heard back from createGuest yet. We will not reset the flag in this case so
     // that we don't end up allocating a second guest.
     if (this.guestInstanceId) {
-      guestViewInternal.destroyGuest(this.guestInstanceId)
       this.guestInstanceId = void 0
     }
 
@@ -112,11 +114,6 @@ export class WebViewImpl {
     guestViewInternal.createGuest(this.buildParams()).then(guestInstanceId => {
       this.attachGuestInstance(guestInstanceId)
     })
-  }
-
-  createGuestSync () {
-    this.beforeFirstNavigation = false
-    this.attachGuestInstance(guestViewInternal.createGuestSync(this.buildParams()))
   }
 
   dispatchEvent (webViewEvent: Electron.Event) {
@@ -223,19 +220,6 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
     return internal.guestInstanceId
   }
 
-  // WebContents associated with this webview.
-  WebViewElement.prototype.getWebContents = function () {
-    if (!remote) {
-      throw new Error('getGuestWebContents requires remote, which is not enabled')
-    }
-    const internal = v8Util.getHiddenValue<WebViewImpl>(this, 'internal')
-    if (!internal.guestInstanceId) {
-      internal.createGuestSync()
-    }
-
-    return (remote as Electron.RemoteInternal).getGuestWebContents(internal.guestInstanceId!)
-  }
-
   // Focusing the webview should move page focus to the underlying iframe.
   WebViewElement.prototype.focus = function () {
     this.contentWindow.focus()
@@ -254,12 +238,16 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
 
   const createNonBlockHandler = function (method: string) {
     return function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
-      return ipcRendererUtils.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', this.getWebContentsId(), method, args)
+      return ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', this.getWebContentsId(), method, args)
     }
   }
 
   for (const method of asyncMethods) {
     (WebViewElement.prototype as Record<string, any>)[method] = createNonBlockHandler(method)
+  }
+
+  WebViewElement.prototype.capturePage = async function (...args) {
+    return deserialize(await ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CAPTURE_PAGE', this.getWebContentsId(), args))
   }
 }
 

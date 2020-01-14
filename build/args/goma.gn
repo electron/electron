@@ -1,0 +1,2 @@
+goma_dir = rebase_path("//electron/external_binaries/goma")
+use_goma = true

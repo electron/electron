@@ -15,7 +15,7 @@ Please also ensure that your system and Python version support at least TLS 1.2.
 This depends on both your version of macOS and Python. For a quick test, run:
 
 ```sh
-$ npm run check-tls
+$ npx @electron/check-python-tls
 ```
 
 If the script returns that your configuration is using an outdated security

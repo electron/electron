@@ -89,9 +89,9 @@ class AtomPermissionManager::PendingRequest {
   size_t remaining_results_;
 };
 
-AtomPermissionManager::AtomPermissionManager() {}
+AtomPermissionManager::AtomPermissionManager() = default;
 
-AtomPermissionManager::~AtomPermissionManager() {}
+AtomPermissionManager::~AtomPermissionManager() = default;
 
 void AtomPermissionManager::SetPermissionRequestHandler(
     const RequestHandler& handler) {

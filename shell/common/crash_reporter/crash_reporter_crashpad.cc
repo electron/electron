@@ -34,8 +34,8 @@ void CrashReporterCrashpad::SetUploadToServer(const bool upload_to_server) {
   }
 }
 
-void CrashReporterCrashpad::SetCrashKeyValue(const base::StringPiece& key,
-                                             const base::StringPiece& value) {
+void CrashReporterCrashpad::SetCrashKeyValue(base::StringPiece key,
+                                             base::StringPiece value) {
   simple_string_dictionary_->SetKeyValue(key.data(), value.data());
 }
 
@@ -109,7 +109,7 @@ CrashReporterCrashpad::GetUploadedReports(const base::FilePath& crashes_dir) {
 
   auto sort_by_time = [](const UploadReportResult& a,
                          const UploadReportResult& b) {
-    return a.first >= b.first;
+    return a.first > b.first;
   };
   std::sort(uploaded_reports.begin(), uploaded_reports.end(), sort_by_time);
   return uploaded_reports;

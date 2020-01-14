@@ -3,6 +3,13 @@ From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Fri, 18 Jan 2019 14:23:28 -0800
 Subject: expose aes-{128,256}-cfb
 
+This exposes AES-CFB ciphers through the EVP APIs. BoringSSL has
+implementations for these ciphers, but Node doesn't realise that because
+without this patch, they're not listed in the APIs that Node uses.
+
+This should be upstreamed. See e.g.
+https://boringssl-review.googlesource.com/c/boringssl/+/33984 for a
+similar patch that was merged upstream.
 
 diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
 index b132265bc103658dba3de6e0c3dc50d3634da5b0..588a4773437c311877f275bf3679f9688cda3c46 100644
@@ -23,23 +30,6 @@ index b132265bc103658dba3de6e0c3dc50d3634da5b0..588a4773437c311877f275bf3679f968
    } else if (OPENSSL_strcasecmp(name, "aes-128-ctr") == 0) {
      return EVP_aes_128_ctr();
    } else if (OPENSSL_strcasecmp(name, "aes-192-ctr") == 0) {
-diff --git a/decrepit/cfb/cfb.c b/decrepit/cfb/cfb.c
-index d3a176163303a202baeb1f95727c6ed3525439d6..21d108a7b73d454aa6b0e324df4b67088d60302a 100644
---- a/decrepit/cfb/cfb.c
-+++ b/decrepit/cfb/cfb.c
-@@ -57,4 +57,12 @@ static const EVP_CIPHER aes_128_cfb128 = {
-     NULL /* cleanup */,  NULL /* ctrl */,
- };
- 
-+static const EVP_CIPHER aes_256_cfb128 = {
-+    NID_aes_128_cfb128,  1 /* block_size */,  32 /* key_size */,
-+    16 /* iv_len */,     sizeof(EVP_CFB_CTX), EVP_CIPH_CFB_MODE,
-+    NULL /* app_data */, aes_cfb_init_key,    aes_cfb128_cipher,
-+    NULL /* cleanup */,  NULL /* ctrl */,
-+};
-+
- const EVP_CIPHER *EVP_aes_128_cfb128(void) { return &aes_128_cfb128; }
-+const EVP_CIPHER *EVP_aes_256_cfb128(void) { return &aes_256_cfb128; }
 diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
 index 53cb9d2dc8f1962a70dc12b648d27c32be8aca4b..84af06fc56e4aa72d4d48801d7c037add0221747 100644
 --- a/decrepit/evp/evp_do_all.c
@@ -67,7 +57,7 @@ index 53cb9d2dc8f1962a70dc12b648d27c32be8aca4b..84af06fc56e4aa72d4d48801d7c037ad
    callback(EVP_aes_192_ctr(), "aes-192-ctr", NULL, arg);
    callback(EVP_aes_256_ctr(), "aes-256-ctr", NULL, arg);
 diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
-index ea7a940ab3003f6919322ef1c4b7caaa9dea8588..5320d5d84c10c6396eb869dc1767b31afeeac4ef 100644
+index d22a6c216a2afe29f9507c90a190a4c6992c06a5..0bde0af4b25fbc24ee479b0ffffa037481c71e53 100644
 --- a/include/openssl/cipher.h
 +++ b/include/openssl/cipher.h
 @@ -424,6 +424,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
@@ -76,5 +66,5 @@ index ea7a940ab3003f6919322ef1c4b7caaa9dea8588..5320d5d84c10c6396eb869dc1767b31a
  OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_128_cfb128(void);
 +OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_256_cfb128(void);
  
- // EVP_bf_ecb is Blowfish in ECB mode and is only available in decrepit.
- OPENSSL_EXPORT const EVP_CIPHER *EVP_bf_ecb(void);
+ // EVP_aes_256_cfb128 is only available in decrepit.
+ OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_256_cfb128(void);

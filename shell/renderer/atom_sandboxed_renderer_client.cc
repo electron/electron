@@ -10,20 +10,18 @@
 #include "base/path_service.h"
 #include "base/process/process_handle.h"
 #include "content/public/renderer/render_frame.h"
-#include "gin/converter.h"
-#include "native_mate/dictionary.h"
+#include "electron/buildflags/buildflags.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/atom_render_frame_observer.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/electron_node/src/node_binding.h"
-#include "third_party/electron_node/src/node_native_module.h"
 
 namespace electron {
 
@@ -44,7 +42,7 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   auto context = isolate->GetCurrentContext();
-  mate::Dictionary global(isolate, context->Global());
+  gin_helper::Dictionary global(isolate, context->Global());
   v8::Local<v8::Value> cache;
 
   if (!global.GetHidden(kModuleCacheKey, &cache)) {
@@ -58,10 +56,10 @@ v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
 // adapted from node.cc
 v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
                                 v8::Local<v8::String> key,
-                                mate::Arguments* margs) {
+                                gin_helper::Arguments* margs) {
   v8::Local<v8::Object> exports;
   std::string module_key = gin::V8ToString(isolate, key);
-  mate::Dictionary cache(isolate, GetModuleCache(isolate));
+  gin_helper::Dictionary cache(isolate, GetModuleCache(isolate));
 
   if (cache.Get(module_key.c_str(), &exports)) {
     return exports;
@@ -95,9 +93,8 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
                           const std::string& hidden_key,
                           const std::string& callback_name) {
   auto* isolate = context->GetIsolate();
-  auto binding_key = mate::ConvertToV8(isolate, hidden_key)
-                         ->ToString(context)
-                         .ToLocalChecked();
+  auto binding_key =
+      gin::ConvertToV8(isolate, hidden_key)->ToString(context).ToLocalChecked();
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();
   v8::Local<v8::Value> value;
@@ -106,7 +103,7 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
   if (value.IsEmpty() || !value->IsObject())
     return;
   auto binding = value->ToObject(context).ToLocalChecked();
-  auto callback_key = mate::ConvertToV8(isolate, callback_name)
+  auto callback_key = gin::ConvertToV8(isolate, callback_name)
                           ->ToString(context)
                           .ToLocalChecked();
   auto callback_value = binding->Get(context, callback_key).ToLocalChecked();
@@ -123,18 +120,18 @@ AtomSandboxedRendererClient::AtomSandboxedRendererClient() {
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
-AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {}
+AtomSandboxedRendererClient::~AtomSandboxedRendererClient() = default;
 
 void AtomSandboxedRendererClient::InitializeBindings(
     v8::Local<v8::Object> binding,
     v8::Local<v8::Context> context,
     bool is_main_frame) {
   auto* isolate = context->GetIsolate();
-  mate::Dictionary b(isolate, binding);
+  gin_helper::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
   b.SetMethod("createPreloadScript", CreatePreloadScript);
 
-  mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
 
   ElectronBindings::BindProcess(isolate, &process, metrics_.get());
@@ -144,12 +141,6 @@ void AtomSandboxedRendererClient::InitializeBindings(
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
   process.SetReadOnly("isMainFrame", is_main_frame);
-
-  // Pass in CLI flags needed to setup the renderer
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kGuestInstanceID))
-    b.Set(options::kGuestInstanceID,
-          command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
 }
 
 void AtomSandboxedRendererClient::RenderFrameCreated(
@@ -165,6 +156,7 @@ void AtomSandboxedRendererClient::RenderViewCreated(
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentStart(render_frame);
   if (injected_frames_.find(render_frame) == injected_frames_.end())
     return;
 
@@ -180,6 +172,7 @@ void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
   if (injected_frames_.find(render_frame) == injected_frames_.end())
     return;
 
@@ -208,7 +201,8 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
       base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInSubFrames);
   bool should_load_preload =
-      is_main_frame || is_devtools || allow_node_in_sub_frames;
+      (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
+      !IsWebViewFrame(context, render_frame);
   if (!should_load_preload)
     return;
 
@@ -226,7 +220,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
 
   std::vector<v8::Local<v8::Value>> sandbox_preload_bundle_args = {binding};
 
-  node::per_process::native_module_loader.CompileAndCall(
+  util::CompileAndCall(
       isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",
       &sandbox_preload_bundle_params, &sandbox_preload_bundle_args, nullptr);
 
@@ -243,7 +237,7 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
   // an argument.
   auto* isolate = context->GetIsolate();
 
-  mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
   process.SetMethod("_linkedBinding", GetBinding);
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
@@ -254,18 +248,20 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
       process.GetHandle(),
       GetContext(render_frame->GetWebFrame(), isolate)->Global()};
 
-  node::per_process::native_module_loader.CompileAndCall(
-      context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
-      &isolated_bundle_args, nullptr);
+  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
+                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
 }
 
 void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame,
     int world_id) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  NOTREACHED();
+#else
   auto* isolate = context->GetIsolate();
 
-  mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
   process.SetMethod("_linkedBinding", GetBinding);
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
@@ -278,17 +274,16 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
       GetContext(render_frame->GetWebFrame(), isolate)->Global(),
       v8::Integer::New(isolate, world_id)};
 
-  node::per_process::native_module_loader.CompileAndCall(
-      context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
-      &isolated_bundle_args, nullptr);
+  util::CompileAndCall(context, "electron/js2c/content_script_bundle",
+                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
+#endif
 }
 
 void AtomSandboxedRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  if (injected_frames_.find(render_frame) == injected_frames_.end())
+  if (injected_frames_.erase(render_frame) == 0)
     return;
-  injected_frames_.erase(render_frame);
 
   auto* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);

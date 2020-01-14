@@ -118,19 +118,21 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   [super dealloc];
 }
 
-- (void)setCloseCallback:(const base::Callback<void()>&)callback {
-  closeCallback = callback;
+- (void)setCloseCallback:(base::OnceClosure)callback {
+  closeCallback = std::move(callback);
 }
 
 - (void)populateWithModel:(electron::AtomMenuModel*)model {
   if (!menu_)
     return;
 
+  // Locate & retain the recent documents menu item
   if (!recentDocumentsMenuItem_) {
-    // Locate & retain the recent documents menu item
-    recentDocumentsMenuItem_.reset(
-        [[[[[NSApp mainMenu] itemWithTitle:@"Electron"] submenu]
-            itemWithTitle:@"Open Recent"] retain]);
+    base::string16 title = base::ASCIIToUTF16("Open Recent");
+    NSString* openTitle = l10n_util::FixUpWindowsStyleLabel(title);
+
+    recentDocumentsMenuItem_.reset([[[[[NSApp mainMenu]
+        itemWithTitle:@"Electron"] submenu] itemWithTitle:openTitle] retain]);
   }
 
   model_ = model;
@@ -151,7 +153,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     isMenuOpen_ = NO;
     model_->MenuWillClose();
     if (!closeCallback.is_null()) {
-      base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, closeCallback);
+      base::PostTask(FROM_HERE, {BrowserThread::UI}, std::move(closeCallback));
     }
   }
 }
@@ -211,6 +213,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   // Replace submenu
   [item setSubmenu:recentDocumentsMenu];
 
+  DCHECK_EQ([item action], @selector(submenuAction:));
+  DCHECK_EQ([item target], recentDocumentsMenu);
+
   // Remember the new menu item that carries the recent documents menu
   recentDocumentsMenuItem_.reset([item retain]);
 }
@@ -232,6 +237,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   gfx::Image icon;
   if (model->GetIconAt(index, &icon) && !icon.IsEmpty())
     [item setImage:icon.ToNSImage()];
+
+  base::string16 toolTip = model->GetToolTipAt(index);
+  [item setToolTip:base::SysUTF16ToNSString(toolTip)];
 
   base::string16 role = model->GetRoleAt(index);
   electron::AtomMenuModel::ItemType type = model->GetTypeAt(index);
@@ -344,8 +352,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   DCHECK(model);
   if (model) {
     NSEvent* event = [NSApp currentEvent];
-    model->ActivatedAt(modelIndex,
-                       ui::EventFlagsFromNSEventWithModifiers(event, [event modifierFlags]));
+    model->ActivatedAt(modelIndex, ui::EventFlagsFromNSEventWithModifiers(
+                                       event, [event modifierFlags]));
   }
 }
 
@@ -372,11 +380,12 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 - (void)menuDidClose:(NSMenu*)menu {
   if (isMenuOpen_) {
     isMenuOpen_ = NO;
-    model_->MenuWillClose();
+    if (model_)
+      model_->MenuWillClose();
     // Post async task so that itemSelected runs before the close callback
     // deletes the controller from the map which deallocates it
     if (!closeCallback.is_null()) {
-      base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, closeCallback);
+      base::PostTask(FROM_HERE, {BrowserThread::UI}, std::move(closeCallback));
     }
   }
 }

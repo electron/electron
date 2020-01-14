@@ -15,6 +15,8 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"
 #include "content/public/common/main_function_params.h"
+#include "electron/buildflags/buildflags.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
 #include "ui/views/layout/layout_provider.h"
 
@@ -29,13 +31,19 @@ class WMState;
 
 namespace electron {
 
-class ElectronBindings;
+class AtomBrowserContext;
 class Browser;
+class ElectronBindings;
 class JavascriptEnvironment;
 class NodeBindings;
 class NodeDebugger;
 class NodeEnvironment;
 class BridgeTaskRunner;
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+class AtomExtensionsClient;
+class AtomExtensionsBrowserClient;
+#endif
 
 #if defined(TOOLKIT_VIEWS)
 class ViewsDelegate;
@@ -85,6 +93,7 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   void PostMainMessageLoopStart() override;
   void PostMainMessageLoopRun() override;
   void PreMainMessageLoopStart() override;
+  void PostCreateThreads() override;
   void PostDestroyThreads() override;
 
  private:
@@ -98,7 +107,8 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(OS_MACOSX)
   void FreeAppDelegate();
-  void InitializeEmptyApplicationMenu();
+  void RegisterURLHandler();
+  void InitializeMainNib();
 #endif
 
 #if defined(OS_MACOSX)
@@ -128,12 +138,17 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<IconManager> icon_manager_;
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  std::unique_ptr<AtomExtensionsClient> extensions_client_;
+  std::unique_ptr<AtomExtensionsBrowserClient> extensions_browser_client_;
+#endif
+
   base::RepeatingTimer gc_timer_;
 
   // List of callbacks should be executed before destroying JS env.
   std::list<base::OnceClosure> destructors_;
 
-  device::mojom::GeolocationControlPtr geolocation_control_;
+  mojo::Remote<device::mojom::GeolocationControl> geolocation_control_;
 
   static AtomBrowserMainParts* self_;
 

@@ -35,7 +35,7 @@ Invokes the print dialog on the child window.
 
 #### `win.postMessage(message, targetOrigin)`
 
-* `message` String
+* `message` any
 * `targetOrigin` String
 
 Sends a message to the child window with the specified origin or `*` for no

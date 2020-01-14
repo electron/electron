@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "base/mac/scoped_sending_event.h"
-#include "base/message_loop/message_loop.h"
+#include "base/message_loop/message_loop_current.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -30,8 +30,7 @@ namespace electron {
 
 namespace api {
 
-MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : Menu(isolate, wrapper), weak_factory_(this) {}
+MenuMac::MenuMac(gin::Arguments* args) : Menu(args), weak_factory_(this) {}
 
 MenuMac::~MenuMac() = default;
 
@@ -39,16 +38,20 @@ void MenuMac::PopupAt(TopLevelWindow* window,
                       int x,
                       int y,
                       int positioning_item,
-                      const base::Closure& callback) {
+                      base::OnceClosure callback) {
   NativeWindow* native_window = window->window();
   if (!native_window)
     return;
 
+  // Make sure the Menu object would not be garbage-collected until the callback
+  // has run.
+  base::OnceClosure callback_with_ref = BindSelfToClosure(std::move(callback));
+
   auto popup =
       base::BindOnce(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
                      native_window->GetWeakPtr(), window->weak_map_id(), x, y,
-                     positioning_item, callback);
-  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, std::move(popup));
+                     positioning_item, std::move(callback_with_ref));
+  base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(popup));
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
@@ -56,13 +59,14 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                         int x,
                         int y,
                         int positioning_item,
-                        base::Closure callback) {
+                        base::OnceClosure callback) {
   if (!native_window)
     return;
   NSWindow* nswindow = native_window->GetNativeWindow().GetNativeNSWindow();
 
-  auto close_callback = base::BindRepeating(
-      &MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
+  base::OnceClosure close_callback =
+      base::BindOnce(&MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id,
+                     std::move(callback));
   popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>(
       [[AtomMenuController alloc] initWithModel:model()
                           useDefaultAccelerator:NO]);
@@ -100,7 +104,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
 
-  [popup_controllers_[window_id] setCloseCallback:close_callback];
+  [popup_controllers_[window_id] setCloseCallback:std::move(close_callback)];
   // Make sure events can be pumped while the menu is up.
   base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
 
@@ -117,6 +121,13 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 }
 
 void MenuMac::ClosePopupAt(int32_t window_id) {
+  auto close_popup = base::BindOnce(&MenuMac::ClosePopupOnUI,
+                                    weak_factory_.GetWeakPtr(), window_id);
+  base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE,
+                                                   std::move(close_popup));
+}
+
+void MenuMac::ClosePopupOnUI(int32_t window_id) {
   auto controller = popup_controllers_.find(window_id);
   if (controller != popup_controllers_.end()) {
     // Close the controller for the window.
@@ -131,9 +142,9 @@ void MenuMac::ClosePopupAt(int32_t window_id) {
   }
 }
 
-void MenuMac::OnClosed(int32_t window_id, base::Closure callback) {
+void MenuMac::OnClosed(int32_t window_id, base::OnceClosure callback) {
   popup_controllers_.erase(window_id);
-  callback.Run();
+  std::move(callback).Run();
 }
 
 // static
@@ -166,8 +177,8 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-mate::WrappableBase* Menu::New(mate::Arguments* args) {
-  return new MenuMac(args->isolate(), args->GetThis());
+gin_helper::WrappableBase* Menu::New(gin::Arguments* args) {
+  return new MenuMac(args);
 }
 
 }  // namespace api

@@ -15,7 +15,7 @@ NativeBrowserViewViews::NativeBrowserViewViews(
     InspectableWebContents* inspectable_web_contents)
     : NativeBrowserView(inspectable_web_contents) {}
 
-NativeBrowserViewViews::~NativeBrowserViewViews() {}
+NativeBrowserViewViews::~NativeBrowserViewViews() = default;
 
 void NativeBrowserViewViews::SetAutoResizeFlags(uint8_t flags) {
   auto_resize_flags_ = flags;
@@ -95,6 +95,10 @@ void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
   auto* view = GetInspectableWebContentsView()->GetView();
   view->SetBoundsRect(bounds);
   ResetAutoResizeProportions();
+}
+
+gfx::Rect NativeBrowserViewViews::GetBounds() {
+  return GetInspectableWebContentsView()->GetView()->bounds();
 }
 
 void NativeBrowserViewViews::SetBackgroundColor(SkColor color) {

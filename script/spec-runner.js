@@ -7,8 +7,13 @@ const { hashElement } = require('folder-hash')
 const path = require('path')
 const unknownFlags = []
 
+require('colors')
+const pass = '✓'.green
+const fail = '✗'.red
+
 const args = require('minimist')(process.argv, {
-  string: ['runners'],
+  string: ['runners', 'target'],
+  boolean: ['buildNativeTests'],
   unknown: arg => unknownFlags.push(arg)
 })
 
@@ -28,14 +33,25 @@ const BASE = path.resolve(__dirname, '../..')
 const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
 
+const runners = new Map([
+  ['main', { description: 'Main process specs', run: runMainProcessElectronTests }],
+  ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }]
+  // TODO(codebytere): refactor native tests to only depend on what we need
+  /* ['native', { description: 'Native specs', run: runNativeElectronTests }] */
+])
+
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
 let runnersToRun = null
 if (args.runners) {
   runnersToRun = args.runners.split(',')
+  if (!runnersToRun.every(r => [...runners.keys()].includes(r))) {
+    console.log(`${fail} ${runnersToRun} must be a subset of [${[...runners.keys()].join(' | ')}]`)
+    process.exit(1)
+  }
   console.log('Only running:', runnersToRun)
 } else {
-  console.log('Will trigger all spec runners')
+  console.log(`Triggering runners: ${[...runners.keys()].join(', ')}`)
 }
 
 async function main () {
@@ -45,7 +61,8 @@ async function main () {
       (lastSpecInstallHash !== currentSpecInstallHash)
 
   if (somethingChanged) {
-    await installSpecModules()
+    await installSpecModules(path.resolve(__dirname, '..', 'spec'))
+    await installSpecModules(path.resolve(__dirname, '..', 'spec-main'))
     await getSpecHash().then(saveSpecHash)
   }
 
@@ -60,7 +77,8 @@ async function main () {
 function generateTypeDefinitions () {
   const { status } = childProcess.spawnSync('npm', ['run', 'create-typescript-definitions'], {
     cwd: path.resolve(__dirname, '..'),
-    stdio: 'inherit'
+    stdio: 'inherit',
+    shell: true
   })
   if (status !== 0) {
     throw new Error(`Electron typescript definition generation failed with exit code: ${status}.`)
@@ -79,25 +97,21 @@ function saveSpecHash ([newSpecHash, newSpecInstallHash]) {
 
 async function runElectronTests () {
   const errors = []
-  const runners = [
-    ['Main process specs', 'main', runMainProcessElectronTests],
-    ['Remote based specs', 'remote', runRemoteBasedElectronTests]
-  ]
 
-  const mochaFile = process.env.MOCHA_FILE
-  for (const runner of runners) {
-    if (runnersToRun && !runnersToRun.includes(runner[1])) {
-      console.info('\nSkipping:', runner[0])
+  const testResultsDir = process.env.ELECTRON_TEST_RESULTS_DIR
+  for (const [runnerId, { description, run }] of runners) {
+    if (runnersToRun && !runnersToRun.includes(runnerId)) {
+      console.info('\nSkipping:', description)
       continue
     }
     try {
-      console.info('\nRunning:', runner[0])
-      if (mochaFile) {
-        process.env.MOCHA_FILE = mochaFile.replace('.xml', `-${runner[1]}.xml`)
+      console.info('\nRunning:', description)
+      if (testResultsDir) {
+        process.env.MOCHA_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`)
       }
-      await runner[2]()
+      await run()
     } catch (err) {
-      errors.push([runner[0], err])
+      errors.push([runnerId, err])
     }
   }
 
@@ -106,7 +120,8 @@ async function runElectronTests () {
       console.error('\n\nRunner Failed:', err[0])
       console.error(err[1])
     }
-    throw new Error('Electron test runners have failed')
+    console.log(`${fail} Electron test runners have failed`)
+    process.exit(1)
   }
 }
 
@@ -123,35 +138,98 @@ async function runRemoteBasedElectronTests () {
     stdio: 'inherit'
   })
   if (status !== 0) {
-    throw new Error(`Electron tests failed with code ${status}.`)
+    const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString()
+    console.log(`${fail} Electron tests failed with code ${textStatus}.`)
+    process.exit(1)
   }
+  console.log(`${pass} Electron remote process tests passed.`)
+}
+
+async function runNativeElectronTests () {
+  let testTargets = require('./native-test-targets.json')
+  const outDir = `out/${utils.getOutDir()}`
+
+  // If native tests are being run, only one arg would be relevant
+  if (args.target && !testTargets.includes(args.target)) {
+    console.log(`${fail} ${args.target} must be a subset of [${[testTargets].join(', ')}]`)
+    process.exit(1)
+  }
+
+  // Optionally build all native test targets
+  if (args.buildNativeTests) {
+    for (const target of testTargets) {
+      const build = childProcess.spawnSync('ninja', ['-C', outDir, target], {
+        cwd: path.resolve(__dirname, '../..'),
+        stdio: 'inherit'
+      })
+
+      // Exit if test target failed to build
+      if (build.status !== 0) {
+        console.log(`${fail} ${target} failed to build.`)
+        process.exit(1)
+      }
+    }
+  }
+
+  // If a specific target was passed, only build and run that target
+  if (args.target) testTargets = [args.target]
+
+  // Run test targets
+  const failures = []
+  for (const target of testTargets) {
+    console.info('\nRunning native test for target:', target)
+    const testRun = childProcess.spawnSync(`./${outDir}/${target}`, {
+      cwd: path.resolve(__dirname, '../..'),
+      stdio: 'inherit'
+    })
+
+    // Collect failures and log at end
+    if (testRun.status !== 0) failures.push({ target })
+  }
+
+  // Exit if any failures
+  if (failures.length > 0) {
+    console.log(`${fail} Electron native tests failed for the following targets: `, failures)
+    process.exit(1)
+  }
+
+  console.log(`${pass} Electron native tests passed.`)
 }
 
 async function runMainProcessElectronTests () {
-  const exe = path.resolve(BASE, utils.getElectronExec())
+  let exe = path.resolve(BASE, utils.getElectronExec())
+  const runnerArgs = ['electron/spec-main', ...unknownArgs.slice(2)]
+  if (process.platform === 'linux') {
+    runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe)
+    exe = 'python'
+  }
 
-  const { status } = childProcess.spawnSync(exe, ['electron/spec-main', ...unknownArgs.slice(2)], {
+  const { status } = childProcess.spawnSync(exe, runnerArgs, {
     cwd: path.resolve(__dirname, '../..'),
     stdio: 'inherit'
   })
   if (status !== 0) {
-    throw new Error(`Electron tests failed with code ${status}.`)
+    const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString()
+    console.log(`${fail} Electron tests failed with code ${textStatus}.`)
+    process.exit(1)
   }
+  console.log(`${pass} Electron main process tests passed.`)
 }
 
-async function installSpecModules () {
-  const nodeDir = path.resolve(BASE, `out/${utils.OUT_DIR}/gen/node_headers`)
+async function installSpecModules (dir) {
+  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
-    npm_config_msvs_version: '2017'
+    npm_config_msvs_version: '2019'
   })
   const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
     env,
-    cwd: path.resolve(__dirname, '../spec'),
+    cwd: dir,
     stdio: 'inherit'
   })
-  if (status !== 0) {
-    throw new Error('Failed to npm install in the spec folder')
+  if (status !== 0 && !process.env.IGNORE_YARN_INSTALL_ERROR) {
+    console.log(`${fail} Failed to yarn install in '${dir}'`)
+    process.exit(1)
   }
 }
 
@@ -160,7 +238,9 @@ function getSpecHash () {
     (async () => {
       const hasher = crypto.createHash('SHA256')
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package.json')))
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/package.json')))
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/yarn.lock')))
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/yarn.lock')))
       return hasher.digest('hex')
     })(),
     (async () => {

@@ -9,7 +9,7 @@
 #include "base/bind.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
-#include "mojo/public/cpp/bindings/interface_request.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "net/proxy_resolution/proxy_info.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/atom_browser_context.h"
@@ -19,12 +19,12 @@ using content::BrowserThread;
 namespace electron {
 
 ResolveProxyHelper::ResolveProxyHelper(AtomBrowserContext* browser_context)
-    : binding_(this), browser_context_(browser_context) {}
+    : browser_context_(browser_context) {}
 
 ResolveProxyHelper::~ResolveProxyHelper() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!owned_self_);
-  DCHECK(!binding_.is_bound());
+  DCHECK(!receiver_.is_bound());
   // Clear all pending requests if the ProxyService is still alive.
   pending_requests_.clear();
 }
@@ -33,10 +33,10 @@ void ResolveProxyHelper::ResolveProxy(const GURL& url,
                                       ResolveProxyCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   // Enqueue the pending request.
-  pending_requests_.push_back(PendingRequest(url, std::move(callback)));
+  pending_requests_.emplace_back(url, std::move(callback));
 
   // If nothing is in progress, start.
-  if (!binding_.is_bound()) {
+  if (!receiver_.is_bound()) {
     DCHECK_EQ(1u, pending_requests_.size());
     StartPendingRequest();
   }
@@ -44,18 +44,19 @@ void ResolveProxyHelper::ResolveProxy(const GURL& url,
 
 void ResolveProxyHelper::StartPendingRequest() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  DCHECK(!binding_.is_bound());
+  DCHECK(!receiver_.is_bound());
   DCHECK(!pending_requests_.empty());
 
   // Start the request.
-  network::mojom::ProxyLookupClientPtr proxy_lookup_client;
-  binding_.Bind(mojo::MakeRequest(&proxy_lookup_client));
-  binding_.set_connection_error_handler(
+  mojo::PendingRemote<network::mojom::ProxyLookupClient> proxy_lookup_client =
+      receiver_.BindNewPipeAndPassRemote();
+  receiver_.set_disconnect_handler(
       base::BindOnce(&ResolveProxyHelper::OnProxyLookupComplete,
                      base::Unretained(this), net::ERR_ABORTED, base::nullopt));
   content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->LookUpProxyForURL(pending_requests_.front().url,
+                          net::NetworkIsolationKey::Todo(),
                           std::move(proxy_lookup_client));
 }
 
@@ -65,7 +66,7 @@ void ResolveProxyHelper::OnProxyLookupComplete(
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!pending_requests_.empty());
 
-  binding_.Close();
+  receiver_.reset();
 
   // Clear the current (completed) request.
   PendingRequest completed_request = std::move(pending_requests_.front());

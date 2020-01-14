@@ -20,7 +20,6 @@ template("webpack_build") {
                "//electron/yarn.lock",
                "//electron/typings/internal-ambient.d.ts",
                "//electron/typings/internal-electron.d.ts",
-               "//electron/typings/internal-helpers.d.ts",
              ] + invoker.inputs
 
     args = [

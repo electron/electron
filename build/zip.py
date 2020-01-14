@@ -16,6 +16,10 @@ PATHS_TO_SKIP = [
   './libVkICD_mock_', #Skipping because these are outputs that we don't need
   './VkICD_mock_', #Skipping because these are outputs that we don't need
 
+  # Skipping because its an output of create_bundle from //build/config/mac/rules.gni
+  # that we don't need
+  'Electron.dSYM',
+
   # //chrome/browser:resources depends on this via
   # //chrome/browser/resources/ssl/ssl_error_assistant, but we don't need to
   # ship it.
@@ -46,19 +50,19 @@ def execute(argv):
     raise e
 
 def main(argv):
-  dist_zip, runtime_deps, target_cpu, target_os = argv
+  dist_zip, runtime_deps, target_cpu, target_os, flatten_val = argv
+  should_flatten = flatten_val == "true"
   dist_files = set()
   with open(runtime_deps) as f:
     for dep in f.readlines():
       dep = dep.strip()
-      dist_files.add(dep)
-  if sys.platform == 'darwin':
+      if not skip_path(dep, dist_zip, target_cpu):
+        dist_files.add(dep)
+  if sys.platform == 'darwin' and not should_flatten:
     execute(['zip', '-r', '-y', dist_zip] + list(dist_files))
   else:
     with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as z:
       for dep in dist_files:
-        if skip_path(dep, dist_zip, target_cpu):
-          continue
         if os.path.isdir(dep):
           for root, dirs, files in os.walk(dep):
             for file in files:
@@ -67,7 +71,7 @@ def main(argv):
           basename = os.path.basename(dep)
           dirname = os.path.dirname(dep)
           arcname = os.path.join(dirname, 'chrome-sandbox') if basename == 'chrome_sandbox' else dep
-          z.write(dep, arcname)
+          z.write(dep, os.path.basename(arcname) if should_flatten else arcname)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))

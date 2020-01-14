@@ -1,0 +1,98 @@
+import("//build/config/mac/mac_sdk.gni")
+
+# Template to compile .xib and .storyboard files.
+# (copied from src/build/config/ios/rules.gni)
+#
+# Arguments
+#
+#     sources:
+#         list of string, sources to compile
+#
+#     ibtool_flags:
+#         (optional) list of string, additional flags to pass to the ibtool
+template("compile_ib_files") {
+  action_foreach(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "testonly",
+                             "visibility",
+                           ])
+    assert(defined(invoker.sources),
+           "sources must be specified for $target_name")
+    assert(defined(invoker.output_extension),
+           "output_extension must be specified for $target_name")
+
+    ibtool_flags = []
+    if (defined(invoker.ibtool_flags)) {
+      ibtool_flags = invoker.ibtool_flags
+    }
+
+    _output_extension = invoker.output_extension
+
+    script = "//build/config/ios/compile_ib_files.py"
+    sources = invoker.sources
+    outputs = [
+      "$target_gen_dir/$target_name/{{source_name_part}}.$_output_extension",
+    ]
+    args = [
+      "--input",
+      "{{source}}",
+      "--output",
+      rebase_path(
+          "$target_gen_dir/$target_name/{{source_name_part}}.$_output_extension",
+          root_build_dir),
+    ]
+    args += ibtool_flags
+  }
+}
+
+# Template is copied here from Chromium but was removed in
+# https://chromium-review.googlesource.com/c/chromium/src/+/1637981
+# Template to compile and package Mac XIB files as bundle data.
+# Arguments
+#     sources:
+#         list of string, sources to comiple
+#     output_path:
+#         (optional) string, the path to use for the outputs list in the
+#         bundle_data step. If unspecified, defaults to bundle_resources_dir.
+template("mac_xib_bundle_data") {
+  _target_name = target_name
+  _compile_target_name = _target_name + "_compile_ibtool"
+
+  compile_ib_files(_compile_target_name) {
+    forward_variables_from(invoker, [ "testonly" ])
+    visibility = [ ":$_target_name" ]
+    sources = invoker.sources
+    output_extension = "nib"
+    ibtool_flags = [
+      "--minimum-deployment-target",
+      mac_deployment_target,
+
+      # TODO(rsesek): Enable this once all the bots are on Xcode 7+.
+      # "--target-device",
+      # "mac",
+    ]
+  }
+
+  bundle_data(_target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "testonly",
+                             "visibility",
+                           ])
+
+    public_deps = [
+      ":$_compile_target_name",
+    ]
+    sources = get_target_outputs(":$_compile_target_name")
+
+    _output_path = "{{bundle_resources_dir}}"
+    if (defined(invoker.output_path)) {
+      _output_path = invoker.output_path
+    }
+
+    outputs = [
+      "$_output_path/{{source_file_part}}",
+    ]
+  }
+}

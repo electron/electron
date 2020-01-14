@@ -6,21 +6,23 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
+#include "components/network_hints/renderer/web_prescient_networking_impl.h"
 #include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
+#include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
-#include "native_mate/dictionary.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/color_util.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/atom_autofill_agent.h"
 #include "shell/renderer/atom_render_frame_observer.h"
@@ -44,23 +46,35 @@
 #include <shlobj.h>
 #endif
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "components/spellcheck/renderer/spellcheck.h"
+#include "components/spellcheck/renderer/spellcheck_provider.h"
+#endif
+
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "shell/common/atom_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
-#if BUILDFLAG(ENABLE_PEPPER_FLASH)
-#include "chrome/renderer/pepper/pepper_helper.h"
-#endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
-
-#if BUILDFLAG(ENABLE_TTS)
-#include "chrome/renderer/tts_dispatcher.h"
-#endif  // BUILDFLAG(ENABLE_TTS)
+#if BUILDFLAG(ENABLE_PLUGINS)
+#include "shell/renderer/pepper_helper.h"
+#endif  // BUILDFLAG(ENABLE_PLUGINS)
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/renderer/print_render_frame_helper.h"
 #include "printing/print_settings.h"
 #include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/common/extensions_client.h"
+#include "extensions/renderer/dispatcher.h"
+#include "extensions/renderer/extension_frame_helper.h"
+#include "extensions/renderer/guest_view/extensions_guest_view_container.h"
+#include "extensions/renderer/guest_view/extensions_guest_view_container_dispatcher.h"
+#include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container.h"
+#include "shell/common/extensions/atom_extensions_client.h"
+#include "shell/renderer/extensions/atom_extensions_renderer_client.h"
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 namespace electron {
 
@@ -71,15 +85,6 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
   std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
   return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
-}
-
-void SetHiddenValue(v8::Handle<v8::Context> context,
-                    const base::StringPiece& key,
-                    v8::Local<v8::Value> value) {
-  v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Private> privateKey =
-      v8::Private::ForApi(isolate, mate::StringToV8(isolate, key));
-  context->Global()->SetPrivate(context, privateKey, value);
 }
 
 }  // namespace
@@ -102,7 +107,7 @@ RendererClientBase::RendererClientBase() {
       command_line->GetSwitchValueASCII(::switches::kRendererClientId);
 }
 
-RendererClientBase::~RendererClientBase() {}
+RendererClientBase::~RendererClientBase() = default;
 
 void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
@@ -110,21 +115,20 @@ void RendererClientBase::DidCreateScriptContext(
   // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
   auto context_id = base::StringPrintf(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
-  v8::Isolate* isolate = context->GetIsolate();
-  SetHiddenValue(context, "contextId", mate::ConvertToV8(isolate, context_id));
+  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
+  global.SetHidden("contextId", context_id);
 
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
   auto* command_line = base::CommandLine::ForCurrentProcess();
   bool enableRemoteModule =
-      !command_line->HasSwitch(switches::kDisableRemoteModule);
-  SetHiddenValue(context, "enableRemoteModule",
-                 mate::ConvertToV8(isolate, enableRemoteModule));
+      command_line->HasSwitch(switches::kEnableRemoteModule);
+  global.SetHidden("enableRemoteModule", enableRemoteModule);
+#endif
 }
 
 void RendererClientBase::AddRenderBindings(
     v8::Isolate* isolate,
-    v8::Local<v8::Object> binding_object) {
-  mate::Dictionary dict(isolate, binding_object);
-}
+    v8::Local<v8::Object> binding_object) {}
 
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -136,6 +140,23 @@ void RendererClientBase::RenderThreadStarted() {
   if (command_line->HasSwitch(options::kOffscreen)) {
     blink::WebView::SetUseExternalPopupMenus(false);
   }
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  auto* thread = content::RenderThread::Get();
+
+  extensions_client_.reset(CreateExtensionsClient());
+  extensions::ExtensionsClient::Set(extensions_client_.get());
+
+  extensions_renderer_client_.reset(new AtomExtensionsRendererClient);
+  extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
+
+  thread->AddObserver(extensions_renderer_client_->GetDispatcher());
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  if (command_line->HasSwitch(switches::kEnableSpellcheck))
+    spellcheck_ = std::make_unique<SpellCheck>(this);
 #endif
 
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
@@ -203,7 +224,7 @@ void RendererClientBase::RenderFrameCreated(
   new AutofillAgent(render_frame,
                     render_frame->GetAssociatedInterfaceRegistry());
 #endif
-#if BUILDFLAG(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PLUGINS)
   new PepperHelper(render_frame);
 #endif
   new ContentSettingsObserver(render_frame);
@@ -213,23 +234,12 @@ void RendererClientBase::RenderFrameCreated(
       std::make_unique<electron::PrintRenderFrameHelperDelegate>());
 #endif
 
-  // TODO(nornagon): it might be possible for an IPC message sent to this
-  // service to trigger v8 context creation before the page has begun loading.
-  // However, it's unclear whether such a timing is possible to trigger, and we
-  // don't have any test to confirm it. Add a test that confirms that a
-  // main->renderer IPC can't cause the preload script to be executed twice. If
-  // it is possible to trigger the preload script before the document is ready
-  // through this interface, we should delay adding it to the registry until
-  // the document is ready.
+  // Note: ElectronApiServiceImpl has to be created now to capture the
+  // DidCreateDocumentElement event.
+  auto* service = new ElectronApiServiceImpl(render_frame, this);
   render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
-      base::BindRepeating(&ElectronApiServiceImpl::CreateMojoService,
-                          render_frame, this));
-
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  // Allow access to file scheme from pdf viewer.
-  blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
-      GURL(kPdfViewerUIOrigin), "file", "", true);
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+      base::BindRepeating(&ElectronApiServiceImpl::BindTo,
+                          service->GetWeakPtr()));
 
   content::RenderView* render_view = render_frame->GetRenderView();
   if (render_frame->IsMainFrame() && render_view) {
@@ -246,22 +256,49 @@ void RendererClientBase::RenderFrameCreated(
       }
     }
   }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  auto* dispatcher = extensions_renderer_client_->GetDispatcher();
+  // ExtensionFrameHelper destroys itself when the RenderFrame is destroyed.
+  new extensions::ExtensionFrameHelper(render_frame, dispatcher);
+
+  dispatcher->OnRenderFrameCreated(render_frame);
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kEnableSpellcheck))
+    new SpellCheckProvider(render_frame, spellcheck_.get(), this);
+#endif
 }
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+void RendererClientBase::BindReceiverOnMainThread(
+    mojo::GenericPendingReceiver receiver) {
+  // TODO(crbug.com/977637): Get rid of the use of BinderRegistry here. This is
+  // only used to bind a spellcheck interface.
+  std::string interface_name = *receiver.interface_name();
+  auto pipe = receiver.PassPipe();
+  registry_.TryBindInterface(interface_name, &pipe);
+}
+
+void RendererClientBase::GetInterface(
+    const std::string& interface_name,
+    mojo::ScopedMessagePipeHandle interface_pipe) {
+  // TODO(crbug.com/977637): Get rid of the use of this implementation of
+  // |service_manager::LocalInterfaceProvider|. This was done only to avoid
+  // churning spellcheck code while eliminating the "chrome" and
+  // "chrome_renderer" services. Spellcheck is (and should remain) the only
+  // consumer of this implementation.
+  content::RenderThread::Get()->BindHostReceiver(
+      mojo::GenericPendingReceiver(interface_name, std::move(interface_pipe)));
+}
+#endif
 
 void RendererClientBase::DidClearWindowObject(
     content::RenderFrame* render_frame) {
   // Make sure every page will get a script context created.
   render_frame->GetWebFrame()->ExecuteScript(blink::WebScriptSource("void 0"));
-}
-
-std::unique_ptr<blink::WebSpeechSynthesizer>
-RendererClientBase::OverrideSpeechSynthesizer(
-    blink::WebSpeechSynthesizerClient* client) {
-#if BUILDFLAG(ENABLE_TTS)
-  return std::make_unique<TtsDispatcher>(client);
-#else
-  return nullptr;
-#endif
 }
 
 bool RendererClientBase::OverrideCreatePlugin(
@@ -301,6 +338,34 @@ void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 #endif
 }
 
+std::unique_ptr<blink::WebPrescientNetworking>
+RendererClientBase::CreatePrescientNetworking(
+    content::RenderFrame* render_frame) {
+  return std::make_unique<network_hints::WebPrescientNetworkingImpl>(
+      render_frame);
+}
+
+void RendererClientBase::RunScriptsAtDocumentStart(
+    content::RenderFrame* render_frame) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_.get()->RunScriptsAtDocumentStart(render_frame);
+#endif
+}
+
+void RendererClientBase::RunScriptsAtDocumentIdle(
+    content::RenderFrame* render_frame) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_.get()->RunScriptsAtDocumentIdle(render_frame);
+#endif
+}
+
+void RendererClientBase::RunScriptsAtDocumentEnd(
+    content::RenderFrame* render_frame) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_.get()->RunScriptsAtDocumentEnd(render_frame);
+#endif
+}
+
 v8::Local<v8::Context> RendererClientBase::GetContext(
     blink::WebLocalFrame* frame,
     v8::Isolate* isolate) const {
@@ -318,6 +383,36 @@ v8::Local<v8::Value> RendererClientBase::RunScript(
   if (!maybe_script.ToLocal(&script))
     return v8::Local<v8::Value>();
   return script->Run(context).ToLocalChecked();
+}
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
+  return new AtomExtensionsClient;
+}
+#endif
+
+bool RendererClientBase::IsWebViewFrame(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) const {
+  auto* isolate = context->GetIsolate();
+
+  if (render_frame->IsMainFrame())
+    return false;
+
+  gin::Dictionary window_dict(
+      isolate, GetContext(render_frame->GetWebFrame(), isolate)->Global());
+
+  v8::Local<v8::Object> frame_element;
+  if (!window_dict.Get("frameElement", &frame_element))
+    return false;
+
+  gin_helper::Dictionary frame_element_dict(isolate, frame_element);
+
+  v8::Local<v8::Object> internal;
+  if (!frame_element_dict.GetHidden("internal", &internal))
+    return false;
+
+  return !internal.IsEmpty();
 }
 
 }  // namespace electron

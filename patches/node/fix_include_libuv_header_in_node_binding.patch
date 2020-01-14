@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 8 Jan 2020 12:54:07 -0800
+Subject: fix: include libuv header in node_binding
+
+The libuv header uv.h was removed in
+https://github.com/nodejs/node/commit/3bb085dbad4d23030c731834e35b2804c8a50b23,
+but is necessary for Windows to understand what uv_lib_t is. 
+
+Upstreamed in https://github.com/nodejs/node/pull/31265.
+
+diff --git a/src/node_binding.h b/src/node_binding.h
+index cefb6419ebb7f5c5c79927d179eef0a790e234ad..5bced5b41431dc7838d1a30774a1a41ff797290e 100644
+--- a/src/node_binding.h
++++ b/src/node_binding.h
+@@ -10,6 +10,7 @@
+ #include "node.h"
+ #define NAPI_EXPERIMENTAL
+ #include "node_api.h"
++#include "uv.h"
+ 
+ enum {
+   NM_F_BUILTIN = 1 << 0,  // Unused.

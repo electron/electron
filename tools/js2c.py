@@ -30,9 +30,9 @@ def main():
 
   js2c = os.path.join(node_path, 'tools', 'js2c.py')
   subprocess.check_call(
-    [sys.executable, js2c, natives] +
+    [sys.executable, js2c] +
     js_source_files +
-    ['-t', TEMPLATE])
+    ['--only-js', '--target', natives])
 
 
 if __name__ == '__main__':

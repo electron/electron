@@ -7,8 +7,8 @@
 #include "base/lazy_instance.h"
 #include "base/threading/thread_local.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/api/event_emitter_caller.h"
 #include "shell/common/asar/asar_util.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 
@@ -38,17 +38,21 @@ WebWorkerObserver::WebWorkerObserver()
 WebWorkerObserver::~WebWorkerObserver() {
   lazy_tls.Pointer()->Set(nullptr);
   node::FreeEnvironment(node_bindings_->uv_env());
+  node::FreeIsolateData(node_bindings_->isolate_data());
   asar::ClearArchives();
 }
 
-void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> context) {
-  v8::Context::Scope context_scope(context);
+void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> worker_context) {
+  v8::Context::Scope context_scope(worker_context);
 
   // Start the embed thread.
   node_bindings_->PrepareMessageLoop();
 
   // Setup node environment for each window.
-  node::Environment* env = node_bindings_->CreateEnvironment(context);
+  bool initialized = node::InitializeContext(worker_context);
+  CHECK(initialized);
+  node::Environment* env =
+      node_bindings_->CreateEnvironment(worker_context, nullptr, true);
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());
@@ -66,7 +70,7 @@ void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> context) {
 void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
   node::Environment* env = node::Environment::GetCurrent(context);
   if (env)
-    mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+    gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
 
   delete this;
 }

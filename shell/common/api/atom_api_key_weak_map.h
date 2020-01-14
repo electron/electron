@@ -5,9 +5,10 @@
 #ifndef SHELL_COMMON_API_ATOM_API_KEY_WEAK_MAP_H_
 #define SHELL_COMMON_API_ATOM_API_KEY_WEAK_MAP_H_
 
-#include "native_mate/handle.h"
-#include "native_mate/object_template_builder.h"
-#include "native_mate/wrappable.h"
+#include "gin/handle.h"
+#include "shell/common/gin_converters/std_converter.h"
+#include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/key_weak_map.h"
 
 namespace electron {
@@ -15,16 +16,16 @@ namespace electron {
 namespace api {
 
 template <typename K>
-class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
+class KeyWeakMap : public gin_helper::Wrappable<KeyWeakMap<K>> {
  public:
-  static mate::Handle<KeyWeakMap<K>> Create(v8::Isolate* isolate) {
-    return mate::CreateHandle(isolate, new KeyWeakMap<K>(isolate));
+  static gin::Handle<KeyWeakMap<K>> Create(v8::Isolate* isolate) {
+    return gin::CreateHandle(isolate, new KeyWeakMap<K>(isolate));
   }
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
-    prototype->SetClassName(mate::StringToV8(isolate, "KeyWeakMap"));
-    mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+    prototype->SetClassName(gin::StringToV8(isolate, "KeyWeakMap"));
+    gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
         .SetMethod("set", &KeyWeakMap<K>::Set)
         .SetMethod("get", &KeyWeakMap<K>::Get)
         .SetMethod("has", &KeyWeakMap<K>::Has)
@@ -33,7 +34,7 @@ class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
 
  protected:
   explicit KeyWeakMap(v8::Isolate* isolate) {
-    mate::Wrappable<KeyWeakMap<K>>::Init(isolate);
+    gin_helper::Wrappable<KeyWeakMap<K>>::Init(isolate);
   }
   ~KeyWeakMap() override {}
 

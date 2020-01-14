@@ -11,7 +11,7 @@ namespace electron {
 GPUInfoEnumerator::GPUInfoEnumerator()
     : value_stack(), current(std::make_unique<base::DictionaryValue>()) {}
 
-GPUInfoEnumerator::~GPUInfoEnumerator() {}
+GPUInfoEnumerator::~GPUInfoEnumerator() = default;
 
 void GPUInfoEnumerator::AddInt64(const char* name, int64_t value) {
   current->SetInteger(name, value);
@@ -33,6 +33,11 @@ void GPUInfoEnumerator::AddBool(const char* name, bool value) {
 void GPUInfoEnumerator::AddTimeDeltaInSecondsF(const char* name,
                                                const base::TimeDelta& value) {
   current->SetInteger(name, value.InMilliseconds());
+}
+
+void GPUInfoEnumerator::AddBinary(const char* name,
+                                  const base::span<const uint8_t>& value) {
+  current->Set(name, std::make_unique<base::Value>(value));
 }
 
 void GPUInfoEnumerator::BeginGPUDevice() {

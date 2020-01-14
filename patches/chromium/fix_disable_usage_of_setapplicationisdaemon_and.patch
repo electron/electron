@@ -1,22 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sattard@slack-corp.com>
 Date: Mon, 4 Mar 2019 14:51:45 -0800
-Subject: fix: disable usage of SetApplicationIsDaemon and
- _LSSetApplicationLaunchServicesServerConnectionStatus in MAS builds
+Subject: fix_disable_usage_of_setapplicationisdaemon_and.patch
 
-diff --git a/content/utility/utility_service_factory.cc b/content/utility/utility_service_factory.cc
-index 35b8382b0215dfc17c67d7215a1a096ffa3cd503..62ac2aa93f4778e029232334729d084ee3c2f6b1 100644
---- a/content/utility/utility_service_factory.cc
-+++ b/content/utility/utility_service_factory.cc
-@@ -207,7 +207,7 @@ void UtilityServiceFactory::RunService(
- std::unique_ptr<service_manager::Service>
- UtilityServiceFactory::CreateAudioService(
-     mojo::PendingReceiver<service_manager::mojom::Service> receiver) {
--#if defined(OS_MACOSX)
-+#if defined(OS_MACOSX) && !defined(MAS_BUILD)
-   // Don't connect to launch services when running sandboxed
-   // (https://crbug.com/874785).
-   if (base::FeatureList::IsEnabled(
+Disable usage of SetApplicationIsDaemon and
+_LSSetApplicationLaunchServicesServerConnectionStatus in MAS builds
+
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
 index caa30bb378b30331f90057fe7ce3aec724104bf8..a766daa808495f7872051e129c6ad9f76f54e4fe 100644
 --- a/sandbox/mac/system_services.cc

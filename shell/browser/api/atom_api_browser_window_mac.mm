@@ -47,7 +47,7 @@ std::vector<gfx::Rect> CalculateNonDraggableRegions(
     int height) {
   std::vector<gfx::Rect> result;
   SkRegion non_draggable;
-  non_draggable.op(0, 0, width, height, SkRegion::kUnion_Op);
+  non_draggable.op({0, 0, width, height}, SkRegion::kUnion_Op);
   non_draggable.op(*draggable, SkRegion::kDifference_Op);
   for (SkRegion::Iterator it(non_draggable); !it.done(); it.next()) {
     result.push_back(gfx::SkIRectToRect(it.rect()));
@@ -101,9 +101,11 @@ void BrowserWindow::UpdateDraggableRegions(
 
   // Draggable regions is implemented by having the whole web view draggable
   // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
-  draggable_regions_.clear();
-  for (const auto& r : regions)
-    draggable_regions_.push_back(r.Clone());
+  if (&draggable_regions_ != &regions) {
+    draggable_regions_.clear();
+    for (const auto& r : regions)
+      draggable_regions_.push_back(r.Clone());
+  }
   std::vector<gfx::Rect> drag_exclude_rects;
   if (regions.empty()) {
     drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));

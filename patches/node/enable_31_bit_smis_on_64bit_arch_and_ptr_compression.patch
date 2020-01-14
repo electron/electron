@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Tue, 10 Dec 2019 15:02:21 -0800
+Subject: enable 31 bit smis on 64bit arch and ptr compression
+
+This aligns with the defaults set on the Chromium build. Without this, native
+node modules will have different (wrong) ideas about how v8 structs are laid
+out in memory on 64-bit machines, and will summarily fail to work.
+
+diff --git a/common.gypi b/common.gypi
+index f4d03a2fdfd47a4e6a71c7146d92ce7cbc44993d..d88db157c0e2972c5a7c4f8dacb5a69bff1d9b72 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -75,6 +75,9 @@
+     # TODO(refack): make v8-perfetto happen
+     'v8_use_perfetto': 0,
+ 
++    'v8_enable_pointer_compression%': 0,
++    'v8_enable_31bit_smis_on_64bit_arch': 1,
++
+     ##### end V8 defaults #####
+ 
+     # When building native modules using 'npm install' with the system npm,
+@@ -152,6 +155,9 @@
+       ['OS=="mac"', {
+         'clang%': 1,
+       }],
++      ['target_arch == "arm64" or target_arch == "x64"', {
++        'v8_enable_pointer_compression': 1,
++      }],
+     ],
+   },
+ 
+@@ -375,6 +381,12 @@
+           }],
+         ],
+       }],
++      ['v8_enable_pointer_compression == 1', {
++        'defines': ['V8_COMPRESS_POINTERS'],
++      }],
++      ['v8_enable_pointer_compression == 1 or v8_enable_31bit_smis_on_64bit_arch == 1', {
++        'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
++      }],
+       ['OS == "win"', {
+         'defines': [
+           'WIN32',

@@ -13,7 +13,7 @@ Generally speaking, shortcuts are added by providing a `Name` and `Exec`
 property for each entry in the shortcuts menu. Unity will execute the
 `Exec` field once clicked by the user. The format is as follows:
 
-```text
+```plaintext
 Actions=PlayPause;Next;Previous
 
 [Desktop Action PlayPause]

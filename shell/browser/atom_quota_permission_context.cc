@@ -4,17 +4,19 @@
 
 #include "shell/browser/atom_quota_permission_context.h"
 
+#include <utility>
+
 namespace electron {
 
-AtomQuotaPermissionContext::AtomQuotaPermissionContext() {}
+AtomQuotaPermissionContext::AtomQuotaPermissionContext() = default;
 
-AtomQuotaPermissionContext::~AtomQuotaPermissionContext() {}
+AtomQuotaPermissionContext::~AtomQuotaPermissionContext() = default;
 
 void AtomQuotaPermissionContext::RequestQuotaPermission(
     const content::StorageQuotaParams& params,
     int render_process_id,
-    const PermissionCallback& callback) {
-  callback.Run(response::QUOTA_PERMISSION_RESPONSE_ALLOW);
+    PermissionCallback callback) {
+  std::move(callback).Run(response::QUOTA_PERMISSION_RESPONSE_ALLOW);
 }
 
 }  // namespace electron

@@ -41,8 +41,8 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
   const body = new stream.PassThrough()
 
   async function sendChunks () {
-    await delay(0)  // the stream protocol API breaks if you send data immediately.
-    let buf = Buffer.from(data as any)  // nodejs typings are wrong, Buffer.from can take a Buffer
+    await delay(0) // the stream protocol API breaks if you send data immediately.
+    let buf = Buffer.from(data as any) // nodejs typings are wrong, Buffer.from can take a Buffer
     for (;;) {
       body.push(buf.slice(0, chunkSize))
       buf = buf.slice(chunkSize)
@@ -60,7 +60,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
 }
 
 // A promise that can be resolved externally.
-function defer(): Promise<any> & {resolve: Function, reject: Function} {
+function defer (): Promise<any> & {resolve: Function, reject: Function} {
   let promiseResolve: Function = null as unknown as Function
   let promiseReject: Function = null as unknown as Function
   const promise: any = new Promise((resolve, reject) => {
@@ -75,14 +75,14 @@ function defer(): Promise<any> & {resolve: Function, reject: Function} {
 describe('protocol module', () => {
   let contents: WebContents = null as unknown as WebContents
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
-  before(() => contents = (webContents as any).create({sandbox: true}))
+  before(() => { contents = (webContents as any).create({ sandbox: true }) })
   after(() => (contents as any).destroy())
 
   async function ajax (url: string, options = {}) {
     // Note that we need to do navigation every time after a protocol is
     // registered or unregistered, otherwise the new protocol won't be
     // recognized by current page when NetworkService is used.
-    await contents.loadFile(path.join(fixturesPath, 'pages', 'jquery.html'))
+    await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'))
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`)
   }
 
@@ -195,7 +195,7 @@ describe('protocol module', () => {
   })
 
   describe('protocol.registerFileProtocol', () => {
-    const filePath = path.join(fixturesPath, 'asar', 'a.asar', 'file1')
+    const filePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'file1')
     const fileContent = fs.readFileSync(filePath)
     const normalPath = path.join(fixturesPath, 'pages', 'a.html')
     const normalContent = fs.readFileSync(normalPath)
@@ -223,7 +223,7 @@ describe('protocol module', () => {
       expect(r.headers).to.include('x-great-header: sogreat')
     })
 
-    it('throws an error when custom headers are invalid', (done) => {
+    it.skip('throws an error when custom headers are invalid', (done) => {
       registerFileProtocol(protocolName, (request, callback) => {
         expect(() => callback({
           path: filePath,
@@ -248,7 +248,7 @@ describe('protocol module', () => {
     })
 
     it('fails when sending unexist-file', async () => {
-      const fakeFilePath = path.join(fixturesPath, 'asar', 'a.asar', 'not-exist')
+      const fakeFilePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'not-exist')
       await registerFileProtocol(protocolName, (request, callback) => callback(fakeFilePath))
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
@@ -392,6 +392,25 @@ describe('protocol module', () => {
       const r = await ajax(protocolName + '://fake-host')
       expect(r.data).to.have.lengthOf(data.length)
     })
+
+    it('can handle a stream completing while writing', async () => {
+      function dumbPassthrough () {
+        return new stream.Transform({
+          async transform (chunk, encoding, cb) {
+            cb(null, chunk)
+          }
+        })
+      }
+      await registerStreamProtocol(protocolName, (request, callback) => {
+        callback({
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/plain' },
+          data: getStream(1024 * 1024, Buffer.alloc(1024 * 1024 * 2)).pipe(dumbPassthrough())
+        })
+      })
+      const r = await ajax(protocolName + '://fake-host')
+      expect(r.data).to.have.lengthOf(1024 * 1024 * 2)
+    })
   })
 
   describe('protocol.isProtocolHandled', () => {
@@ -469,6 +488,18 @@ describe('protocol module', () => {
       expect(r.data).to.have.property('value').that.is.equal(1)
     })
 
+    it('can set content-type with charset', async () => {
+      await interceptStringProtocol('http', (request, callback) => {
+        callback({
+          mimeType: 'application/json; charset=UTF-8',
+          data: '{"value": 1}'
+        })
+      })
+      const r = await ajax('http://fake-host')
+      expect(r.data).to.be.an('object')
+      expect(r.data).to.have.property('value').that.is.equal(1)
+    })
+
     it('can receive post data', async () => {
       await interceptStringProtocol('http', (request, callback) => {
         const uploadData = request.uploadData[0].bytes.toString()
@@ -517,12 +548,12 @@ describe('protocol module', () => {
       const port = (server.address() as AddressInfo).port
       const url = `http://127.0.0.1:${port}`
       await interceptHttpProtocol('http', (request, callback) => {
-        const data = {
+        const data: Electron.RedirectRequest = {
           url: url,
           method: 'POST',
           uploadData: {
             contentType: 'application/x-www-form-urlencoded',
-            bytes: request.uploadData[0].bytes
+            data: request.uploadData[0].bytes
           },
           session: null
         }
@@ -606,7 +637,7 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.registerSchemesAsPrivileged standard', () => {
+  describe.skip('protocol.registerSchemesAsPrivileged standard', () => {
     const standardScheme = (global as any).standardScheme
     const origin = `${standardScheme}://fake-host`
     const imageURL = `${origin}/test.png`
@@ -669,7 +700,7 @@ describe('protocol module', () => {
       await requestReceived
     })
 
-    it('can access files through the FileSystem API', (done) => {
+    it.skip('can access files through the FileSystem API', (done) => {
       const filePath = path.join(fixturesPath, 'pages', 'filesystem.html')
       protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }), (error) => {
         if (error) return done(error)
@@ -690,11 +721,11 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
+  describe.skip('protocol.registerSchemesAsPrivileged cors-fetch', function () {
     const standardScheme = (global as any).standardScheme
     let w: BrowserWindow = null as unknown as BrowserWindow
     beforeEach(async () => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({ show: false })
     })
 
     afterEach(async () => {
@@ -716,10 +747,10 @@ describe('protocol module', () => {
 
     it('allows CORS requests by default', async () => {
       await allowsCORSRequests('cors', 200, new RegExp(''), () => {
-        const {ipcRenderer} = require('electron')
+        const { ipcRenderer } = require('electron')
         fetch('cors://myhost').then(function (response) {
           ipcRenderer.send('response', response.status)
-        }).catch(function (response) {
+        }).catch(function () {
           ipcRenderer.send('response', 'failed')
         })
       })
@@ -727,7 +758,7 @@ describe('protocol module', () => {
 
     it('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
       await allowsCORSRequests('no-cors', ['failed xhr', 'failed fetch'], /has been blocked by CORS policy/, () => {
-        const {ipcRenderer} = require('electron')
+        const { ipcRenderer } = require('electron')
         Promise.all([
           new Promise(resolve => {
             const req = new XMLHttpRequest()
@@ -747,7 +778,7 @@ describe('protocol module', () => {
 
     it('allows CORS, but disallows fetch requests, when specified', async () => {
       await allowsCORSRequests('no-fetch', ['loaded xhr', 'failed fetch'], /Fetch API cannot load/, () => {
-        const {ipcRenderer} = require('electron')
+        const { ipcRenderer } = require('electron')
         Promise.all([
           new Promise(resolve => {
             const req = new XMLHttpRequest()
@@ -775,7 +806,7 @@ describe('protocol module', () => {
 
       const newContents: WebContents = (webContents as any).create({ nodeIntegration: true })
       const consoleMessages: string[] = []
-      newContents.on('console-message', (e, level, message, line, sourceId) => consoleMessages.push(message))
+      newContents.on('console-message', (e, level, message) => consoleMessages.push(message))
       try {
         newContents.loadURL(standardScheme + '://fake-host')
         const [, response] = await emittedOnce(ipcMain, 'response')

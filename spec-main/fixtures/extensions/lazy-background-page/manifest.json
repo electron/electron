@@ -1,0 +1,16 @@
+{
+  "name": "lazy-background-page",
+  "version": "1.0",
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content_script.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "manifest_version": 2
+}

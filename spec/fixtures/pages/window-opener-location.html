@@ -1,7 +1,11 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  window.opener.postMessage(window.opener.location.href, '*')
+  try {
+    window.opener.postMessage(window.opener.location.href, '*')
+  } catch {
+    window.opener.postMessage(null, '*')
+  }
 </script>
 </body>
 </html>
