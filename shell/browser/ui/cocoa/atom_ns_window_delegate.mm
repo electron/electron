@@ -136,6 +136,9 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 - (void)windowDidResize:(NSNotification*)notification {
   [super windowDidResize:notification];
   shell_->NotifyWindowResize();
+  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
+    shell_->RepositionTrafficLights();
+  }
 }
 
 - (void)windowWillMove:(NSNotification*)notification {
@@ -202,6 +205,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
     NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     [window setToolbar:nil];
   }
+  shell_->SetEnteringFullScreen(true);
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
@@ -249,11 +253,20 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
     shell_->SetStyleMask(false, NSWindowStyleMaskFullSizeContentView);
     [window setTitlebarAppearsTransparent:YES];
   }
+  shell_->SetExitingFullScreen(true);
+  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
+    shell_->RepositionTrafficLights();
+  }
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
   shell_->SetResizable(is_resizable_);
   shell_->NotifyWindowLeaveFullScreen();
+  shell_->SetEnteringFullScreen(false);
+  shell_->SetExitingFullScreen(false);
+  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
+    shell_->RepositionTrafficLights();
+  }
 }
 
 - (void)windowWillClose:(NSNotification*)notification {

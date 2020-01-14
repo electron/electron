@@ -335,6 +335,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
+  options.Get(options::kTrafficLightOffsetX, &traffic_light_offsetX_);
+  options.Get(options::kTrafficLightOffsetY, &traffic_light_offsetY_);
 
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
@@ -509,6 +511,46 @@ NativeWindowMac::~NativeWindowMac() {
     [NSEvent removeMonitor:wheel_event_monitor_];
 }
 
+void NativeWindowMac::RepositionTrafficLights() {
+  if (!traffic_light_offsetX_ && !traffic_light_offsetY_) {
+    NSLog(@"in here");
+    return;
+  }
+
+  NSWindow* window = window_;
+  NSButton* close = [window standardWindowButton:NSWindowCloseButton];
+  NSButton* miniaturize =
+      [window standardWindowButton:NSWindowMiniaturizeButton];
+  NSButton* zoom = [window standardWindowButton:NSWindowZoomButton];
+  NSView* titleBarContainerView = close.superview.superview;
+
+  // Hide the container when exiting fullscreen, otherwise traffic light buttons
+  // jump
+  if (exiting_fullscreen_) {
+    [titleBarContainerView setHidden:YES];
+    return;
+  }
+
+  [titleBarContainerView setHidden:NO];
+  CGFloat buttonHeight = [close frame].size.height;
+  CGFloat titleBarFrameHeight = buttonHeight + traffic_light_offsetY_;
+  CGRect titleBarRect = titleBarContainerView.frame;
+  titleBarRect.size.height = titleBarFrameHeight;
+  titleBarRect.origin.y = window.frame.size.height - titleBarFrameHeight;
+  [titleBarContainerView setFrame:titleBarRect];
+
+  NSArray* windowButtons = @[ close, miniaturize, zoom ];
+  const CGFloat space_between =
+      [miniaturize frame].origin.x - [close frame].origin.x;
+  for (NSUInteger i = 0; i < windowButtons.count; i++) {
+    NSView* view = [windowButtons objectAtIndex:i];
+    CGRect rect = [view frame];
+    rect.origin.x = traffic_light_offsetX_ + (i * space_between);
+    rect.origin.y = (titleBarFrameHeight - rect.size.height) / 2;
+    [view setFrameOrigin:rect.origin];
+  }
+}
+
 void NativeWindowMac::SetContentView(views::View* view) {
   views::View* root_view = GetContentsView();
   if (content_view())
@@ -622,10 +664,21 @@ void NativeWindowMac::Hide() {
 bool NativeWindowMac::IsVisible() {
   bool occluded = [window_ occlusionState] == NSWindowOcclusionStateVisible;
 
+  if (title_bar_style_ == TitleBarStyle::HIDDEN && !entering_fullscreen()) {
+    RepositionTrafficLights();
+  }
   // For a window to be visible, it must be visible to the user in the
   // foreground of the app, which means that it should not be minimized or
   // occluded
   return [window_ isVisible] && !occluded && !IsMinimized();
+}
+
+void NativeWindowMac::SetEnteringFullScreen(bool flag) {
+  entering_fullscreen_ = flag;
+}
+
+void NativeWindowMac::SetExitingFullScreen(bool flag) {
+  exiting_fullscreen_ = flag;
 }
 
 bool NativeWindowMac::IsEnabled() {
@@ -949,6 +1002,9 @@ void NativeWindowMac::Invalidate() {
 
 void NativeWindowMac::SetTitle(const std::string& title) {
   [window_ setTitle:base::SysUTF8ToNSString(title)];
+  if (title_bar_style_ == TitleBarStyle::HIDDEN) {
+    RepositionTrafficLights();
+  }
 }
 
 std::string NativeWindowMac::GetTitle() {
