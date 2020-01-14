@@ -1086,7 +1086,6 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   api::Protocol* protocol =
       api::Protocol::FromWrappedClass(isolate, browser_context);
-  // if (!protocol) return false;
   DCHECK(protocol);
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
   DCHECK(web_request.get());
