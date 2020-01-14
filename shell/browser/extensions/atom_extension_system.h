@@ -53,6 +53,8 @@ class AtomExtensionSystem : public ExtensionSystem {
   // Reloads the extension with id |extension_id|.
   void ReloadExtension(const ExtensionId& extension_id);
 
+  void RemoveExtension(const ExtensionId& extension_id);
+
   // KeyedService implementation:
   void Shutdown() override;
 

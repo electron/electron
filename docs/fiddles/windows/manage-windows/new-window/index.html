@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>
+  <h2>Create a new window</h2>
+  <h3>Supports: Win, MacOS, Linux <span>|</span> Process: Main</h3>
+  <button id="new-window">View Demo</button>
+  <p>The <code>BrowserWindow</code> module gives you the ability to create new windows in your app. This main process module can be used from the renderer process with the <code>remote</code> module, as is shown in this demo.</p>
+  <p>There are a lot of options when creating a new window. A few are in this demo, but visit the <a id="browser-window-link" href="">documentation<span>(opens in new window)</span></a>
+<div>
+            <h2>ProTip</h2>
+            <strong>Use an invisible browser window to run background tasks.</strong>
+            <p>You can set a new browser window to not be shown (be invisible) in order to use that additional renderer process as a kind of new thread in which to run JavaScript in the background of your app. You do this by setting the <code>show</code> property to <code>false</code> when defining the new window.</p>
+            <pre><code><span>var</span> win = <span>new</span> BrowserWindow({
+  <span>width</span>: <span>400</span>, <span>height</span>: <span>225</span>, <span>show</span>: <span>false</span>
+})</code></pre>
+          </div>
+    <script>
+    // You can also require other files to run in this process
+    require('./renderer.js')
+  </script>
+</body>
+</html>

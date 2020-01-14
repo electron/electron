@@ -1,4 +1,5 @@
 import("//build/config/locales.gni")
+import("//electron/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//tools/grit/repack.gni")
 import("//ui/base/ui_features.gni")
@@ -86,6 +87,13 @@ template("electron_extra_paks") {
     if (enable_print_preview) {
       sources += [ "$root_gen_dir/chrome/print_preview_resources.pak" ]
       deps += [ "//chrome/browser/resources:print_preview_resources" ]
+    }
+    if (enable_electron_extensions) {
+      sources += [
+        "$root_gen_dir/extensions/extensions_renderer_resources.pak",
+        "$root_gen_dir/extensions/extensions_resources.pak",
+      ]
+      deps += [ "//extensions:extensions_resources" ]
     }
   }
 }

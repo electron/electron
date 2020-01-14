@@ -21,6 +21,8 @@ void LoadResourceBundle(const std::string& locale);
 
 class AtomMainDelegate : public content::ContentMainDelegate {
  public:
+  static const char* const kNonWildcardDomainNonPortSchemes[];
+  static const size_t kNonWildcardDomainNonPortSchemesSize;
   AtomMainDelegate();
   ~AtomMainDelegate() override;
 

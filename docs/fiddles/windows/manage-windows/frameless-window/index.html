@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Frameless window</title>
+  </head>
+
+  <body>
+    <div>
+      <h1>Create and Manage Windows</h1>
+
+      <h3>
+        The <code>BrowserWindow</code> module in Electron allows you to create a
+        new browser window or manage an existing one.
+      </h3>
+
+      <p>
+        Each browser window is a separate process, known as the renderer
+        process. This process, like the main process that controls the life
+        cycle of the app, has full access to the Node.js APIs.
+      </p>
+
+      <p>
+        Open the
+        <a href="http://electron.atom.io/docs/api/browser-window">
+          full API documentation (opens in new window)
+        </a>
+        in your browser.
+      </p>
+    </div>
+
+    <div>
+      <div>
+        <h2>Create a frameless window</h2>
+        <div>
+          <div>
+            <button id="frameless-window">View Demo</button>
+          </div>
+          <p>
+            A frameless window is a window that has no
+            <a href="https://developer.mozilla.org/en-US/docs/Glossary/Chrome">
+              "chrome"
+            </a>
+            , such as toolbars, title bars, status bars, borders, etc. You can
+            make a browser window frameless by setting <code>frame</code> to
+            <code>false</code> when creating the window.
+          </p>
+
+          <p>
+            Windows can have a transparent background, too. By setting the
+            <code>transparent</code> option to <code>true</code>, you can also
+            make your frameless window transparent:
+          </p>
+          <pre>
+<code class="language-js">var win = new BrowserWindow({
+  transparent: true,
+  frame: false
+})</code></pre>
+
+          <p>
+            For more details, see the
+            <a href="http://electron.atom.io/docs/api/frameless-window/">
+              Frameless Window
+            </a>
+            documentation.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // You can also require other files to run in this process
+      require("./renderer.js");
+    </script>
+  </body>
+</html>

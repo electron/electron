@@ -5,6 +5,8 @@ const path = require('path')
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..')
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..')
 
+const RELEASE_BRANCH_PATTERN = /(\d)+-(?:(?:[0-9]+-x$)|(?:x+-y$))/
+
 require('colors')
 const pass = '✓'.green
 const fail = '✗'.red
@@ -66,7 +68,7 @@ async function handleGitCall (args, gitDir) {
 
 async function getCurrentBranch (gitDir) {
   let branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir)
-  if (branch !== 'master' && !branch.match(/[0-9]+-[0-9]+-x$/) && !branch.match(/[0-9]+-x-y$/)) {
+  if (branch !== 'master' && !RELEASE_BRANCH_PATTERN.test(branch)) {
     const lastCommit = await handleGitCall(['rev-parse', 'HEAD'], gitDir)
     const branches = (await handleGitCall([
       'branch',
@@ -75,7 +77,7 @@ async function getCurrentBranch (gitDir) {
       '--remote'
     ], gitDir)).split('\n')
 
-    branch = branches.filter(b => b.trim() === 'master' || b.trim().match(/^[0-9]+-[0-9]+-x$/) || b.trim().match(/^[0-9]+-x-y$/))[0]
+    branch = branches.filter(b => b.trim() === 'master' || RELEASE_BRANCH_PATTERN.test(b.trim()))[0]
     if (!branch) {
       console.log(`${fail} no release branch exists for this ref`)
       process.exit(1)

@@ -32,16 +32,48 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     // extension in an in-memory session results in it being installed in the
     // default session.
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-    (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
     await w.loadURL(url)
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
     expect(bg).to.equal('red')
   })
 
+  it('removes an extension', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+    const { id } = await (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    {
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
+      await w.loadURL(url)
+      const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
+      expect(bg).to.equal('red')
+    }
+    (customSession as any).removeExtension(id)
+    {
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
+      await w.loadURL(url)
+      const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
+      expect(bg).to.equal('')
+    }
+  })
+
+  it('lists loaded extensions in getAllExtensions', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+    const e = await (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    expect((customSession as any).getAllExtensions()).to.deep.equal([e]);
+    (customSession as any).removeExtension(e.id)
+    expect((customSession as any).getAllExtensions()).to.deep.equal([])
+  })
+
+  it('gets an extension by id', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+    const e = await (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    expect((customSession as any).getExtension(e.id)).to.deep.equal(e)
+  })
+
   it('confines an extension to the session it was loaded in', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-    (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
     const w = new BrowserWindow({ show: false }) // not in the session
     await w.loadURL(url)
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
@@ -52,7 +84,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     let content: any
     before(async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'chrome-runtime'))
+      (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'))
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
       try {
         await w.loadURL(url)
@@ -76,13 +108,31 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   describe('chrome.storage', () => {
     it('stores and retrieves a key', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'chrome-storage'))
+      (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'chrome-storage'))
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
       try {
         const p = emittedOnce(ipcMain, 'storage-success')
         await w.loadURL(url)
         const [, v] = await p
         expect(v).to.equal('value')
+      } finally {
+        w.destroy()
+      }
+    })
+  })
+
+  describe('background pages', () => {
+    it('loads a lazy background page when sending a message', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      ;(customSession as any).loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'))
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
+      try {
+        w.loadURL(url)
+        const [, resp] = await emittedOnce(ipcMain, 'bg-page-message-response')
+        expect(resp.message).to.deep.equal({ some: 'message' })
+        expect(resp.sender.id).to.be.a('string')
+        expect(resp.sender.origin).to.equal(url)
+        expect(resp.sender.url).to.equal(url + '/')
       } finally {
         w.destroy()
       }
@@ -130,7 +180,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
 })
 
 ifdescribe(!process.electronBinding('features').isExtensionsEnabled())('chrome extensions', () => {
-  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
+  const fixtures = path.resolve(__dirname, 'fixtures')
   let w: BrowserWindow
 
   before(() => {

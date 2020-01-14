@@ -48,6 +48,7 @@ Unsupported options are:
 
 ```sh
 --max-http-header-size
+--http-parser
 ```
 
 ### `GOOGLE_API_KEY`

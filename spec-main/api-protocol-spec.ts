@@ -82,7 +82,7 @@ describe('protocol module', () => {
     // Note that we need to do navigation every time after a protocol is
     // registered or unregistered, otherwise the new protocol won't be
     // recognized by current page when NetworkService is used.
-    await contents.loadFile(path.join(fixturesPath, 'pages', 'jquery.html'))
+    await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'))
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`)
   }
 
@@ -391,6 +391,25 @@ describe('protocol module', () => {
       })
       const r = await ajax(protocolName + '://fake-host')
       expect(r.data).to.have.lengthOf(data.length)
+    })
+
+    it('can handle a stream completing while writing', async () => {
+      function dumbPassthrough () {
+        return new stream.Transform({
+          async transform (chunk, encoding, cb) {
+            cb(null, chunk)
+          }
+        })
+      }
+      await registerStreamProtocol(protocolName, (request, callback) => {
+        callback({
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/plain' },
+          data: getStream(1024 * 1024, Buffer.alloc(1024 * 1024 * 2)).pipe(dumbPassthrough())
+        })
+      })
+      const r = await ajax(protocolName + '://fake-host')
+      expect(r.data).to.have.lengthOf(1024 * 1024 * 2)
     })
   })
 

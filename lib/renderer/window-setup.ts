@@ -177,7 +177,7 @@ class BrowserWindowProxy {
 export const windowSetup = (
   guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
 ) => {
-  if (guestInstanceId == null) {
+  if (!process.sandboxed && guestInstanceId == null) {
     // Override default window.close.
     window.close = function () {
       ipcRendererInternal.send('ELECTRON_BROWSER_WINDOW_CLOSE')
@@ -197,10 +197,10 @@ export const windowSetup = (
         return null
       }
     }
+  }
 
-    if (openerId != null) {
-      window.opener = getOrCreateProxy(openerId)
-    }
+  if (openerId != null) {
+    window.opener = getOrCreateProxy(openerId)
   }
 
   // But we do not support prompt().
@@ -208,43 +208,47 @@ export const windowSetup = (
     throw new Error('prompt() is and will not be supported.')
   }
 
-  ipcRendererInternal.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
-    _event, sourceId: number, message: any, sourceOrigin: string
-  ) {
-    // Manually dispatch event instead of using postMessage because we also need to
-    // set event.source.
-    //
-    // Why any? We can't construct a MessageEvent and we can't
-    // use `as MessageEvent` because you're not supposed to override
-    // data, origin, and source
-    const event: any = document.createEvent('Event')
-    event.initEvent('message', false, false)
+  if (!usesNativeWindowOpen || openerId != null) {
+    ipcRendererInternal.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
+      _event, sourceId: number, message: any, sourceOrigin: string
+    ) {
+      // Manually dispatch event instead of using postMessage because we also need to
+      // set event.source.
+      //
+      // Why any? We can't construct a MessageEvent and we can't
+      // use `as MessageEvent` because you're not supposed to override
+      // data, origin, and source
+      const event: any = document.createEvent('Event')
+      event.initEvent('message', false, false)
 
-    event.data = message
-    event.origin = sourceOrigin
-    event.source = getOrCreateProxy(sourceId)
+      event.data = message
+      event.origin = sourceOrigin
+      event.source = getOrCreateProxy(sourceId)
 
-    window.dispatchEvent(event as MessageEvent)
-  })
-
-  window.history.back = function () {
-    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK')
+      window.dispatchEvent(event as MessageEvent)
+    })
   }
 
-  window.history.forward = function () {
-    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD')
-  }
+  if (!process.sandboxed) {
+    window.history.back = function () {
+      ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK')
+    }
 
-  window.history.go = function (offset: number) {
-    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', +offset)
-  }
+    window.history.forward = function () {
+      ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD')
+    }
 
-  Object.defineProperty(window.history, 'length', {
-    get: function () {
-      return ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH')
-    },
-    set () {}
-  })
+    window.history.go = function (offset: number) {
+      ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', +offset)
+    }
+
+    Object.defineProperty(window.history, 'length', {
+      get: function () {
+        return ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH')
+      },
+      set () {}
+    })
+  }
 
   if (guestInstanceId != null) {
     // Webview `document.visibilityState` tracks window visibility (and ignores

@@ -1271,11 +1271,8 @@ void NativeWindowMac::SetProgressBar(double progress,
 void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
                                      const std::string& description) {}
 
-void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
-                                                bool visibleOnFullScreen) {
+void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
   SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
-  SetCollectionBehavior(visibleOnFullScreen,
-                        NSWindowCollectionBehaviorFullScreenAuxiliary);
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
@@ -1375,6 +1372,28 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
     [effect_view setState:NSVisualEffectStateActive];
+
+    // Make frameless Vibrant windows have rounded corners.
+    CGFloat radius = 5.0f;  // default corner radius
+    CGFloat dimension = 2 * radius + 1;
+    NSSize size = NSMakeSize(dimension, dimension);
+    NSImage* maskImage = [NSImage imageWithSize:size
+                                        flipped:NO
+                                 drawingHandler:^BOOL(NSRect rect) {
+                                   NSBezierPath* bezierPath = [NSBezierPath
+                                       bezierPathWithRoundedRect:rect
+                                                         xRadius:radius
+                                                         yRadius:radius];
+                                   [[NSColor blackColor] set];
+                                   [bezierPath fill];
+                                   return YES;
+                                 }];
+    [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
+    [maskImage setResizingMode:NSImageResizingModeStretch];
+
+    [effect_view setMaskImage:maskImage];
+    [window_ setCornerMask:maskImage];
+
     [[window_ contentView] addSubview:effect_view
                            positioned:NSWindowBelow
                            relativeTo:nil];

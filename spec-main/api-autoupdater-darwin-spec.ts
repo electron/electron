@@ -9,7 +9,7 @@ import { AddressInfo } from 'net'
 
 const features = process.electronBinding('features')
 
-const fixturesPath = path.resolve(__dirname, '../spec/fixtures')
+const fixturesPath = path.resolve(__dirname, 'fixtures')
 
 // We can only test the auto updater on darwin non-component builds
 const describeFn = (process.platform === 'darwin' && !process.mas && !features.isComponentBuild() ? describe : describe.skip)
