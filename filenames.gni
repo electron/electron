@@ -591,6 +591,8 @@ filenames = {
   lib_sources_extensions = [
     "shell/browser/extensions/api/runtime/atom_runtime_api_delegate.cc",
     "shell/browser/extensions/api/runtime/atom_runtime_api_delegate.h",
+    "shell/browser/extensions/api/tabs/tabs_api.cc",
+    "shell/browser/extensions/api/tabs/tabs_api.h",
     "shell/browser/extensions/atom_extensions_browser_client.cc",
     "shell/browser/extensions/atom_extensions_browser_client.h",
     "shell/browser/extensions/atom_browser_context_keyed_service_factories.cc",
