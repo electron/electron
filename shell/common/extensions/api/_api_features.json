@@ -3,5 +3,11 @@
     "channel": "stable",
     "extension_types": ["extension"],
     "contexts": ["blessed_extension"]
+  },
+  "mimeHandlerViewGuestInternal": {
+    "internal": true,
+    "contexts": "all",
+    "channel": "stable",
+    "matches": ["<all_urls>"]
   }
 }

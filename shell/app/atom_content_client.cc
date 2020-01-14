@@ -39,6 +39,7 @@
 #endif                                    // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
+#include "content/public/browser/plugin_service.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #endif  // BUILDFLAG(ENABLE_PLUGINS)
@@ -166,6 +167,16 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
       chrome_pdf::PPP_ShutdownModule;
   pdf_info.permissions = ppapi::PERMISSION_PDF | ppapi::PERMISSION_DEV;
   plugins->push_back(pdf_info);
+
+  content::WebPluginInfo info;
+  info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
+  info.name = base::UTF8ToUTF16("Chromium PDF Viewer");
+  info.path = base::FilePath(FILE_PATH_LITERAL("internal-pdf-viewer"));
+  info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
+  info.mime_types.emplace_back("application/pdf", "pdf",
+                               "Portable Document Format");
+  content::PluginService::GetInstance()->RefreshPlugins();
+  content::PluginService::GetInstance()->RegisterInternalPlugin(info, true);
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 #endif  // BUILDFLAG(ENABLE_PLUGINS)

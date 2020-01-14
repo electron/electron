@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
 #include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"
 
@@ -24,6 +25,12 @@ void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
     content::WebContents* web_contents) const {
   extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
+}
+
+std::unique_ptr<MimeHandlerViewGuestDelegate>
+ElectronExtensionsAPIClient::CreateMimeHandlerViewGuestDelegate(
+    MimeHandlerViewGuest* guest) const {
+  return std::make_unique<MimeHandlerViewGuestDelegate>();
 }
 
 }  // namespace extensions

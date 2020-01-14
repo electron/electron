@@ -127,11 +127,15 @@
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/browser/guest_view/extensions_guest_view_message_filter.h"
+#include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/process_map.h"
+#include "extensions/common/api/mime_handler.mojom.h"  // nogncheck
 #include "extensions/common/extension.h"
 #include "shell/browser/extensions/atom_extension_system.h"
 #endif
@@ -139,6 +143,7 @@
 #include "ppapi/buildflags/buildflags.h"
 #if BUILDFLAG(ENABLE_PLUGINS)
 #include "shell/browser/plugins/plugin_response_interceptor_url_loader_throttle.h"
+#include "shell/browser/plugins/plugin_utils.h"
 #endif
 
 #if defined(OS_MACOSX)
@@ -389,6 +394,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   host->AddFilter(
       new extensions::ExtensionMessageFilter(process_id, browser_context));
+  host->AddFilter(new extensions::ExtensionsGuestViewMessageFilter(
+      process_id, browser_context));
 #endif
 
   ProcessPreferences prefs;
@@ -1187,11 +1194,31 @@ void AtomBrowserClient::BindHostReceiverForRenderer(
 #endif
 }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+void BindMimeHandlerService(
+    content::RenderFrameHost* frame_host,
+    mojo::PendingReceiver<extensions::mime_handler::MimeHandlerService>
+        receiver) {
+  content::WebContents* contents =
+      content::WebContents::FromRenderFrameHost(frame_host);
+  auto* guest_view =
+      extensions::MimeHandlerViewGuest::FromWebContents(contents);
+  if (!guest_view)
+    return;
+  extensions::MimeHandlerServiceImpl::Create(guest_view->GetStreamWeakPtr(),
+                                             std::move(receiver));
+}
+#endif
+
 void AtomBrowserClient::RegisterBrowserInterfaceBindersForFrame(
     content::RenderFrameHost* render_frame_host,
     service_manager::BinderMapWithContext<content::RenderFrameHost*>* map) {
   map->Add<network_hints::mojom::NetworkHintsHandler>(
       base::BindRepeating(&BindNetworkHintsHandler));
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  map->Add<extensions::mime_handler::MimeHandlerService>(
+      base::BindRepeating(&BindMimeHandlerService));
+#endif
 }
 
 std::unique_ptr<content::LoginDelegate> AtomBrowserClient::CreateLoginDelegate(
@@ -1225,6 +1252,18 @@ AtomBrowserClient::CreateURLLoaderThrottles(
 #endif
 
   return result;
+}
+
+base::flat_set<std::string>
+AtomBrowserClient::GetPluginMimeTypesWithExternalHandlers(
+    content::BrowserContext* browser_context) {
+  base::flat_set<std::string> mime_types;
+#if BUILDFLAG(ENABLE_PLUGINS)
+  auto map = PluginUtils::GetMimeTypeToExtensionIdMap(browser_context);
+  for (const auto& pair : map)
+    mime_types.insert(pair.first);
+#endif
+  return mime_types;
 }
 
 }  // namespace electron

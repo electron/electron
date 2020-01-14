@@ -118,7 +118,7 @@ void LoadResourceBundle(const std::string& locale) {
   bundle.ReloadLocaleResources(locale);
   bundle.AddDataPackFromPath(pak_dir.Append(FILE_PATH_LITERAL("resources.pak")),
                              ui::SCALE_FACTOR_NONE);
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#if 0   // BUILDFLAG(ENABLE_PDF_VIEWER)
   NOTIMPLEMENTED()
       << "Hi, whoever's fixing PDF support! Thanks! The pdf "
          "viewer resources haven't been ported over to the GN build yet, so "

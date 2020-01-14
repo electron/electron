@@ -97,6 +97,15 @@ class RendererClientBase : public content::ContentRendererClient
       override;
   bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
+  content::BrowserPluginDelegate* CreateBrowserPluginDelegate(
+      content::RenderFrame* render_frame,
+      const content::WebPluginInfo& info,
+      const std::string& mime_type,
+      const GURL& original_url) override;
+  bool IsPluginHandledExternally(content::RenderFrame* render_frame,
+                                 const blink::WebElement& plugin_element,
+                                 const GURL& original_url,
+                                 const std::string& mime_type) override;
 
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;

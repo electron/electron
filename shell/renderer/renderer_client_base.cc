@@ -66,12 +66,15 @@
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "base/strings/utf_string_conversions.h"
+#include "content/public/common/webplugininfo.h"
 #include "extensions/common/extensions_client.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
 #include "extensions/renderer/guest_view/extensions_guest_view_container.h"
 #include "extensions/renderer/guest_view/extensions_guest_view_container_dispatcher.h"
 #include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container.h"
+#include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container_manager.h"
 #include "shell/common/extensions/atom_extensions_client.h"
 #include "shell/renderer/extensions/atom_extensions_renderer_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -263,6 +266,11 @@ void RendererClientBase::RenderFrameCreated(
   new extensions::ExtensionFrameHelper(render_frame, dispatcher);
 
   dispatcher->OnRenderFrameCreated(render_frame);
+
+  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
+      base::BindRepeating(
+          &extensions::MimeHandlerViewContainerManager::BindReceiver,
+          render_frame->GetRoutingID()));
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -313,8 +321,9 @@ bool RendererClientBase::OverrideCreatePlugin(
       command_line->HasSwitch(switches::kEnablePlugins))
     return false;
 
-  *plugin = nullptr;
-  return true;
+  //*plugin = nullptr;
+  // return true;
+  return false;
 }
 
 void RendererClientBase::AddSupportedKeySystems(
@@ -335,6 +344,79 @@ bool RendererClientBase::IsKeySystemsUpdateNeeded() {
 void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 #if BUILDFLAG(ENABLE_PRINTING)
   printing::SetAgent(user_agent);
+#endif
+}
+
+content::BrowserPluginDelegate* RendererClientBase::CreateBrowserPluginDelegate(
+    content::RenderFrame* render_frame,
+    const content::WebPluginInfo& info,
+    const std::string& mime_type,
+    const GURL& original_url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  /*
+  if (mime_type == content::kBrowserPluginMimeType)
+    return new extensions::ExtensionsGuestViewContainer(render_frame);
+    */
+  LOG(INFO) << "Got here";
+  return new extensions::MimeHandlerViewContainer(render_frame, info, mime_type,
+                                                  original_url);
+#else
+  return nullptr;
+#endif
+}
+
+bool RendererClientBase::IsPluginHandledExternally(
+    content::RenderFrame* render_frame,
+    const blink::WebElement& plugin_element,
+    const GURL& original_url,
+    const std::string& mime_type) {
+  LOG(INFO) << "ARC::IPHE 0";
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) && BUILDFLAG(ENABLE_PLUGINS)
+  LOG(INFO) << "ARC::IPHE 1";
+  DCHECK(plugin_element.HasHTMLTagName("object") ||
+         plugin_element.HasHTMLTagName("embed"));
+  // Blink will next try to load a WebPlugin which would end up in
+  // OverrideCreatePlugin, sending another IPC only to find out the plugin is
+  // not supported. Here it suffices to return false but there should perhaps be
+  // a more unified approach to avoid sending the IPC twice.
+  /*
+  chrome::mojom::PluginInfoPtr plugin_info = chrome::mojom::PluginInfo::New();
+  GetPluginInfoHost()->GetPluginInfo(
+      render_frame->GetRoutingID(), original_url,
+      render_frame->GetWebFrame()->Top()->GetSecurityOrigin(), mime_type,
+      &plugin_info);
+  // TODO(ekaramad): Not continuing here due to a disallowed status should take
+  // us to CreatePlugin. See if more in depths investigation of |status| is
+  // necessary here (see https://crbug.com/965747). For now, returning false
+  // should take us to CreatePlugin after HTMLPlugInElement which is called
+  // through HTMLPlugInElement::LoadPlugin code path.
+  if (plugin_info->status != chrome::mojom::PluginStatus::kAllowed &&
+      plugin_info->status !=
+          chrome::mojom::PluginStatus::kPlayImportantContent) {
+    // We could get here when a MimeHandlerView is loaded inside a <webview>
+    // which is using permissions API (see WebViewPluginTests).
+    ChromeExtensionsRendererClient::DidBlockMimeHandlerViewForDisallowedPlugin(
+        plugin_element);
+    return false;
+  }
+  return ChromeExtensionsRendererClient::MaybeCreateMimeHandlerView(
+      plugin_element, original_url, plugin_info->actual_mime_type,
+      plugin_info->plugin);
+      */
+  content::WebPluginInfo info;
+  info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
+  info.name = base::UTF8ToUTF16("Chromium PDF Viewer");
+  info.path = base::FilePath(FILE_PATH_LITERAL("internal-pdf-viewer"));
+  info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
+  info.mime_types.emplace_back("application/pdf", "pdf",
+                               "Portable Document Format");
+  return extensions::MimeHandlerViewContainerManager::Get(
+             content::RenderFrame::FromWebFrame(
+                 plugin_element.GetDocument().GetFrame()),
+             true /* create_if_does_not_exist */)
+      ->CreateFrameContainer(plugin_element, original_url, mime_type, info);
+#else
+  return false;
 #endif
 }
 

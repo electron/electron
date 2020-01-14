@@ -278,6 +278,8 @@ filenames = {
     "shell/browser/notifications/win/windows_toast_notification.h",
     "shell/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc",
     "shell/browser/plugins/plugin_response_interceptor_url_loader_throttle.h",
+    "shell/browser/plugins/plugin_utils.cc",
+    "shell/browser/plugins/plugin_utils.h",
     "shell/browser/pref_store_delegate.cc",
     "shell/browser/pref_store_delegate.h",
     "shell/browser/relauncher.cc",
