@@ -392,6 +392,25 @@ describe('protocol module', () => {
       const r = await ajax(protocolName + '://fake-host')
       expect(r.data).to.have.lengthOf(data.length)
     })
+
+    it('can handle a stream completing while writing', async () => {
+      function dumbPassthrough () {
+        return new stream.Transform({
+          async transform (chunk, encoding, cb) {
+            cb(null, chunk)
+          }
+        })
+      }
+      await registerStreamProtocol(protocolName, (request, callback) => {
+        callback({
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/plain' },
+          data: getStream(1024 * 1024, Buffer.alloc(1024 * 1024 * 2)).pipe(dumbPassthrough())
+        })
+      })
+      const r = await ajax(protocolName + '://fake-host')
+      expect(r.data).to.have.lengthOf(1024 * 1024 * 2)
+    })
   })
 
   describe('protocol.isProtocolHandled', () => {

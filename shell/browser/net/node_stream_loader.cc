@@ -97,6 +97,9 @@ void NodeStreamLoader::ReadMore() {
   if (!ret.ToLocal(&buffer) || !node::Buffer::HasInstance(buffer)) {
     readable_ = false;
     is_reading_ = false;
+    if (ended_) {
+      NotifyComplete(result_);
+    }
     return;
   }
 
