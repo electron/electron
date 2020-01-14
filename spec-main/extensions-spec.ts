@@ -121,6 +121,23 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     })
   })
 
+  describe('chrome.tabs', () => {
+    it('executeScript', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      ;(customSession as any).loadExtension(path.join(fixtures, 'extensions', 'chrome-api'))
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
+      await w.loadURL(url)
+
+      const message = { method: 'executeScript', args: ['1 + 2'] }
+      w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
+
+      const [,, responseString] = await emittedOnce(w.webContents, 'console-message')
+      const response = JSON.parse(responseString)
+
+      expect(response).to.equal(3)
+    })
+  })
+
   describe('background pages', () => {
     it('loads a lazy background page when sending a message', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)

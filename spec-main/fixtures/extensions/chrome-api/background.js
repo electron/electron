@@ -17,4 +17,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break
     }
   }
+  // Respond asynchronously
+  return true
 })
