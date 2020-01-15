@@ -185,6 +185,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
           header_client,
       bool* bypass_redirect_checks,
       network::mojom::URLLoaderFactoryOverridePtr* factory_override) override;
+  bool ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
+      base::StringPiece scheme,
+      bool is_embedded_origin_secure) override;
   void OverrideURLLoaderFactoryParams(
       content::BrowserContext* browser_context,
       const url::Origin& origin,

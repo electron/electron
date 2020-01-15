@@ -127,17 +127,24 @@
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "chrome/common/webui_url_constants.h"
+#include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/file_url_loader.h"
+#include "content/public/browser/web_ui_url_loader_factory.h"
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
+#include "extensions/browser/extension_host.h"
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/guest_view/extensions_guest_view_message_filter.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/browser/info_map.h"
+#include "extensions/browser/process_manager.h"
 #include "extensions/browser/process_map.h"
 #include "extensions/common/api/mime_handler.mojom.h"  // nogncheck
 #include "extensions/common/extension.h"
 #include "shell/browser/extensions/atom_extension_system.h"
+#include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #endif
 
 #include "ppapi/buildflags/buildflags.h"
@@ -735,6 +742,7 @@ void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     additional_schemes->insert(additional_schemes->end(), schemes_list.begin(),
                                schemes_list.end());
   additional_schemes->push_back(content::kChromeDevToolsScheme);
+  additional_schemes->push_back(content::kChromeUIScheme);
 }
 
 void AtomBrowserClient::GetAdditionalWebUISchemes(
@@ -1057,28 +1065,130 @@ void AtomBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     protocol->RegisterURLLoaderFactories(factories);
 }
 
+namespace {
+
+// The FileURLLoaderFactory provided to the extension background pages.
+// Checks with the ChildProcessSecurityPolicy to validate the file access.
+class FileURLLoaderFactory : public network::mojom::URLLoaderFactory {
+ public:
+  explicit FileURLLoaderFactory(int child_id) : child_id_(child_id) {}
+
+ private:
+  // network::mojom::URLLoaderFactory:
+  void CreateLoaderAndStart(
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      int32_t routing_id,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& request,
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
+      override {
+    if (!content::ChildProcessSecurityPolicy::GetInstance()->CanRequestURL(
+            child_id_, request.url)) {
+      mojo::Remote<network::mojom::URLLoaderClient>(std::move(client))
+          ->OnComplete(
+              network::URLLoaderCompletionStatus(net::ERR_ACCESS_DENIED));
+      return;
+    }
+    content::CreateFileURLLoader(request, std::move(loader), std::move(client),
+                                 /*observer=*/nullptr,
+                                 /* allow_directory_listing */ true);
+  }
+
+  void Clone(
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> loader) override {
+    receivers_.Add(this, std::move(loader));
+  }
+
+  int child_id_;
+  mojo::ReceiverSet<network::mojom::URLLoaderFactory> receivers_;
+  DISALLOW_COPY_AND_ASSIGN(FileURLLoaderFactory);
+};
+
+}  // namespace
+
 void AtomBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_process_id,
     int render_frame_id,
     NonNetworkURLLoaderFactoryMap* factories) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
-                                                             render_frame_id);
-  if (factory)
-    factories->emplace(extensions::kExtensionScheme, std::move(factory));
-#endif
-
-  // Chromium may call this even when NetworkService is not enabled.
   content::RenderFrameHost* frame_host =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
+
   if (web_contents) {
     api::Protocol* protocol = api::Protocol::FromWrappedClass(
         v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
     if (protocol)
       protocol->RegisterURLLoaderFactories(factories);
   }
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
+                                                             render_frame_id);
+  if (factory)
+    factories->emplace(extensions::kExtensionScheme, std::move(factory));
+
+  extensions::AtomExtensionWebContentsObserver* web_observer =
+      extensions::AtomExtensionWebContentsObserver::FromWebContents(
+          web_contents);
+
+  // There is nothing to do if no AtomExtensionWebContentsObserver is attached
+  // to the |web_contents|.
+  if (!web_observer)
+    return;
+
+  const extensions::Extension* extension =
+      web_observer->GetExtensionFromFrame(frame_host, false);
+  if (!extension)
+    return;
+
+  std::vector<std::string> allowed_webui_hosts;
+  // Support for chrome:// scheme if appropriate.
+  if (extension->is_extension() &&
+      extensions::Manifest::IsComponentLocation(extension->location())) {
+    // Components of chrome that are implemented as extensions or platform apps
+    // are allowed to use chrome://resources/ and chrome://theme/ URLs.
+    allowed_webui_hosts.emplace_back(content::kChromeUIResourcesHost);
+  }
+  if (extension->is_extension()) {
+    // Extensions are allowed to use chrome://favicon/,
+    // chrome://extension-icon/ and chrome://app-icon URLs. Hosted apps are not
+    // allowed because they are served via web servers (and are generally never
+    // given access to Chrome APIs).
+    allowed_webui_hosts.emplace_back(chrome::kChromeUIExtensionIconHost);
+    allowed_webui_hosts.emplace_back(chrome::kChromeUIFaviconHost);
+    allowed_webui_hosts.emplace_back(chrome::kChromeUIAppIconHost);
+  }
+  if (!allowed_webui_hosts.empty()) {
+    factories->emplace(
+        content::kChromeUIScheme,
+        content::CreateWebUIURLLoader(frame_host, content::kChromeUIScheme,
+                                      std::move(allowed_webui_hosts)));
+  }
+
+  // Extension with a background page get file access that gets approval from
+  // ChildProcessSecurityPolicy.
+  extensions::ExtensionHost* host =
+      extensions::ProcessManager::Get(web_contents->GetBrowserContext())
+          ->GetBackgroundHostForExtension(extension->id());
+  if (host) {
+    factories->emplace(url::kFileScheme, std::make_unique<FileURLLoaderFactory>(
+                                             render_process_id));
+  }
+#endif
+}
+
+bool AtomBrowserClient::ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
+    base::StringPiece scheme,
+    bool is_embedded_origin_secure) {
+  if (is_embedded_origin_secure && scheme == content::kChromeUIScheme)
+    return true;
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  return scheme == extensions::kExtensionScheme;
+#else
+  return false;
+#endif
 }
 
 bool AtomBrowserClient::WillCreateURLLoaderFactory(
