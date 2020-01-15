@@ -152,7 +152,6 @@ class NativeWindowMac : public NativeWindow {
   // Custom traffic light positioning
   void RepositionTrafficLights();
   void SetExitingFullScreen(bool flag);
-  void SetEnteringFullScreen(bool flag);
 
   enum class TitleBarStyle {
     NORMAL,
@@ -167,7 +166,6 @@ class NativeWindowMac : public NativeWindow {
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
   bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
-  bool entering_fullscreen() const { return entering_fullscreen_; }
   bool exiting_fullscreen() const { return exiting_fullscreen_; }
 
  protected:
@@ -205,7 +203,6 @@ class NativeWindowMac : public NativeWindow {
   bool zoom_to_page_width_ = false;
   bool fullscreen_window_title_ = false;
   bool resizable_ = true;
-  bool entering_fullscreen_ = false;
   bool exiting_fullscreen_ = false;
   double traffic_light_offsetX_ = 0;
   double traffic_light_offsetY_ = 0;

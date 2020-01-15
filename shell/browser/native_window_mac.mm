@@ -669,10 +669,6 @@ bool NativeWindowMac::IsVisible() {
   return [window_ isVisible] && !occluded && !IsMinimized();
 }
 
-void NativeWindowMac::SetEnteringFullScreen(bool flag) {
-  entering_fullscreen_ = flag;
-}
-
 void NativeWindowMac::SetExitingFullScreen(bool flag) {
   exiting_fullscreen_ = flag;
 }

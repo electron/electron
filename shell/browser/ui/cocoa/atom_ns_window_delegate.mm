@@ -205,7 +205,6 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
     NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     [window setToolbar:nil];
   }
-  shell_->SetEnteringFullScreen(true);
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
@@ -262,7 +261,6 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
   shell_->SetResizable(is_resizable_);
   shell_->NotifyWindowLeaveFullScreen();
-  shell_->SetEnteringFullScreen(false);
   shell_->SetExitingFullScreen(false);
   if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
     shell_->RepositionTrafficLights();
