@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSIONS_BROWSER_API_PROVIDER_H_
-#define SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSIONS_BROWSER_API_PROVIDER_H_
+#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_API_PROVIDER_H_
+#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_API_PROVIDER_H_
 
 #include "base/macros.h"
 #include "extensions/browser/extensions_browser_api_provider.h"
@@ -24,4 +24,4 @@ class ElectronExtensionsBrowserAPIProvider
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSIONS_BROWSER_API_PROVIDER_H_
+#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_API_PROVIDER_H_

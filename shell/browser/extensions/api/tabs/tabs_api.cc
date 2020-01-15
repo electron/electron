@@ -1,4 +1,11 @@
+// Copyright (c) 2019 Slack Technologies, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #include "shell/browser/extensions/api/tabs/tabs_api.h"
+
+#include <memory>
+#include <utility>
 
 #include "extensions/browser/extension_api_frame_id_map.h"
 #include "extensions/common/error_utils.h"
