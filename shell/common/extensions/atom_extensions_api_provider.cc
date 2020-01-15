@@ -77,8 +77,6 @@ namespace electron {
 AtomExtensionsAPIProvider::AtomExtensionsAPIProvider() = default;
 AtomExtensionsAPIProvider::~AtomExtensionsAPIProvider() = default;
 
-// TODO(samuelmaddock): generate API features?
-
 void AtomExtensionsAPIProvider::AddAPIFeatures(
     extensions::FeatureProvider* provider) {
   extensions::AddElectronAPIFeatures(provider);
@@ -86,7 +84,6 @@ void AtomExtensionsAPIProvider::AddAPIFeatures(
 
 void AtomExtensionsAPIProvider::AddManifestFeatures(
     extensions::FeatureProvider* provider) {
-  // TODO(samuelmaddock): why is the extensions namespace generated?
   extensions::AddElectronManifestFeatures(provider);
 }
 
