@@ -9,12 +9,11 @@
 #include "base/bind_helpers.h"
 #include "base/task/post_task.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "content/public/browser/system_connector.h"
+#include "content/public/browser/device_service.h"
 #include "gin/dictionary.h"
 #include "gin/function_template.h"
 #include "services/device/public/mojom/wake_lock_provider.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
-#include "shell/common/atom_constants.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
@@ -88,9 +87,7 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
 device::mojom::WakeLock* PowerSaveBlocker::GetWakeLock() {
   if (!wake_lock_) {
     mojo::Remote<device::mojom::WakeLockProvider> wake_lock_provider;
-    DCHECK(content::GetSystemConnector());
-    content::GetSystemConnector()->Connect(
-        electron::kDeviceServiceName,
+    content::GetDeviceService().BindWakeLockProvider(
         wake_lock_provider.BindNewPipeAndPassReceiver());
 
     wake_lock_provider->GetWakeLockWithoutContext(
