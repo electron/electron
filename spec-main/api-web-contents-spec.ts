@@ -1409,17 +1409,16 @@ describe('webContents module', () => {
     })
   })
 
-  // TODO(deepak1556): Fix and enable after upgrade.
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
     afterEach(closeAllWindows)
-    it.skip('can print to PDF', async () => {
+    it('can print to PDF', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
       const data = await w.webContents.printToPDF({})
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
     })
 
-    it.skip('does not crash when called multiple times', async () => {
+    it('does not crash when called multiple times', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
       const promises = []
