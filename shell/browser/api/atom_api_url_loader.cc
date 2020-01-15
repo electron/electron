@@ -33,21 +33,21 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 
-namespace gin {
+namespace mate {
 
 template <>
-struct Converter<network::mojom::HttpRawHeaderPairPtr> {
+struct Converter<std::pair<std::string, std::string>> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const network::mojom::HttpRawHeaderPairPtr& pair) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-    dict.Set("key", base::ToLowerASCII(pair->key));
-    dict.Set("value", pair->value);
+      const std::pair<std::string, std::string>& pair) {
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    dict.Set("key", base::ToLowerASCII(pair.first));
+    dict.Set("value", pair.second);
     return dict.GetHandle();
   }
 };
 
-}  // namespace gin
+}  // namespace mate
 
 namespace electron {
 
