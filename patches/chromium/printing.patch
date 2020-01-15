@@ -395,7 +395,7 @@ index 34e1cda035c042c8c4c55acd7716cf9473856fcf..199267d873f2343cdf401bb9a335dd75
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 41f6c6ba9920c7fe2a0cf91458162afb70762c16..7315a2b5962f42b57d04655cea97a938bd61768f 100644
+index 41f6c6ba9920c7fe2a0cf91458162afb70762c16..5c23f9fba61c791365d9c69910ebb12154a6f238 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -39,6 +39,7 @@
@@ -452,6 +452,26 @@ index 41f6c6ba9920c7fe2a0cf91458162afb70762c16..7315a2b5962f42b57d04655cea97a938
    print_preview_context_.OnPrintPreview();
  
    base::UmaHistogramEnumeration(print_preview_context_.IsForArc()
+@@ -1557,13 +1561,13 @@ bool PrintRenderFrameHelper::FinalizePrintReadyDocument() {
+       print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_CAPTURE_FAILED);
+       return false;
+     }
+-  } else {
+-    if (!CopyMetafileDataToReadOnlySharedMem(*metafile,
++  }
++
++  if (!CopyMetafileDataToReadOnlySharedMem(*metafile,
+                                              &preview_params.content)) {
+-      LOG(ERROR) << "CopyMetafileDataToReadOnlySharedMem failed";
+-      print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
+-      return false;
+-    }
++    LOG(ERROR) << "CopyMetafileDataToReadOnlySharedMem failed";
++    print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
++    return false;
+   }
+ 
+   preview_params.document_cookie = print_pages_params_->params.document_cookie;
 @@ -1760,7 +1764,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
      auto self = weak_ptr_factory_.GetWeakPtr();
