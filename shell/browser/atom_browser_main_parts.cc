@@ -226,9 +226,6 @@ AtomBrowserMainParts::AtomBrowserMainParts(
       electron_bindings_(new ElectronBindings(uv_default_loop())) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
-  // Register extension scheme as web safe scheme.
-  content::ChildProcessSecurityPolicy::GetInstance()->RegisterWebSafeScheme(
-      "chrome-extension");
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {

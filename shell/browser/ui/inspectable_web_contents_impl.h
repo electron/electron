@@ -21,6 +21,7 @@
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "electron/buildflags/buildflags.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "ui/gfx/geometry/rect.h"
 
@@ -192,6 +193,10 @@ class InspectableWebContentsImpl
                           const base::FilePath& path) override;
 
   void SendMessageAck(int request_id, const base::Value* arg1);
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  void AddDevToolsExtensionsToClient();
+#endif
 
   bool frontend_loaded_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;

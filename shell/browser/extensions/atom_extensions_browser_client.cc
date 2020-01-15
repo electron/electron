@@ -24,6 +24,9 @@
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
 #include "extensions/common/features/feature_channel.h"
+#include "extensions/common/manifest_constants.h"
+#include "extensions/common/manifest_url_handlers.h"
+#include "services/network/public/mojom/url_loader.mojom.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/browser.h"
@@ -31,9 +34,6 @@
 #include "shell/browser/extensions/atom_extension_host_delegate.h"
 #include "shell/browser/extensions/atom_extension_system_factory.h"
 #include "shell/browser/extensions/atom_extension_web_contents_observer.h"
-// #include "shell/browser/extensions/atom_extensions_api_client.h"
-// #include "shell/browser/extensions/atom_extensions_browser_api_provider.h"
-#include "services/network/public/mojom/url_loader.mojom.h"
 #include "shell/browser/extensions/atom_navigation_ui_data.h"
 #include "shell/browser/extensions/electron_extensions_api_client.h"
 #include "shell/browser/extensions/electron_process_manager_delegate.h"
@@ -139,6 +139,37 @@ void AtomExtensionsBrowserClient::LoadResourceFromResourceBundle(
   NOTREACHED() << "Load resources from bundles not supported.";
 }
 
+namespace {
+bool AllowCrossRendererResourceLoad(const GURL& url,
+                                    content::ResourceType resource_type,
+                                    ui::PageTransition page_transition,
+                                    int child_id,
+                                    bool is_incognito,
+                                    const extensions::Extension* extension,
+                                    const extensions::ExtensionSet& extensions,
+                                    const extensions::ProcessMap& process_map,
+                                    bool* allowed) {
+  if (extensions::url_request_util::AllowCrossRendererResourceLoad(
+          url, resource_type, page_transition, child_id, is_incognito,
+          extension, extensions, process_map, allowed)) {
+    return true;
+  }
+
+  // If there aren't any explicitly marked web accessible resources, the
+  // load should be allowed only if it is by DevTools. A close approximation is
+  // checking if the extension contains a DevTools page.
+  if (extension && !extensions::ManifestURL::Get(
+                        extension, extensions::manifest_keys::kDevToolsPage)
+                        .is_empty()) {
+    *allowed = true;
+    return true;
+  }
+
+  // Couldn't determine if the resource is allowed or not.
+  return false;
+}
+}  // namespace
+
 bool AtomExtensionsBrowserClient::AllowCrossRendererResourceLoad(
     const GURL& url,
     content::ResourceType resource_type,
@@ -149,7 +180,7 @@ bool AtomExtensionsBrowserClient::AllowCrossRendererResourceLoad(
     const extensions::ExtensionSet& extensions,
     const extensions::ProcessMap& process_map) {
   bool allowed = false;
-  if (extensions::url_request_util::AllowCrossRendererResourceLoad(
+  if (::electron::AllowCrossRendererResourceLoad(
           url, resource_type, page_transition, child_id, is_incognito,
           extension, extensions, process_map, &allowed)) {
     return allowed;

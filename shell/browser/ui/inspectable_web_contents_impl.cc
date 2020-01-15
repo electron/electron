@@ -48,6 +48,16 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/render_process_host.h"
+#include "extensions/browser/extension_registry.h"
+#include "extensions/common/manifest_constants.h"
+#include "extensions/common/manifest_url_handlers.h"
+#include "extensions/common/permissions/permissions_data.h"
+#include "shell/browser/atom_browser_context.h"
+#endif
+
 namespace electron {
 
 namespace {
@@ -571,9 +581,50 @@ void InspectableWebContentsImpl::LoadCompleted() {
         javascript, base::NullCallback());
   }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  AddDevToolsExtensionsToClient();
+#endif
+
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsOpened();
 }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+void InspectableWebContentsImpl::AddDevToolsExtensionsToClient() {
+  // get main browser context
+  auto* browser_context = web_contents_->GetBrowserContext();
+  const extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(browser_context);
+  if (!registry)
+    return;
+
+  base::ListValue results;
+  for (auto& extension : registry->enabled_extensions()) {
+    auto devtools_page_url = extensions::ManifestURL::Get(
+        extension.get(), extensions::manifest_keys::kDevToolsPage);
+    if (devtools_page_url.is_empty())
+      continue;
+
+    // Each devtools extension will need to be able to run in the devtools
+    // process. Grant the devtools process the ability to request URLs from the
+    // extension.
+    content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
+        web_contents_->GetMainFrame()->GetProcess()->GetID(),
+        url::Origin::Create(extension->url()));
+
+    std::unique_ptr<base::DictionaryValue> extension_info(
+        new base::DictionaryValue());
+    extension_info->SetString("startPage", devtools_page_url.spec());
+    extension_info->SetString("name", extension->name());
+    extension_info->SetBoolean("exposeExperimentalAPIs",
+                               extension->permissions_data()->HasAPIPermission(
+                                   extensions::APIPermission::kExperimental));
+    results.Append(std::move(extension_info));
+  }
+
+  CallClientFunction("DevToolsAPI.addExtensions", &results, NULL, NULL);
+}
+#endif
 
 void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
   DevToolsContentsResizingStrategy strategy(rect);
