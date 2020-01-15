@@ -222,6 +222,7 @@
   "parallel/test-worker-sharedarraybuffer-from-worker-thread",
   "parallel/test-worker-stdio",
   "parallel/test-wrap-js-stream-exceptions",
+  "parallel/test-zlib-unused-weak",
   "pseudo-tty/console_colors",
   "pseudo-tty/ref_keeps_node_running",
   "pseudo-tty/test-async-wrap-getasyncid-tty",
