@@ -513,7 +513,6 @@ NativeWindowMac::~NativeWindowMac() {
 
 void NativeWindowMac::RepositionTrafficLights() {
   if (!traffic_light_offsetX_ && !traffic_light_offsetY_) {
-    NSLog(@"in here");
     return;
   }
 
@@ -664,9 +663,6 @@ void NativeWindowMac::Hide() {
 bool NativeWindowMac::IsVisible() {
   bool occluded = [window_ occlusionState] == NSWindowOcclusionStateVisible;
 
-  if (title_bar_style_ == TitleBarStyle::HIDDEN && !entering_fullscreen()) {
-    RepositionTrafficLights();
-  }
   // For a window to be visible, it must be visible to the user in the
   // foreground of the app, which means that it should not be minimized or
   // occluded
