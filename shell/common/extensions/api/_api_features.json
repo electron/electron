@@ -1,0 +1,7 @@
+{
+  "tabs": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "contexts": ["blessed_extension"]
+  }
+}

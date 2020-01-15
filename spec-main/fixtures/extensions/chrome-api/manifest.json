@@ -12,5 +12,8 @@
     "scripts": ["background.js"],
     "persistent": false
   },
+  "permissions": [
+    "<all_urls>"
+  ],
   "manifest_version": 2
 }

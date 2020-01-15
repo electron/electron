@@ -664,7 +664,8 @@ source_set("electron_lib") {
     ]
   }
 
-  public_deps += [ "shell/common/extensions/api:extensions_features" ]
+  deps += [ "shell/common/extensions/api:extensions_features" ]
+  deps += [ "shell/common/extensions/api" ]
   deps += [
     "//components/pref_registry",
     "//components/user_prefs",

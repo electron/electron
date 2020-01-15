@@ -361,6 +361,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
+  script_executor_.reset(new extensions::ScriptExecutor(web_contents));
 #endif
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
@@ -521,6 +522,7 @@ void WebContents::InitWithSessionAndOptions(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
       web_contents());
+  script_executor_.reset(new extensions::ScriptExecutor(web_contents()));
 #endif
 
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,

@@ -591,6 +591,8 @@ filenames = {
   lib_sources_extensions = [
     "shell/browser/extensions/api/runtime/atom_runtime_api_delegate.cc",
     "shell/browser/extensions/api/runtime/atom_runtime_api_delegate.h",
+    "shell/browser/extensions/api/tabs/tabs_api.cc",
+    "shell/browser/extensions/api/tabs/tabs_api.h",
     "shell/browser/extensions/atom_extensions_browser_client.cc",
     "shell/browser/extensions/atom_extensions_browser_client.h",
     "shell/browser/extensions/atom_browser_context_keyed_service_factories.cc",
@@ -613,6 +615,8 @@ filenames = {
     "shell/browser/extensions/electron_process_manager_delegate.h",
     "shell/browser/extensions/electron_extensions_api_client.cc",
     "shell/browser/extensions/electron_extensions_api_client.h",
+    "shell/browser/extensions/electron_extensions_browser_api_provider.cc",
+    "shell/browser/extensions/electron_extensions_browser_api_provider.h",
     "shell/browser/extensions/electron_messaging_delegate.cc",
     "shell/browser/extensions/electron_messaging_delegate.h",
     "shell/common/extensions/atom_extensions_api_provider.cc",
@@ -621,6 +625,8 @@ filenames = {
     "shell/common/extensions/atom_extensions_client.h",
     "shell/renderer/extensions/atom_extensions_renderer_client.cc",
     "shell/renderer/extensions/atom_extensions_renderer_client.h",
+    "shell/renderer/extensions/electron_extensions_dispatcher_delegate.cc",
+    "shell/renderer/extensions/electron_extensions_dispatcher_delegate.h",
   ]
 
   app_sources = [

@@ -229,6 +229,13 @@ static_library("chrome") {
       "//components/vector_icons:vector_icons",
     ]
   }
+
+  if (enable_electron_extensions) {
+    sources += [
+      "//chrome/renderer/extensions/tabs_hooks_delegate.cc",
+      "//chrome/renderer/extensions/tabs_hooks_delegate.h",
+    ]
+  }
 }
 
 source_set("plugins") {

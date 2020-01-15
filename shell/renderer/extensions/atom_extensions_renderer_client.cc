@@ -6,13 +6,13 @@
 
 #include "content/public/renderer/render_thread.h"
 #include "extensions/renderer/dispatcher.h"
-#include "extensions/renderer/dispatcher_delegate.h"
+#include "shell/renderer/extensions/electron_extensions_dispatcher_delegate.h"
 
 namespace electron {
 
 AtomExtensionsRendererClient::AtomExtensionsRendererClient()
     : dispatcher_(std::make_unique<extensions::Dispatcher>(
-          std::make_unique<extensions::DispatcherDelegate>())) {
+          std::make_unique<ElectronExtensionsDispatcherDelegate>())) {
   dispatcher_->OnRenderThreadStarted(content::RenderThread::Get());
 }
 

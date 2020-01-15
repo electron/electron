@@ -1,0 +1,86 @@
+[
+  {
+    "namespace": "tabs",
+    "functions": [
+      {
+        "name": "executeScript",
+        "type": "function",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "minimum": 0,
+            "optional": true,
+            "description": "The ID of the tab in which to run the script; defaults to the active tab of the current window."
+          },
+          {
+            "$ref": "extensionTypes.InjectDetails",
+            "name": "details",
+            "description": "Details of the script to run. Either the code or the file property must be set, but both may not be set at the same time."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called after all the JavaScript has been executed.",
+            "parameters": [
+              {
+                "name": "result",
+                "optional": true,
+                "type": "array",
+                "items": {
+                  "type": "any",
+                  "minimum": 0
+                },
+                "description": "The result of the script in every injected frame."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "sendMessage",
+        "nocompile": true,
+        "type": "function",
+        "description": "Sends a single message to the content script(s) in the specified tab, with an optional callback to run when a response is sent back.  The $(ref:runtime.onMessage) event is fired in each content script running in the specified tab for the current extension.",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "minimum": 0
+          },
+          {
+            "type": "any",
+            "name": "message",
+            "description": "The message to send. This message should be a JSON-ifiable object."
+          },
+          {
+            "type": "object",
+            "name": "options",
+            "properties": {
+              "frameId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": 0,
+                "description": "Send a message to a specific <a href='webNavigation#frame_ids'>frame</a> identified by <code>frameId</code> instead of all frames in the tab."
+              }
+            },
+            "optional": true
+          },
+          {
+            "type": "function",
+            "name": "responseCallback",
+            "optional": true,
+            "parameters": [
+              {
+                "name": "response",
+                "type": "any",
+                "description": "The JSON response object sent by the handler of the message. If an error occurs while connecting to the specified tab, the callback is called with no arguments and $(ref:runtime.lastError) is set to the error message."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

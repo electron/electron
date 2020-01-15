@@ -11,13 +11,17 @@
 #include "base/containers/span.h"
 #include "base/strings/utf_string_conversions.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/shell/common/extensions/api/generated_schemas.h"
 #include "extensions/common/alias.h"
+#include "extensions/common/features/feature_provider.h"
 #include "extensions/common/features/json_feature_provider_source.h"
+#include "extensions/common/features/simple_feature.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_handler.h"
 #include "extensions/common/manifest_handlers/permissions_parser.h"
 #include "extensions/common/manifest_url_handlers.h"
 #include "extensions/common/permissions/permissions_info.h"
+#include "shell/common/extensions/api/api_features.h"
 #include "shell/common/extensions/api/manifest_features.h"
 
 namespace extensions {
@@ -73,19 +77,14 @@ namespace electron {
 AtomExtensionsAPIProvider::AtomExtensionsAPIProvider() = default;
 AtomExtensionsAPIProvider::~AtomExtensionsAPIProvider() = default;
 
-// TODO(samuelmaddock): generate API features?
-
 void AtomExtensionsAPIProvider::AddAPIFeatures(
     extensions::FeatureProvider* provider) {
-  // AddShellAPIFeatures(provider);
+  extensions::AddElectronAPIFeatures(provider);
 }
 
 void AtomExtensionsAPIProvider::AddManifestFeatures(
     extensions::FeatureProvider* provider) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // TODO(samuelmaddock): why is the extensions namespace generated?
-  extensions::AddAtomManifestFeatures(provider);
-#endif
+  extensions::AddElectronManifestFeatures(provider);
 }
 
 void AtomExtensionsAPIProvider::AddPermissionFeatures(
@@ -104,14 +103,12 @@ void AtomExtensionsAPIProvider::AddAPIJSONSources(
 }
 
 bool AtomExtensionsAPIProvider::IsAPISchemaGenerated(const std::string& name) {
-  // return shell::api::ShellGeneratedSchemas::IsGenerated(name);
-  return false;
+  return extensions::api::ElectronGeneratedSchemas::IsGenerated(name);
 }
 
 base::StringPiece AtomExtensionsAPIProvider::GetAPISchema(
     const std::string& name) {
-  // return shell::api::ShellGeneratedSchemas::Get(name);
-  return "";
+  return extensions::api::ElectronGeneratedSchemas::Get(name);
 }
 
 void AtomExtensionsAPIProvider::RegisterPermissions(

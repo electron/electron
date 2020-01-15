@@ -23,6 +23,8 @@
 #include "ui/gfx/native_widget_types.h"
 #include "url/gurl.h"
 
+#include "shell/browser/api/atom_api_web_contents.h"
+
 namespace extensions {
 
 ElectronMessagingDelegate::ElectronMessagingDelegate() = default;
@@ -39,13 +41,28 @@ ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
 
 std::unique_ptr<base::DictionaryValue>
 ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
+  if (web_contents) {
+    auto* api_contents = electron::api::WebContents::FromWrappedClass(
+        v8::Isolate::GetCurrent(), web_contents);
+    if (api_contents) {
+      auto tab = std::make_unique<base::DictionaryValue>();
+      tab->SetWithoutPathExpansion(
+          "id", std::make_unique<base::Value>(api_contents->ID()));
+      return tab;
+    }
+  }
   return nullptr;
 }
 
 content::WebContents* ElectronMessagingDelegate::GetWebContentsByTabId(
     content::BrowserContext* browser_context,
     int tab_id) {
-  return nullptr;
+  auto* contents = electron::api::WebContents::FromWeakMapID(
+      v8::Isolate::GetCurrent(), tab_id);
+  if (!contents) {
+    return nullptr;
+  }
+  return contents->web_contents();
 }
 
 std::unique_ptr<MessagePort> ElectronMessagingDelegate::CreateReceiverForTab(
