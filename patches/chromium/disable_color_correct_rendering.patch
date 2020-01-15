@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 7eb7eba37f1e073b6c85a17921bd32eed3e7e069..455012abcce57fa26b7838d9b29a10dd2247605b 100644
+index 2b321d9f98dd59bd5163e2541f0aab330105fa89..2d2cd80750cba037d39e12da655a9dbe97c9bc02 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1813,6 +1813,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
+@@ -1796,6 +1796,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
  
  const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpaceAndId(
      int* id) const {
@@ -37,7 +37,7 @@ index 7eb7eba37f1e073b6c85a17921bd32eed3e7e069..455012abcce57fa26b7838d9b29a10dd
    // The pending tree will have the most recently updated color space, so
    // prefer that.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 81e587500b880f1b64d04393e5ccc35d56751ca0..fa1afa2053a39b3dcf012e2ae4da666a0a4b934e 100644
+index 161ce54e75c0047797e9d0db27aafc3d0bfe7140..61838deb281cc11db50d195cf960970ee9cdac89 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -100,6 +100,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -232,10 +232,10 @@ index 20a2cae2de196aede4314e0a94638fdc5be04b75..160092c7e996d0f0232eda91e7a62bb7
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 66df46bf5d9ac3eaff38991c2c73dc796a4a77a2..3941fdaea3376733a47623ccef5a1fe6d9f320e9 100644
+index 48ed8d5675cfb1643cfb901ec75d64a3752d1d36..630b45009f6b7a9340968bb31f7f228b28319d80 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -228,6 +228,7 @@
+@@ -229,6 +229,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
@@ -243,7 +243,7 @@ index 66df46bf5d9ac3eaff38991c2c73dc796a4a77a2..3941fdaea3376733a47623ccef5a1fe6
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3064,6 +3065,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3063,6 +3064,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -252,7 +252,7 @@ index 66df46bf5d9ac3eaff38991c2c73dc796a4a77a2..3941fdaea3376733a47623ccef5a1fe6
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 2ab7bde880a33e65ac1fd7aa0801035fb8abf3f3..203502d96e8c82a3f95f6053fe8b204aa3cea0c6 100644
+index 1e500738a0f1d82e211dd0a2da013fd39dd4be39..ad1677ec5d23afd02f4703671740f2969035132c 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
 @@ -2945,6 +2945,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(

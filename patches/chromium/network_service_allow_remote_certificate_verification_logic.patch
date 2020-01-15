@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index e18aa748cb5ba1de014be3a1bf0e3878bdd463bd..c0974865a3d3776faa8db2759fe1e4530bf825b3 100644
+index e5dfb9c6fd2032608ac32cd997fb027fd9b324e5..7e7e50880804583acf75206d3f5f1c6f4c3b158d 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -95,6 +95,11 @@
@@ -190,7 +190,7 @@ index 23a5fe596b2607fa2b95f601cb621e4e11f81d50..67f0e98426345beac34bfd41be384210
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<cert_verifier::CertNetFetcherURLLoader> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 0b448742c3cb250fa2dcd7d4ddbf76d55a99620e..00850f3087d7756dd9b9a272d21222acfb49bb7c 100644
+index 32a60d94e488b12acb27700416da90cd578bbd57..b3a2dd03807bc8deb867c5168af5251a818389a2 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -191,6 +191,17 @@ struct HttpAuthStaticNetworkContextParams {
@@ -211,7 +211,7 @@ index 0b448742c3cb250fa2dcd7d4ddbf76d55a99620e..00850f3087d7756dd9b9a272d21222ac
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -802,6 +813,9 @@ interface NetworkContext {
+@@ -808,6 +819,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

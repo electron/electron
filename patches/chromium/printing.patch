@@ -63,7 +63,7 @@ index ebffdb08d080eceb0ea9e96ee3ca7db627cfaf5e..bc00a7a00626cee17e5f5ea976f8248f
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index bf7536b9870efe85ca65e509231e1eca86ee982b..e31d3506cc8509a9b9addc011ba85e83fbe608d6 100644
+index 155d86fe79b99989c3f604aeaab13782f8e6631c..b60263e722b2604ed35a1ed10469ac91e22aaa33 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -229,7 +229,7 @@ index bf7536b9870efe85ca65e509231e1eca86ee982b..e31d3506cc8509a9b9addc011ba85e83
    print_job_ = nullptr;
  }
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index af49d3e2f8abaf7dc4d82dc3f9beccdf4fbd9f18..c5ef1a4c1577c509e5fbe0fcf06e6dfdba30c92c 100644
+index 3d434244927aca5e5dbec8d7c1cd212c5c260c71..9d62c903bf08fa8cfa8c425d430c5e995a04f7fc 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -33,6 +33,8 @@ class PrintJob;
@@ -395,7 +395,7 @@ index c4707f4680f1522689c77d3e8bbc57cb62787381..2909205539b2fcfc86e610cfdff0ca41
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 1af8977aaa94dc9cb8b6587bff84884d5f0cd20f..51f285b6247c93c8efae0b7ab8179100f4aa33d2 100644
+index 1af8977aaa94dc9cb8b6587bff84884d5f0cd20f..819c9416a30aac7f10fd788c477a0c8e9f7e7cca 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -452,6 +452,27 @@ index 1af8977aaa94dc9cb8b6587bff84884d5f0cd20f..51f285b6247c93c8efae0b7ab8179100
    print_preview_context_.OnPrintPreview();
  
    base::UmaHistogramEnumeration(print_preview_context_.IsForArc()
+@@ -1564,13 +1568,13 @@ bool PrintRenderFrameHelper::FinalizePrintReadyDocument() {
+       print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_CAPTURE_FAILED);
+       return false;
+     }
+-  } else {
+-    if (!CopyMetafileDataToReadOnlySharedMem(*metafile,
+-                                             &preview_params.content)) {
+-      LOG(ERROR) << "CopyMetafileDataToReadOnlySharedMem failed";
+-      print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
+-      return false;
+-    }
++  }
++
++  if (!CopyMetafileDataToReadOnlySharedMem(*metafile,
++                                           &preview_params.content)) {
++    LOG(ERROR) << "CopyMetafileDataToReadOnlySharedMem failed";
++    print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
++    return false;
+   }
+ 
+   preview_params.document_cookie = print_pages_params_->params.document_cookie;
 @@ -1705,7 +1709,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
      auto self = weak_ptr_factory_.GetWeakPtr();
