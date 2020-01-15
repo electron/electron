@@ -22,7 +22,7 @@ async function main () {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: 'true',
-      ELECTRON_EAGER_ASAR_HOOK: 'true'
+      ELECTRON_EAGER_ASAR_HOOK_FOR_TESTING: 'true'
     },
     cwd: NODE_DIR,
     stdio: 'inherit'
