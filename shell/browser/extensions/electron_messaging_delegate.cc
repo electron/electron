@@ -57,7 +57,12 @@ ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
 content::WebContents* ElectronMessagingDelegate::GetWebContentsByTabId(
     content::BrowserContext* browser_context,
     int tab_id) {
-  return nullptr;
+  auto* contents = electron::api::WebContents::FromWeakMapID(
+      v8::Isolate::GetCurrent(), tab_id);
+  if (!contents) {
+    return nullptr;
+  }
+  return contents->web_contents();
 }
 
 std::unique_ptr<MessagePort> ElectronMessagingDelegate::CreateReceiverForTab(

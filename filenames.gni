@@ -625,6 +625,8 @@ filenames = {
     "shell/common/extensions/atom_extensions_client.h",
     "shell/renderer/extensions/atom_extensions_renderer_client.cc",
     "shell/renderer/extensions/atom_extensions_renderer_client.h",
+    "shell/renderer/extensions/electron_extensions_dispatcher_delegate.cc",
+    "shell/renderer/extensions/electron_extensions_dispatcher_delegate.h",
   ]
 
   app_sources = [
