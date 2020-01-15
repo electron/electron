@@ -677,6 +677,7 @@ source_set("electron_lib") {
   ]
   if (enable_electron_extensions) {
     sources += filenames.lib_sources_extensions
+    deps += [ "//chrome/browser/resources:component_extension_resources" ]
   }
 
   if (enable_pdf) {

@@ -6,6 +6,7 @@
 
 #include "base/values.h"
 #include "content/public/common/webplugininfo.h"
+#include "extensions/buildflags/buildflags.h"
 #include "url/gurl.h"
 #include "url/origin.h"
 

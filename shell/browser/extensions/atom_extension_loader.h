@@ -46,6 +46,8 @@ class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
   void UnloadExtension(const ExtensionId& extension_id,
                        extensions::UnloadedExtensionReason reason);
 
+  ExtensionRegistrar* registrar() { return &extension_registrar_; }
+
  private:
   // If the extension loaded successfully, enables it. If it's an app, launches
   // it. If the load failed, updates ShellKeepAliveRequester.

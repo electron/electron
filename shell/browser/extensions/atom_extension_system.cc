@@ -10,7 +10,11 @@
 #include "base/bind.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/json/json_string_value_serializer.h"
+#include "base/path_service.h"
 #include "base/task/post_task.h"
+#include "chrome/browser/pdf/pdf_extension_util.h"
+#include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -85,6 +89,34 @@ void AtomExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
       std::make_unique<SharedUserScriptMaster>(browser_context_);
   app_sorting_ = std::make_unique<NullAppSorting>();
   extension_loader_ = std::make_unique<AtomExtensionLoader>(browser_context_);
+
+  LoadComponentExtensions();
+}
+
+std::unique_ptr<base::DictionaryValue> ParseManifest(
+    base::StringPiece manifest_contents) {
+  JSONStringValueDeserializer deserializer(manifest_contents);
+  std::unique_ptr<base::Value> manifest = deserializer.Deserialize(NULL, NULL);
+
+  if (!manifest.get() || !manifest->is_dict()) {
+    LOG(ERROR) << "Failed to parse extension manifest.";
+    return std::unique_ptr<base::DictionaryValue>();
+  }
+  return base::DictionaryValue::From(std::move(manifest));
+}
+
+void AtomExtensionSystem::LoadComponentExtensions() {
+  std::string utf8_error;
+  std::string pdf_manifest_string = pdf_extension_util::GetManifest();
+  std::unique_ptr<base::DictionaryValue> pdf_manifest =
+      ParseManifest(pdf_manifest_string);
+  base::FilePath root_directory;
+  CHECK(base::PathService::Get(chrome::DIR_RESOURCES, &root_directory));
+  root_directory = root_directory.Append(FILE_PATH_LITERAL("pdf"));
+  scoped_refptr<const Extension> pdf_extension = extensions::Extension::Create(
+      root_directory, extensions::Manifest::COMPONENT, *pdf_manifest,
+      extensions::Extension::REQUIRE_KEY, &utf8_error);
+  extension_loader_->registrar()->AddExtension(pdf_extension);
 }
 
 ExtensionService* AtomExtensionSystem::extension_service() {

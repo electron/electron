@@ -92,6 +92,8 @@ class AtomExtensionSystem : public ExtensionSystem {
  private:
   void OnExtensionRegisteredWithRequestContexts(
       scoped_refptr<Extension> extension);
+  void LoadComponentExtensions();
+
   content::BrowserContext* browser_context_;  // Not owned.
 
   // Data to be accessed on the IO thread. Must outlive process_manager_.

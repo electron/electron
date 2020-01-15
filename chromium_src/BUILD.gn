@@ -232,6 +232,8 @@ static_library("chrome") {
 
   if (enable_electron_extensions) {
     sources += [
+      "//chrome/browser/pdf/pdf_extension_util.cc",
+      "//chrome/browser/pdf/pdf_extension_util.h",
       "//chrome/renderer/extensions/tabs_hooks_delegate.cc",
       "//chrome/renderer/extensions/tabs_hooks_delegate.h",
     ]
