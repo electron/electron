@@ -156,7 +156,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   pdf_info.is_out_of_process = true;
   pdf_info.name = "Chromium PDF Viewer";
   pdf_info.description = "Portable Document Format";
-  pdf_info.path = base::FilePath(FILE_PATH_LITERAL("internal-pdf-viewer"));
+  pdf_info.path = base::FilePath(FILE_PATH_LITERAL("internal-pdf-viewer2"));
   content::WebPluginMimeType pdf_mime_type(kPdfPluginMimeType, "pdf",
                                            "Portable Document Format");
   pdf_info.mime_types.push_back(pdf_mime_type);

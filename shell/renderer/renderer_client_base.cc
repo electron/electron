@@ -321,9 +321,8 @@ bool RendererClientBase::OverrideCreatePlugin(
       command_line->HasSwitch(switches::kEnablePlugins))
     return false;
 
-  //*plugin = nullptr;
-  // return true;
-  return false;
+  *plugin = nullptr;
+  return true;
 }
 
 void RendererClientBase::AddSupportedKeySystems(
