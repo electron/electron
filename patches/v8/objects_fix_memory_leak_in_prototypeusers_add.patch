@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20Inf=C3=BChr?= <dinfuehr@chromium.org>
+Date: Fri, 13 Dec 2019 14:13:21 +0100
+Subject: [objects] Fix memory leak in PrototypeUsers::Add
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+PrototypeUsers::Add now iterates the WeakArrayList to find empty slots
+before growing the array. Not reusing empty slots caused a memory leak.
+
+It might also be desirable to shrink the WeakArrayList in the future.
+Right now it is only compacted when invoking CreateBlob.
+
+Also removed unused PrototypeUsers::IsEmptySlot declaration.
+
+Bug: v8:10031
+Change-Id: I570ec78fca37e8f0c794f1f40846a4daab47c225
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/1967317
+Reviewed-by: Ulan Degenbaev <ulan@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Dominik Inführ <dinfuehr@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#65456}
+
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index 134cb3998a5585c483f8dd157eb0ef14b2dc916d..58cf79b84feb11f2d337c1d0f30c321ac33ddfea 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -4025,6 +4025,13 @@ Handle<WeakArrayList> PrototypeUsers::Add(Isolate* isolate,
+ 
+   // If there are empty slots, use one of them.
+   int empty_slot = Smi::ToInt(empty_slot_index(*array));
++
++  if (empty_slot == kNoEmptySlotsMarker) {
++    // GCs might have cleared some references, rescan the array for empty slots.
++    PrototypeUsers::ScanForEmptySlots(*array);
++    empty_slot = Smi::ToInt(empty_slot_index(*array));
++  }
++
+   if (empty_slot != kNoEmptySlotsMarker) {
+     DCHECK_GE(empty_slot, kFirstIndex);
+     CHECK_LT(empty_slot, array->length());
+@@ -4047,6 +4054,15 @@ Handle<WeakArrayList> PrototypeUsers::Add(Isolate* isolate,
+   return array;
+ }
+ 
++// static
++void PrototypeUsers::ScanForEmptySlots(WeakArrayList array) {
++  for (int i = kFirstIndex; i < array.length(); i++) {
++    if (array.Get(i)->IsCleared()) {
++      PrototypeUsers::MarkSlotEmpty(array, i);
++    }
++  }
++}
++
+ WeakArrayList PrototypeUsers::Compact(Handle<WeakArrayList> array, Heap* heap,
+                                       CompactionCallback callback,
+                                       AllocationType allocation) {
+diff --git a/src/objects/prototype-info.h b/src/objects/prototype-info.h
+index 94d86d2e1931c397f683c0824dd05dab6a9963c3..6f777eda8936c81a139a80d8be71258f1181ce8d 100644
+--- a/src/objects/prototype-info.h
++++ b/src/objects/prototype-info.h
+@@ -99,7 +99,7 @@ class V8_EXPORT_PRIVATE PrototypeUsers : public WeakArrayList {
+   static inline Smi empty_slot_index(WeakArrayList array);
+   static inline void set_empty_slot_index(WeakArrayList array, int index);
+ 
+-  static void IsSlotEmpty(WeakArrayList array, int index);
++  static void ScanForEmptySlots(WeakArrayList array);
+ 
+   DISALLOW_IMPLICIT_CONSTRUCTORS(PrototypeUsers);
+ };
