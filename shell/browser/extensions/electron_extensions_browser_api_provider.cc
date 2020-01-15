@@ -18,11 +18,6 @@ void ElectronExtensionsBrowserAPIProvider::RegisterExtensionFunctions(
     ExtensionFunctionRegistry* registry) {
   registry->RegisterFunction<TabsExecuteScriptFunction>();
   /*
-  // Preferences.
-  registry->RegisterFunction<GetPreferenceFunction>();
-  registry->RegisterFunction<SetPreferenceFunction>();
-  registry->RegisterFunction<ClearPreferenceFunction>();
-
   // Generated APIs from Electron.
   api::ElectronGeneratedFunctionRegistry::RegisterAll(registry);
   */

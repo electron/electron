@@ -11,6 +11,7 @@
 #include "base/containers/span.h"
 #include "base/strings/utf_string_conversions.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/shell/common/extensions/api/generated_schemas.h"
 #include "extensions/common/alias.h"
 #include "extensions/common/features/feature_provider.h"
 #include "extensions/common/features/json_feature_provider_source.h"
@@ -20,6 +21,7 @@
 #include "extensions/common/manifest_handlers/permissions_parser.h"
 #include "extensions/common/manifest_url_handlers.h"
 #include "extensions/common/permissions/permissions_info.h"
+#include "shell/common/extensions/api/api_features.h"
 #include "shell/common/extensions/api/manifest_features.h"
 
 namespace extensions {
@@ -79,22 +81,13 @@ AtomExtensionsAPIProvider::~AtomExtensionsAPIProvider() = default;
 
 void AtomExtensionsAPIProvider::AddAPIFeatures(
     extensions::FeatureProvider* provider) {
-  // AddShellAPIFeatures(provider);
-
-  {
-    extensions::SimpleFeature* feature = new extensions::SimpleFeature();
-    feature->set_name("tabs");
-    // feature->set_channel(extensions::version_info::Channel::STABLE);
-    feature->set_contexts({extensions::Feature::BLESSED_EXTENSION_CONTEXT});
-    feature->set_extension_types({extensions::Manifest::TYPE_EXTENSION});
-    provider->AddFeature("tabs", feature);
-  }
+  extensions::AddElectronAPIFeatures(provider);
 }
 
 void AtomExtensionsAPIProvider::AddManifestFeatures(
     extensions::FeatureProvider* provider) {
   // TODO(samuelmaddock): why is the extensions namespace generated?
-  extensions::AddAtomManifestFeatures(provider);
+  extensions::AddElectronManifestFeatures(provider);
 }
 
 void AtomExtensionsAPIProvider::AddPermissionFeatures(
@@ -113,34 +106,12 @@ void AtomExtensionsAPIProvider::AddAPIJSONSources(
 }
 
 bool AtomExtensionsAPIProvider::IsAPISchemaGenerated(const std::string& name) {
-  if (name == "tabs") {
-    return true;
-  }
-  // return shell::api::ShellGeneratedSchemas::IsGenerated(name);
-  return false;
+  return extensions::api::ElectronGeneratedSchemas::IsGenerated(name);
 }
 
 base::StringPiece AtomExtensionsAPIProvider::GetAPISchema(
     const std::string& name) {
-  if (name == "tabs") {
-    return "{\"namespace\": \"tabs\", \"functions\": [{\"name\": "
-           "\"executeScript\", \"type\": \"function\", \"parameters\": "
-           "[{\"type\": \"integer\", \"name\": \"tabId\", \"minimum\": 0, "
-           "\"optional\": true, \"description\": \"The ID of the tab in which "
-           "to run the script; defaults to the active tab of the current "
-           "window.\"}, { \"$ref\": \"extensionTypes.InjectDetails\", "
-           "\"name\": \"details\", \"description\": \"Details of the script to "
-           "run. Either the code or the file property must be set, but both "
-           "may not be set at the same time.\" }, { \"type\": \"function\", "
-           "\"name\": \"callback\", \"optional\": true, \"description\": "
-           "\"Called after all the JavaScript has been executed.\", "
-           "\"parameters\": [ { \"name\": \"result\", \"optional\": true, "
-           "\"type\": \"array\", \"items\": {\"type\": \"any\", \"minimum\": "
-           "0}, \"description\": \"The result of the script in every injected "
-           "frame.\" } ] } ]}]}";
-  }
-  // return shell::api::ShellGeneratedSchemas::Get(name);
-  return "";
+  return extensions::api::ElectronGeneratedSchemas::Get(name);
 }
 
 void AtomExtensionsAPIProvider::RegisterPermissions(

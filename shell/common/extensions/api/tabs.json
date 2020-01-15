@@ -1,0 +1,43 @@
+[
+  {
+    "namespace": "tabs",
+    "functions": [
+      {
+        "name": "executeScript",
+        "type": "function",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "minimum": 0,
+            "optional": true,
+            "description": "The ID of the tab in which to run the script; defaults to the active tab of the current window."
+          },
+          {
+            "$ref": "extensionTypes.InjectDetails",
+            "name": "details",
+            "description": "Details of the script to run. Either the code or the file property must be set, but both may not be set at the same time."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called after all the JavaScript has been executed.",
+            "parameters": [
+              {
+                "name": "result",
+                "optional": true,
+                "type": "array",
+                "items": {
+                  "type": "any",
+                  "minimum": 0
+                },
+                "description": "The result of the script in every injected frame."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
