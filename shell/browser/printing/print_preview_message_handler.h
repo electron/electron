@@ -10,7 +10,7 @@
 #include "base/memory/ref_counted_memory.h"
 #include "base/memory/weak_ptr.h"
 #include "components/printing/common/print.mojom.h"
-#include "components/services/pdf_compositor/public/mojom/pdf_compositor.mojom.h"
+#include "components/services/print_compositor/public/mojom/print_compositor.mojom.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
@@ -50,9 +50,10 @@ class PrintPreviewMessageHandler
       content::RenderFrameHost* render_frame_host,
       const PrintHostMsg_DidPreviewDocument_Params& params,
       const PrintHostMsg_PreviewIds& ids);
-  void OnCompositePdfDocumentDone(const PrintHostMsg_PreviewIds& ids,
-                                  printing::mojom::PdfCompositor::Status status,
-                                  base::ReadOnlySharedMemoryRegion region);
+  void OnCompositePdfDocumentDone(
+      const PrintHostMsg_PreviewIds& ids,
+      printing::mojom::PrintCompositor::Status status,
+      base::ReadOnlySharedMemoryRegion region);
   void OnPrintPreviewFailed(int document_cookie,
                             const PrintHostMsg_PreviewIds& ids);
   void OnPrintPreviewCancelled(int document_cookie,
