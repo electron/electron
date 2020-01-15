@@ -616,6 +616,23 @@ describe('net module', () => {
       })
     })
 
+    it('should be able to receive cookies', (done) => {
+      const cookie = ['cookie1', 'cookie2']
+      respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.setHeader('set-cookie', cookie)
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          expect(response.headers['set-cookie']).to.have.same.members(cookie)
+          done()
+        })
+        urlRequest.end()
+      })
+    })
+
     it('should be able to abort an HTTP request before first write', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.end()
