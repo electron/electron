@@ -57,7 +57,7 @@ void AtomRenderFrameObserver::DidClearWindowObject() {
   renderer_client_->DidClearWindowObject(render_frame_);
 }
 
-void AtomRenderFrameObserver::DidCreateScriptContext(
+void AtomRenderFrameObserver::DidInstallConditionalFeatures(
     v8::Handle<v8::Context> context,
     int world_id) {
   if (ShouldNotifyClient(world_id))
