@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_PLUGINS_PLUGIN_UTILS_H_
-#define CHROME_BROWSER_PLUGINS_PLUGIN_UTILS_H_
+#ifndef SHELL_BROWSER_PLUGINS_PLUGIN_UTILS_H_
+#define SHELL_BROWSER_PLUGINS_PLUGIN_UTILS_H_
 
 #include <string>
 
@@ -31,4 +31,4 @@ class PluginUtils {
   DISALLOW_IMPLICIT_CONSTRUCTORS(PluginUtils);
 };
 
-#endif  // CHROME_BROWSER_PLUGINS_PLUGIN_UTILS_H_
+#endif  // SHELL_BROWSER_PLUGINS_PLUGIN_UTILS_H_

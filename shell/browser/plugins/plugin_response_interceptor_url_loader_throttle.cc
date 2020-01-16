@@ -28,6 +28,7 @@
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_stream_manager.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/common/manifest_handlers/mime_types_handler.h"
+#include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/plugins/plugin_utils.h"
 
 namespace {
@@ -84,10 +85,11 @@ void SendExecuteMimeTypeHandlerEvent(
   GURL handler_url(
       extensions::Extension::GetBaseURLFromExtensionId(extension_id).spec() +
       handler->handler_url());
-  /*
-  int tab_id = ExtensionTabUtil::GetTabId(web_contents);
-  */
-  int tab_id = -1;  // TODO
+  int tab_id = -1;
+  auto* api_contents = electron::api::WebContents::FromWrappedClass(
+      v8::Isolate::GetCurrent(), web_contents);
+  if (api_contents)
+    tab_id = api_contents->ID();
   std::unique_ptr<extensions::StreamContainer> stream_container(
       new extensions::StreamContainer(
           tab_id, embedded, handler_url, extension_id,

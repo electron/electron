@@ -4,6 +4,8 @@
 
 #include "shell/browser/plugins/plugin_utils.h"
 
+#include <vector>
+
 #include "base/values.h"
 #include "content/public/common/webplugininfo.h"
 #include "extensions/buildflags/buildflags.h"
