@@ -7,6 +7,7 @@
 
 #include <windows.h>  // windows.h must be included first
 
+#include <rpc.h>
 #include <shellapi.h>
 
 #include <memory>
@@ -17,6 +18,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/ui/tray_icon.h"
+#include "shell/browser/ui/win/notify_icon_host.h"
 
 namespace gfx {
 class Point;
@@ -34,7 +36,11 @@ class NotifyIconHost;
 class NotifyIcon : public TrayIcon {
  public:
   // Constructor which provides this icon's unique ID and messaging window.
-  NotifyIcon(NotifyIconHost* host, UINT id, HWND window, UINT message);
+  NotifyIcon(NotifyIconHost* host,
+             UINT id,
+             HWND window,
+             UINT message,
+             GUID guid);
   ~NotifyIcon() override;
 
   // Handles a click event from the user - if |left_button_click| is true and
@@ -53,6 +59,7 @@ class NotifyIcon : public TrayIcon {
   UINT icon_id() const { return icon_id_; }
   HWND window() const { return window_; }
   UINT message_id() const { return message_id_; }
+  UUID guid() const { return guid_; }
 
   // Overridden from TrayIcon:
   void SetImage(HICON image) override;
@@ -87,6 +94,12 @@ class NotifyIcon : public TrayIcon {
 
   // The context menu.
   AtomMenuModel* menu_model_ = nullptr;
+
+  // An optional GUID used for identifying tray entries on Windows
+  UUID guid_ = GUID_DEFAULT;
+
+  // indicates whether the tray entry is associated with a guid
+  bool is_using_guid_ = false;
 
   // Context menu associated with this icon (if any).
   std::unique_ptr<views::MenuRunner> menu_runner_;

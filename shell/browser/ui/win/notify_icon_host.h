@@ -5,11 +5,15 @@
 #ifndef SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_
 #define SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_
 
+#include <rpc.h>
 #include <windows.h>
 
 #include <vector>
 
 #include "base/macros.h"
+#include "base/optional.h"
+
+const UUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 namespace electron {
 
@@ -20,7 +24,7 @@ class NotifyIconHost {
   NotifyIconHost();
   ~NotifyIconHost();
 
-  NotifyIcon* CreateNotifyIcon();
+  NotifyIcon* CreateNotifyIcon(base::Optional<UUID> guid);
   void Remove(NotifyIcon* notify_icon);
 
  private:

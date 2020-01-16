@@ -5,6 +5,7 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_TRAY_H_
 #define SHELL_BROWSER_API_ATOM_API_TRAY_H_
 
+#include <rpc.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -36,13 +37,16 @@ class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
  public:
   static gin_helper::WrappableBase* New(gin_helper::ErrorThrower thrower,
                                         gin::Handle<NativeImage> image,
+                                        base::Optional<UUID> guid,
                                         gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  Tray(gin::Handle<NativeImage> image, gin_helper::Arguments* args);
+  Tray(gin::Handle<NativeImage> image,
+       base::Optional<UUID> guid,
+       gin_helper::Arguments* args);
   ~Tray() override;
 
   // TrayIconObserver:

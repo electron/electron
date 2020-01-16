@@ -5,6 +5,7 @@
 #ifndef SHELL_BROWSER_UI_TRAY_ICON_H_
 #define SHELL_BROWSER_UI_TRAY_ICON_H_
 
+#include <rpc.h>
 #include <string>
 #include <vector>
 
@@ -17,7 +18,7 @@ namespace electron {
 
 class TrayIcon {
  public:
-  static TrayIcon* Create();
+  static TrayIcon* Create(base::Optional<UUID> guid);
 
 #if defined(OS_WIN)
   using ImageType = HICON;

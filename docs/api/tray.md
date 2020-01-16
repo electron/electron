@@ -58,9 +58,10 @@ If you want to keep exact same behaviors on all platforms, you should not
 rely on the `click` event and always attach a context menu to the tray icon.
 
 
-### `new Tray(image)`
+### `new Tray(image, [guid])`
 
 * `image` ([NativeImage](native-image.md) | String)
+* `guid` String (optional) _Windows_ - Assigns a GUID to the tray icon. If the executable is signed and the signature contains an organization in the subject line then the GUID is permanently associated with that signature. OS level settings like the position of the tray icon in the system tray will persist even if the path to the executable changes. If the executable is not code-signed then the GUID is permanently associated with the path to the executable. Changing the path to the executable will break the creation of the tray icon and a new GUID must be used. However, it is highly recommended to use the GUID parameter only in conjunction with code-signed executable. If an App defines multiple tray icons then each icon must use a separate GUID.
 
 Creates a new tray icon associated with the `image`.
 

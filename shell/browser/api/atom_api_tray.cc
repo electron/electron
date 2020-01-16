@@ -11,6 +11,7 @@
 #include "shell/browser/browser.h"
 #include "shell/common/api/atom_api_native_image.h"
 #include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -54,8 +55,10 @@ namespace electron {
 
 namespace api {
 
-Tray::Tray(gin::Handle<NativeImage> image, gin_helper::Arguments* args)
-    : tray_icon_(TrayIcon::Create()) {
+Tray::Tray(gin::Handle<NativeImage> image,
+           base::Optional<UUID> guid,
+           gin_helper::Arguments* args)
+    : tray_icon_(TrayIcon::Create(guid)) {
   SetImage(args->isolate(), image);
   tray_icon_->AddObserver(this);
 
@@ -67,12 +70,19 @@ Tray::~Tray() = default;
 // static
 gin_helper::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
                                      gin::Handle<NativeImage> image,
+                                     base::Optional<UUID> guid,
                                      gin_helper::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
     return nullptr;
   }
-  return new Tray(image, args);
+
+  if (!guid.has_value() && args->Length() > 1) {
+    thrower.ThrowError("Invalid GUID format");
+    return nullptr;
+  }
+
+  return new Tray(image, guid, args);
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds,
