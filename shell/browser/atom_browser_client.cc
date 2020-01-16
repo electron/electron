@@ -1065,6 +1065,7 @@ void AtomBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     protocol->RegisterURLLoaderFactories(factories);
 }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace {
 
 // The FileURLLoaderFactory provided to the extension background pages.
@@ -1107,6 +1108,7 @@ class FileURLLoaderFactory : public network::mojom::URLLoaderFactory {
 };
 
 }  // namespace
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 void AtomBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_process_id,
