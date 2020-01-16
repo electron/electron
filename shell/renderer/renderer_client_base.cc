@@ -352,11 +352,7 @@ content::BrowserPluginDelegate* RendererClientBase::CreateBrowserPluginDelegate(
     const std::string& mime_type,
     const GURL& original_url) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  /*
-  if (mime_type == content::kBrowserPluginMimeType)
-    return new extensions::ExtensionsGuestViewContainer(render_frame);
-    */
-  LOG(INFO) << "Got here";
+  // TODO(nornagon): check the mime type isn't content::kBrowserPluginMimeType?
   return new extensions::MimeHandlerViewContainer(render_frame, info, mime_type,
                                                   original_url);
 #else
@@ -369,39 +365,9 @@ bool RendererClientBase::IsPluginHandledExternally(
     const blink::WebElement& plugin_element,
     const GURL& original_url,
     const std::string& mime_type) {
-  LOG(INFO) << "ARC::IPHE 0";
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) && BUILDFLAG(ENABLE_PLUGINS)
-  LOG(INFO) << "ARC::IPHE 1";
   DCHECK(plugin_element.HasHTMLTagName("object") ||
          plugin_element.HasHTMLTagName("embed"));
-  // Blink will next try to load a WebPlugin which would end up in
-  // OverrideCreatePlugin, sending another IPC only to find out the plugin is
-  // not supported. Here it suffices to return false but there should perhaps be
-  // a more unified approach to avoid sending the IPC twice.
-  /*
-  chrome::mojom::PluginInfoPtr plugin_info = chrome::mojom::PluginInfo::New();
-  GetPluginInfoHost()->GetPluginInfo(
-      render_frame->GetRoutingID(), original_url,
-      render_frame->GetWebFrame()->Top()->GetSecurityOrigin(), mime_type,
-      &plugin_info);
-  // TODO(ekaramad): Not continuing here due to a disallowed status should take
-  // us to CreatePlugin. See if more in depths investigation of |status| is
-  // necessary here (see https://crbug.com/965747). For now, returning false
-  // should take us to CreatePlugin after HTMLPlugInElement which is called
-  // through HTMLPlugInElement::LoadPlugin code path.
-  if (plugin_info->status != chrome::mojom::PluginStatus::kAllowed &&
-      plugin_info->status !=
-          chrome::mojom::PluginStatus::kPlayImportantContent) {
-    // We could get here when a MimeHandlerView is loaded inside a <webview>
-    // which is using permissions API (see WebViewPluginTests).
-    ChromeExtensionsRendererClient::DidBlockMimeHandlerViewForDisallowedPlugin(
-        plugin_element);
-    return false;
-  }
-  return ChromeExtensionsRendererClient::MaybeCreateMimeHandlerView(
-      plugin_element, original_url, plugin_info->actual_mime_type,
-      plugin_info->plugin);
-      */
   content::WebPluginInfo info;
   info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
   info.name = base::UTF8ToUTF16("Chromium PDF Viewer");
