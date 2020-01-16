@@ -58,10 +58,20 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
                                        WPARAM wparam,
                                        LPARAM lparam) {
   if (message == WM_WTSSESSION_CHANGE) {
-    if (wparam == WTS_SESSION_LOCK) {
-      Emit("lock-screen");
-    } else if (wparam == WTS_SESSION_UNLOCK) {
-      Emit("unlock-screen");
+    bool should_treat_as_current_session = true;
+    DWORD current_session_id = 0;
+    if (!::ProcessIdToSessionId(::GetCurrentProcessId(), &current_session_id)) {
+      LOG(ERROR) << "ProcessIdToSessionId failed, assuming current session";
+    } else {
+      should_treat_as_current_session =
+          (static_cast<DWORD>(lparam) == current_session_id);
+    }
+    if (should_treat_as_current_session) {
+      if (wparam == WTS_SESSION_LOCK) {
+        Emit("lock-screen");
+      } else if (wparam == WTS_SESSION_UNLOCK) {
+        Emit("unlock-screen");
+      }
     }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);
