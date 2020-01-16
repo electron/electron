@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 
+#include "chrome/renderer/extensions/extension_hooks_delegate.h"
 #include "chrome/renderer/extensions/tabs_hooks_delegate.h"
 #include "extensions/renderer/bindings/api_bindings_system.h"
 #include "extensions/renderer/lazy_background_page_native_handler.h"
@@ -45,6 +46,9 @@ void ElectronExtensionsDispatcherDelegate::InitializeBindingsSystem(
     extensions::Dispatcher* dispatcher,
     extensions::NativeExtensionBindingsSystem* bindings_system) {
   extensions::APIBindingsSystem* bindings = bindings_system->api_system();
+  bindings->GetHooksForAPI("extension")
+      ->SetDelegate(std::make_unique<extensions::ExtensionHooksDelegate>(
+          bindings_system->messaging_service()));
   bindings->GetHooksForAPI("tabs")->SetDelegate(
       std::make_unique<extensions::TabsHooksDelegate>(
           bindings_system->messaging_service()));
