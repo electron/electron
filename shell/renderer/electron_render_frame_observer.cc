@@ -57,7 +57,7 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
   renderer_client_->DidClearWindowObject(render_frame_);
 }
 
-void ElectronRenderFrameObserver::DidCreateScriptContext(
+void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     v8::Handle<v8::Context> context,
     int world_id) {
   if (ShouldNotifyClient(world_id))
