@@ -10,9 +10,7 @@ template("npm_action") {
     ]
     script = "//electron/build/npm-run.py"
 
-    outputs = [
-      "$target_gen_dir/npm_pre_stamps/" + target_name + ".stamp",
-    ]
+    outputs = [ "$target_gen_dir/npm_pre_stamps/" + target_name + ".stamp" ]
 
     args = [
       "--silent",

@@ -79,15 +79,11 @@ npm_action("build_electron_definitions") {
   args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
   inputs = auto_filenames.api_docs + [ "yarn.lock" ]
 
-  outputs = [
-    "$target_gen_dir/tsc/typings/electron.d.ts",
-  ]
+  outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
 }
 
 webpack_build("electron_browser_bundle") {
-  deps = [
-    ":build_electron_definitions",
-  ]
+  deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.browser_bundle_deps
 
@@ -96,9 +92,7 @@ webpack_build("electron_browser_bundle") {
 }
 
 webpack_build("electron_renderer_bundle") {
-  deps = [
-    ":build_electron_definitions",
-  ]
+  deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.renderer_bundle_deps
 
@@ -107,9 +101,7 @@ webpack_build("electron_renderer_bundle") {
 }
 
 webpack_build("electron_worker_bundle") {
-  deps = [
-    ":build_electron_definitions",
-  ]
+  deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.worker_bundle_deps
 
@@ -118,9 +110,7 @@ webpack_build("electron_worker_bundle") {
 }
 
 webpack_build("electron_sandboxed_renderer_bundle") {
-  deps = [
-    ":build_electron_definitions",
-  ]
+  deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.sandbox_bundle_deps
 
@@ -129,9 +119,7 @@ webpack_build("electron_sandboxed_renderer_bundle") {
 }
 
 webpack_build("electron_isolated_renderer_bundle") {
-  deps = [
-    ":build_electron_definitions",
-  ]
+  deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.isolated_bundle_deps
 
@@ -140,9 +128,7 @@ webpack_build("electron_isolated_renderer_bundle") {
 }
 
 webpack_build("electron_content_script_bundle") {
-  deps = [
-    ":build_electron_definitions",
-  ]
+  deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.content_script_bundle_deps
 
@@ -155,9 +141,7 @@ copy("atom_js2c_copy") {
     "lib/common/asar.js",
     "lib/common/asar_init.js",
   ]
-  outputs = [
-    "$target_gen_dir/js2c/{{source_file_part}}",
-  ]
+  outputs = [ "$target_gen_dir/js2c/{{source_file_part}}" ]
 }
 
 action("atom_js2c") {
@@ -186,9 +170,7 @@ action("atom_js2c") {
             ]
 
   inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
-  outputs = [
-    "$root_gen_dir/atom_natives.cc",
-  ]
+  outputs = [ "$root_gen_dir/atom_natives.cc" ]
 
   script = "tools/js2c.py"
   args = [ rebase_path("//third_party/electron_node") ] +
@@ -199,9 +181,7 @@ action("atom_js2c") {
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
 
 typescript_build("default_app_js") {
-  deps = [
-    ":build_electron_definitions",
-  ]
+  deps = [ ":build_electron_definitions" ]
   type_root = rebase_path("$target_gen_dir/tsc/electron/typings")
 
   sources = filenames.default_app_ts_sources
@@ -213,16 +193,12 @@ typescript_build("default_app_js") {
 
 copy("default_app_static") {
   sources = filenames.default_app_static_sources
-  outputs = [
-    "$target_gen_default_app_js/{{source}}",
-  ]
+  outputs = [ "$target_gen_default_app_js/{{source}}" ]
 }
 
 copy("default_app_octicon_deps") {
   sources = filenames.default_app_octicon_sources
-  outputs = [
-    "$target_gen_default_app_js/electron/default_app/octicon/{{source_file_part}}",
-  ]
+  outputs = [ "$target_gen_default_app_js/electron/default_app/octicon/{{source_file_part}}" ]
 }
 
 asar("default_app_asar") {
@@ -236,9 +212,7 @@ asar("default_app_asar") {
   sources = get_target_outputs(":default_app_js") +
             get_target_outputs(":default_app_static") +
             get_target_outputs(":default_app_octicon_deps")
-  outputs = [
-    "$root_out_dir/resources/default_app.asar",
-  ]
+  outputs = [ "$root_out_dir/resources/default_app.asar" ]
 }
 
 grit("resources") {
@@ -256,20 +230,14 @@ grit("resources") {
     "target_gen_dir=" + rebase_path(target_gen_dir, root_build_dir),
   ]
 
-  deps = [
-    ":copy_shell_devtools_discovery_page",
-  ]
+  deps = [ ":copy_shell_devtools_discovery_page" ]
 
   output_dir = "$target_gen_dir"
 }
 
 copy("copy_shell_devtools_discovery_page") {
-  sources = [
-    "//content/shell/resources/shell_devtools_discovery_page.html",
-  ]
-  outputs = [
-    "$target_gen_dir/shell_devtools_discovery_page.html",
-  ]
+  sources = [ "//content/shell/resources/shell_devtools_discovery_page.html" ]
+  outputs = [ "$target_gen_dir/shell_devtools_discovery_page.html" ]
 }
 
 if (is_linux) {
@@ -315,9 +283,7 @@ source_set("manifests") {
 npm_action("electron_version_args") {
   script = "generate-version-json"
 
-  outputs = [
-    "$target_gen_dir/electron_version.args",
-  ]
+  outputs = [ "$target_gen_dir/electron_version.args" ]
 
   args = rebase_path(outputs)
 
@@ -328,9 +294,7 @@ npm_action("electron_version_args") {
 }
 
 templated_file("electron_version_header") {
-  deps = [
-    ":electron_version_args",
-  ]
+  deps = [ ":electron_version_args" ]
 
   template = "build/templates/electron_version.tmpl"
   output = "$target_gen_dir/electron_version.h"
@@ -714,15 +678,11 @@ if (is_mac) {
   electron_version = read_file("ELECTRON_VERSION", "trim string")
 
   mac_xib_bundle_data("electron_xibs") {
-    sources = [
-      "shell/common/resources/mac/MainMenu.xib",
-    ]
+    sources = [ "shell/common/resources/mac/MainMenu.xib" ]
   }
 
   bundle_data("electron_framework_resources") {
-    public_deps = [
-      ":packed_resources",
-    ]
+    public_deps = [ ":packed_resources" ]
     sources = []
     if (icu_use_data_file) {
       sources += [ "$root_out_dir/icudtl.dat" ]
@@ -737,9 +697,7 @@ if (is_mac) {
         sources += [ "$root_out_dir/snapshot_blob.bin" ]
       }
     }
-    outputs = [
-      "{{bundle_resources_dir}}/{{source_file_part}}",
-    ]
+    outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
   }
 
   if (!is_component_build) {
@@ -750,9 +708,7 @@ if (is_mac) {
         sources += [ "$root_out_dir/libffmpeg.dylib" ]
         public_deps += [ "//third_party/ffmpeg:ffmpeg" ]
       }
-      outputs = [
-        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
-      ]
+      outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
     }
   } else {
     group("electron_framework_libraries") {
@@ -765,12 +721,8 @@ if (is_mac) {
         "$root_out_dir/egl_intermediates/libEGL.dylib",
         "$root_out_dir/egl_intermediates/libGLESv2.dylib",
       ]
-      outputs = [
-        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
-      ]
-      public_deps = [
-        "//ui/gl:angle_library_copy",
-      ]
+      outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
+      public_deps = [ "//ui/gl:angle_library_copy" ]
     }
 
     # Add the SwiftShader .dylibs in the Libraries directory of the Framework.
@@ -779,42 +731,28 @@ if (is_mac) {
         "$root_out_dir/egl_intermediates/libswiftshader_libEGL.dylib",
         "$root_out_dir/egl_intermediates/libswiftshader_libGLESv2.dylib",
       ]
-      outputs = [
-        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
-      ]
-      public_deps = [
-        "//ui/gl:swiftshader_library_copy",
-      ]
+      outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
+      public_deps = [ "//ui/gl:swiftshader_library_copy" ]
     }
   }
   group("electron_angle_library") {
     if (use_egl) {
-      deps = [
-        ":electron_angle_binaries",
-      ]
+      deps = [ ":electron_angle_binaries" ]
     }
   }
 
   group("electron_swiftshader_library") {
     if (use_egl) {
-      deps = [
-        ":electron_swiftshader_binaries",
-      ]
+      deps = [ ":electron_swiftshader_binaries" ]
     }
   }
 
   bundle_data("electron_crashpad_helper") {
-    sources = [
-      "$root_out_dir/crashpad_handler",
-    ]
+    sources = [ "$root_out_dir/crashpad_handler" ]
 
-    outputs = [
-      "{{bundle_resources_dir}}/{{source_file_part}}",
-    ]
+    outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
 
-    public_deps = [
-      "//third_party/crashpad/crashpad/handler:crashpad_handler",
-    ]
+    public_deps = [ "//third_party/crashpad/crashpad/handler:crashpad_handler" ]
   }
 
   mac_framework_bundle("electron_framework") {
@@ -872,9 +810,7 @@ if (is_mac) {
       assert(defined(invoker.helper_name_suffix))
 
       output_name = electron_helper_name + invoker.helper_name_suffix
-      deps = [
-        ":electron_framework+link",
-      ]
+      deps = [ ":electron_framework+link" ]
       if (!is_mas_build) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
@@ -908,9 +844,7 @@ if (is_mac) {
   }
 
   bundle_data("electron_app_framework_bundle_data") {
-    sources = [
-      "$root_out_dir/$electron_framework_name.framework",
-    ]
+    sources = [ "$root_out_dir/$electron_framework_name.framework" ]
     if (!is_mas_build) {
       sources += [
         "external_binaries/Mantle.framework",
@@ -918,12 +852,8 @@ if (is_mac) {
         "external_binaries/Squirrel.framework",
       ]
     }
-    outputs = [
-      "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}",
-    ]
-    public_deps = [
-      ":electron_framework+link",
-    ]
+    outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
+    public_deps = [ ":electron_framework+link" ]
 
     foreach(helper_params, content_mac_helpers) {
       sources +=
@@ -943,15 +873,10 @@ if (is_mac) {
   }
 
   bundle_data("electron_login_helper_app") {
-    public_deps = [
-      ":electron_login_helper",
-    ]
-    sources = [
-      "$root_out_dir/$electron_login_helper_name.app",
-    ]
-    outputs = [
-      "{{bundle_contents_dir}}/Library/LoginItems/{{source_file_part}}",
-    ]
+    public_deps = [ ":electron_login_helper" ]
+    sources = [ "$root_out_dir/$electron_login_helper_name.app" ]
+    outputs =
+        [ "{{bundle_contents_dir}}/Library/LoginItems/{{source_file_part}}" ]
   }
 
   action("electron_app_lproj_dirs") {
@@ -966,15 +891,9 @@ if (is_mac) {
 
   foreach(locale, locales_as_mac_outputs) {
     bundle_data("electron_app_strings_${locale}_bundle_data") {
-      sources = [
-        "$target_gen_dir/app_infoplist_strings/$locale.lproj",
-      ]
-      outputs = [
-        "{{bundle_resources_dir}}/$locale.lproj",
-      ]
-      public_deps = [
-        ":electron_app_lproj_dirs",
-      ]
+      sources = [ "$target_gen_dir/app_infoplist_strings/$locale.lproj" ]
+      outputs = [ "{{bundle_resources_dir}}/$locale.lproj" ]
+      public_deps = [ ":electron_app_lproj_dirs" ]
     }
   }
   group("electron_app_strings_bundle_data") {
@@ -993,9 +912,7 @@ if (is_mac) {
       "$root_out_dir/resources/default_app.asar",
       "shell/browser/resources/mac/electron.icns",
     ]
-    outputs = [
-      "{{bundle_resources_dir}}/{{source_file_part}}",
-    ]
+    outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
   }
 
   mac_app_bundle("electron_app") {
@@ -1026,9 +943,7 @@ if (is_mac) {
       binary = "$root_out_dir/$electron_framework_name.framework/Versions/$electron_framework_version/$electron_framework_name"
       symbol_dir = "$root_out_dir/breakpad_symbols"
       dsym_file = "$root_out_dir/$electron_framework_name.dSYM/Contents/Resources/DWARF/$electron_framework_name"
-      deps = [
-        ":electron_framework",
-      ]
+      deps = [ ":electron_framework" ]
     }
 
     foreach(helper_params, content_mac_helpers) {
@@ -1039,9 +954,7 @@ if (is_mac) {
         binary = "$root_out_dir/$electron_helper_name${_helper_suffix}.app/Contents/MacOS/$electron_helper_name${_helper_suffix}"
         symbol_dir = "$root_out_dir/breakpad_symbols"
         dsym_file = "$root_out_dir/$electron_helper_name${_helper_suffix}.dSYM/Contents/Resources/DWARF/$electron_helper_name${_helper_suffix}"
-        deps = [
-          ":electron_helper_app_${_helper_target}",
-        ]
+        deps = [ ":electron_helper_app_${_helper_target}" ]
       }
     }
 
@@ -1049,18 +962,15 @@ if (is_mac) {
       binary = "$root_out_dir/$electron_product_name.app/Contents/MacOS/$electron_product_name"
       symbol_dir = "$root_out_dir/breakpad_symbols"
       dsym_file = "$root_out_dir/$electron_product_name.dSYM/Contents/Resources/DWARF/$electron_product_name"
-      deps = [
-        ":electron_app",
-      ]
+      deps = [ ":electron_app" ]
     }
 
     extract_symbols("swiftshader_egl_syms") {
       binary = "$root_out_dir/libswiftshader_libEGL.dylib"
       symbol_dir = "$root_out_dir/breakpad_symbols"
       dsym_file = "$root_out_dir/libswiftshader_libEGL.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libEGL.dylib"
-      deps = [
-        "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
-      ]
+      deps =
+          [ "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL" ]
     }
 
     extract_symbols("swiftshader_gles_syms") {
@@ -1076,9 +986,7 @@ if (is_mac) {
       binary = "$root_out_dir/crashpad_handler"
       symbol_dir = "$root_out_dir/breakpad_symbols"
       dsym_file = "$root_out_dir/crashpad_handler.dSYM/Contents/Resources/DWARF/crashpad_handler"
-      deps = [
-        "//third_party/crashpad/crashpad/handler:crashpad_handler",
-      ]
+      deps = [ "//third_party/crashpad/crashpad/handler:crashpad_handler" ]
     }
 
     group("electron_symbols") {
@@ -1139,9 +1047,7 @@ if (is_mac) {
       data += [ "$root_out_dir/resources/default_app.asar" ]
     }
 
-    public_deps = [
-      "//tools/v8_context_snapshot:v8_context_snapshot",
-    ]
+    public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
 
     if (is_win) {
       sources += [
@@ -1198,17 +1104,14 @@ if (is_mac) {
     extract_symbols("electron_app_symbols") {
       binary = "$root_out_dir/$electron_project_name$_target_executable_suffix"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      deps = [
-        ":electron_app",
-      ]
+      deps = [ ":electron_app" ]
     }
 
     extract_symbols("swiftshader_egl_symbols") {
       binary = "$root_out_dir/swiftshader/libEGL$_target_shared_library_suffix"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      deps = [
-        "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
-      ]
+      deps =
+          [ "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL" ]
     }
 
     extract_symbols("swiftshader_gles_symbols") {
@@ -1280,9 +1183,7 @@ template("dist_zip") {
 
   action(target_name) {
     script = "//electron/build/zip.py"
-    deps = [
-      ":$_runtime_deps_target",
-    ]
+    deps = [ ":$_runtime_deps_target" ]
     forward_variables_from(invoker,
                            [
                              "outputs",
@@ -1301,23 +1202,13 @@ template("dist_zip") {
 }
 
 copy("electron_license") {
-  sources = [
-    "LICENSE",
-  ]
-  outputs = [
-    "$root_build_dir/{{source_file_part}}",
-  ]
+  sources = [ "LICENSE" ]
+  outputs = [ "$root_build_dir/{{source_file_part}}" ]
 }
 copy("chromium_licenses") {
-  deps = [
-    "//components/resources:about_credits",
-  ]
-  sources = [
-    "$root_gen_dir/components/resources/about_credits.html",
-  ]
-  outputs = [
-    "$root_build_dir/LICENSES.chromium.html",
-  ]
+  deps = [ "//components/resources:about_credits" ]
+  sources = [ "$root_gen_dir/components/resources/about_credits.html" ]
+  outputs = [ "$root_build_dir/LICENSES.chromium.html" ]
 }
 
 group("licenses") {
@@ -1328,12 +1219,8 @@ group("licenses") {
 }
 
 copy("electron_version") {
-  sources = [
-    "ELECTRON_VERSION",
-  ]
-  outputs = [
-    "$root_build_dir/version",
-  ]
+  sources = [ "ELECTRON_VERSION" ]
+  outputs = [ "$root_build_dir/version" ]
 }
 
 dist_zip("electron_dist_zip") {
@@ -1345,18 +1232,12 @@ dist_zip("electron_dist_zip") {
   if (is_linux) {
     data_deps += [ "//sandbox/linux:chrome_sandbox" ]
   }
-  outputs = [
-    "$root_build_dir/dist.zip",
-  ]
+  outputs = [ "$root_build_dir/dist.zip" ]
 }
 
 dist_zip("electron_ffmpeg_zip") {
-  data_deps = [
-    "//third_party/ffmpeg",
-  ]
-  outputs = [
-    "$root_build_dir/ffmpeg.zip",
-  ]
+  data_deps = [ "//third_party/ffmpeg" ]
+  outputs = [ "$root_build_dir/ffmpeg.zip" ]
 }
 
 dist_zip("electron_chromedriver_zip") {
@@ -1365,9 +1246,7 @@ dist_zip("electron_chromedriver_zip") {
     ":licenses",
     "//chrome/test/chromedriver",
   ]
-  outputs = [
-    "$root_build_dir/chromedriver.zip",
-  ]
+  outputs = [ "$root_build_dir/chromedriver.zip" ]
 }
 
 mksnapshot_deps = [
@@ -1382,31 +1261,21 @@ group("electron_mksnapshot") {
 
 dist_zip("electron_mksnapshot_zip") {
   data_deps = mksnapshot_deps
-  outputs = [
-    "$root_build_dir/mksnapshot.zip",
-  ]
+  outputs = [ "$root_build_dir/mksnapshot.zip" ]
 }
 
 copy("hunspell_dictionaries") {
   sources = hunspell_dictionaries + hunspell_licenses
-  outputs = [
-    "$target_gen_dir/electron_hunspell/{{source_file_part}}",
-  ]
+  outputs = [ "$target_gen_dir/electron_hunspell/{{source_file_part}}" ]
 }
 
 dist_zip("hunspell_dictionaries_zip") {
-  data_deps = [
-    ":hunspell_dictionaries",
-  ]
+  data_deps = [ ":hunspell_dictionaries" ]
   flatten = true
 
-  outputs = [
-    "$root_build_dir/hunspell_dictionaries.zip",
-  ]
+  outputs = [ "$root_build_dir/hunspell_dictionaries.zip" ]
 }
 
 group("electron") {
-  public_deps = [
-    ":electron_app",
-  ]
+  public_deps = [ ":electron_app" ]
 }

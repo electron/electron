@@ -66,7 +66,5 @@ group("chromium_unittests") {
 group("chromium_browsertests") {
   testonly = true
 
-  deps = [
-    "//content/test:content_browsertests",
-  ]
+  deps = [ "//content/test:content_browsertests" ]
 }
