@@ -125,6 +125,14 @@ void Tray::OnMouseMoved(const gfx::Point& location, int modifiers) {
   EmitWithFlags("mouse-move", modifiers, location);
 }
 
+void Tray::OnMouseUp(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-up", modifiers, location);
+}
+
+void Tray::OnMouseDown(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-down", modifiers, location);
+}
+
 void Tray::OnDragEntered() {
   Emit("drag-enter");
 }
