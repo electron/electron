@@ -76,6 +76,7 @@ class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
   void RemoveBalloon();
   void Focus();
   void PopUpContextMenu(gin_helper::Arguments* args);
+  void CloseContextMenu();
   void SetContextMenu(gin_helper::ErrorThrower thrower,
                       v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();

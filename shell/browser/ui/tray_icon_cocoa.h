@@ -32,6 +32,7 @@ class TrayIconCocoa : public TrayIcon {
   void PopUpOnUI(AtomMenuModel* menu_model);
   void PopUpContextMenu(const gfx::Point& pos,
                         AtomMenuModel* menu_model) override;
+  void CloseContextMenu() override;
   void SetContextMenu(AtomMenuModel* menu_model) override;
   gfx::Rect GetBounds() override;
 

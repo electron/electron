@@ -199,8 +199,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
     return;
 
   // Cancel current menu if there is one.
-  if (menu_runner_ && menu_runner_->IsRunning())
-    menu_runner_->Cancel();
+  CloseContextMenu();
 
   // Show menu at mouse's position by default.
   gfx::Rect rect(pos, gfx::Size());
@@ -229,6 +228,12 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   menu_runner_->RunMenuAt(widget_.get(), NULL, rect,
                           views::MenuAnchorPosition::kTopLeft,
                           ui::MENU_SOURCE_MOUSE);
+}
+
+void NotifyIcon::CloseContextMenu() {
+  if (menu_runner_ && menu_runner_->IsRunning()) {
+    menu_runner_->Cancel();
+  }
 }
 
 void NotifyIcon::SetContextMenu(AtomMenuModel* menu_model) {

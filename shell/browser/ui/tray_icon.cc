@@ -23,6 +23,8 @@ void TrayIcon::Focus() {}
 void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
                                 AtomMenuModel* menu_model) {}
 
+void TrayIcon::CloseContextMenu() {}
+
 gfx::Rect TrayIcon::GetBounds() {
   return gfx::Rect();
 }
