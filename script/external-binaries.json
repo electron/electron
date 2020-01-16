@@ -1,6 +1,6 @@
 {
   "baseUrl": "https://github.com/electron/electron-frameworks/releases/download",
-  "version": "v1.4.1",
+  "version": "v1.4.2",
   "binaries": [
     {
       "url": "Mantle.zip",
@@ -47,7 +47,7 @@
     {
       "url": "goma-win.zip",
       "platform": "win32",
-      "sha": "f97c88aa5d49395ae20387b6329ad406fd019f5fb4aac4ba639ca928b7151f6b"
+      "sha": "a296963f13287c2c0a1401302abe6131ee2cddbec310c3690a6d350a33299f36"
     },
     {
       "url": "goma-linux.tgz",

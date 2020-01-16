@@ -53,7 +53,7 @@ parameters:
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electronjs/build:697b894f36d127155e020f4e8ad4b2e5f6a09613
+    - image: electronjs/build:3bba0fdee0d5650e751c2561f1806f9138dfe56a
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
@@ -219,6 +219,15 @@ step-setup-env-for-build: &step-setup-env-for-build
     command: |
       # To find `gn` executable.
       echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
+      # Setup Goma if applicable
+      if [ ! -z "$RAW_GOMA_CONFIG" ] && [ "`uname`" == "Linux" ]; then
+        export USE_SCCACHE="false"
+        echo 'export USE_SCCACHE=false' >> $BASH_ENV
+        echo 'export USE_GOMA=true' >> $BASH_ENV
+        echo 'export NUMBER_OF_NINJA_PROCESSES=300' >> $BASH_ENV
+        echo $RAW_GOMA_CONFIG > ~/.goma_oauth2_config
+        src/electron/external_binaries/goma/goma_ctl.py ensure_start
+      fi
 
       if [ "$USE_SCCACHE" == "true" ]; then
         # https://github.com/mozilla/sccache
@@ -320,7 +329,11 @@ step-gn-gen-default: &step-gn-gen-default
     name: Default GN gen
     command: |
       cd src
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      if [ "$USE_GOMA" == "true" ]; then
+        gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"//electron/build/args/goma.gn\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      else
+        gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      fi
 
 step-gn-check: &step-gn-check
   run:
@@ -499,7 +512,11 @@ step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
     name: ffmpeg GN gen
     command: |
       cd src
-      gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      if [ "$USE_GOMA" == "true" ]; then
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") import(\"//electron/build/args/goma.gn\") $GN_EXTRA_ARGS"
+      else
+        gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      fi
 
 step-ffmpeg-build: &step-ffmpeg-build
   run:
