@@ -42,7 +42,7 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index d97fd26cfaa2e896920faac73e73f9f13b61b4ad..80aead18c3276fe6ab2b9095595bb57995af7c09 100644
+index a9502e1bb1be5e67bbec201405dd0995770444cb..654dfa5b3a1572dd741390a0ad1612b50e4552cd 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1186,6 +1186,24 @@ void NavigationRequest::BeginNavigation() {
@@ -71,10 +71,10 @@ index d97fd26cfaa2e896920faac73e73f9f13b61b4ad..80aead18c3276fe6ab2b9095595bb579
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index f0e3a20e6342a4fcec6ae199047e049fac78656b..678496df61504d034f0a16c606ca7378755bc120 100644
+index 5042925bf761245b3ab42e83b009190b390e33ab..913245edf9d64bb6bdbee5e96493ad5b8e5cde0a 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2127,6 +2127,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2129,6 +2129,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -91,7 +91,7 @@ index f0e3a20e6342a4fcec6ae199047e049fac78656b..678496df61504d034f0a16c606ca7378
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2146,10 +2156,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2148,10 +2158,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -156,7 +156,7 @@ index f0e3a20e6342a4fcec6ae199047e049fac78656b..678496df61504d034f0a16c606ca7378
  
    scoped_refptr<SiteInstance> dest_site_instance = GetSiteInstanceForNavigation(
        request->common_params().url, request->GetSourceSiteInstance(),
-@@ -2159,6 +2219,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2161,6 +2221,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
        request->GetRestoreType() != RestoreType::NONE, request->is_view_source(),
        request->WasServerRedirect());
  
@@ -194,7 +194,7 @@ index caa100b3889e17a9afdc8127e0e13bb6b86e8042..f08d3a2eb28f0f6fff89b5759eff5369
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 680f68a0e8e1f23ac02bcdf99cbcf1eb6f250d39..705b9278e82d19fa9c97095b2e413922964bc69d 100644
+index 0baf2ab441d48ee32a3ccf40fbc73c2c5cbcea2a..b1646da3383f1799ff47900a00da333d1bdabff3 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -50,6 +50,21 @@
@@ -220,13 +220,13 @@ index 680f68a0e8e1f23ac02bcdf99cbcf1eb6f250d39..705b9278e82d19fa9c97095b2e413922
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index f93225cc5118ea08acd8506e44d89ed3f25ca5bf..aeaac2f669148c195598ca0497dac22f2e986e24 100644
+index 3a32228e8c131468c535f3586b1c54b307062c42..835cdff288ddf57674d5cc44ea2aaacf6facd03d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -218,8 +218,45 @@ struct WebPreferences;
- // the observer interfaces.)
- class CONTENT_EXPORT ContentBrowserClient {
-  public:
+@@ -226,8 +226,45 @@ class CONTENT_EXPORT ContentBrowserClient {
+   using IsClipboardPasteAllowedCallback =
+       base::OnceCallback<void(ClipboardPasteAllowed)>;
+ 
 +  // Identifies the type of site instance to use for a navigation.
 +  enum SiteInstanceForNavigationType {
 +    // Use either the candidate site instance or, if it doesn't exist
