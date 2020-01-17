@@ -271,6 +271,9 @@ class NativeWindowViews : public NativeWindow,
 
   // Set to true if the window is always on top and behind the task bar.
   bool behind_task_bar_ = false;
+
+  // Whether to block Chromium from handling window messages.
+  bool block_chromium_message_handler_ = false;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
