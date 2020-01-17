@@ -162,7 +162,7 @@ v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
       base::Value* values = response_headers.FindListKey(key);
       if (!values)
         values = response_headers.SetKey(key, base::ListValue());
-      values->GetList().emplace_back(value);
+      values->Append(value);
     }
   }
   return ConvertToV8(isolate, response_headers);
