@@ -452,9 +452,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   SpellcheckServiceFactory::GetInstance();
 #endif
 
-  // url::Add*Scheme are not threadsafe, this helps prevent data races.
-  url::LockSchemeRegistries();
-
 #if defined(USE_X11)
   ui::TouchFactory::SetTouchDeviceListFromCommandLine();
 #endif
