@@ -66,16 +66,14 @@ AtomExtensionLoader::AtomExtensionLoader(
 
 AtomExtensionLoader::~AtomExtensionLoader() = default;
 
-const Extension* AtomExtensionLoader::LoadExtension(
-    const base::FilePath& extension_dir) {
-  // TODO(nornagon): load extensions asynchronously on
-  // GetExtensionFileTaskRunner()
-  base::ScopedAllowBlockingForTesting allow_blocking;
-  scoped_refptr<const Extension> extension = LoadUnpacked(extension_dir);
-  if (extension)
-    extension_registrar_.AddExtension(extension);
-
-  return extension.get();
+void AtomExtensionLoader::LoadExtension(
+    const base::FilePath& extension_dir,
+    base::OnceCallback<void(const Extension*)> loaded) {
+  base::PostTaskAndReplyWithResult(
+      GetExtensionFileTaskRunner().get(), FROM_HERE,
+      base::BindOnce(&LoadUnpacked, extension_dir),
+      base::BindOnce(&AtomExtensionLoader::FinishExtensionLoad,
+                     weak_factory_.GetWeakPtr(), std::move(loaded)));
 }
 
 void AtomExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
@@ -98,6 +96,15 @@ void AtomExtensionLoader::UnloadExtension(
     const ExtensionId& extension_id,
     extensions::UnloadedExtensionReason reason) {
   extension_registrar_.RemoveExtension(extension_id, reason);
+}
+
+void AtomExtensionLoader::FinishExtensionLoad(
+    base::OnceCallback<void(const Extension*)> done,
+    scoped_refptr<const Extension> extension) {
+  if (extension) {
+    extension_registrar_.AddExtension(extension);
+  }
+  std::move(done).Run(extension.get());
 }
 
 void AtomExtensionLoader::FinishExtensionReload(
