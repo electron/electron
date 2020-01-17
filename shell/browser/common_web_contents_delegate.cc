@@ -347,6 +347,12 @@ void CommonWebContentsDelegate::EnterFullscreenModeForTab(
   }
   SetHtmlApiFullscreen(true);
   owner_window_->NotifyWindowEnterHtmlFullScreen();
+
+  if (native_fullscreen_) {
+    // Explicitly trigger a view resize, as the size is not actually changing if
+    // the browser is fullscreened, too.
+    source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
+  }
 }
 
 void CommonWebContentsDelegate::ExitFullscreenModeForTab(
