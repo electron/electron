@@ -2858,6 +2858,13 @@ describe('BrowserWindow module', () => {
       w.restore()
       expectBoundsEqual(w.getSize(), initialSize)
     })
+
+    it('does not crash when restoring hidden minimized window', () => {
+      const w = new BrowserWindow({})
+      w.minimize()
+      w.hide()
+      w.show()
+    })
   })
 
   describe('BrowserWindow.unmaximize()', () => {
