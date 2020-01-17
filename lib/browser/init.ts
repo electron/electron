@@ -154,7 +154,9 @@ require('@electron/internal/browser/devtools')
 const features = process.electronBinding('features')
 
 // Load the chrome extension support.
-if (!features.isExtensionsEnabled()) {
+if (features.isExtensionsEnabled()) {
+  require('@electron/internal/browser/chrome-extension-shim')
+} else {
   require('@electron/internal/browser/chrome-extension')
 }
 
