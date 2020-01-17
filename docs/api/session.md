@@ -528,16 +528,18 @@ This API does not support loading packed (.crx) extensions.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `ses.removeExtension(extension_id)`
+#### `ses.removeExtension(extensionId)`
 
-* `extension_id` String - ID of extension to remove
+* `extensionId` String - ID of extension to remove
 
 Unloads an extension.
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `ses.getExtension(extension_id)`
+#### `ses.getExtension(extensionId)`
+
+* `extensionId` String - ID of extension to query
 
 Returns `Extension` | `null` - The loaded extension with the given ID.
 

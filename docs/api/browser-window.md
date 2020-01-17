@@ -705,7 +705,7 @@ Remove a Chrome extension by name.
 is emitted.
 
 **Note:** This method is deprecated. Instead, use
-[`ses.removeExtension(extension_id)`](session.md#sesremoveextensionextension-id).
+[`ses.removeExtension(extension_id)`](session.md#sesremoveextensionextensionid).
 
 #### `BrowserWindow.getExtensions()` _Deprecated_
 
@@ -747,7 +747,7 @@ Remove a DevTools extension by name.
 is emitted.
 
 **Note:** This method is deprecated. Instead, use
-[`ses.removeExtension(extension_id)`](session.md#sesremoveextensionextension-id).
+[`ses.removeExtension(extension_id)`](session.md#sesremoveextensionextensionid).
 
 #### `BrowserWindow.getDevToolsExtensions()` _Deprecated_
 
