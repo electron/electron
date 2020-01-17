@@ -7,7 +7,6 @@
 #include "content/browser/frame_host/frame_tree.h"           // nogncheck
 #include "content/browser/frame_host/frame_tree_node.h"      // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
-#include "content/public/browser/guest_mode.h"
 
 #if BUILDFLAG(ENABLE_OSR)
 #include "shell/browser/osr/osr_render_widget_host_view.h"
@@ -24,7 +23,6 @@ namespace api {
 
 void WebContents::DetachFromOuterFrame() {
   // See detach_webview_frame.patch on how to detach.
-  DCHECK(content::GuestMode::IsCrossProcessFrameGuest(web_contents()));
   int frame_tree_node_id =
       static_cast<content::WebContentsImpl*>(web_contents())
           ->GetOuterDelegateFrameTreeNodeId();

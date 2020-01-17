@@ -105,6 +105,10 @@ class TrayIcon {
   void NotifyDragEntered();
   void NotifyDragExited();
   void NotifyDragEnded();
+  void NotifyMouseUp(const gfx::Point& location = gfx::Point(),
+                     int modifiers = 0);
+  void NotifyMouseDown(const gfx::Point& location = gfx::Point(),
+                       int modifiers = 0);
   void NotifyMouseEntered(const gfx::Point& location = gfx::Point(),
                           int modifiers = 0);
   void NotifyMouseExited(const gfx::Point& location = gfx::Point(),

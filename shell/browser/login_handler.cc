@@ -11,6 +11,7 @@
 
 #include "base/callback.h"
 #include "base/strings/string16.h"
+#include "base/threading/sequenced_task_runner_handle.h"
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
@@ -36,8 +37,8 @@ LoginHandler::LoginHandler(
       auth_required_callback_(std::move(auth_required_callback)) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  base::PostTask(
-      FROM_HERE, {base::CurrentThread()},
+  base::SequencedTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE,
       base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(),
                      auth_info, is_main_frame, url, response_headers,
                      first_auth_attempt));

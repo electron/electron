@@ -6,9 +6,9 @@
 #define SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "gin/converter.h"
+#include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
-#include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/web/web_context_menu_data.h"
 
 namespace blink {
@@ -16,7 +16,6 @@ class WebMouseEvent;
 class WebMouseWheelEvent;
 class WebKeyboardEvent;
 struct WebDeviceEmulationParams;
-struct WebFloatPoint;
 struct WebPoint;
 struct WebSize;
 }  // namespace blink
@@ -52,13 +51,6 @@ struct Converter<blink::WebMouseWheelEvent> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::WebMouseWheelEvent* out);
-};
-
-template <>
-struct Converter<blink::WebFloatPoint> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     blink::WebFloatPoint* out);
 };
 
 template <>

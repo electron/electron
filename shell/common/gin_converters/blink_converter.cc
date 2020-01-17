@@ -17,10 +17,10 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/keyboard_util.h"
 #include "third_party/blink/public/common/context_menu_data/edit_flags.h"
-#include "third_party/blink/public/platform/web_input_event.h"
-#include "third_party/blink/public/platform/web_keyboard_event.h"
-#include "third_party/blink/public/platform/web_mouse_event.h"
-#include "third_party/blink/public/platform/web_mouse_wheel_event.h"
+#include "third_party/blink/public/common/input/web_input_event.h"
+#include "third_party/blink/public/common/input/web_keyboard_event.h"
+#include "third_party/blink/public/common/input/web_mouse_event.h"
+#include "third_party/blink/public/common/input/web_mouse_wheel_event.h"
 #include "third_party/blink/public/web/web_device_emulation_params.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
@@ -279,15 +279,6 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   }
 #endif
   return true;
-}
-
-bool Converter<blink::WebFloatPoint>::FromV8(v8::Isolate* isolate,
-                                             v8::Local<v8::Value> val,
-                                             blink::WebFloatPoint* out) {
-  gin_helper::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
-    return false;
-  return dict.Get("x", &out->x) && dict.Get("y", &out->y);
 }
 
 template <>

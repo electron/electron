@@ -81,9 +81,7 @@ template("mac_xib_bundle_data") {
                              "visibility",
                            ])
 
-    public_deps = [
-      ":$_compile_target_name",
-    ]
+    public_deps = [ ":$_compile_target_name" ]
     sources = get_target_outputs(":$_compile_target_name")
 
     _output_path = "{{bundle_resources_dir}}"
@@ -91,8 +89,6 @@ template("mac_xib_bundle_data") {
       _output_path = invoker.output_path
     }
 
-    outputs = [
-      "$_output_path/{{source_file_part}}",
-    ]
+    outputs = [ "$_output_path/{{source_file_part}}" ]
   }
 }

@@ -116,7 +116,7 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
       base::Value* values = response_headers.FindListKey(key);
       if (!values)
         values = response_headers.SetKey(key, base::ListValue());
-      values->GetList().emplace_back(value);
+      values->Append(value);
     }
   }
   return gin::ConvertToV8(v8::Isolate::GetCurrent(), response_headers);

@@ -162,7 +162,7 @@ v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
       base::Value* values = response_headers.FindListKey(key);
       if (!values)
         values = response_headers.SetKey(key, base::ListValue());
-      values->GetList().emplace_back(value);
+      values->Append(value);
     }
   }
   return ConvertToV8(isolate, response_headers);
@@ -388,7 +388,7 @@ v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
   dict.Set("statusCode", val.status_code);
   dict.Set("newMethod", val.new_method);
   dict.Set("newUrl", val.new_url);
-  dict.Set("newSiteForCookies", val.new_site_for_cookies);
+  dict.Set("newSiteForCookies", val.new_site_for_cookies.RepresentativeUrl());
   dict.Set("newReferrer", val.new_referrer);
   dict.Set("insecureSchemeWasUpgraded", val.insecure_scheme_was_upgraded);
   dict.Set("isSignedExchangeFallbackRedirect",

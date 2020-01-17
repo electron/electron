@@ -184,6 +184,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,
       bool* bypass_redirect_checks,
+      bool* disable_secure_dns,
       network::mojom::URLLoaderFactoryOverridePtr* factory_override) override;
   void OverrideURLLoaderFactoryParams(
       content::BrowserContext* browser_context,

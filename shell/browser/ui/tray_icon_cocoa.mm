@@ -131,6 +131,10 @@
 }
 
 - (void)mouseDown:(NSEvent*)event {
+  trayIcon_->NotifyMouseDown(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
+
   // Pass click to superclass to show menu. Custom mouseUp handler won't be
   // invoked.
   if (menuController_) {
@@ -142,6 +146,10 @@
 
 - (void)mouseUp:(NSEvent*)event {
   [[statusItem_ button] highlight:NO];
+
+  trayIcon_->NotifyMouseUp(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
 
   // If we are ignoring double click events, we should ignore the `clickCount`
   // value and immediately emit a click event.

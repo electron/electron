@@ -10,12 +10,11 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-#include "third_party/blink/public/platform/web_keyboard_event.h"
+#include "third_party/blink/public/common/input/web_keyboard_event.h"
 #include "third_party/blink/public/platform/web_string.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_option_element.h"
-#include "third_party/blink/public/web/web_user_gesture_indicator.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/gfx/geometry/rect_f.h"
 
@@ -175,8 +174,7 @@ void AutofillAgent::DidCompleteFocusChangeInFrame() {
 }
 
 bool AutofillAgent::IsUserGesture() const {
-  return blink::WebUserGestureIndicator::IsProcessingUserGesture(
-      render_frame()->GetWebFrame());
+  return render_frame()->GetWebFrame()->HasTransientUserActivation();
 }
 
 void AutofillAgent::HidePopup() {
