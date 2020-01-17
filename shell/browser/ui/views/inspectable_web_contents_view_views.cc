@@ -49,8 +49,7 @@ class DevToolsWindowDelegate : public views::ClientView,
   base::string16 GetWindowTitle() const override { return shell_->GetTitle(); }
   gfx::ImageSkia GetWindowAppIcon() override { return GetWindowIcon(); }
   gfx::ImageSkia GetWindowIcon() override { return icon_; }
-  views::Widget* GetWidget() override { return widget_; }
-  const views::Widget* GetWidget() const override { return widget_; }
+  const views::Widget* GetWidgetImpl() const override { return widget_; }
   views::View* GetContentsView() override { return view_; }
   views::ClientView* CreateClientView(views::Widget* widget) override {
     return this;

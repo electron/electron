@@ -107,14 +107,18 @@ base::string16 Clipboard::ReadText(gin_helper::Arguments* args) {
   base::string16 data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   auto type = GetClipboardBuffer(args);
-  if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::GetPlainTextWType(),
+  if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::GetPlainTextType(),
                                    type)) {
     clipboard->ReadText(type, &data);
-  } else if (clipboard->IsFormatAvailable(
-                 ui::ClipboardFormatType::GetPlainTextType(), type)) {
-    std::string result;
-    clipboard->ReadAsciiText(type, &result);
-    data = base::ASCIIToUTF16(result);
+  } else {
+#if defined(OS_WIN)
+    if (clipboard->IsFormatAvailable(
+            ui::ClipboardFormatType::GetPlainTextAType(), type)) {
+      std::string result;
+      clipboard->ReadAsciiText(type, &result);
+      data = base::ASCIIToUTF16(result);
+    }
+#endif
   }
   return data;
 }

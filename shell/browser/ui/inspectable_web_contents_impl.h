@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "base/containers/span.h"
 #include "base/containers/unique_ptr_adapters.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
@@ -157,7 +158,7 @@ class InspectableWebContentsImpl
 
   // content::DevToolsAgentHostClient:
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
-                               const std::string& message) override;
+                               base::span<const uint8_t> message) override;
   void AgentHostClosed(content::DevToolsAgentHost* agent_host) override;
 
   // content::WebContentsObserver:

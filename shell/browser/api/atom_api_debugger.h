@@ -43,7 +43,7 @@ class Debugger : public gin_helper::TrackableObject<Debugger>,
   // content::DevToolsAgentHostClient:
   void AgentHostClosed(content::DevToolsAgentHost* agent_host) override;
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
-                               const std::string& message) override;
+                               base::span<const uint8_t> message) override;
 
   // content::WebContentsObserver:
   void RenderFrameHostChanged(content::RenderFrameHost* old_rfh,

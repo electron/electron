@@ -34,9 +34,7 @@ template("extract_symbols") {
       dump_syms_binary,
     ]
     stamp_file = "${target_gen_dir}/${target_name}.stamp"
-    outputs = [
-      stamp_file,
-    ]
+    outputs = [ stamp_file ]
     args = [
       "./" + rebase_path(dump_syms_binary, root_build_dir),
       rebase_path(invoker.binary, root_build_dir),

@@ -17,8 +17,8 @@
 #include "services/service_manager/sandbox/switches.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "components/services/pdf_compositor/pdf_compositor_impl.h"
-#include "components/services/pdf_compositor/public/mojom/pdf_compositor.mojom.h"
+#include "components/services/print_compositor/print_compositor_impl.h"
+#include "components/services/print_compositor/public/mojom/print_compositor.mojom.h"
 
 #if defined(OS_WIN)
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
@@ -41,9 +41,9 @@ auto RunPrintingService(
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
-auto RunPdfCompositor(
-    mojo::PendingReceiver<printing::mojom::PdfCompositor> receiver) {
-  return std::make_unique<printing::PdfCompositorImpl>(
+auto RunPrintCompositor(
+    mojo::PendingReceiver<printing::mojom::PrintCompositor> receiver) {
+  return std::make_unique<printing::PrintCompositorImpl>(
       std::move(receiver), true /* initialize_environment */,
       content::UtilityThread::Get()->GetIOTaskRunner());
 }
@@ -104,7 +104,7 @@ bool AtomContentUtilityClient::OnMessageReceived(const IPC::Message& message) {
 mojo::ServiceFactory* AtomContentUtilityClient::GetMainThreadServiceFactory() {
   static base::NoDestructor<mojo::ServiceFactory> factory {
 #if BUILDFLAG(ENABLE_PRINTING)
-    RunPdfCompositor,
+    RunPrintCompositor,
 #if defined(OS_WIN)
         RunPrintingService
 #endif
