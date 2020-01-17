@@ -1370,7 +1370,7 @@ base::flat_set<std::string>
 AtomBrowserClient::GetPluginMimeTypesWithExternalHandlers(
     content::BrowserContext* browser_context) {
   base::flat_set<std::string> mime_types;
-#if BUILDFLAG(ENABLE_PLUGINS)
+#if BUILDFLAG(ENABLE_PLUGINS) && BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto map = PluginUtils::GetMimeTypeToExtensionIdMap(browser_context);
   for (const auto& pair : map)
     mime_types.insert(pair.first);
