@@ -4,6 +4,8 @@
 
 #include "shell/browser/extensions/atom_extension_loader.h"
 
+#include <utility>
+
 #include "base/auto_reset.h"
 #include "base/bind.h"
 #include "base/files/file_path.h"
