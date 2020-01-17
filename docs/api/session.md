@@ -513,11 +513,11 @@ be remembered for future runs of the application. This is no longer the case:
 extension to be loaded.
 
 ```js
-const { app, session } = require("electron")
-const path = require("path")
+const { app, session } = require('electron')
+const path = require('path')
 
-app.on("ready", async () => {
-  await session.defaultSession.loadExtension(path.join(__dirname, "react-devtools"))
+app.on('ready', async () => {
+  await session.defaultSession.loadExtension(path.join(__dirname, 'react-devtools'))
   // Note that in order to use the React DevTools extension, you'll need to
   // download and unzip a copy of the extension.
 })
