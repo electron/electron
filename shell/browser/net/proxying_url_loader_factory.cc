@@ -94,7 +94,9 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
   request_for_info.request_initiator = original_initiator_;
   info_.emplace(extensions::WebRequestInfoInitParams(
       request_id_, factory_->render_process_id_, request_.render_frame_id,
-      nullptr, routing_id_, request_for_info, false,
+      factory_->navigation_ui_data_ ? factory_->navigation_ui_data_->DeepCopy()
+                                    : nullptr,
+      routing_id_, request_for_info, false,
       !(options_ & network::mojom::kURLLoadOptionSynchronous),
       factory_->IsForServiceWorkerScript(), factory_->navigation_id_));
 
@@ -303,7 +305,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnBeforeSendHeaders(
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
     const std::string& headers,
-    const net::IPEndPoint& endpoint,
+    const net::IPEndPoint& remote_endpoint,
     OnHeadersReceivedCallback callback) {
   if (!current_request_uses_header_client_) {
     std::move(callback).Run(net::OK, base::nullopt, GURL());
@@ -314,6 +316,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
   current_response_ = network::mojom::URLResponseHead::New();
   current_response_->headers =
       base::MakeRefCounted<net::HttpResponseHeaders>(headers);
+  current_response_->remote_endpoint = remote_endpoint;
   HandleResponseOrRedirectHeaders(
       base::BindOnce(&InProgressRequest::ContinueToHandleOverrideHeaders,
                      weak_factory_.GetWeakPtr()));
@@ -673,6 +676,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     const HandlersMap& intercepted_handlers,
     content::BrowserContext* browser_context,
     int render_process_id,
+    std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
     base::Optional<int64_t> navigation_id,
     network::mojom::URLLoaderFactoryRequest loader_request,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote,
@@ -683,6 +687,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
       intercepted_handlers_(intercepted_handlers),
       browser_context_(browser_context),
       render_process_id_(render_process_id),
+      navigation_ui_data_(std::move(navigation_ui_data)),
       navigation_id_(std::move(navigation_id)),
       loader_factory_type_(loader_factory_type) {
   target_factory_.Bind(std::move(target_factory_remote));
