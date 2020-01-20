@@ -263,6 +263,9 @@ class NativeWindowViews : public NativeWindow,
   bool forwarding_mouse_messages_ = false;
   HWND legacy_window_ = NULL;
   bool layered_ = false;
+
+  // Whether to block Chromium from handling window messages.
+  bool block_chromium_message_handler_ = false;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
