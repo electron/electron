@@ -882,7 +882,12 @@ describe('Menu module', function () {
       expect(output).to.include('Window has no menu')
     })
 
-    ifit(process.platform !== 'darwin')('does not override null menu on startup', async () => {
+    ifit(process.platform !== 'darwin')('does not override null menu on startup', async function () {
+      // This test is flaky on WOA.
+      if (process.platform === 'win32' && process.arch === 'arm64') {
+        this.retries(3)
+      }
+
       const appPath = path.join(fixturesPath, 'api', 'test-menu-null')
       const appProcess = cp.spawn(process.execPath, [appPath])
 

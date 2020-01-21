@@ -1089,7 +1089,11 @@ describe('chromium features', () => {
 
   describe('window.history', () => {
     describe('window.history.pushState', () => {
-      it('should push state after calling history.pushState() from the same url', (done) => {
+      it('should push state after calling history.pushState() from the same url', function (done) {
+        // In Electron the navigation history is maintained by listening to
+        // WebContents events, so window.history related tests are flaky.
+        this.retries(3)
+
         const w = new BrowserWindow({ show: false })
         w.webContents.once('did-finish-load', async () => {
           // History should have current page by now.
