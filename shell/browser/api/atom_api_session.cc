@@ -615,15 +615,20 @@ v8::Local<v8::Promise> Session::LoadExtension(
 
   auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
-  // TODO(nornagon): make LoadExtension() asynchronous.
-  auto* extension = extension_system->LoadExtension(extension_path);
-
-  if (extension) {
-    promise.Resolve(extension);
-  } else {
-    // TODO(nornagon): plumb through error message from extension loader.
-    promise.RejectWithErrorMessage("Failed to load extension");
-  }
+  extension_system->LoadExtension(
+      extension_path,
+      base::BindOnce(
+          [](gin_helper::Promise<const extensions::Extension*> promise,
+             const extensions::Extension* extension) {
+            if (extension) {
+              promise.Resolve(extension);
+            } else {
+              // TODO(nornagon): plumb through error message from extension
+              // loader.
+              promise.RejectWithErrorMessage("Failed to load extension");
+            }
+          },
+          std::move(promise)));
 
   return handle;
 }
