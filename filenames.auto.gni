@@ -247,6 +247,7 @@ auto_filenames = {
     "lib/browser/api/views/text-field.js",
     "lib/browser/api/web-contents-view.js",
     "lib/browser/api/web-contents.js",
+    "lib/browser/chrome-extension-shim.js",
     "lib/browser/chrome-extension.js",
     "lib/browser/crash-reporter-init.js",
     "lib/browser/default-menu.ts",
