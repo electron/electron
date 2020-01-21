@@ -992,6 +992,7 @@ void NativeWindowViews::SetContentProtection(bool enable) {
 }
 
 void NativeWindowViews::SetFocusable(bool focusable) {
+  widget()->widget_delegate()->SetCanActivate(focusable);
 #if defined(OS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
   if (focusable)
