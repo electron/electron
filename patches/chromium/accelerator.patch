@@ -10,7 +10,7 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= should show as Ctrl-+
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 025a82c14dd379f82e6c8242727346bd21e768f3..8b8b0e77c355acd1ef22fb51b89f65f90bfe5cc6 100644
+index d7b79feb77f3595bcc8617b6e84c566357c336fe..3b1eab14a4348eab79f486aec43783fd8f629a8f 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -31,7 +31,7 @@ index 025a82c14dd379f82e6c8242727346bd21e768f3..8b8b0e77c355acd1ef22fb51b89f65f9
  
  namespace ui {
  
-@@ -150,7 +149,15 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -154,7 +153,15 @@ base::string16 Accelerator::GetShortcutText() const {
    shortcut = KeyCodeToName();
  #endif
  
@@ -47,7 +47,7 @@ index 025a82c14dd379f82e6c8242727346bd21e768f3..8b8b0e77c355acd1ef22fb51b89f65f9
  #if defined(OS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -159,21 +166,14 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -163,21 +170,14 @@ base::string16 Accelerator::GetShortcutText() const {
      // accent' for '0'). For display in the menu (e.g. Ctrl-0 for the
      // default zoom level), we leave VK_[0-9] alone without translation.
      wchar_t key;
@@ -75,7 +75,7 @@ index 025a82c14dd379f82e6c8242727346bd21e768f3..8b8b0e77c355acd1ef22fb51b89f65f9
    }
  
  #if defined(OS_MACOSX)
-@@ -356,7 +356,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
+@@ -360,7 +360,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
      shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_CTRL_KEY);

@@ -134,7 +134,8 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   } else {
     std::move(callback).Run(path,
                             download::DownloadItem::TARGET_DISPOSITION_PROMPT,
-                            download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
+                            download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+                            item->GetMixedContentStatus(), path,
                             download::DOWNLOAD_INTERRUPT_REASON_NONE);
   }
 }
@@ -180,8 +181,8 @@ void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
                    : download::DOWNLOAD_INTERRUPT_REASON_NONE;
   std::move(download_callback)
       .Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
-           download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
-           interrupt_reason);
+           download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+           item->GetMixedContentStatus(), path, interrupt_reason);
 }
 
 void AtomDownloadManagerDelegate::Shutdown() {
@@ -199,6 +200,7 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
         download->GetForcedFilePath(),
         download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+        download::DownloadItem::MixedContentStatus::UNKNOWN,
         download->GetForcedFilePath(),
         download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
@@ -210,7 +212,8 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
   if (!save_path.empty()) {
     std::move(*callback).Run(
         save_path, download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
-        download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, save_path,
+        download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+        download::DownloadItem::MixedContentStatus::UNKNOWN, save_path,
         download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
