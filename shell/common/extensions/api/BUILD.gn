@@ -34,7 +34,10 @@ group("extensions_features") {
 # Private Targets
 
 generated_json_strings("generated_api_json_strings") {
-  sources = [ "tabs.json" ]
+  sources = [
+    "extension.json",
+    "tabs.json",
+  ]
 
   configs = [ "//build/config:precompiled_headers" ]
   bundle_name = "Electron"

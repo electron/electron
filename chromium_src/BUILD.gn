@@ -233,6 +233,8 @@ static_library("chrome") {
 
   if (enable_electron_extensions) {
     sources += [
+      "//chrome/renderer/extensions/extension_hooks_delegate.cc",
+      "//chrome/renderer/extensions/extension_hooks_delegate.h",
       "//chrome/renderer/extensions/tabs_hooks_delegate.cc",
       "//chrome/renderer/extensions/tabs_hooks_delegate.h",
     ]
