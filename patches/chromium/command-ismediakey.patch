@@ -11,7 +11,7 @@ control events until it begins playing audio. This means that a media shortcut w
 into effect until you, for example, began playing a YouTube video which sort of defeats the
 purpose of GlobalShortcuts.
 
-At the moment there is no upstream possibility for this; but perhaps Chromium may 
+At the moment there is no upstream possibility for this; but perhaps Chromium may
 consider some kind of switch, enabled by default, which would conditionally choose to avoid usage of
 RemoteCommandCenterDelegate on macOS.
 
@@ -72,9 +72,8 @@ index 1145e1f3d79482b5bb468c3128431ac674310e5f..e319e7a3e34e05b0e96d4a2dbb456355
  }
  
  }  // namespace ui
- 
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..bb4c1a891dd13855227b39a0e582fd4dbc342ec9 100644
+index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..f7e90349ee49f0d79a0443c5a9ec886f5a929242 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
 @@ -11,6 +11,7 @@
@@ -85,7 +84,7 @@ index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..bb4c1a891dd13855227b39a0e582fd4d
  #include "ui/base/accelerators/accelerator.h"
  #include "ui/base/accelerators/remote_command_media_keys_listener_mac.h"
  #include "ui/base/now_playing/remote_command_center_delegate.h"
-@@ -33,6 +33,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
+@@ -33,6 +34,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
      case NX_KEYTYPE_NEXT:
      case NX_KEYTYPE_FAST:
        return VKEY_MEDIA_NEXT_TRACK;
@@ -98,7 +97,7 @@ index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..bb4c1a891dd13855227b39a0e582fd4d
    }
    return VKEY_UNKNOWN;
  }
-@@ -193,7 +199,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -193,7 +200,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&
@@ -110,7 +109,7 @@ index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..bb4c1a891dd13855227b39a0e582fd4d
      return event;
    }
  
-@@ -233,6 +234,7 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -224,6 +234,7 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
    // For Mac OS 10.12.2 or later, we want to use MPRemoteCommandCenter for
    // getting media keys globally if there is a RemoteCommandCenterDelegate
    // available.
@@ -118,7 +117,7 @@ index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..bb4c1a891dd13855227b39a0e582fd4d
    if (@available(macOS 10.12.2, *)) {
      if (scope == Scope::kGlobal &&
          now_playing::RemoteCommandCenterDelegate::GetInstance()) {
-@@ -242,7 +244,7 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -233,7 +244,7 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
        return std::move(listener);
      }
    }
