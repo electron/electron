@@ -123,7 +123,6 @@ build_script:
   - gn check out/Default //electron/shell/common/api:mojo
   - if DEFINED RAW_GOMA_CONFIG (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
   - if "%GN_CONFIG%"=="testing" ( python C:\Users\electron\depot_tools\post_build_ninja_summary.py -C out\Default )
-  - if DEFINED RAW_GOMA_CONFIG (python electron\external_binaries\goma\goma_ctl.py stat)
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
   - ninja -C out/Default electron:electron_dist_zip
@@ -132,6 +131,7 @@ build_script:
   - ninja -C out/Default electron:hunspell_dictionaries_zip
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
+  - if DEFINED RAW_GOMA_CONFIG (python electron\external_binaries\goma\goma_ctl.py stat)
   - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
   - appveyor PushArtifact out/Default/windows_toolchain_profile.json
   - appveyor PushArtifact out/Default/dist.zip
