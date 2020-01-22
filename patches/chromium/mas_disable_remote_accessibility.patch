@@ -7,7 +7,7 @@ Disable remote accessibility APIs (NSAccessibilityRemoteUIElement) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/application_bridge.mm b/components/remote_cocoa/app_shim/application_bridge.mm
-index 628196e20d2b..28dbc7f300dc 100644
+index 628196e20d2b3b30231cb03af8288244a4196146..28dbc7f300dc72779ca3e3cb6fbb3d9a0b14666b 100644
 --- a/components/remote_cocoa/app_shim/application_bridge.mm
 +++ b/components/remote_cocoa/app_shim/application_bridge.mm
 @@ -44,6 +44,7 @@
@@ -40,7 +40,7 @@ index 628196e20d2b..28dbc7f300dc 100644
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 6fc744210179..3db03e957c03 100644
+index 6fc744210179b06384d9eba08da02a626dab4930..3db03e957c0325417747a952f2dffb45b3c81916 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -554,10 +554,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -57,7 +57,7 @@ index 6fc744210179..3db03e957c03 100644
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // crrev/c/1236675. The ordering of unassociated layers relative to NSView
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index 938854358e5b..c79ee1552668 100644
+index 938854358e5b683d5d77c5aa825963daa67e5b2f..c79ee1552668b8522eb88b86dbe4a31bf267bdfe 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 @@ -61,8 +61,10 @@ id GetFocusedBrowserAccessibilityElement() override {
@@ -83,7 +83,7 @@ index 938854358e5b..c79ee1552668 100644
    DISALLOW_COPY_AND_ASSIGN(RenderWidgetHostNSViewBridgeOwner);
  };
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 0bf2a269abf7..dde6064a25b6 100644
+index 0bf2a269abf7fcf5940e8cf95f6f6b32ae786ddf..dde6064a25b64958b234f4c9a3bf01f5b1c694ff 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -45,7 +45,9 @@ class ScopedPasswordInputEnabler;
@@ -110,7 +110,7 @@ index 0bf2a269abf7..dde6064a25b6 100644
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 9f36053c15a9..6a9f9c466a45 100644
+index 9f36053c15a9895677c791e1578d16bc867c4265..6a9f9c466a45312c190b30e53146b9b303b9f32a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -245,8 +245,10 @@
@@ -163,7 +163,7 @@ index 9f36053c15a9..6a9f9c466a45 100644
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 0a3994cebd4a..6a9162808bd0 100644
+index 0a3994cebd4a1a56c5e7dc8d36a363468996fb83..6a9162808bd0659e11fa1e2d11e750ea7f673a7f 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -286,6 +286,13 @@ jumbo_component("base") {
@@ -181,7 +181,7 @@ index 0a3994cebd4a..6a9162808bd0 100644
      sources += [ "l10n/l10n_util_posix.cc" ]
    }
 diff --git a/ui/base/cocoa/remote_accessibility_api.h b/ui/base/cocoa/remote_accessibility_api.h
-index 2a58aebabb23..3424b6011e80 100644
+index 2a58aebabb23443a2c11364af4988c573f3909ba..3424b6011e80e9c995519b6a8d652abd843d926b 100644
 --- a/ui/base/cocoa/remote_accessibility_api.h
 +++ b/ui/base/cocoa/remote_accessibility_api.h
 @@ -11,6 +11,8 @@
@@ -201,7 +201,7 @@ index 2a58aebabb23..3424b6011e80 100644
 +
  #endif  // UI_BASE_COCOA_REMOTE_ACCESSIBILITY_API_H_
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 5058eb6048a6..b73c6993b46c 100644
+index 528ec883d22679a92c1d82da783588f8e33e4d99..c8b3f1752526c85fd9793e95b29424120c7c5158 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -28,7 +28,9 @@
@@ -229,10 +229,10 @@ index 5058eb6048a6..b73c6993b46c 100644
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 89eb028e840b..b85cf12286d6 100644
+index 6aa9e71245f131b176a2c6d4416786d5bcac621e..b24a364c7689d8ca3df680b9b57bd9d040885985 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -351,14 +351,22 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+@@ -348,14 +348,22 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
  NativeWidgetMacNSWindowHost::GetNativeViewAccessibleForNSView() const {
    if (in_process_ns_window_bridge_)
      return in_process_ns_window_bridge_->ns_view();
@@ -255,7 +255,7 @@ index 89eb028e840b..b85cf12286d6 100644
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1194,6 +1202,7 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+@@ -1191,6 +1199,7 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -263,7 +263,7 @@ index 89eb028e840b..b85cf12286d6 100644
    remote_window_accessible_ =
        ui::RemoteAccessibility::GetRemoteElementFromToken(window_token);
    remote_view_accessible_ =
-@@ -1201,14 +1210,17 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+@@ -1198,14 +1207,17 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
    [remote_view_accessible_ setWindowUIElement:remote_window_accessible_.get()];
    [remote_view_accessible_
        setTopLevelUIElement:remote_window_accessible_.get()];

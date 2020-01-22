@@ -6,7 +6,7 @@ Subject: mas_disable_spi_file_type_mappings.patch
 Disable NSURLFileTypeMappings API for MAS build.
 
 diff --git a/net/base/platform_mime_util_mac.mm b/net/base/platform_mime_util_mac.mm
-index a510c87ea7d9..b5f8ed974402 100644
+index a510c87ea7d92763a20db61f1dd946f363fff7a3..b5f8ed97440200c3fccadfccce28c7bc1df44ce8 100644
 --- a/net/base/platform_mime_util_mac.mm
 +++ b/net/base/platform_mime_util_mac.mm
 @@ -18,7 +18,7 @@
