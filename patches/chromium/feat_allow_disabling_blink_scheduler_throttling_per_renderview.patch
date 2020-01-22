@@ -61,10 +61,10 @@ index 95679ab2915ad496ca0018aa13874b84eb11d7fd..c278e0fc072409677beafc7f252ebcf6
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 6820d5aabc8dfcb01e8a10b7b3fe94a35b3468a6..94000dacdccfd83b3e218521918ed400f54979e1 100644
+index 272f0ed4ffada8191e725f31c8533bcb35622e46..174c50f9b89982e66836ce791fb446767e0c214a 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -1194,6 +1194,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -1192,6 +1192,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
      IPC_MESSAGE_HANDLER(ViewMsg_SetPageScale, OnSetPageScale)
      IPC_MESSAGE_HANDLER(ViewMsg_SetInitialFocus, OnSetInitialFocus)
@@ -73,7 +73,7 @@ index 6820d5aabc8dfcb01e8a10b7b3fe94a35b3468a6..94000dacdccfd83b3e218521918ed400
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_ClosePage, OnClosePage)
-@@ -1750,6 +1752,12 @@ void RenderViewImpl::OnSetPageScale(float page_scale_factor) {
+@@ -1748,6 +1750,12 @@ void RenderViewImpl::OnSetPageScale(float page_scale_factor) {
    webview()->SetPageScaleFactor(page_scale_factor);
  }
  
@@ -87,7 +87,7 @@ index 6820d5aabc8dfcb01e8a10b7b3fe94a35b3468a6..94000dacdccfd83b3e218521918ed400
      PageVisibilityState visibility_state,
      bool initial_setting) {
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 7c9264c7ade06893918010f7fe235df6243b9ab6..15ad1af9a8b02a02f80bd11bf3d2d0131c7a24b9 100644
+index edefd461a9d6b127886a2e84355a3a99e891ade7..af5fc0cc3334e66368c1780b4e79e923aeac1394 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
 @@ -440,6 +440,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
@@ -138,10 +138,10 @@ index 34ff617acbd75b2d431aef194cceff651aadc24f..b681d16f2bf1aa9151d455f1a6d9ebb5
  
  PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 3154dbd08dc8aa0386c6259afdec084570822a9e..b9f6ed110e4527a9a05074c31cc89982edaae4f2 100644
+index f74646d4c73e26b79864cab70060914767c401b6..c3954b6f7f0bda0586cbbd5febe512db8a949e8d 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -306,6 +306,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -305,6 +305,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -149,7 +149,7 @@ index 3154dbd08dc8aa0386c6259afdec084570822a9e..b9f6ed110e4527a9a05074c31cc89982
    void SetVisibilityState(PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    PageVisibilityState GetVisibilityState() override;
-@@ -680,6 +681,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -679,6 +680,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // WebViewImpl::Close while handling an input event.
    bool debug_inside_input_handling_ = false;
  

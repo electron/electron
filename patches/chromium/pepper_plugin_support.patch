@@ -40,7 +40,7 @@ index d72a867594acee97d50c5f905fc1a4df9aa9352e..8a4cc159cb490ebadbb1b54aa88223c0
 +  return PP_OK;
  }
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
-index 6d40a6b79d027df09412db2f5e3d573bc176cb31..03eb786787cdd349b33c2512ea32ceaceede9291 100644
+index c1fdd9dd86e4a205c6e2b51910f2bd2901501c75..77d65652808f2405881a8e1bb53d70d020866781 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 @@ -8,9 +8,11 @@
@@ -90,8 +90,8 @@ index 6d40a6b79d027df09412db2f5e3d573bc176cb31..03eb786787cdd349b33c2512ea32ceac
    // belong to the profile which lives on the UI thread. We lazily initialize
    // |cookie_settings_| by grabbing the reference from the UI thread and then
 @@ -140,9 +147,11 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
-                    context->MakeReplyMessageContext(), document_url,
-                    plugin_url));
+                        context->MakeReplyMessageContext(), document_url,
+                        plugin_url));
    }
 -  return PP_OK_COMPLETIONPENDING;
 +#endif
