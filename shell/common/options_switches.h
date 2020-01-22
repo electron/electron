@@ -54,8 +54,7 @@ extern const char kOpacity[];
 extern const char kFocusable[];
 extern const char kWebPreferences[];
 extern const char kVibrancyType[];
-extern const char kTrafficLightOffsetX[];
-extern const char kTrafficLightOffsetY[];
+extern const char kTrafficLightPosition[];
 
 // WebPreferences.
 extern const char kZoomFactor[];

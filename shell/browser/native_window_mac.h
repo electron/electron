@@ -204,8 +204,7 @@ class NativeWindowMac : public NativeWindow {
   bool fullscreen_window_title_ = false;
   bool resizable_ = true;
   bool exiting_fullscreen_ = false;
-  double traffic_light_offsetX_ = 0;
-  double traffic_light_offsetY_ = 0;
+  gfx::Point traffic_light_position_;
 
   NSInteger attention_request_id_ = 0;  // identifier from requestUserAttention
 

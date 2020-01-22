@@ -28,6 +28,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/deprecate_util.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -335,8 +336,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
-  options.Get(options::kTrafficLightOffsetX, &traffic_light_offsetX_);
-  options.Get(options::kTrafficLightOffsetY, &traffic_light_offsetY_);
+  options.Get(options::kTrafficLightPosition, &traffic_light_position_);
 
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
@@ -512,7 +512,7 @@ NativeWindowMac::~NativeWindowMac() {
 }
 
 void NativeWindowMac::RepositionTrafficLights() {
-  if (!traffic_light_offsetX_ && !traffic_light_offsetY_) {
+  if (!traffic_light_position_.x() && !traffic_light_position_.y()) {
     return;
   }
 
@@ -532,7 +532,7 @@ void NativeWindowMac::RepositionTrafficLights() {
 
   [titleBarContainerView setHidden:NO];
   CGFloat buttonHeight = [close frame].size.height;
-  CGFloat titleBarFrameHeight = buttonHeight + traffic_light_offsetY_;
+  CGFloat titleBarFrameHeight = buttonHeight + traffic_light_position_.y();
   CGRect titleBarRect = titleBarContainerView.frame;
   titleBarRect.size.height = titleBarFrameHeight;
   titleBarRect.origin.y = window.frame.size.height - titleBarFrameHeight;
@@ -544,7 +544,7 @@ void NativeWindowMac::RepositionTrafficLights() {
   for (NSUInteger i = 0; i < windowButtons.count; i++) {
     NSView* view = [windowButtons objectAtIndex:i];
     CGRect rect = [view frame];
-    rect.origin.x = traffic_light_offsetX_ + (i * space_between);
+    rect.origin.x = traffic_light_position_.x() + (i * space_between);
     rect.origin.y = (titleBarFrameHeight - rect.size.height) / 2;
     [view setFrameOrigin:rect.origin];
   }
