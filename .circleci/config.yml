@@ -332,7 +332,7 @@ step-gn-gen-default: &step-gn-gen-default
       if [ "$USE_GOMA" == "true" ]; then
         gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"//electron/build/args/goma.gn\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
       else
-        gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+        gn gen out/Default --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
       fi
 
 step-gn-check: &step-gn-check
@@ -515,7 +515,7 @@ step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
       if [ "$USE_GOMA" == "true" ]; then
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") import(\"//electron/build/args/goma.gn\") $GN_EXTRA_ARGS"
       else
-        gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") cc_wrapper=\"$SCCACHE_PATH\" $GN_EXTRA_ARGS"
       fi
 
 step-ffmpeg-build: &step-ffmpeg-build
