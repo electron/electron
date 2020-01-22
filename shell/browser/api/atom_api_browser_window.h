@@ -68,7 +68,7 @@ class BrowserWindow : public TopLevelWindow,
   void OnWindowFocus() override;
   void OnWindowResize() override;
   void OnWindowLeaveFullScreen() override;
-  void Focus() override;
+  void Focus(const base::Optional<gin_helper::Dictionary>& options) override;
   void Blur() override;
   void SetBackgroundColor(const std::string& color_name) override;
   void SetBrowserView(v8::Local<v8::Value> value) override;

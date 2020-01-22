@@ -601,16 +601,21 @@ void NativeWindowMac::CloseImmediately() {
   [window_ close];
 }
 
-void NativeWindowMac::Focus(bool focus) {
+void NativeWindowMac::Focus(const FocusOptions& options) {
   if (!IsVisible())
     return;
 
-  if (focus) {
-    [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
-    [window_ makeKeyAndOrderFront:nil];
-  } else {
-    [window_ orderBack:nil];
-  }
+  [[NSApplication sharedApplication]
+      activateIgnoringOtherApps:options.ignoreOtherApps];
+
+  [window_ makeKeyAndOrderFront:nil];
+}
+
+void NativeWindowMac::Blur() {
+  if (!IsVisible())
+    return;
+
+  [window_ orderBack:nil];
 }
 
 bool NativeWindowMac::IsFocused() {
@@ -1205,8 +1210,8 @@ void NativeWindowMac::SetContentProtection(bool enable) {
 
 void NativeWindowMac::SetFocusable(bool focusable) {
   // No known way to unfocus the window if it had the focus. Here we do not
-  // want to call Focus(false) because it moves the window to the back, i.e.
-  // at the bottom in term of z-order.
+  // want to call Blur() because it moves the window to the back, i.e. at
+  // the bottom in term of z-order.
   [window_ setDisableKeyOrMainWindow:!focusable];
 }
 

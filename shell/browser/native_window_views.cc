@@ -367,16 +367,20 @@ void NativeWindowViews::CloseImmediately() {
   widget()->CloseNow();
 }
 
-void NativeWindowViews::Focus(bool focus) {
+void NativeWindowViews::Focus(const FocusOptions& options) {
   // For hidden window focus() should do nothing.
   if (!IsVisible())
     return;
 
-  if (focus) {
-    widget()->Activate();
-  } else {
-    widget()->Deactivate();
-  }
+  widget()->Activate();
+}
+
+void NativeWindowViews::Blur() {
+  // For hidden window focus() should do nothing.
+  if (!IsVisible())
+    return;
+
+  widget()->Deactivate();
 }
 
 bool NativeWindowViews::IsFocused() {
@@ -1001,7 +1005,7 @@ void NativeWindowViews::SetFocusable(bool focusable) {
     ex_style |= WS_EX_NOACTIVATE;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
   SetSkipTaskbar(!focusable);
-  Focus(false);
+  Blur();
 #endif
 }
 
@@ -1348,7 +1352,8 @@ void NativeWindowViews::DeleteDelegate() {
     // Enable parent window after current window gets closed.
     static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
     // Focus on parent window.
-    parent->Focus(true);
+    FocusOptions focusOptions;
+    parent->Focus(focusOptions&);
   }
 
   NotifyWindowClosed();

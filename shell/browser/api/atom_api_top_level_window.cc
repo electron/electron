@@ -307,12 +307,18 @@ void TopLevelWindow::Close() {
   window_->Close();
 }
 
-void TopLevelWindow::Focus() {
-  window_->Focus(true);
+void TopLevelWindow::Focus(
+    const base::Optional<gin_helper::Dictionary>& options) {
+  FocusOptions focusOptions;
+
+  if (options) {
+    options->Get("ignoreOtherApps", &focusOptions.ignoreOtherApps);
+  }
+  window_->Focus(focusOptions);
 }
 
 void TopLevelWindow::Blur() {
-  window_->Focus(false);
+  window_->Blur();
 }
 
 bool TopLevelWindow::IsFocused() {
