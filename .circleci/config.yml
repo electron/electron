@@ -560,7 +560,7 @@ step-show-sccache-stats: &step-show-sccache-stats
         $SCCACHE_PATH -s
       fi
       if [ "$USE_GOMA" == "true" ]; then
-        src/electron/external_binaries/goma_ctl.py stat
+        src/electron/external_binaries/goma/goma_ctl.py stat
       fi
 
 step-mksnapshot-build: &step-mksnapshot-build
@@ -1284,6 +1284,9 @@ commands:
       build:
         type: boolean
         default: true
+      use-out-cache:
+        type: boolean
+        default: true
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1343,7 +1346,10 @@ commands:
             - *step-gn-gen-default
 
             # Electron app
-            - *step-restore-out-cache
+            - when:
+                condition: << parameters.use-out-cache >>
+                steps:
+                  - *step-restore-out-cache
             - *step-gn-gen-default
             - *step-electron-build
             - *step-ninja-summary
@@ -1405,7 +1411,10 @@ commands:
                     # These files do not seem to like being in a cache, let us remove them
                     find . -type f -name '*_pkg_info' -delete
                   fi
-            - *step-save-out-cache
+            - when:
+                condition: << parameters.use-out-cache >>
+                steps:
+                  - *step-save-out-cache
 
       # Trigger tests on arm hardware if needed
       - *step-maybe-trigger-arm-test
@@ -1508,6 +1517,7 @@ jobs:
       - electron-build:
           persist: true
           checkout: true
+          use-out-cache: false
 
   linux-x64-testing-no-run-as-node:
     <<: *machine-linux-2xlarge
@@ -1522,6 +1532,7 @@ jobs:
       - electron-build:
           persist: false
           checkout: true
+          use-out-cache: false
 
   linux-x64-testing-gn-check:
     <<: *machine-linux-medium
@@ -1572,6 +1583,7 @@ jobs:
       - electron-build:
           persist: true
           checkout: true
+          use-out-cache: false
 
   linux-ia32-chromedriver:
     <<: *machine-linux-medium
@@ -1620,6 +1632,7 @@ jobs:
       - electron-build:
           persist: false
           checkout: true
+          use-out-cache: false
 
   linux-arm-chromedriver:
     <<: *machine-linux-medium
@@ -1668,6 +1681,7 @@ jobs:
       - electron-build:
           persist: false
           checkout: true
+          use-out-cache: false
 
   linux-arm64-testing-gn-check:
     <<: *machine-linux-medium
