@@ -194,6 +194,12 @@
   }
 }
 
+- (void)closeContextMenu {
+  if (menuController_) {
+    [menuController_ cancel];
+  }
+}
+
 - (void)rightMouseUp:(NSEvent*)event {
   trayIcon_->NotifyRightClicked(
       gfx::ScreenRectFromNSRect(event.window.frame),
@@ -313,6 +319,10 @@ void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
                      base::Unretained(menu_model)));
+}
+
+void TrayIconCocoa::CloseContextMenu() {
+  [status_item_view_ closeContextMenu];
 }
 
 void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {
