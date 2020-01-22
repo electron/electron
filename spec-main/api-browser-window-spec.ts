@@ -697,6 +697,17 @@ describe('BrowserWindow module', () => {
         await closeWindow(w2, { assertNotWindows: false })
       })
     })
+
+    describe('BrowserWindow.setFocusable()', () => {
+      it('can set unfocusable window to focusable', async () => {
+        const w2 = new BrowserWindow({ focusable: false })
+        const w2Focused = emittedOnce(w2, 'focus')
+        w2.setFocusable(true)
+        w2.focus()
+        await w2Focused
+        await closeWindow(w2, { assertNotWindows: false })
+      })
+    })
   })
 
   describe('sizing', () => {
