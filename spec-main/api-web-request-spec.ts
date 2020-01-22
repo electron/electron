@@ -121,6 +121,14 @@ describe('webRequest module', () => {
       const { data } = await ajax(defaultURL)
       expect(data).to.equal('/redirect')
     })
+
+    it('does not crash for redirects', async () => {
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        callback({ cancel: false })
+      })
+      await ajax(defaultURL + 'serverRedirect')
+      await ajax(defaultURL + 'serverRedirect')
+    })
   })
 
   describe('webRequest.onBeforeSendHeaders', () => {
