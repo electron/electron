@@ -220,12 +220,12 @@ step-setup-env-for-build: &step-setup-env-for-build
       # To find `gn` executable.
       echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
       # Setup Goma if applicable
-      if [ ! -z "$RAW_GOMA_CONFIG" ] && [ "`uname`" == "Linux" ]; then
+      if [ ! -z "$RAW_GOMA_AUTH" ] && [ "`uname`" == "Linux" ]; then
         export USE_SCCACHE="false"
         echo 'export USE_SCCACHE=false' >> $BASH_ENV
         echo 'export USE_GOMA=true' >> $BASH_ENV
         echo 'export NUMBER_OF_NINJA_PROCESSES=300' >> $BASH_ENV
-        echo $RAW_GOMA_CONFIG > ~/.goma_oauth2_config
+        echo $RAW_GOMA_AUTH > ~/.goma_oauth2_config
         src/electron/external_binaries/goma/goma_ctl.py ensure_start
       fi
 
