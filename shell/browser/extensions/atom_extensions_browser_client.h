@@ -95,11 +95,6 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
       const extensions::ExtensionId& extension_id) override;
   bool IsLoggedInAsPublicAccount() override;
   extensions::ExtensionSystemProvider* GetExtensionSystemFactory() override;
-  void RegisterExtensionInterfaces(
-      service_manager::BinderRegistryWithArgs<content::RenderFrameHost*>*
-          registry,
-      content::RenderFrameHost* render_frame_host,
-      const extensions::Extension* extension) const override;
   std::unique_ptr<extensions::RuntimeAPIDelegate> CreateRuntimeAPIDelegate(
       content::BrowserContext* context) const override;
   const extensions::ComponentExtensionResourceManager*
