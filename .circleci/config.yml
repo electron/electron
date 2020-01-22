@@ -554,10 +554,13 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
 
 step-show-sccache-stats: &step-show-sccache-stats
   run:
-    name: Check sccache stats after build
+    name: Check sccache/goma stats after build
     command: |
       if [ "$SCCACHE_PATH" != "" ]; then
         $SCCACHE_PATH -s
+      fi
+      if [ "$USE_GOMA" == "true" ]; then
+        src/electron/external_binaries/goma_ctl.py stat
       fi
 
 step-mksnapshot-build: &step-mksnapshot-build
