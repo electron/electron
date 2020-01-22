@@ -13,6 +13,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "gin/converter.h"
 #include "shell/common/deprecate_util.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/keyboard_util.h"
@@ -310,7 +311,10 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
   }
 
   dict.Get("screenSize", &out->screen_size);
-  dict.Get("viewPosition", &out->view_position);
+  gfx::Point view_position;
+  if (dict.Get("viewPosition", &view_position)) {
+    out->view_position = view_position;
+  }
   dict.Get("deviceScaleFactor", &out->device_scale_factor);
   dict.Get("viewSize", &out->view_size);
   dict.Get("scale", &out->scale);
