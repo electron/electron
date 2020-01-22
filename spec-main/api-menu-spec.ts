@@ -878,7 +878,7 @@ describe('Menu module', function () {
       let output = ''
       appProcess.stdout.on('data', data => { output += data })
 
-      await emittedOnce(appProcess, 'close')
+      await emittedOnce(appProcess, 'exit')
       expect(output).to.include('Window has no menu')
     })
 
@@ -889,7 +889,7 @@ describe('Menu module', function () {
       let output = ''
       appProcess.stdout.on('data', data => { output += data })
 
-      await emittedOnce(appProcess, 'close')
+      await emittedOnce(appProcess, 'exit')
       expect(output).to.include('Window has no menu')
     })
   })

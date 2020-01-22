@@ -340,7 +340,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
     it('does not prevent process from crashing', (done) => {
       const appPath = path.join(fixtures, 'api', 'cookie-app')
       const appProcess = childProcess.spawn(process.execPath, [appPath])
-      appProcess.once('close', () => {
+      appProcess.once('exit', () => {
         done()
       })
     })

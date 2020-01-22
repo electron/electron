@@ -160,7 +160,7 @@ describe('app module', () => {
       if (appProcess && appProcess.stdout) {
         appProcess.stdout.on('data', data => { output += data })
       }
-      const [code] = await emittedOnce(appProcess, 'close')
+      const [code] = await emittedOnce(appProcess, 'exit')
 
       if (process.platform !== 'win32') {
         expect(output).to.include('Exit event with code: 123')
@@ -173,7 +173,7 @@ describe('app module', () => {
       const electronPath = process.execPath
 
       appProcess = cp.spawn(electronPath, [appPath])
-      const [code, signal] = await emittedOnce(appProcess, 'close')
+      const [code, signal] = await emittedOnce(appProcess, 'exit')
 
       expect(signal).to.equal(null, 'exit signal should be null, if you see this please tag @MarshallOfSound')
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound')
@@ -194,7 +194,7 @@ describe('app module', () => {
       if (appProcess && appProcess.stdout) {
         appProcess.stdout.on('data', () => appProcess!.kill())
       }
-      const [code, signal] = await emittedOnce(appProcess, 'close')
+      const [code, signal] = await emittedOnce(appProcess, 'exit')
 
       const message = `code:\n${code}\nsignal:\n${signal}`
       expect(code).to.equal(0, message)
