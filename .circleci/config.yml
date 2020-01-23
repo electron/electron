@@ -232,6 +232,15 @@ step-setup-env-for-build: &step-setup-env-for-build
     command: |
       # To find `gn` executable.
       echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
+      # Setup Goma if applicable
+      if [ ! -z "$RAW_GOMA_AUTH" ] && [ "`uname`" == "Linux" ]; then
+        export USE_SCCACHE="false"
+        echo 'export USE_SCCACHE=false' >> $BASH_ENV
+        echo 'export USE_GOMA=true' >> $BASH_ENV
+        echo 'export NUMBER_OF_NINJA_PROCESSES=300' >> $BASH_ENV
+        echo $RAW_GOMA_AUTH > ~/.goma_oauth2_config
+        src/electron/external_binaries/goma/goma_ctl.py ensure_start
+      fi
 
       if [ "$USE_SCCACHE" == "true" ]; then
         # https://github.com/mozilla/sccache
@@ -333,7 +342,11 @@ step-gn-gen-default: &step-gn-gen-default
     name: Default GN gen
     command: |
       cd src
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      if [ "$USE_GOMA" == "true" ]; then
+        gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"//electron/build/args/goma.gn\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      else
+        gn gen out/Default --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      fi
 
 step-gn-check: &step-gn-check
   run:
@@ -508,7 +521,11 @@ step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
     name: ffmpeg GN gen
     command: |
       cd src
-      gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      if [ "$USE_GOMA" == "true" ]; then
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") import(\"//electron/build/args/goma.gn\") $GN_EXTRA_ARGS"
+      else
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") cc_wrapper=\"$SCCACHE_PATH\" $GN_EXTRA_ARGS"
+      fi
 
 step-ffmpeg-build: &step-ffmpeg-build
   run:
@@ -546,10 +563,13 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
 
 step-show-sccache-stats: &step-show-sccache-stats
   run:
-    name: Check sccache stats after build
+    name: Check sccache/goma stats after build
     command: |
       if [ "$SCCACHE_PATH" != "" ]; then
         $SCCACHE_PATH -s
+      fi
+      if [ "$USE_GOMA" == "true" ]; then
+        src/electron/external_binaries/goma/goma_ctl.py stat
       fi
 
 step-mksnapshot-build: &step-mksnapshot-build
