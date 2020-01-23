@@ -22,7 +22,6 @@ boringssl_build_gn.patch
 pepper_plugin_support.patch
 no_cache_storage_check.patch
 blink_fix_prototype_assert.patch
-libgtkui_export.patch
 gtk_visibility.patch
 sysroot.patch
 mas_blink_no_private_api.patch
