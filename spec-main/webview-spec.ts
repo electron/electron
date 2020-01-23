@@ -151,7 +151,9 @@ describe('<webview> tag', function () {
     })
   })
 
-  it('loads devtools extensions registered on the parent window', async () => {
+  // TODO(nornagon): update this test to load its resources from http:, because
+  // extensions aren't supported on file:
+  it.skip('loads devtools extensions registered on the parent window', async () => {
     const w = new BrowserWindow({
       show: false,
       webPreferences: {
