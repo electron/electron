@@ -72,8 +72,8 @@
 #include "extensions/renderer/guest_view/extensions_guest_view_container.h"
 #include "extensions/renderer/guest_view/extensions_guest_view_container_dispatcher.h"
 #include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container.h"
-#include "shell/common/extensions/atom_extensions_client.h"
-#include "shell/renderer/extensions/atom_extensions_renderer_client.h"
+#include "shell/common/extensions/electron_extensions_client.h"
+#include "shell/renderer/extensions/electron_extensions_renderer_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 namespace electron {
@@ -148,7 +148,7 @@ void RendererClientBase::RenderThreadStarted() {
   extensions_client_.reset(CreateExtensionsClient());
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
-  extensions_renderer_client_.reset(new AtomExtensionsRendererClient);
+  extensions_renderer_client_.reset(new ElectronExtensionsRendererClient);
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
@@ -387,7 +387,7 @@ v8::Local<v8::Value> RendererClientBase::RunScript(
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
-  return new AtomExtensionsClient;
+  return new ElectronExtensionsClient;
 }
 #endif
 

@@ -35,7 +35,7 @@ class ExtensionsClient;
 namespace electron {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-class AtomExtensionsRendererClient;
+class ElectronExtensionsRendererClient;
 #endif
 
 class RendererClientBase : public content::ContentRendererClient
@@ -112,7 +112,7 @@ class RendererClientBase : public content::ContentRendererClient
  private:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<extensions::ExtensionsClient> extensions_client_;
-  std::unique_ptr<AtomExtensionsRendererClient> extensions_renderer_client_;
+  std::unique_ptr<ElectronExtensionsRendererClient> extensions_renderer_client_;
 #endif
 
 #if defined(WIDEVINE_CDM_AVAILABLE)

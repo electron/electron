@@ -67,7 +67,7 @@
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/extension_registry.h"
-#include "shell/browser/extensions/atom_extension_system.h"
+#include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/common/gin_converters/extension_converter.h"
 #endif
 
@@ -613,7 +613,7 @@ v8::Local<v8::Promise> Session::LoadExtension(
   gin_helper::Promise<const extensions::Extension*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
+  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
   extension_system->LoadExtension(
       extension_path,
@@ -634,7 +634,7 @@ v8::Local<v8::Promise> Session::LoadExtension(
 }
 
 void Session::RemoveExtension(const std::string& extension_id) {
-  auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
+  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
   extension_system->RemoveExtension(extension_id);
 }

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_EXTENSIONS_ATOM_EXTENSIONS_CLIENT_H_
-#define SHELL_COMMON_EXTENSIONS_ATOM_EXTENSIONS_CLIENT_H_
+#ifndef SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_CLIENT_H_
+#define SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_CLIENT_H_
 
 #include <string>
 
@@ -24,12 +24,12 @@ class URLPatternSet;
 namespace electron {
 
 // The app_shell implementation of ExtensionsClient.
-class AtomExtensionsClient : public extensions::ExtensionsClient {
+class ElectronExtensionsClient : public extensions::ExtensionsClient {
  public:
   typedef extensions::ExtensionsClient::ScriptingWhitelist ScriptingWhitelist;
 
-  AtomExtensionsClient();
-  ~AtomExtensionsClient() override;
+  ElectronExtensionsClient();
+  ~ElectronExtensionsClient() override;
 
   // ExtensionsClient overrides:
   void Initialize() override;
@@ -57,9 +57,9 @@ class AtomExtensionsClient : public extensions::ExtensionsClient {
   const GURL webstore_base_url_;
   const GURL webstore_update_url_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionsClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsClient);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_EXTENSIONS_ATOM_EXTENSIONS_CLIENT_H_
+#endif  // SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_CLIENT_H_

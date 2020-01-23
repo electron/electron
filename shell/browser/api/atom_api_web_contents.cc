@@ -119,7 +119,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "shell/browser/extensions/atom_extension_web_contents_observer.h"
+#include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
 namespace gin {
@@ -359,7 +359,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   AttachAsUserData(web_contents);
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+  extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
   script_executor_.reset(new extensions::ScriptExecutor(web_contents));
 #endif
@@ -520,7 +520,7 @@ void WebContents::InitWithSessionAndOptions(
   SecurityStateTabHelper::CreateForWebContents(web_contents());
   InitZoomController(web_contents(), options);
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+  extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents());
   script_executor_.reset(new extensions::ScriptExecutor(web_contents()));
 #endif

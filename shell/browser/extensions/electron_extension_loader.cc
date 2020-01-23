@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/extensions/atom_extension_loader.h"
+#include "shell/browser/extensions/electron_extension_loader.h"
 
 #include <utility>
 
@@ -60,25 +60,25 @@ scoped_refptr<const Extension> LoadUnpacked(
 
 }  // namespace
 
-AtomExtensionLoader::AtomExtensionLoader(
+ElectronExtensionLoader::ElectronExtensionLoader(
     content::BrowserContext* browser_context)
     : browser_context_(browser_context),
       extension_registrar_(browser_context, this),
       weak_factory_(this) {}
 
-AtomExtensionLoader::~AtomExtensionLoader() = default;
+ElectronExtensionLoader::~ElectronExtensionLoader() = default;
 
-void AtomExtensionLoader::LoadExtension(
+void ElectronExtensionLoader::LoadExtension(
     const base::FilePath& extension_dir,
     base::OnceCallback<void(const Extension*)> loaded) {
   base::PostTaskAndReplyWithResult(
       GetExtensionFileTaskRunner().get(), FROM_HERE,
       base::BindOnce(&LoadUnpacked, extension_dir),
-      base::BindOnce(&AtomExtensionLoader::FinishExtensionLoad,
+      base::BindOnce(&ElectronExtensionLoader::FinishExtensionLoad,
                      weak_factory_.GetWeakPtr(), std::move(loaded)));
 }
 
-void AtomExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
+void ElectronExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
   const Extension* extension = ExtensionRegistry::Get(browser_context_)
                                    ->GetInstalledExtension(extension_id);
   // We shouldn't be trying to reload extensions that haven't been added.
@@ -94,13 +94,13 @@ void AtomExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
     return;
 }
 
-void AtomExtensionLoader::UnloadExtension(
+void ElectronExtensionLoader::UnloadExtension(
     const ExtensionId& extension_id,
     extensions::UnloadedExtensionReason reason) {
   extension_registrar_.RemoveExtension(extension_id, reason);
 }
 
-void AtomExtensionLoader::FinishExtensionLoad(
+void ElectronExtensionLoader::FinishExtensionLoad(
     base::OnceCallback<void(const Extension*)> done,
     scoped_refptr<const Extension> extension) {
   if (extension) {
@@ -109,7 +109,7 @@ void AtomExtensionLoader::FinishExtensionLoad(
   std::move(done).Run(extension.get());
 }
 
-void AtomExtensionLoader::FinishExtensionReload(
+void ElectronExtensionLoader::FinishExtensionReload(
     const ExtensionId& old_extension_id,
     scoped_refptr<const Extension> extension) {
   if (extension) {
@@ -117,8 +117,8 @@ void AtomExtensionLoader::FinishExtensionReload(
   }
 }
 
-void AtomExtensionLoader::PreAddExtension(const Extension* extension,
-                                          const Extension* old_extension) {
+void ElectronExtensionLoader::PreAddExtension(const Extension* extension,
+                                              const Extension* old_extension) {
   if (old_extension)
     return;
 
@@ -138,13 +138,13 @@ void AtomExtensionLoader::PreAddExtension(const Extension* extension,
   }
 }
 
-void AtomExtensionLoader::PostActivateExtension(
+void ElectronExtensionLoader::PostActivateExtension(
     scoped_refptr<const Extension> extension) {}
 
-void AtomExtensionLoader::PostDeactivateExtension(
+void ElectronExtensionLoader::PostDeactivateExtension(
     scoped_refptr<const Extension> extension) {}
 
-void AtomExtensionLoader::LoadExtensionForReload(
+void ElectronExtensionLoader::LoadExtensionForReload(
     const ExtensionId& extension_id,
     const base::FilePath& path,
     LoadErrorBehavior load_error_behavior) {
@@ -153,21 +153,21 @@ void AtomExtensionLoader::LoadExtensionForReload(
   base::PostTaskAndReplyWithResult(
       GetExtensionFileTaskRunner().get(), FROM_HERE,
       base::BindOnce(&LoadUnpacked, path),
-      base::BindOnce(&AtomExtensionLoader::FinishExtensionReload,
+      base::BindOnce(&ElectronExtensionLoader::FinishExtensionReload,
                      weak_factory_.GetWeakPtr(), extension_id));
   did_schedule_reload_ = true;
 }
 
-bool AtomExtensionLoader::CanEnableExtension(const Extension* extension) {
+bool ElectronExtensionLoader::CanEnableExtension(const Extension* extension) {
   return true;
 }
 
-bool AtomExtensionLoader::CanDisableExtension(const Extension* extension) {
+bool ElectronExtensionLoader::CanDisableExtension(const Extension* extension) {
   // Extensions cannot be disabled by the user.
   return false;
 }
 
-bool AtomExtensionLoader::ShouldBlockExtension(const Extension* extension) {
+bool ElectronExtensionLoader::ShouldBlockExtension(const Extension* extension) {
   return false;
 }
 

@@ -35,7 +35,7 @@ class SpecialStoragePolicy;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace extensions {
-class AtomExtensionSystem;
+class ElectronExtensionSystem;
 }
 #endif
 
@@ -142,7 +142,7 @@ class AtomBrowserContext
   }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::AtomExtensionSystem* extension_system() {
+  extensions::ElectronExtensionSystem* extension_system() {
     return extension_system_;
   }
 #endif
@@ -192,7 +192,7 @@ class AtomBrowserContext
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // Owned by the KeyedService system.
-  extensions::AtomExtensionSystem* extension_system_;
+  extensions::ElectronExtensionSystem* extension_system_;
 #endif
 
   // Shared URLLoaderFactory.

@@ -41,8 +41,8 @@ class NodeEnvironment;
 class BridgeTaskRunner;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-class AtomExtensionsClient;
-class AtomExtensionsBrowserClient;
+class ElectronExtensionsClient;
+class ElectronExtensionsBrowserClient;
 #endif
 
 #if defined(TOOLKIT_VIEWS)
@@ -139,8 +139,8 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  std::unique_ptr<AtomExtensionsClient> extensions_client_;
-  std::unique_ptr<AtomExtensionsBrowserClient> extensions_browser_client_;
+  std::unique_ptr<ElectronExtensionsClient> extensions_client_;
+  std::unique_ptr<ElectronExtensionsBrowserClient> extensions_browser_client_;
 #endif
 
   base::RepeatingTimer gc_timer_;

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_EXTENSIONS_ATOM_EXTENSIONS_API_PROVIDER_H_
-#define SHELL_COMMON_EXTENSIONS_ATOM_EXTENSIONS_API_PROVIDER_H_
+#ifndef SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_
+#define SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_
 
 #include <string>
 
@@ -12,10 +12,10 @@
 
 namespace electron {
 
-class AtomExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
+class ElectronExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
  public:
-  AtomExtensionsAPIProvider();
-  ~AtomExtensionsAPIProvider() override;
+  ElectronExtensionsAPIProvider();
+  ~ElectronExtensionsAPIProvider() override;
 
   // ExtensionsAPIProvider:
   void AddAPIFeatures(extensions::FeatureProvider* provider) override;
@@ -31,9 +31,9 @@ class AtomExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
   void RegisterManifestHandlers() override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionsAPIProvider);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsAPIProvider);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_EXTENSIONS_ATOM_EXTENSIONS_API_PROVIDER_H_
+#endif  // SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_

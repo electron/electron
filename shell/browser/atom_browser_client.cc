@@ -133,7 +133,7 @@
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/process_map.h"
 #include "extensions/common/extension.h"
-#include "shell/browser/extensions/atom_extension_system.h"
+#include "shell/browser/extensions/electron_extension_system.h"
 #endif
 
 #if defined(OS_MACOSX)
