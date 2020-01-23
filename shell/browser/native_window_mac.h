@@ -149,6 +149,10 @@ class NativeWindowMac : public NativeWindow {
   void SetCollectionBehavior(bool on, NSUInteger flag);
   void SetWindowLevel(int level);
 
+  // Custom traffic light positioning
+  void RepositionTrafficLights();
+  void SetExitingFullScreen(bool flag);
+
   enum class TitleBarStyle {
     NORMAL,
     HIDDEN,
@@ -162,6 +166,7 @@ class NativeWindowMac : public NativeWindow {
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
   bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
+  bool exiting_fullscreen() const { return exiting_fullscreen_; }
 
  protected:
   // views::WidgetDelegate:
@@ -198,6 +203,8 @@ class NativeWindowMac : public NativeWindow {
   bool zoom_to_page_width_ = false;
   bool fullscreen_window_title_ = false;
   bool resizable_ = true;
+  bool exiting_fullscreen_ = false;
+  gfx::Point traffic_light_position_;
 
   NSInteger attention_request_id_ = 0;  // identifier from requestUserAttention
 
