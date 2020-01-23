@@ -183,7 +183,7 @@ describe('<webview> tag', function () {
     })
 
     const [, { runtimeId, tabId }] = await emittedOnce(ipcMain, 'answer')
-    expect(runtimeId).to.equal('dcioafifjljennimmcgkboenbfdmhpfj')
+    expect(runtimeId).to.match(/^[a-z]{32}$/)
     expect(tabId).to.equal(childWebContentsId)
   })
 
