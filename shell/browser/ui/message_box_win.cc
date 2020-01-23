@@ -183,8 +183,7 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
   else
     button_id = cancel_id;
 
-  return std::make_pair(button_id,
-                        checkbox_checked ? verificationFlagChecked : false);
+  return std::make_pair(button_id, verificationFlagChecked);
 }
 
 DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings) {
