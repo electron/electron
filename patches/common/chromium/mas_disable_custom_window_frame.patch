@@ -7,7 +7,7 @@ Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 677279352ba9..2194a762c6a1 100644
+index 677279352ba9a0415814654cfb676a240a316bc3..2194a762c6a14233f2246fb320ea158879a196cd 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,6 +9,7 @@
@@ -42,7 +42,7 @@ index 677279352ba9..2194a762c6a1 100644
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
-index 8416c7c6e052..cd356beda023 100644
+index 8416c7c6e052dafb2aad61c0bd3224c36e945d23..cd356beda023ab2409b16d58ca38c70ba3674913 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
 @@ -4,6 +4,8 @@
@@ -75,7 +75,7 @@ index 8416c7c6e052..cd356beda023 100644
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 5b481e482e27..6f551699f098 100644
+index 5b481e482e27f455ec4ecf03de3883d5be0d25f7..6f551699f09879f08e8f9298758a8ab0ec09c84c 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class BridgedNativeWidgetImpl;
@@ -95,7 +95,7 @@ index 5b481e482e27..6f551699f098 100644
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index aa2bb3a5f886..198d2f03d5b4 100644
+index aa2bb3a5f886c44f8217eaca8b0d19526090b47e..198d2f03d5b4c41f280bc4d9ce93bdcd209410df 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -15,7 +15,9 @@

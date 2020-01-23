@@ -7,7 +7,7 @@ Disable remote accessibility APIs (NSAccessibilityRemoteUIElement) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/bridge_factory_impl.mm b/components/remote_cocoa/app_shim/bridge_factory_impl.mm
-index 5ed3c60b5f4f..20346425bfbb 100644
+index 5ed3c60b5f4f502b4171271c4e38c722bddd9d14..20346425bfbb6bea148df8ca1d3e61cdb11be20e 100644
 --- a/components/remote_cocoa/app_shim/bridge_factory_impl.mm
 +++ b/components/remote_cocoa/app_shim/bridge_factory_impl.mm
 @@ -43,6 +43,7 @@
@@ -40,7 +40,7 @@ index 5ed3c60b5f4f..20346425bfbb 100644
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/bridged_native_widget_impl.mm b/components/remote_cocoa/app_shim/bridged_native_widget_impl.mm
-index a9f2b8af7dee..402b6099126e 100644
+index a9f2b8af7deeda5c5c05c6354ce83063c7261afb..402b6099126e0ac8dd3b6be5c0ffb1a1946dc139 100644
 --- a/components/remote_cocoa/app_shim/bridged_native_widget_impl.mm
 +++ b/components/remote_cocoa/app_shim/bridged_native_widget_impl.mm
 @@ -543,10 +543,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -57,7 +57,7 @@ index a9f2b8af7dee..402b6099126e 100644
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // crrev/c/1236675. The ordering of unassociated layers relative to NSView
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index 98b4efbae008..cc0b1c5b2e7a 100644
+index 98b4efbae0082f912f0df3315724db567811d4a1..cc0b1c5b2e7af5cef916c6bb581d33663bc577c4 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 @@ -60,8 +60,10 @@ id GetFocusedBrowserAccessibilityElement() override {
@@ -83,7 +83,7 @@ index 98b4efbae008..cc0b1c5b2e7a 100644
    DISALLOW_COPY_AND_ASSIGN(RenderWidgetHostNSViewBridgeOwner);
  };
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 9194753f4719..69ca0507b18e 100644
+index 9194753f4719183efbea0afcac85e4dfcd3e6036..69ca0507b18edc31afc08d198450c01254cc8110 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -44,7 +44,9 @@ class ScopedPasswordInputEnabler;
@@ -110,7 +110,7 @@ index 9194753f4719..69ca0507b18e 100644
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index a1138408c098..2b10c5b8f6d4 100644
+index a1138408c0985efc1334c9a92f7e875680b69a4a..2b10c5b8f6d4a7a091ef3dd9d8ff324e5663f768 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -244,8 +244,10 @@
@@ -163,7 +163,7 @@ index a1138408c098..2b10c5b8f6d4 100644
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 20371e7cd4eb..a039b947be9f 100644
+index 20371e7cd4eb2b01d6d4411733428fa2ecf25a15..a039b947be9f458c1af3988ac9a2ac5c0a03edec 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -289,6 +289,13 @@ jumbo_component("base") {
@@ -181,7 +181,7 @@ index 20371e7cd4eb..a039b947be9f 100644
      sources += [ "l10n/l10n_util_posix.cc" ]
    }
 diff --git a/ui/base/cocoa/remote_accessibility_api.h b/ui/base/cocoa/remote_accessibility_api.h
-index 2a58aebabb23..3424b6011e80 100644
+index 2a58aebabb23443a2c11364af4988c573f3909ba..3424b6011e80e9c995519b6a8d652abd843d926b 100644
 --- a/ui/base/cocoa/remote_accessibility_api.h
 +++ b/ui/base/cocoa/remote_accessibility_api.h
 @@ -11,6 +11,8 @@
@@ -201,7 +201,7 @@ index 2a58aebabb23..3424b6011e80 100644
 +
  #endif  // UI_BASE_COCOA_REMOTE_ACCESSIBILITY_API_H_
 diff --git a/ui/views/cocoa/bridged_native_widget_host_impl.h b/ui/views/cocoa/bridged_native_widget_host_impl.h
-index eb874f0d4bcd..ede669bc842f 100644
+index eb874f0d4bcd6e08ddecfab5a0f9b18b562d6d92..ede669bc842f39062fe9e7af4605cbd285ece58e 100644
 --- a/ui/views/cocoa/bridged_native_widget_host_impl.h
 +++ b/ui/views/cocoa/bridged_native_widget_host_impl.h
 @@ -28,7 +28,9 @@
@@ -229,7 +229,7 @@ index eb874f0d4bcd..ede669bc842f 100644
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/bridged_native_widget_host_impl.mm b/ui/views/cocoa/bridged_native_widget_host_impl.mm
-index dd3365aa841d..f46c10998f29 100644
+index dd3365aa841dc7d4d9c998ff097ffc8f21c811eb..f46c10998f29a15bedc246fd23b53d1b68653ff8 100644
 --- a/ui/views/cocoa/bridged_native_widget_host_impl.mm
 +++ b/ui/views/cocoa/bridged_native_widget_host_impl.mm
 @@ -348,14 +348,22 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {

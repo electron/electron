@@ -99,10 +99,10 @@ index 46fcb918f42654ec1d7d2c5c5ea70e4a402dede1..2815129bd44643fea242977a7f7dcf9d
          initWithIdentifier:NSTouchBarItemIdentifierCandidateList]);
      auto* candidateListItem = candidateListTouchBarItem_.get();
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 48a71f0dba47fa34b537a2e955a1a1541659ece5..388550c791e0f033a0127946f4777aceb153a1d3 100644
+index 477cef4973bc4f2d50aa173571fc1d2bcd0a6469..2ad881d2dd3bec1de545eaab29b69c12a05bbfe2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -564,7 +564,11 @@
+@@ -566,7 +566,11 @@
    if (!did_update_state)
      return;
  
@@ -115,7 +115,7 @@ index 48a71f0dba47fa34b537a2e955a1a1541659ece5..388550c791e0f033a0127946f4777ace
  
    // |updated_view| is the last view to change its TextInputState which can be
    // used to start/stop monitoring composition info when it has a focused
-@@ -580,7 +584,6 @@
+@@ -582,7 +586,6 @@
  
    // Set the monitor state based on the text input focus state.
    const bool has_focus = HasFocus();
