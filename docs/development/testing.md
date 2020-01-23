@@ -50,14 +50,14 @@ would run `npm run test -- -g ipc`.
 
 1. Visual Studio 2019 must be installed.
 2. Node headers have to be compiled for your configuration.
-   ```
-   ninja -C out/Testing third_party/electron_node:headers
+   ```powershell
+   ninja -C out\Testing third_party\electron_node:headers
    ```
 3. The electron.lib has to be copied as node.lib.
-   ```
-   cd .\out\Testing
-   mkdir .\gen\node_headers\Release
-   copy .\electron.lib .\gen\node_headers\Release\node.lib
+   ```powershell
+   cd out\Testing
+   mkdir gen\node_headers\Release
+   copy electron.lib gen\node_headers\Release\node.lib
    ```
 
 #### Missing fonts
