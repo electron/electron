@@ -1,0 +1,250 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christopher Cameron <ccameron@chromium.org>
+Date: Thu, 7 Nov 2019 18:28:51 +0000
+Subject: Fix hi-dpi transitions on Catalina
+
+A few issues here:
+
+First, actually wire up NativeWidgetNSWindowBridge as a DisplayObserver.
+In the past, it didn't matter that this code was missing, because we
+were getting notified via windowDidChangeBackingProperties. In Catalina,
+that call is happening at a different time, resulting us using an
+invalid cached version (which is the second issue).
+
+Second, change GetDisplayNearestWindow to call UpdateDisplaysIfNeeded.
+There was a bug here wherein we would return displays_[0], even if we
+knew (because of displays_require_update_) that that value was out of
+date.
+
+Thid, make GetCachedDisplayForScreen be robust to getting a surprise
+NSScreen* that we didn't know about. On Catalina, it happens that we
+can read -[NSScreen screens] and see that it has changed, before having
+received any notifications that such a change would happen (!).
+
+Fourth, listen for NSApplicationDidChangeScreenParametersNotification
+notifications. Just because it sounds like a healthy thing to be doing.
+
+Bug: 1021340
+Change-Id: Ibe5a6469d9e2c39cd81d0fb19ee2cfe3aedb1488
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1902508
+Reviewed-by: Elly Fong-Jones <ellyjones@chromium.org>
+Commit-Queue: ccameron <ccameron@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#713490}
+
+diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
+index 9aa274565161d8ddc7257011ad5a3e345549631e..e91ba1d54b1466fc4437692ee6f084f4f5d146c6 100644
+--- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
++++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
+@@ -187,6 +187,8 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+   bool RedispatchKeyEvent(NSEvent* event);
+ 
+   // display::DisplayObserver:
++  void OnDisplayAdded(const display::Display& new_display) override;
++  void OnDisplayRemoved(const display::Display& old_display) override;
+   void OnDisplayMetricsChanged(const display::Display& display,
+                                uint32_t metrics) override;
+ 
+diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+index 3db03e957c0325417747a952f2dffb45b3c81916..ab9caba9ba54a6fbe85b3ca2ffac470d9498900d 100644
+--- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
++++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+@@ -313,9 +313,11 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+       bridge_mojo_binding_(this) {
+   DCHECK(GetIdToWidgetImplMap().find(id_) == GetIdToWidgetImplMap().end());
+   GetIdToWidgetImplMap().insert(std::make_pair(id_, this));
++  display::Screen::GetScreen()->AddObserver(this);
+ }
+ 
+ NativeWidgetNSWindowBridge::~NativeWidgetNSWindowBridge() {
++  display::Screen::GetScreen()->RemoveObserver(this);
+   // The delegate should be cleared already. Note this enforces the precondition
+   // that -[NSWindow close] is invoked on the hosted window before the
+   // destructor is called.
+@@ -1098,7 +1100,17 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+ }
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+-// NativeWidgetNSWindowBridge, ui::CATransactionObserver
++// NativeWidgetNSWindowBridge, display::DisplayObserver:
++
++void NativeWidgetNSWindowBridge::OnDisplayAdded(
++    const display::Display& display) {
++  UpdateWindowDisplay();
++}
++
++void NativeWidgetNSWindowBridge::OnDisplayRemoved(
++    const display::Display& display) {
++  UpdateWindowDisplay();
++}
+ 
+ void NativeWidgetNSWindowBridge::OnDisplayMetricsChanged(
+     const display::Display& display,
+diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
+index 4e0a2cb6991cafa96c1e2077f38ef315544890fc..9f0d860316d2aabc6f344e47a1c5b4d550b6335e 100644
+--- a/ui/display/mac/screen_mac.mm
++++ b/ui/display/mac/screen_mac.mm
+@@ -32,8 +32,8 @@
+ namespace display {
+ namespace {
+ 
+-// The delay to handle the display configuration changes.
+-// See comments in ScreenMac::HandleDisplayReconfiguration.
++// The delay to handle the display configuration changes. This is in place to
++// coalesce display update notifications and thereby avoid thrashing.
+ const int64_t kConfigureDelayMs = 500;
+ 
+ NSScreen* GetMatchingScreen(const gfx::Rect& match_rect) {
+@@ -159,20 +159,27 @@ CGFloat GetMinimumDistanceToCorner(const NSPoint& point, NSScreen* screen) {
+     CGDisplayRegisterReconfigurationCallback(
+         ScreenMac::DisplayReconfigurationCallBack, this);
+ 
++    auto update_block = ^(NSNotification* notification) {
++      OnNSScreensMayHaveChanged();
++    };
++
+     NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
+     screen_color_change_observer_.reset(
+         [[center addObserverForName:NSScreenColorSpaceDidChangeNotification
+                              object:nil
+                               queue:nil
+-                         usingBlock:^(NSNotification* notification) {
+-                           configure_timer_.Reset();
+-                           displays_require_update_ = true;
+-                         }] retain]);
++                         usingBlock:update_block] retain]);
++    screen_params_change_observer_.reset([[center
++        addObserverForName:NSApplicationDidChangeScreenParametersNotification
++                    object:nil
++                     queue:nil
++                usingBlock:update_block] retain]);
+   }
+ 
+   ~ScreenMac() override {
+     NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
+     [center removeObserver:screen_color_change_observer_];
++    [center removeObserver:screen_params_change_observer_];
+ 
+     CGDisplayRemoveReconfigurationCallback(
+         ScreenMac::DisplayReconfigurationCallBack, this);
+@@ -197,16 +204,18 @@ bool IsWindowUnderCursor(gfx::NativeWindow native_window) override {
+   int GetNumDisplays() const override { return GetAllDisplays().size(); }
+ 
+   const std::vector<Display>& GetAllDisplays() const override {
++    UpdateDisplaysIfNeeded();
+     return displays_;
+   }
+ 
+   Display GetDisplayNearestWindow(
+       gfx::NativeWindow native_window) const override {
+-    NSWindow* window = native_window.GetNativeNSWindow();
+-    EnsureDisplaysValid();
++    UpdateDisplaysIfNeeded();
++
+     if (displays_.size() == 1)
+       return displays_[0];
+ 
++    NSWindow* window = native_window.GetNativeNSWindow();
+     if (!window)
+       return GetPrimaryDisplay();
+ 
+@@ -279,31 +288,30 @@ void RemoveObserver(DisplayObserver* observer) override {
+   static void DisplayReconfigurationCallBack(CGDirectDisplayID display,
+                                              CGDisplayChangeSummaryFlags flags,
+                                              void* userInfo) {
+-    if (flags & kCGDisplayBeginConfigurationFlag)
+-      return;
+-
+     ScreenMac* screen_mac = static_cast<ScreenMac*>(userInfo);
+-
+-    // Timer::Reset() ensures at least another interval passes before the
+-    // associated task runs, effectively coalescing these events.
+-    screen_mac->configure_timer_.Reset();
+-    screen_mac->displays_require_update_ = true;
++    screen_mac->OnNSScreensMayHaveChanged();
+   }
+ 
+  private:
+   Display GetCachedDisplayForScreen(NSScreen* screen) const {
+-    EnsureDisplaysValid();
++    UpdateDisplaysIfNeeded();
+     const CGDirectDisplayID display_id = [[[screen deviceDescription]
+         objectForKey:@"NSScreenNumber"] unsignedIntValue];
+     for (const Display& display : displays_) {
+       if (display_id == display.id())
+         return display;
+     }
+-    NOTREACHED();  // Asked for a hidden/sleeping/mirrored screen?
++    // In theory, this should not be reached, because |displays_require_update_|
++    // should have been set prior to -[NSScreen screens] changing. In practice,
++    // on Catalina, it has been observed that -[NSScreen screens] changes before
++    // any notifications are received.
++    // https://crbug.com/1021340.
++    OnNSScreensMayHaveChanged();
++    DLOG(ERROR) << "Value of -[NSScreen screens] changed before notification.";
+     return BuildDisplayForScreen(screen);
+   }
+ 
+-  void EnsureDisplaysValid() const {
++  void UpdateDisplaysIfNeeded() const {
+     if (displays_require_update_) {
+       displays_ = BuildDisplaysFromQuartz();
+       displays_require_update_ = false;
+@@ -311,7 +319,7 @@ void EnsureDisplaysValid() const {
+   }
+ 
+   void ConfigureTimerFired() {
+-    EnsureDisplaysValid();
++    UpdateDisplaysIfNeeded();
+     change_notifier_.NotifyDisplaysChanged(old_displays_, displays_);
+     old_displays_ = displays_;
+   }
+@@ -325,7 +333,7 @@ void ConfigureTimerFired() {
+     // It would be ridiculous to have this many displays connected, but
+     // CGDirectDisplayID is just an integer, so supporting up to this many
+     // doesn't hurt.
+-    CGDirectDisplayID online_displays[128];
++    CGDirectDisplayID online_displays[1024];
+     CGDisplayCount online_display_count = 0;
+     if (CGGetOnlineDisplayList(base::size(online_displays), online_displays,
+                                &online_display_count) != kCGErrorSuccess) {
+@@ -361,21 +369,32 @@ void ConfigureTimerFired() {
+                             : displays;
+   }
+ 
+-  // The displays currently attached to the device. Cached.
++  void OnNSScreensMayHaveChanged() const {
++    // Timer::Reset() ensures at least another interval passes before the
++    // associated task runs, effectively coalescing these events.
++    configure_timer_.Reset();
++    displays_require_update_ = true;
++  }
++
++  // The displays currently attached to the device. Updated by
++  // UpdateDisplaysIfNeeded.
+   mutable std::vector<Display> displays_;
+ 
+-  // Set whenever the CGDisplayRegisterReconfigurationCallback is invoked and
+-  // cleared when |displays_| is updated by BuildDisplaysFromQuartz().
++  // Whether or not |displays_| might need to be upated. Set in
++  // OnNSScreensMayHaveChanged, and un-set by UpdateDisplaysIfNeeded.
+   mutable bool displays_require_update_ = false;
+ 
+-  // The displays last communicated to DisplayChangeNotifier.
+-  std::vector<Display> old_displays_;
++  // The timer to delay configuring outputs and notifying observers (to coalesce
++  // several updates into one update).
++  mutable base::RetainingOneShotTimer configure_timer_;
+ 
+-  // The timer to delay configuring outputs and notifying observers.
+-  base::RetainingOneShotTimer configure_timer_;
++  // The displays last communicated to the DisplayChangeNotifier.
++  std::vector<Display> old_displays_;
+ 
+-  // The observer notified by NSScreenColorSpaceDidChangeNotification.
++  // The observers notified by NSScreenColorSpaceDidChangeNotification and
++  // NSApplicationDidChangeScreenParametersNotification.
+   base::scoped_nsobject<id> screen_color_change_observer_;
++  base::scoped_nsobject<id> screen_params_change_observer_;
+ 
+   DisplayChangeNotifier change_notifier_;
+ 
