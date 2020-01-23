@@ -248,10 +248,10 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     const fixtures = path.resolve(__dirname, 'fixtures')
     const extensionPath = path.resolve(fixtures, 'extensions')
 
-    const addExtension = (name: string) => BrowserWindow.addExtension(path.resolve(extensionPath, name))
+    const addExtension = (name: string) => session.defaultSession.loadExtension(path.resolve(extensionPath, name))
     const removeAllExtensions = () => {
-      Object.keys(BrowserWindow.getExtensions()).map(extName => {
-        BrowserWindow.removeExtension(extName)
+      Object.keys(session.defaultSession.getAllExtensions()).map(extName => {
+        session.defaultSession.removeExtension(extName)
       })
     }
 
@@ -289,8 +289,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
             return closeWindow(w).then(() => { w = null as unknown as BrowserWindow })
           })
 
-          it('should run content script at document_start', () => {
-            addExtension('content-script-document-start')
+          it('should run content script at document_start', async () => {
+            await addExtension('content-script-document-start')
             w.webContents.once('dom-ready', async () => {
               const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
               expect(result).to.equal('red')
@@ -299,14 +299,14 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
           })
 
           it('should run content script at document_idle', async () => {
-            addExtension('content-script-document-idle')
+            await addExtension('content-script-document-idle')
             w.loadURL(url)
             const result = await w.webContents.executeJavaScript('document.body.style.backgroundColor')
             expect(result).to.equal('red')
           })
 
-          it('should run content script at document_end', () => {
-            addExtension('content-script-document-end')
+          it('should run content script at document_end', async () => {
+            await addExtension('content-script-document-end')
             w.webContents.once('did-finish-load', async () => {
               const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
               expect(result).to.equal('red')
