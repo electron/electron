@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 5e9dd2074cc7645eb09f016d48d894f9b890bb1b..fe1363db5cc84eb60c1e52a2beafe5e7a6bb542a 100644
+index 34f9ab3e9fefc868cdbdd810b3fea0f0f317394d..d108b77ffa5da154220d36f0309591a574c12523 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4403,6 +4403,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4400,6 +4400,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index 5e9dd2074cc7645eb09f016d48d894f9b890bb1b..fe1363db5cc84eb60c1e52a2beafe5e7
            &no_javascript_access);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 2d567fe521b1b086b1517c90a7841a3e497da511..e7572d8557becdd0250b0d41cd660a7e1d6be6b2 100644
+index abd2be4bc8e81a28209aa551f4435b9e8d37a249..f33766c98e1a28c89fc41f9e5cfd098ca6bc6150 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -305,6 +305,10 @@ struct CreateNewWindowParams {

@@ -71,7 +71,7 @@ index ce0b1ae151e22cde1f0a3127e08b14d4043567be..53d584727b5a7b4675165e23e35f1350
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 0ce2a4fec90f91e9098fb033f885c37221c3723a..a13fa98055f452f2db67bd00bc3f06c2479cab8a 100644
+index 8a1e34f3ccda8950e134f163820af1a7016f2e1c..89b58c11dcbab8cec581a58f47bdc52982694eae 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2137,6 +2137,16 @@ bool RenderFrameHostManager::InitRenderView(

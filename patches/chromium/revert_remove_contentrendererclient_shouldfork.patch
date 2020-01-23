@@ -6,10 +6,10 @@ Subject: Revert "Remove ContentRendererClient::ShouldFork."
 This reverts commit 6b068eb8ca4a3c7350bdafa22fc0cf0636ef8b74.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index 8b4ddc020612fd477fd0a7360c8be45661592847..fb0c05ef22c6d9e7ffe50315121f3b42c9a5bc69 100644
+index e03ad3a5a115383143d1324164dfd37f87c6f2f2..1c179e0cca8b0b1fc19971d1c9e93d59af7b9383 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1306,6 +1306,17 @@ bool ChromeContentRendererClient::ShouldFork(WebLocalFrame* frame,
+@@ -1291,6 +1291,17 @@ bool ChromeContentRendererClient::ShouldFork(WebLocalFrame* frame,
      return true;
  #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
  
@@ -28,7 +28,7 @@ index 8b4ddc020612fd477fd0a7360c8be45661592847..fb0c05ef22c6d9e7ffe50315121f3b42
  }
  
 diff --git a/content/renderer/render_view_browsertest.cc b/content/renderer/render_view_browsertest.cc
-index 6190e9567939d415afc9f905535eb4f6b5184b54..3fb17495c87be0bad4317b75bfe60c96b56527d5 100644
+index b9c20b110331d6cac758a1cbcc27e25d99cd932c..e2de48f1818b4c433c743b17ab4fccb82c534d62 100644
 --- a/content/renderer/render_view_browsertest.cc
 +++ b/content/renderer/render_view_browsertest.cc
 @@ -996,6 +996,73 @@ TEST_F(RenderViewImplTest, BeginNavigationForWebUI) {
