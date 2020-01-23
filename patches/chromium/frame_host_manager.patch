@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 21d141c7aac4a75165a607a4d5a99355a731792a..f4c36999f79f6c71d15d4f5a53a57541d9dd5172 100644
+index f6bef176125384d58793fe0b8dddcbfc16550268..bba7dc934cd43df41949ed5b2adc70e152b77627 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1209,6 +1209,8 @@ void NavigationRequest::BeginNavigation() {
+@@ -1212,6 +1212,8 @@ void NavigationRequest::BeginNavigation() {
      TRACE_EVENT_ASYNC_STEP_INTO0("navigation", "NavigationRequest", this,
                                   "ResponseStarted");
  
@@ -55,10 +55,10 @@ index 21d141c7aac4a75165a607a4d5a99355a731792a..f4c36999f79f6c71d15d4f5a53a57541
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index b512f07fee6209b887e773c22740b0f01eb81181..e3b5c26ad2b2d114b9fc8e7a9af8ac6430f42fff 100644
+index 5e37e9fd005fa5b653608669590910f448057e2c..14882ebb867b24e332306bdff65af68f7df0cf6f 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2135,6 +2135,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2128,6 +2128,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -75,7 +75,7 @@ index b512f07fee6209b887e773c22740b0f01eb81181..e3b5c26ad2b2d114b9fc8e7a9af8ac64
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2154,10 +2164,61 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2147,10 +2157,61 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -141,7 +141,7 @@ index b512f07fee6209b887e773c22740b0f01eb81181..e3b5c26ad2b2d114b9fc8e7a9af8ac64
  
    scoped_refptr<SiteInstance> dest_site_instance = GetSiteInstanceForNavigation(
        request->common_params().url, request->GetSourceSiteInstance(),
-@@ -2167,6 +2228,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2160,6 +2221,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
        request->GetRestoreType() != RestoreType::NONE, request->is_view_source(),
        request->WasServerRedirect());
  
