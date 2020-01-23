@@ -1089,19 +1089,17 @@ describe('chromium features', () => {
 
   describe('window.history', () => {
     describe('window.history.pushState', () => {
-      it('should push state after calling history.pushState() from the same url', (done) => {
+      it('should push state after calling history.pushState() from the same url', async () => {
         const w = new BrowserWindow({ show: false })
-        w.webContents.once('did-finish-load', async () => {
-          // History should have current page by now.
-          expect((w.webContents as any).length()).to.equal(1)
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'))
+        // History should have current page by now.
+        expect((w.webContents as any).length()).to.equal(1)
 
-          w.webContents.executeJavaScript('window.history.pushState({}, "")').then(() => {
-            // Initial page + pushed state
-            expect((w.webContents as any).length()).to.equal(2)
-            done()
-          })
-        })
-        w.loadURL('about:blank')
+        const waitCommit = emittedOnce(w.webContents, 'navigation-entry-commited')
+        w.webContents.executeJavaScript('window.history.pushState({}, "")')
+        await waitCommit
+        // Initial page + pushed state.
+        expect((w.webContents as any).length()).to.equal(2)
       })
     })
   })
