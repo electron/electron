@@ -88,8 +88,17 @@ build_script:
         if (Test-Path -Path $zipfile) {
           # file exists, unzip and then gclient sync
           7z x -y $zipfile -mmt=30 -aoa
-          # update external binaries
-          python src/electron/script/update-external-binaries.py
+          if (-not (Test-Path -Path "src\buildtools")) {
+            # the zip file must be corrupt - resync
+            $env:RUN_GCLIENT_SYNC="true"
+            if ($env:TARGET_ARCH -ne 'ia32') {
+              # only save on x64/woa to avoid contention saving
+              $env:SAVE_GCLIENT_SRC="true"
+            }
+          } else {
+            # update external binaries
+            python src/electron/script/update-external-binaries.py
+          }
         } else {    
           # file does not exist, gclient sync, then zip
           $env:RUN_GCLIENT_SYNC="true"
