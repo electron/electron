@@ -81,6 +81,8 @@ class TrayIcon {
   virtual void PopUpContextMenu(const gfx::Point& pos,
                                 AtomMenuModel* menu_model);
 
+  virtual void CloseContextMenu();
+
   // Set the context menu for this icon.
   virtual void SetContextMenu(AtomMenuModel* menu_model) = 0;
 
@@ -105,6 +107,10 @@ class TrayIcon {
   void NotifyDragEntered();
   void NotifyDragExited();
   void NotifyDragEnded();
+  void NotifyMouseUp(const gfx::Point& location = gfx::Point(),
+                     int modifiers = 0);
+  void NotifyMouseDown(const gfx::Point& location = gfx::Point(),
+                       int modifiers = 0);
   void NotifyMouseEntered(const gfx::Point& location = gfx::Point(),
                           int modifiers = 0);
   void NotifyMouseExited(const gfx::Point& location = gfx::Point(),

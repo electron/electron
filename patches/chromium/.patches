@@ -80,3 +80,4 @@ chore_use_electron_resources_not_chrome_for_spellchecker.patch
 add_trustedauthclient_to_urlloaderfactory.patch
 feat_allow_disabling_blink_scheduler_throttling_per_renderview.patch
 accessible_pane_view.patch
+fixme_grit_conflicts.patch

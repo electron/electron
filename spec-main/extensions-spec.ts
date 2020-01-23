@@ -210,6 +210,39 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       await emittedOnce(ipcMain, 'winning')
     })
   })
+
+  describe('deprecation shims', () => {
+    afterEach(() => {
+      (session.defaultSession as any).getAllExtensions().forEach((e: any) => {
+        (session.defaultSession as any).removeExtension(e.id)
+      })
+    })
+
+    it('loads an extension through BrowserWindow.addExtension', async () => {
+      BrowserWindow.addExtension(path.join(fixtures, 'extensions', 'red-bg'))
+      const w = new BrowserWindow({ show: false })
+      await w.loadURL(url)
+      const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
+      expect(bg).to.equal('red')
+    })
+
+    it('loads an extension through BrowserWindow.addDevToolsExtension', async () => {
+      BrowserWindow.addDevToolsExtension(path.join(fixtures, 'extensions', 'red-bg'))
+      const w = new BrowserWindow({ show: false })
+      await w.loadURL(url)
+      const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
+      expect(bg).to.equal('red')
+    })
+
+    it('removes an extension through BrowserWindow.removeExtension', async () => {
+      await (BrowserWindow.addExtension(path.join(fixtures, 'extensions', 'red-bg')) as any)
+      BrowserWindow.removeExtension('red-bg')
+      const w = new BrowserWindow({ show: false })
+      await w.loadURL(url)
+      const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
+      expect(bg).to.equal('')
+    })
+  })
 })
 
 ifdescribe(!process.electronBinding('features').isExtensionsEnabled())('chrome extensions', () => {

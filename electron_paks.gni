@@ -57,6 +57,7 @@ template("electron_extra_paks") {
       "$root_gen_dir/components/components_resources.pak",
       "$root_gen_dir/content/browser/tracing/tracing_resources.pak",
       "$root_gen_dir/content/content_resources.pak",
+      "$root_gen_dir/content/dev_ui_content_resources.pak",
       "$root_gen_dir/mojo/public/js/mojo_bindings_resources.pak",
       "$root_gen_dir/net/net_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/blink_resources.pak",
@@ -65,7 +66,8 @@ template("electron_extra_paks") {
     ]
     deps = [
       "//components/resources",
-      "//content:resources",
+      "//content:content_resources",
+      "//content:dev_ui_content_resources",
       "//content/browser/tracing:resources",
       "//electron:resources",
       "//mojo/public/js:resources",

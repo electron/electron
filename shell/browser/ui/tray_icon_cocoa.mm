@@ -131,6 +131,10 @@
 }
 
 - (void)mouseDown:(NSEvent*)event {
+  trayIcon_->NotifyMouseDown(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
+
   // Pass click to superclass to show menu. Custom mouseUp handler won't be
   // invoked.
   if (menuController_) {
@@ -142,6 +146,10 @@
 
 - (void)mouseUp:(NSEvent*)event {
   [[statusItem_ button] highlight:NO];
+
+  trayIcon_->NotifyMouseUp(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
 
   // If we are ignoring double click events, we should ignore the `clickCount`
   // value and immediately emit a click event.
@@ -183,6 +191,12 @@
     base::ScopedPumpMessagesInPrivateModes pump_private;
 
     [[statusItem_ button] performClick:self];
+  }
+}
+
+- (void)closeContextMenu {
+  if (menuController_) {
+    [menuController_ cancel];
   }
 }
 
@@ -305,6 +319,10 @@ void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
                      base::Unretained(menu_model)));
+}
+
+void TrayIconCocoa::CloseContextMenu() {
+  [status_item_view_ closeContextMenu];
 }
 
 void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {

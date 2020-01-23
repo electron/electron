@@ -18,7 +18,6 @@ class PrintRenderFrameHelperDelegate
 
  private:
   // printing::PrintRenderFrameHelper::Delegate:
-  bool CancelPrerender(content::RenderFrame* render_frame) override;
   blink::WebElement GetPdfElement(blink::WebLocalFrame* frame) override;
   bool IsPrintPreviewEnabled() override;
   bool OverridePrint(blink::WebLocalFrame* frame) override;

@@ -48,14 +48,10 @@ AtomExtensionSystem::AtomExtensionSystem(BrowserContext* browser_context)
 
 AtomExtensionSystem::~AtomExtensionSystem() = default;
 
-const Extension* AtomExtensionSystem::LoadExtension(
-    const base::FilePath& extension_dir) {
-  return extension_loader_->LoadExtension(extension_dir);
-}
-
-const Extension* AtomExtensionSystem::LoadApp(const base::FilePath& app_dir) {
-  NOTIMPLEMENTED() << "Attempted to load platform app in Electron";
-  return nullptr;
+void AtomExtensionSystem::LoadExtension(
+    const base::FilePath& extension_dir,
+    base::OnceCallback<void(const Extension*)> loaded) {
+  extension_loader_->LoadExtension(extension_dir, std::move(loaded));
 }
 
 void AtomExtensionSystem::FinishInitialization() {

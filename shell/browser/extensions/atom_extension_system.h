@@ -39,13 +39,8 @@ class AtomExtensionSystem : public ExtensionSystem {
 
   // Loads an unpacked extension from a directory. Returns the extension on
   // success, or nullptr otherwise.
-  const Extension* LoadExtension(const base::FilePath& extension_dir);
-
-  // Loads an unpacked platform app from a directory. Returns the extension on
-  // success, or nullptr otherwise.
-  // Currently this just calls LoadExtension, as apps are not loaded differently
-  // than other extensions. Use LaunchApp() to actually launch the loaded app.
-  const Extension* LoadApp(const base::FilePath& app_dir);
+  void LoadExtension(const base::FilePath& extension_dir,
+                     base::OnceCallback<void(const Extension*)> loaded);
 
   // Finish initialization for the shell extension system.
   void FinishInitialization();

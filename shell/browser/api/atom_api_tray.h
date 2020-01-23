@@ -60,6 +60,8 @@ class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
   void OnDragEntered() override;
   void OnDragExited() override;
   void OnDragEnded() override;
+  void OnMouseUp(const gfx::Point& location, int modifiers) override;
+  void OnMouseDown(const gfx::Point& location, int modifiers) override;
   void OnMouseEntered(const gfx::Point& location, int modifiers) override;
   void OnMouseExited(const gfx::Point& location, int modifiers) override;
   void OnMouseMoved(const gfx::Point& location, int modifiers) override;
@@ -76,6 +78,7 @@ class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
   void RemoveBalloon();
   void Focus();
   void PopUpContextMenu(gin_helper::Arguments* args);
+  void CloseContextMenu();
   void SetContextMenu(gin_helper::ErrorThrower thrower,
                       v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();

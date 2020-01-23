@@ -125,6 +125,14 @@ void Tray::OnMouseMoved(const gfx::Point& location, int modifiers) {
   EmitWithFlags("mouse-move", modifiers, location);
 }
 
+void Tray::OnMouseUp(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-up", modifiers, location);
+}
+
+void Tray::OnMouseDown(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-down", modifiers, location);
+}
+
 void Tray::OnDragEntered() {
   Emit("drag-enter");
 }
@@ -231,6 +239,10 @@ void Tray::PopUpContextMenu(gin_helper::Arguments* args) {
   tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
 }
 
+void Tray::CloseContextMenu() {
+  tray_icon_->CloseContextMenu();
+}
+
 void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
                           v8::Local<v8::Value> arg) {
   gin::Handle<Menu> menu;
@@ -268,6 +280,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("removeBalloon", &Tray::RemoveBalloon)
       .SetMethod("focus", &Tray::Focus)
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
+      .SetMethod("closeContextMenu", &Tray::CloseContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
       .SetMethod("getBounds", &Tray::GetBounds);
 }

@@ -33,8 +33,9 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
   // not have fatal OOM occur while this method executes, but it is better
   // than crashing when using IME.
   base::allocator::SetCallNewHandlerOnMallocFailure(false);
-  g_swizzle_imk_input_session->GetOriginalImplementation()(self, _cmd, range,
-                                                           attributes, block);
+  g_swizzle_imk_input_session
+      ->InvokeOriginal<void, NSRange, long long, void (^)(void)>(
+          self, _cmd, range, attributes, block);
   base::allocator::SetCallNewHandlerOnMallocFailure(true);
 }
 @end

@@ -34,7 +34,9 @@ class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
 
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
-  const Extension* LoadExtension(const base::FilePath& extension_dir);
+  void LoadExtension(
+      const base::FilePath& extension_dir,
+      base::OnceCallback<void(const Extension* extension)> loaded);
 
   // Starts reloading the extension. A keep-alive is maintained until the
   // reload succeeds/fails. If the extension is an app, it will be launched upon
@@ -53,6 +55,9 @@ class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
   // it. If the load failed, updates ShellKeepAliveRequester.
   void FinishExtensionReload(const ExtensionId& old_extension_id,
                              scoped_refptr<const Extension> extension);
+
+  void FinishExtensionLoad(base::OnceCallback<void(const Extension*)> loaded,
+                           scoped_refptr<const Extension> extension);
 
   // ExtensionRegistrar::Delegate:
   void PreAddExtension(const Extension* extension,
