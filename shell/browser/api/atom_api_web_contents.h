@@ -446,8 +446,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                      const GURL& validated_url) override;
   void DidFailLoad(content::RenderFrameHost* render_frame_host,
                    const GURL& validated_url,
-                   int error_code,
-                   const base::string16& error_description) override;
+                   int error_code) override;
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidStartNavigation(

@@ -983,13 +983,12 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& url,
-                              int error_code,
-                              const base::string16& error_description) {
+                              int error_code) {
   bool is_main_frame = !render_frame_host->GetParent();
   int frame_process_id = render_frame_host->GetProcess()->GetID();
   int frame_routing_id = render_frame_host->GetRoutingID();
-  Emit("did-fail-load", error_code, error_description, url, is_main_frame,
-       frame_process_id, frame_routing_id);
+  Emit("did-fail-load", error_code, "", url, is_main_frame, frame_process_id,
+       frame_routing_id);
 }
 
 void WebContents::DidStartLoading() {
