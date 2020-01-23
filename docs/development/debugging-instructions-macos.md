@@ -23,6 +23,11 @@ you prefer a graphical interface.
   They include LLDB, the default debugger in Xcode on Mac OS X. It supports
   debugging C, Objective-C and C++ on the desktop and iOS devices and simulator.
 
+* **.lldbinit**: Create or edit `~/.lldbinit` to allow Chromium code to be properly source-mapped.  
+   ```
+   command script import ~/electron/src/tools/lldb/lldbinit.py
+   ```
+
 ## Attaching to and Debugging Electron
 
 To start a debugging session, open up Terminal and start `lldb`, passing a non-release
@@ -104,6 +109,8 @@ Process 25244 stopped
    121 	int Browser::GetBadgeCount() {
    122 	  return badge_count_;
 ```
+
+**NOTE:** If you don't see source code when you think you should, you may not have added the `~/.lldbinit` file above.
 
 To finish debugging at this point, run `process continue`. You can also continue until a certain
 line is hit in this thread (`thread until 100`). This command will run the thread in the current
