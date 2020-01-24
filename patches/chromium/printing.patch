@@ -63,7 +63,7 @@ index ebffdb08d080eceb0ea9e96ee3ca7db627cfaf5e..bc00a7a00626cee17e5f5ea976f8248f
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 155d86fe79b99989c3f604aeaab13782f8e6631c..b60263e722b2604ed35a1ed10469ac91e22aaa33 100644
+index 155d86fe79b99989c3f604aeaab13782f8e6631c..6fd44945ea44ac80fb123456792f9622abdd316b 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -201,7 +201,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..b60263e722b2604ed35a1ed10469ac91
    printing_succeeded_ = false;
    return true;
  }
-@@ -618,14 +631,24 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -618,14 +631,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -211,8 +211,6 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..b60263e722b2604ed35a1ed10469ac91
 +      cb_str = printing_cancelled_ ? "cancelled" : "failed";
 +    std::move(callback_).Run(printing_succeeded_, cb_str);
 +  }
-+
-+  TerminatePrintJob(true);
 +
    if (!print_job_)
      return;
