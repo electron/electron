@@ -69,7 +69,7 @@ set chocolateyUseWindowsCompression='true'
 SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 
 REM Install nodejs python git and yarn needed dependencies
-choco install -y nodejs python2 git yarn vcredist140 windbg
+choco install -y nodejs python2 git yarn vcredist140 windows-sdk-10-version-1903-windbg
 cmd /c refreshenv
 SET PATH=C:\Python27\;C:\Python27\Scripts;%PATH%
 
