@@ -27,9 +27,9 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
-#include "shell/common/deprecate_util.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/gfx/skia_util.h"
@@ -1407,16 +1407,14 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   NSVisualEffectMaterial vibrancyType;
 
   if (type == "appearance-based") {
-    EmitDeprecationWarning(
-        env, "NSVisualEffectMaterialAppearanceBased" + dep_warn, "electron");
+    EmitWarning(env, "NSVisualEffectMaterialAppearanceBased" + dep_warn,
+                "electron");
     vibrancyType = NSVisualEffectMaterialAppearanceBased;
   } else if (type == "light") {
-    EmitDeprecationWarning(env, "NSVisualEffectMaterialLight" + dep_warn,
-                           "electron");
+    EmitWarning(env, "NSVisualEffectMaterialLight" + dep_warn, "electron");
     vibrancyType = NSVisualEffectMaterialLight;
   } else if (type == "dark") {
-    EmitDeprecationWarning(env, "NSVisualEffectMaterialDark" + dep_warn,
-                           "electron");
+    EmitWarning(env, "NSVisualEffectMaterialDark" + dep_warn, "electron");
     vibrancyType = NSVisualEffectMaterialDark;
   } else if (type == "titlebar") {
     vibrancyType = NSVisualEffectMaterialTitlebar;
@@ -1439,13 +1437,13 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       vibrancyType = static_cast<NSVisualEffectMaterial>(7);
     } else if (type == "medium-light") {
       // NSVisualEffectMaterialMediumLight
-      EmitDeprecationWarning(
-          env, "NSVisualEffectMaterialMediumLight" + dep_warn, "electron");
+      EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
+                  "electron");
       vibrancyType = static_cast<NSVisualEffectMaterial>(8);
     } else if (type == "ultra-dark") {
       // NSVisualEffectMaterialUltraDark
-      EmitDeprecationWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn,
-                             "electron");
+      EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn,
+                  "electron");
       vibrancyType = static_cast<NSVisualEffectMaterial>(9);
     }
   }

@@ -26,9 +26,9 @@
 #include "shell/browser/mac/atom_application.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/ui/cocoa/NSColor+Hex.h"
-#include "shell/common/deprecate_util.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/process_util.h"
 #include "ui/native_theme/native_theme.h"
 
 namespace gin {
@@ -504,7 +504,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   NSColor* sysColor = nil;
   if (color == "alternate-selected-control-text") {
     sysColor = [NSColor alternateSelectedControlTextColor];
-    EmitDeprecationWarning(
+    EmitWarning(
         node::Environment::GetCurrent(thrower.isolate()),
         "'alternate-selected-control-text' is deprecated as an input to "
         "getColor.  Use 'selected-content-background' instead.",

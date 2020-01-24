@@ -63,6 +63,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/process_util.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -619,13 +620,17 @@ v8::Local<v8::Promise> Session::LoadExtension(
       extension_path,
       base::BindOnce(
           [](gin_helper::Promise<const extensions::Extension*> promise,
-             const extensions::Extension* extension) {
+             const extensions::Extension* extension,
+             const std::string& error_msg) {
             if (extension) {
+              if (!error_msg.empty()) {
+                node::Environment* env =
+                    node::Environment::GetCurrent(v8::Isolate::GetCurrent());
+                EmitWarning(env, error_msg, "ExtensionLoadWarning");
+              }
               promise.Resolve(extension);
             } else {
-              // TODO(nornagon): plumb through error message from extension
-              // loader.
-              promise.RejectWithErrorMessage("Failed to load extension");
+              promise.RejectWithErrorMessage(error_msg);
             }
           },
           std::move(promise)));
