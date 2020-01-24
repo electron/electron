@@ -379,20 +379,16 @@ void Browser::ShowAboutPanel() {
   // Credits must be a NSAttributedString instead of NSString
   NSString* credits = (NSString*)options[@"Credits"];
   if (credits != nil) {
-    // Check if app is running in dark mode
-    NSString* mode = [[NSUserDefaults standardUserDefaults]
-        stringForKey:@"AppleInterfaceStyle"];
-    BOOL isDarkMode = [mode isEqualToString:@"Dark"];
+    base::scoped_nsobject<NSMutableDictionary> mutable_options(
+        [options mutableCopy]);
+    base::scoped_nsobject<NSAttributedString> creditString(
+        [[NSAttributedString alloc]
+            initWithString:credits
+                attributes:@{
+                  NSForegroundColorAttributeName : [NSColor textColor]
+                }]);
 
-    // Set color of credits depending on if we're in dark mode or not.
-    NSColor* color = isDarkMode ? [NSColor whiteColor] : [NSColor blackColor];
-    NSAttributedString* creditString = [[NSAttributedString alloc]
-        initWithString:credits
-            attributes:@{NSForegroundColorAttributeName : color}];
-
-    // Cast back to NSDictionary with updated options
-    NSMutableDictionary* mutable_options = [options mutableCopy];
-    mutable_options[@"Credits"] = creditString;
+    [mutable_options setValue:creditString forKey:@"Credits"];
     options = [NSDictionary dictionaryWithDictionary:mutable_options];
   }
 
