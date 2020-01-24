@@ -62,7 +62,6 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
   icon_data.uFlags |= NIF_MESSAGE;
   icon_data.uCallbackMessage = message_id_;
   BOOL result = Shell_NotifyIcon(NIM_ADD, &icon_data);
-
   // This can happen if the explorer process isn't running when we try to
   // create the icon for some reason (for example, at startup).
   if (!result)
@@ -150,8 +149,7 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   wcsncpy_s(icon_data.szTip, base::UTF8ToUTF16(tool_tip).c_str(), _TRUNCATE);
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
-    LOG(WARNING) << "Unable to set tooltip for status tray icon. If a guid is "
-                    "provided then ensure the calling binary is code signed.";
+    LOG(WARNING) << "Unable to set tooltip for status tray icon";
 }
 
 void NotifyIcon::DisplayBalloon(const BalloonOptions& options) {
@@ -175,8 +173,7 @@ void NotifyIcon::DisplayBalloon(const BalloonOptions& options) {
 
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
-    LOG(WARNING) << "Unable to create status tray balloon. If a guid is "
-                    "provided then ensure teh calling binary is code signed.";
+    LOG(WARNING) << "Unable to create status tray balloon.";
 }
 
 void NotifyIcon::RemoveBalloon() {
@@ -186,8 +183,7 @@ void NotifyIcon::RemoveBalloon() {
 
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
-    LOG(WARNING) << "Unable to remove status tray balloon. If a guid is "
-                    "provided then ensure the calling binary is code signed.";
+    LOG(WARNING) << "Unable to remove status tray balloon.";
 }
 
 void NotifyIcon::Focus() {
@@ -196,8 +192,7 @@ void NotifyIcon::Focus() {
 
   BOOL result = Shell_NotifyIcon(NIM_SETFOCUS, &icon_data);
   if (!result)
-    LOG(WARNING) << "Unable to focus tray icon. If a guid is provided then "
-                    "ensure the calling binary is code signed.";
+    LOG(WARNING) << "Unable to focus tray icon.";
 }
 
 void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
@@ -251,16 +246,15 @@ void NotifyIcon::SetContextMenu(AtomMenuModel* menu_model) {
 gfx::Rect NotifyIcon::GetBounds() {
   NOTIFYICONIDENTIFIER icon_id;
   memset(&icon_id, 0, sizeof(NOTIFYICONIDENTIFIER));
+  icon_id.uID = icon_id_;
   icon_id.hWnd = window_;
   icon_id.cbSize = sizeof(NOTIFYICONIDENTIFIER);
-  icon_id.uID = icon_id_;
   if (is_using_guid_) {
     icon_id.guidItem = guid_;
   }
 
   RECT rect = {0};
   Shell_NotifyIconGetRect(&icon_id, &rect);
-
   return display::win::ScreenWin::ScreenToDIPRect(window_, gfx::Rect(rect));
 }
 
