@@ -81,6 +81,8 @@ class TrayIcon {
   virtual void PopUpContextMenu(const gfx::Point& pos,
                                 AtomMenuModel* menu_model);
 
+  virtual void CloseContextMenu();
+
   // Set the context menu for this icon.
   virtual void SetContextMenu(AtomMenuModel* menu_model) = 0;
 

@@ -44,6 +44,7 @@
 #include "content/public/common/web_preferences.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
+#include "extensions/browser/extension_navigation_ui_data.h"
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/common/constants.h"
 #include "net/base/escape.h"
@@ -1093,6 +1094,17 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote;
   *factory_receiver = target_factory_remote.InitWithNewPipeAndPassReceiver();
 
+  // Required by WebRequestInfoInitParams.
+  //
+  // Note that in Electron we allow webRequest to capture requests sent from
+  // browser process, so creation of |navigation_ui_data| is different from
+  // Chromium which only does for renderer-initialized navigations.
+  std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data;
+  if (navigation_id.has_value()) {
+    navigation_ui_data =
+        std::make_unique<extensions::ExtensionNavigationUIData>();
+  }
+
   mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
       header_client_receiver;
   if (header_client)
@@ -1100,7 +1112,8 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
 
   new ProxyingURLLoaderFactory(
       web_request.get(), protocol->intercept_handlers(), browser_context,
-      render_process_id, std::move(navigation_id), std::move(proxied_receiver),
+      render_process_id, std::move(navigation_ui_data),
+      std::move(navigation_id), std::move(proxied_receiver),
       std::move(target_factory_remote), std::move(header_client_receiver),
       type);
 

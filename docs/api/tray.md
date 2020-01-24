@@ -277,6 +277,10 @@ be shown instead of the tray icon's context menu.
 
 The `position` is only available on Windows, and it is (0, 0) by default.
 
+#### `tray.closeContextMenu()` _macOS_ _Windows_
+
+Closes an open context menu, as set by `tray.setContextMenu()`.
+
 #### `tray.setContextMenu(menu)`
 
 * `menu` Menu | null

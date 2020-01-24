@@ -63,6 +63,18 @@ describe('tray module', () => {
     })
   })
 
+  describe('tray.closeContextMenu()', () => {
+    ifit(process.platform === 'win32')('does not crash when called more than once', function (done) {
+      tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]))
+      setTimeout(() => {
+        tray.closeContextMenu()
+        tray.closeContextMenu()
+        done()
+      })
+      tray.popUpContextMenu()
+    })
+  })
+
   describe('tray.getBounds()', () => {
     afterEach(() => { tray.destroy() })
 

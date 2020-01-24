@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 
+from lib.config import get_target_arch
 from lib.util import get_electron_branding, rm_rf, scoped_cwd
 
 PROJECT_NAME = get_electron_branding()['project_name']
@@ -28,6 +29,8 @@ def main():
         mkargs = [ get_binary_path('mksnapshot', app_path), \
                     SNAPSHOT_SOURCE, '--startup_blob', 'snapshot_blob.bin', \
                     '--no-native-code-counters', '--turbo_instruction_scheduling' ]
+        if get_target_arch() == 'ia32':
+          mkargs.append('--target_arch=x86')
         subprocess.check_call(mkargs)
         print('ok mksnapshot successfully created snapshot_blob.bin.')
         context_snapshot = 'v8_context_snapshot.bin'
