@@ -564,6 +564,13 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
   * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
   * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
   * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
+  * `scaleFactor` Number (optional) - The scale factor of the web page.
+  * `headerFooter` Record<string, string> (optional) - the header and footer for the PDF.
+    * `title` String - The title for the PDF header.
+    * `url` String - the url for the PDF footer.
+  * `pageRanges` Record<string, number> (optional) - The page range to print.
+    * `from` Number - the start page.
+    * `to` Number - the end page.
 
 Returns `Promise<Uint8Array>` - Resolves with the generated PDF data.
 

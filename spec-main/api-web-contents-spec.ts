@@ -1414,17 +1414,40 @@ describe('webContents module', () => {
   })
 
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
-    afterEach(closeAllWindows)
-    it('can print to PDF', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+    let w: BrowserWindow
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
+    })
+
+    afterEach(closeAllWindows)
+
+    it('rejects on incorrectly typed parameters', async () => {
+      const badTypes = {
+        marginsType: 'terrible',
+        scaleFactor: 'not-a-number',
+        landscape: [],
+        pageRanges: { 'oops': 'im-not-the-right-key' },
+        headerFooter: '123',
+        printSelectionOnly: 1,
+        printBackground: 2,
+        pageSize: 'IAmAPageSize'
+      }
+
+      // These will hard crash in Chromium unless we type-check
+      for (const [key, value] of Object.entries(badTypes)) {
+        const param = { [key]: value }
+        await expect(w.webContents.printToPDF(param)).to.eventually.be.rejected()
+      }
+    })
+
+    it('can print to PDF', async () => {
       const data = await w.webContents.printToPDF({})
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
     })
 
     it('does not crash when called multiple times', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
-      await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
       const promises = []
       for (let i = 0; i < 2; i++) {
         promises.push(w.webContents.printToPDF({}))
