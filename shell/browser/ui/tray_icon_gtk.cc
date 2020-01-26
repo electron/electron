@@ -38,8 +38,8 @@ void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
 }
 
 void TrayIconGtk::SetContextMenu(AtomMenuModel* menu_model) {
-  icon_->UpdatePlatformContextMenu(menu_model_);
   menu_model_ = menu_model;
+  icon_->UpdatePlatformContextMenu(menu_model_);
 }
 
 const gfx::ImageSkia& TrayIconGtk::GetImage() const {
