@@ -61,7 +61,7 @@ index 13f9d7af3ae796ecec3a9189aa59f4b20171fd7a..9c35b294340cce070a9f428dac6aa587
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index da3383624ff83c20fd94578a80e94d00689bfefc..fcf7264c590f72b26cbcea328cc1f0e718a8c791 100644
+index da3383624ff83c20fd94578a80e94d00689bfefc..aa61f780aafb205c33009dc84c2d237b622994ae 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -171,16 +171,20 @@ index da3383624ff83c20fd94578a80e94d00689bfefc..fcf7264c590f72b26cbcea328cc1f0e7
        NOTREACHED();
        break;
      }
-@@ -542,8 +551,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -542,8 +551,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
 -  // Disconnect the current |print_job_|.
 -  DisconnectFromCurrentPrintJob();
++  if (callback_.is_null()) {
++    // Disconnect the current |print_job_| only when calling window.print()
++    DisconnectFromCurrentPrintJob();
++  }
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetRenderViewHost() ||
-@@ -557,9 +564,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -557,9 +568,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  #if defined(OS_CHROMEOS)
    print_job_->SetSource(PrintJob::Source::PRINT_PREVIEW, /*source_id=*/"");
  #endif  // defined(OS_CHROMEOS)
@@ -190,7 +194,7 @@ index da3383624ff83c20fd94578a80e94d00689bfefc..fcf7264c590f72b26cbcea328cc1f0e7
    printing_succeeded_ = false;
    return true;
  }
-@@ -608,6 +612,13 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -608,6 +616,13 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -204,7 +208,7 @@ index da3383624ff83c20fd94578a80e94d00689bfefc..fcf7264c590f72b26cbcea328cc1f0e7
    if (!print_job_)
      return;
  
-@@ -617,8 +628,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -617,8 +632,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
      rfh->Send(msg.release());
    }
  
@@ -216,7 +220,16 @@ index da3383624ff83c20fd94578a80e94d00689bfefc..fcf7264c590f72b26cbcea328cc1f0e7
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -688,6 +700,9 @@ bool PrintViewManagerBase::PrintNowInternal(
+@@ -654,7 +670,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+ }
+ 
+ bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
+-  if (print_job_)
++  if (print_job_ && print_job_->document())
+     return true;
+ 
+   if (!cookie) {
+@@ -688,6 +704,9 @@ bool PrintViewManagerBase::PrintNowInternal(
    // Don't print / print preview interstitials or crashed tabs.
    if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
      return false;
