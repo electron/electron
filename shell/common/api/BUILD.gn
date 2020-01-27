@@ -3,6 +3,7 @@ import("//mojo/public/tools/bindings/mojom.gni")
 mojom("mojo") {
   sources = [
     "api.mojom",
+    "native_types.mojom",
   ]
 
   public_deps = [

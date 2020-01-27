@@ -62,7 +62,8 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
   void Send(bool internal,
             const std::string& channel,
             const base::ListValue& arguments) {
-    electron_browser_ptr_->Message(internal, channel, arguments.Clone());
+    electron_browser_ptr_->Message(
+        internal, channel, base::ListValue(arguments.Clone().GetList()));
   }
 
   v8::Local<v8::Promise> Invoke(mate::Arguments* args,
@@ -72,7 +73,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     auto handle = p.GetHandle();
 
     electron_browser_ptr_->Invoke(
-        channel, arguments.Clone(),
+        channel, base::ListValue(arguments.Clone().GetList()),
         base::BindOnce([](electron::util::Promise p,
                           base::Value result) { p.Resolve(result); },
                        std::move(p)));
@@ -85,13 +86,15 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
               int32_t web_contents_id,
               const std::string& channel,
               const base::ListValue& arguments) {
-    electron_browser_ptr_->MessageTo(internal, send_to_all, web_contents_id,
-                                     channel, arguments.Clone());
+    electron_browser_ptr_->MessageTo(
+        internal, send_to_all, web_contents_id, channel,
+        base::ListValue(arguments.Clone().GetList()));
   }
 
   void SendToHost(const std::string& channel,
                   const base::ListValue& arguments) {
-    electron_browser_ptr_->MessageHost(channel, arguments.Clone());
+    electron_browser_ptr_->MessageHost(
+        channel, base::ListValue(arguments.Clone().GetList()));
   }
 
   base::Value SendSync(bool internal,
@@ -99,23 +102,9 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
                        const base::ListValue& arguments) {
     base::Value result;
 
-    electron_browser_ptr_->MessageSync(internal, channel, arguments.Clone(),
-                                       &result);
-
-    // // A task is posted to a worker thread to execute the request so that
-    // // this thread may block on a waitable event. It is safe to pass raw
-    // // pointers to |result| and |response_received_event| as this stack frame
-    // // will survive until the request is complete.
-
-    // base::WaitableEvent response_received_event;
-    // task_runner_->PostTask(
-    //     FROM_HERE,
-    //     base::BindOnce(&IPCRenderer::SendMessageSyncOnWorkerThread,
-    //                               base::Unretained(this),
-    //                               base::Unretained(&response_received_event),
-    //                               base::Unretained(&result), internal,
-    //                               channel, arguments.Clone()));
-    // response_received_event.Wait();
+    electron_browser_ptr_->MessageSync(
+        internal, channel, base::ListValue(arguments.Clone().GetList()),
+        &result);
     return result;
   }
 

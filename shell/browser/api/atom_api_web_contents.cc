@@ -1023,36 +1023,39 @@ void WebContents::OnElectronBrowserConnectionError() {
 
 void WebContents::Message(bool internal,
                           const std::string& channel,
-                          base::Value arguments) {
+                          const base::ListValue& arguments) {
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
-                 internal, channel, std::move(arguments));
+                 internal, channel,
+                 base::Value(std::move(arguments.GetList())));
 }
 
 void WebContents::Invoke(const std::string& channel,
-                         base::Value arguments,
+                         const base::ListValue& arguments,
                          InvokeCallback callback) {
   // webContents.emit('-ipc-invoke', new Event(), channel, arguments);
   EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
-                 std::move(callback), channel, std::move(arguments));
+                 std::move(callback), channel,
+                 base::Value(std::move(arguments.GetList())));
 }
 
 void WebContents::MessageSync(bool internal,
                               const std::string& channel,
-                              base::Value arguments,
+                              const base::ListValue& arguments,
                               MessageSyncCallback callback) {
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
   EmitWithSender("-ipc-message-sync", bindings_.dispatch_context(),
-                 std::move(callback), internal, channel, std::move(arguments));
+                 std::move(callback), internal, channel,
+                 base::Value(std::move(arguments.GetList())));
 }
 
 void WebContents::MessageTo(bool internal,
                             bool send_to_all,
                             int32_t web_contents_id,
                             const std::string& channel,
-                            base::Value arguments) {
+                            const base::ListValue& arguments) {
   auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
       isolate(), web_contents_id);
 
@@ -1064,10 +1067,11 @@ void WebContents::MessageTo(bool internal,
 }
 
 void WebContents::MessageHost(const std::string& channel,
-                              base::Value arguments) {
+                              const base::ListValue& arguments) {
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
-                 base::nullopt, channel, std::move(arguments));
+                 base::nullopt, channel,
+                 base::Value(std::move(arguments.GetList())));
 }
 
 void WebContents::UpdateDraggableRegions(
@@ -1966,7 +1970,8 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(internal, false, channel, args.Clone(), sender_id);
+    electron_ptr->Message(internal, false, channel,
+                          base::ListValue(args.Clone().GetList()), sender_id);
   }
   return true;
 }
@@ -1988,7 +1993,8 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   mojom::ElectronRendererAssociatedPtr electron_ptr;
   (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(internal, send_to_all, channel, args.Clone(),
+  electron_ptr->Message(internal, send_to_all, channel,
+                        base::ListValue(args.Clone().GetList()),
                         0 /* sender_id */);
   return true;
 }

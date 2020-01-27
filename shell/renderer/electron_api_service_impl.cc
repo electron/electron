@@ -131,7 +131,7 @@ void ElectronApiServiceImpl::OnConnectionError() {
 void ElectronApiServiceImpl::Message(bool internal,
                                      bool send_to_all,
                                      const std::string& channel,
-                                     base::Value arguments,
+                                     const base::ListValue& arguments,
                                      int32_t sender_id) {
   // Don't handle browser messages before document element is created.
   //

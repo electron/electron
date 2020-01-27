@@ -28,7 +28,7 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   void Message(bool internal,
                bool send_to_all,
                const std::string& channel,
-               base::Value arguments,
+               const base::ListValue& arguments,
                int32_t sender_id) override;
   void UpdateCrashpadPipeName(const std::string& pipe_name) override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,

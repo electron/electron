@@ -509,20 +509,21 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // mojom::ElectronBrowser
   void Message(bool internal,
                const std::string& channel,
-               base::Value arguments) override;
+               const base::ListValue& arguments) override;
   void Invoke(const std::string& channel,
-              base::Value arguments,
+              const base::ListValue& arguments,
               InvokeCallback callback) override;
   void MessageSync(bool internal,
                    const std::string& channel,
-                   base::Value arguments,
+                   const base::ListValue& arguments,
                    MessageSyncCallback callback) override;
   void MessageTo(bool internal,
                  bool send_to_all,
                  int32_t web_contents_id,
                  const std::string& channel,
-                 base::Value arguments) override;
-  void MessageHost(const std::string& channel, base::Value arguments) override;
+                 const base::ListValue& arguments) override;
+  void MessageHost(const std::string& channel,
+                   const base::ListValue& arguments) override;
   void UpdateDraggableRegions(
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;

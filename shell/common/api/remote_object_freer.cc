@@ -79,7 +79,7 @@ void RemoteObjectFreer::RunDestructor() {
   mojom::ElectronBrowserPtr electron_ptr;
   render_frame->GetRemoteInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(true, channel, args.Clone());
+  electron_ptr->Message(true, channel, base::ListValue(args.Clone().GetList()));
 }
 
 }  // namespace electron
