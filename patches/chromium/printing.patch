@@ -201,7 +201,7 @@ index 3d026cd11aa2c0b009812317995cd4e02161251e..2778bfd64270a2e93153f39e849316ed
    printing_succeeded_ = false;
    return true;
  }
-@@ -614,14 +627,24 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -614,14 +627,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -211,8 +211,6 @@ index 3d026cd11aa2c0b009812317995cd4e02161251e..2778bfd64270a2e93153f39e849316ed
 +      cb_str = printing_cancelled_ ? "cancelled" : "failed";
 +    std::move(callback_).Run(printing_succeeded_, cb_str);
 +  }
-+
-+  TerminatePrintJob(true);
 +
    if (!print_job_)
      return;
