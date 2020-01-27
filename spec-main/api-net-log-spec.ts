@@ -161,7 +161,7 @@ describe('netLog module', () => {
         }
       })
 
-    await emittedOnce(appProcess, 'close')
+    await emittedOnce(appProcess, 'exit')
     expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists')
   })
 })
