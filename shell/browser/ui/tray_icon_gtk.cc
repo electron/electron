@@ -4,9 +4,9 @@
 
 #include "shell/browser/ui/tray_icon_gtk.h"
 
-#include <algorithm>
-
 #include <gtk/gtk.h>
+
+#include <algorithm>
 
 #include "base/optional.h"
 #include "base/strings/stringprintf.h"
