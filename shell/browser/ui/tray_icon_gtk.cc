@@ -47,8 +47,9 @@ gfx::ImageSkia GetIconFromImage(const gfx::Image& image) {
   if (!size.IsEmpty() &&
       ((size.width() > max_size) || (size.height() > max_size))) {
     const double ratio =
-        max_size / double(std::max(size.width(), size.height()));
-    size = gfx::Size(int(ratio * size.width()), int(ratio * size.height()));
+        max_size / static_cast<double>(std::max(size.width(), size.height()));
+    size = gfx::Size(static_cast<int>(ratio * size.width()),
+                     static_cast<int>(ratio * size.height()));
     icon = gfx::ImageSkiaOperations::CreateResizedImage(
         icon, skia::ImageOperations::RESIZE_BEST, size);
   }
