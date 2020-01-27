@@ -23,31 +23,18 @@ TrayIconGtk::TrayIconGtk() = default;
 
 TrayIconGtk::~TrayIconGtk() = default;
 
-int GetPreferredTrayIconPixelSize() {
-  static base::Optional<int> pixels;
-
-  if (!pixels) {
-    static constexpr GtkIconSize icon_size = GTK_ICON_SIZE_LARGE_TOOLBAR;
-    static constexpr int fallback_px = 22;
-    int px;
-    pixels = gtk_icon_size_lookup(icon_size, &px, nullptr) ? px : fallback_px;
-  }
-
-  return *pixels;
-}
-
 gfx::ImageSkia GetIconFromImage(const gfx::Image& image) {
   auto icon = image.AsImageSkia();
   auto size = icon.size();
 
-  // Ensure that the icon is no larger than the preferred size.
-  // Works around (GNOME shell?) issue which warps icon if icon exceeds that
-  // size. #21445
-  const int max_size = GetPreferredTrayIconPixelSize();
-  if (!size.IsEmpty() &&
-      ((size.width() > max_size) || (size.height() > max_size))) {
-    const double ratio =
-        max_size / static_cast<double>(std::max(size.width(), size.height()));
+  // Systray icons are historically 22 pixels tall, e.g. on Ubuntu GNOME,
+  // KDE, and xfce. Taller icons are causing incorrect sizing issues -- e.g.
+  // a 1x1 icon -- so fnow, pin the height manually. Recent comments at
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=419673,
+  // indicate this might be an active upstream issue too.
+  static constexpr int DESIRED_HEIGHT = 22;
+  if ((size.height() != 0) && (size.height() != DESIRED_HEIGHT)) {
+    const double ratio = DESIRED_HEIGHT / static_cast<double>(size.height());
     size = gfx::Size(static_cast<int>(ratio * size.width()),
                      static_cast<int>(ratio * size.height()));
     icon = gfx::ImageSkiaOperations::CreateResizedImage(
