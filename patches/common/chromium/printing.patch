@@ -52,7 +52,7 @@ index 691c476708b6bcef9f231bc990b81dd06c4c0cc4..5ec4e16b833735dccbe834e6efdc92d7
  
  void PrintJobWorker::GetSettingsWithUI(
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 309477ec68ed90f4d0229d92f37a6456e779c51c..c3047d2340e11bd97c1927eb6ec18fe4726ff204 100644
+index 309477ec68ed90f4d0229d92f37a6456e779c51c..6ec8bdc74f31f324bed7f4dc078748fbb1a9b157 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -161,17 +161,20 @@ index 309477ec68ed90f4d0229d92f37a6456e779c51c..c3047d2340e11bd97c1927eb6ec18fe4
        NOTREACHED();
        break;
      }
-@@ -532,9 +540,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(PrinterQuery* query) {
+@@ -532,8 +540,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(PrinterQuery* query) {
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
 -  // Disconnect the current |print_job_|.
 -  DisconnectFromCurrentPrintJob();
--
++  if (callback_.is_null()) {
++    // Disconnect the current |print_job_| only when calling window.print()
++    DisconnectFromCurrentPrintJob();
++  }
+ 
    // We can't print if there is no renderer.
    if (!web_contents()->GetRenderViewHost() ||
-       !web_contents()->GetRenderViewHost()->IsRenderViewLive()) {
-@@ -594,6 +599,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -594,6 +604,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -181,7 +184,7 @@ index 309477ec68ed90f4d0229d92f37a6456e779c51c..c3047d2340e11bd97c1927eb6ec18fe4
    if (!print_job_)
      return;
  
-@@ -603,8 +611,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -603,8 +616,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
      rfh->Send(msg.release());
    }
  
@@ -193,7 +196,16 @@ index 309477ec68ed90f4d0229d92f37a6456e779c51c..c3047d2340e11bd97c1927eb6ec18fe4
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -678,6 +687,10 @@ bool PrintViewManagerBase::PrintNowInternal(
+@@ -644,7 +658,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+ }
+ 
+ bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
+-  if (print_job_)
++  if (print_job_ && print_job_->document())
+     return true;
+ 
+   if (!cookie) {
+@@ -678,6 +692,10 @@ bool PrintViewManagerBase::PrintNowInternal(
    // Don't print / print preview interstitials or crashed tabs.
    if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
      return false;
