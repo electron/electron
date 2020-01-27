@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include <gtk/gtk.h>
+
 #include "base/optional.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -14,8 +16,6 @@
 #include "shell/common/application_info.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia_operations.h"
-
-#include <gtk/gtk.h>
 
 namespace electron {
 
