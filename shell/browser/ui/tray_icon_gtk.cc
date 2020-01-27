@@ -25,9 +25,8 @@ gfx::ImageSkia GetIconFromImage(const gfx::Image& image) {
 
   // Systray icons are historically 22 pixels tall, e.g. on Ubuntu GNOME,
   // KDE, and xfce. Taller icons are causing incorrect sizing issues -- e.g.
-  // a 1x1 icon -- so fnow, pin the height manually. Recent comments at
-  // https://bugs.chromium.org/p/chromium/issues/detail?id=419673,
-  // indicate this might be an active upstream issue too.
+  // a 1x1 icon -- so for now, pin the height manually. Similar behavior to
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1042098 ?
   static constexpr int DESIRED_HEIGHT = 22;
   if ((size.height() != 0) && (size.height() != DESIRED_HEIGHT)) {
     const double ratio = DESIRED_HEIGHT / static_cast<double>(size.height());
