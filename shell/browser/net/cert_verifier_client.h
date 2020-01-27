@@ -17,6 +17,7 @@ struct VerifyRequestParams {
   std::string default_result;
   int error_code;
   scoped_refptr<net::X509Certificate> certificate;
+  scoped_refptr<net::X509Certificate> validated_certificate;
 
   VerifyRequestParams();
   VerifyRequestParams(const VerifyRequestParams&);
