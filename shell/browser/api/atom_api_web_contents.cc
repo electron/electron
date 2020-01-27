@@ -1304,7 +1304,7 @@ void WebContents::WebContentsDestroyed() {
 
 void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& details) {
-  Emit("navigation-entry-commited", details.entry->GetURL(),
+  Emit("navigation-entry-committed", details.entry->GetURL(),
        details.is_same_document, details.did_replace_entry);
 }
 
