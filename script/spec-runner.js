@@ -35,9 +35,8 @@ const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
 
 const runners = new Map([
   ['main', { description: 'Main process specs', run: runMainProcessElectronTests }],
-  ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }]
-  // TODO(codebytere): refactor native tests to only depend on what we need
-  /* ['native', { description: 'Native specs', run: runNativeElectronTests }] */
+  ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }],
+  ['native', { description: 'Native specs', run: runNativeElectronTests }]
 ])
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
