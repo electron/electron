@@ -8,10 +8,10 @@ and respond with custom instance. Also allows for us to at-runtime
 enable or disable this patch.
 
 diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_instance.cc
-index 1e6b4b91485ae9a528beed77b12f6532e5968c07..c4a9db033bb56d097c4ce84ecd195e7bf4d7afd4 100644
+index f49ec7e1456751e506609a797f0b3b97b3e86a56..c7198c08d9292981d6fba12d5941f606c03b5d35 100644
 --- a/content/browser/browsing_instance.cc
 +++ b/content/browser/browsing_instance.cc
-@@ -83,6 +83,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
+@@ -84,6 +84,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
    return instance;
  }
  
@@ -42,7 +42,7 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index ce0b1ae151e22cde1f0a3127e08b14d4043567be..53d584727b5a7b4675165e23e35f13500a80ddd0 100644
+index 0fd355a218cc454380c9e48ae299872484078f4d..8824293926782106cb7f8fb1eb76adda6963b97d 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1198,6 +1198,24 @@ void NavigationRequest::BeginNavigation() {
@@ -167,10 +167,10 @@ index 8a1e34f3ccda8950e134f163820af1a7016f2e1c..89b58c11dcbab8cec581a58f47bdc529
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index f16abf44e24c7173d721352c53241228fe72a3e4..3d33d492b8cf4d79b4c81dac53d30e03c7dddea3 100644
+index 1815638647c48c5337749920309d7f48bfce21ee..b98b73993ca82891311a70c1c281788eafddb8a7 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -413,6 +413,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
+@@ -430,6 +430,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
    return browsing_instance_->HasSiteInstance(url);
  }
  
