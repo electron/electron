@@ -18,21 +18,27 @@ if (process.platform === 'linux') {
    *
    * So here we watch for 'shutdown' listeners to be added or removed and
    * set or unset our shutdown delay lock accordingly. */
-  const { app } = require('electron')
-  app.once('ready', (): void => {
+  const onceReady = (): void => {
     powerMonitor.on('newListener', (event: string) => {
-      // if first shutdown listener added
+      // whenever the listener count is incremented to one...
       if (event === 'shutdown' && powerMonitor.listenerCount('shutdown') === 0) {
         powerMonitor.blockShutdown()
       }
     })
     powerMonitor.on('removeListener', (event: string) => {
-      // if last shutdown listener removed
+      // whenever the listener count is decremented to zero...
       if (event === 'shutdown' && powerMonitor.listenerCount('shutdown') === 0) {
         powerMonitor.unblockShutdown()
       }
     })
-  })
+  }
+
+  const { app } = require('electron')
+  if (app.isReady()) {
+    onceReady()
+  } else {
+    app.once('ready', onceReady)
+  }
 }
 
 module.exports = powerMonitor
