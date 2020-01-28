@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@github.com>
+Date: Tue, 28 Jan 2020 12:16:11 -0500
+Subject: [64bit] Bump TypedArray max length to 2**32-1 elements
+
+TypedArray max length for 64 bit has been changed to 2**32-1 elements
+See: https://source.chromium.org/chromium/_/chromium/v8/v8.git/+/3bff8fa5ea29c0623c0a5601b6fa67c64cbcc319
+
+diff --git a/test/parallel/test-buffer-alloc.js b/test/parallel/test-buffer-alloc.js
+index de3e7fa52390f0631b93fb4adf2e8a4e31bdc572..eae7533250599cfc649a17c19c8b0fa268155b69 100644
+--- a/test/parallel/test-buffer-alloc.js
++++ b/test/parallel/test-buffer-alloc.js
+@@ -8,8 +8,8 @@ const SlowBuffer = require('buffer').SlowBuffer;
+ // Verify the maximum Uint8Array size. There is no concrete limit by spec. The
+ // internal limits should be updated if this fails.
+ assert.throws(
+-  () => new Uint8Array(2 ** 31),
+-  { message: 'Invalid typed array length: 2147483648' }
++  () => new Uint8Array(2 ** 32),
++  { message: 'Invalid typed array length: 4294967296' }
+ );
+ 
+ const b = Buffer.allocUnsafe(1024);
