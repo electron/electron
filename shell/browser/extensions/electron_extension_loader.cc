@@ -12,6 +12,7 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/sequenced_task_runner.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/task_runner_util.h"
 #include "base/threading/thread_restrictions.h"
 #include "extensions/browser/extension_file_task_runner.h"
@@ -31,7 +32,8 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
   // NOTE: If you add packed extension support consider removing the flag
   // FOLLOW_SYMLINKS_ANYWHERE below. Packed extensions should not have symlinks.
   if (!base::DirectoryExists(extension_dir)) {
-    std::string err = "Extension directory not found: " + extension_dir.value();
+    std::string err = "Extension directory not found: " +
+                      base::UTF16ToUTF8(extension_dir.LossyDisplayName());
     return std::make_pair(nullptr, err);
   }
 
@@ -40,7 +42,8 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
   scoped_refptr<Extension> extension = file_util::LoadExtension(
       extension_dir, Manifest::COMMAND_LINE, load_flags, &load_error);
   if (!extension.get()) {
-    std::string err = "Loading extension at " + extension_dir.value() +
+    std::string err = "Loading extension at " +
+                      base::UTF16ToUTF8(extension_dir.LossyDisplayName()) +
                       " failed with: " + load_error;
     return std::make_pair(nullptr, err);
   }
@@ -48,7 +51,8 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
   std::string warnings;
   // Log warnings.
   if (extension->install_warnings().size()) {
-    warnings += "Warnings loading extension at " + extension_dir.value() + ": ";
+    warnings += "Warnings loading extension at " +
+                base::UTF16ToUTF8(extension_dir.LossyDisplayName()) + ": ";
     for (const auto& warning : extension->install_warnings()) {
       warnings += warning.message + " ";
     }
