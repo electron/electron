@@ -32,6 +32,7 @@ void CertVerifierClient::Verify(
   params.default_result = net::ErrorToString(default_error);
   params.error_code = default_error;
   params.certificate = certificate;
+  params.validated_certificate = default_result.verified_cert;
   cert_verify_proc_.Run(
       params,
       base::AdaptCallbackForRepeating(base::BindOnce(

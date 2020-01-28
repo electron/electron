@@ -2222,6 +2222,31 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
   return handle;
 }
 
+void WebContents::IncrementCapturerCount(gin_helper::Arguments* args) {
+  gfx::Size size;
+  bool stay_hidden = false;
+
+  // get size arguments if they exist
+  args->GetNext(&size);
+  // get stayHidden arguments if they exist
+  args->GetNext(&stay_hidden);
+
+  web_contents()->IncrementCapturerCount(size, stay_hidden);
+}
+
+void WebContents::DecrementCapturerCount(gin_helper::Arguments* args) {
+  bool stay_hidden = false;
+
+  // get stayHidden arguments if they exist
+  args->GetNext(&stay_hidden);
+
+  web_contents()->DecrementCapturerCount(stay_hidden);
+}
+
+bool WebContents::IsBeingCaptured() {
+  return web_contents()->IsBeingCaptured();
+}
+
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   const content::CursorInfo& info = cursor.info();
 
@@ -2598,6 +2623,9 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)
       .SetMethod("getNativeView", &WebContents::GetNativeView)
+      .SetMethod("incrementCapturerCount", &WebContents::IncrementCapturerCount)
+      .SetMethod("decrementCapturerCount", &WebContents::DecrementCapturerCount)
+      .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCIPHandlingPolicy",

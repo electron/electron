@@ -63,7 +63,7 @@ index ebffdb08d080eceb0ea9e96ee3ca7db627cfaf5e..bc00a7a00626cee17e5f5ea976f8248f
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 155d86fe79b99989c3f604aeaab13782f8e6631c..b60263e722b2604ed35a1ed10469ac91e22aaa33 100644
+index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac921170345f86b8d0 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -183,16 +183,20 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..b60263e722b2604ed35a1ed10469ac91
        NOTREACHED();
        break;
      }
-@@ -552,8 +569,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -552,8 +569,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
 -  // Disconnect the current |print_job_|.
 -  DisconnectFromCurrentPrintJob();
++  if (callback_.is_null()) {
++    // Disconnect the current |print_job_| only when calling window.print()
++    DisconnectFromCurrentPrintJob();
++  }
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetRenderViewHost() ||
-@@ -568,8 +583,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -568,8 +587,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    print_job_->SetSource(PrintJob::Source::PRINT_PREVIEW, /*source_id=*/"");
  #endif  // defined(OS_CHROMEOS)
  
@@ -201,7 +205,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..b60263e722b2604ed35a1ed10469ac91
    printing_succeeded_ = false;
    return true;
  }
-@@ -618,14 +631,24 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -618,14 +635,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -211,8 +215,6 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..b60263e722b2604ed35a1ed10469ac91
 +      cb_str = printing_cancelled_ ? "cancelled" : "failed";
 +    std::move(callback_).Run(printing_succeeded_, cb_str);
 +  }
-+
-+  TerminatePrintJob(true);
 +
    if (!print_job_)
      return;
@@ -228,6 +230,15 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..b60263e722b2604ed35a1ed10469ac91
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
+@@ -661,7 +686,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+ }
+ 
+ bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
+-  if (print_job_)
++  if (print_job_ && print_job_->document())
+     return true;
+ 
+   if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
 index 3d434244927aca5e5dbec8d7c1cd212c5c260c71..9d62c903bf08fa8cfa8c425d430c5e995a04f7fc 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
