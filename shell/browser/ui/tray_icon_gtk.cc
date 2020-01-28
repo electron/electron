@@ -4,7 +4,6 @@
 
 #include "shell/browser/ui/tray_icon_gtk.h"
 
-#include "base/optional.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h"
@@ -15,9 +14,7 @@
 
 namespace electron {
 
-TrayIconGtk::TrayIconGtk() = default;
-
-TrayIconGtk::~TrayIconGtk() = default;
+namespace {
 
 gfx::ImageSkia GetIconFromImage(const gfx::Image& image) {
   auto icon = image.AsImageSkia();
@@ -38,6 +35,12 @@ gfx::ImageSkia GetIconFromImage(const gfx::Image& image) {
 
   return icon;
 }
+
+}  // namespace
+
+TrayIconGtk::TrayIconGtk() = default;
+
+TrayIconGtk::~TrayIconGtk() = default;
 
 void TrayIconGtk::SetImage(const gfx::Image& image) {
   image_ = GetIconFromImage(image);
