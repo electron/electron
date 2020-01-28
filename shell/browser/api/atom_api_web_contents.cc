@@ -116,6 +116,10 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/common/print_messages.h"
+
+#if defined(OS_WIN)
+#include "printing/backend/win_helper.h"
+#endif
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -345,6 +349,23 @@ base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
 #endif
   return base::nullopt;
 }
+
+#if BUILDFLAG(ENABLE_PRINTING)
+// This will return false if no printer with the provided device_name can be
+// found on the network. We need to check this because Chromium does not do
+// sanity checking of device_name validity and so will crash on invalid names.
+bool DeviceNameValid(const std::string& device_name) {
+#if defined(OS_MACOSX)
+  base::ScopedCFTypeRef<CFStringRef> new_printer_id(
+      base::SysUTF8ToCFStringRef(device_name));
+  return PMPrinterCreateFromPrinterID(new_printer_id.get());
+#elif defined(OS_WIN)
+  printing::ScopedPrinterHandle printer;
+  return printer.OpenPrinterWithName(base::UTF8ToUTF16(device_name).c_str());
+#endif
+  return true;
+}
+#endif
 
 }  // namespace
 
@@ -1783,6 +1804,11 @@ void WebContents::Print(gin_helper::Arguments* args) {
   // Printer device name as opened by the OS.
   base::string16 device_name;
   options.Get("deviceName", &device_name);
+  if (!device_name.empty() &&
+      !DeviceNameValid(base::UTF16ToUTF8(device_name))) {
+    args->ThrowError("webContents.print(): Invalid deviceName provided.");
+    return;
+  }
   settings.SetStringKey(printing::kSettingDeviceName, device_name);
 
   int scale_factor = 100;
