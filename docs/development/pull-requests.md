@@ -225,7 +225,7 @@ All pull requests require approval from a
 [Code Owner](https://github.com/electron/electron/blob/master/.github/CODEOWNERS)
 of the area you modified in order to land. Whenever a maintainer reviews a pull
 request they may request changes. These may be small, such as fixing a typo, or
-may involve substantive changes. Such requests are intended to be helpful, but 
+may involve substantive changes. Such requests are intended to be helpful, but
 at times may come across as abrupt or unhelpful, especially if they do not include
 concrete suggestions on *how* to change them.
 
