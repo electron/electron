@@ -269,8 +269,8 @@ async function main () {
   const opts = parseCommandLine()
 
   // no mode specified? run 'em all
-  if (!opts['c++'] && !opts.javascript && !opts.python && !opts.gn && !opts.patches) {
-    opts['c++'] = opts.javascript = opts.python = opts.gn = opts.patches = true
+  if (!opts['c++'] && !opts.javascript && !opts.objc && !opts.python && !opts.gn && !opts.patches) {
+    opts['c++'] = opts.javascript = opts.objc = opts.python = opts.gn = opts.patches = true
   }
 
   const linters = LINTERS.filter(x => opts[x.key])
