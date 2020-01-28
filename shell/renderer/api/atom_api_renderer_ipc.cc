@@ -61,21 +61,23 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
 
   void Send(bool internal,
             const std::string& channel,
-            const base::ListValue& arguments) {
-    electron_browser_ptr_->Message(internal, channel, arguments);
+            base::ListValue arguments) {
+    electron_browser_ptr_->Message(internal, channel, std::move(arguments));
   }
 
   v8::Local<v8::Promise> Invoke(mate::Arguments* args,
                                 const std::string& channel,
-                                const base::ListValue& arguments) {
+                                base::ListValue arguments) {
     electron::util::Promise p(args->isolate());
     auto handle = p.GetHandle();
 
     electron_browser_ptr_->Invoke(
-        channel, arguments,
-        base::BindOnce([](electron::util::Promise p,
-                          base::Value result) { p.Resolve(result); },
-                       std::move(p)));
+        channel, std::move(arguments),
+        base::BindOnce(
+            [](electron::util::Promise p, base::ListValue result) {
+              p.Resolve(result.GetList().at(0));
+            },
+            std::move(p)));
 
     return handle;
   }
@@ -84,23 +86,23 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
               bool send_to_all,
               int32_t web_contents_id,
               const std::string& channel,
-              const base::ListValue& arguments) {
+              base::ListValue arguments) {
     electron_browser_ptr_->MessageTo(internal, send_to_all, web_contents_id,
-                                     channel, arguments);
+                                     channel, std::move(arguments));
   }
 
-  void SendToHost(const std::string& channel,
-                  const base::ListValue& arguments) {
-    electron_browser_ptr_->MessageHost(channel, arguments);
+  void SendToHost(const std::string& channel, base::ListValue arguments) {
+    electron_browser_ptr_->MessageHost(channel, std::move(arguments));
   }
 
   base::Value SendSync(bool internal,
                        const std::string& channel,
-                       const base::ListValue& arguments) {
-    base::Value result;
+                       base::ListValue arguments) {
+    base::ListValue result;
 
-    electron_browser_ptr_->MessageSync(internal, channel, arguments, &result);
-    return result;
+    electron_browser_ptr_->MessageSync(internal, channel, std::move(arguments),
+                                       &result);
+    return std::move(result.GetList().at(0));
   }
 
  private:

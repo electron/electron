@@ -39,7 +39,7 @@ interface ElectronBrowser {
   // process, and returns the response.
   Invoke(
       string channel,
-      LegacyListValue arguments) => (mojo_base.mojom.Value result);
+      LegacyListValue arguments) => (LegacyListValue result);
 
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process, and waits synchronously for a response.
@@ -47,7 +47,7 @@ interface ElectronBrowser {
   MessageSync(
     bool internal,
     string channel,
-    LegacyListValue arguments) => (mojo_base.mojom.Value result);
+    LegacyListValue arguments) => (LegacyListValue result);
 
   // Emits an event from the |ipcRenderer| JavaScript object in the target
   // WebContents's main frame, specified by |web_contents_id|.

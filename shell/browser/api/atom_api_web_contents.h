@@ -217,19 +217,19 @@ class WebContents : public mate::TrackableObject<WebContents>,
   bool SendIPCMessage(bool internal,
                       bool send_to_all,
                       const std::string& channel,
-                      const base::ListValue& args);
+                      base::ListValue args);
 
   bool SendIPCMessageWithSender(bool internal,
                                 bool send_to_all,
                                 const std::string& channel,
-                                const base::ListValue& args,
+                                base::ListValue args,
                                 int32_t sender_id = 0);
 
   bool SendIPCMessageToFrame(bool internal,
                              bool send_to_all,
                              int32_t frame_id,
                              const std::string& channel,
-                             const base::ListValue& args);
+                             base::ListValue args);
 
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
@@ -509,21 +509,21 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // mojom::ElectronBrowser
   void Message(bool internal,
                const std::string& channel,
-               const base::ListValue& arguments) override;
+               base::ListValue arguments) override;
   void Invoke(const std::string& channel,
-              const base::ListValue& arguments,
+              base::ListValue arguments,
               InvokeCallback callback) override;
   void MessageSync(bool internal,
                    const std::string& channel,
-                   const base::ListValue& arguments,
+                   base::ListValue arguments,
                    MessageSyncCallback callback) override;
   void MessageTo(bool internal,
                  bool send_to_all,
                  int32_t web_contents_id,
                  const std::string& channel,
-                 const base::ListValue& arguments) override;
+                 base::ListValue arguments) override;
   void MessageHost(const std::string& channel,
-                   const base::ListValue& arguments) override;
+                   base::ListValue arguments) override;
   void UpdateDraggableRegions(
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;

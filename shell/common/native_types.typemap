@@ -5,5 +5,5 @@ deps = [
   "//ipc"
 ]
 type_mappings = [
-  "electron.mojom.LegacyListValue=::base::ListValue",
+  "electron.mojom.LegacyListValue=::base::ListValue[move_only]",
 ]

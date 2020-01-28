@@ -1023,7 +1023,7 @@ void WebContents::OnElectronBrowserConnectionError() {
 
 void WebContents::Message(bool internal,
                           const std::string& channel,
-                          const base::ListValue& arguments) {
+                          base::ListValue arguments) {
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
@@ -1031,7 +1031,7 @@ void WebContents::Message(bool internal,
 }
 
 void WebContents::Invoke(const std::string& channel,
-                         const base::ListValue& arguments,
+                         base::ListValue arguments,
                          InvokeCallback callback) {
   // webContents.emit('-ipc-invoke', new Event(), channel, arguments);
   EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
@@ -1040,7 +1040,7 @@ void WebContents::Invoke(const std::string& channel,
 
 void WebContents::MessageSync(bool internal,
                               const std::string& channel,
-                              const base::ListValue& arguments,
+                              base::ListValue arguments,
                               MessageSyncCallback callback) {
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
@@ -1052,18 +1052,18 @@ void WebContents::MessageTo(bool internal,
                             bool send_to_all,
                             int32_t web_contents_id,
                             const std::string& channel,
-                            const base::ListValue& arguments) {
+                            base::ListValue arguments) {
   auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
       isolate(), web_contents_id);
 
   if (web_contents) {
     web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
-                                           arguments, ID());
+                                           std::move(arguments), ID());
   }
 }
 
 void WebContents::MessageHost(const std::string& channel,
-                              const base::ListValue& arguments) {
+                              base::ListValue arguments) {
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
                  base::nullopt, channel, arguments);
@@ -1942,14 +1942,15 @@ void WebContents::TabTraverse(bool reverse) {
 bool WebContents::SendIPCMessage(bool internal,
                                  bool send_to_all,
                                  const std::string& channel,
-                                 const base::ListValue& args) {
-  return SendIPCMessageWithSender(internal, send_to_all, channel, args);
+                                 base::ListValue args) {
+  return SendIPCMessageWithSender(internal, send_to_all, channel,
+                                  std::move(args));
 }
 
 bool WebContents::SendIPCMessageWithSender(bool internal,
                                            bool send_to_all,
                                            const std::string& channel,
-                                           const base::ListValue& args,
+                                           base::ListValue args,
                                            int32_t sender_id) {
   std::vector<content::RenderFrameHost*> target_hosts;
   if (!send_to_all) {
@@ -1965,7 +1966,8 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(internal, false, channel, args, sender_id);
+    electron_ptr->Message(internal, false, channel,
+                          base::ListValue(args.GetList()), sender_id);
   }
   return true;
 }
@@ -1974,7 +1976,7 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
                                         bool send_to_all,
                                         int32_t frame_id,
                                         const std::string& channel,
-                                        const base::ListValue& args) {
+                                        base::ListValue args) {
   auto frames = web_contents()->GetAllFrames();
   auto iter = std::find_if(frames.begin(), frames.end(), [frame_id](auto* f) {
     return f->GetRoutingID() == frame_id;
@@ -1987,7 +1989,7 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   mojom::ElectronRendererAssociatedPtr electron_ptr;
   (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(internal, send_to_all, channel, args,
+  electron_ptr->Message(internal, send_to_all, channel, std::move(args),
                         0 /* sender_id */);
   return true;
 }

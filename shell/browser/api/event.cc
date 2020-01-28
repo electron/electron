@@ -61,7 +61,10 @@ bool Event::SendReply(const base::Value& result) {
   if (!callback_ || sender_ == nullptr)
     return false;
 
-  std::move(*callback_).Run(result.Clone());
+  base::ListValue ret;
+  ret.GetList().push_back(result.Clone());
+
+  std::move(*callback_).Run(std::move(ret));
   callback_.reset();
   return true;
 }
