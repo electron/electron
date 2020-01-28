@@ -21,3 +21,15 @@ index de3e7fa52390f0631b93fb4adf2e8a4e31bdc572..eae7533250599cfc649a17c19c8b0fa2
  );
  
  const b = Buffer.allocUnsafe(1024);
+diff --git a/test/parallel/test-buffer-over-max-length.js b/test/parallel/test-buffer-over-max-length.js
+index b1267b19ff439e344417a85649667facb0d2add7..8c613372e03b2cc9fc9a5ad88d93e15cf6193646 100644
+--- a/test/parallel/test-buffer-over-max-length.js
++++ b/test/parallel/test-buffer-over-max-length.js
+@@ -23,7 +23,3 @@ assert.throws(() => SlowBuffer(kMaxLength + 1), bufferMaxSizeMsg);
+ assert.throws(() => Buffer.alloc(kMaxLength + 1), bufferMaxSizeMsg);
+ assert.throws(() => Buffer.allocUnsafe(kMaxLength + 1), bufferMaxSizeMsg);
+ assert.throws(() => Buffer.allocUnsafeSlow(kMaxLength + 1), bufferMaxSizeMsg);
+-
+-// issue GH-4331
+-assert.throws(() => Buffer.allocUnsafe(0xFFFFFFFF), bufferMaxSizeMsg);
+-assert.throws(() => Buffer.allocUnsafe(0xFFFFFFFFF), bufferMaxSizeMsg);
