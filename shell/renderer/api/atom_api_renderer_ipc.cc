@@ -102,20 +102,6 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     electron_browser_ptr_->MessageSync(internal, channel, arguments.Clone(),
                                        &result);
 
-    // // A task is posted to a worker thread to execute the request so that
-    // // this thread may block on a waitable event. It is safe to pass raw
-    // // pointers to |result| and |response_received_event| as this stack frame
-    // // will survive until the request is complete.
-
-    // base::WaitableEvent response_received_event;
-    // task_runner_->PostTask(
-    //     FROM_HERE,
-    //     base::BindOnce(&IPCRenderer::SendMessageSyncOnWorkerThread,
-    //                               base::Unretained(this),
-    //                               base::Unretained(&response_received_event),
-    //                               base::Unretained(&result), internal,
-    //                               channel, arguments.Clone()));
-    // response_received_event.Wait();
     return result;
   }
 
