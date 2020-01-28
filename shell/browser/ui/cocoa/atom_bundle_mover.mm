@@ -10,6 +10,9 @@
 #import <sys/mount.h>
 #import <sys/param.h>
 
+#include <string>
+#include <utility>
+
 #include "gin/dictionary.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/callback_converter.h"
