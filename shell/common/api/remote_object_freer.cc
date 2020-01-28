@@ -4,6 +4,8 @@
 
 #include "shell/common/api/remote_object_freer.h"
 
+#include <utility>
+
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
