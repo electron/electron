@@ -5,7 +5,6 @@
 #include "shell/browser/ui/win/notify_icon_host.h"
 
 #include <commctrl.h>
-#include <rpc.h>
 #include <winuser.h>
 
 #include "base/bind.h"
@@ -99,6 +98,7 @@ NotifyIcon* NotifyIconHost::CreateNotifyIcon(base::Optional<UUID> guid) {
   NotifyIcon* notify_icon =
       new NotifyIcon(this, NextIconId(), window_, kNotifyIconMessage,
                      guid.has_value() ? guid.value() : GUID_DEFAULT);
+
   notify_icons_.push_back(notify_icon);
   return notify_icon;
 }

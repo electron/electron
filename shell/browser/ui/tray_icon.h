@@ -5,13 +5,13 @@
 #ifndef SHELL_BROWSER_UI_TRAY_ICON_H_
 #define SHELL_BROWSER_UI_TRAY_ICON_H_
 
-#include <rpc.h>
 #include <string>
 #include <vector>
 
 #include "base/observer_list.h"
 #include "shell/browser/ui/atom_menu_model.h"
 #include "shell/browser/ui/tray_icon_observer.h"
+#include "shell/common/gin_converters/guid_converter.h"
 #include "ui/gfx/geometry/rect.h"
 
 namespace electron {

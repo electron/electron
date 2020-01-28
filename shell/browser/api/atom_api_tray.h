@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_TRAY_H_
 #define SHELL_BROWSER_API_ATOM_API_TRAY_H_
 
-#include <rpc.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -13,6 +12,7 @@
 #include "gin/handle.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
+#include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/trackable_object.h"
 

@@ -5,15 +5,15 @@
 #ifndef SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_
 #define SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_
 
-#include <rpc.h>
 #include <windows.h>
 
 #include <vector>
 
 #include "base/macros.h"
 #include "base/optional.h"
+#include "shell/common/gin_converters/guid_converter.h"
 
-const UUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+const GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 namespace electron {
 

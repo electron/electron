@@ -77,10 +77,12 @@ gin_helper::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
     return nullptr;
   }
 
+#if defined(OS_WIN)
   if (!guid.has_value() && args->Length() > 1) {
     thrower.ThrowError("Invalid GUID format");
     return nullptr;
   }
+#endif
 
   return new Tray(image, guid, args);
 }

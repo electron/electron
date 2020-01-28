@@ -7,7 +7,6 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include <rpc.h>
 #include <shellapi.h>
 
 #include <memory>
@@ -59,7 +58,7 @@ class NotifyIcon : public TrayIcon {
   UINT icon_id() const { return icon_id_; }
   HWND window() const { return window_; }
   UINT message_id() const { return message_id_; }
-  UUID guid() const { return guid_; }
+  GUID guid() const { return guid_; }
 
   // Overridden from TrayIcon:
   void SetImage(HICON image) override;
@@ -96,7 +95,7 @@ class NotifyIcon : public TrayIcon {
   AtomMenuModel* menu_model_ = nullptr;
 
   // An optional GUID used for identifying tray entries on Windows
-  UUID guid_ = GUID_DEFAULT;
+  GUID guid_ = GUID_DEFAULT;
 
   // indicates whether the tray entry is associated with a guid
   bool is_using_guid_ = false;
