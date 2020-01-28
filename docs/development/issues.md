@@ -6,6 +6,12 @@
 * [Triaging a Bug Report](#triaging-a-bug-report)
 * [Resolving a Bug Report](#resolving-a-bug-report)
 
+## Where to Find and Submit Issues
+
+Issues for `electron/electron` are in the GitHub
+[issue tracker](https://github.com/electron/electronjs.org/issues/).
+
+
 ## How to Contribute to Issues
 
 For any issue, there are fundamentally three ways an individual can
@@ -29,6 +35,9 @@ list of resources for getting programming help, reporting security issues,
 contributing, and more. Please use the issue tracker for bugs only!
 
 ## Submitting a Bug Report
+
+To submit a bug report:
+[open an issue](https://github.com/electron/electronjs.org/issues/new).
 
 When opening a new issue in the `electron/electron` issue tracker, users
 will be presented with a template that should be filled in.
