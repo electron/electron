@@ -62,18 +62,17 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
   void Send(bool internal,
             const std::string& channel,
             const base::ListValue& arguments) {
-    electron_browser_ptr_->Message(
-        internal, channel, base::ListValue(arguments.Clone().GetList()));
+    electron_browser_ptr_->Message(internal, channel, arguments);
   }
 
   v8::Local<v8::Promise> Invoke(mate::Arguments* args,
                                 const std::string& channel,
-                                const base::Value& arguments) {
+                                const base::ListValue& arguments) {
     electron::util::Promise p(args->isolate());
     auto handle = p.GetHandle();
 
     electron_browser_ptr_->Invoke(
-        channel, base::ListValue(arguments.Clone().GetList()),
+        channel, arguments,
         base::BindOnce([](electron::util::Promise p,
                           base::Value result) { p.Resolve(result); },
                        std::move(p)));
@@ -86,15 +85,13 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
               int32_t web_contents_id,
               const std::string& channel,
               const base::ListValue& arguments) {
-    electron_browser_ptr_->MessageTo(
-        internal, send_to_all, web_contents_id, channel,
-        base::ListValue(arguments.Clone().GetList()));
+    electron_browser_ptr_->MessageTo(internal, send_to_all, web_contents_id,
+                                     channel, arguments);
   }
 
   void SendToHost(const std::string& channel,
                   const base::ListValue& arguments) {
-    electron_browser_ptr_->MessageHost(
-        channel, base::ListValue(arguments.Clone().GetList()));
+    electron_browser_ptr_->MessageHost(channel, arguments);
   }
 
   base::Value SendSync(bool internal,
@@ -102,9 +99,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
                        const base::ListValue& arguments) {
     base::Value result;
 
-    electron_browser_ptr_->MessageSync(
-        internal, channel, base::ListValue(arguments.Clone().GetList()),
-        &result);
+    electron_browser_ptr_->MessageSync(internal, channel, arguments, &result);
     return result;
   }
 

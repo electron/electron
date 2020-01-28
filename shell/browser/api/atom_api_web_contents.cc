@@ -1027,8 +1027,7 @@ void WebContents::Message(bool internal,
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
-                 internal, channel,
-                 base::Value(std::move(arguments.GetList())));
+                 internal, channel, arguments);
 }
 
 void WebContents::Invoke(const std::string& channel,
@@ -1036,8 +1035,7 @@ void WebContents::Invoke(const std::string& channel,
                          InvokeCallback callback) {
   // webContents.emit('-ipc-invoke', new Event(), channel, arguments);
   EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
-                 std::move(callback), channel,
-                 base::Value(std::move(arguments.GetList())));
+                 std::move(callback), channel, arguments);
 }
 
 void WebContents::MessageSync(bool internal,
@@ -1047,8 +1045,7 @@ void WebContents::MessageSync(bool internal,
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
   EmitWithSender("-ipc-message-sync", bindings_.dispatch_context(),
-                 std::move(callback), internal, channel,
-                 base::Value(std::move(arguments.GetList())));
+                 std::move(callback), internal, channel, arguments);
 }
 
 void WebContents::MessageTo(bool internal,
@@ -1061,8 +1058,7 @@ void WebContents::MessageTo(bool internal,
 
   if (web_contents) {
     web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
-                                           base::ListValue(arguments.GetList()),
-                                           ID());
+                                           arguments, ID());
   }
 }
 
@@ -1070,8 +1066,7 @@ void WebContents::MessageHost(const std::string& channel,
                               const base::ListValue& arguments) {
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
-                 base::nullopt, channel,
-                 base::Value(std::move(arguments.GetList())));
+                 base::nullopt, channel, arguments);
 }
 
 void WebContents::UpdateDraggableRegions(
@@ -1970,8 +1965,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(internal, false, channel,
-                          base::ListValue(args.Clone().GetList()), sender_id);
+    electron_ptr->Message(internal, false, channel, args, sender_id);
   }
   return true;
 }
@@ -1993,8 +1987,7 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   mojom::ElectronRendererAssociatedPtr electron_ptr;
   (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(internal, send_to_all, channel,
-                        base::ListValue(args.Clone().GetList()),
+  electron_ptr->Message(internal, send_to_all, channel, args,
                         0 /* sender_id */);
   return true;
 }
