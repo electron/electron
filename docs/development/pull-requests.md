@@ -221,7 +221,7 @@ seem unfamiliar, refer to this
 
 #### Approval and Request Changes Workflow
 
-All pull requests require approval from a 
+All pull requests require approval from a
 [Code Owner](https://github.com/electron/electron/blob/master/.github/CODEOWNERS)
 of the area you modified in order to land. Whenever a maintainer reviews a pull
 request they may request changes. These may be small, such as fixing a typo, or
