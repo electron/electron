@@ -5,6 +5,8 @@
 
 #import "shell/browser/ui/cocoa/atom_menu_controller.h"
 
+#include <utility>
+
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
