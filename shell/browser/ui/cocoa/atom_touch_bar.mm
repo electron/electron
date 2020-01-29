@@ -5,6 +5,7 @@
 #import "shell/browser/ui/cocoa/atom_touch_bar.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/strings/sys_string_conversions.h"
