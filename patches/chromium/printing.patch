@@ -63,7 +63,7 @@ index aacffd44658cac701c9683fcb3b20135a64c18bd..01cd31eb174e198724cab082e5056444
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 3d026cd11aa2c0b009812317995cd4e02161251e..99aac7f3932d3a8eb988337cd8dbf5c6965c87a7 100644
+index 3d026cd11aa2c0b009812317995cd4e02161251e..f2f6ded6051a0659808ec848ea4d8566449243f6 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -205,7 +205,7 @@ index 3d026cd11aa2c0b009812317995cd4e02161251e..99aac7f3932d3a8eb988337cd8dbf5c6
    printing_succeeded_ = false;
    return true;
  }
-@@ -614,14 +627,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -614,14 +631,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -230,7 +230,7 @@ index 3d026cd11aa2c0b009812317995cd4e02161251e..99aac7f3932d3a8eb988337cd8dbf5c6
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -657,7 +684,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -657,7 +682,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {

@@ -55,10 +55,10 @@ index f6bef176125384d58793fe0b8dddcbfc16550268..bba7dc934cd43df41949ed5b2adc70e1
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 5e37e9fd005fa5b653608669590910f448057e2c..14882ebb867b24e332306bdff65af68f7df0cf6f 100644
+index 2b2c5538a26d95976ebc8a75b827eebf0e536f45..acdde7935fa617e82d5a53c2cc6bc99d74eb2b7b 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2128,6 +2128,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2160,6 +2160,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -75,7 +75,7 @@ index 5e37e9fd005fa5b653608669590910f448057e2c..14882ebb867b24e332306bdff65af68f
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2147,10 +2157,61 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2179,10 +2189,61 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -139,9 +139,9 @@ index 5e37e9fd005fa5b653608669590910f448057e2c..14882ebb867b24e332306bdff65af68f
 +    }
 +  }
  
-   scoped_refptr<SiteInstance> dest_site_instance = GetSiteInstanceForNavigation(
-       request->common_params().url, request->GetSourceSiteInstance(),
-@@ -2160,6 +2221,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+   // Account for renderer-initiated reload as well.
+   // Needed as a workaround for https://crbug.com/1045524, remove it when it is
+@@ -2202,6 +2263,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
        request->GetRestoreType() != RestoreType::NONE, request->is_view_source(),
        request->WasServerRedirect());
  
