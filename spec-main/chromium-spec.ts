@@ -1095,7 +1095,7 @@ describe('chromium features', () => {
         // History should have current page by now.
         expect((w.webContents as any).length()).to.equal(1)
 
-        const waitCommit = emittedOnce(w.webContents, 'navigation-entry-commited')
+        const waitCommit = emittedOnce(w.webContents, 'navigation-entry-committed')
         w.webContents.executeJavaScript('window.history.pushState({}, "")')
         await waitCommit
         // Initial page + pushed state.
