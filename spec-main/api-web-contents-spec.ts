@@ -1448,29 +1448,27 @@ describe('webContents module', () => {
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
     })
 
-    it('respects custom settings', (done) => {
-      w.loadURL('https://github.com')
-      w.webContents.on('did-finish-load', async () => {
-        const data = await w.webContents.printToPDF({
-          pageRanges: {
-            from: 0,
-            to: 2
-          },
-          landscape: true
-        })
+    it('respects custom settings', async () => {
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'))
+      await emittedOnce(w.webContents, 'did-finish-load')
 
-        const doc = await pdfjs.getDocument(data)
-
-        // Check that correct # of pages are rendered.
-        expect(doc.numPages).to.equal(3)
-
-        // Check that PDF is generated in landscape mode.
-        const firstPage = await doc.getPage(1)
-        const { width, height } = firstPage.getViewport({ scale: 100 })
-        expect(width).to.be.greaterThan(height)
-
-        done()
+      const data = await w.webContents.printToPDF({
+        pageRanges: {
+          from: 0,
+          to: 2
+        },
+        landscape: true
       })
+
+      const doc = await pdfjs.getDocument(data).promise
+
+      // Check that correct # of pages are rendered.
+      expect(doc.numPages).to.equal(3)
+
+      // Check that PDF is generated in landscape mode.
+      const firstPage = await doc.getPage(1)
+      const { width, height } = firstPage.getViewport({ scale: 100 })
+      expect(width).to.be.greaterThan(height)
     })
 
     it('does not crash when called multiple times', async () => {
