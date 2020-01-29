@@ -1801,10 +1801,14 @@ void WebContents::Print(gin_helper::Arguments* args) {
   options.Get("landscape", &landscape);
   settings.SetBoolKey(printing::kSettingLandscape, landscape);
 
-  // We set the default to empty string here and only update
-  // if at the Chromium level if it's non-empty
+  // We set the default to the system's default printer and only update
+  // if at the Chromium level if the user overrides.
+  auto print_backend = printing::PrintBackend::CreateInstance(
+      nullptr, g_browser_process->GetApplicationLocale());
+  std::string default_printer = print_backend->GetDefaultPrinterName();
+  base::string16 device_name = base::UTF8ToUTF16(default_printer);
+
   // Printer device name as opened by the OS.
-  base::string16 device_name;
   options.Get("deviceName", &device_name);
   if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
     args->ThrowError("webContents.print(): Invalid deviceName provided.");
