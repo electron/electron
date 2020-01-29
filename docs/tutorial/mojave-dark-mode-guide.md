@@ -2,7 +2,7 @@
 
 In macOS 10.14 Mojave, Apple introduced a new [system-wide dark mode](https://developer.apple.com/design/human-interface-guidelines/macos/visual-design/dark-mode/)
 for all macOS computers.  If your app does have a dark mode, you can make your Electron app
-follow the system-wide dark mode setting using [the nativeTheme api](/docs/api/native-theme).
+follow the system-wide dark mode setting using [the nativeTheme api](../api/native-theme.md).
 
 In macOS 10.15 Catalina, Apple introduced a new "automatic" dark mode option for all macOS computers. In order
 for the `nativeTheme.shouldUseDarkColors` and `Tray` APIs to work correctly in this mode on Catalina you need to either have `NSRequiresAquaSystemAppearance` set to `false` in your `Info.plist` file or be on Electron `>=7.0.0`.
