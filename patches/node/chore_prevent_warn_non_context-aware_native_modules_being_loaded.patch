@@ -71,7 +71,7 @@ index 60cb1b6d113e7e0687d96806f8940b5a715144cf..eef7b7bc244b4231419b4ec3013fa1cf
    v8::Isolate* const isolate_;
    IsolateData* const isolate_data_;
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index 4adb4b893925b1b0ebf6ba41040121438db56d1f..7c1dfaf06f1c7a08d9301d6d1837fa008b076cbd 100644
+index 4adb4b893925b1b0ebf6ba41040121438db56d1f..da60922c9e351bf24e11ae2dedae56c316455885 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
 @@ -3,6 +3,7 @@
@@ -82,7 +82,7 @@ index 4adb4b893925b1b0ebf6ba41040121438db56d1f..7c1dfaf06f1c7a08d9301d6d1837fa00
  #include "util.h"
  
  #if HAVE_OPENSSL
-@@ -466,10 +467,12 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+@@ -466,10 +467,22 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
  
      if (mp != nullptr) {
        if (mp->nm_context_register_func == nullptr) {
@@ -90,10 +90,20 @@ index 4adb4b893925b1b0ebf6ba41040121438db56d1f..7c1dfaf06f1c7a08d9301d6d1837fa00
 +        if (env->force_context_aware()) {
            dlib->Close();
 -          THROW_ERR_NON_CONTEXT_AWARE_DISABLED(env);
-+          env->ThrowError("Loading non context-aware native modules has been disabled in this process.  This means you have loaded a non context-aware native module with app.allowRendererProcessReuse set to true. See https://github.com/electron/electron/issues/18397 for more information");
++          char errmsg[1024];
++          snprintf(errmsg,
++                   sizeof(errmsg),
++                   "Loading non-context-aware native module in renderer: '%s', but app.allowRendererProcessReuse is true. See https://github.com/electron/electron/issues/18397.",
++                   *filename);
++          env->ThrowError(errmsg);
            return false;
 +        } else if (env->warn_non_context_aware()) {
-+          ProcessEmitWarningGeneric(env, "Loading non context-aware native modules in the renderer process is deprecated and will stop working at some point in the future, please see https://github.com/electron/electron/issues/18397 for more information", "Electron");
++          char errmsg[1024];
++          snprintf(errmsg,
++                   sizeof(errmsg),
++                   "Loading non-context-aware native module in renderer: '%s'. This is deprecated, see https://github.com/electron/electron/issues/18397.",
++                   *filename);
++          ProcessEmitWarningGeneric(env, errmsg, "Electron");
          }
        }
        mp->nm_dso_handle = dlib->handle_;
