@@ -6,9 +6,11 @@ import datetime
 import errno
 import hashlib
 import json
+import mmap
 import os
 import shutil
 import subprocess
+from struct import Struct
 import sys
 import tempfile
 
@@ -164,8 +166,64 @@ def get_electron_build_version():
   return subprocess.check_output([electron, '--version']).strip()
 
 
+class NonZipFileError(ValueError):
+  """Raised when a given file does not appear to be a zip"""
+
+
+def zero_zip_date_time(fname):
+  """ Wrap strip-zip zero_zip_date_time within a file opening operation """
+  try:
+    zip = open(fname, 'r+b')
+    _zero_zip_date_time(zip)
+  except:
+    raise NonZipFileError(fname)
+  finally:
+    zip.close()
+
+
+def _zero_zip_date_time(zip_):
+  """ Code under MIT from https://github.com/Code0x58/python-stripzip/blob/f1980fcfc55cb6ee1f83a2f72244dd38b3b649f4/stripzip.py """
+  archive_size = os.fstat(zip_.fileno()).st_size
+
+  signature_struct = Struct("<L")
+  local_file_header_struct = Struct("<LHHHHHLLLHH")
+  central_directory_header_struct = Struct("<LHHHHHHLLLHHHHHLL")
+
+  offset = 0
+
+  mm = mmap.mmap(zip_.fileno(), 0)
+  while offset < archive_size:
+    if signature_struct.unpack_from(mm, offset) != (0x04034b50,):
+      break
+    values = list(local_file_header_struct.unpack_from(mm, offset))
+    _, _, _, _, _, _, _, a, _, b, c = values
+    values[4] = 0
+    values[5] = 0x21
+    local_file_header_struct.pack_into(mm, offset, *values)
+    offset += local_file_header_struct.size + a + b + c
+
+  while offset < archive_size:
+    if signature_struct.unpack_from(mm, offset) != (0x02014b50,):
+      break
+    values = list(central_directory_header_struct.unpack_from(mm, offset))
+    _, _, _, _, _, _, _, _, _, _, a, b, c, _, _, _, _ = values
+    values[5] = 0
+    values[6] = 0x21
+    central_directory_header_struct.pack_into(mm, offset, *values)
+    offset += central_directory_header_struct.size + a + b + c
+
+  if offset == 0:
+    raise NonZipFileError(zip_.name)
+
+
 def upload_electron(release, file_path, args):
   filename = os.path.basename(file_path)
+
+  # Strip zip non determinism before upload, in-place operation
+  try:
+    zero_zip_date_time(file_path)
+  except NonZipFileError:
+    pass
 
   # if upload_to_s3 is set, skip github upload.
   if args.upload_to_s3:
