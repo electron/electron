@@ -128,7 +128,6 @@ describe('webContents module', () => {
     })
 
     it('does not crash', () => {
-      const w = new BrowserWindow({ show: false })
       expect(() => {
         w.webContents.print({ silent: true })
       }).to.not.throw()
