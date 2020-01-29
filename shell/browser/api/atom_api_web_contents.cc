@@ -358,14 +358,17 @@ base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
 // This will return false if no printer with the provided device_name can be
 // found on the network. We need to check this because Chromium does not do
 // sanity checking of device_name validity and so will crash on invalid names.
-bool DeviceNameValid(const std::string& device_name) {
+bool IsDeviceNameValid(const base::string16& device_name) {
 #if defined(OS_MACOSX)
   base::ScopedCFTypeRef<CFStringRef> new_printer_id(
-      base::SysUTF8ToCFStringRef(device_name));
-  return PMPrinterCreateFromPrinterID(new_printer_id.get());
+      base::SysUTF16ToCFStringRef(device_name));
+  PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
+  bool printer_exists = new_printer != nullptr;
+  PMRelease(new_printer);
+  return printer_exists;
 #elif defined(OS_WIN)
   printing::ScopedPrinterHandle printer;
-  return printer.OpenPrinterWithName(base::UTF8ToUTF16(device_name).c_str());
+  return printer.OpenPrinterWithName(device_name.c_str());
 #endif
   return true;
 }
@@ -1793,8 +1796,7 @@ void WebContents::Print(mate::Arguments* args) {
   // Printer device name as opened by the OS.
   base::string16 device_name;
   options.Get("deviceName", &device_name);
-  if (!device_name.empty() &&
-      !DeviceNameValid(base::UTF16ToUTF8(device_name))) {
+  if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
     args->ThrowError("webContents.print(): Invalid deviceName provided.");
     return;
   }
