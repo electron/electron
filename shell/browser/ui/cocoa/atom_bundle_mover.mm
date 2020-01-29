@@ -5,6 +5,7 @@
 #import "shell/browser/ui/cocoa/atom_bundle_mover.h"
 
 #include <string>
+#include <utility>
 
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
