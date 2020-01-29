@@ -64,9 +64,9 @@ require('electron').remote.getGlobal('sharedObject').someProperty = 'new value'
 console.log(require('electron').remote.getGlobal('sharedObject').someProperty)
 ```
 
-## My app's window/tray disappeared after a few minutes.
+## My app's tray disappeared after a few minutes.
 
-This happens when the variable which is used to store the window/tray gets
+This happens when the variable which is used to store the tray gets
 garbage collected.
 
 If you encounter this problem, the following articles may prove helpful:
