@@ -112,18 +112,3 @@ index 85378bb565de617b1bd611d28c8714361747a357..94a899e76586d2c7bb199828bfa4aa1e
      return event;
    }
  
-@@ -223,12 +233,14 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
-   // For Mac OS 10.12.2 or later, we want to use MPRemoteCommandCenter for
-   // getting media keys globally if there is a RemoteCommandCenterDelegate
-   // available.
-+#if !BUILDFLAG(ENABLE_MEDIA_KEY_OVERRIDES)
-   if (scope == Scope::kGlobal) {
-     auto listener =
-         std::make_unique<SystemMediaControlsMediaKeysListener>(delegate);
-     if (listener->Initialize())
-       return listener;
-   }
-+#endif
- 
-   return std::make_unique<MediaKeysListenerImpl>(delegate, scope);
- }
