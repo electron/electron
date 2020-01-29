@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 59107c7284d76d6d448caed9b5b23a9eb43a18a7..be4896118a93addcc0af5ee4eb07e27447f50cb6 100644
+index 04fb97db324c9051ea794e4445e543d7926af9ee..849d51d9158b6f091b798cee5bda66a8327d2b28 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4462,6 +4462,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4483,6 +4483,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -49,10 +49,10 @@ index bcdc73fdf89d46e267f0c9568e46172ec89f9f23..930e043a0fdf40ef0e48a19597da567c
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 5807d1d7d6021e045b2b3c6d4e2e4106e118ab3b..7abfa455bce8b8a4d7ba9d3e3c5aab4477dceaa2 100644
+index d6948f86672e8567b68d0222ca5d2278cab63e55..1fcc4c057ac5686f47eba791d1f0cf2c8c639574 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -145,6 +145,7 @@ class NetworkService;
+@@ -146,6 +146,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -60,7 +60,7 @@ index 5807d1d7d6021e045b2b3c6d4e2e4106e118ab3b..7abfa455bce8b8a4d7ba9d3e3c5aab44
  }  // namespace network
  
  namespace rappor {
-@@ -830,6 +831,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -831,6 +832,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
