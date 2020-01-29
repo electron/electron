@@ -7,7 +7,9 @@
 #include <AvailabilityMacros.h>
 #include <objc/objc-runtime.h>
 
+#include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/mac/mac_util.h"
