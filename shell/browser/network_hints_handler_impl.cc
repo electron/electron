@@ -19,7 +19,8 @@
 NetworkHintsHandlerImpl::NetworkHintsHandlerImpl(
     content::RenderFrameHost* frame_host)
     : network_hints::SimpleNetworkHintsHandlerImpl(
-          frame_host->GetProcess()->GetID()),
+          frame_host->GetProcess()->GetID(),
+          frame_host->GetRoutingID()),
       render_frame_host_(frame_host) {}
 
 NetworkHintsHandlerImpl::~NetworkHintsHandlerImpl() = default;

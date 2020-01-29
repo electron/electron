@@ -35,7 +35,9 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
-  { scheme: 'no-fetch', privileges: { corsEnabled: true } }
+  { scheme: 'no-fetch', privileges: { corsEnabled: true } },
+  { scheme: 'foo', privileges: { standard: true } },
+  { scheme: 'bar', privileges: { standard: true } }
 ])
 
 app.whenReady().then(() => {

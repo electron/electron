@@ -245,12 +245,6 @@ AtomExtensionsBrowserClient::GetExtensionSystemFactory() {
   return extensions::AtomExtensionSystemFactory::GetInstance();
 }
 
-void AtomExtensionsBrowserClient::RegisterExtensionInterfaces(
-    service_manager::BinderRegistryWithArgs<content::RenderFrameHost*>*
-        registry,
-    content::RenderFrameHost* render_frame_host,
-    const extensions::Extension* extension) const {}
-
 std::unique_ptr<extensions::RuntimeAPIDelegate>
 AtomExtensionsBrowserClient::CreateRuntimeAPIDelegate(
     content::BrowserContext* context) const {

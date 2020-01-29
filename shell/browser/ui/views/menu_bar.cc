@@ -18,7 +18,7 @@
 #include "ui/views/widget/widget.h"
 
 #if defined(USE_X11)
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #endif
 
 #if defined(OS_WIN)
@@ -283,10 +283,10 @@ void MenuBar::RefreshColorCache() {
   const ui::NativeTheme* theme = GetNativeTheme();
   if (theme) {
 #if defined(USE_X11)
-    background_color_ = libgtkui::GetBgColor("GtkMenuBar#menubar");
-    enabled_color_ = libgtkui::GetFgColor(
-        "GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
-    disabled_color_ = libgtkui::GetFgColor(
+    background_color_ = gtk::GetBgColor("GtkMenuBar#menubar");
+    enabled_color_ =
+        gtk::GetFgColor("GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
+    disabled_color_ = gtk::GetFgColor(
         "GtkMenuBar#menubar GtkMenuItem#menuitem:disabled GtkLabel");
 #else
     background_color_ =
