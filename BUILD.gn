@@ -803,6 +803,10 @@ if (is_mac) {
         "@executable_path/../../../../../..",
       ]
     }
+    ldflags += [
+      "-rpath",
+      "@executable_path/.",
+    ]
   }
 
   template("electron_helper_app") {
@@ -1240,11 +1244,29 @@ dist_zip("electron_ffmpeg_zip") {
   outputs = [ "$root_build_dir/ffmpeg.zip" ]
 }
 
+executable("erick-chromedriver") {
+  testonly = true
+  sources = [ "//chrome/test/chromedriver/server/chromedriver_server.cc" ]
+  deps = [
+    "//build/win:default_exe_manifest",
+    "//chrome/test/chromedriver:lib",
+    "//mojo/core/embedder",
+
+    # "//net/server:http_server",
+    "//net/traffic_annotation:test_support",
+    "//services/network/public/mojom",
+  ]
+  ldflags = [
+    "-rpath",
+    "@executable_path/.",
+  ]
+}
+
 dist_zip("electron_chromedriver_zip") {
   testonly = true
   data_deps = [
+    ":erick-chromedriver",
     ":licenses",
-    "//chrome/test/chromedriver",
   ]
   outputs = [ "$root_build_dir/chromedriver.zip" ]
 }
