@@ -1,0 +1,68 @@
+From 3da02cadcd589bc1b660179860e2125b4277ceca Mon Sep 17 00:00:00 2001
+From: Jeff Genovy <29107334+jefgen@users.noreply.github.com>
+Date: Wed, 24 Apr 2019 14:02:06 -0700
+Subject: [PATCH] ICU-20558 Fix regression in DateTimePatternGenerator
+
+This fixes a regression introduced by commit
+b12a927c9365bb38831afbf76fdd0999f8f33deb for issue ICU-13778.
+
+The above commit improved the error checking in the
+DateTimePatternGenerator class, adding checks for errors/failures
+where there previously was none at all. This was done in order to
+catch catastrophic errors like out-of-memory (OOM), and properly
+report them to the caller, rather than ignoring/hiding these errors.
+
+However, in doing so it exposed a case where the code was depending
+on ignoring errors in order to fall-back to the Gregorian calendar
+when the default ICU locale is set to root.
+
+This restores the previous behavior, by allowing the error of
+U_MISSING_RESOURCE_ERROR to fall-though and continue without
+reporting back an error to the caller.
+
+Note: This regression was technically introduced in ICU 63, and
+also effects ICU 64 as well.
+
+diff --git a/source/i18n/dtptngen.cpp b/source/i18n/dtptngen.cpp
+index fcc5977c56d78901e8c3e99c94550baeb386393d..8128d679129c8d82f200528a9b7119ca7ac3302e 100644
+--- a/source/i18n/dtptngen.cpp
++++ b/source/i18n/dtptngen.cpp
+@@ -787,6 +787,7 @@ void
+ DateTimePatternGenerator::getCalendarTypeToUse(const Locale& locale, CharString& destination, UErrorCode& err) {
+     destination.clear().append(DT_DateTimeGregorianTag, -1, err); // initial default
+     if ( U_SUCCESS(err) ) {
++        UErrorCode localStatus = U_ZERO_ERROR;
+         char localeWithCalendarKey[ULOC_LOCALE_IDENTIFIER_CAPACITY];
+         // obtain a locale that always has the calendar key value that should be used
+         ures_getFunctionalEquivalent(
+@@ -798,8 +799,7 @@ DateTimePatternGenerator::getCalendarTypeToUse(const Locale& locale, CharString&
+             locale.getName(),
+             nullptr,
+             FALSE,
+-            &err);
+-        if (U_FAILURE(err)) { return; }
++            &localStatus);
+         localeWithCalendarKey[ULOC_LOCALE_IDENTIFIER_CAPACITY-1] = 0; // ensure null termination
+         // now get the calendar key value from that locale
+         char calendarType[ULOC_KEYWORDS_CAPACITY];
+@@ -808,13 +808,17 @@ DateTimePatternGenerator::getCalendarTypeToUse(const Locale& locale, CharString&
+             "calendar",
+             calendarType,
+             ULOC_KEYWORDS_CAPACITY,
+-            &err);
+-        if (U_FAILURE(err)) { return; }
++            &localStatus);
++        // If the input locale was invalid, don't fail with missing resource error, instead
++        // continue with default of Gregorian.
++        if (U_FAILURE(localStatus) && localStatus != U_MISSING_RESOURCE_ERROR) {
++            err = localStatus;
++            return;
++        }
+         if (calendarTypeLen < ULOC_KEYWORDS_CAPACITY) {
+             destination.clear().append(calendarType, -1, err);
+             if (U_FAILURE(err)) { return; }
+         }
+-        err = U_ZERO_ERROR;
+     }
+ }
+ 

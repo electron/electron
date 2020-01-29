@@ -1,0 +1,76 @@
+From 974193d9ea7ea14544538c85fdb04dd5fd6ac216 Mon Sep 17 00:00:00 2001
+From: "Steven R. Loomis" <srloomis@us.ibm.com>
+Date: Thu, 25 Apr 2019 10:40:28 -0700
+Subject: [PATCH] ICU-20575 fix broken default locale mapping for C.UTF-8
+
+Regression was in 1afef30549d93c17bb966c6803d5d943cf055925
+PR #418 [ICU-20187]
+
+- We dropped the mapping from "C" in uloc_canonicalize,
+  but then putil did not handle cases where a codepage was
+  set (such as C.UTF-8).
+
+- Add an additional check in uprv_getDefaultLocaleID() for
+  locales that end up as "C" or "POSIX" after removing codepage
+  suffix.
+
+- Also fix regression where aa@bb would become aa__BB__BB
+  (incorrectly doubled __BB)
+
+diff --git a/source/common/putil.cpp b/source/common/putil.cpp
+index 532a0903cdd..289a8aaa141 100644
+--- a/source/common/putil.cpp
++++ b/source/common/putil.cpp
+@@ -1560,6 +1560,10 @@ static const char *uprv_getPOSIXIDForCategory(int category)
+     {
+         /* Nothing worked.  Give it a nice POSIX default value. */
+         posixID = "en_US_POSIX";
++        // Note: this test will not catch 'C.UTF-8',
++        // that will be handled in uprv_getDefaultLocaleID().
++        // Leave this mapping here for the uprv_getPOSIXIDForDefaultCodepage()
++        // caller which expects to see "en_US_POSIX" in many branches.
+     }
+     return posixID;
+ }
+@@ -1631,8 +1635,8 @@ The leftmost codepage (.xxx) wins.
+     }
+ 
+     // Copy the ID into owned memory.
+-    // Over-allocate in case we replace "@" with "__".
+-    char *correctedPOSIXLocale = static_cast<char *>(uprv_malloc(uprv_strlen(posixID) + 1 + 1));
++    // Over-allocate in case we replace "C" with "en_US_POSIX" (+10), + null termination
++    char *correctedPOSIXLocale = static_cast<char *>(uprv_malloc(uprv_strlen(posixID) + 10 + 1));
+     if (correctedPOSIXLocale == nullptr) {
+         return nullptr;
+     }
+@@ -1641,11 +1645,18 @@ The leftmost codepage (.xxx) wins.
+     char *limit;
+     if ((limit = uprv_strchr(correctedPOSIXLocale, '.')) != nullptr) {
+         *limit = 0;
+-        if ((limit = uprv_strchr(correctedPOSIXLocale, '@')) != nullptr) {
+-            *limit = 0;
+-        }
++    }
++    if ((limit = uprv_strchr(correctedPOSIXLocale, '@')) != nullptr) {
++        *limit = 0;
+     }
+ 
++    if ((uprv_strcmp("C", correctedPOSIXLocale) == 0) // no @ variant
++        || (uprv_strcmp("POSIX", correctedPOSIXLocale) == 0)) {
++      // Raw input was C.* or POSIX.*, Give it a nice POSIX default value.
++      // (The "C"/"POSIX" case is handled in uprv_getPOSIXIDForCategory())
++      uprv_strcpy(correctedPOSIXLocale, "en_US_POSIX");
++    }
++ 
+     /* Note that we scan the *uncorrected* ID. */
+     const char *p;
+     if ((p = uprv_strrchr(posixID, '@')) != nullptr) {
+@@ -1668,7 +1679,7 @@ The leftmost codepage (.xxx) wins.
+         if ((q = uprv_strchr(p, '.')) != nullptr) {
+             /* How big will the resulting string be? */
+             int32_t len = (int32_t)(uprv_strlen(correctedPOSIXLocale) + (q-p));
+-            uprv_strncat(correctedPOSIXLocale, p, q-p);
++            uprv_strncat(correctedPOSIXLocale, p, q-p); // do not include charset
+             correctedPOSIXLocale[len] = 0;
+         }
+         else {
