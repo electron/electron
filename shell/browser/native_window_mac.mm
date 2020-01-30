@@ -338,7 +338,11 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
-  options.Get(options::kTrafficLightPosition, &traffic_light_position_);
+  v8::Local<v8::Value> traffic_light_options;
+  if (options.Get(options::kTrafficLightPosition, &traffic_light_options)) {
+    gin::ConvertFromV8(options.isolate(), traffic_light_options,
+                       &traffic_light_position_);
+  }
 
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
@@ -523,6 +527,12 @@ void NativeWindowMac::RepositionTrafficLights() {
   NSButton* miniaturize =
       [window standardWindowButton:NSWindowMiniaturizeButton];
   NSButton* zoom = [window standardWindowButton:NSWindowZoomButton];
+  // Safety check just in case apple changes the view structure in a macOS
+  // update
+  DCHECK(close.superview);
+  DCHECK(close.superview.superview);
+  if (!close.superview || !close.superview.superview)
+    return;
   NSView* titleBarContainerView = close.superview.superview;
 
   // Hide the container when exiting fullscreen, otherwise traffic light buttons
