@@ -1027,7 +1027,7 @@ void WebContents::Message(bool internal,
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
-                 internal, channel, arguments);
+                 internal, channel, std::move(arguments));
 }
 
 void WebContents::Invoke(const std::string& channel,
@@ -1035,7 +1035,7 @@ void WebContents::Invoke(const std::string& channel,
                          InvokeCallback callback) {
   // webContents.emit('-ipc-invoke', new Event(), channel, arguments);
   EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
-                 std::move(callback), channel, arguments);
+                 std::move(callback), channel, std::move(arguments));
 }
 
 void WebContents::MessageSync(bool internal,
@@ -1045,7 +1045,7 @@ void WebContents::MessageSync(bool internal,
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
   EmitWithSender("-ipc-message-sync", bindings_.dispatch_context(),
-                 std::move(callback), internal, channel, arguments);
+                 std::move(callback), internal, channel, std::move(arguments));
 }
 
 void WebContents::MessageTo(bool internal,
@@ -1066,7 +1066,7 @@ void WebContents::MessageHost(const std::string& channel,
                               base::ListValue arguments) {
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
-                 base::nullopt, channel, arguments);
+                 base::nullopt, channel, std::move(arguments));
 }
 
 void WebContents::UpdateDraggableRegions(
@@ -1967,7 +1967,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
     electron_ptr->Message(internal, false, channel,
-                          base::ListValue(args.GetList()), sender_id);
+                          base::ListValue(args.Clone().GetList()), sender_id);
   }
   return true;
 }
