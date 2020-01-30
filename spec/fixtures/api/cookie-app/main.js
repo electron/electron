@@ -1,6 +1,6 @@
 const { app, session } = require('electron')
 
-app.on('ready', async function () {
+app.whenReady().then(async function () {
   const url = 'http://foo.bar'
   const persistentSession = session.fromPartition('persist:ence-test')
   const name = 'test'

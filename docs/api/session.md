@@ -520,7 +520,7 @@ A [`Protocol`](protocol.md) object for this session.
 const { app, session } = require('electron')
 const path = require('path')
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   const protocol = session.fromPartition('some-partition').protocol
   protocol.registerFileProtocol('atom', (request, callback) => {
     let url = request.url.substr(7)
@@ -538,7 +538,7 @@ A [`NetLog`](net-log.md) object for this session.
 ```javascript
 const { app, session } = require('electron')
 
-app.on('ready', async () => {
+app.whenReady().then(async () => {
   const netLog = session.fromPartition('some-partition').netLog
   netLog.startLogging('/path/to/net-log')
   // After some network events

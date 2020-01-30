@@ -937,7 +937,7 @@ if (!gotTheLock) {
   })
 
   // Create myWindow, load the rest of the app, etc...
-  app.on('ready', () => {
+  app.whenReady().then(() => {
   })
 }
 ```

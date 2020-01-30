@@ -1,7 +1,7 @@
 const { app, BrowserWindow } = require('electron')
 
 let win
-app.on('ready', function () {
+app.whenReady().then(function () {
   win = new BrowserWindow({})
   win.loadURL('about:blank')
   win.setMenuBarVisibility(false)
