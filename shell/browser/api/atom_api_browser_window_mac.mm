@@ -79,6 +79,9 @@ void BrowserWindow::UpdateDraggableRegions(
   if (window_->has_frame())
     return;
 
+  if (!web_contents())
+    return;
+
   // All ControlRegionViews should be added as children of the WebContentsView,
   // because WebContentsView will be removed and re-added when entering and
   // leaving fullscreen mode.
