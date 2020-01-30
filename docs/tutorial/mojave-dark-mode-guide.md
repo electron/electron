@@ -18,15 +18,12 @@ out of this theming.
 ## Automatically updating your own interfaces
 
 If your app has its own dark mode you should toggle it on and off in sync with the system's dark mode setting.  You can do
-this by listening for the theme changed event on Electron's `systemPreferences` module.  E.g.
+this by listening for the theme updated event on Electron's `nativeTheme` module.  E.g.
 
 ```js
-const { nativeTheme, systemPreferences } = require('electron')
+const { nativeTheme } = require('electron')
 
-systemPreferences.subscribeNotification(
-  'AppleInterfaceThemeChangedNotification',
-  function theThemeHasChanged () {
-    updateMyAppTheme(nativeTheme.shouldUseDarkColors)
-  }
-)
+nativeTheme.on('updated', function theThemeHasChanged () {
+  updateMyAppTheme(nativeTheme.shouldUseDarkColors)
+})
 ```
