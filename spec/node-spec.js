@@ -154,6 +154,42 @@ describe('node feature', () => {
           done()
         })
       })
+
+      it('doesnt crash for locale that has missing resource from icu', (done) => {
+        child = ChildProcess.spawn(process.execPath, [path.join(__dirname, 'fixtures', 'module', 'icu.js')], {
+          env: {
+            ELECTRON_RUN_AS_NODE: true,
+            LC_ALL: 'ja'
+          }
+        })
+
+        let output = ''
+        child.stdout.on('data', data => {
+          output += data
+        })
+        child.stdout.on('close', () => {
+          expect(output).to.not.be.null()
+          done()
+        })
+      })
+
+      it('doesnt crash for locale of the format aa@BB', (done) => {
+        child = ChildProcess.spawn(process.execPath, [path.join(__dirname, 'fixtures', 'module', 'icu.js')], {
+          env: {
+            ELECTRON_RUN_AS_NODE: true,
+            LC_ALL: 'fr@EURO'
+          }
+        })
+
+        let output = ''
+        child.stdout.on('data', data => {
+          output += data
+        })
+        child.stdout.on('close', () => {
+          expect(output).to.not.be.null()
+          done()
+        })
+      })
     })
 
     describe('child_process.exec', () => {
