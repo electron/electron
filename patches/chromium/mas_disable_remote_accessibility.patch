@@ -47,10 +47,10 @@ index 9ddda9116e7284cbccde8a51e23ad7560dd06367..e846091ad99b0154636489e53491209f
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 7311c27d421690d553d0485a4902d914d7c96076..85b8c7f1895e7716c62d21755879ca313c12b668 100644
+index 2ee45cb069ec5d78d9c7a3f61fdd1d444a590f41..badc4323b910f8e3957583e05af303472cb204f6 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -544,10 +544,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -543,10 +543,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -117,7 +117,7 @@ index 1b1847cfd0dd0498da645e34cd5ab1b2bc87fc0c..da98761f0d8d4844f54f4558746649ec
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index e6e26f703be064924dbb7e36555c60ba91b0123f..064c44b2d056a3428428fd415b2a78c621cc09c2 100644
+index 6b62883356dba70e281f99735feab4e09b1e15e2..0148364ce32a75307ff9f99f29e305e546122438 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -231,8 +231,10 @@
@@ -170,7 +170,7 @@ index e6e26f703be064924dbb7e36555c60ba91b0123f..064c44b2d056a3428428fd415b2a78c6
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 36dc6e30cbea8e909d887c903ccfc6d2420433c4..afa109e4aaadb6a278642864425c01918948814e 100644
+index 7ec4b390a6c805868076177b02312352d825a553..ac544812b3f8197ae709cb93840f142e2f75daea 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -304,6 +304,13 @@ jumbo_component("base") {

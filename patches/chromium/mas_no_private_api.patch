@@ -262,10 +262,10 @@ index fed745716ad3d0d9152c20353372c34740c097e4..1381a64458dd37d07c72c3265e461669
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 9009a7f7bd5505f4a65c90ecc31dca5b2b82f248..88e4b8aad6e882d8085e77f09aa7798fcdcb56ec 100644
+index d7f4f9364441aed3eda1e0b22e646f04182b6965..48408ca844ed3e7080410fc780764e8748ac2341 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -532,6 +532,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -531,6 +531,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -273,7 +273,7 @@ index 9009a7f7bd5505f4a65c90ecc31dca5b2b82f248..88e4b8aad6e882d8085e77f09aa7798f
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -539,6 +540,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -538,6 +539,7 @@ void PostAnnouncementNotification(NSString* announcement) {
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }
@@ -314,10 +314,10 @@ index e59ac93d0e1554a2df5d8c74db2beba25d090228..6657c48664bdec4964b382f80309d1bf
  
  }  // namespace
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index b2425416b1993f037530619df0458d43d008bd03..39b096120b57c3192519a607d96c8a3ddab434e5 100644
+index 61c4a389098a3eaa77ad547921f0e29ea4145252..dbce8048b4455efc4b314559b1ebaa42f5d409bf 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -36,6 +36,7 @@
+@@ -35,6 +35,7 @@
  #include "device/bluetooth/bluetooth_low_energy_peripheral_manager_delegate.h"
  #include "device/bluetooth/bluetooth_socket_mac.h"
  
@@ -325,7 +325,7 @@ index b2425416b1993f037530619df0458d43d008bd03..39b096120b57c3192519a607d96c8a3d
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -49,6 +50,7 @@
+@@ -48,6 +49,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -333,7 +333,7 @@ index b2425416b1993f037530619df0458d43d008bd03..39b096120b57c3192519a607d96c8a3d
  
  namespace {
  
-@@ -121,8 +123,10 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -120,8 +122,10 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
        controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -344,7 +344,7 @@ index b2425416b1993f037530619df0458d43d008bd03..39b096120b57c3192519a607d96c8a3d
        should_update_name_(true),
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
-@@ -307,8 +311,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -306,8 +310,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {

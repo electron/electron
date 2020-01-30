@@ -28,10 +28,10 @@ index e03ad3a5a115383143d1324164dfd37f87c6f2f2..1c179e0cca8b0b1fc19971d1c9e93d59
  }
  
 diff --git a/content/renderer/render_view_browsertest.cc b/content/renderer/render_view_browsertest.cc
-index 83dd16276475dcaddd249b37c292e37e1db7848e..4c31ace15cd77a10315ed2ad5882435002e1c56c 100644
+index 5d8c13256126f1906c8932b6718aab0ef7bb722c..e1ca0141f7dc1be7ac900d75a678211ba63e08cd 100644
 --- a/content/renderer/render_view_browsertest.cc
 +++ b/content/renderer/render_view_browsertest.cc
-@@ -1004,6 +1004,73 @@ TEST_F(RenderViewImplTest, BeginNavigationForWebUI) {
+@@ -1003,6 +1003,73 @@ TEST_F(RenderViewImplTest, BeginNavigationForWebUI) {
        FrameHostMsg_OpenURL::ID));
  }
  

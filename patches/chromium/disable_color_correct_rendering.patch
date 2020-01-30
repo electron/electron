@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index cd52b3a69753b09f496c6ab0c66e441c443a023a..0c8740c58309682654874da01f6e5c390a61de61 100644
+index eba842bdd614edd9b66fe0d826a3403726def295..14d0dd7ff1032e3fab3b19371f0ad963b27d6ff2 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1803,6 +1803,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
@@ -220,10 +220,10 @@ index be727deec562337330e29570cfc232d57cc69a83..fee41b66cf4b3b14c6f5b1b7278c9070
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index e4a4b968e3f94cd10444495c066651130f076a5a..7481ee690590102b1ec71c3bce6c075402f2c0e6 100644
+index 34510d80f708b2e61dac8605526d7b34c484a962..3ba61b3c1fbec6e9d5d9fe62704f6a9d05c4cbdd 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -216,6 +216,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -221,6 +221,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
