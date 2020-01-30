@@ -624,7 +624,6 @@ v8::Local<v8::Promise> Session::LoadExtension(
              const std::string& error_msg) {
             if (extension) {
               if (!error_msg.empty()) {
-                LOG(INFO) << "ELW 1";
                 node::Environment* env =
                     node::Environment::GetCurrent(v8::Isolate::GetCurrent());
                 EmitWarning(env, error_msg, "ExtensionLoadWarning");
