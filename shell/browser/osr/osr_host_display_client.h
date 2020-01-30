@@ -21,8 +21,9 @@ typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
 
 class LayeredWindowUpdater : public viz::mojom::LayeredWindowUpdater {
  public:
-  explicit LayeredWindowUpdater(viz::mojom::LayeredWindowUpdaterRequest request,
-                                OnPaintCallback callback);
+  explicit LayeredWindowUpdater(
+      mojo::PendingReceiver<viz::mojom::LayeredWindowUpdater> receiver,
+      OnPaintCallback callback);
   ~LayeredWindowUpdater() override;
 
   void SetActive(bool active);
@@ -34,7 +35,7 @@ class LayeredWindowUpdater : public viz::mojom::LayeredWindowUpdater {
 
  private:
   OnPaintCallback callback_;
-  mojo::Binding<viz::mojom::LayeredWindowUpdater> binding_;
+  mojo::Receiver<viz::mojom::LayeredWindowUpdater> receiver_;
   std::unique_ptr<SkCanvas> canvas_;
   bool active_ = false;
 
@@ -62,7 +63,12 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
 #endif
 
   void CreateLayeredWindowUpdater(
-      viz::mojom::LayeredWindowUpdaterRequest request) override;
+      mojo::PendingReceiver<viz::mojom::LayeredWindowUpdater> receiver)
+      override;
+
+#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
+  void DidCompleteSwapWithNewSize(const gfx::Size& size) override;
+#endif
 
   std::unique_ptr<LayeredWindowUpdater> layered_window_updater_;
   OnPaintCallback callback_;
