@@ -1353,7 +1353,7 @@ void NativeWindowViews::DeleteDelegate() {
     static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
     // Focus on parent window.
     FocusOptions focusOptions;
-    parent->Focus(focusOptions&);
+    parent->Focus(focusOptions);
   }
 
   NotifyWindowClosed();
