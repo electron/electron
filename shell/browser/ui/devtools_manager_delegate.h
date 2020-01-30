@@ -23,8 +23,7 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
 
   // DevToolsManagerDelegate implementation.
   void Inspect(content::DevToolsAgentHost* agent_host) override;
-  void HandleCommand(content::DevToolsAgentHost* agent_host,
-                     content::DevToolsAgentHostClient* client,
+  void HandleCommand(content::DevToolsAgentHostClientChannel* channel,
                      const std::string& method,
                      base::span<const uint8_t> message,
                      NotHandledCallback callback) override;

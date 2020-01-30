@@ -22,7 +22,6 @@ boringssl_build_gn.patch
 pepper_plugin_support.patch
 no_cache_storage_check.patch
 blink_fix_prototype_assert.patch
-libgtkui_export.patch
 gtk_visibility.patch
 sysroot.patch
 mas_blink_no_private_api.patch
@@ -81,3 +80,5 @@ add_trustedauthclient_to_urlloaderfactory.patch
 feat_allow_disabling_blink_scheduler_throttling_per_renderview.patch
 accessible_pane_view.patch
 fixme_grit_conflicts.patch
+fix_add_executable_to_chromedriver_s_rpath_for_electron_8.patch
+fix_use_the_new_mediaplaypause_key_listener_for_internal_chrome.patch

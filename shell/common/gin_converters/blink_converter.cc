@@ -12,6 +12,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/keyboard_util.h"
@@ -280,23 +281,6 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   return true;
 }
 
-template <>
-struct Converter<base::Optional<blink::WebPoint>> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     base::Optional<blink::WebPoint>* out) {
-    gin_helper::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
-      return false;
-    blink::WebPoint point;
-    bool success = dict.Get("x", &point.x) && dict.Get("y", &point.y);
-    if (!success)
-      return false;
-    out->emplace(point);
-    return true;
-  }
-};
-
 bool Converter<blink::WebSize>::FromV8(v8::Isolate* isolate,
                                        v8::Local<v8::Value> val,
                                        blink::WebSize* out) {
@@ -326,7 +310,10 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
   }
 
   dict.Get("screenSize", &out->screen_size);
-  dict.Get("viewPosition", &out->view_position);
+  gfx::Point view_position;
+  if (dict.Get("viewPosition", &view_position)) {
+    out->view_position = view_position;
+  }
   dict.Get("deviceScaleFactor", &out->device_scale_factor);
   dict.Get("viewSize", &out->view_size);
   dict.Get("scale", &out->scale);

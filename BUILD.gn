@@ -494,7 +494,7 @@ source_set("electron_lib") {
     deps += [
       ":libnotify_loader",
       "//build/config/linux/gtk",
-      "//chrome/browser/ui/libgtkui",
+      "//chrome/browser/ui/gtk",
       "//dbus",
       "//device/bluetooth",
       "//third_party/breakpad:client",

@@ -595,7 +595,7 @@ describe('chromium features', () => {
       }
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`b = window.open(${JSON.stringify(targetURL)})`)
+      w.webContents.executeJavaScript(`{ b = window.open(${JSON.stringify(targetURL)}); null }`)
       const [, window] = await emittedOnce(app, 'browser-window-created')
       await emittedOnce(window.webContents, 'did-finish-load')
       expect(await w.webContents.executeJavaScript(`b.location.href`)).to.equal(targetURL)
@@ -604,29 +604,29 @@ describe('chromium features', () => {
     it('defines a window.location setter', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`b = window.open("about:blank")`)
+      w.webContents.executeJavaScript(`{ b = window.open("about:blank"); null }`)
       const [, { webContents }] = await emittedOnce(app, 'browser-window-created')
       await emittedOnce(webContents, 'did-finish-load')
       // When it loads, redirect
-      w.webContents.executeJavaScript(`b.location = ${JSON.stringify(`file://${fixturesPath}/pages/base-page.html`)}`)
+      w.webContents.executeJavaScript(`{ b.location = ${JSON.stringify(`file://${fixturesPath}/pages/base-page.html`)}; null }`)
       await emittedOnce(webContents, 'did-finish-load')
     })
 
     it('defines a window.location.href setter', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`b = window.open("about:blank")`)
+      w.webContents.executeJavaScript(`{ b = window.open("about:blank"); null }`)
       const [, { webContents }] = await emittedOnce(app, 'browser-window-created')
       await emittedOnce(webContents, 'did-finish-load')
       // When it loads, redirect
-      w.webContents.executeJavaScript(`b.location.href = ${JSON.stringify(`file://${fixturesPath}/pages/base-page.html`)}`)
+      w.webContents.executeJavaScript(`{ b.location.href = ${JSON.stringify(`file://${fixturesPath}/pages/base-page.html`)}; null }`)
       await emittedOnce(webContents, 'did-finish-load')
     })
 
     it('open a blank page when no URL is specified', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`b = window.open()`)
+      w.webContents.executeJavaScript(`{ b = window.open(); null }`)
       const [, { webContents }] = await emittedOnce(app, 'browser-window-created')
       await emittedOnce(webContents, 'did-finish-load')
       expect(await w.webContents.executeJavaScript(`b.location.href`)).to.equal('about:blank')
@@ -635,7 +635,7 @@ describe('chromium features', () => {
     it('open a blank page when an empty URL is specified', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`b = window.open('')`)
+      w.webContents.executeJavaScript(`{ b = window.open(''); null }`)
       const [, { webContents }] = await emittedOnce(app, 'browser-window-created')
       await emittedOnce(webContents, 'did-finish-load')
       expect(await w.webContents.executeJavaScript(`b.location.href`)).to.equal('about:blank')
@@ -644,7 +644,7 @@ describe('chromium features', () => {
     it('sets the window title to the specified frameName', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`b = window.open('', 'hello')`)
+      w.webContents.executeJavaScript(`{ b = window.open('', 'hello'); null }`)
       const [, window] = await emittedOnce(app, 'browser-window-created')
       expect(window.getTitle()).to.equal('hello')
     })
@@ -652,7 +652,7 @@ describe('chromium features', () => {
     it('does not throw an exception when the frameName is a built-in object property', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`b = window.open('', '__proto__')`)
+      w.webContents.executeJavaScript(`{ b = window.open('', '__proto__'); null }`)
       const [, window] = await emittedOnce(app, 'browser-window-created')
       expect(window.getTitle()).to.equal('__proto__')
     })
@@ -1095,7 +1095,7 @@ describe('chromium features', () => {
         // History should have current page by now.
         expect((w.webContents as any).length()).to.equal(1)
 
-        const waitCommit = emittedOnce(w.webContents, 'navigation-entry-commited')
+        const waitCommit = emittedOnce(w.webContents, 'navigation-entry-committed')
         w.webContents.executeJavaScript('window.history.pushState({}, "")')
         await waitCommit
         // Initial page + pushed state.

@@ -7,10 +7,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1652925 removed colors
 needed in chromium but our autofill implementation uses them.  This patch can be removed if we refactor
 our autofill implementation to work like Chromium's.
 
-diff --git a/chrome/browser/ui/libgtkui/native_theme_gtk.cc b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-index c34e3618c5124e3b10c25d434420cf85679e9c73..1cacab5eb9dc7dd754eb9f7a29d11319d633cdc8 100644
---- a/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-+++ b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
+diff --git a/chrome/browser/ui/gtk/native_theme_gtk.cc b/chrome/browser/ui/gtk/native_theme_gtk.cc
+index 26f1842494bdbcf5ffefb07e8fc74ba816a2a2d8..8ef9c27728a5b3166732d753d582e30a015cc0a6 100644
+--- a/chrome/browser/ui/gtk/native_theme_gtk.cc
++++ b/chrome/browser/ui/gtk/native_theme_gtk.cc
 @@ -301,6 +301,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");

@@ -7,7 +7,9 @@
 #include <AvailabilityMacros.h>
 #include <objc/objc-runtime.h>
 
+#include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/mac/mac_util.h"
@@ -1062,7 +1064,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       // Hide the titlebar
       SetStyleMask(false, NSWindowStyleMaskTitled);
 
-      // Resize the window to accomodate the _entire_ screen size
+      // Resize the window to accommodate the _entire_ screen size
       fullscreenFrame.size.height -=
           [[[NSApplication sharedApplication] mainMenu] menuBarHeight];
     } else if (!window_button_visibility_.has_value()) {
