@@ -12,48 +12,50 @@ import time
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
+
 def main():
   args = parse_args()
 
-  if sys.platform == 'darwin':
-    chromedriver_name = 'chromedriver'
-    chromedriver_path = os.path.join(args.source_root, args.chromedriver_path, chromedriver_name)
-  elif sys.platform == 'windows':
-    print("I'm on windows")
-    # add windows code
-  else:
-    print("I'm on linux")
-    # add linux code
+  chromedriver_name = {
+    'darwin': 'chromedriver',
+    'windows': 'chromedriver.exe',
+    'linux': 'chromedriver'
+}
 
-  proc = subprocess.Popen([chromedriver_path], stdout=subprocess.PIPE, universal_newlines=True)
+  chromedriver_path = os.path.join(
+    args.source_root, args.chromedriver_path, chromedriver_name[sys.platform])
+  proc = subprocess.Popen([chromedriver_path],
+                          stdout=subprocess.PIPE, universal_newlines=True)
   try:
-    time.sleep(10)
     output = proc.stdout.readline()
-    print(output)
   except KeyboardInterrupt:
     returncode = 0
   finally:
     proc.terminate()
 
   returncode = 0
-  match = re.search("^Starting ChromeDriver [0-9]+.[0-9]+.[0-9]+.[0-9]+ .* on port [0-9]+$", output)
+  match = re.search(
+    '^Starting ChromeDriver [0-9]+.[0-9]+.[0-9]+.[0-9]+ .* on port [0-9]+$', output)
 
-  if (match == None):
+  if match == None:
     returncode = 1
 
   if returncode == 0:
-    print("ok ChromeDriver is able to be initialized.")
+    print('ok ChromeDriver is able to be initialized.')
+
   return returncode
 
+
 def parse_args():
-  parser = argparse.ArgumentParser(description='Test ChromeDriver')
-  parser.add_argument('--source-root',
-                      default=SOURCE_ROOT,
-                      required=False)
-  parser.add_argument('--chromedriver-path',
-                      default=None,
-                      required=True)
-  return parser.parse_args()
+    parser=argparse.ArgumentParser(description='Test ChromeDriver')
+    parser.add_argument('--source-root',
+                        default=SOURCE_ROOT,
+                        required=False)
+    parser.add_argument('--chromedriver-path',
+                        default=None,
+                        required=True)
+    return parser.parse_args()
+
 
 if __name__ == '__main__':
-  sys.exit(main())
+    sys.exit(main())
