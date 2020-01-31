@@ -108,7 +108,7 @@ index 4bf25bf1fa69f7d3869369172d375e2e489e62a1..f80ef2cecc8b111dc54e109646573a59
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 60dc1b6e6410e3e5aa3b2b518b4c043e8b742108..940212acfeb61a4df3722e8fa19b4a4bba75fe14 100644
+index 5c07cb506115cdc846952d9b8e1061b6de6042d0..baf9e4ed20a41b9c1320ec6fbae290319e8e05e5 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2033,7 +2033,7 @@ void RenderProcessHostImpl::CreateNotificationService(
