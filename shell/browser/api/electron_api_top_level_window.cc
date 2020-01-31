@@ -120,6 +120,9 @@ TopLevelWindow::~TopLevelWindow() {
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
   base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
+
+  // Remove global reference so the JS object can be garbage collected.
+  self_ref_.Reset();
 }
 
 void TopLevelWindow::InitWith(v8::Isolate* isolate,
@@ -135,6 +138,9 @@ void TopLevelWindow::InitWith(v8::Isolate* isolate,
     DCHECK(!parent.IsEmpty());
     parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
   }
+
+  // Reference this object in case it got garbage collected.
+  self_ref_.Reset(isolate, wrapper);
 }
 
 void TopLevelWindow::WillCloseWindow(bool* prevent_default) {
