@@ -53,7 +53,7 @@ parameters:
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electronjs/build:3bba0fdee0d5650e751c2561f1806f9138dfe56a
+    - image: electronjs/build:d09fd95029bd8c1c73069888231b29688ef385ed
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
