@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_VIEWS_ATOM_API_LAYOUT_MANAGER_H_
-#define SHELL_BROWSER_API_VIEWS_ATOM_API_LAYOUT_MANAGER_H_
+#ifndef SHELL_BROWSER_API_VIEWS_ELECTRON_API_LAYOUT_MANAGER_H_
+#define SHELL_BROWSER_API_VIEWS_ELECTRON_API_LAYOUT_MANAGER_H_
 
 #include <memory>
 
@@ -41,4 +41,4 @@ class LayoutManager : public gin_helper::TrackableObject<LayoutManager> {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_VIEWS_ATOM_API_LAYOUT_MANAGER_H_
+#endif  // SHELL_BROWSER_API_VIEWS_ELECTRON_API_LAYOUT_MANAGER_H_

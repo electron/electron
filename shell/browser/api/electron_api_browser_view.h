@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ATOM_API_BROWSER_VIEW_H_
-#define SHELL_BROWSER_API_ATOM_API_BROWSER_VIEW_H_
+#ifndef SHELL_BROWSER_API_ELECTRON_API_BROWSER_VIEW_H_
+#define SHELL_BROWSER_API_ELECTRON_API_BROWSER_VIEW_H_
 
 #include <memory>
 #include <string>
@@ -70,4 +70,4 @@ class BrowserView : public gin_helper::TrackableObject<BrowserView>,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ATOM_API_BROWSER_VIEW_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_BROWSER_VIEW_H_

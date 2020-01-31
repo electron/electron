@@ -3,8 +3,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_COCOA_ATOM_MENU_CONTROLLER_H_
-#define SHELL_BROWSER_UI_COCOA_ATOM_MENU_CONTROLLER_H_
+#ifndef SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_
+#define SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_
 
 #import <Cocoa/Cocoa.h>
 
@@ -60,4 +60,4 @@ class ElectronMenuModel;
 
 @end
 
-#endif  // SHELL_BROWSER_UI_COCOA_ATOM_MENU_CONTROLLER_H_
+#endif  // SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_

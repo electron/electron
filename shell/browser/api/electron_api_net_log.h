@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ATOM_API_NET_LOG_H_
-#define SHELL_BROWSER_API_ATOM_API_NET_LOG_H_
+#ifndef SHELL_BROWSER_API_ELECTRON_API_NET_LOG_H_
+#define SHELL_BROWSER_API_ELECTRON_API_NET_LOG_H_
 
 #include <list>
 #include <memory>
@@ -67,4 +67,4 @@ class NetLog : public gin_helper::TrackableObject<NetLog> {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ATOM_API_NET_LOG_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_NET_LOG_H_

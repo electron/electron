@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_COCOA_ATOM_BUNDLE_MOVER_H_
-#define SHELL_BROWSER_UI_COCOA_ATOM_BUNDLE_MOVER_H_
+#ifndef SHELL_BROWSER_UI_COCOA_ELECTRON_BUNDLE_MOVER_H_
+#define SHELL_BROWSER_UI_COCOA_ELECTRON_BUNDLE_MOVER_H_
 
 #include "base/mac/foundation_util.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -41,4 +41,4 @@ class ElectronBundleMover {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_COCOA_ATOM_BUNDLE_MOVER_H_
+#endif  // SHELL_BROWSER_UI_COCOA_ELECTRON_BUNDLE_MOVER_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_VIEWS_ATOM_API_BOX_LAYOUT_H_
-#define SHELL_BROWSER_API_VIEWS_ATOM_API_BOX_LAYOUT_H_
+#ifndef SHELL_BROWSER_API_VIEWS_ELECTRON_API_BOX_LAYOUT_H_
+#define SHELL_BROWSER_API_VIEWS_ELECTRON_API_BOX_LAYOUT_H_
 
 #include "gin/handle.h"
 #include "shell/browser/api/views/electron_api_layout_manager.h"
@@ -38,4 +38,4 @@ class BoxLayout : public LayoutManager {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_VIEWS_ATOM_API_BOX_LAYOUT_H_
+#endif  // SHELL_BROWSER_API_VIEWS_ELECTRON_API_BOX_LAYOUT_H_

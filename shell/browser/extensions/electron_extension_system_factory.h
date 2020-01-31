@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSION_SYSTEM_FACTORY_H_
-#define SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSION_SYSTEM_FACTORY_H_
+#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_FACTORY_H_
+#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_FACTORY_H_
 
 #include "base/macros.h"
 #include "base/memory/singleton.h"
@@ -38,4 +38,4 @@ class ElectronExtensionSystemFactory : public ExtensionSystemProvider {
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSION_SYSTEM_FACTORY_H_
+#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_FACTORY_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ATOM_DISPLAY_INFO_PROVIDER_H_
-#define SHELL_BROWSER_EXTENSIONS_ATOM_DISPLAY_INFO_PROVIDER_H_
+#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_DISPLAY_INFO_PROVIDER_H_
+#define SHELL_BROWSER_EXTENSIONS_ELECTRON_DISPLAY_INFO_PROVIDER_H_
 
 #include "base/macros.h"
 #include "extensions/browser/api/system_display/display_info_provider.h"
@@ -20,4 +20,4 @@ class ElectronDisplayInfoProvider : public DisplayInfoProvider {
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ATOM_DISPLAY_INFO_PROVIDER_H_
+#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_DISPLAY_INFO_PROVIDER_H_

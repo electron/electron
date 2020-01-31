@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ATOM_API_DATA_PIPE_HOLDER_H_
-#define SHELL_BROWSER_API_ATOM_API_DATA_PIPE_HOLDER_H_
+#ifndef SHELL_BROWSER_API_ELECTRON_API_DATA_PIPE_HOLDER_H_
+#define SHELL_BROWSER_API_ELECTRON_API_DATA_PIPE_HOLDER_H_
 
 #include <string>
 
@@ -51,4 +51,4 @@ class DataPipeHolder : public gin::Wrappable<DataPipeHolder> {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ATOM_API_DATA_PIPE_HOLDER_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_DATA_PIPE_HOLDER_H_

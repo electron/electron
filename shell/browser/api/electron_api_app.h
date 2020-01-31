@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ATOM_API_APP_H_
-#define SHELL_BROWSER_API_ATOM_API_APP_H_
+#ifndef SHELL_BROWSER_API_ELECTRON_API_APP_H_
+#define SHELL_BROWSER_API_ELECTRON_API_APP_H_
 
 #include <memory>
 #include <string>
@@ -244,4 +244,4 @@ class App : public ElectronBrowserClient::Delegate,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ATOM_API_APP_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_APP_H_

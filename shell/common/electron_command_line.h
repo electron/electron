@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_ATOM_COMMAND_LINE_H_
-#define SHELL_COMMON_ATOM_COMMAND_LINE_H_
+#ifndef SHELL_COMMON_ELECTRON_COMMAND_LINE_H_
+#define SHELL_COMMON_ELECTRON_COMMAND_LINE_H_
 
 #include <string>
 #include <vector>
@@ -35,4 +35,4 @@ class ElectronCommandLine {
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_ATOM_COMMAND_LINE_H_
+#endif  // SHELL_COMMON_ELECTRON_COMMAND_LINE_H_

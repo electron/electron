@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_ATOM_API_NATIVE_IMAGE_H_
-#define SHELL_COMMON_API_ATOM_API_NATIVE_IMAGE_H_
+#ifndef SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
+#define SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
 
 #include <map>
 #include <string>
@@ -128,4 +128,4 @@ struct Converter<electron::api::NativeImage*> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_API_ATOM_API_NATIVE_IMAGE_H_
+#endif  // SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_

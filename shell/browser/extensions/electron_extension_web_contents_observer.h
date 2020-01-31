@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSION_WEB_CONTENTS_OBSERVER_H_
-#define SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSION_WEB_CONTENTS_OBSERVER_H_
+#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_WEB_CONTENTS_OBSERVER_H_
+#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_WEB_CONTENTS_OBSERVER_H_
 
 #include "base/macros.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -37,4 +37,4 @@ class ElectronExtensionWebContentsObserver
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSION_WEB_CONTENTS_OBSERVER_H_
+#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_WEB_CONTENTS_OBSERVER_H_

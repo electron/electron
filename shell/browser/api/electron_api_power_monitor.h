@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ATOM_API_POWER_MONITOR_H_
-#define SHELL_BROWSER_API_ATOM_API_POWER_MONITOR_H_
+#ifndef SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
+#define SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
 #include "base/compiler_specific.h"
 #include "shell/browser/lib/power_observer.h"
@@ -77,4 +77,4 @@ class PowerMonitor : public gin_helper::TrackableObject<PowerMonitor>,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ATOM_API_POWER_MONITOR_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_

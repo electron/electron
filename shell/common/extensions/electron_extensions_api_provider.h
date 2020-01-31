@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_EXTENSIONS_ATOM_EXTENSIONS_API_PROVIDER_H_
-#define SHELL_COMMON_EXTENSIONS_ATOM_EXTENSIONS_API_PROVIDER_H_
+#ifndef SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_
+#define SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_
 
 #include <string>
 
@@ -36,4 +36,4 @@ class ElectronExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_EXTENSIONS_ATOM_EXTENSIONS_API_PROVIDER_H_
+#endif  // SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_

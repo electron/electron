@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_
-#define SHELL_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_
+#ifndef SHELL_BROWSER_API_ELECTRON_API_TOP_LEVEL_WINDOW_H_
+#define SHELL_BROWSER_API_ELECTRON_API_TOP_LEVEL_WINDOW_H_
 
 #include <map>
 #include <memory>
@@ -266,4 +266,4 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_TOP_LEVEL_WINDOW_H_

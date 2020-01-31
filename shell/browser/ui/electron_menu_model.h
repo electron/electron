@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_ATOM_MENU_MODEL_H_
-#define SHELL_BROWSER_UI_ATOM_MENU_MODEL_H_
+#ifndef SHELL_BROWSER_UI_ELECTRON_MENU_MODEL_H_
+#define SHELL_BROWSER_UI_ELECTRON_MENU_MODEL_H_
 
 #include <map>
 
@@ -85,4 +85,4 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_ATOM_MENU_MODEL_H_
+#endif  // SHELL_BROWSER_UI_ELECTRON_MENU_MODEL_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
-#define SHELL_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
+#ifndef SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
+#define SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
 
 #include <map>
 #include <memory>
@@ -59,4 +59,4 @@ class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_

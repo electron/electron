@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
-#define SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
+#ifndef SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
+#define SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 
 #include "shell/common/gin_helper/event_emitter.h"
 #include "ui/native_theme/native_theme.h"
@@ -62,4 +62,4 @@ struct Converter<ui::NativeTheme::ThemeSource> {
 
 }  // namespace gin
 
-#endif  // SHELL_BROWSER_API_ATOM_API_NATIVE_THEME_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_

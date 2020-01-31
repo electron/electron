@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_ATOM_VIEWS_DELEGATE_H_
-#define SHELL_BROWSER_UI_VIEWS_ATOM_VIEWS_DELEGATE_H_
+#ifndef SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_
+#define SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_
 
 #include <map>
 #include <string>
@@ -76,4 +76,4 @@ class ViewsDelegate : public views::ViewsDelegate {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_ATOM_VIEWS_DELEGATE_H_
+#endif  // SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_
