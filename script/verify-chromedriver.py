@@ -8,6 +8,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
@@ -17,22 +18,32 @@ def main():
   if sys.platform == 'darwin':
     chromedriver_name = 'chromedriver'
     chromedriver_path = os.path.join(args.source_root, args.chromedriver_path, chromedriver_name)
+  elif sys.platform == 'windows':
+    print("I'm on windows")
+    # add windows code
+  else:
+    print("I'm on linux")
+    # add linux code
 
-  process = subprocess.Popen([chromedriver_path], stdout=subprocess.PIPE, universal_newlines=True)
-  output = []
-
-  for _ in range(0, 3):
-    output.append(process.stdout.readline())
-
-  process.kill()
+  proc = subprocess.Popen([chromedriver_path], stdout=subprocess.PIPE, universal_newlines=True)
+  try:
+    time.sleep(10)
+    output = proc.stdout.readline()
+    print(output)
+  except KeyboardInterrupt:
+    returncode = 0
+  finally:
+    proc.terminate()
 
   returncode = 0
-  match = re.search("^Starting ChromeDriver [0-9]+.[0-9]+.[0-9]+.[0-9]+ .* on port [0-9]+$", output[0])
+  match = re.search("^Starting ChromeDriver [0-9]+.[0-9]+.[0-9]+.[0-9]+ .* on port [0-9]+$", output)
 
   if (match == None):
     returncode = 1
 
-  print("returncode")
+  if returncode == 0:
+    print("ok ChromeDriver is able to be initialized.")
+  return returncode
 
 def parse_args():
   parser = argparse.ArgumentParser(description='Test ChromeDriver')
