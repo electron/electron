@@ -4,6 +4,8 @@
 
 #include "shell/common/api/remote_object_freer.h"
 
+#include <utility>
+
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
@@ -79,7 +81,7 @@ void RemoteObjectFreer::RunDestructor() {
   mojom::ElectronBrowserPtr electron_ptr;
   render_frame->GetRemoteInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(true, channel, args.Clone());
+  electron_ptr->Message(true, channel, std::move(args));
 }
 
 }  // namespace electron

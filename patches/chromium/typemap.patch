@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Mon, 27 Jan 2020 16:02:41 -0800
+Subject: typemap
+
+this adds electron's typemap to the global registry of typemaps. Only
+needed for temporarily supporting the legacy-ipc base::ListValue
+serializers until we switch to using SCA.
+
+diff --git a/mojo/public/tools/bindings/chromium_bindings_configuration.gni b/mojo/public/tools/bindings/chromium_bindings_configuration.gni
+index 6e8bc9e2c4f0edca9f22eac5017b44000e477ea2..a482fdca501ed94ec135c18cd35bc2fe3cf6ed88 100644
+--- a/mojo/public/tools/bindings/chromium_bindings_configuration.gni
++++ b/mojo/public/tools/bindings/chromium_bindings_configuration.gni
+@@ -22,6 +22,7 @@ _typemap_imports = [
+   "//device/bluetooth/public/mojom/typemaps.gni",
+   "//device/bluetooth/public/mojom/test/typemaps.gni",
+   "//device/gamepad/public/cpp/typemaps.gni",
++  "//electron/shell/common/api/typemaps.gni",
+   "//fuchsia/mojom/test_typemaps.gni",
+   "//gpu/ipc/common/typemaps.gni",
+   "//ipc/typemaps.gni",

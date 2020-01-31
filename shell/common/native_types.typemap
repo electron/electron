@@ -1,0 +1,9 @@
+mojom = "//electron/shell/common/api/native_types.mojom"
+public_headers = []
+traits_headers = [ "//ipc/ipc_message_utils.h" ]
+deps = [
+  "//ipc"
+]
+type_mappings = [
+  "electron.mojom.LegacyListValue=::base::ListValue[move_only]",
+]

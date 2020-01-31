@@ -55,7 +55,7 @@ void RemoteCallbackFreer::RunDestructor() {
     (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
     electron_ptr->Message(true /* internal */, false /* send_to_all */, channel,
-                          args.Clone(), sender_id);
+                          base::ListValue(args.Clone().GetList()), sender_id);
   }
 
   Observe(nullptr);

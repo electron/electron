@@ -1,0 +1,4 @@
+module electron.mojom;
+
+[Native]
+struct LegacyListValue;
