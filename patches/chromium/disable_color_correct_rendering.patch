@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index eba842bdd614edd9b66fe0d826a3403726def295..14d0dd7ff1032e3fab3b19371f0ad963b27d6ff2 100644
+index 4691cedce6d16b5ffcbed995bc2a4a49dda2556b..7c95c65dbb7067524f8696ea4d86e27dacc815cb 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1803,6 +1803,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
+@@ -1814,6 +1814,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
  
  const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpaceAndId(
      int* id) const {
@@ -232,7 +232,7 @@ index 34510d80f708b2e61dac8605526d7b34c484a962..3ba61b3c1fbec6e9d5d9fe62704f6a9d
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 5ba898b3e6d59e84f0cf329843c51b294a0f093f..f190662cb5a01542b40ca9e992d63451e4c8f4ac 100644
+index 89fa83bbda39e90c1fcd6df83cd248c1f2de7195..8d69e9a2f2ee1ea7e639c1bfcdf42eb89a4099ff 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -228,6 +228,7 @@
@@ -243,7 +243,7 @@ index 5ba898b3e6d59e84f0cf329843c51b294a0f093f..f190662cb5a01542b40ca9e992d63451
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3082,6 +3083,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3083,6 +3084,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -252,10 +252,10 @@ index 5ba898b3e6d59e84f0cf329843c51b294a0f093f..f190662cb5a01542b40ca9e992d63451
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 2d802d7f5ff7958c550bcbc3afbeecb13a90d39e..711890dbcc64f20eabe55feaa0446ea4537c6594 100644
+index bef9630bc7a15b9b8fcebd064d4cea013e6adc4d..c376dab8247eb8352f045dbcd1b8d01a6571aaa3 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2854,6 +2854,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2853,6 +2853,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
