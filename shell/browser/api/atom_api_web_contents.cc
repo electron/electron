@@ -113,15 +113,6 @@
 #include "ui/gfx/font_render_params.h"
 #endif
 
-#if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/browser/printing/print_view_manager_basic.h"
-#include "components/printing/common/print_messages.h"
-
-#if defined(OS_WIN)
-#include "printing/backend/win_helper.h"
-#endif
-#endif
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #endif
@@ -334,6 +325,16 @@ bool IsDeviceNameValid(const base::string16& device_name) {
   return printer.OpenPrinterWithName(device_name.c_str());
 #endif
   return true;
+}
+
+base::string16 GetDefaultPrinterAsync() {
+  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                base::BlockingType::MAY_BLOCK);
+
+  scoped_refptr<printing::PrintBackend> backend =
+      printing::PrintBackend::CreateInstance(nullptr);
+  std::string printer_name = backend->GetDefaultPrinterName();
+  return base::UTF8ToUTF16(printer_name);
 }
 #endif
 }  // namespace
@@ -1670,6 +1671,30 @@ bool WebContents::IsCurrentlyAudible() {
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
+void WebContents::OnGetDefaultPrinter(
+    base::DictionaryValue print_settings,
+    printing::CompletionCallback print_callback,
+    base::string16 device_name,
+    bool silent,
+    base::string16 default_printer) {
+  base::string16 printer_name =
+      device_name.empty() ? default_printer : device_name;
+  print_settings.SetStringKey(printing::kSettingDeviceName, printer_name);
+
+  auto* print_view_manager =
+      printing::PrintViewManagerBasic::FromWebContents(web_contents());
+  auto* focused_frame = web_contents()->GetFocusedFrame();
+  auto* rfh = focused_frame && focused_frame->HasSelection()
+                  ? focused_frame
+                  : web_contents()->GetMainFrame();
+
+  print_view_manager->PrintNow(
+      rfh,
+      std::make_unique<PrintMsg_PrintPages>(rfh->GetRoutingID(), silent,
+                                            std::move(print_settings)),
+      std::move(print_callback));
+}
+
 void WebContents::Print(mate::Arguments* args) {
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   base::DictionaryValue settings;
@@ -1733,15 +1758,15 @@ void WebContents::Print(mate::Arguments* args) {
   options.Get("landscape", &landscape);
   settings.SetBoolean(printing::kSettingLandscape, landscape);
 
-  // We set the default to empty string here and only update
-  // if at the Chromium level if it's non-empty
+  // We set the default to the system's default printer and only update
+  // if at the Chromium level if the user overrides.
+  // Printer device name as opened by the OS.
   base::string16 device_name;
   options.Get("deviceName", &device_name);
   if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
     args->ThrowError("webContents.print(): Invalid deviceName provided.");
     return;
   }
-  settings.SetString(printing::kSettingDeviceName, device_name);
 
   int scale_factor = 100;
   options.Get("scaleFactor", &scale_factor);
@@ -1808,16 +1833,13 @@ void WebContents::Print(mate::Arguments* args) {
     settings.SetInteger(printing::kSettingDpiVertical, dpi);
   }
 
-  auto* print_view_manager =
-      printing::PrintViewManagerBasic::FromWebContents(web_contents());
-  auto* focused_frame = web_contents()->GetFocusedFrame();
-  auto* rfh = focused_frame && focused_frame->HasSelection()
-                  ? focused_frame
-                  : web_contents()->GetMainFrame();
-  print_view_manager->PrintNow(rfh,
-                               std::make_unique<PrintMsg_PrintPages>(
-                                   rfh->GetRoutingID(), silent, settings),
-                               std::move(callback));
+  base::PostTaskAndReplyWithResult(
+      FROM_HERE,
+      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_BLOCKING},
+      base::BindOnce(&GetDefaultPrinterAsync),
+      base::BindOnce(&WebContents::OnGetDefaultPrinter,
+                     weak_factory_.GetWeakPtr(), std::move(settings),
+                     std::move(callback), device_name, silent));
 }
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
