@@ -705,8 +705,9 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 }
 
 void WebContents::SetContentsBounds(content::WebContents* source,
-                                    const gfx::Rect& pos) {
-  Emit("move", pos);
+                                    const gfx::Rect& rect) {
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnSetContentBounds(rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
@@ -725,7 +726,8 @@ void WebContents::CloseContents(content::WebContents* source) {
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
-  Emit("activate");
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnActivateContents();
 }
 
 void WebContents::UpdateTargetURL(content::WebContents* source,
@@ -1228,6 +1230,8 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
       final_title = title;
     }
   }
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnPageTitleUpdated(final_title, explicit_set);
   Emit("page-title-updated", final_title, explicit_set);
 }
 
