@@ -308,7 +308,7 @@ describe('app module', () => {
   describe('certificate-error event', () => {
     afterEach(closeAllWindows)
     it('is emitted when visiting a server with a self-signed cert', async () => {
-      const w = new BrowserWindow({ show: true })
+      const w = new BrowserWindow({ show: false })
       w.loadURL(secureUrl)
       await emittedOnce(app, 'certificate-error')
     })
