@@ -83,9 +83,22 @@ NotifyIconHost::~NotifyIconHost() {
     delete ptr;
 }
 
-NotifyIcon* NotifyIconHost::CreateNotifyIcon() {
+NotifyIcon* NotifyIconHost::CreateNotifyIcon(base::Optional<UUID> guid) {
+  if (guid.has_value()) {
+    for (NotifyIcons::const_iterator i(notify_icons_.begin());
+         i != notify_icons_.end(); ++i) {
+      NotifyIcon* current_win_icon = static_cast<NotifyIcon*>(*i);
+      if (current_win_icon->guid() == guid.value()) {
+        LOG(WARNING)
+            << "Guid already in use. Existing tray entry will be replaced.";
+      }
+    }
+  }
+
   NotifyIcon* notify_icon =
-      new NotifyIcon(this, NextIconId(), window_, kNotifyIconMessage);
+      new NotifyIcon(this, NextIconId(), window_, kNotifyIconMessage,
+                     guid.has_value() ? guid.value() : GUID_DEFAULT);
+
   notify_icons_.push_back(notify_icon);
   return notify_icon;
 }

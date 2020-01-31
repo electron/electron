@@ -12,6 +12,7 @@
 #include "gin/handle.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
+#include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
@@ -36,13 +37,16 @@ class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
  public:
   static gin_helper::WrappableBase* New(gin_helper::ErrorThrower thrower,
                                         gin::Handle<NativeImage> image,
+                                        base::Optional<UUID> guid,
                                         gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  Tray(gin::Handle<NativeImage> image, gin_helper::Arguments* args);
+  Tray(gin::Handle<NativeImage> image,
+       base::Optional<UUID> guid,
+       gin_helper::Arguments* args);
   ~Tray() override;
 
   // TrayIconObserver:

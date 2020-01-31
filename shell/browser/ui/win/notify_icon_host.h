@@ -10,6 +10,10 @@
 #include <vector>
 
 #include "base/macros.h"
+#include "base/optional.h"
+#include "shell/common/gin_converters/guid_converter.h"
+
+const GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 namespace electron {
 
@@ -20,7 +24,7 @@ class NotifyIconHost {
   NotifyIconHost();
   ~NotifyIconHost();
 
-  NotifyIcon* CreateNotifyIcon();
+  NotifyIcon* CreateNotifyIcon(base::Optional<UUID> guid);
   void Remove(NotifyIcon* notify_icon);
 
  private:

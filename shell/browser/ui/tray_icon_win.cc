@@ -8,9 +8,9 @@
 namespace electron {
 
 // static
-TrayIcon* TrayIcon::Create() {
+TrayIcon* TrayIcon::Create(base::Optional<UUID> guid) {
   static NotifyIconHost host;
-  return host.CreateNotifyIcon();
+  return host.CreateNotifyIcon(guid);
 }
 
 }  // namespace electron
