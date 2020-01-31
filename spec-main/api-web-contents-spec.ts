@@ -9,6 +9,7 @@ import { emittedOnce } from './events-helpers'
 import { closeAllWindows } from './window-helpers'
 import { ifdescribe, ifit } from './spec-helpers'
 
+const pdfjs = require('pdfjs-dist')
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 const features = process.electronBinding('features')
 
@@ -99,22 +100,35 @@ describe('webContents module', () => {
   })
 
   ifdescribe(features.isPrintingEnabled())('webContents.print()', () => {
+    let w: BrowserWindow
+
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false })
+    })
+
     afterEach(closeAllWindows)
+
     it('throws when invalid settings are passed', () => {
-      const w = new BrowserWindow({ show: false })
       expect(() => {
         // @ts-ignore this line is intentionally incorrect
         w.webContents.print(true)
       }).to.throw('webContents.print(): Invalid print settings specified.')
+    })
 
+    it('throws when an invalid callback is passed', () => {
       expect(() => {
         // @ts-ignore this line is intentionally incorrect
         w.webContents.print({}, true)
       }).to.throw('webContents.print(): Invalid optional callback provided.')
     })
 
+    ifit(process.platform !== 'linux')('throws when an invalid deviceName is passed', () => {
+      expect(() => {
+        w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, () => {})
+      }).to.throw('webContents.print(): Invalid deviceName provided.')
+    })
+
     it('does not crash', () => {
-      const w = new BrowserWindow({ show: false })
       expect(() => {
         w.webContents.print({ silent: true })
       }).to.not.throw()
@@ -1445,6 +1459,29 @@ describe('webContents module', () => {
     it('can print to PDF', async () => {
       const data = await w.webContents.printToPDF({})
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
+    })
+
+    it('respects custom settings', async () => {
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'))
+      await emittedOnce(w.webContents, 'did-finish-load')
+
+      const data = await w.webContents.printToPDF({
+        pageRanges: {
+          from: 0,
+          to: 2
+        },
+        landscape: true
+      })
+
+      const doc = await pdfjs.getDocument(data).promise
+
+      // Check that correct # of pages are rendered.
+      expect(doc.numPages).to.equal(3)
+
+      // Check that PDF is generated in landscape mode.
+      const firstPage = await doc.getPage(1)
+      const { width, height } = firstPage.getViewport({ scale: 100 })
+      expect(width).to.be.greaterThan(height)
     })
 
     it('does not crash when called multiple times', async () => {

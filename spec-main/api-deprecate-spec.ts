@@ -2,9 +2,16 @@ import { expect } from 'chai'
 import { deprecate } from 'electron'
 
 describe('deprecate', () => {
+  let throwing: boolean
+
   beforeEach(() => {
+    throwing = process.throwDeprecation
     deprecate.setHandler(null)
     process.throwDeprecation = true
+  })
+
+  afterEach(() => {
+    process.throwDeprecation = throwing
   })
 
   it('allows a deprecation handler function to be specified', () => {

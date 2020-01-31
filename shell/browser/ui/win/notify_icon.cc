@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/win/notify_icon.h"
 
+#include <objbase.h>
 #include <utility>
 
 #include "base/strings/string_number_conversions.h"
@@ -43,12 +44,18 @@ UINT ConvertIconType(electron::TrayIcon::IconType type) {
 
 namespace electron {
 
-NotifyIcon::NotifyIcon(NotifyIconHost* host, UINT id, HWND window, UINT message)
+NotifyIcon::NotifyIcon(NotifyIconHost* host,
+                       UINT id,
+                       HWND window,
+                       UINT message,
+                       GUID guid)
     : host_(host),
       icon_id_(id),
       window_(window),
       message_id_(message),
       weak_factory_(this) {
+  guid_ = guid;
+  is_using_guid_ = guid != GUID_DEFAULT;
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_MESSAGE;
@@ -246,6 +253,9 @@ gfx::Rect NotifyIcon::GetBounds() {
   icon_id.uID = icon_id_;
   icon_id.hWnd = window_;
   icon_id.cbSize = sizeof(NOTIFYICONIDENTIFIER);
+  if (is_using_guid_) {
+    icon_id.guidItem = guid_;
+  }
 
   RECT rect = {0};
   Shell_NotifyIconGetRect(&icon_id, &rect);
@@ -257,6 +267,10 @@ void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
   icon_data->cbSize = sizeof(NOTIFYICONDATA);
   icon_data->hWnd = window_;
   icon_data->uID = icon_id_;
+  if (is_using_guid_) {
+    icon_data->uFlags = NIF_GUID;
+    icon_data->guidItem = guid_;
+  }
 }
 
 void NotifyIcon::OnContextMenuClosed() {

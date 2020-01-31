@@ -20,6 +20,18 @@ describe('tray module', () => {
         tray = new Tray(badPath)
       }).to.throw(/Image could not be created from .*/)
     })
+
+    ifit(process.platform === 'win32')('throws a descriptive error if an invlaid guid is given', () => {
+      expect(() => {
+        tray = new Tray(nativeImage.createEmpty(), 'I am not a guid')
+      }).to.throw('Invalid GUID format')
+    })
+
+    ifit(process.platform === 'win32')('accepts a valid guid', () => {
+      expect(() => {
+        tray = new Tray(nativeImage.createEmpty(), '0019A433-3526-48BA-A66C-676742C0FEFB')
+      }).to.not.throw()
+    })
   })
 
   ifdescribe(process.platform === 'darwin')('tray get/set ignoreDoubleClickEvents', () => {
