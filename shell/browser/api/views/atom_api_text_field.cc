@@ -4,8 +4,8 @@
 
 #include "shell/browser/api/views/atom_api_text_field.h"
 
-#include "native_mate/dictionary.h"
-#include "shell/common/api/constructor.h"
+#include "shell/common/gin_helper/constructor.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -27,7 +27,7 @@ base::string16 TextField::GetText() const {
 }
 
 // static
-mate::WrappableBase* TextField::New(mate::Arguments* args) {
+gin_helper::WrappableBase* TextField::New(gin_helper::Arguments* args) {
   // Constructor call.
   auto* view = new TextField();
   view->InitWith(args->isolate(), args->GetThis());
@@ -37,8 +37,8 @@ mate::WrappableBase* TextField::New(mate::Arguments* args) {
 // static
 void TextField::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "TextField"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  prototype->SetClassName(gin_helper::StringTov8(isolate, "TextField"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setText", &TextField::SetText)
       .SetMethod("getText", &TextField::GetText);
 }
@@ -56,8 +56,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("TextField", mate::CreateConstructor<TextField>(
+  gin_helper::Dictionary dict(isolate, exports);
+  dict.Set("TextField", gin_helper::CreateConstructor<TextField>(
                             isolate, base::BindRepeating(&TextField::New)));
 }
 

@@ -620,6 +620,10 @@ void TopLevelWindow::SetBackgroundColor(const std::string& color_name) {
   window_->SetBackgroundColor(color);
 }
 
+std::string TopLevelWindow::GetBackgroundColor() {
+  return ToRGBHex(window_->GetBackgroundColor());
+}
+
 void TopLevelWindow::SetHasShadow(bool has_shadow) {
   window_->SetHasShadow(has_shadow);
 }
@@ -786,13 +790,8 @@ void TopLevelWindow::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible,
-                                               gin_helper::Arguments* args) {
-  gin_helper::Dictionary options;
-  bool visibleOnFullScreen = false;
-  args->GetNext(&options) &&
-      options.Get("visibleOnFullScreen", &visibleOnFullScreen);
-  return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
+void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible) {
+  return window_->SetVisibleOnAllWorkspaces(visible);
 }
 
 bool TopLevelWindow::IsVisibleOnAllWorkspaces() {
@@ -1055,7 +1054,7 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
 }
 
 // static
-mate::WrappableBase* TopLevelWindow::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* TopLevelWindow::New(gin_helper::Arguments* args) {
   gin_helper::Dictionary options =
       gin::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
@@ -1145,6 +1144,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setKiosk", &TopLevelWindow::SetKiosk)
       .SetMethod("isKiosk", &TopLevelWindow::IsKiosk)
       .SetMethod("setBackgroundColor", &TopLevelWindow::SetBackgroundColor)
+      .SetMethod("getBackgroundColor", &TopLevelWindow::GetBackgroundColor)
       .SetMethod("setHasShadow", &TopLevelWindow::SetHasShadow)
       .SetMethod("hasShadow", &TopLevelWindow::HasShadow)
       .SetMethod("setOpacity", &TopLevelWindow::SetOpacity)

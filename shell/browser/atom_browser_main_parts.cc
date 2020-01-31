@@ -22,16 +22,14 @@
 #include "chrome/browser/icon_manager.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/device_service.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/result_codes.h"
-#include "content/public/common/service_manager_connection.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/localized_strings.h"
-#include "services/device/public/mojom/constants.mojom.h"
 #include "services/network/public/cpp/features.h"
-#include "services/service_manager/public/cpp/connector.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/atom_main_delegate.h"
 #include "shell/browser/api/atom_api_app.h"
@@ -66,8 +64,8 @@
 #if defined(USE_X11)
 #include "base/environment.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "chrome/browser/ui/libgtkui/gtk_ui.h"
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "chrome/browser/ui/gtk/gtk_ui.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/base/x/x11_util_internal.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
@@ -215,9 +213,6 @@ AtomBrowserMainParts::AtomBrowserMainParts(
       electron_bindings_(new ElectronBindings(uv_default_loop())) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
-  // Register extension scheme as web safe scheme.
-  content::ChildProcessSecurityPolicy::GetInstance()->RegisterWebSafeScheme(
-      "chrome-extension");
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
@@ -447,9 +442,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   SpellcheckServiceFactory::GetInstance();
 #endif
 
-  // url::Add*Scheme are not threadsafe, this helps prevent data races.
-  url::LockSchemeRegistries();
-
 #if defined(USE_X11)
   ui::TouchFactory::SetTouchDeviceListFromCommandLine();
 #endif
@@ -549,16 +541,10 @@ void AtomBrowserMainParts::PreMainMessageLoopStartCommon() {
 
 device::mojom::GeolocationControl*
 AtomBrowserMainParts::GetGeolocationControl() {
-  if (geolocation_control_)
-    return geolocation_control_.get();
-
-  auto request = mojo::MakeRequest(&geolocation_control_);
-  if (!content::ServiceManagerConnection::GetForProcess())
-    return geolocation_control_.get();
-
-  service_manager::Connector* connector =
-      content::ServiceManagerConnection::GetForProcess()->GetConnector();
-  connector->BindInterface(device::mojom::kServiceName, std::move(request));
+  if (!geolocation_control_) {
+    content::GetDeviceService().BindGeolocationControl(
+        geolocation_control_.BindNewPipeAndPassReceiver());
+  }
   return geolocation_control_.get();
 }
 

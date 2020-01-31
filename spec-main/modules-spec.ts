@@ -20,7 +20,7 @@ describe('modules support', () => {
       it('can be required in renderer', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
         w.loadURL('about:blank')
-        await expect(w.webContents.executeJavaScript(`{ require('echo') }`)).to.be.fulfilled()
+        await expect(w.webContents.executeJavaScript(`{ require('echo'); null }`)).to.be.fulfilled()
       })
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', function (done) {

@@ -11,13 +11,14 @@
 #include "base/observer_list.h"
 #include "shell/browser/ui/atom_menu_model.h"
 #include "shell/browser/ui/tray_icon_observer.h"
+#include "shell/common/gin_converters/guid_converter.h"
 #include "ui/gfx/geometry/rect.h"
 
 namespace electron {
 
 class TrayIcon {
  public:
-  static TrayIcon* Create();
+  static TrayIcon* Create(base::Optional<UUID> guid);
 
 #if defined(OS_WIN)
   using ImageType = HICON;
@@ -81,6 +82,8 @@ class TrayIcon {
   virtual void PopUpContextMenu(const gfx::Point& pos,
                                 AtomMenuModel* menu_model);
 
+  virtual void CloseContextMenu();
+
   // Set the context menu for this icon.
   virtual void SetContextMenu(AtomMenuModel* menu_model) = 0;
 
@@ -105,6 +108,10 @@ class TrayIcon {
   void NotifyDragEntered();
   void NotifyDragExited();
   void NotifyDragEnded();
+  void NotifyMouseUp(const gfx::Point& location = gfx::Point(),
+                     int modifiers = 0);
+  void NotifyMouseDown(const gfx::Point& location = gfx::Point(),
+                       int modifiers = 0);
   void NotifyMouseEntered(const gfx::Point& location = gfx::Point(),
                           int modifiers = 0);
   void NotifyMouseExited(const gfx::Point& location = gfx::Point(),

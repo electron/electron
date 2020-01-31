@@ -6,10 +6,10 @@ Subject: fix: build and expose inspector agent
 Node inspector initialization happens in a different start-up function in node.cc, which we don't call in Electron. This allows for us to use the inspector agent in electron/atom/browser/node_debugger.cc
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 2965483dea6244e7123c08c104f399fc023a84e0..b6624300e96daf6041a296fdc1ceeaf579e215cd 100644
+index aff52a5a5eccd175fae4f82ffcf9897ad43763ee..e55862ca202caaa9ec9800b40215232f98120476 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
-@@ -217,7 +217,7 @@ const int CONTEXT_GROUP_ID = 1;
+@@ -222,7 +222,7 @@ const int CONTEXT_GROUP_ID = 1;
  
  std::string GetWorkerLabel(node::Environment* env) {
    std::ostringstream result;
@@ -18,7 +18,7 @@ index 2965483dea6244e7123c08c104f399fc023a84e0..b6624300e96daf6041a296fdc1ceeaf5
    return result.str();
  }
  
-@@ -465,7 +465,7 @@ class NodeInspectorClient : public V8InspectorClient {
+@@ -470,7 +470,7 @@ class NodeInspectorClient : public V8InspectorClient {
      client_ = V8Inspector::create(env->isolate(), this);
      // TODO(bnoordhuis) Make name configurable from src/node.cc.
      std::string name =
@@ -28,7 +28,7 @@ index 2965483dea6244e7123c08c104f399fc023a84e0..b6624300e96daf6041a296fdc1ceeaf5
      info.is_default = true;
      contextCreated(env->context(), info);
 diff --git a/src/inspector_agent.h b/src/inspector_agent.h
-index 4fb544f85bd1453d0705088dfb5511ae32bacad2..ac9352e3fa953e2f4ac0a032c2aacd7353c2cf71 100644
+index d5088a1b5469044a3f694522c547c901d7cd91f8..19bdf7e6e7e8df944eb76e52e63957dc4cffdab8 100644
 --- a/src/inspector_agent.h
 +++ b/src/inspector_agent.h
 @@ -6,7 +6,9 @@

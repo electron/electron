@@ -264,17 +264,6 @@ void SetVisualZoomLevelLimits(v8::Local<v8::Value> window,
   web_frame->View()->SetIgnoreViewportTagScaleLimits(true);
 }
 
-void SetLayoutZoomLevelLimits(v8::Local<v8::Value> window,
-                              double min_level,
-                              double max_level) {
-  content::RenderFrame* render_frame = GetRenderFrame(window);
-  mojom::ElectronBrowserPtr browser_ptr;
-  render_frame->GetRemoteInterfaces()->GetInterface(
-      mojo::MakeRequest(&browser_ptr));
-
-  browser_ptr->SetZoomLimits(min_level, max_level);
-}
-
 void AllowGuestViewElementDefinition(v8::Isolate* isolate,
                                      v8::Local<v8::Value> window,
                                      v8::Local<v8::Object> context,
@@ -580,7 +569,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("setZoomFactor", &SetZoomFactor);
   dict.SetMethod("getZoomFactor", &GetZoomFactor);
   dict.SetMethod("setVisualZoomLevelLimits", &SetVisualZoomLevelLimits);
-  dict.SetMethod("setLayoutZoomLevelLimits", &SetLayoutZoomLevelLimits);
   dict.SetMethod("allowGuestViewElementDefinition",
                  &AllowGuestViewElementDefinition);
   dict.SetMethod("getWebFrameId", &GetWebFrameId);

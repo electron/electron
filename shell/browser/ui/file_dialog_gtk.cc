@@ -10,7 +10,7 @@
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -63,7 +63,7 @@ class FileChooserDialog {
         GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, NULL);
     if (parent_) {
       parent_->SetEnabled(false);
-      libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
+      gtk::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
       gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     }
 

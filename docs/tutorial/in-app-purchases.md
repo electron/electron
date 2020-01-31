@@ -37,7 +37,7 @@ inAppPurchase.on('transactions-updated', (event, transactions) => {
 
   // Check each transaction.
   transactions.forEach(function (transaction) {
-    var payment = transaction.payment
+    let payment = transaction.payment
 
     switch (transaction.transactionState) {
       case 'purchasing':

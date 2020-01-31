@@ -39,19 +39,16 @@ class AtomExtensionSystem : public ExtensionSystem {
 
   // Loads an unpacked extension from a directory. Returns the extension on
   // success, or nullptr otherwise.
-  const Extension* LoadExtension(const base::FilePath& extension_dir);
-
-  // Loads an unpacked platform app from a directory. Returns the extension on
-  // success, or nullptr otherwise.
-  // Currently this just calls LoadExtension, as apps are not loaded differently
-  // than other extensions. Use LaunchApp() to actually launch the loaded app.
-  const Extension* LoadApp(const base::FilePath& app_dir);
+  void LoadExtension(const base::FilePath& extension_dir,
+                     base::OnceCallback<void(const Extension*)> loaded);
 
   // Finish initialization for the shell extension system.
   void FinishInitialization();
 
   // Reloads the extension with id |extension_id|.
   void ReloadExtension(const ExtensionId& extension_id);
+
+  void RemoveExtension(const ExtensionId& extension_id);
 
   // KeyedService implementation:
   void Shutdown() override;
@@ -71,7 +68,7 @@ class AtomExtensionSystem : public ExtensionSystem {
   AppSorting* app_sorting() override;
   void RegisterExtensionWithRequestContexts(
       const Extension* extension,
-      const base::Closure& callback) override;
+      base::OnceClosure callback) override;
   void UnregisterExtensionWithRequestContexts(
       const std::string& extension_id,
       const UnloadedExtensionReason reason) override;

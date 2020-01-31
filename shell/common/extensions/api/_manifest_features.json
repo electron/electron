@@ -9,6 +9,10 @@
 {
   "content_scripts": {
     "channel": "stable",
-    "extension_types": ["extension", "legacy_packaged_app"]
+    "extension_types": ["extension"]
+  },
+  "devtools_page": {
+    "channel": "stable",
+    "extension_types": ["extension"]
   }
 }

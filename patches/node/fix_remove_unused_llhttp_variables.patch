@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 8 Jan 2020 10:12:46 -0800
+Subject: fix: remove unused llhttp variables
+
+Node.js updated llhttps in https://github.com/nodejs/node/pull/30553,
+which updated some of the llparse_blobs. To keep numbering consistency,
+it left the newly unused ones, which causes compilation failures in Electron
+as we do not allow unused variables.
+
+Fixed in https://github.com/nodejs/llparse/pull/34; this patch can be removed
+as soon as llparse v6.2.1 is rolled into Node.js
+
+diff --git a/deps/llhttp/src/llhttp.c b/deps/llhttp/src/llhttp.c
+index 698230f93fe08f347a9e6e9f7194663c9b5318c3..664b563ad1ccf69794f0e86245e91d0bc26c1d58 100644
+--- a/deps/llhttp/src/llhttp.c
++++ b/deps/llhttp/src/llhttp.c
+@@ -24,10 +24,6 @@ typedef int (*llhttp__internal__span_cb)(
+ static const unsigned char llparse_blob0[] = {
+   'C', 'L'
+ };
+-static const unsigned char ALIGN(16) llparse_blob1[] = {
+-  0x9, 0x9, 0xc, 0xc, '!', '"', '$', '>', '@', '~', 0x80,
+-  0xff
+-};
+ static const unsigned char llparse_blob2[] = {
+   'o', 'n'
+ };
+@@ -43,19 +39,9 @@ static const unsigned char llparse_blob5[] = {
+ static const unsigned char llparse_blob6[] = {
+   'p', 'g', 'r', 'a', 'd', 'e'
+ };
+-static const unsigned char ALIGN(16) llparse_blob7[] = {
+-  0x9, 0x9, ' ', '~', 0x80, 0xfe
+-};
+ static const unsigned char llparse_blob8[] = {
+   'h', 'u', 'n', 'k', 'e', 'd'
+ };
+-static const unsigned char ALIGN(16) llparse_blob9[] = {
+-  ' ', '!', '#', '\'', '*', '+', '-', '.', '0', '9', 'A',
+-  'Z', '^', 'z', '|', '|'
+-};
+-static const unsigned char ALIGN(16) llparse_blob10[] = {
+-  '~', '~'
+-};
+ static const unsigned char llparse_blob11[] = {
+   'e', 'n', 't', '-', 'l', 'e', 'n', 'g', 't', 'h'
+ };

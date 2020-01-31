@@ -28,10 +28,7 @@ Show the given file in a file manager. If possible, select the file.
 
 * `path` String
 
-Returns `Promise<Object>` - Resolve with an object containing the following:
-
-* `success` Boolean - whether or not the path was successfully opened in the desktop's default manner.
-* `errorMessage` String (optional) - The error message corresponding to the failure if a failure occurred, otherwise empty string.
+Returns `Promise<String>` - Resolves with an string containing the error message corresponding to the failure if a failure occurred, otherwise "".
 
 Open the given file in the desktop's default manner.
 

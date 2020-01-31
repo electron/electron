@@ -66,6 +66,7 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect GetContentBounds() override;
   gfx::Size GetContentSize() override;
   gfx::Rect GetNormalBounds() override;
+  SkColor GetBackgroundColor() override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
@@ -122,8 +123,7 @@ class NativeWindowViews : public NativeWindow,
   void SetMenuBarVisibility(bool visible) override;
   bool IsMenuBarVisible() override;
 
-  void SetVisibleOnAllWorkspaces(bool visible,
-                                 bool visibleOnFullScreen) override;
+  void SetVisibleOnAllWorkspaces(bool visible) override;
 
   bool IsVisibleOnAllWorkspaces() override;
 
@@ -275,6 +275,9 @@ class NativeWindowViews : public NativeWindow,
 
   // Set to true if the window is always on top and behind the task bar.
   bool behind_task_bar_ = false;
+
+  // Whether to block Chromium from handling window messages.
+  bool block_chromium_message_handler_ = false;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

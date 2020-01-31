@@ -6,9 +6,14 @@ describe('inAppPurchase module', function () {
 
   this.timeout(3 * 60 * 1000)
 
-  it('canMakePayments() does not throw', () => {
+  it('canMakePayments() returns a boolean', () => {
+    const canMakePayments = inAppPurchase.canMakePayments()
+    expect(canMakePayments).to.be.a('boolean')
+  })
+
+  it('restoreCompletedTransactions() does not throw', () => {
     expect(() => {
-      inAppPurchase.canMakePayments()
+      inAppPurchase.restoreCompletedTransactions()
     }).to.not.throw()
   })
 
@@ -29,22 +34,23 @@ describe('inAppPurchase module', function () {
   })
 
   // The following three tests are disabled because they hit Apple servers, and
-  // Apple started blocking requests from AWS IPs (we think), so they fail on
-  // CI.
+  // Apple started blocking requests from AWS IPs (we think), so they fail on CI.
   // TODO: find a way to mock out the server requests so we can test these APIs
   // without relying on a remote service.
-  xit('purchaseProduct() fails when buying invalid product', async () => {
-    const success = await inAppPurchase.purchaseProduct('non-exist', 1)
-    expect(success).to.be.false('failed to purchase non-existent product')
-  })
+  xdescribe('handles product purchases', () => {
+    it('purchaseProduct() fails when buying invalid product', async () => {
+      const success = await inAppPurchase.purchaseProduct('non-exist', 1)
+      expect(success).to.be.false('failed to purchase non-existent product')
+    })
 
-  xit('purchaseProduct() accepts optional arguments', async () => {
-    const success = await inAppPurchase.purchaseProduct('non-exist')
-    expect(success).to.be.false('failed to purchase non-existent product')
-  })
+    it('purchaseProduct() accepts optional arguments', async () => {
+      const success = await inAppPurchase.purchaseProduct('non-exist')
+      expect(success).to.be.false('failed to purchase non-existent product')
+    })
 
-  xit('getProducts() returns an empty list when getting invalid product', async () => {
-    const products = await inAppPurchase.getProducts(['non-exist'])
-    expect(products).to.be.an('array').of.length(0)
+    it('getProducts() returns an empty list when getting invalid product', async () => {
+      const products = await inAppPurchase.getProducts(['non-exist'])
+      expect(products).to.be.an('array').of.length(0)
+    })
   })
 })

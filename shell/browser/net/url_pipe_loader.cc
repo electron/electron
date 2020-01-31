@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
@@ -15,7 +16,7 @@ URLPipeLoader::URLPipeLoader(
     scoped_refptr<network::SharedURLLoaderFactory> factory,
     std::unique_ptr<network::ResourceRequest> request,
     network::mojom::URLLoaderRequest loader,
-    network::mojom::URLLoaderClientPtr client,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::NetworkTrafficAnnotationTag& annotation,
     base::DictionaryValue upload_data)
     : binding_(this, std::move(loader)),

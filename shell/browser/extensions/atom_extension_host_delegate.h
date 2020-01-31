@@ -36,7 +36,6 @@ class AtomExtensionHostDelegate : public ExtensionHostDelegate {
                                   const GURL& security_origin,
                                   blink::mojom::MediaStreamType type,
                                   const Extension* extension) override;
-  ExtensionHostQueue* GetExtensionHostQueue() const override;
   content::PictureInPictureResult EnterPictureInPicture(
       content::WebContents* web_contents,
       const viz::SurfaceId& surface_id,

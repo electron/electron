@@ -1,12 +1,19 @@
+/*
+Usage:
+
+$ node ./script/gn-check.js [--outDir=dirName]
+*/
+
 const cp = require('child_process')
 const path = require('path')
+const args = require('minimist')(process.argv.slice(2), { string: ['outDir'] })
 
 const { getOutDir } = require('./lib/utils')
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools')
-const OUT_DIR = getOutDir()
 
+const OUT_DIR = getOutDir({ outDir: args.outDir })
 if (!OUT_DIR) {
   throw new Error(`No viable out dir: one of Debug, Testing, or Release must exist.`)
 }

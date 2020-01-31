@@ -10,10 +10,12 @@
 #include <string>
 #include <vector>
 
+#include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
-#include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
+#include "services/network/public/mojom/url_response_head.mojom.h"
 #include "v8/include/v8.h"
 
 namespace electron {
@@ -28,9 +30,9 @@ namespace electron {
 // the passed |Buffer| is alive while writing data to pipe.
 class NodeStreamLoader : public network::mojom::URLLoader {
  public:
-  NodeStreamLoader(network::ResourceResponseHead head,
+  NodeStreamLoader(network::mojom::URLResponseHeadPtr head,
                    network::mojom::URLLoaderRequest loader,
-                   network::mojom::URLLoaderClientPtr client,
+                   mojo::PendingRemote<network::mojom::URLLoaderClient> client,
                    v8::Isolate* isolate,
                    v8::Local<v8::Object> emitter);
 
@@ -39,7 +41,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
 
   using EventCallback = base::RepeatingCallback<void()>;
 
-  void Start(network::ResourceResponseHead head);
+  void Start(network::mojom::URLResponseHeadPtr head);
   void NotifyReadable();
   void NotifyComplete(int result);
   void ReadMore();
@@ -58,7 +60,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   void ResumeReadingBodyFromNet() override {}
 
   mojo::Binding<network::mojom::URLLoader> binding_;
-  network::mojom::URLLoaderClientPtr client_;
+  mojo::Remote<network::mojom::URLLoaderClient> client_;
 
   v8::Isolate* isolate_;
   v8::Global<v8::Object> emitter_;

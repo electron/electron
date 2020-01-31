@@ -11,6 +11,7 @@
 #include "shell/browser/browser.h"
 #include "shell/common/api/atom_api_native_image.h"
 #include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -54,8 +55,10 @@ namespace electron {
 
 namespace api {
 
-Tray::Tray(gin::Handle<NativeImage> image, gin_helper::Arguments* args)
-    : tray_icon_(TrayIcon::Create()) {
+Tray::Tray(gin::Handle<NativeImage> image,
+           base::Optional<UUID> guid,
+           gin_helper::Arguments* args)
+    : tray_icon_(TrayIcon::Create(guid)) {
   SetImage(args->isolate(), image);
   tray_icon_->AddObserver(this);
 
@@ -65,14 +68,23 @@ Tray::Tray(gin::Handle<NativeImage> image, gin_helper::Arguments* args)
 Tray::~Tray() = default;
 
 // static
-mate::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
-                               gin::Handle<NativeImage> image,
-                               gin_helper::Arguments* args) {
+gin_helper::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
+                                     gin::Handle<NativeImage> image,
+                                     base::Optional<UUID> guid,
+                                     gin_helper::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
     return nullptr;
   }
-  return new Tray(image, args);
+
+#if defined(OS_WIN)
+  if (!guid.has_value() && args->Length() > 1) {
+    thrower.ThrowError("Invalid GUID format");
+    return nullptr;
+  }
+#endif
+
+  return new Tray(image, guid, args);
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds,
@@ -123,6 +135,14 @@ void Tray::OnMouseExited(const gfx::Point& location, int modifiers) {
 
 void Tray::OnMouseMoved(const gfx::Point& location, int modifiers) {
   EmitWithFlags("mouse-move", modifiers, location);
+}
+
+void Tray::OnMouseUp(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-up", modifiers, location);
+}
+
+void Tray::OnMouseDown(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-down", modifiers, location);
 }
 
 void Tray::OnDragEntered() {
@@ -231,6 +251,10 @@ void Tray::PopUpContextMenu(gin_helper::Arguments* args) {
   tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
 }
 
+void Tray::CloseContextMenu() {
+  tray_icon_->CloseContextMenu();
+}
+
 void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
                           v8::Local<v8::Value> arg) {
   gin::Handle<Menu> menu;
@@ -268,6 +292,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("removeBalloon", &Tray::RemoveBalloon)
       .SetMethod("focus", &Tray::Focus)
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
+      .SetMethod("closeContextMenu", &Tray::CloseContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
       .SetMethod("getBounds", &Tray::GetBounds);
 }

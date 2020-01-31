@@ -26,10 +26,6 @@
 class SpellCheck;
 #endif
 
-namespace network_hints {
-class WebPrescientNetworkingImpl;
-}
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace extensions {
 class ExtensionsClient;
@@ -71,7 +67,8 @@ class RendererClientBase : public content::ContentRendererClient
                                             content::RenderFrame* render_frame,
                                             int world_id) = 0;
 
-  blink::WebPrescientNetworking* GetPrescientNetworking() override;
+  std::unique_ptr<blink::WebPrescientNetworking> CreatePrescientNetworking(
+      content::RenderFrame* render_frame) override;
   bool isolated_world() const { return isolated_world_; }
 
   // Get the context that the Electron API is running in.
@@ -113,9 +110,6 @@ class RendererClientBase : public content::ContentRendererClient
 #endif
 
  private:
-  std::unique_ptr<network_hints::WebPrescientNetworkingImpl>
-      web_prescient_networking_impl_;
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<extensions::ExtensionsClient> extensions_client_;
   std::unique_ptr<AtomExtensionsRendererClient> extensions_renderer_client_;

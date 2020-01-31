@@ -1,0 +1,15 @@
+{
+  "tabs": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "contexts": ["blessed_extension"]
+  },
+  "extension": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "contexts": ["blessed_extension"]
+  },
+  "extension.getURL": {
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
+  }
+}

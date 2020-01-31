@@ -12,6 +12,7 @@
 #include "gin/handle.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
+#include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
@@ -34,15 +35,18 @@ class NativeImage;
 
 class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
  public:
-  static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
-                                  gin::Handle<NativeImage> image,
-                                  gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin_helper::ErrorThrower thrower,
+                                        gin::Handle<NativeImage> image,
+                                        base::Optional<UUID> guid,
+                                        gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  Tray(gin::Handle<NativeImage> image, gin_helper::Arguments* args);
+  Tray(gin::Handle<NativeImage> image,
+       base::Optional<UUID> guid,
+       gin_helper::Arguments* args);
   ~Tray() override;
 
   // TrayIconObserver:
@@ -60,6 +64,8 @@ class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
   void OnDragEntered() override;
   void OnDragExited() override;
   void OnDragEnded() override;
+  void OnMouseUp(const gfx::Point& location, int modifiers) override;
+  void OnMouseDown(const gfx::Point& location, int modifiers) override;
   void OnMouseEntered(const gfx::Point& location, int modifiers) override;
   void OnMouseExited(const gfx::Point& location, int modifiers) override;
   void OnMouseMoved(const gfx::Point& location, int modifiers) override;
@@ -76,6 +82,7 @@ class Tray : public gin_helper::TrackableObject<Tray>, public TrayIconObserver {
   void RemoveBalloon();
   void Focus();
   void PopUpContextMenu(gin_helper::Arguments* args);
+  void CloseContextMenu();
   void SetContextMenu(gin_helper::ErrorThrower thrower,
                       v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();

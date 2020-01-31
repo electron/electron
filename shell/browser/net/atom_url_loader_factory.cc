@@ -88,24 +88,24 @@ gin::Dictionary ToDict(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }
 
 // Parse headers from response object.
-network::ResourceResponseHead ToResponseHead(
+network::mojom::URLResponseHeadPtr ToResponseHead(
     const gin_helper::Dictionary& dict) {
-  network::ResourceResponseHead head;
-  head.mime_type = "text/html";
-  head.charset = "utf-8";
+  auto head = network::mojom::URLResponseHead::New();
+  head->mime_type = "text/html";
+  head->charset = "utf-8";
   if (dict.IsEmpty()) {
-    head.headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
+    head->headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
     return head;
   }
 
   int status_code = 200;
   dict.Get("statusCode", &status_code);
-  head.headers = new net::HttpResponseHeaders(base::StringPrintf(
+  head->headers = new net::HttpResponseHeaders(base::StringPrintf(
       "HTTP/1.1 %d %s", status_code,
       net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
 
-  dict.Get("charset", &head.charset);
-  bool has_mime_type = dict.Get("mimeType", &head.mime_type);
+  dict.Get("charset", &head->charset);
+  bool has_mime_type = dict.Get("mimeType", &head->mime_type);
   bool has_content_type = false;
 
   base::DictionaryValue headers;
@@ -113,12 +113,12 @@ network::ResourceResponseHead ToResponseHead(
     for (const auto& iter : headers.DictItems()) {
       if (iter.second.is_string()) {
         // key: value
-        head.headers->AddHeader(iter.first + ": " + iter.second.GetString());
+        head->headers->AddHeader(iter.first + ": " + iter.second.GetString());
       } else if (iter.second.is_list()) {
         // key: [values...]
         for (const auto& item : iter.second.GetList()) {
           if (item.is_string())
-            head.headers->AddHeader(iter.first + ": " + item.GetString());
+            head->headers->AddHeader(iter.first + ": " + item.GetString());
         }
       } else {
         continue;
@@ -126,22 +126,22 @@ network::ResourceResponseHead ToResponseHead(
       // Some apps are passing content-type via headers, which is not accepted
       // in NetworkService.
       if (base::ToLowerASCII(iter.first) == "content-type") {
-        head.headers->GetMimeTypeAndCharset(&head.mime_type, &head.charset);
+        head->headers->GetMimeTypeAndCharset(&head->mime_type, &head->charset);
         has_content_type = true;
       }
     }
   }
 
-  // Setting |head.mime_type| does not automatically set the "content-type"
+  // Setting |head->mime_type| does not automatically set the "content-type"
   // header in NetworkService.
   if (has_mime_type && !has_content_type)
-    head.headers->AddHeader("content-type: " + head.mime_type);
+    head->headers->AddHeader("content-type: " + head->mime_type);
   return head;
 }
 
 // Helper to write string to pipe.
 struct WriteData {
-  network::mojom::URLLoaderClientPtr client;
+  mojo::Remote<network::mojom::URLLoaderClient> client;
   std::string data;
   std::unique_ptr<mojo::DataPipeProducer> producer;
 };
@@ -173,7 +173,7 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
     int32_t request_id,
     uint32_t options,
     const network::ResourceRequest& request,
-    network::mojom::URLLoaderClientPtr client,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   handler_.Run(
@@ -195,7 +195,7 @@ void AtomURLLoaderFactory::StartLoading(
     int32_t request_id,
     uint32_t options,
     const network::ResourceRequest& request,
-    network::mojom::URLLoaderClientPtr client,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     network::mojom::URLLoaderFactory* proxy_factory,
     ProtocolType type,
@@ -206,7 +206,9 @@ void AtomURLLoaderFactory::StartLoading(
   // passed, to keep compatibility with old code.
   v8::Local<v8::Value> response;
   if (!args->GetNext(&response)) {
-    client->OnComplete(
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(
         network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
     return;
   }
@@ -216,12 +218,14 @@ void AtomURLLoaderFactory::StartLoading(
   if (!dict.IsEmpty()) {
     int error_code;
     if (dict.Get("error", &error_code)) {
-      client->OnComplete(network::URLLoaderCompletionStatus(error_code));
+      mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+          std::move(client));
+      client_remote->OnComplete(network::URLLoaderCompletionStatus(error_code));
       return;
     }
   }
 
-  network::ResourceResponseHead head = ToResponseHead(dict);
+  network::mojom::URLResponseHeadPtr head = ToResponseHead(dict);
 
   // Handle redirection.
   //
@@ -230,7 +234,7 @@ void AtomURLLoaderFactory::StartLoading(
   // to implement redirection. This is also what Chromium does with WebRequest
   // API in WebRequestProxyingURLLoaderFactory.
   std::string location;
-  if (head.headers->IsRedirect(&location)) {
+  if (head->headers->IsRedirect(&location)) {
     network::ResourceRequest new_request = request;
     new_request.url = GURL(location);
     // When the redirection comes from an intercepted scheme (which has
@@ -260,7 +264,9 @@ void AtomURLLoaderFactory::StartLoading(
 
   // Some protocol accepts non-object responses.
   if (dict.IsEmpty() && ResponseMustBeObject(type)) {
-    client->OnComplete(
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(
         network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
     return;
   }
@@ -288,7 +294,10 @@ void AtomURLLoaderFactory::StartLoading(
     case ProtocolType::kFree:
       ProtocolType type;
       if (!gin::ConvertFromV8(args->isolate(), response, &type)) {
-        client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+        mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+            std::move(client));
+        client_remote->OnComplete(
+            network::URLLoaderCompletionStatus(net::ERR_FAILED));
         return;
       }
       StartLoading(std::move(loader), routing_id, request_id, options, request,
@@ -300,13 +309,16 @@ void AtomURLLoaderFactory::StartLoading(
 
 // static
 void AtomURLLoaderFactory::StartLoadingBuffer(
-    network::mojom::URLLoaderClientPtr client,
-    network::ResourceResponseHead head,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    network::mojom::URLResponseHeadPtr head,
     const gin_helper::Dictionary& dict) {
   v8::Local<v8::Value> buffer = dict.GetHandle();
   dict.Get("data", &buffer);
   if (!node::Buffer::HasInstance(buffer)) {
-    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
@@ -317,8 +329,8 @@ void AtomURLLoaderFactory::StartLoadingBuffer(
 
 // static
 void AtomURLLoaderFactory::StartLoadingString(
-    network::mojom::URLLoaderClientPtr client,
-    network::ResourceResponseHead head,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    network::mojom::URLResponseHeadPtr head,
     const gin_helper::Dictionary& dict,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
@@ -328,7 +340,10 @@ void AtomURLLoaderFactory::StartLoadingString(
   } else if (!dict.IsEmpty()) {
     dict.Get("data", &contents);
   } else {
-    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
@@ -339,8 +354,8 @@ void AtomURLLoaderFactory::StartLoadingString(
 void AtomURLLoaderFactory::StartLoadingFile(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     network::ResourceRequest request,
-    network::mojom::URLLoaderClientPtr client,
-    network::ResourceResponseHead head,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    network::mojom::URLResponseHeadPtr head,
     const gin_helper::Dictionary& dict,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
@@ -353,20 +368,23 @@ void AtomURLLoaderFactory::StartLoadingFile(
     if (dict.Get("path", &path))
       request.url = net::FilePathToFileURL(path);
   } else {
-    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
-  head.headers->AddHeader(kCORSHeader);
+  head->headers->AddHeader(kCORSHeader);
   asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
-                            head.headers);
+                            head->headers);
 }
 
 // static
 void AtomURLLoaderFactory::StartLoadingHttp(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     const network::ResourceRequest& original_request,
-    network::mojom::URLLoaderClientPtr client,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     const gin_helper::Dictionary& dict) {
   auto request = std::make_unique<network::ResourceRequest>();
@@ -407,33 +425,38 @@ void AtomURLLoaderFactory::StartLoadingHttp(
 // static
 void AtomURLLoaderFactory::StartLoadingStream(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
-    network::mojom::URLLoaderClientPtr client,
-    network::ResourceResponseHead head,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    network::mojom::URLResponseHeadPtr head,
     const gin_helper::Dictionary& dict) {
   v8::Local<v8::Value> stream;
   if (!dict.Get("data", &stream)) {
     // Assume the opts is already a stream.
     stream = dict.GetHandle();
   } else if (stream->IsNullOrUndefined()) {
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
     // "data" was explicitly passed as null or undefined, assume the user wants
     // to send an empty body.
     //
     // Note that We must submit a empty body otherwise NetworkService would
     // crash.
-    client->OnReceiveResponse(head);
+    client_remote->OnReceiveResponse(std::move(head));
     mojo::ScopedDataPipeProducerHandle producer;
     mojo::ScopedDataPipeConsumerHandle consumer;
     if (mojo::CreateDataPipe(nullptr, &producer, &consumer) != MOJO_RESULT_OK) {
-      client->OnComplete(
+      client_remote->OnComplete(
           network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
       return;
     }
     producer.reset();  // The data pipe is empty.
-    client->OnStartLoadingResponseBody(std::move(consumer));
-    client->OnComplete(network::URLLoaderCompletionStatus(net::OK));
+    client_remote->OnStartLoadingResponseBody(std::move(consumer));
+    client_remote->OnComplete(network::URLLoaderCompletionStatus(net::OK));
     return;
   } else if (!stream->IsObject()) {
-    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
@@ -441,7 +464,10 @@ void AtomURLLoaderFactory::StartLoadingStream(
   v8::Local<v8::Value> method;
   if (!data.Get("on", &method) || !method->IsFunction() ||
       !data.Get("removeListener", &method) || !method->IsFunction()) {
-    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
@@ -451,25 +477,27 @@ void AtomURLLoaderFactory::StartLoadingStream(
 
 // static
 void AtomURLLoaderFactory::SendContents(
-    network::mojom::URLLoaderClientPtr client,
-    network::ResourceResponseHead head,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    network::mojom::URLResponseHeadPtr head,
     std::string data) {
-  head.headers->AddHeader(kCORSHeader);
-  client->OnReceiveResponse(head);
+  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+      std::move(client));
+  head->headers->AddHeader(kCORSHeader);
+  client_remote->OnReceiveResponse(std::move(head));
 
   // Code bellow follows the pattern of data_url_loader_factory.cc.
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
   if (mojo::CreateDataPipe(nullptr, &producer, &consumer) != MOJO_RESULT_OK) {
-    client->OnComplete(
+    client_remote->OnComplete(
         network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
     return;
   }
 
-  client->OnStartLoadingResponseBody(std::move(consumer));
+  client_remote->OnStartLoadingResponseBody(std::move(consumer));
 
   auto write_data = std::make_unique<WriteData>();
-  write_data->client = std::move(client);
+  write_data->client = std::move(client_remote);
   write_data->data = std::move(data);
   write_data->producer =
       std::make_unique<mojo::DataPipeProducer>(std::move(producer));

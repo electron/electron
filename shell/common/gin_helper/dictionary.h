@@ -48,8 +48,6 @@ class Dictionary : public gin::Dictionary {
 
   // Differences from the Set method in gin::Dictionary:
   // 1. It accepts arbitrary type of key.
-  // 2. It forces using gin::ConvertFromV8 (would no longer be needed after
-  //    removing native_mate).
   template <typename K, typename V>
   bool Set(const K& key, const V& val) {
     v8::Local<v8::Value> v8_value;

@@ -126,9 +126,10 @@ Clears the session’s HTTP cache.
     `scheme://host:port`.
   * `storages` String[] (optional) - The types of storages to clear, can contain:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
-    `shadercache`, `websql`, `serviceworkers`, `cachestorage`.
+    `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
+    specified, clear all storage types.
   * `quotas` String[] (optional) - The types of quotas to clear, can contain:
-    `temporary`, `persistent`, `syncable`.
+    `temporary`, `persistent`, `syncable`. If not specified, clear all quotas.
 
 Returns `Promise<void>` - resolves when the storage data has been cleared.
 
@@ -271,6 +272,7 @@ the original network configuration.
   * `request` Object
     * `hostname` String
     * `certificate` [Certificate](structures/certificate.md)
+    * `validatedCertificate` [Certificate](structures/certificate.md)
     * `verificationResult` String - Verification result from chromium.
     * `errorCode` Integer - Error code.
   * `callback` Function
@@ -464,11 +466,15 @@ The built in spellchecker does not automatically detect what language a user is 
 spell checker to correctly check their words you must call this API with an array of language codes.  You can
 get the list of supported language codes with the `ses.availableSpellCheckerLanguages` property.
 
+**Note:** On macOS the OS spellchecker is used and will detect your language automatically.  This API is a no-op on macOS.
+
 #### `ses.getSpellCheckerLanguages()`
 
 Returns `String[]` - An array of language codes the spellchecker is enabled for.  If this list is empty the spellchecker
 will fallback to using `en-US`.  By default on launch if this setting is an empty list Electron will try to populate this
 setting with the current OS locale.  This setting is persisted across restarts.
+
+**Note:** On macOS the OS spellchecker is used and has it's own list of languages.  This API is a no-op on macOS.
 
 #### `ses.setSpellCheckerDictionaryDownloadURL(url)`
 
@@ -478,6 +484,16 @@ By default Electron will download hunspell dictionaries from the Chromium CDN.  
 behavior you can use this API to point the dictionary downloader at your own hosted version of the hunspell
 dictionaries.  We publish a `hunspell_dictionaries.zip` file with each release which contains the files you need
 to host here.
+
+**Note:** On macOS the OS spellchecker is used and therefore we do not download any dictionary files.  This API is a no-op on macOS.
+
+#### `ses.addWordToSpellCheckerDictionary(word)`
+
+* `word` String - The word you want to add to the dictionary
+
+Returns `Boolean` - Whether the word was successfully written to the custom dictionary.
+
+**Note:** On macOS and Windows 10 this word will be written to the OS custom dictionary as well
 
 ### Instance Properties
 
@@ -504,12 +520,12 @@ A [`Protocol`](protocol.md) object for this session.
 const { app, session } = require('electron')
 const path = require('path')
 
-app.on('ready', function () {
+app.on('ready', () => {
   const protocol = session.fromPartition('some-partition').protocol
-  protocol.registerFileProtocol('atom', function (request, callback) {
-    var url = request.url.substr(7)
+  protocol.registerFileProtocol('atom', (request, callback) => {
+    let url = request.url.substr(7)
     callback({ path: path.normalize(`${__dirname}/${url}`) })
-  }, function (error) {
+  }, (error) => {
     if (error) console.error('Failed to register protocol')
   })
 })
@@ -522,7 +538,7 @@ A [`NetLog`](net-log.md) object for this session.
 ```javascript
 const { app, session } = require('electron')
 
-app.on('ready', async function () {
+app.on('ready', async () => {
   const netLog = session.fromPartition('some-partition').netLog
   netLog.startLogging('/path/to/net-log')
   // After some network events

@@ -57,7 +57,6 @@ webFrame.setZoomLevel(200)
 console.log(webFrame.getZoomLevel())
 
 webFrame.setVisualZoomLevelLimits(50, 200)
-webFrame.setLayoutZoomLevelLimits(50, 200)
 
 webFrame.setSpellCheckProvider('en-US', {
   spellCheck (words, callback) {

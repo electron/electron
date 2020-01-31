@@ -14,7 +14,7 @@ See [`Menu`](menu.md) for examples.
     * `menuItem` MenuItem
     * `browserWindow` [BrowserWindow](browser-window.md)
     * `event` [KeyboardEvent](structures/keyboard-event.md)
-  * `role` String (optional) - Can be `undo`, `redo`, `cut`, `copy`, `paste`, `pasteAndMatchStyle`, `delete`, `selectAll`, `reload`, `forceReload`, `toggleDevTools`, `resetZoom`, `zoomIn`, `zoomOut`, `togglefullscreen`, `window`, `minimize`, `close`, `help`, `about`, `services`, `hide`, `hideOthers`, `unhide`, `quit`, `startSpeaking`, `stopSpeaking`, `close`, `minimize`, `zoom`, `front`, `appMenu`, `fileMenu`, `editMenu`, `viewMenu`, `recentDocuments`, `toggleTabBar`, `selectNextTab`, `selectPreviousTab`, `mergeAllWindows`, `clearRecentDocuments`, `moveTabToNewWindow` or `windowMenu` - Define the action of the menu item, when specified the
+  * `role` String (optional) - Can be `undo`, `redo`, `cut`, `copy`, `paste`, `pasteAndMatchStyle`, `delete`, `selectAll`, `reload`, `forceReload`, `toggleDevTools`, `resetZoom`, `zoomIn`, `zoomOut`, `togglefullscreen`, `window`, `minimize`, `close`, `help`, `about`, `services`, `hide`, `hideOthers`, `unhide`, `quit`, `startSpeaking`, `stopSpeaking`, `minimize`, `zoom`, `front`, `appMenu`, `fileMenu`, `editMenu`, `viewMenu`, `recentDocuments`, `toggleTabBar`, `selectNextTab`, `selectPreviousTab`, `mergeAllWindows`, `clearRecentDocuments`, `moveTabToNewWindow` or `windowMenu` - Define the action of the menu item, when specified the
     `click` property will be ignored. See [roles](#roles).
   * `type` String (optional) - Can be `normal`, `separator`, `submenu`, `checkbox` or
     `radio`.
@@ -130,8 +130,7 @@ dynamically changed.
 
 #### `menuItem.label`
 
-A `String` indicating the item's visible label, this property can be
-dynamically changed.
+A `String` indicating the item's visible label.
 
 #### `menuItem.click`
 
@@ -165,7 +164,7 @@ item's icon, if set.
 
 #### `menuItem.sublabel`
 
-A `String` indicating the item's sublabel, this property can be dynamically changed.
+A `String` indicating the item's sublabel.
 
 #### `menuItem.toolTip` _macOS_
 
@@ -197,7 +196,9 @@ You can add a `click` function for additional behavior.
 #### `menuItem.registerAccelerator`
 
 A `Boolean` indicating if the accelerator should be registered with the
-system or just displayed, this property can be dynamically changed.
+system or just displayed.
+
+This property can be dynamically changed.
 
 #### `menuItem.commandId`
 

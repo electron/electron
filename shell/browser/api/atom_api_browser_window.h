@@ -23,8 +23,8 @@ class BrowserWindow : public TopLevelWindow,
                       public content::WebContentsObserver,
                       public ExtendedWebContentsObserver {
  public:
-  static mate::WrappableBase* New(gin_helper::ErrorThrower thrower,
-                                  gin::Arguments* args);
+  static gin_helper::WrappableBase* New(gin_helper::ErrorThrower thrower,
+                                        gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

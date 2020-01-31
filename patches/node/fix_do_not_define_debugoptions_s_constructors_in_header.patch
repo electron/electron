@@ -15,7 +15,7 @@ By putting the definitions of constructors into the implementation file,
 we can avoid this problem.
 
 diff --git a/src/node_options.cc b/src/node_options.cc
-index f4dc3d7df5a33ce92ca52e901283db5aa9f143b4..b9d6108c5db800465e6c7156ad1c28002c33261b 100644
+index 2dd90e9a8cf9381c8608b73ead247bcf86b72ab9..051e7b084b6770215bd009b0e37feabbb7df7389 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -26,6 +26,12 @@ Mutex cli_options_mutex;
@@ -29,10 +29,10 @@ index f4dc3d7df5a33ce92ca52e901283db5aa9f143b4..b9d6108c5db800465e6c7156ad1c2800
 +DebugOptions& DebugOptions::operator=(DebugOptions&&) = default;
 +
  void DebugOptions::CheckOptions(std::vector<std::string>* errors) {
- #if !NODE_USE_V8_PLATFORM
+ #if !NODE_USE_V8_PLATFORM && !HAVE_INSPECTOR
    if (inspector_enabled) {
 diff --git a/src/node_options.h b/src/node_options.h
-index 5fb23cfda7aebca507174555b78c9a73e837dda0..ce86827024126c6b0d8462c811360057c298ec5b 100644
+index 40c19ea6ff4d98a1a1da59bca76087209445af81..4ce5551284bb5b1b4194905a9fe619f852933405 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -61,11 +61,11 @@ struct InspectPublishUid {

@@ -36,6 +36,8 @@ class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
   void AddBool(const char* name, bool value) override;
   void AddTimeDeltaInSecondsF(const char* name,
                               const base::TimeDelta& value) override;
+  void AddBinary(const char* name,
+                 const base::span<const uint8_t>& value) override;
   void BeginGPUDevice() override;
   void EndGPUDevice() override;
   void BeginVideoDecodeAcceleratorSupportedProfile() override;

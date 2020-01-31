@@ -15,12 +15,8 @@ template("templated_file") {
                              "inputs",
                              "outputs",
                            ])
-    inputs = [
-      invoker.template,
-    ]
-    outputs = [
-      invoker.output,
-    ]
+    inputs = [ invoker.template ]
+    outputs = [ invoker.output ]
     script = "//electron/build/generate-template.py"
     args = [
       rebase_path(invoker.template),

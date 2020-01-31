@@ -9,6 +9,7 @@ libEGL.so
 libGLESv2.so
 libffmpeg.so
 libvk_swiftshader.so
+libvulkan.so
 locales/am.pak
 locales/ar.pak
 locales/bg.pak
@@ -67,7 +68,7 @@ resources/default_app.asar
 snapshot_blob.bin
 swiftshader/libEGL.so
 swiftshader/libGLESv2.so
-libvk_swiftshader_icd.json
+vk_swiftshader_icd.json
 crashpad_handler
 v8_context_snapshot.bin
 version

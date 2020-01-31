@@ -24,11 +24,11 @@ bool Converter<electron::MessageBoxSettings>::FromV8(
   dict.Get("buttons", &out->buttons);
   dict.Get("defaultId", &out->default_id);
   dict.Get("cancelId", &out->cancel_id);
-  dict.Get("options", &out->options);
   dict.Get("title", &out->title);
   dict.Get("message", &out->message);
   dict.Get("detail", &out->detail);
   dict.Get("checkboxLabel", &out->checkbox_label);
+  dict.Get("noLink", &out->no_link);
   dict.Get("checkboxChecked", &out->checkbox_checked);
   dict.Get("icon", &out->icon);
   return true;

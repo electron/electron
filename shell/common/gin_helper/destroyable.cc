@@ -5,7 +5,7 @@
 #include "shell/common/gin_helper/destroyable.h"
 
 #include "gin/converter.h"
-#include "native_mate/wrappable_base.h"
+#include "shell/common/gin_helper/wrappable_base.h"
 
 namespace gin_helper {
 
@@ -20,8 +20,8 @@ void DestroyFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
   if (Destroyable::IsDestroyed(holder))
     return;
 
-  // TODO(zcbenz): mate::Wrappable will be removed.
-  delete static_cast<mate::WrappableBase*>(
+  // TODO(zcbenz): gin_helper::Wrappable will be removed.
+  delete static_cast<gin_helper::WrappableBase*>(
       holder->GetAlignedPointerFromInternalField(0));
   holder->SetAlignedPointerInInternalField(0, nullptr);
 }

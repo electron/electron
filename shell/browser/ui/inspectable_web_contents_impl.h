@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "base/containers/span.h"
 #include "base/containers/unique_ptr_adapters.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
@@ -21,6 +22,7 @@
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "electron/buildflags/buildflags.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "ui/gfx/geometry/rect.h"
 
@@ -156,7 +158,7 @@ class InspectableWebContentsImpl
 
   // content::DevToolsAgentHostClient:
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
-                               const std::string& message) override;
+                               base::span<const uint8_t> message) override;
   void AgentHostClosed(content::DevToolsAgentHost* agent_host) override;
 
   // content::WebContentsObserver:
@@ -192,6 +194,10 @@ class InspectableWebContentsImpl
                           const base::FilePath& path) override;
 
   void SendMessageAck(int request_id, const base::Value* arg1);
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  void AddDevToolsExtensionsToClient();
+#endif
 
   bool frontend_loaded_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;

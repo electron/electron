@@ -5,6 +5,7 @@
 #ifndef SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_H_
 #define SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_H_
 
+#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 
 namespace asar {
@@ -12,7 +13,7 @@ namespace asar {
 void CreateAsarURLLoader(
     const network::ResourceRequest& request,
     network::mojom::URLLoaderRequest loader,
-    network::mojom::URLLoaderClientPtr client,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     scoped_refptr<net::HttpResponseHeaders> extra_response_headers);
 
 }  // namespace asar

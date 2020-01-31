@@ -5,6 +5,8 @@ const path = require('path')
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..')
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..')
 
+const RELEASE_BRANCH_PATTERN = /(\d)+-(?:(?:[0-9]+-x$)|(?:x+-y$))/
+
 require('colors')
 const pass = '✓'.green
 const fail = '✗'.red
@@ -23,11 +25,23 @@ function getElectronExec () {
   }
 }
 
-function getOutDir (shouldLog) {
-  if (process.env.ELECTRON_OUT_DIR) {
-    return process.env.ELECTRON_OUT_DIR
+function getOutDir (options = {}) {
+  const shouldLog = options.shouldLog || false
+
+  if (options.outDir || process.env.ELECTRON_OUT_DIR) {
+    const outDir = options.outDir || process.env.ELECTRON_OUT_DIR
+    const outPath = path.resolve(SRC_DIR, 'out', outDir)
+
+    // Check that user-set variable is a valid/existing directory
+    if (fs.existsSync(outPath)) {
+      if (shouldLog) console.log(`OUT_DIR is: ${outDir}`)
+      return outDir
+    }
+
+    // Throw error if user passed/set nonexistent directory.
+    throw new Error(`${outDir} directory not configured on your machine.`)
   } else {
-    for (const buildType of ['Testing', 'Release', 'Default']) {
+    for (const buildType of ['Testing', 'Release', 'Default', 'Debug']) {
       const outPath = path.resolve(SRC_DIR, 'out', buildType)
       if (fs.existsSync(outPath)) {
         if (shouldLog) console.log(`OUT_DIR is: ${buildType}`)
@@ -54,7 +68,7 @@ async function handleGitCall (args, gitDir) {
 
 async function getCurrentBranch (gitDir) {
   let branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir)
-  if (branch !== 'master' && !branch.match(/[0-9]+-[0-9]+-x$/) && !branch.match(/[0-9]+-x-y$/)) {
+  if (branch !== 'master' && !RELEASE_BRANCH_PATTERN.test(branch)) {
     const lastCommit = await handleGitCall(['rev-parse', 'HEAD'], gitDir)
     const branches = (await handleGitCall([
       'branch',
@@ -63,7 +77,7 @@ async function getCurrentBranch (gitDir) {
       '--remote'
     ], gitDir)).split('\n')
 
-    branch = branches.filter(b => b.trim() === 'master' || b.trim().match(/^[0-9]+-[0-9]+-x$/) || b.trim().match(/^[0-9]+-x-y$/))[0]
+    branch = branches.filter(b => b.trim() === 'master' || RELEASE_BRANCH_PATTERN.test(b.trim()))[0]
     if (!branch) {
       console.log(`${fail} no release branch exists for this ref`)
       process.exit(1)

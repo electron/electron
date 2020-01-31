@@ -139,6 +139,15 @@ void FilterCookieWithStatuses(const base::Value& filter,
                 net::cookie_util::StripStatuses(list));
 }
 
+// Parse dictionary property to CanonicalCookie time correctly.
+base::Time ParseTimeProperty(const base::Optional<double>& value) {
+  if (!value)  // empty time means ignoring the parameter
+    return base::Time();
+  if (*value == 0)  // FromDoubleT would convert 0 to empty Time
+    return base::Time::UnixEpoch();
+  return base::Time::FromDoubleT(*value);
+}
+
 std::string InclusionStatusToString(
     net::CanonicalCookie::CookieInclusionStatus status) {
   if (status.HasExclusionReason(
@@ -241,21 +250,6 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
   const std::string* path = details.FindStringKey("path");
   bool secure = details.FindBoolKey("secure").value_or(false);
   bool http_only = details.FindBoolKey("httpOnly").value_or(false);
-  base::Optional<double> creation_date = details.FindDoubleKey("creationDate");
-  base::Optional<double> expiration_date =
-      details.FindDoubleKey("expirationDate");
-  base::Optional<double> last_access_date =
-      details.FindDoubleKey("lastAccessDate");
-
-  base::Time creation_time = creation_date
-                                 ? base::Time::FromDoubleT(*creation_date)
-                                 : base::Time::UnixEpoch();
-  base::Time expiration_time = expiration_date
-                                   ? base::Time::FromDoubleT(*expiration_date)
-                                   : base::Time::UnixEpoch();
-  base::Time last_access_time = last_access_date
-                                    ? base::Time::FromDoubleT(*last_access_date)
-                                    : base::Time::UnixEpoch();
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
@@ -266,18 +260,14 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
     return handle;
   }
 
-  if (!name || name->empty()) {
-    promise.RejectWithErrorMessage(
-        InclusionStatusToString(net::CanonicalCookie::CookieInclusionStatus(
-            net::CanonicalCookie::CookieInclusionStatus::
-                EXCLUDE_FAILURE_TO_STORE)));
-    return handle;
-  }
-
   auto canonical_cookie = net::CanonicalCookie::CreateSanitizedCookie(
-      url, *name, value ? *value : "", domain ? *domain : "", path ? *path : "",
-      creation_time, expiration_time, last_access_time, secure, http_only,
-      net::CookieSameSite::NO_RESTRICTION, net::COOKIE_PRIORITY_DEFAULT);
+      url, name ? *name : "", value ? *value : "", domain ? *domain : "",
+      path ? *path : "",
+      ParseTimeProperty(details.FindDoubleKey("creationDate")),
+      ParseTimeProperty(details.FindDoubleKey("expirationDate")),
+      ParseTimeProperty(details.FindDoubleKey("lastAccessDate")), secure,
+      http_only, net::CookieSameSite::NO_RESTRICTION,
+      net::COOKIE_PRIORITY_DEFAULT);
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     promise.RejectWithErrorMessage(
         InclusionStatusToString(net::CanonicalCookie::CookieInclusionStatus(

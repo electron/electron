@@ -55,7 +55,7 @@ function cpplint (args) {
 
 const LINTERS = [ {
   key: 'c++',
-  roots: ['shell', 'native_mate'],
+  roots: ['shell'],
   test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
   run: (opts, filenames) => {
     if (opts.fix) {
@@ -184,7 +184,7 @@ const LINTERS = [ {
     let ok = true
     filenames.filter(f => f.endsWith('.patch')).forEach(f => {
       const patchText = fs.readFileSync(f, 'utf8')
-      if (/^Subject: .*$\s+^diff/.test(patchText)) {
+      if (/^Subject: .*$\s+^diff/m.test(patchText)) {
         console.warn(`Patch file '${f}' has no description. Every patch must contain a justification for why the patch exists and the plan for its removal.`)
         ok = false
       }
@@ -246,7 +246,7 @@ async function findFiles (args, linter) {
       return []
     }
   } else if (args.only) {
-    whitelist = new Set(args._)
+    whitelist = new Set(args._.map(p => path.resolve(p)))
   }
 
   // accumulate the raw list of files
@@ -281,8 +281,8 @@ async function main () {
   const opts = parseCommandLine()
 
   // no mode specified? run 'em all
-  if (!opts['c++'] && !opts.javascript && !opts.python && !opts.gn && !opts.patches) {
-    opts['c++'] = opts.javascript = opts.python = opts.gn = opts.patches = true
+  if (!opts['c++'] && !opts.javascript && !opts.objc && !opts.python && !opts.gn && !opts.patches) {
+    opts['c++'] = opts.javascript = opts.objc = opts.python = opts.gn = opts.patches = true
   }
 
   const linters = LINTERS.filter(x => opts[x.key])

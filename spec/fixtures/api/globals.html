@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Document</title>
+</head>
+<body>
+  <script>
+  window.postMessage({
+    globals: Object.keys(Object.getOwnPropertyDescriptors(window))
+  })
+  </script>
+</body>
+</html>

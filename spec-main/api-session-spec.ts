@@ -58,6 +58,15 @@ describe('session module', () => {
     const value = '0'
     afterEach(closeAllWindows)
 
+    // Clear cookie of defaultSession after each test.
+    afterEach(async () => {
+      const { cookies } = session.defaultSession
+      const cs = await cookies.get({ url })
+      for (const c of cs) {
+        await cookies.remove(url, c.name)
+      }
+    })
+
     it('should get cookies', async () => {
       const server = http.createServer((req, res) => {
         res.setHeader('Set-Cookie', [`${name}=${value}`])
@@ -79,8 +88,32 @@ describe('session module', () => {
       const value = '1'
 
       await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 })
-      const cs = await cookies.get({ url })
-      expect(cs.some(c => c.name === name && c.value === value)).to.equal(true)
+      const c = (await cookies.get({ url }))[0]
+      expect(c.name).to.equal(name)
+      expect(c.value).to.equal(value)
+      expect(c.session).to.equal(false)
+    })
+
+    it('sets session cookies', async () => {
+      const { cookies } = session.defaultSession
+      const name = '2'
+      const value = '1'
+
+      await cookies.set({ url, name, value })
+      const c = (await cookies.get({ url }))[0]
+      expect(c.name).to.equal(name)
+      expect(c.value).to.equal(value)
+      expect(c.session).to.equal(true)
+    })
+
+    it('sets cookies without name', async () => {
+      const { cookies } = session.defaultSession
+      const value = '3'
+
+      await cookies.set({ url, value })
+      const c = (await cookies.get({ url }))[0]
+      expect(c.name).to.be.empty()
+      expect(c.value).to.equal(value)
     })
 
     it('gets cookies without url', async () => {
@@ -201,7 +234,7 @@ describe('session module', () => {
           )
 
           appProcess.stdout.on('data', data => { output += data })
-          appProcess.stdout.on('end', () => {
+          appProcess.on('exit', () => {
             resolve(output.replace(/(\r\n|\n|\r)/gm, ''))
           })
         })
@@ -511,12 +544,19 @@ describe('session module', () => {
       const fetch = (url: string) => new Promise((resolve, reject) => {
         const request = net.request({ url, session: ses })
         request.on('response', (response) => {
-          let data = ''
+          let data: string | null = null
           response.on('data', (chunk) => {
+            if (!data) {
+              data = ''
+            }
             data += chunk
           })
           response.on('end', () => {
-            resolve(data)
+            if (!data) {
+              reject(new Error('Empty response'))
+            } else {
+              resolve(data)
+            }
           })
           response.on('error', (error: any) => { reject(new Error(error)) })
         })

@@ -149,6 +149,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
   virtual void SetBackgroundColor(SkColor color) = 0;
+  virtual SkColor GetBackgroundColor() = 0;
   virtual void SetHasShadow(bool has_shadow) = 0;
   virtual bool HasShadow() = 0;
   virtual void SetOpacity(const double opacity) = 0;
@@ -184,8 +185,7 @@ class NativeWindow : public base::SupportsUserData,
                               const std::string& description) = 0;
 
   // Workspace APIs.
-  virtual void SetVisibleOnAllWorkspaces(bool visible,
-                                         bool visibleOnFullScreen = false) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
 
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 
@@ -306,8 +306,7 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   // views::WidgetDelegate:
-  views::Widget* GetWidget() override;
-  const views::Widget* GetWidget() const override;
+  const views::Widget* GetWidgetImpl() const override;
   base::string16 GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }

@@ -7,7 +7,7 @@ Dont compare RC.exe and RC.py output.
 FIXME: It has to be reverted once the script is fixed.
 
 diff --git a/build/toolchain/win/rc/rc.py b/build/toolchain/win/rc/rc.py
-index 5c0442bef19334004647bf6e5dcbabcf399f2ec6..05fb71a1a18d35d361cac8eddece95b665f74ed8 100755
+index 74761866eecfe4e742af974aab71ec05817c3a6a..91ad9ac4c7d59be0cc95341d61e0e30a23869601 100755
 --- a/build/toolchain/win/rc/rc.py
 +++ b/build/toolchain/win/rc/rc.py
 @@ -234,7 +234,10 @@ def CompareToMsRcOutput(preprocessed_output, is_utf8, flags):

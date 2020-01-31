@@ -3,6 +3,10 @@ From: Heilig Benedek <benecene@gmail.com>
 Date: Sat, 10 Aug 2019 00:41:50 +0200
 Subject: feat: enable picture in picture mode for video players
 
+These files are needed to implement PiP, but the Electron build patches out
+chrome's generated resources for our own. This updates the #include so that we
+don't get errors for Chrome's generated resources, which are non-existent
+because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
 index 8e4deafa1746eeb48802a0503fefb37bedb33d04..127c62efd2327e1f3f09e9b93a0b8344e2714f80 100644
@@ -31,7 +35,7 @@ index e9b64a823ae7e25361f37190d247af0fa6a6f68a..43fdb0ad50d2b11a1bc28aa0f358c6dd
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 027fb9dddff339e67600b83c79c209656d210a90..e9dfd515aadfb4442da7a7b574a3891fe2a8d8bb 100644
+index 02c05417bf3a2b6ca1bfc839d76262b97e9b2d69..3ac71544700f517b4c7397fa7a838ca8d778d2b1 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -19,7 +19,7 @@

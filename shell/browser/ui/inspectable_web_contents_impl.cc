@@ -12,6 +12,7 @@
 #include "base/guid.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
+#include "base/json/string_escape.h"
 #include "base/metrics/histogram.h"
 #include "base/stl_util.h"
 #include "base/strings/pattern.h"
@@ -27,10 +28,12 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/file_select_listener.h"
+#include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_channel.h"
@@ -45,6 +48,16 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/render_process_host.h"
+#include "extensions/browser/extension_registry.h"
+#include "extensions/common/manifest_constants.h"
+#include "extensions/common/manifest_url_handlers.h"
+#include "extensions/common/permissions/permissions_data.h"
+#include "shell/browser/atom_browser_context.h"
+#endif
 
 namespace electron {
 
@@ -62,7 +75,7 @@ const char kChromeUIDevToolsURL[] =
     "textColor=rgba(0,0,0,1)&"
     "experiments=true";
 const char kChromeUIDevToolsRemoteFrontendBase[] =
-    "https://devtools-frontend.appspot.com/";
+    "https://chrome-devtools-frontend.appspot.com/";
 const char kChromeUIDevToolsRemoteFrontendPath[] = "serve_file";
 
 const char kDevToolsBoundsPref[] = "electron.devtools.bounds";
@@ -150,29 +163,87 @@ GURL GetDevToolsURL(bool can_dock) {
   return GURL(url_string);
 }
 
+constexpr base::TimeDelta kInitialBackoffDelay =
+    base::TimeDelta::FromMilliseconds(250);
+constexpr base::TimeDelta kMaxBackoffDelay = base::TimeDelta::FromSeconds(10);
+
 }  // namespace
 
 class InspectableWebContentsImpl::NetworkResourceLoader
     : public network::SimpleURLLoaderStreamConsumer {
  public:
-  NetworkResourceLoader(int stream_id,
-                        InspectableWebContentsImpl* bindings,
-                        std::unique_ptr<network::SimpleURLLoader> loader,
-                        network::mojom::URLLoaderFactory* url_loader_factory,
-                        const DispatchCallback& callback)
+  class URLLoaderFactoryHolder {
+   public:
+    network::mojom::URLLoaderFactory* get() {
+      return ptr_.get() ? ptr_.get() : refptr_.get();
+    }
+    void operator=(std::unique_ptr<network::mojom::URLLoaderFactory>&& ptr) {
+      ptr_ = std::move(ptr);
+    }
+    void operator=(scoped_refptr<network::SharedURLLoaderFactory>&& refptr) {
+      refptr_ = std::move(refptr);
+    }
+
+   private:
+    std::unique_ptr<network::mojom::URLLoaderFactory> ptr_;
+    scoped_refptr<network::SharedURLLoaderFactory> refptr_;
+  };
+
+  static void Create(int stream_id,
+                     InspectableWebContentsImpl* bindings,
+                     const network::ResourceRequest& resource_request,
+                     const net::NetworkTrafficAnnotationTag& traffic_annotation,
+                     URLLoaderFactoryHolder url_loader_factory,
+                     const DispatchCallback& callback,
+                     base::TimeDelta retry_delay = base::TimeDelta()) {
+    auto resource_loader =
+        std::make_unique<InspectableWebContentsImpl::NetworkResourceLoader>(
+            stream_id, bindings, resource_request, traffic_annotation,
+            std::move(url_loader_factory), callback, retry_delay);
+    bindings->loaders_.insert(std::move(resource_loader));
+  }
+
+  NetworkResourceLoader(
+      int stream_id,
+      InspectableWebContentsImpl* bindings,
+      const network::ResourceRequest& resource_request,
+      const net::NetworkTrafficAnnotationTag& traffic_annotation,
+      URLLoaderFactoryHolder url_loader_factory,
+      const DispatchCallback& callback,
+      base::TimeDelta delay)
       : stream_id_(stream_id),
         bindings_(bindings),
-        loader_(std::move(loader)),
-        callback_(callback) {
+        resource_request_(resource_request),
+        traffic_annotation_(traffic_annotation),
+        loader_(network::SimpleURLLoader::Create(
+            std::make_unique<network::ResourceRequest>(resource_request),
+            traffic_annotation)),
+        url_loader_factory_(std::move(url_loader_factory)),
+        callback_(callback),
+        retry_delay_(delay) {
     loader_->SetOnResponseStartedCallback(base::BindOnce(
         &NetworkResourceLoader::OnResponseStarted, base::Unretained(this)));
-    loader_->DownloadAsStream(url_loader_factory, this);
+    timer_.Start(FROM_HERE, delay,
+                 base::BindRepeating(&NetworkResourceLoader::DownloadAsStream,
+                                     base::Unretained(this)));
   }
 
   NetworkResourceLoader(const NetworkResourceLoader&) = delete;
   NetworkResourceLoader& operator=(const NetworkResourceLoader&) = delete;
 
  private:
+  void DownloadAsStream() {
+    loader_->DownloadAsStream(url_loader_factory_.get(), this);
+  }
+
+  base::TimeDelta GetNextExponentialBackoffDelay(const base::TimeDelta& delta) {
+    if (delta.is_zero()) {
+      return kInitialBackoffDelay;
+    } else {
+      return delta * 1.3;
+    }
+  }
+
   void OnResponseStarted(const GURL& final_url,
                          const network::mojom::URLResponseHead& response_head) {
     response_headers_ = response_head.headers;
@@ -199,21 +270,34 @@ class InspectableWebContentsImpl::NetworkResourceLoader
   }
 
   void OnComplete(bool success) override {
-    base::DictionaryValue response;
-    response.SetInteger("statusCode", response_headers_
-                                          ? response_headers_->response_code()
-                                          : 200);
+    if (!success && loader_->NetError() == net::ERR_INSUFFICIENT_RESOURCES &&
+        retry_delay_ < kMaxBackoffDelay) {
+      const base::TimeDelta delay =
+          GetNextExponentialBackoffDelay(retry_delay_);
+      LOG(WARNING) << "InspectableWebContentsImpl::NetworkResourceLoader id = "
+                   << stream_id_
+                   << " failed with insufficient resources, retrying in "
+                   << delay << "." << std::endl;
+      NetworkResourceLoader::Create(
+          stream_id_, bindings_, resource_request_, traffic_annotation_,
+          std::move(url_loader_factory_), callback_, delay);
+    } else {
+      base::DictionaryValue response;
+      response.SetInteger("statusCode", response_headers_
+                                            ? response_headers_->response_code()
+                                            : 200);
 
-    auto headers = std::make_unique<base::DictionaryValue>();
-    size_t iterator = 0;
-    std::string name;
-    std::string value;
-    while (response_headers_ &&
-           response_headers_->EnumerateHeaderLines(&iterator, &name, &value))
-      headers->SetString(name, value);
+      auto headers = std::make_unique<base::DictionaryValue>();
+      size_t iterator = 0;
+      std::string name;
+      std::string value;
+      while (response_headers_ &&
+             response_headers_->EnumerateHeaderLines(&iterator, &name, &value))
+        headers->SetString(name, value);
 
-    response.Set("headers", std::move(headers));
-    callback_.Run(&response);
+      response.Set("headers", std::move(headers));
+      callback_.Run(&response);
+    }
 
     bindings_->loaders_.erase(bindings_->loaders_.find(this));
   }
@@ -222,9 +306,14 @@ class InspectableWebContentsImpl::NetworkResourceLoader
 
   const int stream_id_;
   InspectableWebContentsImpl* const bindings_;
+  const network::ResourceRequest resource_request_;
+  const net::NetworkTrafficAnnotationTag traffic_annotation_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
+  URLLoaderFactoryHolder url_loader_factory_;
   DispatchCallback callback_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
+  base::OneShotTimer timer_;
+  base::TimeDelta retry_delay_;
 };
 
 // Implemented separately on each platform.
@@ -493,9 +582,50 @@ void InspectableWebContentsImpl::LoadCompleted() {
         javascript, base::NullCallback());
   }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  AddDevToolsExtensionsToClient();
+#endif
+
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsOpened();
 }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+void InspectableWebContentsImpl::AddDevToolsExtensionsToClient() {
+  // get main browser context
+  auto* browser_context = web_contents_->GetBrowserContext();
+  const extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(browser_context);
+  if (!registry)
+    return;
+
+  base::ListValue results;
+  for (auto& extension : registry->enabled_extensions()) {
+    auto devtools_page_url = extensions::ManifestURL::Get(
+        extension.get(), extensions::manifest_keys::kDevToolsPage);
+    if (devtools_page_url.is_empty())
+      continue;
+
+    // Each devtools extension will need to be able to run in the devtools
+    // process. Grant the devtools process the ability to request URLs from the
+    // extension.
+    content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
+        web_contents_->GetMainFrame()->GetProcess()->GetID(),
+        url::Origin::Create(extension->url()));
+
+    std::unique_ptr<base::DictionaryValue> extension_info(
+        new base::DictionaryValue());
+    extension_info->SetString("startPage", devtools_page_url.spec());
+    extension_info->SetString("name", extension->name());
+    extension_info->SetBoolean("exposeExperimentalAPIs",
+                               extension->permissions_data()->HasAPIPermission(
+                                   extensions::APIPermission::kExperimental));
+    results.Append(std::move(extension_info));
+  }
+
+  CallClientFunction("DevToolsAPI.addExtensions", &results, NULL, NULL);
+}
+#endif
 
 void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
   DevToolsContentsResizingStrategy strategy(rect);
@@ -528,19 +658,45 @@ void InspectableWebContentsImpl::LoadNetworkResource(
     return;
   }
 
-  auto resource_request = std::make_unique<network::ResourceRequest>();
-  resource_request->url = gurl;
-  resource_request->headers.AddHeadersFromString(headers);
+  // Create traffic annotation tag.
+  net::NetworkTrafficAnnotationTag traffic_annotation =
+      net::DefineNetworkTrafficAnnotation("devtools_network_resource", R"(
+        semantics {
+          sender: "Developer Tools"
+          description:
+            "When user opens Developer Tools, the browser may fetch additional "
+            "resources from the network to enrich the debugging experience "
+            "(e.g. source map resources)."
+          trigger: "User opens Developer Tools to debug a web page."
+          data: "Any resources requested by Developer Tools."
+          destination: WEBSITE
+        }
+        policy {
+          cookies_allowed: YES
+          cookies_store: "user"
+          setting:
+            "It's not possible to disable this feature from settings."
+        })");
 
-  auto* partition = content::BrowserContext::GetDefaultStoragePartition(
-      GetDevToolsWebContents()->GetBrowserContext());
-  auto factory = partition->GetURLLoaderFactoryForBrowserProcess();
+  network::ResourceRequest resource_request;
+  resource_request.url = gurl;
+  resource_request.site_for_cookies = net::SiteForCookies::FromUrl(gurl);
+  resource_request.headers.AddHeadersFromString(headers);
 
-  auto simple_url_loader = network::SimpleURLLoader::Create(
-      std::move(resource_request), MISSING_TRAFFIC_ANNOTATION);
-  auto resource_loader = std::make_unique<NetworkResourceLoader>(
-      stream_id, this, std::move(simple_url_loader), factory.get(), callback);
-  loaders_.insert(std::move(resource_loader));
+  NetworkResourceLoader::URLLoaderFactoryHolder url_loader_factory;
+  if (gurl.SchemeIsFile()) {
+    url_loader_factory = content::CreateFileURLLoaderFactory(
+        base::FilePath() /* profile_path */,
+        nullptr /* shared_cors_origin_access_list */);
+  } else {
+    auto* partition = content::BrowserContext::GetDefaultStoragePartition(
+        GetDevToolsWebContents()->GetBrowserContext());
+    url_loader_factory = partition->GetURLLoaderFactoryForBrowserProcess();
+  }
+
+  NetworkResourceLoader::Create(stream_id, this, resource_request,
+                                traffic_annotation,
+                                std::move(url_loader_factory), callback);
 }
 
 void InspectableWebContentsImpl::SetIsDocked(const DispatchCallback& callback,
@@ -675,7 +831,8 @@ void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
   }
 
   if (agent_host_)
-    agent_host_->DispatchProtocolMessage(this, message);
+    agent_host_->DispatchProtocolMessage(
+        this, base::as_bytes(base::make_span(message)));
 }
 
 void InspectableWebContentsImpl::SendJsonRequest(
@@ -747,21 +904,26 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(
 
 void InspectableWebContentsImpl::DispatchProtocolMessage(
     content::DevToolsAgentHost* agent_host,
-    const std::string& message) {
+    base::span<const uint8_t> message) {
   if (!frontend_loaded_)
     return;
 
-  if (message.length() < kMaxMessageChunkSize) {
+  base::StringPiece str_message(reinterpret_cast<const char*>(message.data()),
+                                message.size());
+  if (str_message.size() < kMaxMessageChunkSize) {
+    std::string param;
+    base::EscapeJSONString(str_message, true, &param);
     base::string16 javascript =
-        base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + message + ");");
+        base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + param + ");");
     GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
     return;
   }
 
-  base::Value total_size(static_cast<int>(message.length()));
-  for (size_t pos = 0; pos < message.length(); pos += kMaxMessageChunkSize) {
-    base::Value message_value(message.substr(pos, kMaxMessageChunkSize));
+  base::Value total_size(static_cast<int>(str_message.length()));
+  for (size_t pos = 0; pos < str_message.length();
+       pos += kMaxMessageChunkSize) {
+    base::Value message_value(str_message.substr(pos, kMaxMessageChunkSize));
     CallClientFunction("DevToolsAPI.dispatchMessageChunk", &message_value,
                        pos ? nullptr : &total_size, nullptr);
   }

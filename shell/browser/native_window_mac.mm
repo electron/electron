@@ -7,7 +7,9 @@
 #include <AvailabilityMacros.h>
 #include <objc/objc-runtime.h>
 
+#include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/mac/mac_util.h"
@@ -28,6 +30,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/deprecate_util.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -335,6 +338,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
+  options.Get(options::kTrafficLightPosition, &traffic_light_position_);
 
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
@@ -509,6 +513,45 @@ NativeWindowMac::~NativeWindowMac() {
     [NSEvent removeMonitor:wheel_event_monitor_];
 }
 
+void NativeWindowMac::RepositionTrafficLights() {
+  if (!traffic_light_position_.x() && !traffic_light_position_.y()) {
+    return;
+  }
+
+  NSWindow* window = window_;
+  NSButton* close = [window standardWindowButton:NSWindowCloseButton];
+  NSButton* miniaturize =
+      [window standardWindowButton:NSWindowMiniaturizeButton];
+  NSButton* zoom = [window standardWindowButton:NSWindowZoomButton];
+  NSView* titleBarContainerView = close.superview.superview;
+
+  // Hide the container when exiting fullscreen, otherwise traffic light buttons
+  // jump
+  if (exiting_fullscreen_) {
+    [titleBarContainerView setHidden:YES];
+    return;
+  }
+
+  [titleBarContainerView setHidden:NO];
+  CGFloat buttonHeight = [close frame].size.height;
+  CGFloat titleBarFrameHeight = buttonHeight + traffic_light_position_.y();
+  CGRect titleBarRect = titleBarContainerView.frame;
+  titleBarRect.size.height = titleBarFrameHeight;
+  titleBarRect.origin.y = window.frame.size.height - titleBarFrameHeight;
+  [titleBarContainerView setFrame:titleBarRect];
+
+  NSArray* windowButtons = @[ close, miniaturize, zoom ];
+  const CGFloat space_between =
+      [miniaturize frame].origin.x - [close frame].origin.x;
+  for (NSUInteger i = 0; i < windowButtons.count; i++) {
+    NSView* view = [windowButtons objectAtIndex:i];
+    CGRect rect = [view frame];
+    rect.origin.x = traffic_light_position_.x() + (i * space_between);
+    rect.origin.y = (titleBarFrameHeight - rect.size.height) / 2;
+    [view setFrameOrigin:rect.origin];
+  }
+}
+
 void NativeWindowMac::SetContentView(views::View* view) {
   views::View* root_view = GetContentsView();
   if (content_view())
@@ -626,6 +669,10 @@ bool NativeWindowMac::IsVisible() {
   // foreground of the app, which means that it should not be minimized or
   // occluded
   return [window_ isVisible] && !occluded && !IsMinimized();
+}
+
+void NativeWindowMac::SetExitingFullScreen(bool flag) {
+  exiting_fullscreen_ = flag;
 }
 
 bool NativeWindowMac::IsEnabled() {
@@ -949,6 +996,9 @@ void NativeWindowMac::Invalidate() {
 
 void NativeWindowMac::SetTitle(const std::string& title) {
   [window_ setTitle:base::SysUTF8ToNSString(title)];
+  if (title_bar_style_ == TitleBarStyle::HIDDEN) {
+    RepositionTrafficLights();
+  }
 }
 
 std::string NativeWindowMac::GetTitle() {
@@ -1014,7 +1064,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       // Hide the titlebar
       SetStyleMask(false, NSWindowStyleMaskTitled);
 
-      // Resize the window to accomodate the _entire_ screen size
+      // Resize the window to accommodate the _entire_ screen size
       fullscreenFrame.size.height -=
           [[[NSApplication sharedApplication] mainMenu] menuBarHeight];
     } else if (!window_button_visibility_.has_value()) {
@@ -1100,6 +1150,11 @@ void NativeWindowMac::SetBackgroundColor(SkColor color) {
   base::ScopedCFTypeRef<CGColorRef> cgcolor(
       skia::CGColorCreateFromSkColor(color));
   [[[window_ contentView] layer] setBackgroundColor:cgcolor];
+}
+
+SkColor NativeWindowMac::GetBackgroundColor() {
+  return skia::CGColorRefToSkColor(
+      [[[window_ contentView] layer] backgroundColor]);
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {
@@ -1266,11 +1321,8 @@ void NativeWindowMac::SetProgressBar(double progress,
 void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
                                      const std::string& description) {}
 
-void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
-                                                bool visibleOnFullScreen) {
+void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
   SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
-  SetCollectionBehavior(visibleOnFullScreen,
-                        NSWindowCollectionBehaviorFullScreenAuxiliary);
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
@@ -1370,6 +1422,28 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
     [effect_view setState:NSVisualEffectStateActive];
+
+    // Make frameless Vibrant windows have rounded corners.
+    CGFloat radius = 5.0f;  // default corner radius
+    CGFloat dimension = 2 * radius + 1;
+    NSSize size = NSMakeSize(dimension, dimension);
+    NSImage* maskImage = [NSImage imageWithSize:size
+                                        flipped:NO
+                                 drawingHandler:^BOOL(NSRect rect) {
+                                   NSBezierPath* bezierPath = [NSBezierPath
+                                       bezierPathWithRoundedRect:rect
+                                                         xRadius:radius
+                                                         yRadius:radius];
+                                   [[NSColor blackColor] set];
+                                   [bezierPath fill];
+                                   return YES;
+                                 }];
+    [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
+    [maskImage setResizingMode:NSImageResizingModeStretch];
+
+    [effect_view setMaskImage:maskImage];
+    [window_ setCornerMask:maskImage];
+
     [[window_ contentView] addSubview:effect_view
                            positioned:NSWindowBelow
                            relativeTo:nil];

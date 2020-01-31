@@ -268,7 +268,9 @@ const warnAboutAllowedPopups = function () {
 // Logs a warning message about the remote module
 
 const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electron.WebPreferences) {
-  if (!webPreferences || !webPreferences.enableRemoteModule || isLocalhost()) return
+  if (!webPreferences || isLocalhost()) return
+  const remoteModuleEnabled = webPreferences.enableRemoteModule != null ? !!webPreferences.enableRemoteModule : true
+  if (!remoteModuleEnabled) return
 
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has "enableRemoteModule" enabled

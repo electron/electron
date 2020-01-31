@@ -79,6 +79,9 @@ void BrowserWindow::UpdateDraggableRegions(
   if (window_->has_frame())
     return;
 
+  if (!web_contents())
+    return;
+
   // All ControlRegionViews should be added as children of the WebContentsView,
   // because WebContentsView will be removed and re-added when entering and
   // leaving fullscreen mode.
@@ -101,9 +104,11 @@ void BrowserWindow::UpdateDraggableRegions(
 
   // Draggable regions is implemented by having the whole web view draggable
   // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
-  draggable_regions_.clear();
-  for (const auto& r : regions)
-    draggable_regions_.push_back(r.Clone());
+  if (&draggable_regions_ != &regions) {
+    draggable_regions_.clear();
+    for (const auto& r : regions)
+      draggable_regions_.push_back(r.Clone());
+  }
   std::vector<gfx::Rect> drag_exclude_rects;
   if (regions.empty()) {
     drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));

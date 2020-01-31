@@ -17,12 +17,12 @@
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/browser/web_contents_binding_set.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
+#include "mojo/public/cpp/bindings/binding_set.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/binder_registry.h"
 #include "shell/browser/api/frame_subscriber.h"
@@ -34,6 +34,10 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "printing/backend/print_backend.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/script_executor.h"
 #endif
 
 namespace blink {
@@ -181,6 +185,9 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   void SetEmbedder(const WebContents* embedder);
   void SetDevToolsWebContents(const WebContents* devtools);
   v8::Local<v8::Value> GetNativeView() const;
+  void IncrementCapturerCount(gin_helper::Arguments* args);
+  void DecrementCapturerCount(gin_helper::Arguments* args);
+  bool IsBeingCaptured();
 
 #if BUILDFLAG(ENABLE_PRINTING)
   void Print(gin_helper::Arguments* args);
@@ -272,7 +279,6 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   double GetZoomLevel() const;
   void SetZoomFactor(double factor);
   double GetZoomFactor() const;
-  void SetZoomLimits(double min_zoom, double max_zoom) override;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
@@ -327,6 +333,12 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                            content::NavigationHandle* navigation_handle);
 
   WebContents* embedder() { return embedder_; }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::ScriptExecutor* script_executor() {
+    return script_executor_.get();
+  }
+#endif
 
  protected:
   // Does not manage lifetime of |web_contents|.
@@ -422,7 +434,8 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // content::WebContentsObserver:
   void BeforeUnloadFired(bool proceed,
                          const base::TimeTicks& proceed_time) override;
-  void RenderViewCreated(content::RenderViewHost*) override;
+  void RenderViewCreated(content::RenderViewHost* render_view_host) override;
+  void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
@@ -433,8 +446,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                      const GURL& validated_url) override;
   void DidFailLoad(content::RenderFrameHost* render_frame_host,
                    const GURL& validated_url,
-                   int error_code,
-                   const base::string16& error_description) override;
+                   int error_code) override;
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidStartNavigation(
@@ -458,7 +470,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       const MediaPlayerInfo& video_type,
       const content::MediaPlayerId& id,
       content::WebContentsObserver::MediaStoppedReason reason) override;
-  void DidChangeThemeColor(base::Optional<SkColor> theme_color) override;
+  void DidChangeThemeColor() override;
   void OnInterfaceRequestFromFrame(
       content::RenderFrameHost* render_frame_host,
       const std::string& interface_name,
@@ -536,6 +548,10 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  std::unique_ptr<extensions::ScriptExecutor> script_executor_;
+#endif
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_ = nullptr;

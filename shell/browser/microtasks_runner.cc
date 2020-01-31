@@ -10,7 +10,8 @@ namespace electron {
 
 MicrotasksRunner::MicrotasksRunner(v8::Isolate* isolate) : isolate_(isolate) {}
 
-void MicrotasksRunner::WillProcessTask(const base::PendingTask& pending_task) {}
+void MicrotasksRunner::WillProcessTask(const base::PendingTask& pending_task,
+                                       bool was_blocked_or_low_priority) {}
 
 void MicrotasksRunner::DidProcessTask(const base::PendingTask& pending_task) {
   v8::Isolate::Scope scope(isolate_);

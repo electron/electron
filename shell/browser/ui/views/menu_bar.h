@@ -11,7 +11,7 @@
 #include "shell/browser/ui/views/menu_delegate.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "ui/views/accessible_pane_view.h"
-#include "ui/views/controls/button/menu_button_listener.h"
+#include "ui/views/controls/button/button.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/view.h"
 
@@ -37,7 +37,7 @@ class MenuBarColorUpdater : public views::FocusChangeListener {
 };
 
 class MenuBar : public views::AccessiblePaneView,
-                public views::MenuButtonListener,
+                public views::ButtonListener,
                 public electron::MenuDelegate::Observer {
  public:
   static const char kViewClassName[];
@@ -71,19 +71,16 @@ class MenuBar : public views::AccessiblePaneView,
 
   // views::AccessiblePaneView:
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
+  bool SetPaneFocus(views::View* initial_focus) override;
+  void RemovePaneFocus() override;
 
  protected:
   // views::View:
   const char* GetClassName() const override;
 
-  // views::MenuButtonListener:
-  void OnMenuButtonClicked(views::Button* source,
-                           const gfx::Point& point,
-                           const ui::Event* event) override;
+  // views::ButtonListener:
+  void ButtonPressed(views::Button* source, const ui::Event& event) override;
   void OnThemeChanged() override;
-
-  bool SetPaneFocus(views::View* initial_focus);
-  void RemovePaneFocus();
 
  private:
   friend class MenuBarColorUpdater;

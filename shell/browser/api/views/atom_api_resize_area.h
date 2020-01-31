@@ -5,7 +5,7 @@
 #ifndef SHELL_BROWSER_API_VIEWS_ATOM_API_RESIZE_AREA_H_
 #define SHELL_BROWSER_API_VIEWS_ATOM_API_RESIZE_AREA_H_
 
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "shell/browser/api/atom_api_view.h"
 #include "ui/views/controls/resize_area.h"
 #include "ui/views/controls/resize_area_delegate.h"
@@ -16,7 +16,7 @@ namespace api {
 
 class ResizeArea : public View, protected views::ResizeAreaDelegate {
  public:
-  static mate::WrappableBase* New(mate::Arguments* args);
+  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

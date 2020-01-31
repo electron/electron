@@ -3,12 +3,13 @@ From: Nitish Sakhawalkar <nitsakh@icloud.com>
 Date: Thu, 11 Apr 2019 11:50:49 -0700
 Subject: fix: export DebugOptions
 
+This exports DebugOptions so we can parse args like `--inspect-brk`.
 
 diff --git a/src/node_options.cc b/src/node_options.cc
-index e2a39626b69fd3380febc258fb25efc0cea2a08e..f4dc3d7df5a33ce92ca52e901283db5aa9f143b4 100644
+index 35cac18a916c2ce104a3e7b6760d0280b33c2892..2dd90e9a8cf9381c8608b73ead247bcf86b72ab9 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -204,11 +204,6 @@ void EnvironmentOptions::CheckOptions(std::vector<std::string>* errors) {
+@@ -210,11 +210,6 @@ void EnvironmentOptions::CheckOptions(std::vector<std::string>* errors) {
  
  namespace options_parser {
  
@@ -21,7 +22,7 @@ index e2a39626b69fd3380febc258fb25efc0cea2a08e..f4dc3d7df5a33ce92ca52e901283db5a
   public:
    EnvironmentOptionsParser();
 diff --git a/src/node_options.h b/src/node_options.h
-index dbd85b2d584be57619fc5c8d019140f67514f427..5fb23cfda7aebca507174555b78c9a73e837dda0 100644
+index 8937bfd9011e4795d22e232886e18183d698b8d4..40c19ea6ff4d98a1a1da59bca76087209445af81 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -59,7 +59,7 @@ struct InspectPublishUid {
@@ -33,7 +34,7 @@ index dbd85b2d584be57619fc5c8d019140f67514f427..5fb23cfda7aebca507174555b78c9a73
   public:
    DebugOptions() = default;
    DebugOptions(const DebugOptions&) = default;
-@@ -240,7 +240,7 @@ class PerProcessOptions : public Options {
+@@ -244,7 +244,7 @@ class PerProcessOptions : public Options {
  
  namespace options_parser {
  
@@ -42,7 +43,7 @@ index dbd85b2d584be57619fc5c8d019140f67514f427..5fb23cfda7aebca507174555b78c9a73
      std::vector<std::string>* errors);
  void GetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
  
-@@ -433,6 +433,11 @@ class OptionsParser {
+@@ -437,6 +437,11 @@ class OptionsParser {
    friend void GetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
  };
  

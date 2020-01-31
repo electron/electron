@@ -6,10 +6,10 @@ Subject: feat: add uv_loop watcher_queue code
 Electron's Node Integration works by listening to Node's backend file descriptor in a separate thread; when an event is ready the backend file descriptor will trigger a new event for it, and the main thread will then iterate the libuv loop. For certain operations (ex. adding a timeout task) the backend file descriptor isn't informed, & as a result the main thread doesn't know it needs to iterate the libuv loop so the timeout task will never execute until something else trigger a new event. This commit should be removed when https://github.com/libuv/libuv/pull/1921 is merged
 
 diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
-index f97801cec2f41b104fae591277ffbb94c3b2f299..da648b3efd5948843c485d65035ae29c79eebc69 100644
+index 0e8132e4384be02737e9a001aa2a65f76e7a1215..b79a5228c2abef854cf63dbbcd3704c14c3bb25e 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
-@@ -1657,6 +1657,8 @@ union uv_any_req {
+@@ -1734,6 +1734,8 @@ union uv_any_req {
  struct uv_loop_s {
    /* User data - use this for whatever. */
    void* data;
@@ -19,10 +19,10 @@ index f97801cec2f41b104fae591277ffbb94c3b2f299..da648b3efd5948843c485d65035ae29c
    unsigned int active_handles;
    void* handle_queue[2];
 diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
-index 202c75bbb5e94cb2e8a588b09d4fbfdfe1ccfe3a..041b1838c629ec828f2160ac735953f1bf986c01 100644
+index ffce948c9574034443203b9d2569d5f7aec1070e..ca2a755e09ac96c313737efb7b9c5880a1c158ae 100644
 --- a/deps/uv/src/unix/core.c
 +++ b/deps/uv/src/unix/core.c
-@@ -892,8 +892,11 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -899,8 +899,11 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
      return;
  #endif
  
@@ -35,7 +35,7 @@ index 202c75bbb5e94cb2e8a588b09d4fbfdfe1ccfe3a..041b1838c629ec828f2160ac735953f1
  
    if (loop->watchers[w->fd] == NULL) {
      loop->watchers[w->fd] = w;
-@@ -929,8 +932,11 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -936,8 +939,11 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
        w->events = 0;
      }
    }
@@ -48,7 +48,7 @@ index 202c75bbb5e94cb2e8a588b09d4fbfdfe1ccfe3a..041b1838c629ec828f2160ac735953f1
  }
  
  
-@@ -947,6 +953,8 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
+@@ -954,6 +960,8 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
  void uv__io_feed(uv_loop_t* loop, uv__io_t* w) {
    if (QUEUE_EMPTY(&w->pending_queue))
      QUEUE_INSERT_TAIL(&loop->pending_queue, &w->pending_queue);

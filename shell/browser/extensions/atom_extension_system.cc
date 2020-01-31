@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "base/bind.h"
 #include "base/files/file_path.h"
@@ -43,14 +44,10 @@ AtomExtensionSystem::AtomExtensionSystem(BrowserContext* browser_context)
 
 AtomExtensionSystem::~AtomExtensionSystem() = default;
 
-const Extension* AtomExtensionSystem::LoadExtension(
-    const base::FilePath& extension_dir) {
-  return extension_loader_->LoadExtension(extension_dir);
-}
-
-const Extension* AtomExtensionSystem::LoadApp(const base::FilePath& app_dir) {
-  CHECK(false);  // Should never call LoadApp
-  return nullptr;
+void AtomExtensionSystem::LoadExtension(
+    const base::FilePath& extension_dir,
+    base::OnceCallback<void(const Extension*)> loaded) {
+  extension_loader_->LoadExtension(extension_dir, std::move(loaded));
 }
 
 void AtomExtensionSystem::FinishInitialization() {
@@ -64,6 +61,11 @@ void AtomExtensionSystem::FinishInitialization() {
 
 void AtomExtensionSystem::ReloadExtension(const ExtensionId& extension_id) {
   extension_loader_->ReloadExtension(extension_id);
+}
+
+void AtomExtensionSystem::RemoveExtension(const ExtensionId& extension_id) {
+  extension_loader_->UnloadExtension(
+      extension_id, extensions::UnloadedExtensionReason::UNINSTALL);
 }
 
 void AtomExtensionSystem::Shutdown() {
@@ -130,12 +132,12 @@ AppSorting* AtomExtensionSystem::app_sorting() {
 
 void AtomExtensionSystem::RegisterExtensionWithRequestContexts(
     const Extension* extension,
-    const base::Closure& callback) {
+    base::OnceClosure callback) {
   base::PostTaskAndReply(
       FROM_HERE, {BrowserThread::IO},
       base::Bind(&InfoMap::AddExtension, info_map(),
                  base::RetainedRef(extension), base::Time::Now(), false, false),
-      callback);
+      std::move(callback));
 }
 
 void AtomExtensionSystem::UnregisterExtensionWithRequestContexts(

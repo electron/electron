@@ -16,6 +16,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/common/content_constants.h"
 #include "electron/buildflags/buildflags.h"
+#include "extensions/common/constants.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "shell/browser/atom_paths.h"
 #include "shell/common/options_switches.h"
@@ -225,7 +226,7 @@ void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
                                 &schemes->cors_enabled_schemes);
 
   schemes->service_worker_schemes.emplace_back(url::kFileScheme);
-  schemes->standard_schemes.emplace_back("chrome-extension");
+  schemes->standard_schemes.emplace_back(extensions::kExtensionScheme);
 }
 
 void AtomContentClient::AddPepperPlugins(

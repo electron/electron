@@ -55,14 +55,14 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
  public:
   // Mark the JS object as destroyed.
   void MarkDestroyed() {
-    v8::Local<v8::Object> wrapper = mate::Wrappable<T>::GetWrapper();
+    v8::Local<v8::Object> wrapper = gin_helper::Wrappable<T>::GetWrapper();
     if (!wrapper.IsEmpty()) {
       wrapper->SetAlignedPointerInInternalField(0, nullptr);
     }
   }
 
   bool IsDestroyed() {
-    v8::Local<v8::Object> wrapper = mate::Wrappable<T>::GetWrapper();
+    v8::Local<v8::Object> wrapper = gin_helper::Wrappable<T>::GetWrapper();
     return wrapper->InternalFieldCount() == 0 ||
            wrapper->GetAlignedPointerFromInternalField(0) == nullptr;
   }
@@ -110,7 +110,7 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
   ~TrackableObject() override { RemoveFromWeakMap(); }
 
   void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override {
-    mate::WrappableBase::InitWith(isolate, wrapper);
+    gin_helper::WrappableBase::InitWith(isolate, wrapper);
     if (!weak_map_) {
       weak_map_ = new electron::KeyWeakMap<int32_t>;
     }

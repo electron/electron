@@ -35,8 +35,9 @@ const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
 
 const runners = new Map([
   ['main', { description: 'Main process specs', run: runMainProcessElectronTests }],
-  ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }],
-  ['native', { description: 'Native specs', run: runNativeElectronTests }]
+  ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }]
+  // TODO(codebytere): refactor native tests to only depend on what we need
+  /* ['native', { description: 'Native specs', run: runNativeElectronTests }] */
 ])
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
@@ -146,7 +147,7 @@ async function runRemoteBasedElectronTests () {
 
 async function runNativeElectronTests () {
   let testTargets = require('./native-test-targets.json')
-  const outDir = `out/${utils.getOutDir(false)}`
+  const outDir = `out/${utils.getOutDir()}`
 
   // If native tests are being run, only one arg would be relevant
   if (args.target && !testTargets.includes(args.target)) {
@@ -216,7 +217,7 @@ async function runMainProcessElectronTests () {
 }
 
 async function installSpecModules (dir) {
-  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir(true)}/gen/node_headers`)
+  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2019'

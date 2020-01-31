@@ -2,14 +2,17 @@
 
 import argparse
 import errno
+import hashlib
 import json
 import os
+import tarfile
 
 from lib.config import PLATFORM, get_target_arch
 from lib.util import add_exec_bit, download, extract_zip, rm_rf, \
                      safe_mkdir, tempdir
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+CONFIG_PATH = os.path.join(SOURCE_ROOT, 'script', 'external-binaries.json')
 
 def parse_args():
   parser = argparse.ArgumentParser(
@@ -17,13 +20,13 @@ def parse_args():
 
   parser.add_argument('--base-url', required=False,
                       help="Base URL for all downloads")
+  parser.add_argument('--force', action='store_true', default=False, required=False)
 
   return parser.parse_args()
 
 
 def parse_config():
-  config_path = os.path.join(SOURCE_ROOT, 'script', 'external-binaries.json')
-  with open(config_path, 'r') as config_file:
+  with open(CONFIG_PATH, 'r') as config_file:
     config = json.load(config_file)
     return config
 
@@ -33,43 +36,47 @@ def main():
   config = parse_config()
 
   base_url = args.base_url if args.base_url is not None else config['baseUrl']
-  version = config['version']
+  
   output_dir = os.path.join(SOURCE_ROOT, 'external_binaries')
-  version_file = os.path.join(output_dir, '.version')
+  config_hash_path = os.path.join(output_dir, '.hash')
 
-  if (is_updated(version_file, version)):
+  if (not is_updated(config_hash_path) and not args.force):
     return
 
   rm_rf(output_dir)
   safe_mkdir(output_dir)
 
-  for binary in config['binaries']:
+  for binary in config['files']:
     if not binary_should_be_downloaded(binary):
       continue
 
-    temp_path = download_binary(base_url, version, binary['url'])
+    temp_path = download_binary(base_url, binary['sha'], binary['name'])
 
-    # We assume that all binaries are in zip archives.
-    extract_zip(temp_path, output_dir)
+    if temp_path.endswith('.zip'):
+      extract_zip(temp_path, output_dir)
+    else:
+      tar = tarfile.open(temp_path, "r:gz")
+      tar.extractall(output_dir)
+      tar.close()
 
     # Hack alert. Set exec bit for sccache binaries.
     # https://bugs.python.org/issue15795
-    if 'sccache' in binary['url']:
+    if 'sccache' in binary['name']:
       add_exec_bit_to_sccache_binary(output_dir)
 
-  with open(version_file, 'w') as f:
-    f.write(version)
+  with open(config_hash_path, 'w') as f:
+    f.write(sha256(CONFIG_PATH))
 
 
-def is_updated(version_file, version):
-  existing_version = ''
+def is_updated(config_hash_path):
+  existing_hash = ''
   try:
-    with open(version_file, 'r') as f:
-      existing_version = f.readline().strip()
+    with open(config_hash_path, 'r') as f:
+      existing_hash = f.readline().strip()
   except IOError as e:
     if e.errno != errno.ENOENT:
       raise
-  return existing_version == version
+  return not sha256(CONFIG_PATH) == existing_hash
 
 
 def binary_should_be_downloaded(binary):
@@ -82,16 +89,31 @@ def binary_should_be_downloaded(binary):
   return True
 
 
-def download_binary(base_url, version, binary_url):
-  full_url = '{0}/{1}/{2}'.format(base_url, version, binary_url)
-  temp_path = download_to_temp_dir(full_url, filename=binary_url)
+def sha256(file_path):
+  hash_256 = hashlib.sha256()
+  with open(file_path, "rb") as f:
+      for chunk in iter(lambda: f.read(4096), b""):
+          hash_256.update(chunk)
+  return hash_256.hexdigest()
+
+
+def download_binary(base_url, sha, binary_name):
+  full_url = '{0}/{1}/{2}'.format(base_url, sha, binary_name)
+  temp_path = download_to_temp_dir(full_url, filename=binary_name, sha=sha)
   return temp_path
 
 
-def download_to_temp_dir(url, filename):
+def validate_sha(file_path, sha):
+  downloaded_sha = sha256(file_path)
+  if downloaded_sha != sha:
+    raise Exception("SHA for external binary file {} does not match expected '{}' != '{}'".format(file_path, downloaded_sha, sha))
+
+
+def download_to_temp_dir(url, filename, sha):
   download_dir = tempdir(prefix='electron-')
   file_path = os.path.join(download_dir, filename)
   download(text='Download ' + filename, url=url, path=file_path)
+  validate_sha(file_path, sha)
   return file_path
 
 

@@ -3,12 +3,14 @@ From: Nitish Sakhawalkar <nitsakh@icloud.com>
 Date: Tue, 26 Mar 2019 11:28:05 -0700
 Subject: fixme: Comment trace event macro
 
+This broke the build at some point. Does it still? We should probably remove
+this patch and find out!
 
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 2311036beadf7efaac4999ceef985566fe41c763..10fbbc1d8cf43f76248efdac9a2539a8c8287d71 100644
+index e8d6705e0197aad55b931910bb5221dd33b37fb0..c55ddf6988344eef5fd9efc3b24337d3b1e4cdbb 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -348,10 +348,11 @@ class TraceEventScope {
+@@ -358,10 +358,11 @@ class TraceEventScope {
    TraceEventScope(const char* category,
                    const char* name,
                    void* id) : category_(category), name_(name), id_(id) {

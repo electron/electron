@@ -3,12 +3,13 @@ From: deepak1556 <hop2deep@gmail.com>
 Date: Thu, 20 Sep 2018 17:47:47 -0700
 Subject: blink-worker-enable-csp-in-file-scheme.patch
 
+This allows file:// URLs in workers to have a CSP.
 
 diff --git a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
-index b1b9f451951bb7b11eefe6453a71a6b44be838a5..0f62ba09ef99538a5b0b306f601d10c44a7a7abf 100644
+index d490f57f7ad056a278bc50786e285d6757de6433..6bd0614c388dc581b50c6b01e9c6dabad5419b19 100644
 --- a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
 +++ b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
-@@ -308,7 +308,6 @@ void WorkerClassicScriptLoader::ProcessContentSecurityPolicy(
+@@ -312,7 +312,6 @@ void WorkerClassicScriptLoader::ProcessContentSecurityPolicy(
    // document (which is implemented in WorkerMessagingProxy, and
    // m_contentSecurityPolicy should be left as nullptr to inherit the policy).
    if (!response.CurrentRequestUrl().ProtocolIs("blob") &&

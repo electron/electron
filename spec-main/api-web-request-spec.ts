@@ -5,7 +5,7 @@ import * as path from 'path'
 import { session, WebContents, webContents } from 'electron'
 import { AddressInfo } from 'net'
 
-const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
+const fixturesPath = path.resolve(__dirname, 'fixtures')
 
 describe('webRequest module', () => {
   const ses = session.defaultSession
@@ -120,6 +120,14 @@ describe('webRequest module', () => {
       })
       const { data } = await ajax(defaultURL)
       expect(data).to.equal('/redirect')
+    })
+
+    it('does not crash for redirects', async () => {
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        callback({ cancel: false })
+      })
+      await ajax(defaultURL + 'serverRedirect')
+      await ajax(defaultURL + 'serverRedirect')
     })
   })
 

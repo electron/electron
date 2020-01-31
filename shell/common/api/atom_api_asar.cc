@@ -6,18 +6,18 @@
 
 #include <vector>
 
-#include "native_mate/wrappable.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 namespace {
 
-class Archive : public mate::Wrappable<Archive> {
+class Archive : public gin_helper::Wrappable<Archive> {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate,
                                      const base::FilePath& path) {

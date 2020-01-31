@@ -6,7 +6,7 @@ Subject: fix: key gen APIs are not available in BoringSSL
 This will make Node's key pair generation APIs fail.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index bca482cc9724fef680196a192a6bbd7b4d2e4fde..1cc2372fe2e385e9a9db27e38f0da61d62de2e81 100644
+index ad06141752eae90a655d710932b479f9cd8482ff..861d321d6170b25e874080d4c70dda201cab3248 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -290,24 +290,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
@@ -34,7 +34,7 @@ index bca482cc9724fef680196a192a6bbd7b4d2e4fde..1cc2372fe2e385e9a9db27e38f0da61d
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -2487,8 +2477,11 @@ void SSLWrap<Base>::GetEphemeralKeyInfo(
+@@ -2557,8 +2547,11 @@ void SSLWrap<Base>::GetEphemeralKeyInfo(
              .Check();
          break;
        case EVP_PKEY_EC:
@@ -46,7 +46,7 @@ index bca482cc9724fef680196a192a6bbd7b4d2e4fde..1cc2372fe2e385e9a9db27e38f0da61d
          {
            const char* curve_name;
            if (kid == EVP_PKEY_EC) {
-@@ -3742,12 +3735,15 @@ Local<Value> KeyObject::GetAsymmetricKeyType() const {
+@@ -3894,12 +3887,15 @@ Local<Value> KeyObject::GetAsymmetricKeyType() const {
      return env()->crypto_ec_string();
    case EVP_PKEY_ED25519:
      return env()->crypto_ed25519_string();
@@ -62,7 +62,7 @@ index bca482cc9724fef680196a192a6bbd7b4d2e4fde..1cc2372fe2e385e9a9db27e38f0da61d
    default:
      return Undefined(env()->isolate());
    }
-@@ -6240,6 +6236,8 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6402,6 +6398,8 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
      if (EVP_PKEY_paramgen_init(param_ctx.get()) <= 0)
        return nullptr;
  
@@ -71,7 +71,7 @@ index bca482cc9724fef680196a192a6bbd7b4d2e4fde..1cc2372fe2e385e9a9db27e38f0da61d
      if (EVP_PKEY_CTX_set_dsa_paramgen_bits(param_ctx.get(), modulus_bits_) <= 0)
        return nullptr;
  
-@@ -6259,6 +6257,8 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6421,6 +6419,8 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
  
      EVPKeyCtxPointer key_ctx(EVP_PKEY_CTX_new(params.get(), nullptr));
      return key_ctx;
@@ -80,7 +80,7 @@ index bca482cc9724fef680196a192a6bbd7b4d2e4fde..1cc2372fe2e385e9a9db27e38f0da61d
    }
  
   private:
-@@ -6950,9 +6950,12 @@ void Initialize(Local<Object> target,
+@@ -7101,9 +7101,12 @@ void Initialize(Local<Object> target,
    env->SetMethod(target, "generateKeyPairEC", GenerateKeyPairEC);
    env->SetMethod(target, "generateKeyPairNid", GenerateKeyPairNid);
    NODE_DEFINE_CONSTANT(target, EVP_PKEY_ED25519);

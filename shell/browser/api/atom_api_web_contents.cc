@@ -85,11 +85,11 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+#include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/platform/web_cursor_info.h"
-#include "third_party/blink/public/platform/web_input_event.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
@@ -116,6 +116,10 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/common/print_messages.h"
+
+#if defined(OS_WIN)
+#include "printing/backend/win_helper.h"
+#endif
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -346,6 +350,26 @@ base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
   return base::nullopt;
 }
 
+#if BUILDFLAG(ENABLE_PRINTING)
+// This will return false if no printer with the provided device_name can be
+// found on the network. We need to check this because Chromium does not do
+// sanity checking of device_name validity and so will crash on invalid names.
+bool IsDeviceNameValid(const base::string16& device_name) {
+#if defined(OS_MACOSX)
+  base::ScopedCFTypeRef<CFStringRef> new_printer_id(
+      base::SysUTF16ToCFStringRef(device_name));
+  PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
+  bool printer_exists = new_printer != nullptr;
+  PMRelease(new_printer);
+  return printer_exists;
+#elif defined(OS_WIN)
+  printing::ScopedPrinterHandle printer;
+  return printer.OpenPrinterWithName(device_name.c_str());
+#endif
+  return true;
+}
+#endif
+
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -358,6 +382,11 @@ WebContents::WebContents(v8::Isolate* isolate,
   Init(isolate);
   AttachAsUserData(web_contents);
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+      web_contents);
+  script_executor_.reset(new extensions::ScriptExecutor(web_contents));
+#endif
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
   bindings_.set_connection_error_handler(base::BindRepeating(
@@ -399,7 +428,10 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
-  bool initially_shown = true;
+  // BrowserViews are not attached to a window initially so they should start
+  // off as hidden. This is also important for compositor recycling. See:
+  // https://github.com/electron/electron/pull/21372
+  bool initially_shown = type_ != Type::BROWSER_VIEW;
   options.Get(options::kShow, &initially_shown);
 
   // Obtain the session.
@@ -514,6 +546,7 @@ void WebContents::InitWithSessionAndOptions(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
       web_contents());
+  script_executor_.reset(new extensions::ScriptExecutor(web_contents()));
 #endif
 
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
@@ -863,10 +896,20 @@ void WebContents::BeforeUnloadFired(bool proceed,
 }
 
 void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  auto* impl = static_cast<content::RenderWidgetHostImpl*>(
-      render_view_host->GetWidget());
-  if (impl)
-    impl->disable_hidden_ = !background_throttling_;
+  if (!background_throttling_)
+    render_view_host->SetSchedulerThrottling(false);
+}
+
+void WebContents::RenderFrameCreated(
+    content::RenderFrameHost* render_frame_host) {
+  auto* rwhv = render_frame_host->GetView();
+  if (!rwhv)
+    return;
+
+  auto* rwh_impl =
+      static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
+  if (rwh_impl)
+    rwh_impl->disable_hidden_ = !background_throttling_;
 }
 
 void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
@@ -920,7 +963,8 @@ void WebContents::MediaStoppedPlaying(
   Emit("media-paused");
 }
 
-void WebContents::DidChangeThemeColor(base::Optional<SkColor> theme_color) {
+void WebContents::DidChangeThemeColor() {
+  auto theme_color = web_contents()->GetThemeColor();
   if (theme_color) {
     Emit("did-change-theme-color", electron::ToRGBHex(theme_color.value()));
   } else {
@@ -963,13 +1007,12 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& url,
-                              int error_code,
-                              const base::string16& error_description) {
+                              int error_code) {
   bool is_main_frame = !render_frame_host->GetParent();
   int frame_process_id = render_frame_host->GetProcess()->GetID();
   int frame_routing_id = render_frame_host->GetRoutingID();
-  Emit("did-fail-load", error_code, error_description, url, is_main_frame,
-       frame_process_id, frame_routing_id);
+  Emit("did-fail-load", error_code, "", url, is_main_frame, frame_process_id,
+       frame_routing_id);
 }
 
 void WebContents::DidStartLoading() {
@@ -1022,6 +1065,7 @@ void WebContents::OnElectronBrowserConnectionError() {
 void WebContents::Message(bool internal,
                           const std::string& channel,
                           blink::CloneableMessage arguments) {
+  TRACE_EVENT1("electron", "WebContents::Message", "channel", channel);
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
@@ -1032,6 +1076,7 @@ void WebContents::Invoke(bool internal,
                          const std::string& channel,
                          blink::CloneableMessage arguments,
                          InvokeCallback callback) {
+  TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
   EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
                  std::move(callback), internal, channel, std::move(arguments));
@@ -1041,6 +1086,7 @@ void WebContents::MessageSync(bool internal,
                               const std::string& channel,
                               blink::CloneableMessage arguments,
                               MessageSyncCallback callback) {
+  TRACE_EVENT1("electron", "WebContents::MessageSync", "channel", channel);
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
   EmitWithSender("-ipc-message-sync", bindings_.dispatch_context(),
@@ -1052,6 +1098,7 @@ void WebContents::MessageTo(bool internal,
                             int32_t web_contents_id,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
+  TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
   auto* web_contents = gin_helper::TrackableObject<WebContents>::FromWeakMapID(
       isolate(), web_contents_id);
 
@@ -1063,6 +1110,7 @@ void WebContents::MessageTo(bool internal,
 
 void WebContents::MessageHost(const std::string& channel,
                               blink::CloneableMessage arguments) {
+  TRACE_EVENT1("electron", "WebContents::MessageHost", "channel", channel);
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
                  InvokeCallback(), channel, std::move(arguments));
@@ -1279,38 +1327,31 @@ void WebContents::WebContentsDestroyed() {
 
 void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& details) {
-  Emit("navigation-entry-commited", details.entry->GetURL(),
+  Emit("navigation-entry-committed", details.entry->GetURL(),
        details.is_same_document, details.did_replace_entry);
 }
 
 void WebContents::SetBackgroundThrottling(bool allowed) {
   background_throttling_ = allowed;
 
-  auto* contents = web_contents();
-  if (!contents) {
+  auto* rfh = web_contents()->GetMainFrame();
+  if (!rfh)
     return;
-  }
 
-  auto* render_view_host = contents->GetRenderViewHost();
-  if (!render_view_host) {
+  auto* rwhv = rfh->GetView();
+  if (!rwhv)
     return;
-  }
 
-  auto* render_process_host = render_view_host->GetProcess();
-  if (!render_process_host) {
+  auto* rwh_impl =
+      static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
+  if (!rwh_impl)
     return;
-  }
 
-  auto* render_widget_host_impl = content::RenderWidgetHostImpl::FromID(
-      render_process_host->GetID(), render_view_host->GetRoutingID());
-  if (!render_widget_host_impl) {
-    return;
-  }
+  rwh_impl->disable_hidden_ = !background_throttling_;
+  web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
 
-  render_widget_host_impl->disable_hidden_ = !background_throttling_;
-
-  if (render_widget_host_impl->is_hidden()) {
-    render_widget_host_impl->WasShown(base::nullopt);
+  if (rwh_impl->is_hidden()) {
+    rwh_impl->WasShown(base::nullopt);
   }
 }
 
@@ -1381,6 +1422,12 @@ void WebContents::LoadURL(const GURL& url,
   if (options.Get("baseURLForDataURL", &base_url_for_data_url)) {
     params.base_url_for_data_url = base_url_for_data_url;
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
+  }
+
+  bool reload_ignoring_cache = false;
+  if (options.Get("reloadIgnoringCache", &reload_ignoring_cache) &&
+      reload_ignoring_cache) {
+    params.reload_type = content::ReloadType::BYPASSING_CACHE;
   }
 
   // Calling LoadURLWithParams() can trigger JS which destroys |this|.
@@ -1759,6 +1806,10 @@ void WebContents::Print(gin_helper::Arguments* args) {
   // Printer device name as opened by the OS.
   base::string16 device_name;
   options.Get("deviceName", &device_name);
+  if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
+    args->ThrowError("webContents.print(): Invalid deviceName provided.");
+    return;
+  }
   settings.SetStringKey(printing::kSettingDeviceName, device_name);
 
   int scale_factor = 100;
@@ -1851,7 +1902,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
-  auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
+  auto print_backend = printing::PrintBackend::CreateInstance(
+      nullptr, g_browser_process->GetApplicationLocale());
   {
     // TODO(deepak1556): Deprecate this api in favor of an
     // async version and post a non blocing task call.
@@ -2027,7 +2079,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         &electron_renderer);
-    electron_renderer->Message(internal, false, channel, std::move(args),
+    electron_renderer->Message(internal, false, channel, args.ShallowClone(),
                                sender_id);
   }
   return true;
@@ -2197,6 +2249,31 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
   return handle;
 }
 
+void WebContents::IncrementCapturerCount(gin_helper::Arguments* args) {
+  gfx::Size size;
+  bool stay_hidden = false;
+
+  // get size arguments if they exist
+  args->GetNext(&size);
+  // get stayHidden arguments if they exist
+  args->GetNext(&stay_hidden);
+
+  web_contents()->IncrementCapturerCount(size, stay_hidden);
+}
+
+void WebContents::DecrementCapturerCount(gin_helper::Arguments* args) {
+  bool stay_hidden = false;
+
+  // get stayHidden arguments if they exist
+  args->GetNext(&stay_hidden);
+
+  web_contents()->DecrementCapturerCount(stay_hidden);
+}
+
+bool WebContents::IsBeingCaptured() {
+  return web_contents()->IsBeingCaptured();
+}
+
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   const content::CursorInfo& info = cursor.info();
 
@@ -2305,15 +2382,6 @@ void WebContents::SetZoomFactor(double factor) {
 double WebContents::GetZoomFactor() const {
   auto level = GetZoomLevel();
   return blink::PageZoomLevelToZoomFactor(level);
-}
-
-void WebContents::SetZoomLimits(double min_zoom, double max_zoom) {
-  // Round the double to avoid returning incorrect minimum/maximum zoom
-  // percentages.
-  int minimum_percent = round(blink::PageZoomLevelToZoomFactor(min_zoom) * 100);
-  int maximum_percent = round(blink::PageZoomLevelToZoomFactor(max_zoom) * 100);
-  web_contents()->SetMinimumZoomPercent(minimum_percent);
-  web_contents()->SetMaximumZoomPercent(maximum_percent);
 }
 
 void WebContents::SetTemporaryZoomLevel(double level) {
@@ -2582,6 +2650,9 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)
       .SetMethod("getNativeView", &WebContents::GetNativeView)
+      .SetMethod("incrementCapturerCount", &WebContents::IncrementCapturerCount)
+      .SetMethod("decrementCapturerCount", &WebContents::DecrementCapturerCount)
+      .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCIPHandlingPolicy",

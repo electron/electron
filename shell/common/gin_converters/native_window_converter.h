@@ -22,9 +22,8 @@ struct Converter<electron::NativeWindow*> {
     }
 
     electron::api::TopLevelWindow* window;
-    // TODO(deermichel): remove mate:: after dropping mate
-    if (!mate::Converter<electron::api::TopLevelWindow*>::FromV8(isolate, val,
-                                                                 &window))
+    if (!gin::Converter<electron::api::TopLevelWindow*>::FromV8(isolate, val,
+                                                                &window))
       return false;
     *out = window->window();
     return true;

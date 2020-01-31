@@ -11,10 +11,7 @@ const { BrowserWindow } = require('electron')
 // Or use `remote` from the renderer process.
 // const { BrowserWindow } = require('electron').remote
 
-let win = new BrowserWindow({ width: 800, height: 600 })
-win.on('closed', () => {
-  win = null
-})
+const win = new BrowserWindow({ width: 800, height: 600 })
 
 // Load a remote URL
 win.loadURL('https://github.com')
@@ -229,6 +226,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       unless hovered over in the top left of the window. These custom buttons prevent
       issues with mouse events that occur with the standard window toolbar buttons.
       **Note:** This option is currently experimental.
+  * `trafficLightPosition` [Point](structures/point.md) (optional) - Set a custom position for the traffic light buttons. Can only be used with `titleBarStyle` set to `hidden`
   * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
     title bar in full screen mode on macOS for all `titleBarStyle` options.
     Default is `false`.
@@ -272,8 +270,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       OS-level sandbox and disabling the Node.js engine. This is not the same as
       the `nodeIntegration` option and the APIs available to the preload script
       are more limited. Read more about the option [here](sandbox-option.md).
-      **Note:** This option is currently experimental and may change or be
-      removed in future Electron releases.
     * `enableRemoteModule` Boolean (optional) - Whether to enable the [`remote`](remote.md) module.
       Default is `true`.
     * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
@@ -963,12 +959,9 @@ Perhaps there are 15 pixels of controls on the left edge, 25 pixels of controls
 on the right edge and 50 pixels of controls below the player. In order to
 maintain a 16:9 aspect ratio (standard aspect ratio for HD @1920x1080) within
 the player itself we would call this function with arguments of 16/9 and
-[ 40, 50 ]. The second argument doesn't care where the extra width and height
+{ width: 40, height: 50 }. The second argument doesn't care where the extra width and height
 are within the content view--only that they exist. Sum any extra width and
 height areas you have within the overall content view.
-
-Calling this function with a value of `0` will remove any previously set aspect
-ratios.
 
 #### `win.setBackgroundColor(backgroundColor)`
 
@@ -1018,6 +1011,11 @@ console.log(win.getBounds())
 #### `win.getBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
+
+#### `win.getBackgroundColor()`
+
+Returns `String` - Gets the background color of the window. See [Setting
+`backgroundColor`](#setting-backgroundcolor).
 
 #### `win.setContentBounds(bounds[, animate])`
 
@@ -1622,12 +1620,9 @@ can still bring up the menu bar by pressing the single `Alt` key.
 
 Returns `Boolean` - Whether the menu bar is visible.
 
-#### `win.setVisibleOnAllWorkspaces(visible[, options])`
+#### `win.setVisibleOnAllWorkspaces(visible)`
 
 * `visible` Boolean
-* `options` Object (optional)
-  * `visibleOnFullScreen` Boolean (optional) _macOS_ - Sets whether
-    the window should be visible above fullscreen windows
 
 Sets whether the window should be visible on all workspaces.
 

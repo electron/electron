@@ -18,7 +18,7 @@
 #include "ui/views/widget/widget.h"
 
 #if defined(USE_X11)
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #endif
 
 #if defined(OS_WIN)
@@ -166,9 +166,8 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
             electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
 
         if (keycode == accelerator.key_code()) {
-          const gfx::Point p(0, 0);
           auto event = accelerator.ToKeyEvent();
-          OnMenuButtonClicked(button, p, &event);
+          ButtonPressed(button, event);
           return true;
         }
       }
@@ -255,9 +254,7 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
-void MenuBar::OnMenuButtonClicked(views::Button* source,
-                                  const gfx::Point& point,
-                                  const ui::Event* event) {
+void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
   // Hide the accelerator when a submenu is activated.
   SetAcceleratorVisibility(false);
 
@@ -276,10 +273,9 @@ void MenuBar::OnMenuButtonClicked(views::Button* source,
 
   // Deleted in MenuDelegate::OnMenuClosed
   MenuDelegate* menu_delegate = new MenuDelegate(this);
-  menu_delegate->RunMenu(menu_model_->GetSubmenuModelAt(id), source,
-                         event != nullptr && event->IsKeyEvent()
-                             ? ui::MENU_SOURCE_KEYBOARD
-                             : ui::MENU_SOURCE_MOUSE);
+  menu_delegate->RunMenu(
+      menu_model_->GetSubmenuModelAt(id), source,
+      event.IsKeyEvent() ? ui::MENU_SOURCE_KEYBOARD : ui::MENU_SOURCE_MOUSE);
   menu_delegate->AddObserver(this);
 }
 
@@ -287,10 +283,10 @@ void MenuBar::RefreshColorCache() {
   const ui::NativeTheme* theme = GetNativeTheme();
   if (theme) {
 #if defined(USE_X11)
-    background_color_ = libgtkui::GetBgColor("GtkMenuBar#menubar");
-    enabled_color_ = libgtkui::GetFgColor(
-        "GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
-    disabled_color_ = libgtkui::GetFgColor(
+    background_color_ = gtk::GetBgColor("GtkMenuBar#menubar");
+    enabled_color_ =
+        gtk::GetFgColor("GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
+    disabled_color_ = gtk::GetFgColor(
         "GtkMenuBar#menubar GtkMenuItem#menuitem:disabled GtkLabel");
 #else
     background_color_ =

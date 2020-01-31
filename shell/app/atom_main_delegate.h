@@ -21,6 +21,8 @@ void LoadResourceBundle(const std::string& locale);
 
 class AtomMainDelegate : public content::ContentMainDelegate {
  public:
+  static const char* const kNonWildcardDomainNonPortSchemes[];
+  static const size_t kNonWildcardDomainNonPortSchemesSize;
   AtomMainDelegate();
   ~AtomMainDelegate() override;
 
@@ -40,7 +42,6 @@ class AtomMainDelegate : public content::ContentMainDelegate {
 #if defined(OS_MACOSX)
   bool DelaySandboxInitialization(const std::string& process_type) override;
 #endif
-  bool ShouldLockSchemeRegistry() override;
   bool ShouldCreateFeatureList() override;
 
  private:

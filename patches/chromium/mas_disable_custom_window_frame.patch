@@ -1,0 +1,146 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:48:49 -0700
+Subject: mas_disable_custom_window_frame.patch
+
+Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
+build.
+
+diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
+index 1ffb647e85e00ff60d84234e47f5d7d385f65245..439cc6df5e0cc1ec3732d6f2a2e00d543c73e837 100644
+--- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
++++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
+@@ -9,6 +9,7 @@
+ #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
+ #include "components/remote_cocoa/common/native_widget_ns_window_host.mojom.h"
+ 
++#ifndef MAS_BUILD
+ @interface NSWindow (PrivateBrowserNativeWidgetAPI)
+ + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
+ @end
+@@ -69,10 +70,13 @@ - (NSRect)_draggableFrame NS_DEPRECATED_MAC(10_10, 10_11) {
+ 
+ @end
+ 
++#endif  // MAS_BUILD
++
+ @implementation BrowserNativeWidgetWindow
+ 
+ // NSWindow (PrivateAPI) overrides.
+ 
++#ifndef MAS_BUILD
+ + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
+   // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
+   if ([BrowserWindowFrame class])
+@@ -87,6 +91,8 @@ - (BOOL)_usesCustomDrawing {
+   return NO;
+ }
+ 
++#endif  // MAS_BUILD
++
+ // Handle "Move focus to the window toolbar" configured in System Preferences ->
+ // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
+ // tends to just be nil.
+diff --git a/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
+index 8416c7c6e052dafb2aad61c0bd3224c36e945d23..cd356beda023ab2409b16d58ca38c70ba3674913 100644
+--- a/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
++++ b/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
+@@ -4,6 +4,8 @@
+ 
+ #import "components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.h"
+ 
++#ifndef MAS_BUILD
++
+ @interface NSWindow (PrivateAPI)
+ + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
+ @end
+@@ -18,8 +20,12 @@ - (CGFloat)_titlebarHeight {
+ }
+ @end
+ 
++#endif  // MAS_BUILD
++
+ @implementation NativeWidgetMacFramelessNSWindow
+ 
++#ifndef MAS_BUILD
++
+ + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
+   if ([NativeWidgetMacFramelessNSWindowFrame class]) {
+     return [NativeWidgetMacFramelessNSWindowFrame class];
+@@ -27,4 +33,6 @@ + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
+   return [super frameViewClassForStyleMask:windowStyle];
+ }
+ 
++#endif  // MAS_BUILD
++
+ @end
+diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
+index e03bbc724cfd01967e71998394361556df1c4915..783745b11365c04c1e1052197d20d494bc901d45 100644
+--- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
++++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
+@@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
+ 
+ @protocol WindowTouchBarDelegate;
+ 
++#ifndef MAS_BUILD
+ // Weak lets Chrome launch even if a future macOS doesn't have the below classes
+ WEAK_IMPORT_ATTRIBUTE
+ @interface NSNextStepFrame : NSView
+@@ -33,6 +34,7 @@ REMOTE_COCOA_APP_SHIM_EXPORT
+ REMOTE_COCOA_APP_SHIM_EXPORT
+ @interface NativeWidgetMacNSWindowTitledFrame : NSThemeFrame
+ @end
++#endif
+ 
+ // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
+ // can only be accomplished by overriding methods.
+diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
+index 3786db1f2fa8f617eb9cd59c85b84b7d020e4ff3..64e84b91236b382d4bdfb5ab2e26006952c869a0 100644
+--- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
++++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
+@@ -15,7 +15,9 @@
+ #import "ui/base/cocoa/window_size_constants.h"
+ 
+ @interface NSWindow (Private)
++#ifndef MAS_BUILD
+ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle;
++#endif
+ - (BOOL)hasKeyAppearance;
+ - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
+ - (BOOL)_isConsideredOpenForPersistentState;
+@@ -57,6 +59,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+ }
+ @end
+ 
++#ifndef MAS_BUILD
++
+ @implementation NativeWidgetMacNSWindowTitledFrame
+ - (void)mouseDown:(NSEvent*)event {
+   if (self.window.isMovable)
+@@ -78,6 +82,8 @@ - (BOOL)usesCustomDrawing {
+ }
+ @end
+ 
++#endif  // MAS_BUILD
++
+ @implementation NativeWidgetMacNSWindow {
+  @private
+   base::scoped_nsobject<CommandDispatcher> _commandDispatcher;
+@@ -159,6 +165,8 @@ - (BOOL)hasViewsMenuActive {
+ 
+ // NSWindow overrides.
+ 
++#ifndef MAS_BUILD
++
+ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+   if (windowStyle & NSWindowStyleMaskTitled) {
+     if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
+@@ -170,6 +178,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+   return [super frameViewClassForStyleMask:windowStyle];
+ }
+ 
++#endif
++
+ - (BOOL)_isTitleHidden {
+   bool shouldShowWindowTitle = YES;
+   if (_bridge)

@@ -28,7 +28,7 @@ class View;
 class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
                        public NativeWindowObserver {
  public:
-  static mate::WrappableBase* New(gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -155,6 +155,7 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
   void SetKiosk(bool kiosk);
   bool IsKiosk();
   virtual void SetBackgroundColor(const std::string& color_name);
+  std::string GetBackgroundColor();
   void SetHasShadow(bool has_shadow);
   bool HasShadow();
   void SetOpacity(const double opacity);
@@ -180,7 +181,7 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
   void SetProgressBar(double progress, gin_helper::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
-  void SetVisibleOnAllWorkspaces(bool visible, gin_helper::Arguments* args);
+  void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
