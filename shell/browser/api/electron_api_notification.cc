@@ -51,7 +51,7 @@ namespace api {
 Notification::Notification(gin::Arguments* args) {
   InitWithArgs(args);
 
-  presenter_ = static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
+  presenter_ = static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
                    ->GetNotificationPresenter();
 
   gin::Dictionary opts(nullptr);
@@ -236,7 +236,7 @@ void Notification::Show() {
 }
 
 bool Notification::IsSupported() {
-  return !!static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
+  return !!static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
                ->GetNotificationPresenter();
 }
 

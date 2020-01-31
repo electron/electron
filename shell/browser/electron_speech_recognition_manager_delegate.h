@@ -14,12 +14,12 @@
 
 namespace electron {
 
-class AtomSpeechRecognitionManagerDelegate
+class ElectronSpeechRecognitionManagerDelegate
     : public content::SpeechRecognitionManagerDelegate,
       public content::SpeechRecognitionEventListener {
  public:
-  AtomSpeechRecognitionManagerDelegate();
-  ~AtomSpeechRecognitionManagerDelegate() override;
+  ElectronSpeechRecognitionManagerDelegate();
+  ~ElectronSpeechRecognitionManagerDelegate() override;
 
   // content::SpeechRecognitionEventListener:
   void OnRecognitionStart(int session_id) override;
@@ -48,7 +48,7 @@ class AtomSpeechRecognitionManagerDelegate
   bool FilterProfanities(int render_process_id) override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomSpeechRecognitionManagerDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ElectronSpeechRecognitionManagerDelegate);
 };
 
 }  // namespace electron

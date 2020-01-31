@@ -19,39 +19,40 @@ const char kChromeUIDevToolsBundledHost[] = "devtools";
 }  // namespace
 
 // static
-AtomWebUIControllerFactory* AtomWebUIControllerFactory::GetInstance() {
-  return base::Singleton<AtomWebUIControllerFactory>::get();
+ElectronWebUIControllerFactory* ElectronWebUIControllerFactory::GetInstance() {
+  return base::Singleton<ElectronWebUIControllerFactory>::get();
 }
 
-AtomWebUIControllerFactory::AtomWebUIControllerFactory() = default;
+ElectronWebUIControllerFactory::ElectronWebUIControllerFactory() = default;
 
-AtomWebUIControllerFactory::~AtomWebUIControllerFactory() = default;
+ElectronWebUIControllerFactory::~ElectronWebUIControllerFactory() = default;
 
-content::WebUI::TypeID AtomWebUIControllerFactory::GetWebUIType(
+content::WebUI::TypeID ElectronWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,
     const GURL& url) {
   if (url.host() == kChromeUIDevToolsBundledHost) {
-    return const_cast<AtomWebUIControllerFactory*>(this);
+    return const_cast<ElectronWebUIControllerFactory*>(this);
   }
 
   return content::WebUI::kNoWebUI;
 }
 
-bool AtomWebUIControllerFactory::UseWebUIForURL(
+bool ElectronWebUIControllerFactory::UseWebUIForURL(
     content::BrowserContext* browser_context,
     const GURL& url) {
   return GetWebUIType(browser_context, url) != content::WebUI::kNoWebUI;
 }
 
-bool AtomWebUIControllerFactory::UseWebUIBindingsForURL(
+bool ElectronWebUIControllerFactory::UseWebUIBindingsForURL(
     content::BrowserContext* browser_context,
     const GURL& url) {
   return UseWebUIForURL(browser_context, url);
 }
 
 std::unique_ptr<content::WebUIController>
-AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
-                                                        const GURL& url) {
+ElectronWebUIControllerFactory::CreateWebUIControllerForURL(
+    content::WebUI* web_ui,
+    const GURL& url) {
   if (url.host() == kChromeUIDevToolsBundledHost) {
     auto* browser_context = web_ui->GetWebContents()->GetBrowserContext();
     return std::make_unique<DevToolsUI>(browser_context, web_ui);

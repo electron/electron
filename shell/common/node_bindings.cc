@@ -264,7 +264,7 @@ void NodeBindings::Initialize() {
 #if defined(OS_LINUX)
   // Get real command line in renderer process forked by zygote.
   if (browser_env_ != BrowserEnvironment::BROWSER)
-    AtomCommandLine::InitializeFromCommandLine();
+    ElectronCommandLine::InitializeFromCommandLine();
 #endif
 
   // Explicitly register electron's builtin modules.
@@ -302,12 +302,12 @@ node::Environment* NodeBindings::CreateEnvironment(
     node::MultiIsolatePlatform* platform,
     bool bootstrap_env) {
 #if defined(OS_WIN)
-  auto& atom_args = AtomCommandLine::argv();
+  auto& atom_args = ElectronCommandLine::argv();
   std::vector<std::string> args(atom_args.size());
   std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
                  [](auto& a) { return base::WideToUTF8(a); });
 #else
-  auto args = AtomCommandLine::argv();
+  auto args = ElectronCommandLine::argv();
 #endif
 
   // Feed node the path to initialization script.

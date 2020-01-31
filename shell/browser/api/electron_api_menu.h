@@ -19,8 +19,8 @@ namespace electron {
 namespace api {
 
 class Menu : public gin_helper::TrackableObject<Menu>,
-             public AtomMenuModel::Delegate,
-             public AtomMenuModel::Observer {
+             public ElectronMenuModel::Delegate,
+             public ElectronMenuModel::Observer {
  public:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
 
@@ -35,7 +35,7 @@ class Menu : public gin_helper::TrackableObject<Menu>,
   static void SendActionToFirstResponder(const std::string& action);
 #endif
 
-  AtomMenuModel* model() const { return model_.get(); }
+  ElectronMenuModel* model() const { return model_.get(); }
 
  protected:
   explicit Menu(gin::Arguments* args);
@@ -64,7 +64,7 @@ class Menu : public gin_helper::TrackableObject<Menu>,
                        base::OnceClosure callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
 
-  std::unique_ptr<AtomMenuModel> model_;
+  std::unique_ptr<ElectronMenuModel> model_;
   Menu* parent_ = nullptr;
 
   // Observable:
@@ -130,10 +130,10 @@ class Menu : public gin_helper::TrackableObject<Menu>,
 namespace gin {
 
 template <>
-struct Converter<electron::AtomMenuModel*> {
+struct Converter<electron::ElectronMenuModel*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     electron::AtomMenuModel** out) {
+                     electron::ElectronMenuModel** out) {
     // null would be tranfered to NULL.
     if (val->IsNull()) {
       *out = nullptr;

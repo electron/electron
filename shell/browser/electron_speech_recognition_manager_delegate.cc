@@ -11,52 +11,54 @@
 
 namespace electron {
 
-AtomSpeechRecognitionManagerDelegate::AtomSpeechRecognitionManagerDelegate() =
-    default;
+ElectronSpeechRecognitionManagerDelegate::
+    ElectronSpeechRecognitionManagerDelegate() = default;
 
-AtomSpeechRecognitionManagerDelegate::~AtomSpeechRecognitionManagerDelegate() =
-    default;
+ElectronSpeechRecognitionManagerDelegate::
+    ~ElectronSpeechRecognitionManagerDelegate() = default;
 
-void AtomSpeechRecognitionManagerDelegate::OnRecognitionStart(int session_id) {}
-
-void AtomSpeechRecognitionManagerDelegate::OnAudioStart(int session_id) {}
-
-void AtomSpeechRecognitionManagerDelegate::OnEnvironmentEstimationComplete(
+void ElectronSpeechRecognitionManagerDelegate::OnRecognitionStart(
     int session_id) {}
 
-void AtomSpeechRecognitionManagerDelegate::OnSoundStart(int session_id) {}
+void ElectronSpeechRecognitionManagerDelegate::OnAudioStart(int session_id) {}
 
-void AtomSpeechRecognitionManagerDelegate::OnSoundEnd(int session_id) {}
+void ElectronSpeechRecognitionManagerDelegate::OnEnvironmentEstimationComplete(
+    int session_id) {}
 
-void AtomSpeechRecognitionManagerDelegate::OnAudioEnd(int session_id) {}
+void ElectronSpeechRecognitionManagerDelegate::OnSoundStart(int session_id) {}
 
-void AtomSpeechRecognitionManagerDelegate::OnRecognitionEnd(int session_id) {}
+void ElectronSpeechRecognitionManagerDelegate::OnSoundEnd(int session_id) {}
 
-void AtomSpeechRecognitionManagerDelegate::OnRecognitionResults(
+void ElectronSpeechRecognitionManagerDelegate::OnAudioEnd(int session_id) {}
+
+void ElectronSpeechRecognitionManagerDelegate::OnRecognitionEnd(
+    int session_id) {}
+
+void ElectronSpeechRecognitionManagerDelegate::OnRecognitionResults(
     int session_id,
     const std::vector<blink::mojom::SpeechRecognitionResultPtr>& results) {}
 
-void AtomSpeechRecognitionManagerDelegate::OnRecognitionError(
+void ElectronSpeechRecognitionManagerDelegate::OnRecognitionError(
     int session_id,
     const blink::mojom::SpeechRecognitionError& error) {}
 
-void AtomSpeechRecognitionManagerDelegate::OnAudioLevelsChange(
+void ElectronSpeechRecognitionManagerDelegate::OnAudioLevelsChange(
     int session_id,
     float volume,
     float noise_volume) {}
 
-void AtomSpeechRecognitionManagerDelegate::CheckRecognitionIsAllowed(
+void ElectronSpeechRecognitionManagerDelegate::CheckRecognitionIsAllowed(
     int session_id,
     base::OnceCallback<void(bool ask_user, bool is_allowed)> callback) {
   std::move(callback).Run(true, true);
 }
 
 content::SpeechRecognitionEventListener*
-AtomSpeechRecognitionManagerDelegate::GetEventListener() {
+ElectronSpeechRecognitionManagerDelegate::GetEventListener() {
   return this;
 }
 
-bool AtomSpeechRecognitionManagerDelegate::FilterProfanities(
+bool ElectronSpeechRecognitionManagerDelegate::FilterProfanities(
     int render_process_id) {
   return false;
 }

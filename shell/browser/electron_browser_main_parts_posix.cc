@@ -164,7 +164,7 @@ void ShutdownDetector::ThreadMain() {
 
 }  // namespace
 
-void AtomBrowserMainParts::HandleSIGCHLD() {
+void ElectronBrowserMainParts::HandleSIGCHLD() {
   // We need to accept SIGCHLD, even though our handler is a no-op because
   // otherwise we cannot wait on children. (According to POSIX 2001.)
   struct sigaction action;
@@ -173,7 +173,7 @@ void AtomBrowserMainParts::HandleSIGCHLD() {
   CHECK_EQ(sigaction(SIGCHLD, &action, nullptr), 0);
 }
 
-void AtomBrowserMainParts::HandleShutdownSignals() {
+void ElectronBrowserMainParts::HandleShutdownSignals() {
   int pipefd[2];
   int ret = pipe(pipefd);
   if (ret < 0) {

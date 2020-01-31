@@ -18,7 +18,7 @@ void EnsureBrowserContextKeyedServiceFactoriesBuilt() {
   // extensions embedders (and namely chrome.)
   UpdateServiceFactory::GetInstance();
 
-  AtomExtensionSystemFactory::GetInstance();
+  ElectronExtensionSystemFactory::GetInstance();
 }
 
 }  // namespace electron

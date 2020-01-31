@@ -9,18 +9,18 @@
 
 namespace electron {
 
-AtomNavigationThrottle::AtomNavigationThrottle(
+ElectronNavigationThrottle::ElectronNavigationThrottle(
     content::NavigationHandle* navigation_handle)
     : content::NavigationThrottle(navigation_handle) {}
 
-AtomNavigationThrottle::~AtomNavigationThrottle() = default;
+ElectronNavigationThrottle::~ElectronNavigationThrottle() = default;
 
-const char* AtomNavigationThrottle::GetNameForLogging() {
-  return "AtomNavigationThrottle";
+const char* ElectronNavigationThrottle::GetNameForLogging() {
+  return "ElectronNavigationThrottle";
 }
 
 content::NavigationThrottle::ThrottleCheckResult
-AtomNavigationThrottle::WillRedirectRequest() {
+ElectronNavigationThrottle::WillRedirectRequest() {
   auto* handle = navigation_handle();
   auto* contents = handle->GetWebContents();
   if (!contents) {

@@ -8,7 +8,7 @@
 #import <Cocoa/Cocoa.h>
 #import <Quartz/Quartz.h>
 
-@interface AtomPreviewItem : NSObject <QLPreviewItem>
+@interface ElectronPreviewItem : NSObject <QLPreviewItem>
 @property(nonatomic, retain) NSURL* previewItemURL;
 @property(nonatomic, retain) NSString* previewItemTitle;
 - (id)initWithURL:(NSURL*)url title:(NSString*)title;

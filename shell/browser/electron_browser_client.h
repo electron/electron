@@ -33,14 +33,14 @@ namespace electron {
 class NotificationPresenter;
 class PlatformNotificationService;
 
-class AtomBrowserClient : public content::ContentBrowserClient,
-                          public content::RenderProcessHostObserver {
+class ElectronBrowserClient : public content::ContentBrowserClient,
+                              public content::RenderProcessHostObserver {
  public:
-  static AtomBrowserClient* Get();
+  static ElectronBrowserClient* Get();
   static void SetApplicationLocale(const std::string& locale);
 
-  AtomBrowserClient();
-  ~AtomBrowserClient() override;
+  ElectronBrowserClient();
+  ~ElectronBrowserClient() override;
 
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
@@ -286,7 +286,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   bool disable_process_restart_tricks_ = false;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };
 
 }  // namespace electron

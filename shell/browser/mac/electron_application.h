@@ -9,9 +9,9 @@
 #import <AVFoundation/AVFoundation.h>
 #import <LocalAuthentication/LocalAuthentication.h>
 
-@interface AtomApplication : NSApplication <CrAppProtocol,
-                                            CrAppControlProtocol,
-                                            NSUserActivityDelegate> {
+@interface ElectronApplication : NSApplication <CrAppProtocol,
+                                                CrAppControlProtocol,
+                                                NSUserActivityDelegate> {
  @private
   BOOL handlingSendEvent_;
   base::scoped_nsobject<NSUserActivity> currentActivity_;
@@ -20,7 +20,7 @@
   base::Callback<bool()> shouldShutdown_;
 }
 
-+ (AtomApplication*)sharedApplication;
++ (ElectronApplication*)sharedApplication;
 
 - (void)setShutdownHandler:(base::Callback<bool()>)handler;
 - (void)registerURLHandler;

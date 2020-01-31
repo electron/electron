@@ -25,7 +25,7 @@ namespace {
 
 bool WebContentsDestroyed(int process_id) {
   content::WebContents* web_contents =
-      static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
           ->GetWebContentsFromProcessID(process_id);
   if (!web_contents)
     return true;
@@ -33,14 +33,14 @@ bool WebContentsDestroyed(int process_id) {
 }
 
 void PermissionRequestResponseCallbackWrapper(
-    AtomPermissionManager::StatusCallback callback,
+    ElectronPermissionManager::StatusCallback callback,
     const std::vector<blink::mojom::PermissionStatus>& vector) {
   std::move(callback).Run(vector[0]);
 }
 
 }  // namespace
 
-class AtomPermissionManager::PendingRequest {
+class ElectronPermissionManager::PendingRequest {
  public:
   PendingRequest(content::RenderFrameHost* render_frame_host,
                  const std::vector<content::PermissionType>& permissions,
@@ -61,7 +61,7 @@ class AtomPermissionManager::PendingRequest {
         content::ChildProcessSecurityPolicy::GetInstance()
             ->GrantSendMidiSysExMessage(render_process_id_);
       } else if (permission == content::PermissionType::GEOLOCATION) {
-        AtomBrowserMainParts::Get()
+        ElectronBrowserMainParts::Get()
             ->GetGeolocationControl()
             ->UserDidOptIntoLocationServices();
       }
@@ -89,11 +89,11 @@ class AtomPermissionManager::PendingRequest {
   size_t remaining_results_;
 };
 
-AtomPermissionManager::AtomPermissionManager() = default;
+ElectronPermissionManager::ElectronPermissionManager() = default;
 
-AtomPermissionManager::~AtomPermissionManager() = default;
+ElectronPermissionManager::~ElectronPermissionManager() = default;
 
-void AtomPermissionManager::SetPermissionRequestHandler(
+void ElectronPermissionManager::SetPermissionRequestHandler(
     const RequestHandler& handler) {
   if (handler.is_null() && !pending_requests_.IsEmpty()) {
     for (PendingRequestsMap::iterator iter(&pending_requests_); !iter.IsAtEnd();
@@ -107,12 +107,12 @@ void AtomPermissionManager::SetPermissionRequestHandler(
   request_handler_ = handler;
 }
 
-void AtomPermissionManager::SetPermissionCheckHandler(
+void ElectronPermissionManager::SetPermissionCheckHandler(
     const CheckHandler& handler) {
   check_handler_ = handler;
 }
 
-int AtomPermissionManager::RequestPermission(
+int ElectronPermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
@@ -123,7 +123,7 @@ int AtomPermissionManager::RequestPermission(
                                       std::move(response_callback));
 }
 
-int AtomPermissionManager::RequestPermissionWithDetails(
+int ElectronPermissionManager::RequestPermissionWithDetails(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
@@ -137,7 +137,7 @@ int AtomPermissionManager::RequestPermissionWithDetails(
                      std::move(response_callback)));
 }
 
-int AtomPermissionManager::RequestPermissions(
+int ElectronPermissionManager::RequestPermissions(
     const std::vector<content::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
@@ -148,7 +148,7 @@ int AtomPermissionManager::RequestPermissions(
                                        std::move(response_callback));
 }
 
-int AtomPermissionManager::RequestPermissionsWithDetails(
+int ElectronPermissionManager::RequestPermissionsWithDetails(
     const std::vector<content::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
@@ -168,7 +168,7 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
             ->GrantSendMidiSysExMessage(
                 render_frame_host->GetProcess()->GetID());
       } else if (permission == content::PermissionType::GEOLOCATION) {
-        AtomBrowserMainParts::Get()
+        ElectronBrowserMainParts::Get()
             ->GetGeolocationControl()
             ->UserDidOptIntoLocationServices();
       }
@@ -186,7 +186,7 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
   for (size_t i = 0; i < permissions.size(); ++i) {
     auto permission = permissions[i];
     const auto callback =
-        base::BindRepeating(&AtomPermissionManager::OnPermissionResponse,
+        base::BindRepeating(&ElectronPermissionManager::OnPermissionResponse,
                             base::Unretained(this), request_id, i);
     auto mutable_details =
         details == nullptr ? base::DictionaryValue() : details->Clone();
@@ -200,7 +200,7 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
   return request_id;
 }
 
-void AtomPermissionManager::OnPermissionResponse(
+void ElectronPermissionManager::OnPermissionResponse(
     int request_id,
     int permission_id,
     blink::mojom::PermissionStatus status) {
@@ -215,18 +215,19 @@ void AtomPermissionManager::OnPermissionResponse(
   }
 }
 
-void AtomPermissionManager::ResetPermission(content::PermissionType permission,
-                                            const GURL& requesting_origin,
-                                            const GURL& embedding_origin) {}
+void ElectronPermissionManager::ResetPermission(
+    content::PermissionType permission,
+    const GURL& requesting_origin,
+    const GURL& embedding_origin) {}
 
-blink::mojom::PermissionStatus AtomPermissionManager::GetPermissionStatus(
+blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
   return blink::mojom::PermissionStatus::GRANTED;
 }
 
-int AtomPermissionManager::SubscribePermissionStatusChange(
+int ElectronPermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
@@ -234,10 +235,10 @@ int AtomPermissionManager::SubscribePermissionStatusChange(
   return -1;
 }
 
-void AtomPermissionManager::UnsubscribePermissionStatusChange(
+void ElectronPermissionManager::UnsubscribePermissionStatusChange(
     int subscription_id) {}
 
-bool AtomPermissionManager::CheckPermissionWithDetails(
+bool ElectronPermissionManager::CheckPermissionWithDetails(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
@@ -258,7 +259,7 @@ bool AtomPermissionManager::CheckPermissionWithDetails(
 }
 
 blink::mojom::PermissionStatus
-AtomPermissionManager::GetPermissionStatusForFrame(
+ElectronPermissionManager::GetPermissionStatusForFrame(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin) {

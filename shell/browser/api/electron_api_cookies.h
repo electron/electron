@@ -29,21 +29,21 @@ class URLRequestContextGetter;
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
 namespace api {
 
 class Cookies : public gin_helper::TrackableObject<Cookies> {
  public:
   static gin::Handle<Cookies> Create(v8::Isolate* isolate,
-                                     AtomBrowserContext* browser_context);
+                                     ElectronBrowserContext* browser_context);
 
   // gin_helper::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context);
+  Cookies(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Cookies() override;
 
   v8::Local<v8::Promise> Get(const gin_helper::Dictionary& filter);
@@ -58,7 +58,7 @@ class Cookies : public gin_helper::TrackableObject<Cookies> {
   std::unique_ptr<base::CallbackList<void(
       const net::CookieChangeInfo& change)>::Subscription>
       cookie_change_subscription_;
-  scoped_refptr<AtomBrowserContext> browser_context_;
+  scoped_refptr<ElectronBrowserContext> browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };

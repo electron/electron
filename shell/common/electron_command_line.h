@@ -15,7 +15,7 @@
 namespace electron {
 
 // Singleton to remember the original "argc" and "argv".
-class AtomCommandLine {
+class ElectronCommandLine {
  public:
   static const base::CommandLine::StringVector& argv() { return argv_; }
 
@@ -30,7 +30,7 @@ class AtomCommandLine {
  private:
   static base::CommandLine::StringVector argv_;
 
-  DISALLOW_IMPLICIT_CONSTRUCTORS(AtomCommandLine);
+  DISALLOW_IMPLICIT_CONSTRUCTORS(ElectronCommandLine);
 };
 
 }  // namespace electron

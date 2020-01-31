@@ -53,12 +53,12 @@ base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
 
 }  // namespace
 
-void AtomMainDelegate::OverrideFrameworkBundlePath() {
+void ElectronMainDelegate::OverrideFrameworkBundlePath() {
   base::mac::SetOverrideFrameworkBundlePath(
       GetFrameworksPath().Append(ELECTRON_PRODUCT_NAME " Framework.framework"));
 }
 
-void AtomMainDelegate::OverrideChildProcessPath() {
+void ElectronMainDelegate::OverrideChildProcessPath() {
   base::FilePath frameworks_path = GetFrameworksPath();
   base::FilePath helper_path =
       GetHelperAppPath(frameworks_path, ELECTRON_PRODUCT_NAME);
@@ -69,7 +69,7 @@ void AtomMainDelegate::OverrideChildProcessPath() {
   base::PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
 }
 
-void AtomMainDelegate::SetUpBundleOverrides() {
+void ElectronMainDelegate::SetUpBundleOverrides() {
   base::mac::ScopedNSAutoreleasePool pool;
   NSBundle* bundle = MainApplicationBundle();
   std::string base_bundle_id =
@@ -82,7 +82,7 @@ void AtomMainDelegate::SetUpBundleOverrides() {
 
 void RegisterAtomCrApp() {
   // Force the NSApplication subclass to be used.
-  [AtomApplication sharedApplication];
+  [ElectronApplication sharedApplication];
 }
 
 }  // namespace electron

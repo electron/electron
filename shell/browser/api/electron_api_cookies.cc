@@ -173,7 +173,7 @@ std::string InclusionStatusToString(
 
 }  // namespace
 
-Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
+Cookies::Cookies(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : browser_context_(browser_context) {
   Init(isolate);
   cookie_change_subscription_ =
@@ -322,7 +322,7 @@ void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
 
 // static
 gin::Handle<Cookies> Cookies::Create(v8::Isolate* isolate,
-                                     AtomBrowserContext* browser_context) {
+                                     ElectronBrowserContext* browser_context) {
   return gin::CreateHandle(isolate, new Cookies(isolate, browser_context));
 }
 

@@ -6,21 +6,21 @@
 
 namespace extensions {
 
-AtomExtensionWebContentsObserver::AtomExtensionWebContentsObserver(
+ElectronExtensionWebContentsObserver::ElectronExtensionWebContentsObserver(
     content::WebContents* web_contents)
     : ExtensionWebContentsObserver(web_contents) {}
 
-AtomExtensionWebContentsObserver::~AtomExtensionWebContentsObserver() {}
+ElectronExtensionWebContentsObserver::~ElectronExtensionWebContentsObserver() {}
 
-void AtomExtensionWebContentsObserver::CreateForWebContents(
+void ElectronExtensionWebContentsObserver::CreateForWebContents(
     content::WebContents* web_contents) {
   content::WebContentsUserData<
-      AtomExtensionWebContentsObserver>::CreateForWebContents(web_contents);
+      ElectronExtensionWebContentsObserver>::CreateForWebContents(web_contents);
 
   // Initialize this instance if necessary.
   FromWebContents(web_contents)->Initialize();
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(AtomExtensionWebContentsObserver)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(ElectronExtensionWebContentsObserver)
 
 }  // namespace extensions

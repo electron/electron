@@ -39,10 +39,10 @@ using HandlersMap =
     std::map<std::string, std::pair<ProtocolType, ProtocolHandler>>;
 
 // Implementation of URLLoaderFactory.
-class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
+class ElectronURLLoaderFactory : public network::mojom::URLLoaderFactory {
  public:
-  AtomURLLoaderFactory(ProtocolType type, const ProtocolHandler& handler);
-  ~AtomURLLoaderFactory() override;
+  ElectronURLLoaderFactory(ProtocolType type, const ProtocolHandler& handler);
+  ~ElectronURLLoaderFactory() override;
 
   // network::mojom::URLLoaderFactory:
   void CreateLoaderAndStart(
@@ -114,7 +114,7 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   ProtocolType type_;
   ProtocolHandler handler_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomURLLoaderFactory);
+  DISALLOW_COPY_AND_ASSIGN(ElectronURLLoaderFactory);
 };
 
 }  // namespace electron

@@ -11,20 +11,20 @@
 
 namespace extensions {
 
-AtomNavigationUIData::AtomNavigationUIData() {}
+ElectronNavigationUIData::ElectronNavigationUIData() {}
 
-AtomNavigationUIData::AtomNavigationUIData(
+ElectronNavigationUIData::ElectronNavigationUIData(
     content::NavigationHandle* navigation_handle) {
   extension_data_ = std::make_unique<ExtensionNavigationUIData>(
       navigation_handle, extension_misc::kUnknownTabId,
       extension_misc::kUnknownWindowId);
 }
 
-AtomNavigationUIData::~AtomNavigationUIData() {}
+ElectronNavigationUIData::~ElectronNavigationUIData() {}
 
-std::unique_ptr<content::NavigationUIData> AtomNavigationUIData::Clone() {
-  std::unique_ptr<AtomNavigationUIData> copy =
-      std::make_unique<AtomNavigationUIData>();
+std::unique_ptr<content::NavigationUIData> ElectronNavigationUIData::Clone() {
+  std::unique_ptr<ElectronNavigationUIData> copy =
+      std::make_unique<ElectronNavigationUIData>();
 
   if (extension_data_)
     copy->SetExtensionNavigationUIData(extension_data_->DeepCopy());
@@ -32,7 +32,7 @@ std::unique_ptr<content::NavigationUIData> AtomNavigationUIData::Clone() {
   return std::move(copy);
 }
 
-void AtomNavigationUIData::SetExtensionNavigationUIData(
+void ElectronNavigationUIData::SetExtensionNavigationUIData(
     std::unique_ptr<ExtensionNavigationUIData> extension_data) {
   extension_data_ = std::move(extension_data);
 }

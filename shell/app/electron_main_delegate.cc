@@ -129,16 +129,16 @@ void LoadResourceBundle(const std::string& locale) {
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
-AtomMainDelegate::AtomMainDelegate() = default;
+ElectronMainDelegate::ElectronMainDelegate() = default;
 
-AtomMainDelegate::~AtomMainDelegate() = default;
+ElectronMainDelegate::~ElectronMainDelegate() = default;
 
-const char* const AtomMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
+const char* const ElectronMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
     extensions::kExtensionScheme};
-const size_t AtomMainDelegate::kNonWildcardDomainNonPortSchemesSize =
+const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
     base::size(kNonWildcardDomainNonPortSchemes);
 
-bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
+bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   logging::LoggingSettings settings;
@@ -224,13 +224,13 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
                << " is not supported. See https://crbug.com/638180.";
 #endif
 
-  content_client_ = std::make_unique<AtomContentClient>();
+  content_client_ = std::make_unique<ElectronContentClient>();
   SetContentClient(content_client_.get());
 
   return false;
 }
 
-void AtomMainDelegate::PostEarlyInitialization(bool is_running_tests) {
+void ElectronMainDelegate::PostEarlyInitialization(bool is_running_tests) {
   std::string custom_locale;
   ui::ResourceBundle::InitSharedInstanceWithLocale(
       custom_locale, nullptr, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
@@ -256,11 +256,11 @@ void AtomMainDelegate::PostEarlyInitialization(bool is_running_tests) {
 
   LoadResourceBundle(custom_locale);
 
-  AtomBrowserClient::SetApplicationLocale(
+  ElectronBrowserClient::SetApplicationLocale(
       l10n_util::GetApplicationLocale(custom_locale));
 }
 
-void AtomMainDelegate::PreSandboxStartup() {
+void ElectronMainDelegate::PreSandboxStartup() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   std::string process_type =
@@ -287,7 +287,7 @@ void AtomMainDelegate::PreSandboxStartup() {
 #endif
 }
 
-void AtomMainDelegate::PreCreateMainMessageLoop() {
+void ElectronMainDelegate::PreCreateMainMessageLoop() {
   // This is initialized early because the service manager reads some feature
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
@@ -297,35 +297,37 @@ void AtomMainDelegate::PreCreateMainMessageLoop() {
 #endif
 }
 
-content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
-  browser_client_ = std::make_unique<AtomBrowserClient>();
+content::ContentBrowserClient*
+ElectronMainDelegate::CreateContentBrowserClient() {
+  browser_client_ = std::make_unique<ElectronBrowserClient>();
   return browser_client_.get();
 }
 
-content::ContentGpuClient* AtomMainDelegate::CreateContentGpuClient() {
-  gpu_client_ = std::make_unique<AtomGpuClient>();
+content::ContentGpuClient* ElectronMainDelegate::CreateContentGpuClient() {
+  gpu_client_ = std::make_unique<ElectronGpuClient>();
   return gpu_client_.get();
 }
 
 content::ContentRendererClient*
-AtomMainDelegate::CreateContentRendererClient() {
+ElectronMainDelegate::CreateContentRendererClient() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   if (IsSandboxEnabled(command_line)) {
-    renderer_client_ = std::make_unique<AtomSandboxedRendererClient>();
+    renderer_client_ = std::make_unique<ElectronSandboxedRendererClient>();
   } else {
-    renderer_client_ = std::make_unique<AtomRendererClient>();
+    renderer_client_ = std::make_unique<ElectronRendererClient>();
   }
 
   return renderer_client_.get();
 }
 
-content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
-  utility_client_ = std::make_unique<AtomContentUtilityClient>();
+content::ContentUtilityClient*
+ElectronMainDelegate::CreateContentUtilityClient() {
+  utility_client_ = std::make_unique<ElectronContentUtilityClient>();
   return utility_client_.get();
 }
 
-int AtomMainDelegate::RunProcess(
+int ElectronMainDelegate::RunProcess(
     const std::string& process_type,
     const content::MainFunctionParams& main_function_params) {
   if (process_type == kRelauncherProcess)
@@ -335,13 +337,13 @@ int AtomMainDelegate::RunProcess(
 }
 
 #if defined(OS_MACOSX)
-bool AtomMainDelegate::DelaySandboxInitialization(
+bool ElectronMainDelegate::DelaySandboxInitialization(
     const std::string& process_type) {
   return process_type == kRelauncherProcess;
 }
 #endif
 
-bool AtomMainDelegate::ShouldCreateFeatureList() {
+bool ElectronMainDelegate::ShouldCreateFeatureList() {
   return false;
 }
 

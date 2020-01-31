@@ -14,10 +14,10 @@
 
 namespace electron {
 
-class AtomSandboxedRendererClient : public RendererClientBase {
+class ElectronSandboxedRendererClient : public RendererClientBase {
  public:
-  AtomSandboxedRendererClient();
-  ~AtomSandboxedRendererClient() override;
+  ElectronSandboxedRendererClient();
+  ~ElectronSandboxedRendererClient() override;
 
   void InitializeBindings(v8::Local<v8::Object> binding,
                           v8::Local<v8::Context> context,
@@ -46,7 +46,7 @@ class AtomSandboxedRendererClient : public RendererClientBase {
   // assertion, so we have to keep a book of injected web frames.
   std::set<content::RenderFrame*> injected_frames_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRendererClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronSandboxedRendererClient);
 };
 
 }  // namespace electron

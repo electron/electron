@@ -31,7 +31,7 @@ class WMState;
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 class Browser;
 class ElectronBindings;
 class JavascriptEnvironment;
@@ -41,8 +41,8 @@ class NodeEnvironment;
 class BridgeTaskRunner;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-class AtomExtensionsClient;
-class AtomExtensionsBrowserClient;
+class ElectronExtensionsClient;
+class ElectronExtensionsBrowserClient;
 #endif
 
 #if defined(TOOLKIT_VIEWS)
@@ -53,12 +53,12 @@ class ViewsDelegate;
 class ViewsDelegateMac;
 #endif
 
-class AtomBrowserMainParts : public content::BrowserMainParts {
+class ElectronBrowserMainParts : public content::BrowserMainParts {
  public:
-  explicit AtomBrowserMainParts(const content::MainFunctionParams& params);
-  ~AtomBrowserMainParts() override;
+  explicit ElectronBrowserMainParts(const content::MainFunctionParams& params);
+  ~ElectronBrowserMainParts() override;
 
-  static AtomBrowserMainParts* Get();
+  static ElectronBrowserMainParts* Get();
 
   // Sets the exit code, will fail if the message loop is not ready.
   bool SetExitCode(int code);
@@ -139,8 +139,8 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  std::unique_ptr<AtomExtensionsClient> extensions_client_;
-  std::unique_ptr<AtomExtensionsBrowserClient> extensions_browser_client_;
+  std::unique_ptr<ElectronExtensionsClient> extensions_client_;
+  std::unique_ptr<ElectronExtensionsBrowserClient> extensions_browser_client_;
 #endif
 
   base::RepeatingTimer gc_timer_;
@@ -150,9 +150,9 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
 
   mojo::Remote<device::mojom::GeolocationControl> geolocation_control_;
 
-  static AtomBrowserMainParts* self_;
+  static ElectronBrowserMainParts* self_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomBrowserMainParts);
+  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserMainParts);
 };
 
 }  // namespace electron

@@ -160,7 +160,8 @@ std::string ErrorCodeToString(ProtocolError error) {
 
 }  // namespace
 
-Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context) {
+Protocol::Protocol(v8::Isolate* isolate,
+                   ElectronBrowserContext* browser_context) {
   Init(isolate);
   AttachAsUserData(browser_context);
 }
@@ -170,7 +171,7 @@ Protocol::~Protocol() = default;
 void Protocol::RegisterURLLoaderFactories(
     content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
   for (const auto& it : handlers_) {
-    factories->emplace(it.first, std::make_unique<AtomURLLoaderFactory>(
+    factories->emplace(it.first, std::make_unique<ElectronURLLoaderFactory>(
                                      it.second.first, it.second.second));
   }
 }
@@ -254,8 +255,9 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args,
 }
 
 // static
-gin::Handle<Protocol> Protocol::Create(v8::Isolate* isolate,
-                                       AtomBrowserContext* browser_context) {
+gin::Handle<Protocol> Protocol::Create(
+    v8::Isolate* isolate,
+    ElectronBrowserContext* browser_context) {
   return gin::CreateHandle(isolate, new Protocol(isolate, browser_context));
 }
 

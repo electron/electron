@@ -46,7 +46,7 @@ enum class JumpListResult : int;
 
 namespace api {
 
-class App : public AtomBrowserClient::Delegate,
+class App : public ElectronBrowserClient::Delegate,
             public gin_helper::EventEmitter<App>,
             public BrowserObserver,
             public content::GpuDataManagerObserver,

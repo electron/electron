@@ -11,12 +11,12 @@ namespace electron {
 
 class NativeWindowMac;
 
-class AtomNativeWidgetMac : public views::NativeWidgetMac {
+class ElectronNativeWidgetMac : public views::NativeWidgetMac {
  public:
-  AtomNativeWidgetMac(NativeWindowMac* shell,
-                      NSUInteger style_mask,
-                      views::internal::NativeWidgetDelegate* delegate);
-  ~AtomNativeWidgetMac() override;
+  ElectronNativeWidgetMac(NativeWindowMac* shell,
+                          NSUInteger style_mask,
+                          views::internal::NativeWidgetDelegate* delegate);
+  ~ElectronNativeWidgetMac() override;
 
  protected:
   // NativeWidgetMac:
@@ -27,7 +27,7 @@ class AtomNativeWidgetMac : public views::NativeWidgetMac {
   NativeWindowMac* shell_;
   NSUInteger style_mask_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomNativeWidgetMac);
+  DISALLOW_COPY_AND_ASSIGN(ElectronNativeWidgetMac);
 };
 
 }  // namespace electron

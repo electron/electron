@@ -14,10 +14,10 @@
 
 namespace electron {
 
-class AtomContentClient : public content::ContentClient {
+class ElectronContentClient : public content::ContentClient {
  public:
-  AtomContentClient();
-  ~AtomContentClient() override;
+  ElectronContentClient();
+  ~ElectronContentClient() override;
 
  protected:
   // content::ContentClient:
@@ -33,7 +33,7 @@ class AtomContentClient : public content::ContentClient {
       std::vector<media::CdmHostFilePath>* cdm_host_file_paths) override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomContentClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronContentClient);
 };
 
 }  // namespace electron

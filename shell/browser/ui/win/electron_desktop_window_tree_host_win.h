@@ -12,12 +12,13 @@
 
 namespace electron {
 
-class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
+class ElectronDesktopWindowTreeHostWin
+    : public views::DesktopWindowTreeHostWin {
  public:
-  AtomDesktopWindowTreeHostWin(
+  ElectronDesktopWindowTreeHostWin(
       NativeWindowViews* native_window_view,
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
-  ~AtomDesktopWindowTreeHostWin() override;
+  ~ElectronDesktopWindowTreeHostWin() override;
 
  protected:
   bool PreHandleMSG(UINT message,
@@ -31,7 +32,7 @@ class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
  private:
   NativeWindowViews* native_window_view_;  // weak ref
 
-  DISALLOW_COPY_AND_ASSIGN(AtomDesktopWindowTreeHostWin);
+  DISALLOW_COPY_AND_ASSIGN(ElectronDesktopWindowTreeHostWin);
 };
 
 }  // namespace electron

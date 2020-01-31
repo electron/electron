@@ -27,7 +27,7 @@ class ScopedDisableResize {
 
 }  // namespace electron
 
-@interface AtomNSWindow : NativeWidgetMacNSWindow {
+@interface ElectronNSWindow : NativeWidgetMacNSWindow {
  @private
   electron::NativeWindowMac* shell_;
 }

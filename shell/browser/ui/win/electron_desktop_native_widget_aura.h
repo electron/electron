@@ -14,9 +14,10 @@ class DesktopWindowTreeHost;
 
 namespace electron {
 
-class AtomDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
+class ElectronDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
  public:
-  explicit AtomDesktopNativeWidgetAura(NativeWindowViews* native_window_view);
+  explicit ElectronDesktopNativeWidgetAura(
+      NativeWindowViews* native_window_view);
 
   // views::DesktopNativeWidgetAura:
   void InitNativeWidget(views::Widget::InitParams params) override;
@@ -34,7 +35,7 @@ class AtomDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
   // Owned by DesktopNativeWidgetAura.
   views::DesktopWindowTreeHost* desktop_window_tree_host_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomDesktopNativeWidgetAura);
+  DISALLOW_COPY_AND_ASSIGN(ElectronDesktopNativeWidgetAura);
 };
 
 }  // namespace electron

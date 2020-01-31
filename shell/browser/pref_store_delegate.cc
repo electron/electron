@@ -12,7 +12,7 @@
 namespace electron {
 
 PrefStoreDelegate::PrefStoreDelegate(
-    base::WeakPtr<AtomBrowserContext> browser_context)
+    base::WeakPtr<ElectronBrowserContext> browser_context)
     : browser_context_(std::move(browser_context)) {}
 
 PrefStoreDelegate::~PrefStoreDelegate() {

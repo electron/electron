@@ -21,10 +21,10 @@ namespace electron {
 class ElectronBindings;
 class NodeBindings;
 
-class AtomRendererClient : public RendererClientBase {
+class ElectronRendererClient : public RendererClientBase {
  public:
-  AtomRendererClient();
-  ~AtomRendererClient() override;
+  ElectronRendererClient();
+  ~ElectronRendererClient() override;
 
   // electron::RendererClientBase:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
@@ -70,7 +70,7 @@ class AtomRendererClient : public RendererClientBase {
   // assertion, so we have to keep a book of injected web frames.
   std::set<content::RenderFrame*> injected_frames_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronRendererClient);
 };
 
 }  // namespace electron

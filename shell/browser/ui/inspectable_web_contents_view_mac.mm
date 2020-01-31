@@ -22,7 +22,7 @@ InspectableWebContentsView* CreateInspectableContentsView(
 InspectableWebContentsViewMac::InspectableWebContentsViewMac(
     InspectableWebContentsImpl* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents),
-      view_([[AtomInspectableWebContentsView alloc]
+      view_([[ElectronInspectableWebContentsView alloc]
           initWithInspectableWebContentsViewMac:this]) {}
 
 InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {

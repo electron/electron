@@ -10,20 +10,20 @@
 
 namespace electron {
 
-AtomExtensionsRendererClient::AtomExtensionsRendererClient()
+ElectronExtensionsRendererClient::ElectronExtensionsRendererClient()
     : dispatcher_(std::make_unique<extensions::Dispatcher>(
           std::make_unique<ElectronExtensionsDispatcherDelegate>())) {
   dispatcher_->OnRenderThreadStarted(content::RenderThread::Get());
 }
 
-AtomExtensionsRendererClient::~AtomExtensionsRendererClient() {}
+ElectronExtensionsRendererClient::~ElectronExtensionsRendererClient() {}
 
-bool AtomExtensionsRendererClient::IsIncognitoProcess() const {
+bool ElectronExtensionsRendererClient::IsIncognitoProcess() const {
   // app_shell doesn't support off-the-record contexts.
   return false;
 }
 
-int AtomExtensionsRendererClient::GetLowestIsolatedWorldId() const {
+int ElectronExtensionsRendererClient::GetLowestIsolatedWorldId() const {
   // app_shell doesn't need to reserve world IDs for anything other than
   // extensions, so we always return 1. Note that 0 is reserved for the global
   // world.
@@ -31,33 +31,33 @@ int AtomExtensionsRendererClient::GetLowestIsolatedWorldId() const {
   return 10;
 }
 
-extensions::Dispatcher* AtomExtensionsRendererClient::GetDispatcher() {
+extensions::Dispatcher* ElectronExtensionsRendererClient::GetDispatcher() {
   return dispatcher_.get();
 }
 
-bool AtomExtensionsRendererClient::ExtensionAPIEnabledForServiceWorkerScript(
-    const GURL& scope,
-    const GURL& script_url) const {
+bool ElectronExtensionsRendererClient::
+    ExtensionAPIEnabledForServiceWorkerScript(const GURL& scope,
+                                              const GURL& script_url) const {
   // TODO(nornagon): adapt logic from chrome's version
   return true;
 }
 
-bool AtomExtensionsRendererClient::AllowPopup() {
+bool ElectronExtensionsRendererClient::AllowPopup() {
   // TODO(samuelmaddock):
   return false;
 }
 
-void AtomExtensionsRendererClient::RunScriptsAtDocumentStart(
+void ElectronExtensionsRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   dispatcher_->RunScriptsAtDocumentStart(render_frame);
 }
 
-void AtomExtensionsRendererClient::RunScriptsAtDocumentEnd(
+void ElectronExtensionsRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
   dispatcher_->RunScriptsAtDocumentEnd(render_frame);
 }
 
-void AtomExtensionsRendererClient::RunScriptsAtDocumentIdle(
+void ElectronExtensionsRendererClient::RunScriptsAtDocumentIdle(
     content::RenderFrame* render_frame) {
   dispatcher_->RunScriptsAtDocumentIdle(render_frame);
 }

@@ -213,20 +213,20 @@ int X11EmptyIOErrorHandler(Display* d) {
 }  // namespace
 
 // static
-AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
+ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
-AtomBrowserMainParts::AtomBrowserMainParts(
+ElectronBrowserMainParts::ElectronBrowserMainParts(
     const content::MainFunctionParams& params)
     : fake_browser_process_(new BrowserProcessImpl),
       browser_(new Browser),
       node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::BROWSER)),
       electron_bindings_(new ElectronBindings(uv_default_loop())) {
-  DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
+  DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
 
-AtomBrowserMainParts::~AtomBrowserMainParts() {
+ElectronBrowserMainParts::~ElectronBrowserMainParts() {
   asar::ClearArchives();
   // Leak the JavascriptEnvironment on exit.
   // This is to work around the bug that V8 would be waiting for background
@@ -240,12 +240,12 @@ AtomBrowserMainParts::~AtomBrowserMainParts() {
 }
 
 // static
-AtomBrowserMainParts* AtomBrowserMainParts::Get() {
+ElectronBrowserMainParts* ElectronBrowserMainParts::Get() {
   DCHECK(self_);
   return self_;
 }
 
-bool AtomBrowserMainParts::SetExitCode(int code) {
+bool ElectronBrowserMainParts::SetExitCode(int code) {
   if (!exit_code_)
     return false;
 
@@ -253,11 +253,11 @@ bool AtomBrowserMainParts::SetExitCode(int code) {
   return true;
 }
 
-int AtomBrowserMainParts::GetExitCode() {
+int ElectronBrowserMainParts::GetExitCode() {
   return exit_code_ != nullptr ? *exit_code_ : 0;
 }
 
-void AtomBrowserMainParts::RegisterDestructionCallback(
+void ElectronBrowserMainParts::RegisterDestructionCallback(
     base::OnceClosure callback) {
   // The destructors should be called in reversed order, so dependencies between
   // JavaScript objects can be correctly resolved.
@@ -265,7 +265,7 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
   destructors_.insert(destructors_.begin(), std::move(callback));
 }
 
-int AtomBrowserMainParts::PreEarlyInitialization() {
+int ElectronBrowserMainParts::PreEarlyInitialization() {
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());
@@ -284,7 +284,7 @@ int AtomBrowserMainParts::PreEarlyInitialization() {
   return service_manager::RESULT_CODE_NORMAL_EXIT;
 }
 
-void AtomBrowserMainParts::PostEarlyInitialization() {
+void ElectronBrowserMainParts::PostEarlyInitialization() {
   // A workaround was previously needed because there was no ThreadTaskRunner
   // set.  If this check is failing we may need to re-add that workaround
   DCHECK(base::ThreadTaskRunnerHandle::IsSet());
@@ -354,7 +354,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   fake_browser_process_->PostEarlyInitialization();
 }
 
-int AtomBrowserMainParts::PreCreateThreads() {
+int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
   display::Screen* screen = views::CreateDesktopScreen();
   display::Screen::SetScreenInstance(screen);
@@ -368,7 +368,7 @@ int AtomBrowserMainParts::PreCreateThreads() {
 
   // Initialize the app locale.
   fake_browser_process_->SetApplicationLocale(
-      AtomBrowserClient::Get()->GetApplicationLocale());
+      ElectronBrowserClient::Get()->GetApplicationLocale());
 
   // Force MediaCaptureDevicesDispatcher to be created on UI thread.
   MediaCaptureDevicesDispatcher::GetInstance();
@@ -385,13 +385,13 @@ int AtomBrowserMainParts::PreCreateThreads() {
   return 0;
 }
 
-void AtomBrowserMainParts::PostCreateThreads() {
+void ElectronBrowserMainParts::PostCreateThreads() {
   base::PostTask(
       FROM_HERE, {content::BrowserThread::IO},
       base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
 }
 
-void AtomBrowserMainParts::PostDestroyThreads() {
+void ElectronBrowserMainParts::PostDestroyThreads() {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_browser_client_.reset();
   extensions::ExtensionsBrowserClient::Set(nullptr);
@@ -403,7 +403,7 @@ void AtomBrowserMainParts::PostDestroyThreads() {
   fake_browser_process_->PostDestroyThreads();
 }
 
-void AtomBrowserMainParts::ToolkitInitialized() {
+void ElectronBrowserMainParts::ToolkitInitialized() {
   ui::MaterialDesignController::Initialize();
 
 #if defined(USE_AURA) && defined(USE_X11)
@@ -430,18 +430,19 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 #endif
 }
 
-void AtomBrowserMainParts::PreMainMessageLoopRun() {
+void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_client_ = std::make_unique<AtomExtensionsClient>();
+  extensions_client_ = std::make_unique<ElectronExtensionsClient>();
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
   // BrowserContextKeyedAPIServiceFactories require an ExtensionsBrowserClient.
-  extensions_browser_client_ = std::make_unique<AtomExtensionsBrowserClient>();
+  extensions_browser_client_ =
+      std::make_unique<ElectronExtensionsBrowserClient>();
   extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
 
   extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
@@ -462,7 +463,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
                                       base::Unretained(js_env_->isolate())));
 
   content::WebUIControllerFactory::RegisterFactory(
-      AtomWebUIControllerFactory::GetInstance());
+      ElectronWebUIControllerFactory::GetInstance());
 
   // --remote-debugging-port
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -470,7 +471,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
     DevToolsManagerDelegate::StartHttpHandler();
 
 #if !defined(OS_MACOSX)
-  // The corresponding call in macOS is in AtomApplicationDelegate.
+  // The corresponding call in macOS is in ElectronApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching(base::DictionaryValue());
 #endif
@@ -479,18 +480,18 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->PreMainMessageLoopRun();
 }
 
-bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
+bool ElectronBrowserMainParts::MainMessageLoopRun(int* result_code) {
   js_env_->OnMessageLoopCreated();
   exit_code_ = result_code;
   return content::BrowserMainParts::MainMessageLoopRun(result_code);
 }
 
-void AtomBrowserMainParts::PreDefaultMainMessageLoopRun(
+void ElectronBrowserMainParts::PreDefaultMainMessageLoopRun(
     base::OnceClosure quit_closure) {
   Browser::Get()->SetMainMessageLoopQuitClosure(std::move(quit_closure));
 }
 
-void AtomBrowserMainParts::PostMainMessageLoopStart() {
+void ElectronBrowserMainParts::PostMainMessageLoopStart() {
 #if defined(USE_X11)
   // Installs the X11 error handlers for the browser process after the
   // main message loop has started. This will allow us to exit cleanly
@@ -505,7 +506,7 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 #endif
 }
 
-void AtomBrowserMainParts::PostMainMessageLoopRun() {
+void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 #if defined(USE_X11)
   // Unset the X11 error handlers. The X11 error handlers log the errors using a
   // |PostTask()| on the message-loop. But since the message-loop is in the
@@ -536,12 +537,12 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
 }
 
 #if !defined(OS_MACOSX)
-void AtomBrowserMainParts::PreMainMessageLoopStart() {
+void ElectronBrowserMainParts::PreMainMessageLoopStart() {
   PreMainMessageLoopStartCommon();
 }
 #endif
 
-void AtomBrowserMainParts::PreMainMessageLoopStartCommon() {
+void ElectronBrowserMainParts::PreMainMessageLoopStartCommon() {
 #if defined(OS_MACOSX)
   InitializeMainNib();
   RegisterURLHandler();
@@ -550,7 +551,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStartCommon() {
 }
 
 device::mojom::GeolocationControl*
-AtomBrowserMainParts::GetGeolocationControl() {
+ElectronBrowserMainParts::GetGeolocationControl() {
   if (!geolocation_control_) {
     content::GetDeviceService().BindGeolocationControl(
         geolocation_control_.BindNewPipeAndPassReceiver());
@@ -558,7 +559,7 @@ AtomBrowserMainParts::GetGeolocationControl() {
   return geolocation_control_.get();
 }
 
-IconManager* AtomBrowserMainParts::GetIconManager() {
+IconManager* ElectronBrowserMainParts::GetIconManager() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (!icon_manager_.get())
     icon_manager_ = std::make_unique<IconManager>();

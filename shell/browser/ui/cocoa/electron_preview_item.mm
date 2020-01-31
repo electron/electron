@@ -4,7 +4,7 @@
 
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 
-@implementation AtomPreviewItem
+@implementation ElectronPreviewItem
 
 @synthesize previewItemURL;
 @synthesize previewItemTitle;

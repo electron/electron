@@ -17,7 +17,7 @@ class InspectableWebContentsViewMac;
 
 using electron::InspectableWebContentsViewMac;
 
-@interface AtomInspectableWebContentsView : BaseView <NSWindowDelegate> {
+@interface ElectronInspectableWebContentsView : BaseView <NSWindowDelegate> {
  @private
   electron::InspectableWebContentsViewMac* inspectableWebContentsView_;
 

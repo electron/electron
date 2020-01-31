@@ -20,10 +20,10 @@ class WebContents;
 
 namespace electron {
 
-class AtomPermissionManager : public content::PermissionControllerDelegate {
+class ElectronPermissionManager : public content::PermissionControllerDelegate {
  public:
-  AtomPermissionManager();
-  ~AtomPermissionManager() override;
+  ElectronPermissionManager();
+  ~ElectronPermissionManager() override;
 
   using StatusCallback =
       base::OnceCallback<void(blink::mojom::PermissionStatus)>;
@@ -107,7 +107,7 @@ class AtomPermissionManager : public content::PermissionControllerDelegate {
 
   PendingRequestsMap pending_requests_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomPermissionManager);
+  DISALLOW_COPY_AND_ASSIGN(ElectronPermissionManager);
 };
 
 }  // namespace electron

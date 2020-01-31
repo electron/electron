@@ -28,7 +28,7 @@ namespace electron {
 
 namespace api {
 
-Menu::Menu(gin::Arguments* args) : model_(new AtomMenuModel(this)) {
+Menu::Menu(gin::Arguments* args) : model_(new ElectronMenuModel(this)) {
   InitWithArgs(args);
   model_->AddObserver(this);
 }

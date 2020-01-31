@@ -18,13 +18,14 @@ class DownloadManager;
 
 namespace electron {
 
-class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
+class ElectronDownloadManagerDelegate
+    : public content::DownloadManagerDelegate {
  public:
   using CreateDownloadPathCallback =
       base::Callback<void(const base::FilePath&)>;
 
-  explicit AtomDownloadManagerDelegate(content::DownloadManager* manager);
-  ~AtomDownloadManagerDelegate() override;
+  explicit ElectronDownloadManagerDelegate(content::DownloadManager* manager);
+  ~ElectronDownloadManagerDelegate() override;
 
   // content::DownloadManagerDelegate:
   void Shutdown() override;
@@ -52,9 +53,9 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
       gin_helper::Dictionary result);
 
   content::DownloadManager* download_manager_;
-  base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;
+  base::WeakPtrFactory<ElectronDownloadManagerDelegate> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomDownloadManagerDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ElectronDownloadManagerDelegate);
 };
 
 }  // namespace electron

@@ -16,7 +16,8 @@ using content::BrowserThread;
 
 namespace electron {
 
-CookieChangeNotifier::CookieChangeNotifier(AtomBrowserContext* browser_context)
+CookieChangeNotifier::CookieChangeNotifier(
+    ElectronBrowserContext* browser_context)
     : browser_context_(browser_context), receiver_(this) {
   StartListening();
 }

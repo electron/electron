@@ -149,8 +149,9 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
         }
 
         if (render_frame_host_ && !paths.empty()) {
-          auto* browser_context = static_cast<electron::AtomBrowserContext*>(
-              render_frame_host_->GetProcess()->GetBrowserContext());
+          auto* browser_context =
+              static_cast<electron::ElectronBrowserContext*>(
+                  render_frame_host_->GetProcess()->GetBrowserContext());
           browser_context->prefs()->SetFilePath(prefs::kSelectFileLastDirectory,
                                                 paths[0].DirName());
         }
@@ -330,7 +331,7 @@ void WebDialogHelper::RunFileChooser(
         NOTREACHED();
     }
 
-    auto* browser_context = static_cast<electron::AtomBrowserContext*>(
+    auto* browser_context = static_cast<electron::ElectronBrowserContext*>(
         render_frame_host->GetProcess()->GetBrowserContext());
     settings.default_path = browser_context->prefs()
                                 ->GetFilePath(prefs::kSelectFileLastDirectory)

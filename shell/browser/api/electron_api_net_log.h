@@ -19,14 +19,14 @@
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
 namespace api {
 
 class NetLog : public gin_helper::TrackableObject<NetLog> {
  public:
   static gin::Handle<NetLog> Create(v8::Isolate* isolate,
-                                    AtomBrowserContext* browser_context);
+                                    ElectronBrowserContext* browser_context);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -37,7 +37,8 @@ class NetLog : public gin_helper::TrackableObject<NetLog> {
   bool IsCurrentlyLogging() const;
 
  protected:
-  explicit NetLog(v8::Isolate* isolate, AtomBrowserContext* browser_context);
+  explicit NetLog(v8::Isolate* isolate,
+                  ElectronBrowserContext* browser_context);
   ~NetLog() override;
 
   void OnConnectionError();
@@ -49,7 +50,7 @@ class NetLog : public gin_helper::TrackableObject<NetLog> {
   void NetLogStarted(int32_t error);
 
  private:
-  AtomBrowserContext* browser_context_;
+  ElectronBrowserContext* browser_context_;
 
   network::mojom::NetLogExporterPtr net_log_exporter_;
 

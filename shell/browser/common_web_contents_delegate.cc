@@ -153,7 +153,7 @@ void AppendToFile(const base::FilePath& path, const std::string& content) {
 
 PrefService* GetPrefService(content::WebContents* web_contents) {
   auto* context = web_contents->GetBrowserContext();
-  return static_cast<electron::AtomBrowserContext*>(context)->prefs();
+  return static_cast<electron::ElectronBrowserContext*>(context)->prefs();
 }
 
 std::map<std::string, std::string> GetAddedFileSystemPaths(
@@ -191,7 +191,7 @@ CommonWebContentsDelegate::~CommonWebContentsDelegate() = default;
 
 void CommonWebContentsDelegate::InitWithWebContents(
     content::WebContents* web_contents,
-    AtomBrowserContext* browser_context,
+    ElectronBrowserContext* browser_context,
     bool is_guest) {
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
@@ -252,7 +252,7 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
     base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
         FROM_HERE,
         base::BindOnce(
-            [](scoped_refptr<AtomBrowserContext> browser_context,
+            [](scoped_refptr<ElectronBrowserContext> browser_context,
                std::unique_ptr<InspectableWebContents> web_contents) {
               web_contents.reset();
             },

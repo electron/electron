@@ -42,10 +42,10 @@ class MenuMac : public Menu {
 
   void OnClosed(int32_t window_id, base::OnceClosure callback);
 
-  scoped_nsobject<AtomMenuController> menu_controller_;
+  scoped_nsobject<ElectronMenuController> menu_controller_;
 
   // window ID -> open context menu
-  std::map<int32_t, scoped_nsobject<AtomMenuController>> popup_controllers_;
+  std::map<int32_t, scoped_nsobject<ElectronMenuController>> popup_controllers_;
 
   base::WeakPtrFactory<MenuMac> weak_factory_;
 

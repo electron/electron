@@ -31,10 +31,11 @@ namespace electron {
 // with no related incognito context.
 // Must be initialized via InitWithBrowserContext() once the BrowserContext is
 // created.
-class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
+class ElectronExtensionsBrowserClient
+    : public extensions::ExtensionsBrowserClient {
  public:
-  AtomExtensionsBrowserClient();
-  ~AtomExtensionsBrowserClient() override;
+  ElectronExtensionsBrowserClient();
+  ~ElectronExtensionsBrowserClient() override;
 
   // ExtensionsBrowserClient overrides:
   bool IsShuttingDown() override;
@@ -137,7 +138,7 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
   // The extension cache used for download and installation.
   std::unique_ptr<extensions::ExtensionCache> extension_cache_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionsBrowserClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsBrowserClient);
 };
 
 }  // namespace electron

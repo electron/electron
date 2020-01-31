@@ -14,7 +14,7 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/image/image.h"
 
-@implementation AtomTouchBar
+@implementation ElectronTouchBar
 
 static NSTouchBarItemIdentifier ButtonIdentifier =
     @"com.electron.touchbar.button.";

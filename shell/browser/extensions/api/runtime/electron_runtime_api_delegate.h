@@ -16,10 +16,10 @@ class BrowserContext;
 
 namespace extensions {
 
-class AtomRuntimeAPIDelegate : public RuntimeAPIDelegate {
+class ElectronRuntimeAPIDelegate : public RuntimeAPIDelegate {
  public:
-  explicit AtomRuntimeAPIDelegate(content::BrowserContext* browser_context);
-  ~AtomRuntimeAPIDelegate() override;
+  explicit ElectronRuntimeAPIDelegate(content::BrowserContext* browser_context);
+  ~ElectronRuntimeAPIDelegate() override;
 
   // RuntimeAPIDelegate implementation.
   void AddUpdateObserver(UpdateObserver* observer) override;
@@ -34,7 +34,7 @@ class AtomRuntimeAPIDelegate : public RuntimeAPIDelegate {
  private:
   content::BrowserContext* browser_context_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomRuntimeAPIDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ElectronRuntimeAPIDelegate);
 };
 
 }  // namespace extensions

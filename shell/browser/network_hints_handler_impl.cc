@@ -33,7 +33,7 @@ void NetworkHintsHandlerImpl::Preconnect(const GURL& url,
       render_frame_host_->GetProcess()->GetBrowserContext();
   auto* session = electron::api::Session::FromWrappedClass(
       v8::Isolate::GetCurrent(),
-      static_cast<electron::AtomBrowserContext*>(browser_context));
+      static_cast<electron::ElectronBrowserContext*>(browser_context));
   if (session) {
     session->Emit("preconnect", url, allow_credentials);
   }

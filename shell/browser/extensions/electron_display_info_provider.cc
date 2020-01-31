@@ -6,6 +6,6 @@
 
 namespace extensions {
 
-AtomDisplayInfoProvider::AtomDisplayInfoProvider() = default;
+ElectronDisplayInfoProvider::ElectronDisplayInfoProvider() = default;
 
 }  // namespace extensions

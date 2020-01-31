@@ -22,7 +22,7 @@ MessagingDelegate* ElectronExtensionsAPIClient::GetMessagingDelegate() {
 
 void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
     content::WebContents* web_contents) const {
-  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+  extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
 }
 

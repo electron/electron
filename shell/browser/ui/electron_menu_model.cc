@@ -8,51 +8,51 @@
 
 namespace electron {
 
-bool AtomMenuModel::Delegate::GetAcceleratorForCommandId(
+bool ElectronMenuModel::Delegate::GetAcceleratorForCommandId(
     int command_id,
     ui::Accelerator* accelerator) const {
   return GetAcceleratorForCommandIdWithParams(command_id, false, accelerator);
 }
 
-AtomMenuModel::AtomMenuModel(Delegate* delegate)
+ElectronMenuModel::ElectronMenuModel(Delegate* delegate)
     : ui::SimpleMenuModel(delegate), delegate_(delegate) {}
 
-AtomMenuModel::~AtomMenuModel() = default;
+ElectronMenuModel::~ElectronMenuModel() = default;
 
-void AtomMenuModel::SetToolTip(int index, const base::string16& toolTip) {
+void ElectronMenuModel::SetToolTip(int index, const base::string16& toolTip) {
   int command_id = GetCommandIdAt(index);
   toolTips_[command_id] = toolTip;
 }
 
-base::string16 AtomMenuModel::GetToolTipAt(int index) {
+base::string16 ElectronMenuModel::GetToolTipAt(int index) {
   const int command_id = GetCommandIdAt(index);
   const auto iter = toolTips_.find(command_id);
   return iter == std::end(toolTips_) ? base::string16() : iter->second;
 }
 
-void AtomMenuModel::SetRole(int index, const base::string16& role) {
+void ElectronMenuModel::SetRole(int index, const base::string16& role) {
   int command_id = GetCommandIdAt(index);
   roles_[command_id] = role;
 }
 
-base::string16 AtomMenuModel::GetRoleAt(int index) {
+base::string16 ElectronMenuModel::GetRoleAt(int index) {
   const int command_id = GetCommandIdAt(index);
   const auto iter = roles_.find(command_id);
   return iter == std::end(roles_) ? base::string16() : iter->second;
 }
 
-void AtomMenuModel::SetSublabel(int index, const base::string16& sublabel) {
+void ElectronMenuModel::SetSublabel(int index, const base::string16& sublabel) {
   int command_id = GetCommandIdAt(index);
   sublabels_[command_id] = sublabel;
 }
 
-base::string16 AtomMenuModel::GetSublabelAt(int index) const {
+base::string16 ElectronMenuModel::GetSublabelAt(int index) const {
   int command_id = GetCommandIdAt(index);
   const auto iter = sublabels_.find(command_id);
   return iter == std::end(sublabels_) ? base::string16() : iter->second;
 }
 
-bool AtomMenuModel::GetAcceleratorAtWithParams(
+bool ElectronMenuModel::GetAcceleratorAtWithParams(
     int index,
     bool use_default_accelerator,
     ui::Accelerator* accelerator) const {
@@ -63,7 +63,7 @@ bool AtomMenuModel::GetAcceleratorAtWithParams(
   return false;
 }
 
-bool AtomMenuModel::ShouldRegisterAcceleratorAt(int index) const {
+bool ElectronMenuModel::ShouldRegisterAcceleratorAt(int index) const {
   if (delegate_) {
     return delegate_->ShouldRegisterAcceleratorForCommandId(
         GetCommandIdAt(index));
@@ -71,29 +71,29 @@ bool AtomMenuModel::ShouldRegisterAcceleratorAt(int index) const {
   return true;
 }
 
-bool AtomMenuModel::WorksWhenHiddenAt(int index) const {
+bool ElectronMenuModel::WorksWhenHiddenAt(int index) const {
   if (delegate_) {
     return delegate_->ShouldCommandIdWorkWhenHidden(GetCommandIdAt(index));
   }
   return true;
 }
 
-void AtomMenuModel::MenuWillClose() {
+void ElectronMenuModel::MenuWillClose() {
   ui::SimpleMenuModel::MenuWillClose();
   for (Observer& observer : observers_) {
     observer.OnMenuWillClose();
   }
 }
 
-void AtomMenuModel::MenuWillShow() {
+void ElectronMenuModel::MenuWillShow() {
   ui::SimpleMenuModel::MenuWillShow();
   for (Observer& observer : observers_) {
     observer.OnMenuWillShow();
   }
 }
 
-AtomMenuModel* AtomMenuModel::GetSubmenuModelAt(int index) {
-  return static_cast<AtomMenuModel*>(
+ElectronMenuModel* ElectronMenuModel::GetSubmenuModelAt(int index) {
+  return static_cast<ElectronMenuModel*>(
       ui::SimpleMenuModel::GetSubmenuModelAt(index));
 }
 

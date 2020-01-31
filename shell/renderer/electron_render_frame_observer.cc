@@ -43,7 +43,7 @@ scoped_refptr<base::RefCountedMemory> NetResourceProvider(int key) {
 
 }  // namespace
 
-AtomRenderFrameObserver::AtomRenderFrameObserver(
+ElectronRenderFrameObserver::ElectronRenderFrameObserver(
     content::RenderFrame* frame,
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(frame),
@@ -53,11 +53,11 @@ AtomRenderFrameObserver::AtomRenderFrameObserver(
   net::NetModule::SetResourceProvider(NetResourceProvider);
 }
 
-void AtomRenderFrameObserver::DidClearWindowObject() {
+void ElectronRenderFrameObserver::DidClearWindowObject() {
   renderer_client_->DidClearWindowObject(render_frame_);
 }
 
-void AtomRenderFrameObserver::DidCreateScriptContext(
+void ElectronRenderFrameObserver::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     int world_id) {
   if (ShouldNotifyClient(world_id))
@@ -98,7 +98,7 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
 #endif
 }
 
-void AtomRenderFrameObserver::DraggableRegionsChanged() {
+void ElectronRenderFrameObserver::DraggableRegionsChanged() {
   blink::WebVector<blink::WebDraggableRegion> webregions =
       render_frame_->GetWebFrame()->GetDocument().DraggableRegions();
   std::vector<mojom::DraggableRegionPtr> regions;
@@ -116,18 +116,18 @@ void AtomRenderFrameObserver::DraggableRegionsChanged() {
   browser_ptr->UpdateDraggableRegions(std::move(regions));
 }
 
-void AtomRenderFrameObserver::WillReleaseScriptContext(
+void ElectronRenderFrameObserver::WillReleaseScriptContext(
     v8::Local<v8::Context> context,
     int world_id) {
   if (ShouldNotifyClient(world_id))
     renderer_client_->WillReleaseScriptContext(context, render_frame_);
 }
 
-void AtomRenderFrameObserver::OnDestruct() {
+void ElectronRenderFrameObserver::OnDestruct() {
   delete this;
 }
 
-void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
+void ElectronRenderFrameObserver::CreateIsolatedWorldContext() {
   auto* frame = render_frame_->GetWebFrame();
   blink::WebIsolatedWorldInfo info;
   // This maps to the name shown in the context combo box in the Console tab
@@ -143,15 +143,15 @@ void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
   frame->ExecuteScriptInIsolatedWorld(World::ISOLATED_WORLD, source);
 }
 
-bool AtomRenderFrameObserver::IsMainWorld(int world_id) {
+bool ElectronRenderFrameObserver::IsMainWorld(int world_id) {
   return world_id == World::MAIN_WORLD;
 }
 
-bool AtomRenderFrameObserver::IsIsolatedWorld(int world_id) {
+bool ElectronRenderFrameObserver::IsIsolatedWorld(int world_id) {
   return world_id == World::ISOLATED_WORLD;
 }
 
-bool AtomRenderFrameObserver::ShouldNotifyClient(int world_id) {
+bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) {
   bool allow_node_in_sub_frames =
       base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInSubFrames);

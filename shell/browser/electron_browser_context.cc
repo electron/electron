@@ -90,18 +90,19 @@ std::string MakePartitionName(const std::string& input) {
 }  // namespace
 
 // static
-AtomBrowserContext::BrowserContextMap AtomBrowserContext::browser_context_map_;
+ElectronBrowserContext::BrowserContextMap
+    ElectronBrowserContext::browser_context_map_;
 
-AtomBrowserContext::AtomBrowserContext(const std::string& partition,
-                                       bool in_memory,
-                                       base::DictionaryValue options)
-    : base::RefCountedDeleteOnSequence<AtomBrowserContext>(
+ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
+                                               bool in_memory,
+                                               base::DictionaryValue options)
+    : base::RefCountedDeleteOnSequence<ElectronBrowserContext>(
           base::ThreadTaskRunnerHandle::Get()),
       in_memory_pref_store_(nullptr),
       storage_policy_(new SpecialStoragePolicy),
       in_memory_(in_memory),
       weak_factory_(this) {
-  user_agent_ = AtomBrowserClient::Get()->GetUserAgent();
+  user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
 
   // Read options.
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -136,14 +137,14 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(
       this);
 
-  extension_system_ = static_cast<extensions::AtomExtensionSystem*>(
+  extension_system_ = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(this));
   extension_system_->InitForRegularProfile(true /* extensions_enabled */);
   extension_system_->FinishInitialization();
 #endif
 }
 
-AtomBrowserContext::~AtomBrowserContext() {
+ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   NotifyWillBeDestroyed(this);
   // Notify any keyed services of browser context destruction.
@@ -155,7 +156,7 @@ AtomBrowserContext::~AtomBrowserContext() {
                             std::move(resource_context_));
 }
 
-void AtomBrowserContext::InitPrefs() {
+void ElectronBrowserContext::InitPrefs() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   PrefServiceFactory prefs_factory;
@@ -225,40 +226,40 @@ void AtomBrowserContext::InitPrefs() {
 #endif
 }
 
-void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
+void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
 }
 
-base::FilePath AtomBrowserContext::GetPath() {
+base::FilePath ElectronBrowserContext::GetPath() {
   return path_;
 }
 
-bool AtomBrowserContext::IsOffTheRecord() {
+bool ElectronBrowserContext::IsOffTheRecord() {
   return in_memory_;
 }
 
-bool AtomBrowserContext::CanUseHttpCache() const {
+bool ElectronBrowserContext::CanUseHttpCache() const {
   return use_cache_;
 }
 
-int AtomBrowserContext::GetMaxCacheSize() const {
+int ElectronBrowserContext::GetMaxCacheSize() const {
   return max_cache_size_;
 }
 
-content::ResourceContext* AtomBrowserContext::GetResourceContext() {
+content::ResourceContext* ElectronBrowserContext::GetResourceContext() {
   if (!resource_context_)
     resource_context_ = std::make_unique<content::ResourceContext>();
   return resource_context_.get();
 }
 
-std::string AtomBrowserContext::GetMediaDeviceIDSalt() {
+std::string ElectronBrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
     media_device_id_salt_ = std::make_unique<MediaDeviceIDSalt>(prefs_.get());
   return media_device_id_salt_->GetSalt();
 }
 
 std::unique_ptr<content::ZoomLevelDelegate>
-AtomBrowserContext::CreateZoomLevelDelegate(
+ElectronBrowserContext::CreateZoomLevelDelegate(
     const base::FilePath& partition_path) {
   if (!IsOffTheRecord()) {
     return std::make_unique<ZoomLevelDelegate>(prefs(), partition_path);
@@ -267,37 +268,38 @@ AtomBrowserContext::CreateZoomLevelDelegate(
 }
 
 content::DownloadManagerDelegate*
-AtomBrowserContext::GetDownloadManagerDelegate() {
+ElectronBrowserContext::GetDownloadManagerDelegate() {
   if (!download_manager_delegate_.get()) {
     auto* download_manager = content::BrowserContext::GetDownloadManager(this);
     download_manager_delegate_ =
-        std::make_unique<AtomDownloadManagerDelegate>(download_manager);
+        std::make_unique<ElectronDownloadManagerDelegate>(download_manager);
   }
   return download_manager_delegate_.get();
 }
 
-content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
+content::BrowserPluginGuestManager* ElectronBrowserContext::GetGuestManager() {
   if (!guest_manager_)
     guest_manager_ = std::make_unique<WebViewManager>();
   return guest_manager_.get();
 }
 
 content::PermissionControllerDelegate*
-AtomBrowserContext::GetPermissionControllerDelegate() {
+ElectronBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
-    permission_manager_ = std::make_unique<AtomPermissionManager>();
+    permission_manager_ = std::make_unique<ElectronPermissionManager>();
   return permission_manager_.get();
 }
 
-storage::SpecialStoragePolicy* AtomBrowserContext::GetSpecialStoragePolicy() {
+storage::SpecialStoragePolicy*
+ElectronBrowserContext::GetSpecialStoragePolicy() {
   return storage_policy_.get();
 }
 
-std::string AtomBrowserContext::GetUserAgent() const {
+std::string ElectronBrowserContext::GetUserAgent() const {
   return user_agent_;
 }
 
-predictors::PreconnectManager* AtomBrowserContext::GetPreconnectManager() {
+predictors::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
   if (!preconnect_manager_.get()) {
     preconnect_manager_ =
         std::make_unique<predictors::PreconnectManager>(nullptr, this);
@@ -306,7 +308,7 @@ predictors::PreconnectManager* AtomBrowserContext::GetPreconnectManager() {
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
-AtomBrowserContext::GetURLLoaderFactory() {
+ElectronBrowserContext::GetURLLoaderFactory() {
   if (url_loader_factory_)
     return url_loader_factory_;
 
@@ -317,7 +319,7 @@ AtomBrowserContext::GetURLLoaderFactory() {
   // Consult the embedder.
   mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
       header_client;
-  static_cast<content::ContentBrowserClient*>(AtomBrowserClient::Get())
+  static_cast<content::ContentBrowserClient*>(ElectronBrowserClient::Get())
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
@@ -372,47 +374,49 @@ class AuthResponder : public network::mojom::TrustedAuthClient {
   }
 };
 
-void AtomBrowserContext::OnLoaderCreated(
+void ElectronBrowserContext::OnLoaderCreated(
     int32_t request_id,
     mojo::PendingReceiver<network::mojom::TrustedAuthClient> auth_client) {
   mojo::MakeSelfOwnedReceiver(std::make_unique<AuthResponder>(),
                               std::move(auth_client));
 }
 
-content::PushMessagingService* AtomBrowserContext::GetPushMessagingService() {
+content::PushMessagingService*
+ElectronBrowserContext::GetPushMessagingService() {
   return nullptr;
 }
 
-content::SSLHostStateDelegate* AtomBrowserContext::GetSSLHostStateDelegate() {
+content::SSLHostStateDelegate*
+ElectronBrowserContext::GetSSLHostStateDelegate() {
   return nullptr;
 }
 
 content::BackgroundFetchDelegate*
-AtomBrowserContext::GetBackgroundFetchDelegate() {
+ElectronBrowserContext::GetBackgroundFetchDelegate() {
   return nullptr;
 }
 
 content::BackgroundSyncController*
-AtomBrowserContext::GetBackgroundSyncController() {
+ElectronBrowserContext::GetBackgroundSyncController() {
   return nullptr;
 }
 
 content::BrowsingDataRemoverDelegate*
-AtomBrowserContext::GetBrowsingDataRemoverDelegate() {
+ElectronBrowserContext::GetBrowsingDataRemoverDelegate() {
   return nullptr;
 }
 
 content::ClientHintsControllerDelegate*
-AtomBrowserContext::GetClientHintsControllerDelegate() {
+ElectronBrowserContext::GetClientHintsControllerDelegate() {
   return nullptr;
 }
 
 content::StorageNotificationService*
-AtomBrowserContext::GetStorageNotificationService() {
+ElectronBrowserContext::GetStorageNotificationService() {
   return nullptr;
 }
 
-void AtomBrowserContext::SetCorsOriginAccessListForOrigin(
+void ElectronBrowserContext::SetCorsOriginAccessListForOrigin(
     const url::Origin& source_origin,
     std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
     std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
@@ -422,7 +426,7 @@ void AtomBrowserContext::SetCorsOriginAccessListForOrigin(
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(closure));
 }
 
-ResolveProxyHelper* AtomBrowserContext::GetResolveProxyHelper() {
+ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {
   if (!resolve_proxy_helper_) {
     resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(this);
   }
@@ -430,19 +434,19 @@ ResolveProxyHelper* AtomBrowserContext::GetResolveProxyHelper() {
 }
 
 // static
-scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
+scoped_refptr<ElectronBrowserContext> ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
     base::DictionaryValue options) {
   PartitionKey key(partition, in_memory);
   auto* browser_context = browser_context_map_[key].get();
   if (browser_context)
-    return scoped_refptr<AtomBrowserContext>(browser_context);
+    return scoped_refptr<ElectronBrowserContext>(browser_context);
 
   auto* new_context =
-      new AtomBrowserContext(partition, in_memory, std::move(options));
+      new ElectronBrowserContext(partition, in_memory, std::move(options));
   browser_context_map_[key] = new_context->GetWeakPtr();
-  return scoped_refptr<AtomBrowserContext>(new_context);
+  return scoped_refptr<ElectronBrowserContext>(new_context);
 }
 
 }  // namespace electron

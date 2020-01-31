@@ -14,17 +14,17 @@
 #include "shell/common/electron_command_line.h"
 #include "shell/common/mac/main_application_bundle.h"
 
-int AtomMain(int argc, char* argv[]) {
-  electron::AtomMainDelegate delegate;
+int ElectronMain(int argc, char* argv[]) {
+  electron::ElectronMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;
   params.argv = const_cast<const char**>(argv);
-  electron::AtomCommandLine::Init(argc, argv);
+  electron::ElectronCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-int AtomInitializeICUandStartNode(int argc, char* argv[]) {
+int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
   base::AtExitManager atexit_manager;
   base::mac::ScopedNSAutoreleasePool pool;
   base::mac::SetOverrideFrameworkBundlePath(

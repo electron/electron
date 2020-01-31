@@ -67,9 +67,9 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   base::OnceClosure close_callback =
       base::BindOnce(&MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id,
                      std::move(callback));
-  popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>(
-      [[AtomMenuController alloc] initWithModel:model()
-                          useDefaultAccelerator:NO]);
+  popup_controllers_[window_id] = base::scoped_nsobject<ElectronMenuController>(
+      [[ElectronMenuController alloc] initWithModel:model()
+                              useDefaultAccelerator:NO]);
   NSMenu* menu = [popup_controllers_[window_id] menu];
   NSView* view = [nswindow contentView];
 
@@ -150,9 +150,9 @@ void MenuMac::OnClosed(int32_t window_id, base::OnceClosure callback) {
 // static
 void Menu::SetApplicationMenu(Menu* base_menu) {
   MenuMac* menu = static_cast<MenuMac*>(base_menu);
-  base::scoped_nsobject<AtomMenuController> menu_controller(
-      [[AtomMenuController alloc] initWithModel:menu->model_.get()
-                          useDefaultAccelerator:YES]);
+  base::scoped_nsobject<ElectronMenuController> menu_controller(
+      [[ElectronMenuController alloc] initWithModel:menu->model_.get()
+                              useDefaultAccelerator:YES]);
 
   NSRunLoop* currentRunLoop = [NSRunLoop currentRunLoop];
   [currentRunLoop cancelPerformSelector:@selector(setMainMenu:)

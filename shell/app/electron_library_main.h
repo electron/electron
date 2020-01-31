@@ -10,10 +10,10 @@
 
 #if defined(OS_MACOSX)
 extern "C" {
-__attribute__((visibility("default"))) int AtomMain(int argc, char* argv[]);
+__attribute__((visibility("default"))) int ElectronMain(int argc, char* argv[]);
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-__attribute__((visibility("default"))) int AtomInitializeICUandStartNode(
+__attribute__((visibility("default"))) int ElectronInitializeICUandStartNode(
     int argc,
     char* argv[]);
 #endif

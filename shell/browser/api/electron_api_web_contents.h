@@ -54,8 +54,8 @@ class ResourceRequestBody;
 
 namespace electron {
 
-class AtomBrowserContext;
-class AtomJavaScriptDialogManager;
+class ElectronBrowserContext;
+class ElectronJavaScriptDialogManager;
 class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
@@ -486,7 +486,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   void DevToolsClosed() override;
 
  private:
-  AtomBrowserContext* GetBrowserContext() const;
+  ElectronBrowserContext* GetBrowserContext() const;
 
   // Binds the given request for the ElectronBrowser API. When the
   // RenderFrameHost is destroyed, all related bindings will be removed.
@@ -545,7 +545,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
-  std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
+  std::unique_ptr<ElectronJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
 

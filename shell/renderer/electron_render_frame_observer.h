@@ -38,10 +38,10 @@ enum World {
 };
 
 // Helper class to forward the messages to the client.
-class AtomRenderFrameObserver : public content::RenderFrameObserver {
+class ElectronRenderFrameObserver : public content::RenderFrameObserver {
  public:
-  AtomRenderFrameObserver(content::RenderFrame* frame,
-                          RendererClientBase* renderer_client);
+  ElectronRenderFrameObserver(content::RenderFrame* frame,
+                              RendererClientBase* renderer_client);
 
   // content::RenderFrameObserver:
   void DidClearWindowObject() override;
@@ -63,7 +63,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
+  DISALLOW_COPY_AND_ASSIGN(ElectronRenderFrameObserver);
 };
 
 }  // namespace electron

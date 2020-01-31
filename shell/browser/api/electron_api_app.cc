@@ -536,7 +536,8 @@ void OnIconDataAvailable(gin_helper::Promise<gfx::Image> promise,
 }  // namespace
 
 App::App(v8::Isolate* isolate) {
-  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
+  static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+      ->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
 
@@ -549,7 +550,7 @@ App::App(v8::Isolate* isolate) {
 }
 
 App::~App() {
-  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
+  static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
       ->set_delegate(nullptr);
   Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
@@ -573,7 +574,7 @@ void App::OnWindowAllClosed() {
 }
 
 void App::OnQuit() {
-  int exitCode = AtomBrowserMainParts::Get()->GetExitCode();
+  int exitCode = ElectronBrowserMainParts::Get()->GetExitCode();
   Emit("quit", exitCode);
 
   if (process_singleton_) {
@@ -786,7 +787,7 @@ void App::RenderProcessReady(content::RenderProcessHost* host) {
   // `WebContents` instances, but this was implicitly happening before in
   // `RenderProcessPreferences`, so this is at least more explicit...
   content::WebContents* web_contents =
-      AtomBrowserClient::Get()->GetWebContentsFromProcessID(host->GetID());
+      ElectronBrowserClient::Get()->GetWebContentsFromProcessID(host->GetID());
   if (web_contents)
     WebContents::FromOrCreate(v8::Isolate::GetCurrent(), web_contents);
 }
@@ -991,7 +992,8 @@ bool App::Relaunch(gin_helper::Arguments* js_args) {
   }
 
   if (!override_argv) {
-    const relauncher::StringVector& argv = electron::AtomCommandLine::argv();
+    const relauncher::StringVector& argv =
+        electron::ElectronCommandLine::argv();
     return relauncher::RelaunchApp(argv);
   }
 
@@ -1065,7 +1067,7 @@ Browser::LoginItemSettings App::GetLoginItemSettings(
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(const base::DictionaryValue& options,
                             net::CompletionRepeatingCallback callback) {
-  auto browser_context = AtomBrowserContext::From("", false);
+  auto browser_context = ElectronBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     auto copy = base::DictionaryValue::From(
         base::Value::ToUniquePtrValue(options.Clone()));
@@ -1164,7 +1166,7 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
     icon_size = GetIconSizeByString(icon_size_string);
   }
 
-  auto* icon_manager = AtomBrowserMainParts::Get()->GetIconManager();
+  auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
@@ -1314,28 +1316,28 @@ void App::EnableSandbox(gin_helper::ErrorThrower thrower) {
 }
 
 void App::SetUserAgentFallback(const std::string& user_agent) {
-  AtomBrowserClient::Get()->SetUserAgent(user_agent);
+  ElectronBrowserClient::Get()->SetUserAgent(user_agent);
 }
 
 std::string App::GetUserAgentFallback() {
-  return AtomBrowserClient::Get()->GetUserAgent();
+  return ElectronBrowserClient::Get()->GetUserAgent();
 }
 
 void App::SetBrowserClientCanUseCustomSiteInstance(bool should_disable) {
-  AtomBrowserClient::Get()->SetCanUseCustomSiteInstance(should_disable);
+  ElectronBrowserClient::Get()->SetCanUseCustomSiteInstance(should_disable);
 }
 bool App::CanBrowserClientUseCustomSiteInstance() {
-  return AtomBrowserClient::Get()->CanUseCustomSiteInstance();
+  return ElectronBrowserClient::Get()->CanUseCustomSiteInstance();
 }
 
 #if defined(OS_MACOSX)
 bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
                                    gin::Arguments* args) {
-  return AtomBundleMover::Move(thrower, args);
+  return ElectronBundleMover::Move(thrower, args);
 }
 
 bool App::IsInApplicationsFolder() {
-  return AtomBundleMover::IsCurrentAppInApplicationsFolder();
+  return ElectronBundleMover::IsCurrentAppInApplicationsFolder();
 }
 
 int DockBounce(gin_helper::Arguments* args) {

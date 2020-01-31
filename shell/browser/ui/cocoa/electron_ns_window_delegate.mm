@@ -18,7 +18,7 @@
 
 using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 
-@implementation AtomNSWindowDelegate
+@implementation ElectronNSWindowDelegate
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell {
   // The views library assumes the window delegate must be an instance of

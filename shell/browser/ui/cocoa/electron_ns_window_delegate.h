@@ -13,7 +13,7 @@ namespace electron {
 class NativeWindowMac;
 }
 
-@interface AtomNSWindowDelegate
+@interface ElectronNSWindowDelegate
     : ViewsNSWindowDelegate <NSTouchBarDelegate, QLPreviewPanelDataSource> {
  @private
   electron::NativeWindowMac* shell_;

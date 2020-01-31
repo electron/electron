@@ -17,7 +17,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 }  // namespace electron
 
-@implementation AtomNSWindow
+@implementation ElectronNSWindow
 
 @synthesize acceptsFirstMouse;
 @synthesize enableLargerThanScreen;

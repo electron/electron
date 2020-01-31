@@ -161,13 +161,14 @@ void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
 
 }  // namespace
 
-AtomURLLoaderFactory::AtomURLLoaderFactory(ProtocolType type,
-                                           const ProtocolHandler& handler)
+ElectronURLLoaderFactory::ElectronURLLoaderFactory(
+    ProtocolType type,
+    const ProtocolHandler& handler)
     : type_(type), handler_(handler) {}
 
-AtomURLLoaderFactory::~AtomURLLoaderFactory() = default;
+ElectronURLLoaderFactory::~ElectronURLLoaderFactory() = default;
 
-void AtomURLLoaderFactory::CreateLoaderAndStart(
+void ElectronURLLoaderFactory::CreateLoaderAndStart(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     int32_t routing_id,
     int32_t request_id,
@@ -178,18 +179,18 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   handler_.Run(
       request,
-      base::BindOnce(&AtomURLLoaderFactory::StartLoading, std::move(loader),
+      base::BindOnce(&ElectronURLLoaderFactory::StartLoading, std::move(loader),
                      routing_id, request_id, options, request,
                      std::move(client), traffic_annotation, nullptr, type_));
 }
 
-void AtomURLLoaderFactory::Clone(
+void ElectronURLLoaderFactory::Clone(
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver) {
   receivers_.Add(this, std::move(receiver));
 }
 
 // static
-void AtomURLLoaderFactory::StartLoading(
+void ElectronURLLoaderFactory::StartLoading(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     int32_t routing_id,
     int32_t request_id,
@@ -308,7 +309,7 @@ void AtomURLLoaderFactory::StartLoading(
 }
 
 // static
-void AtomURLLoaderFactory::StartLoadingBuffer(
+void ElectronURLLoaderFactory::StartLoadingBuffer(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     network::mojom::URLResponseHeadPtr head,
     const gin_helper::Dictionary& dict) {
@@ -328,7 +329,7 @@ void AtomURLLoaderFactory::StartLoadingBuffer(
 }
 
 // static
-void AtomURLLoaderFactory::StartLoadingString(
+void ElectronURLLoaderFactory::StartLoadingString(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     network::mojom::URLResponseHeadPtr head,
     const gin_helper::Dictionary& dict,
@@ -351,7 +352,7 @@ void AtomURLLoaderFactory::StartLoadingString(
 }
 
 // static
-void AtomURLLoaderFactory::StartLoadingFile(
+void ElectronURLLoaderFactory::StartLoadingFile(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     network::ResourceRequest request,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
@@ -381,7 +382,7 @@ void AtomURLLoaderFactory::StartLoadingFile(
 }
 
 // static
-void AtomURLLoaderFactory::StartLoadingHttp(
+void ElectronURLLoaderFactory::StartLoadingHttp(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     const network::ResourceRequest& original_request,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
@@ -400,12 +401,13 @@ void AtomURLLoaderFactory::StartLoadingHttp(
   if (request->method != "GET" && request->method != "HEAD")
     dict.Get("uploadData", &upload_data);
 
-  scoped_refptr<AtomBrowserContext> browser_context =
-      AtomBrowserContext::From("", false);
+  scoped_refptr<ElectronBrowserContext> browser_context =
+      ElectronBrowserContext::From("", false);
   v8::Local<v8::Value> value;
   if (dict.Get("session", &value)) {
     if (value->IsNull()) {
-      browser_context = AtomBrowserContext::From(base::GenerateGUID(), true);
+      browser_context =
+          ElectronBrowserContext::From(base::GenerateGUID(), true);
     } else {
       gin::Handle<api::Session> session;
       if (gin::ConvertFromV8(dict.isolate(), value, &session) &&
@@ -423,7 +425,7 @@ void AtomURLLoaderFactory::StartLoadingHttp(
 }
 
 // static
-void AtomURLLoaderFactory::StartLoadingStream(
+void ElectronURLLoaderFactory::StartLoadingStream(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     network::mojom::URLResponseHeadPtr head,
@@ -476,7 +478,7 @@ void AtomURLLoaderFactory::StartLoadingStream(
 }
 
 // static
-void AtomURLLoaderFactory::SendContents(
+void ElectronURLLoaderFactory::SendContents(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     network::mojom::URLResponseHeadPtr head,
     std::string data) {

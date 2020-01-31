@@ -227,7 +227,7 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
 
 }  // namespace
 
-Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
+Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : network_emulation_token_(base::UnguessableToken::Create()),
       browser_context_(browser_context) {
   // Observe DownloadManager to get download notifications.
@@ -453,23 +453,23 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
                                           gin_helper::Arguments* args) {
-  auto* permission_manager = static_cast<AtomPermissionManager*>(
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   if (val->IsNull()) {
     permission_manager->SetPermissionRequestHandler(
-        AtomPermissionManager::RequestHandler());
+        ElectronPermissionManager::RequestHandler());
     return;
   }
-  auto handler = std::make_unique<AtomPermissionManager::RequestHandler>();
+  auto handler = std::make_unique<ElectronPermissionManager::RequestHandler>();
   if (!gin::ConvertFromV8(args->isolate(), val, handler.get())) {
     args->ThrowError("Must pass null or function");
     return;
   }
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
-      [](AtomPermissionManager::RequestHandler* handler,
+      [](ElectronPermissionManager::RequestHandler* handler,
          content::WebContents* web_contents,
          content::PermissionType permission_type,
-         AtomPermissionManager::StatusCallback callback,
+         ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
         handler->Run(web_contents, permission_type,
                      base::AdaptCallbackForRepeating(std::move(callback)),
@@ -480,12 +480,12 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
 
 void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
                                         gin_helper::Arguments* args) {
-  AtomPermissionManager::CheckHandler handler;
+  ElectronPermissionManager::CheckHandler handler;
   if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
     args->ThrowError("Must pass null or function");
     return;
   }
-  auto* permission_manager = static_cast<AtomPermissionManager*>(
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetPermissionCheckHandler(handler);
 }
@@ -613,7 +613,7 @@ v8::Local<v8::Promise> Session::LoadExtension(
   gin_helper::Promise<const extensions::Extension*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
+  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
   extension_system->LoadExtension(
       extension_path,
@@ -634,7 +634,7 @@ v8::Local<v8::Promise> Session::LoadExtension(
 }
 
 void Session::RemoveExtension(const std::string& extension_id) {
-  auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
+  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
   extension_system->RemoveExtension(extension_id);
 }
@@ -690,7 +690,7 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
 }
 
 static void StartPreconnectOnUI(
-    scoped_refptr<AtomBrowserContext> browser_context,
+    scoped_refptr<ElectronBrowserContext> browser_context,
     const GURL& url,
     int num_sockets_to_preconnect) {
   std::vector<predictors::PreconnectRequest> requests = {
@@ -777,8 +777,9 @@ bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
 #endif
 
 // static
-gin::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
-                                         AtomBrowserContext* browser_context) {
+gin::Handle<Session> Session::CreateFrom(
+    v8::Isolate* isolate,
+    ElectronBrowserContext* browser_context) {
   auto* existing = TrackableObject::FromWrappedClass(isolate, browser_context);
   if (existing)
     return gin::CreateHandle(isolate, static_cast<Session*>(existing));
@@ -798,16 +799,18 @@ gin::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
 gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
                                             const std::string& partition,
                                             base::DictionaryValue options) {
-  scoped_refptr<AtomBrowserContext> browser_context;
+  scoped_refptr<ElectronBrowserContext> browser_context;
   if (partition.empty()) {
-    browser_context = AtomBrowserContext::From("", false, std::move(options));
+    browser_context =
+        ElectronBrowserContext::From("", false, std::move(options));
   } else if (base::StartsWith(partition, kPersistPrefix,
                               base::CompareCase::SENSITIVE)) {
     std::string name = partition.substr(8);
-    browser_context = AtomBrowserContext::From(name, false, std::move(options));
+    browser_context =
+        ElectronBrowserContext::From(name, false, std::move(options));
   } else {
     browser_context =
-        AtomBrowserContext::From(partition, true, std::move(options));
+        ElectronBrowserContext::From(partition, true, std::move(options));
   }
   return CreateFrom(isolate, browser_context.get());
 }

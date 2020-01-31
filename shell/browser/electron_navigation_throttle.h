@@ -9,17 +9,18 @@
 
 namespace electron {
 
-class AtomNavigationThrottle : public content::NavigationThrottle {
+class ElectronNavigationThrottle : public content::NavigationThrottle {
  public:
-  explicit AtomNavigationThrottle(content::NavigationHandle* handle);
-  ~AtomNavigationThrottle() override;
+  explicit ElectronNavigationThrottle(content::NavigationHandle* handle);
+  ~ElectronNavigationThrottle() override;
 
-  AtomNavigationThrottle::ThrottleCheckResult WillRedirectRequest() override;
+  ElectronNavigationThrottle::ThrottleCheckResult WillRedirectRequest()
+      override;
 
   const char* GetNameForLogging() override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomNavigationThrottle);
+  DISALLOW_COPY_AND_ASSIGN(ElectronNavigationThrottle);
 };
 
 }  // namespace electron

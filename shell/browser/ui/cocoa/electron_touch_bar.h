@@ -15,9 +15,9 @@
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 
-@interface AtomTouchBar : NSObject <NSScrubberDelegate,
-                                    NSScrubberDataSource,
-                                    NSScrubberFlowLayoutDelegate> {
+@interface ElectronTouchBar : NSObject <NSScrubberDelegate,
+                                        NSScrubberDataSource,
+                                        NSScrubberFlowLayoutDelegate> {
  @protected
   std::vector<gin_helper::PersistentDictionary> ordered_settings_;
   std::map<std::string, gin_helper::PersistentDictionary> settings_;

@@ -49,11 +49,11 @@ base::FilePath CreateDownloadPath(const GURL& url,
 
 }  // namespace
 
-AtomDownloadManagerDelegate::AtomDownloadManagerDelegate(
+ElectronDownloadManagerDelegate::ElectronDownloadManagerDelegate(
     content::DownloadManager* manager)
     : download_manager_(manager), weak_ptr_factory_(this) {}
 
-AtomDownloadManagerDelegate::~AtomDownloadManagerDelegate() {
+ElectronDownloadManagerDelegate::~ElectronDownloadManagerDelegate() {
   if (download_manager_) {
     DCHECK_EQ(static_cast<content::DownloadManagerDelegate*>(this),
               download_manager_->GetDelegate());
@@ -62,8 +62,9 @@ AtomDownloadManagerDelegate::~AtomDownloadManagerDelegate() {
   }
 }
 
-void AtomDownloadManagerDelegate::GetItemSavePath(download::DownloadItem* item,
-                                                  base::FilePath* path) {
+void ElectronDownloadManagerDelegate::GetItemSavePath(
+    download::DownloadItem* item,
+    base::FilePath* path) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
@@ -73,7 +74,7 @@ void AtomDownloadManagerDelegate::GetItemSavePath(download::DownloadItem* item,
     *path = download->GetSavePath();
 }
 
-void AtomDownloadManagerDelegate::GetItemSaveDialogOptions(
+void ElectronDownloadManagerDelegate::GetItemSaveDialogOptions(
     download::DownloadItem* item,
     file_dialog::DialogSettings* options) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
@@ -85,7 +86,7 @@ void AtomDownloadManagerDelegate::GetItemSaveDialogOptions(
     *options = download->GetSaveDialogOptions();
 }
 
-void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
+void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     uint32_t download_id,
     content::DownloadTargetCallback callback,
     const base::FilePath& default_path) {
@@ -126,7 +127,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     gin_helper::Promise<gin_helper::Dictionary> dialog_promise(isolate);
     auto dialog_callback = base::BindOnce(
-        &AtomDownloadManagerDelegate::OnDownloadSaveDialogDone,
+        &ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone,
         base::Unretained(this), download_id, std::move(callback));
 
     ignore_result(dialog_promise.Then(std::move(dialog_callback)));
@@ -140,7 +141,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   }
 }
 
-void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
+void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
     uint32_t download_id,
     content::DownloadTargetCallback download_callback,
     gin_helper::Dictionary result) {
@@ -158,8 +159,9 @@ void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
   if (!canceled) {
     if (result.Get("filePath", &path)) {
       // Remember the last selected download directory.
-      AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
-          download_manager_->GetBrowserContext());
+      ElectronBrowserContext* browser_context =
+          static_cast<ElectronBrowserContext*>(
+              download_manager_->GetBrowserContext());
       browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
                                             path.DirName());
 
@@ -185,12 +187,12 @@ void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
            item->GetMixedContentStatus(), path, interrupt_reason);
 }
 
-void AtomDownloadManagerDelegate::Shutdown() {
+void ElectronDownloadManagerDelegate::Shutdown() {
   weak_ptr_factory_.InvalidateWeakPtrs();
   download_manager_ = nullptr;
 }
 
-bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
+bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
     download::DownloadItem* download,
     content::DownloadTargetCallback* callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -218,8 +220,9 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
     return true;
   }
 
-  AtomBrowserContext* browser_context =
-      static_cast<AtomBrowserContext*>(download_manager_->GetBrowserContext());
+  ElectronBrowserContext* browser_context =
+      static_cast<ElectronBrowserContext*>(
+          download_manager_->GetBrowserContext());
   base::FilePath default_download_path =
       browser_context->prefs()->GetFilePath(prefs::kDownloadDefaultDirectory);
 
@@ -231,19 +234,19 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
                      download->GetContentDisposition(),
                      download->GetSuggestedFilename(), download->GetMimeType(),
                      default_download_path),
-      base::BindOnce(&AtomDownloadManagerDelegate::OnDownloadPathGenerated,
+      base::BindOnce(&ElectronDownloadManagerDelegate::OnDownloadPathGenerated,
                      weak_ptr_factory_.GetWeakPtr(), download->GetId(),
                      std::move(*callback)));
   return true;
 }
 
-bool AtomDownloadManagerDelegate::ShouldOpenDownload(
+bool ElectronDownloadManagerDelegate::ShouldOpenDownload(
     download::DownloadItem* download,
     content::DownloadOpenDelayedCallback callback) {
   return true;
 }
 
-void AtomDownloadManagerDelegate::GetNextId(
+void ElectronDownloadManagerDelegate::GetNextId(
     content::DownloadIdCallback callback) {
   static uint32_t next_id = download::DownloadItem::kInvalidId + 1;
   std::move(callback).Run(next_id++);

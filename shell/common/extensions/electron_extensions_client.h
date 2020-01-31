@@ -24,12 +24,12 @@ class URLPatternSet;
 namespace electron {
 
 // The app_shell implementation of ExtensionsClient.
-class AtomExtensionsClient : public extensions::ExtensionsClient {
+class ElectronExtensionsClient : public extensions::ExtensionsClient {
  public:
   typedef extensions::ExtensionsClient::ScriptingWhitelist ScriptingWhitelist;
 
-  AtomExtensionsClient();
-  ~AtomExtensionsClient() override;
+  ElectronExtensionsClient();
+  ~ElectronExtensionsClient() override;
 
   // ExtensionsClient overrides:
   void Initialize() override;
@@ -57,7 +57,7 @@ class AtomExtensionsClient : public extensions::ExtensionsClient {
   const GURL webstore_base_url_;
   const GURL webstore_update_url_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionsClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsClient);
 };
 
 }  // namespace electron

@@ -15,7 +15,7 @@ namespace accelerator_util {
 
 typedef struct {
   int position;
-  electron::AtomMenuModel* model;
+  electron::ElectronMenuModel* model;
 } MenuItem;
 typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;
 
@@ -25,7 +25,7 @@ bool StringToAccelerator(const std::string& description,
 
 // Generate a table that contains memu model's accelerators and command ids.
 void GenerateAcceleratorTable(AcceleratorTable* table,
-                              electron::AtomMenuModel* model);
+                              electron::ElectronMenuModel* model);
 
 // Trigger command from the accelerators table.
 bool TriggerAcceleratorTableCommand(AcceleratorTable* table,

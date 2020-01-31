@@ -10,12 +10,12 @@
 
 namespace extensions {
 
-class AtomDisplayInfoProvider : public DisplayInfoProvider {
+class ElectronDisplayInfoProvider : public DisplayInfoProvider {
  public:
-  AtomDisplayInfoProvider();
+  ElectronDisplayInfoProvider();
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomDisplayInfoProvider);
+  DISALLOW_COPY_AND_ASSIGN(ElectronDisplayInfoProvider);
 };
 
 }  // namespace extensions

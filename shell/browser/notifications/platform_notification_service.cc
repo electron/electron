@@ -72,7 +72,7 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
 }  // namespace
 
 PlatformNotificationService::PlatformNotificationService(
-    AtomBrowserClient* browser_client)
+    ElectronBrowserClient* browser_client)
     : browser_client_(browser_client) {}
 
 PlatformNotificationService::~PlatformNotificationService() = default;

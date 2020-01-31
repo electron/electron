@@ -149,12 +149,12 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
   content::InitializeSandboxInfo(&sandbox_info);
-  electron::AtomMainDelegate delegate;
+  electron::ElectronMainDelegate delegate;
 
   content::ContentMainParams params(&delegate);
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
-  electron::AtomCommandLine::Init(arguments.argc, arguments.argv);
+  electron::ElectronCommandLine::Init(arguments.argc, arguments.argv);
   return content::ContentMain(params);
 }
 
@@ -171,11 +171,11 @@ int main(int argc, char* argv[]) {
   }
 #endif
 
-  electron::AtomMainDelegate delegate;
+  electron::ElectronMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;
   params.argv = const_cast<const char**>(argv);
-  electron::AtomCommandLine::Init(argc, argv);
+  electron::ElectronCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
@@ -186,7 +186,7 @@ int main(int argc, char* argv[]) {
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
   if (IsEnvSet(electron::kRunAsNode)) {
-    return AtomInitializeICUandStartNode(argc, argv);
+    return ElectronInitializeICUandStartNode(argc, argv);
   }
 #endif
 
@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
   }
 #endif  // defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
 
-  return AtomMain(argc, argv);
+  return ElectronMain(argc, argv);
 }
 
 #endif  // defined(OS_MACOSX)

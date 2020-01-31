@@ -33,7 +33,7 @@ class NetworkContextService : public KeyedService {
       bool in_memory,
       const base::FilePath& path);
 
-  AtomBrowserContext* browser_context_;
+  ElectronBrowserContext* browser_context_;
   ProxyConfigMonitor proxy_config_monitor_;
 };
 

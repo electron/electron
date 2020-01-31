@@ -138,7 +138,7 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
 }
 
 int RelauncherMain(const content::MainFunctionParams& main_parameters) {
-  const StringVector& argv = electron::AtomCommandLine::argv();
+  const StringVector& argv = electron::ElectronCommandLine::argv();
 
   if (argv.size() < 4 || argv[1] != internal::kRelauncherTypeArg) {
     LOG(ERROR) << "relauncher process invoked with unexpected arguments";

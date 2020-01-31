@@ -18,7 +18,7 @@ using content::BrowserThread;
 
 namespace electron {
 
-ResolveProxyHelper::ResolveProxyHelper(AtomBrowserContext* browser_context)
+ResolveProxyHelper::ResolveProxyHelper(ElectronBrowserContext* browser_context)
     : browser_context_(browser_context) {}
 
 ResolveProxyHelper::~ResolveProxyHelper() {

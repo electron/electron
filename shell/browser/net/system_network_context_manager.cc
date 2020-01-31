@@ -220,7 +220,7 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
   network_context_params->context_name = std::string("system");
 
   network_context_params->user_agent =
-      electron::AtomBrowserClient::Get()->GetUserAgent();
+      electron::ElectronBrowserClient::Get()->GetUserAgent();
 
   network_context_params->http_cache_enabled = false;
 

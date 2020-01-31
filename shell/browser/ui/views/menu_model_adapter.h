@@ -12,14 +12,14 @@ namespace electron {
 
 class MenuModelAdapter : public views::MenuModelAdapter {
  public:
-  explicit MenuModelAdapter(AtomMenuModel* menu_model);
+  explicit MenuModelAdapter(ElectronMenuModel* menu_model);
   ~MenuModelAdapter() override;
 
  protected:
   bool GetAccelerator(int id, ui::Accelerator* accelerator) const override;
 
  private:
-  AtomMenuModel* menu_model_;
+  ElectronMenuModel* menu_model_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuModelAdapter);
 };

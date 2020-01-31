@@ -58,19 +58,19 @@ auto RunProxyResolver(
 
 }  // namespace
 
-AtomContentUtilityClient::AtomContentUtilityClient()
+ElectronContentUtilityClient::ElectronContentUtilityClient()
     : utility_process_running_elevated_(false) {
 #if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
   printing_handler_ = std::make_unique<printing::PrintingHandler>();
 #endif
 }
 
-AtomContentUtilityClient::~AtomContentUtilityClient() = default;
+ElectronContentUtilityClient::~ElectronContentUtilityClient() = default;
 
 // The guts of this came from the chromium implementation
 // https://cs.chromium.org/chromium/src/chrome/utility/
 // chrome_content_utility_client.cc?sq=package:chromium&dr=CSs&g=0&l=142
-void AtomContentUtilityClient::ExposeInterfacesToBrowser(
+void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
     mojo::BinderMap* binders) {
 #if defined(OS_WIN)
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -89,7 +89,8 @@ void AtomContentUtilityClient::ExposeInterfacesToBrowser(
 #endif
 }
 
-bool AtomContentUtilityClient::OnMessageReceived(const IPC::Message& message) {
+bool ElectronContentUtilityClient::OnMessageReceived(
+    const IPC::Message& message) {
   if (utility_process_running_elevated_)
     return false;
 
@@ -101,7 +102,8 @@ bool AtomContentUtilityClient::OnMessageReceived(const IPC::Message& message) {
   return false;
 }
 
-mojo::ServiceFactory* AtomContentUtilityClient::GetMainThreadServiceFactory() {
+mojo::ServiceFactory*
+ElectronContentUtilityClient::GetMainThreadServiceFactory() {
   static base::NoDestructor<mojo::ServiceFactory> factory {
 #if BUILDFLAG(ENABLE_PRINTING)
     RunPrintCompositor,
@@ -113,7 +115,8 @@ mojo::ServiceFactory* AtomContentUtilityClient::GetMainThreadServiceFactory() {
   return factory.get();
 }
 
-mojo::ServiceFactory* AtomContentUtilityClient::GetIOThreadServiceFactory() {
+mojo::ServiceFactory*
+ElectronContentUtilityClient::GetIOThreadServiceFactory() {
   static base::NoDestructor<mojo::ServiceFactory> factory{RunProxyResolver};
   return factory.get();
 }

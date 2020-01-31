@@ -36,7 +36,7 @@ TrackableObjectBase::TrackableObjectBase() : weak_factory_(this) {
   DCHECK(gin_helper::Locker::IsBrowserProcess())
       << "This class only works for browser process";
 
-  electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+  electron::ElectronBrowserMainParts::Get()->RegisterDestructionCallback(
       GetDestroyClosure());
 }
 

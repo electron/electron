@@ -14,9 +14,10 @@
 
 namespace electron {
 
-void AtomBrowserMainParts::PreMainMessageLoopStart() {
+void ElectronBrowserMainParts::PreMainMessageLoopStart() {
   // Set our own application delegate.
-  AtomApplicationDelegate* delegate = [[AtomApplicationDelegate alloc] init];
+  ElectronApplicationDelegate* delegate =
+      [[ElectronApplicationDelegate alloc] init];
   [NSApp setDelegate:delegate];
 
   PreMainMessageLoopStartCommon();
@@ -28,17 +29,17 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
          forKey:@"NSTreatUnknownArgumentsAsOpen"];
 }
 
-void AtomBrowserMainParts::FreeAppDelegate() {
+void ElectronBrowserMainParts::FreeAppDelegate() {
   [[NSApp delegate] release];
   [NSApp setDelegate:nil];
 }
 
-void AtomBrowserMainParts::RegisterURLHandler() {
-  [[AtomApplication sharedApplication] registerURLHandler];
+void ElectronBrowserMainParts::RegisterURLHandler() {
+  [[ElectronApplication sharedApplication] registerURLHandler];
 }
 
 // Replicates NSApplicationMain, but doesn't start a run loop.
-void AtomBrowserMainParts::InitializeMainNib() {
+void ElectronBrowserMainParts::InitializeMainNib() {
   auto infoDictionary = base::mac::OuterBundle().infoDictionary;
 
   auto principalClass =

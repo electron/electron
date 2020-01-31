@@ -17,7 +17,7 @@ namespace electron {
 // Possible bundle movement conflicts
 enum class BundlerMoverConflictType { EXISTS, EXISTS_AND_RUNNING };
 
-class AtomBundleMover {
+class ElectronBundleMover {
  public:
   static bool Move(gin_helper::ErrorThrower thrower, gin::Arguments* args);
   static bool IsCurrentAppInApplicationsFolder();

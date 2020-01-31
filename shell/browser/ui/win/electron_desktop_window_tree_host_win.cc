@@ -8,31 +8,32 @@
 
 namespace electron {
 
-AtomDesktopWindowTreeHostWin::AtomDesktopWindowTreeHostWin(
+ElectronDesktopWindowTreeHostWin::ElectronDesktopWindowTreeHostWin(
     NativeWindowViews* native_window_view,
     views::DesktopNativeWidgetAura* desktop_native_widget_aura)
     : views::DesktopWindowTreeHostWin(native_window_view->widget(),
                                       desktop_native_widget_aura),
       native_window_view_(native_window_view) {}
 
-AtomDesktopWindowTreeHostWin::~AtomDesktopWindowTreeHostWin() {}
+ElectronDesktopWindowTreeHostWin::~ElectronDesktopWindowTreeHostWin() {}
 
-bool AtomDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
-                                                WPARAM w_param,
-                                                LPARAM l_param,
-                                                LRESULT* result) {
+bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
+                                                    WPARAM w_param,
+                                                    LPARAM l_param,
+                                                    LRESULT* result) {
   return native_window_view_->PreHandleMSG(message, w_param, l_param, result);
 }
 
-bool AtomDesktopWindowTreeHostWin::HasNativeFrame() const {
+bool ElectronDesktopWindowTreeHostWin::HasNativeFrame() const {
   // Since we never use chromium's titlebar implementation, we can just say
   // that we use a native titlebar. This will disable the repaint locking when
   // DWM composition is disabled.
   return true;
 }
 
-bool AtomDesktopWindowTreeHostWin::GetClientAreaInsets(gfx::Insets* insets,
-                                                       HMONITOR monitor) const {
+bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
+    gfx::Insets* insets,
+    HMONITOR monitor) const {
   if (IsMaximized() && !native_window_view_->has_frame()) {
     // Windows automatically adds a standard width border to all sides when a
     // window is maximized.

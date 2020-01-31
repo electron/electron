@@ -10,10 +10,10 @@
 namespace electron {
 
 // static
-base::CommandLine::StringVector AtomCommandLine::argv_;
+base::CommandLine::StringVector ElectronCommandLine::argv_;
 
 // static
-void AtomCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
+void ElectronCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
   DCHECK(argv_.empty());
 
   // NOTE: uv_setup_args does nothing on Windows, so we don't need to call it.
@@ -28,7 +28,7 @@ void AtomCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
 
 #if defined(OS_LINUX)
 // static
-void AtomCommandLine::InitializeFromCommandLine() {
+void ElectronCommandLine::InitializeFromCommandLine() {
   argv_ = base::CommandLine::ForCurrentProcess()->argv();
 }
 #endif

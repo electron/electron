@@ -383,7 +383,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   AttachAsUserData(web_contents);
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+  extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
   script_executor_.reset(new extensions::ScriptExecutor(web_contents));
 #endif
@@ -544,7 +544,7 @@ void WebContents::InitWithSessionAndOptions(
   SecurityStateTabHelper::CreateForWebContents(web_contents());
   InitZoomController(web_contents(), options);
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+  extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents());
   script_executor_.reset(new extensions::ScriptExecutor(web_contents()));
 #endif
@@ -880,7 +880,7 @@ std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
     content::WebContents* source) {
   if (!dialog_manager_)
-    dialog_manager_ = std::make_unique<AtomJavaScriptDialogManager>(this);
+    dialog_manager_ = std::make_unique<ElectronJavaScriptDialogManager>(this);
 
   return dialog_manager_.get();
 }
@@ -1498,17 +1498,17 @@ void WebContents::Stop() {
 }
 
 void WebContents::GoBack() {
-  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoBack();
 }
 
 void WebContents::GoForward() {
-  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoForward();
 }
 
 void WebContents::GoToOffset(int offset) {
-  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoToOffset(offset);
 }
 
@@ -2666,8 +2666,9 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("debugger", &WebContents::Debugger);
 }
 
-AtomBrowserContext* WebContents::GetBrowserContext() const {
-  return static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext());
+ElectronBrowserContext* WebContents::GetBrowserContext() const {
+  return static_cast<ElectronBrowserContext*>(
+      web_contents()->GetBrowserContext());
 }
 
 // static

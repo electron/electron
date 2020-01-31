@@ -12,10 +12,10 @@
 
 namespace electron {
 
-class AtomExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
+class ElectronExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
  public:
-  AtomExtensionsAPIProvider();
-  ~AtomExtensionsAPIProvider() override;
+  ElectronExtensionsAPIProvider();
+  ~ElectronExtensionsAPIProvider() override;
 
   // ExtensionsAPIProvider:
   void AddAPIFeatures(extensions::FeatureProvider* provider) override;
@@ -31,7 +31,7 @@ class AtomExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
   void RegisterManifestHandlers() override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionsAPIProvider);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsAPIProvider);
 };
 
 }  // namespace electron

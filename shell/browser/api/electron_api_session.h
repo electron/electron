@@ -32,7 +32,7 @@ class ProxyConfig;
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
 namespace api {
 
@@ -40,8 +40,9 @@ class Session : public gin_helper::TrackableObject<Session>,
                 public content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
-  static gin::Handle<Session> CreateFrom(v8::Isolate* isolate,
-                                         AtomBrowserContext* browser_context);
+  static gin::Handle<Session> CreateFrom(
+      v8::Isolate* isolate,
+      ElectronBrowserContext* browser_context);
 
   // Gets the Session of |partition|.
   static gin::Handle<Session> FromPartition(
@@ -49,7 +50,9 @@ class Session : public gin_helper::TrackableObject<Session>,
       const std::string& partition,
       base::DictionaryValue options = base::DictionaryValue());
 
-  AtomBrowserContext* browser_context() const { return browser_context_.get(); }
+  ElectronBrowserContext* browser_context() const {
+    return browser_context_.get();
+  }
 
   // gin_helper::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
@@ -103,7 +106,7 @@ class Session : public gin_helper::TrackableObject<Session>,
 #endif
 
  protected:
-  Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);
+  Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Session() override;
 
   // content::DownloadManager::Observer:
@@ -122,7 +125,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  scoped_refptr<AtomBrowserContext> browser_context_;
+  scoped_refptr<ElectronBrowserContext> browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };

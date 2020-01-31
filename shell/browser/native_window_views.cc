@@ -189,7 +189,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget = new AtomDesktopNativeWidgetAura(this);
+  params.native_widget = new ElectronDesktopNativeWidgetAura(this);
 #elif defined(USE_X11)
   std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
@@ -219,7 +219,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   // Before the window is mapped the SetWMSpecState can not work, so we have
   // to manually set the _NET_WM_STATE.
-  std::vector<::Atom> state_atom_list;
+  std::vector<::Electron> state_atom_list;
   bool skip_taskbar = false;
   if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
     state_atom_list.push_back(GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
@@ -1005,7 +1005,7 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 #endif
 }
 
-void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
+void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
 #if defined(USE_X11)
   // Remove global menu bar.
   if (global_menu_bar_ && menu_model == nullptr) {

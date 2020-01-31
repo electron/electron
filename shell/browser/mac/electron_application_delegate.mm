@@ -41,11 +41,11 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 @end
 #endif  // BUILDFLAG(USE_ALLOCATOR_SHIM)
 
-@implementation AtomApplicationDelegate
+@implementation ElectronApplicationDelegate
 
-- (void)setApplicationDockMenu:(electron::AtomMenuModel*)model {
-  menu_controller_.reset([[AtomMenuController alloc] initWithModel:model
-                                             useDefaultAccelerator:NO]);
+- (void)setApplicationDockMenu:(electron::ElectronMenuModel*)model {
+  menu_controller_.reset([[ElectronMenuController alloc] initWithModel:model
+                                                 useDefaultAccelerator:NO]);
 }
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notify {

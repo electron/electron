@@ -34,22 +34,22 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 
 }  // namespace
 
-AtomRendererClient::AtomRendererClient()
+ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::RENDERER)),
       electron_bindings_(new ElectronBindings(uv_default_loop())) {}
 
-AtomRendererClient::~AtomRendererClient() {
+ElectronRendererClient::~ElectronRendererClient() {
   asar::ClearArchives();
 }
 
-void AtomRendererClient::RenderFrameCreated(
+void ElectronRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
-  new AtomRenderFrameObserver(render_frame, this);
+  new ElectronRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 
-void AtomRendererClient::RunScriptsAtDocumentStart(
+void ElectronRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentStart(render_frame);
   // Inform the document start pharse.
@@ -60,7 +60,7 @@ void AtomRendererClient::RunScriptsAtDocumentStart(
                           "document-start");
 }
 
-void AtomRendererClient::RunScriptsAtDocumentEnd(
+void ElectronRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
   // Inform the document end pharse.
@@ -71,7 +71,7 @@ void AtomRendererClient::RunScriptsAtDocumentEnd(
                           "document-end");
 }
 
-void AtomRendererClient::DidCreateScriptContext(
+void ElectronRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
   RendererClientBase::DidCreateScriptContext(renderer_context, render_frame);
@@ -153,7 +153,7 @@ void AtomRendererClient::DidCreateScriptContext(
   }
 }
 
-void AtomRendererClient::WillReleaseScriptContext(
+void ElectronRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
   if (injected_frames_.erase(render_frame) == 0)
@@ -187,11 +187,11 @@ void AtomRendererClient::WillReleaseScriptContext(
   electron_bindings_->EnvironmentDestroyed(env);
 }
 
-bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
-                                    const GURL& url,
-                                    const std::string& http_method,
-                                    bool is_initial_navigation,
-                                    bool is_server_redirect) {
+bool ElectronRendererClient::ShouldFork(blink::WebLocalFrame* frame,
+                                        const GURL& url,
+                                        const std::string& http_method,
+                                        bool is_initial_navigation,
+                                        bool is_server_redirect) {
   // Handle all the navigations and reloads in browser.
   // FIXME We only support GET here because http method will be ignored when
   // the OpenURLFromTab is triggered, which means form posting would not work,
@@ -199,7 +199,7 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
   return http_method == "GET";
 }
 
-void AtomRendererClient::DidInitializeWorkerContextOnWorkerThread(
+void ElectronRendererClient::DidInitializeWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
@@ -207,7 +207,7 @@ void AtomRendererClient::DidInitializeWorkerContextOnWorkerThread(
   }
 }
 
-void AtomRendererClient::WillDestroyWorkerContextOnWorkerThread(
+void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
@@ -215,7 +215,7 @@ void AtomRendererClient::WillDestroyWorkerContextOnWorkerThread(
   }
 }
 
-void AtomRendererClient::SetupMainWorldOverrides(
+void ElectronRendererClient::SetupMainWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
   // Setup window overrides in the main world context
@@ -237,7 +237,7 @@ void AtomRendererClient::SetupMainWorldOverrides(
                        &isolated_bundle_params, &isolated_bundle_args, nullptr);
 }
 
-void AtomRendererClient::SetupExtensionWorldOverrides(
+void ElectronRendererClient::SetupExtensionWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame,
     int world_id) {
@@ -265,7 +265,7 @@ void AtomRendererClient::SetupExtensionWorldOverrides(
 #endif
 }
 
-node::Environment* AtomRendererClient::GetEnvironment(
+node::Environment* ElectronRendererClient::GetEnvironment(
     content::RenderFrame* render_frame) const {
   if (injected_frames_.find(render_frame) == injected_frames_.end())
     return nullptr;

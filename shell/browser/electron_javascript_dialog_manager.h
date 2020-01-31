@@ -16,10 +16,11 @@ namespace api {
 class WebContents;
 }
 
-class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
+class ElectronJavaScriptDialogManager
+    : public content::JavaScriptDialogManager {
  public:
-  explicit AtomJavaScriptDialogManager(api::WebContents* api_web_contents);
-  ~AtomJavaScriptDialogManager() override;
+  explicit ElectronJavaScriptDialogManager(api::WebContents* api_web_contents);
+  ~ElectronJavaScriptDialogManager() override;
 
   // content::JavaScriptDialogManager implementations.
   void RunJavaScriptDialog(content::WebContents* web_contents,

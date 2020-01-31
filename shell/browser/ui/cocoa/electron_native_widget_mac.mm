@@ -8,7 +8,7 @@
 
 namespace electron {
 
-AtomNativeWidgetMac::AtomNativeWidgetMac(
+ElectronNativeWidgetMac::ElectronNativeWidgetMac(
     NativeWindowMac* shell,
     NSUInteger style_mask,
     views::internal::NativeWidgetDelegate* delegate)
@@ -16,12 +16,12 @@ AtomNativeWidgetMac::AtomNativeWidgetMac(
       shell_(shell),
       style_mask_(style_mask) {}
 
-AtomNativeWidgetMac::~AtomNativeWidgetMac() {}
+ElectronNativeWidgetMac::~ElectronNativeWidgetMac() {}
 
-NativeWidgetMacNSWindow* AtomNativeWidgetMac::CreateNSWindow(
+NativeWidgetMacNSWindow* ElectronNativeWidgetMac::CreateNSWindow(
     const remote_cocoa::mojom::CreateWindowParams* params) {
-  return [[[AtomNSWindow alloc] initWithShell:shell_
-                                    styleMask:style_mask_] autorelease];
+  return [[[ElectronNSWindow alloc] initWithShell:shell_
+                                        styleMask:style_mask_] autorelease];
 }
 
 }  // namespace electron

@@ -13,7 +13,7 @@
 
 namespace electron {
 
-class AtomMenuModel : public ui::SimpleMenuModel {
+class ElectronMenuModel : public ui::SimpleMenuModel {
  public:
   class Delegate : public ui::SimpleMenuModel::Delegate {
    public:
@@ -47,8 +47,8 @@ class AtomMenuModel : public ui::SimpleMenuModel {
     virtual void OnMenuWillClose() {}
   };
 
-  explicit AtomMenuModel(Delegate* delegate);
-  ~AtomMenuModel() override;
+  explicit ElectronMenuModel(Delegate* delegate);
+  ~ElectronMenuModel() override;
 
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(Observer* obs) { observers_.RemoveObserver(obs); }
@@ -70,7 +70,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   void MenuWillShow() override;
 
   using SimpleMenuModel::GetSubmenuModelAt;
-  AtomMenuModel* GetSubmenuModelAt(int index);
+  ElectronMenuModel* GetSubmenuModelAt(int index);
 
  private:
   Delegate* delegate_;  // weak ref.
@@ -80,7 +80,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   std::map<int, base::string16> sublabels_;  // command id -> sublabel
   base::ObserverList<Observer> observers_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomMenuModel);
+  DISALLOW_COPY_AND_ASSIGN(ElectronMenuModel);
 };
 
 }  // namespace electron

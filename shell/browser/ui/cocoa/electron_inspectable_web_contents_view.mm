@@ -11,7 +11,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view_mac.h"
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 
-@implementation AtomInspectableWebContentsView
+@implementation ElectronInspectableWebContentsView
 
 - (instancetype)initWithInspectableWebContentsViewMac:
     (InspectableWebContentsViewMac*)view {

@@ -14,32 +14,34 @@ using extensions::api::runtime::PlatformInfo;
 
 namespace extensions {
 
-AtomRuntimeAPIDelegate::AtomRuntimeAPIDelegate(
+ElectronRuntimeAPIDelegate::ElectronRuntimeAPIDelegate(
     content::BrowserContext* browser_context)
     : browser_context_(browser_context) {
   DCHECK(browser_context_);
 }
 
-AtomRuntimeAPIDelegate::~AtomRuntimeAPIDelegate() = default;
+ElectronRuntimeAPIDelegate::~ElectronRuntimeAPIDelegate() = default;
 
-void AtomRuntimeAPIDelegate::AddUpdateObserver(UpdateObserver* observer) {}
+void ElectronRuntimeAPIDelegate::AddUpdateObserver(UpdateObserver* observer) {}
 
-void AtomRuntimeAPIDelegate::RemoveUpdateObserver(UpdateObserver* observer) {}
+void ElectronRuntimeAPIDelegate::RemoveUpdateObserver(
+    UpdateObserver* observer) {}
 
-void AtomRuntimeAPIDelegate::ReloadExtension(const std::string& extension_id) {
-  static_cast<AtomExtensionSystem*>(ExtensionSystem::Get(browser_context_))
+void ElectronRuntimeAPIDelegate::ReloadExtension(
+    const std::string& extension_id) {
+  static_cast<ElectronExtensionSystem*>(ExtensionSystem::Get(browser_context_))
       ->ReloadExtension(extension_id);
 }
 
-bool AtomRuntimeAPIDelegate::CheckForUpdates(
+bool ElectronRuntimeAPIDelegate::CheckForUpdates(
     const std::string& extension_id,
     const UpdateCheckCallback& callback) {
   return false;
 }
 
-void AtomRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {}
+void ElectronRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {}
 
-bool AtomRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
+bool ElectronRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
   // TODO(nornagon): put useful information here.
 #if defined(OS_LINUX)
   info->os = api::runtime::PLATFORM_OS_LINUX;
@@ -47,7 +49,7 @@ bool AtomRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
   return true;
 }  // namespace extensions
 
-bool AtomRuntimeAPIDelegate::RestartDevice(std::string* error_message) {
+bool ElectronRuntimeAPIDelegate::RestartDevice(std::string* error_message) {
   *error_message = "Restart is not supported in Electron";
   return false;
 }

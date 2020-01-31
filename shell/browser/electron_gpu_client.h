@@ -9,15 +9,15 @@
 
 namespace electron {
 
-class AtomGpuClient : public content::ContentGpuClient {
+class ElectronGpuClient : public content::ContentGpuClient {
  public:
-  AtomGpuClient();
+  ElectronGpuClient();
 
   // content::ContentGpuClient:
   void PreCreateMessageLoop() override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomGpuClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronGpuClient);
 };
 
 }  // namespace electron

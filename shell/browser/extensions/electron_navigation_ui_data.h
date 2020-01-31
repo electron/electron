@@ -18,11 +18,12 @@ namespace extensions {
 // beginning of each navigation. The class is instantiated on the UI thread,
 // then a copy created using Clone is passed to the content::ResourceRequestInfo
 // on the IO thread.
-class AtomNavigationUIData : public content::NavigationUIData {
+class ElectronNavigationUIData : public content::NavigationUIData {
  public:
-  AtomNavigationUIData();
-  explicit AtomNavigationUIData(content::NavigationHandle* navigation_handle);
-  ~AtomNavigationUIData() override;
+  ElectronNavigationUIData();
+  explicit ElectronNavigationUIData(
+      content::NavigationHandle* navigation_handle);
+  ~ElectronNavigationUIData() override;
 
   // Creates a new ChromeNavigationUIData that is a deep copy of the original.
   // Any changes to the original after the clone is created will not be
@@ -40,7 +41,7 @@ class AtomNavigationUIData : public content::NavigationUIData {
   // Manages the lifetime of optional ExtensionNavigationUIData information.
   std::unique_ptr<ExtensionNavigationUIData> extension_data_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomNavigationUIData);
+  DISALLOW_COPY_AND_ASSIGN(ElectronNavigationUIData);
 };
 
 }  // namespace extensions

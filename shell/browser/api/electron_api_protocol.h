@@ -16,7 +16,7 @@
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
 namespace api {
 
@@ -38,19 +38,19 @@ enum class ProtocolError {
 class Protocol : public gin_helper::TrackableObject<Protocol> {
  public:
   static gin::Handle<Protocol> Create(v8::Isolate* isolate,
-                                      AtomBrowserContext* browser_context);
+                                      ElectronBrowserContext* browser_context);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  // Used by AtomBrowserClient for creating URLLoaderFactory.
+  // Used by ElectronBrowserClient for creating URLLoaderFactory.
   void RegisterURLLoaderFactories(
       content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories);
 
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
 
  private:
-  Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context);
+  Protocol(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Protocol() override;
 
   // Callback types.

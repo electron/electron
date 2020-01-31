@@ -26,16 +26,16 @@ class BrowserContext;
 
 namespace extensions {
 
-class AtomExtensionLoader;
+class ElectronExtensionLoader;
 class ValueStoreFactory;
 
 // A simplified version of ExtensionSystem for app_shell. Allows
 // app_shell to skip initialization of services it doesn't need.
-class AtomExtensionSystem : public ExtensionSystem {
+class ElectronExtensionSystem : public ExtensionSystem {
  public:
   using InstallUpdateCallback = ExtensionSystem::InstallUpdateCallback;
-  explicit AtomExtensionSystem(content::BrowserContext* browser_context);
-  ~AtomExtensionSystem() override;
+  explicit ElectronExtensionSystem(content::BrowserContext* browser_context);
+  ~ElectronExtensionSystem() override;
 
   // Loads an unpacked extension from a directory. Returns the extension on
   // success, or nullptr otherwise.
@@ -98,16 +98,16 @@ class AtomExtensionSystem : public ExtensionSystem {
   std::unique_ptr<SharedUserScriptMaster> shared_user_script_master_;
   std::unique_ptr<AppSorting> app_sorting_;
 
-  std::unique_ptr<AtomExtensionLoader> extension_loader_;
+  std::unique_ptr<ElectronExtensionLoader> extension_loader_;
 
   scoped_refptr<ValueStoreFactory> store_factory_;
 
   // Signaled when the extension system has completed its startup tasks.
   base::OneShotEvent ready_;
 
-  base::WeakPtrFactory<AtomExtensionSystem> weak_factory_;
+  base::WeakPtrFactory<ElectronExtensionSystem> weak_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionSystem);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionSystem);
 };
 
 }  // namespace extensions

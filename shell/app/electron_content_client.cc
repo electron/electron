@@ -187,33 +187,33 @@ void AppendDelimitedSwitchToVector(const base::StringPiece cmd_switch,
 
 }  // namespace
 
-AtomContentClient::AtomContentClient() = default;
+ElectronContentClient::ElectronContentClient() = default;
 
-AtomContentClient::~AtomContentClient() = default;
+ElectronContentClient::~ElectronContentClient() = default;
 
-base::string16 AtomContentClient::GetLocalizedString(int message_id) {
+base::string16 ElectronContentClient::GetLocalizedString(int message_id) {
   return l10n_util::GetStringUTF16(message_id);
 }
 
-base::StringPiece AtomContentClient::GetDataResource(
+base::StringPiece ElectronContentClient::GetDataResource(
     int resource_id,
     ui::ScaleFactor scale_factor) {
   return ui::ResourceBundle::GetSharedInstance().GetRawDataResourceForScale(
       resource_id, scale_factor);
 }
 
-gfx::Image& AtomContentClient::GetNativeImageNamed(int resource_id) {
+gfx::Image& ElectronContentClient::GetNativeImageNamed(int resource_id) {
   return ui::ResourceBundle::GetSharedInstance().GetNativeImageNamed(
       resource_id);
 }
 
-base::RefCountedMemory* AtomContentClient::GetDataResourceBytes(
+base::RefCountedMemory* ElectronContentClient::GetDataResourceBytes(
     int resource_id) {
   return ui::ResourceBundle::GetSharedInstance().LoadDataResourceBytes(
       resource_id);
 }
 
-void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
+void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
   AppendDelimitedSwitchToVector(switches::kServiceWorkerSchemes,
                                 &schemes->service_worker_schemes);
   AppendDelimitedSwitchToVector(switches::kStandardSchemes,
@@ -229,7 +229,7 @@ void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
   schemes->standard_schemes.emplace_back(extensions::kExtensionScheme);
 }
 
-void AtomContentClient::AddPepperPlugins(
+void ElectronContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
 #if BUILDFLAG(ENABLE_PEPPER_FLASH)
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -240,7 +240,7 @@ void AtomContentClient::AddPepperPlugins(
 #endif  // BUILDFLAG(ENABLE_PLUGINS)
 }
 
-void AtomContentClient::AddContentDecryptionModules(
+void ElectronContentClient::AddContentDecryptionModules(
     std::vector<content::CdmInfo>* cdms,
     std::vector<media::CdmHostFilePath>* cdm_host_file_paths) {
   if (cdms) {

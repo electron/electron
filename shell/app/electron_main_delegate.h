@@ -19,12 +19,12 @@ namespace electron {
 
 void LoadResourceBundle(const std::string& locale);
 
-class AtomMainDelegate : public content::ContentMainDelegate {
+class ElectronMainDelegate : public content::ContentMainDelegate {
  public:
   static const char* const kNonWildcardDomainNonPortSchemes[];
   static const size_t kNonWildcardDomainNonPortSchemesSize;
-  AtomMainDelegate();
-  ~AtomMainDelegate() override;
+  ElectronMainDelegate();
+  ~ElectronMainDelegate() override;
 
  protected:
   // content::ContentMainDelegate:
@@ -58,7 +58,7 @@ class AtomMainDelegate : public content::ContentMainDelegate {
   std::unique_ptr<content::ContentUtilityClient> utility_client_;
   std::unique_ptr<tracing::TracingSamplerProfiler> tracing_sampler_profiler_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomMainDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ElectronMainDelegate);
 };
 
 }  // namespace electron

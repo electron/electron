@@ -27,12 +27,12 @@ constexpr int kUserWantsNoMoreDialogs = -1;
 
 }  // namespace
 
-AtomJavaScriptDialogManager::AtomJavaScriptDialogManager(
+ElectronJavaScriptDialogManager::ElectronJavaScriptDialogManager(
     api::WebContents* api_web_contents)
     : api_web_contents_(api_web_contents) {}
-AtomJavaScriptDialogManager::~AtomJavaScriptDialogManager() = default;
+ElectronJavaScriptDialogManager::~ElectronJavaScriptDialogManager() = default;
 
-void AtomJavaScriptDialogManager::RunJavaScriptDialog(
+void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
     content::WebContents* web_contents,
     content::RenderFrameHost* rfh,
     JavaScriptDialogType dialog_type,
@@ -100,12 +100,12 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
   electron::ShowMessageBox(
       settings,
-      base::BindOnce(&AtomJavaScriptDialogManager::OnMessageBoxCallback,
+      base::BindOnce(&ElectronJavaScriptDialogManager::OnMessageBoxCallback,
                      base::Unretained(this), base::Passed(std::move(callback)),
                      origin));
 }
 
-void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
+void ElectronJavaScriptDialogManager::RunBeforeUnloadDialog(
     content::WebContents* web_contents,
     content::RenderFrameHost* rfh,
     bool is_reload,
@@ -115,11 +115,11 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
   return;
 }
 
-void AtomJavaScriptDialogManager::CancelDialogs(
+void ElectronJavaScriptDialogManager::CancelDialogs(
     content::WebContents* web_contents,
     bool reset_state) {}
 
-void AtomJavaScriptDialogManager::OnMessageBoxCallback(
+void ElectronJavaScriptDialogManager::OnMessageBoxCallback(
     DialogClosedCallback callback,
     const std::string& origin,
     int code,

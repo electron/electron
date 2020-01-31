@@ -6,12 +6,12 @@
 
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
 
-@interface AtomApplicationDelegate : NSObject <NSApplicationDelegate> {
+@interface ElectronApplicationDelegate : NSObject <NSApplicationDelegate> {
  @private
-  base::scoped_nsobject<AtomMenuController> menu_controller_;
+  base::scoped_nsobject<ElectronMenuController> menu_controller_;
 }
 
 // Sets the menu that will be returned in "applicationDockMenu:".
-- (void)setApplicationDockMenu:(electron::AtomMenuModel*)model;
+- (void)setApplicationDockMenu:(electron::ElectronMenuModel*)model;
 
 @end

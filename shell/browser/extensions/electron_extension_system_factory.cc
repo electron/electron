@@ -13,38 +13,39 @@ using content::BrowserContext;
 
 namespace extensions {
 
-ExtensionSystem* AtomExtensionSystemFactory::GetForBrowserContext(
+ExtensionSystem* ElectronExtensionSystemFactory::GetForBrowserContext(
     BrowserContext* context) {
-  return static_cast<AtomExtensionSystem*>(
+  return static_cast<ElectronExtensionSystem*>(
       GetInstance()->GetServiceForBrowserContext(context, true));
 }
 
 // static
-AtomExtensionSystemFactory* AtomExtensionSystemFactory::GetInstance() {
-  return base::Singleton<AtomExtensionSystemFactory>::get();
+ElectronExtensionSystemFactory* ElectronExtensionSystemFactory::GetInstance() {
+  return base::Singleton<ElectronExtensionSystemFactory>::get();
 }
 
-AtomExtensionSystemFactory::AtomExtensionSystemFactory()
-    : ExtensionSystemProvider("AtomExtensionSystem",
+ElectronExtensionSystemFactory::ElectronExtensionSystemFactory()
+    : ExtensionSystemProvider("ElectronExtensionSystem",
                               BrowserContextDependencyManager::GetInstance()) {
   DependsOn(ExtensionPrefsFactory::GetInstance());
   DependsOn(ExtensionRegistryFactory::GetInstance());
 }
 
-AtomExtensionSystemFactory::~AtomExtensionSystemFactory() {}
+ElectronExtensionSystemFactory::~ElectronExtensionSystemFactory() {}
 
-KeyedService* AtomExtensionSystemFactory::BuildServiceInstanceFor(
+KeyedService* ElectronExtensionSystemFactory::BuildServiceInstanceFor(
     BrowserContext* context) const {
-  return new AtomExtensionSystem(context);
+  return new ElectronExtensionSystem(context);
 }
 
-BrowserContext* AtomExtensionSystemFactory::GetBrowserContextToUse(
+BrowserContext* ElectronExtensionSystemFactory::GetBrowserContextToUse(
     BrowserContext* context) const {
   // Use a separate instance for incognito.
   return context;
 }
 
-bool AtomExtensionSystemFactory::ServiceIsCreatedWithBrowserContext() const {
+bool ElectronExtensionSystemFactory::ServiceIsCreatedWithBrowserContext()
+    const {
   return true;
 }
 

@@ -12,25 +12,25 @@
 
 namespace electron {
 
-AtomDesktopNativeWidgetAura::AtomDesktopNativeWidgetAura(
+ElectronDesktopNativeWidgetAura::ElectronDesktopNativeWidgetAura(
     NativeWindowViews* native_window_view)
     : views::DesktopNativeWidgetAura(native_window_view->widget()),
       native_window_view_(native_window_view) {
-  GetNativeWindow()->SetName("AtomDesktopNativeWidgetAura");
+  GetNativeWindow()->SetName("ElectronDesktopNativeWidgetAura");
   // This is to enable the override of OnWindowActivated
   wm::SetActivationChangeObserver(GetNativeWindow(), this);
 }
 
-void AtomDesktopNativeWidgetAura::InitNativeWidget(
+void ElectronDesktopNativeWidgetAura::InitNativeWidget(
     views::Widget::InitParams params) {
-  desktop_window_tree_host_ = new AtomDesktopWindowTreeHostWin(
+  desktop_window_tree_host_ = new ElectronDesktopWindowTreeHostWin(
       native_window_view_,
       static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
   params.desktop_window_tree_host = desktop_window_tree_host_;
   views::DesktopNativeWidgetAura::InitNativeWidget(std::move(params));
 }
 
-void AtomDesktopNativeWidgetAura::Activate() {
+void ElectronDesktopNativeWidgetAura::Activate() {
   // Activate can cause the focused window to be blurred so only
   // call when the window being activated is visible. This prevents
   // hidden windows from blurring the focused window when created.
@@ -38,7 +38,7 @@ void AtomDesktopNativeWidgetAura::Activate() {
     views::DesktopNativeWidgetAura::Activate();
 }
 
-void AtomDesktopNativeWidgetAura::OnWindowActivated(
+void ElectronDesktopNativeWidgetAura::OnWindowActivated(
     wm::ActivationChangeObserver::ActivationReason reason,
     aura::Window* gained_active,
     aura::Window* lost_active) {

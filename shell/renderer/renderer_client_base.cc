@@ -148,7 +148,7 @@ void RendererClientBase::RenderThreadStarted() {
   extensions_client_.reset(CreateExtensionsClient());
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
-  extensions_renderer_client_.reset(new AtomExtensionsRendererClient);
+  extensions_renderer_client_.reset(new ElectronExtensionsRendererClient);
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
@@ -387,7 +387,7 @@ v8::Local<v8::Value> RendererClientBase::RunScript(
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
-  return new AtomExtensionsClient;
+  return new ElectronExtensionsClient;
 }
 #endif
 

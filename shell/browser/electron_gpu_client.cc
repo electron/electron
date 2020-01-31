@@ -12,9 +12,9 @@
 
 namespace electron {
 
-AtomGpuClient::AtomGpuClient() = default;
+ElectronGpuClient::ElectronGpuClient() = default;
 
-void AtomGpuClient::PreCreateMessageLoop() {
+void ElectronGpuClient::PreCreateMessageLoop() {
 #if defined(OS_WIN)
   auto env = base::Environment::Create();
   if (env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))

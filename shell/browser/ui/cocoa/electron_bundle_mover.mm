@@ -38,9 +38,9 @@ struct Converter<electron::BundlerMoverConflictType> {
 
 namespace electron {
 
-bool AtomBundleMover::ShouldContinueMove(gin_helper::ErrorThrower thrower,
-                                         BundlerMoverConflictType type,
-                                         gin::Arguments* args) {
+bool ElectronBundleMover::ShouldContinueMove(gin_helper::ErrorThrower thrower,
+                                             BundlerMoverConflictType type,
+                                             gin::Arguments* args) {
   gin::Dictionary options(args->isolate());
   bool hasOptions = args->GetNext(&options);
   base::OnceCallback<v8::Local<v8::Value>(BundlerMoverConflictType)>
@@ -61,8 +61,8 @@ bool AtomBundleMover::ShouldContinueMove(gin_helper::ErrorThrower thrower,
   return true;
 }
 
-bool AtomBundleMover::Move(gin_helper::ErrorThrower thrower,
-                           gin::Arguments* args) {
+bool ElectronBundleMover::Move(gin_helper::ErrorThrower thrower,
+                               gin::Arguments* args) {
   // Path of the current bundle
   NSString* bundlePath = [[NSBundle mainBundle] bundlePath];
 
@@ -178,11 +178,11 @@ bool AtomBundleMover::Move(gin_helper::ErrorThrower thrower,
   return true;
 }
 
-bool AtomBundleMover::IsCurrentAppInApplicationsFolder() {
+bool ElectronBundleMover::IsCurrentAppInApplicationsFolder() {
   return IsInApplicationsFolder([[NSBundle mainBundle] bundlePath]);
 }
 
-bool AtomBundleMover::IsInApplicationsFolder(NSString* bundlePath) {
+bool ElectronBundleMover::IsInApplicationsFolder(NSString* bundlePath) {
   // Check all the normal Application directories
   NSArray* applicationDirs = NSSearchPathForDirectoriesInDomains(
       NSApplicationDirectory, NSAllDomainsMask, true);
@@ -199,7 +199,7 @@ bool AtomBundleMover::IsInApplicationsFolder(NSString* bundlePath) {
   return false;
 }
 
-NSString* AtomBundleMover::ContainingDiskImageDevice(NSString* bundlePath) {
+NSString* ElectronBundleMover::ContainingDiskImageDevice(NSString* bundlePath) {
   NSString* containingPath = [bundlePath stringByDeletingLastPathComponent];
 
   struct statfs fs;
@@ -258,9 +258,9 @@ NSString* AtomBundleMover::ContainingDiskImageDevice(NSString* bundlePath) {
   return nil;
 }
 
-bool AtomBundleMover::AuthorizedInstall(NSString* srcPath,
-                                        NSString* dstPath,
-                                        bool* canceled) {
+bool ElectronBundleMover::AuthorizedInstall(NSString* srcPath,
+                                            NSString* dstPath,
+                                            bool* canceled) {
   if (canceled)
     *canceled = false;
 
@@ -361,21 +361,21 @@ fail:
   return false;
 }
 
-bool AtomBundleMover::CopyBundle(NSString* srcPath, NSString* dstPath) {
+bool ElectronBundleMover::CopyBundle(NSString* srcPath, NSString* dstPath) {
   NSFileManager* fileManager = [NSFileManager defaultManager];
   NSError* error = nil;
 
   return [fileManager copyItemAtPath:srcPath toPath:dstPath error:&error];
 }
 
-NSString* AtomBundleMover::ShellQuotedString(NSString* string) {
+NSString* ElectronBundleMover::ShellQuotedString(NSString* string) {
   return [NSString
       stringWithFormat:@"'%@'",
                        [string stringByReplacingOccurrencesOfString:@"'"
                                                          withString:@"'\\''"]];
 }
 
-void AtomBundleMover::Relaunch(NSString* destinationPath) {
+void ElectronBundleMover::Relaunch(NSString* destinationPath) {
   // The shell script waits until the original app process terminates.
   // This is done so that the relaunched app opens as the front-most app.
   int pid = [[NSProcessInfo processInfo] processIdentifier];
@@ -402,7 +402,7 @@ void AtomBundleMover::Relaunch(NSString* destinationPath) {
                        arguments:[NSArray arrayWithObjects:@"-c", script, nil]];
 }
 
-bool AtomBundleMover::IsApplicationAtPathRunning(NSString* bundlePath) {
+bool ElectronBundleMover::IsApplicationAtPathRunning(NSString* bundlePath) {
   bundlePath = [bundlePath stringByStandardizingPath];
 
   for (NSRunningApplication* runningApplication in
@@ -416,7 +416,7 @@ bool AtomBundleMover::IsApplicationAtPathRunning(NSString* bundlePath) {
   return false;
 }
 
-bool AtomBundleMover::Trash(NSString* path) {
+bool ElectronBundleMover::Trash(NSString* path) {
   bool result = false;
 
   if (floor(NSAppKitVersionNumber) >= NSAppKitVersionNumber10_8) {
@@ -456,7 +456,7 @@ end tell
   return result;
 }
 
-bool AtomBundleMover::DeleteOrTrash(NSString* path) {
+bool ElectronBundleMover::DeleteOrTrash(NSString* path) {
   NSError* error;
 
   if ([[NSFileManager defaultManager] removeItemAtPath:path error:&error]) {

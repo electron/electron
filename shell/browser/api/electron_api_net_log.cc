@@ -75,7 +75,7 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
-NetLog::NetLog(v8::Isolate* isolate, AtomBrowserContext* browser_context)
+NetLog::NetLog(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : browser_context_(browser_context), weak_ptr_factory_(this) {
   Init(isolate);
   file_task_runner_ = CreateFileTaskRunner();
@@ -213,7 +213,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(gin_helper::Arguments* args) {
 
 // static
 gin::Handle<NetLog> NetLog::Create(v8::Isolate* isolate,
-                                   AtomBrowserContext* browser_context) {
+                                   ElectronBrowserContext* browser_context) {
   return gin::CreateHandle(isolate, new NetLog(isolate, browser_context));
 }
 

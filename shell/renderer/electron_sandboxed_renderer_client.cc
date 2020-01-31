@@ -114,15 +114,15 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
 
 }  // namespace
 
-AtomSandboxedRendererClient::AtomSandboxedRendererClient() {
+ElectronSandboxedRendererClient::ElectronSandboxedRendererClient() {
   // Explicitly register electron's builtin modules.
   NodeBindings::RegisterBuiltinModules();
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
-AtomSandboxedRendererClient::~AtomSandboxedRendererClient() = default;
+ElectronSandboxedRendererClient::~ElectronSandboxedRendererClient() = default;
 
-void AtomSandboxedRendererClient::InitializeBindings(
+void ElectronSandboxedRendererClient::InitializeBindings(
     v8::Local<v8::Object> binding,
     v8::Local<v8::Context> context,
     bool is_main_frame) {
@@ -143,18 +143,18 @@ void AtomSandboxedRendererClient::InitializeBindings(
   process.SetReadOnly("isMainFrame", is_main_frame);
 }
 
-void AtomSandboxedRendererClient::RenderFrameCreated(
+void ElectronSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
-  new AtomRenderFrameObserver(render_frame, this);
+  new ElectronRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 
-void AtomSandboxedRendererClient::RenderViewCreated(
+void ElectronSandboxedRendererClient::RenderViewCreated(
     content::RenderView* render_view) {
   RendererClientBase::RenderViewCreated(render_view);
 }
 
-void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
+void ElectronSandboxedRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentStart(render_frame);
   if (injected_frames_.find(render_frame) == injected_frames_.end())
@@ -170,7 +170,7 @@ void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
   InvokeHiddenCallback(context, kLifecycleKey, "onDocumentStart");
 }
 
-void AtomSandboxedRendererClient::RunScriptsAtDocumentEnd(
+void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
   if (injected_frames_.find(render_frame) == injected_frames_.end())
@@ -186,7 +186,7 @@ void AtomSandboxedRendererClient::RunScriptsAtDocumentEnd(
   InvokeHiddenCallback(context, kLifecycleKey, "onDocumentEnd");
 }
 
-void AtomSandboxedRendererClient::DidCreateScriptContext(
+void ElectronSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
   RendererClientBase::DidCreateScriptContext(context, render_frame);
@@ -229,7 +229,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   InvokeHiddenCallback(context, kLifecycleKey, "onLoaded");
 }
 
-void AtomSandboxedRendererClient::SetupMainWorldOverrides(
+void ElectronSandboxedRendererClient::SetupMainWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
   // Setup window overrides in the main world context
@@ -252,7 +252,7 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
                        &isolated_bundle_params, &isolated_bundle_args, nullptr);
 }
 
-void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
+void ElectronSandboxedRendererClient::SetupExtensionWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame,
     int world_id) {
@@ -279,7 +279,7 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
 #endif
 }
 
-void AtomSandboxedRendererClient::WillReleaseScriptContext(
+void ElectronSandboxedRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
   if (injected_frames_.erase(render_frame) == 0)

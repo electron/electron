@@ -35,22 +35,22 @@ class SpecialStoragePolicy;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace extensions {
-class AtomExtensionSystem;
+class ElectronExtensionSystem;
 }
 #endif
 
 namespace electron {
 
-class AtomBrowserContext;
-class AtomDownloadManagerDelegate;
-class AtomPermissionManager;
+class ElectronBrowserContext;
+class ElectronDownloadManagerDelegate;
+class ElectronPermissionManager;
 class CookieChangeNotifier;
 class ResolveProxyHelper;
 class SpecialStoragePolicy;
 class WebViewManager;
 
-class AtomBrowserContext
-    : public base::RefCountedDeleteOnSequence<AtomBrowserContext>,
+class ElectronBrowserContext
+    : public base::RefCountedDeleteOnSequence<ElectronBrowserContext>,
       public content::BrowserContext,
       public network::mojom::TrustedURLLoaderAuthClient {
  public:
@@ -73,12 +73,12 @@ class AtomBrowserContext
     }
   };
   using BrowserContextMap =
-      std::map<PartitionKey, base::WeakPtr<AtomBrowserContext>>;
+      std::map<PartitionKey, base::WeakPtr<ElectronBrowserContext>>;
 
   // Get or create the BrowserContext according to its |partition| and
   // |in_memory|. The |options| will be passed to constructor when there is no
   // existing BrowserContext.
-  static scoped_refptr<AtomBrowserContext> From(
+  static scoped_refptr<ElectronBrowserContext> From(
       const std::string& partition,
       bool in_memory,
       base::DictionaryValue options = base::DictionaryValue());
@@ -137,25 +137,25 @@ class AtomBrowserContext
   ValueMapPrefStore* in_memory_pref_store() const {
     return in_memory_pref_store_;
   }
-  base::WeakPtr<AtomBrowserContext> GetWeakPtr() {
+  base::WeakPtr<ElectronBrowserContext> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::AtomExtensionSystem* extension_system() {
+  extensions::ElectronExtensionSystem* extension_system() {
     return extension_system_;
   }
 #endif
 
  protected:
-  AtomBrowserContext(const std::string& partition,
-                     bool in_memory,
-                     base::DictionaryValue options);
-  ~AtomBrowserContext() override;
+  ElectronBrowserContext(const std::string& partition,
+                         bool in_memory,
+                         base::DictionaryValue options);
+  ~ElectronBrowserContext() override;
 
  private:
-  friend class base::RefCountedDeleteOnSequence<AtomBrowserContext>;
-  friend class base::DeleteHelper<AtomBrowserContext>;
+  friend class base::RefCountedDeleteOnSequence<ElectronBrowserContext>;
+  friend class base::DeleteHelper<ElectronBrowserContext>;
 
   void OnLoaderCreated(int32_t request_id,
                        mojo::PendingReceiver<network::mojom::TrustedAuthClient>
@@ -171,9 +171,9 @@ class AtomBrowserContext
   std::unique_ptr<content::ResourceContext> resource_context_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
   std::unique_ptr<PrefService> prefs_;
-  std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
+  std::unique_ptr<ElectronDownloadManagerDelegate> download_manager_delegate_;
   std::unique_ptr<WebViewManager> guest_manager_;
-  std::unique_ptr<AtomPermissionManager> permission_manager_;
+  std::unique_ptr<ElectronPermissionManager> permission_manager_;
   std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
   scoped_refptr<ResolveProxyHelper> resolve_proxy_helper_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
@@ -192,16 +192,16 @@ class AtomBrowserContext
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // Owned by the KeyedService system.
-  extensions::AtomExtensionSystem* extension_system_;
+  extensions::ElectronExtensionSystem* extension_system_;
 #endif
 
   // Shared URLLoaderFactory.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   mojo::Receiver<network::mojom::TrustedURLLoaderAuthClient> auth_client_{this};
 
-  base::WeakPtrFactory<AtomBrowserContext> weak_factory_;
+  base::WeakPtrFactory<ElectronBrowserContext> weak_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
+  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserContext);
 };
 
 }  // namespace electron

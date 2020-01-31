@@ -20,10 +20,10 @@
 
 namespace electron {
 
-class AtomContentUtilityClient : public content::ContentUtilityClient {
+class ElectronContentUtilityClient : public content::ContentUtilityClient {
  public:
-  AtomContentUtilityClient();
-  ~AtomContentUtilityClient() override;
+  ElectronContentUtilityClient();
+  ~ElectronContentUtilityClient() override;
 
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -38,7 +38,7 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   // True if the utility process runs with elevated privileges.
   bool utility_process_running_elevated_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomContentUtilityClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronContentUtilityClient);
 };
 
 }  // namespace electron

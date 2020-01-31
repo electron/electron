@@ -27,10 +27,10 @@ namespace extensions {
 class Extension;
 
 // Handles extension loading and reloading using ExtensionRegistrar.
-class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
+class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
  public:
-  explicit AtomExtensionLoader(content::BrowserContext* browser_context);
-  ~AtomExtensionLoader() override;
+  explicit ElectronExtensionLoader(content::BrowserContext* browser_context);
+  ~ElectronExtensionLoader() override;
 
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
@@ -84,9 +84,9 @@ class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
   // LoadExtensionForReload().
   bool did_schedule_reload_ = false;
 
-  base::WeakPtrFactory<AtomExtensionLoader> weak_factory_;
+  base::WeakPtrFactory<ElectronExtensionLoader> weak_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionLoader);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionLoader);
 };
 
 }  // namespace extensions

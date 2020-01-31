@@ -14,10 +14,10 @@
 namespace extensions {
 
 // A minimal ExtensionHostDelegate.
-class AtomExtensionHostDelegate : public ExtensionHostDelegate {
+class ElectronExtensionHostDelegate : public ExtensionHostDelegate {
  public:
-  AtomExtensionHostDelegate();
-  ~AtomExtensionHostDelegate() override;
+  ElectronExtensionHostDelegate();
+  ~ElectronExtensionHostDelegate() override;
 
   // ExtensionHostDelegate implementation.
   void OnExtensionHostCreated(content::WebContents* web_contents) override;
@@ -43,7 +43,7 @@ class AtomExtensionHostDelegate : public ExtensionHostDelegate {
   void ExitPictureInPicture() override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionHostDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionHostDelegate);
 };
 
 }  // namespace extensions

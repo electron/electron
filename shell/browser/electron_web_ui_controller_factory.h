@@ -14,12 +14,12 @@
 
 namespace electron {
 
-class AtomWebUIControllerFactory : public content::WebUIControllerFactory {
+class ElectronWebUIControllerFactory : public content::WebUIControllerFactory {
  public:
-  static AtomWebUIControllerFactory* GetInstance();
+  static ElectronWebUIControllerFactory* GetInstance();
 
-  AtomWebUIControllerFactory();
-  ~AtomWebUIControllerFactory() override;
+  ElectronWebUIControllerFactory();
+  ~ElectronWebUIControllerFactory() override;
 
   // content::WebUIControllerFactory:
   content::WebUI::TypeID GetWebUIType(content::BrowserContext* browser_context,
@@ -33,9 +33,9 @@ class AtomWebUIControllerFactory : public content::WebUIControllerFactory {
       const GURL& url) override;
 
  private:
-  friend struct base::DefaultSingletonTraits<AtomWebUIControllerFactory>;
+  friend struct base::DefaultSingletonTraits<ElectronWebUIControllerFactory>;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomWebUIControllerFactory);
+  DISALLOW_COPY_AND_ASSIGN(ElectronWebUIControllerFactory);
 };
 
 }  // namespace electron
