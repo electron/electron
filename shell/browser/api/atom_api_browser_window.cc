@@ -273,7 +273,7 @@ void BrowserWindow::OnWindowFocus() {
     rwhv->SetActive(true);
 #else
   if (!api_web_contents_->IsDevToolsOpened())
-    web_contents()->Focus(base::nullopt);
+    web_contents()->Focus();
 #endif
 
   TopLevelWindow::OnWindowFocus();
