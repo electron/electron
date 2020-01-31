@@ -317,6 +317,15 @@ describe('app module', () => {
     })
   })
 
+  describe('certificate-error event', () => {
+    afterEach(closeAllWindows)
+    it('is emitted when visiting a server with a self-signed cert', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL(secureUrl)
+      await emittedOnce(app, 'certificate-error')
+    })
+  })
+
   // xdescribe('app.importCertificate', () => {
   //   let w = null
 
@@ -745,6 +754,7 @@ describe('app module', () => {
       if (process.platform === 'linux') {
         this.skip()
       }
+      session.fromPartition('empty-certificate').setCertificateVerifyProc((req, cb) => { cb(0) })
     })
 
     beforeEach(() => {
@@ -758,6 +768,8 @@ describe('app module', () => {
     })
 
     afterEach(() => closeWindow(w).then(() => { w = null as any }))
+
+    after(() => session.fromPartition('empty-certificate').setCertificateVerifyProc(null))
 
     it('can respond with empty certificate list', async () => {
       app.once('select-client-certificate', function (event, webContents, url, list, callback) {
