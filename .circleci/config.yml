@@ -219,6 +219,8 @@ step-setup-env-for-build: &step-setup-env-for-build
     command: |
       # To find `gn` executable.
       echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
+      # So scripts know where to find the build
+      echo 'export ELECTRON_OUT_DIR=Default' >> $BASH_ENV
       # Setup Goma if applicable
       if [ ! -z "$RAW_GOMA_AUTH" ] && [ "`uname`" == "Linux" ]; then
         export USE_SCCACHE="false"
@@ -1166,7 +1168,6 @@ steps-tests: &steps-tests
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           cd src
-          export ELECTRON_OUT_DIR=Default
           (cd electron && node script/yarn test --runners=main --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
           (cd electron && node script/yarn test --runners=remote --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
     - run:
@@ -1201,7 +1202,6 @@ steps-test-nan: &steps-test-nan
         name: Run Nan Tests
         command: |
           cd src
-          export ELECTRON_OUT_DIR=Default
           node electron/script/nan-spec-runner.js
 
 steps-test-node: &steps-test-node
@@ -1217,7 +1217,6 @@ steps-test-node: &steps-test-node
         name: Run Node Tests
         command: |
           cd src
-          export ELECTRON_OUT_DIR=Default
           node electron/script/node-spec-runner.js junit
     - store_test_results:
         path: src/junit
