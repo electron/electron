@@ -32,8 +32,14 @@
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/browser/printing/print_view_manager_basic.h"
+#include "components/printing/common/print_messages.h"
 #include "printing/backend/print_backend.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
+
+#if defined(OS_WIN)
+#include "printing/backend/win_helper.h"
+#endif
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -190,6 +196,11 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   bool IsBeingCaptured();
 
 #if BUILDFLAG(ENABLE_PRINTING)
+  void OnGetDefaultPrinter(base::Value print_settings,
+                           printing::CompletionCallback print_callback,
+                           base::string16 device_name,
+                           bool silent,
+                           base::string16 default_printer);
   void Print(gin_helper::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   // Print current page as PDF.

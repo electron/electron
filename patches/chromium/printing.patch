@@ -616,27 +616,6 @@ index 51cfabd4dbeaa63538f4483c7a1948afaa665de1..0850b96b7511c494692a24026734d757
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
-diff --git a/printing/print_settings_conversion.cc b/printing/print_settings_conversion.cc
-index e01d195261a4c993dddb77d7a355481bf02067cc..2e533a6981c86387f892f8a3aaed99478f6079ef 100644
---- a/printing/print_settings_conversion.cc
-+++ b/printing/print_settings_conversion.cc
-@@ -186,12 +186,14 @@ bool PrintSettingsFromJobSettings(const base::Value& job_settings,
- 
-   settings->set_dpi_xy(dpi_horizontal.value(), dpi_vertical.value());
- #endif
-+  const std::string* device_name =
-+      job_settings.FindStringKey(kSettingDeviceName);
-+  if (!device_name->empty())
-+    settings->set_device_name(base::UTF8ToUTF16(*device_name));
- 
-   settings->set_collate(collate.value());
-   settings->set_copies(copies.value());
-   settings->SetOrientation(landscape.value());
--  settings->set_device_name(
--      base::UTF8ToUTF16(*job_settings.FindStringKey(kSettingDeviceName)));
-   settings->set_duplex_mode(static_cast<DuplexMode>(duplex_mode.value()));
-   settings->set_color(static_cast<ColorModel>(color.value()));
-   settings->set_scale_factor(static_cast<double>(scale_factor.value()) / 100.0);
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
 index 73940192472b1576a701cad3abbb92f2d72aa77e..bc0d39ccd113306691ae532e9fbc5b64c9aa0a33 100644
 --- a/printing/printing_context.cc

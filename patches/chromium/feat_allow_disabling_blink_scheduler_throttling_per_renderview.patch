@@ -61,7 +61,7 @@ index 95679ab2915ad496ca0018aa13874b84eb11d7fd..c278e0fc072409677beafc7f252ebcf6
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 272f0ed4ffada8191e725f31c8533bcb35622e46..174c50f9b89982e66836ce791fb446767e0c214a 100644
+index 463906df3f761bb321c8580185c5e12dceb96854..053abd33b8f73b0f12a7729b507914516dff584e 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -1192,6 +1192,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
@@ -111,7 +111,7 @@ index a6d03eca18db4566002d71ec0b6aedae39a78be7..5eaf6fa6e7568d89d3051617f3ac99b3
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index ef6fe6f27f6bc184a0f5a926225a79800a5aff73..d31101df348199bd2ac09bc745517d0c7051047c 100644
+index 7f58ed742695387c9516dd5c5c3f195e66348cfc..0688b04bc98cecc7506aa69af6b1c2a355dddf62 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3334,12 +3334,20 @@ PageScheduler* WebViewImpl::Scheduler() const {
@@ -138,7 +138,7 @@ index ef6fe6f27f6bc184a0f5a926225a79800a5aff73..d31101df348199bd2ac09bc745517d0c
  
  PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 54366cdabce974234c4acbe01e1cb911202878fb..a5daf03349802b7a8b09b55f55a221e9b8dfa5d4 100644
+index 710607bd9112b399e14826105e45f5bf93ab6524..dafc73dc85222298a3e027433939632f4fddb9c1 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -310,6 +310,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
