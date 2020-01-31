@@ -979,6 +979,10 @@ steps-electron-build: &steps-electron-build
     - *step-maybe-cross-arch-snapshot
     - *step-maybe-cross-arch-snapshot-store
 
+    # chromedriver
+    - *step-electron-chromedriver-build
+    - *step-electron-chromedriver-store
+
     # ffmpeg
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
@@ -1158,7 +1162,6 @@ steps-verify-mksnapshot: &steps-verify-mksnapshot
     - *step-verify-mksnapshot
     - *step-maybe-notify-slack-failure
 
-# erick
 steps-verify-chromedriver: &steps-verify-chromedriver
   steps:
     - attach_workspace:
