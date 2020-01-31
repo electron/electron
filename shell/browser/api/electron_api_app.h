@@ -201,6 +201,8 @@ class App : public ElectronBrowserClient::Delegate,
   bool CanBrowserClientUseCustomSiteInstance();
 
 #if defined(OS_MACOSX)
+  void SetActivationPolicy(gin_helper::ErrorThrower thrower,
+                           const std::string& policy);
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);

@@ -1459,6 +1459,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::BindRepeating(&Browser::UpdateCurrentActivity, browser))
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
+      .SetMethod("setActivationPolicy", &App::SetActivationPolicy)
 #endif
       .SetMethod("setAboutPanelOptions",
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))
