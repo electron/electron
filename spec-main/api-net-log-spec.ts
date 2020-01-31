@@ -71,7 +71,8 @@ describe('netLog module', () => {
 
     expect(testNetLog().currentlyLoggingPath).to.equal(dumpFileDynamic)
 
-    await testNetLog().stopLogging()
+    const path = await testNetLog().stopLogging()
+    expect(path).to.equal(dumpFileDynamic)
 
     expect(fs.existsSync(dumpFileDynamic)).to.be.true('currently logging')
   })
