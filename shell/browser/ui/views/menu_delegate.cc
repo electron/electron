@@ -23,7 +23,7 @@ MenuDelegate::MenuDelegate(MenuBar* menu_bar)
 
 MenuDelegate::~MenuDelegate() = default;
 
-void MenuDelegate::RunMenu(AtomMenuModel* model,
+void MenuDelegate::RunMenu(ElectronMenuModel* model,
                            views::Button* button,
                            ui::MenuSourceType source_type) {
   gfx::Point screen_loc;
@@ -123,7 +123,7 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
   // TODO(zcbenz): We should follow Chromium's logics on implementing the
   // sibling menu switches, this code is almost a hack.
   views::MenuButton* button;
-  AtomMenuModel* model;
+  ElectronMenuModel* model;
   if (menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, &button) &&
       button->tag() != id_) {
     bool switch_in_progress = !!button_to_open_;

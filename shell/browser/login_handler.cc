@@ -13,7 +13,7 @@
 #include "base/strings/string16.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
-#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/common/native_mate_converters/callback_converter_deprecated.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"

@@ -62,10 +62,10 @@
 @end
 
 // Manages the PopUpButtonHandler.
-@interface AtomAccessoryView : NSView
+@interface ElectronAccessoryView : NSView
 @end
 
-@implementation AtomAccessoryView
+@implementation ElectronAccessoryView
 
 - (void)dealloc {
   auto* popupButton =
@@ -114,8 +114,8 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
     return;  // don't add file format picker
 
   // Add file format picker.
-  AtomAccessoryView* accessoryView =
-      [[AtomAccessoryView alloc] initWithFrame:NSMakeRect(0.0, 0.0, 200, 32.0)];
+  ElectronAccessoryView* accessoryView = [[ElectronAccessoryView alloc]
+      initWithFrame:NSMakeRect(0.0, 0.0, 200, 32.0)];
   NSTextField* label =
       [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 60, 22)];
 
