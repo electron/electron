@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "components/prefs/value_map_pref_store.h"
-#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/electron_browser_context.h"
 
 namespace electron {
 

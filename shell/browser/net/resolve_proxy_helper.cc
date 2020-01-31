@@ -12,7 +12,7 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "net/proxy_resolution/proxy_info.h"
 #include "services/network/public/mojom/network_context.mojom.h"
-#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/electron_browser_context.h"
 
 using content::BrowserThread;
 

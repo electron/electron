@@ -5,7 +5,7 @@
 #ifndef SHELL_BROWSER_UI_VIEWS_MENU_MODEL_ADAPTER_H_
 #define SHELL_BROWSER_UI_VIEWS_MENU_MODEL_ADAPTER_H_
 
-#include "shell/browser/ui/atom_menu_model.h"
+#include "shell/browser/ui/electron_menu_model.h"
 #include "ui/views/controls/menu/menu_model_adapter.h"
 
 namespace electron {

@@ -10,7 +10,7 @@
 
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_process_host.h"
-#include "shell/browser/atom_permission_manager.h"
+#include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/media/media_stream_devices_controller.h"
 
 namespace {

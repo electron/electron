@@ -25,7 +25,7 @@
 #include "gin/dictionary.h"
 #include "net/base/directory_lister.h"
 #include "net/base/mime_util.h"
-#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_converters/callback_converter.h"

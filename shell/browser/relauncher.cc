@@ -15,7 +15,7 @@
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/main_function_params.h"
-#include "shell/common/atom_command_line.h"
+#include "shell/common/electron_command_line.h"
 
 #if defined(OS_POSIX)
 #include "base/posix/eintr_wrapper.h"

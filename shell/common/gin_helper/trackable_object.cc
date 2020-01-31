@@ -8,7 +8,7 @@
 
 #include "base/bind.h"
 #include "base/supports_user_data.h"
-#include "shell/browser/atom_browser_main_parts.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/common/gin_helper/locker.h"
 
 namespace gin_helper {
