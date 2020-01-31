@@ -30,7 +30,7 @@ def main():
           mkargs = f.readlines()
         print(mkargs, sep = ", ")
         subprocess.check_call(mkargs + [ SNAPSHOT_SOURCE ], cwd=app_path)
-        print 'ok mksnapshot successfully created snapshot_blob.bin.'
+        print('ok mksnapshot successfully created snapshot_blob.bin.')
         context_snapshot = 'v8_context_snapshot.bin'
         context_snapshot_path = os.path.join(app_path, context_snapshot)
         gen_binary = get_binary_path('v8_context_snapshot_generator', \
