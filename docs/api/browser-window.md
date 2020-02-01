@@ -229,6 +229,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       unless hovered over in the top left of the window. These custom buttons prevent
       issues with mouse events that occur with the standard window toolbar buttons.
       **Note:** This option is currently experimental.
+  * `trafficLightPosition` [Point](structures/point.md) (optional) - Set a custom position for the traffic light buttons. Can only be used with `titleBarStyle` set to `hidden`
   * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
     title bar in full screen mode on macOS for all `titleBarStyle` options.
     Default is `false`.
