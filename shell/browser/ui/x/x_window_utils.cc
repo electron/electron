@@ -17,11 +17,11 @@
 
 namespace electron {
 
-::Electron GetAtom(const char* name) {
+::Atom GetAtom(const char* name) {
   return XInternAtom(gfx::GetXDisplay(), name, false);
 }
 
-void SetWMSpecState(::Window xwindow, bool enabled, ::Electron state) {
+void SetWMSpecState(::Window xwindow, bool enabled, ::Atom state) {
   XEvent xclient;
   memset(&xclient, 0, sizeof(xclient));
   xclient.type = ClientMessage;
@@ -42,7 +42,7 @@ void SetWMSpecState(::Window xwindow, bool enabled, ::Electron state) {
 void SetWindowType(::Window xwindow, const std::string& type) {
   XDisplay* xdisplay = gfx::GetXDisplay();
   std::string type_prefix = "_NET_WM_WINDOW_TYPE_";
-  ::Electron window_type = XInternAtom(
+  ::Atom window_type = XInternAtom(
       xdisplay, (type_prefix + base::ToUpperASCII(type)).c_str(), x11::False);
   XChangeProperty(xdisplay, xwindow,
                   XInternAtom(xdisplay, "_NET_WM_WINDOW_TYPE", x11::False),

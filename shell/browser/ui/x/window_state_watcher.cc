@@ -56,7 +56,7 @@ void WindowStateWatcher::DidProcessEvent(const ui::PlatformEvent& event) {
 }
 
 bool WindowStateWatcher::IsWindowStateEvent(const ui::PlatformEvent& event) {
-  ::Electron changed_atom = event->xproperty.atom;
+  ::Atom changed_atom = event->xproperty.atom;
   return (changed_atom == gfx::GetAtom("_NET_WM_STATE") &&
           event->type == PropertyNotify && event->xproperty.window == widget_);
 }
