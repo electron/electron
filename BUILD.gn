@@ -161,10 +161,10 @@ copy("electron_js2c_copy") {
 
 action("electron_js2c") {
   deps = [
-    ":electron_js2c_copy",
     ":electron_browser_bundle",
     ":electron_content_script_bundle",
     ":electron_isolated_renderer_bundle",
+    ":electron_js2c_copy",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
     ":electron_worker_bundle",
