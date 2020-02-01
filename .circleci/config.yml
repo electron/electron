@@ -1406,6 +1406,10 @@ commands:
             - *step-maybe-cross-arch-snapshot
             - *step-maybe-cross-arch-snapshot-store
 
+            # chromedriver
+            - *step-electron-chromedriver-build
+            - *step-electron-chromedriver-store
+
             # ffmpeg
             - *step-ffmpeg-gn-gen
             - *step-ffmpeg-build
