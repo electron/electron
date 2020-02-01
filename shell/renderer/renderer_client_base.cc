@@ -27,6 +27,7 @@
 #include "shell/common/options_switches.h"
 #include "shell/renderer/atom_autofill_agent.h"
 #include "shell/renderer/atom_render_frame_observer.h"
+#include "shell/renderer/browser_exposed_renderer_interfaces.h"
 #include "shell/renderer/content_settings_observer.h"
 #include "shell/renderer/electron_api_service_impl.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
@@ -219,6 +220,13 @@ void RendererClientBase::RenderThreadStarted() {
 #endif
 }
 
+void RendererClientBase::ExposeInterfacesToBrowser(mojo::BinderMap* binders) {
+  // NOTE: Do not add binders directly within this method. Instead, modify the
+  // definition of |ExposeElectronRendererInterfacesToBrowser()| to ensure
+  // security review coverage.
+  ExposeElectronRendererInterfacesToBrowser(this, binders);
+}
+
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
 #if defined(TOOLKIT_VIEWS)
@@ -280,15 +288,6 @@ void RendererClientBase::RenderFrameCreated(
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-void RendererClientBase::BindReceiverOnMainThread(
-    mojo::GenericPendingReceiver receiver) {
-  // TODO(crbug.com/977637): Get rid of the use of BinderRegistry here. This is
-  // only used to bind a spellcheck interface.
-  std::string interface_name = *receiver.interface_name();
-  auto pipe = receiver.PassPipe();
-  registry_.TryBindInterface(interface_name, &pipe);
-}
-
 void RendererClientBase::GetInterface(
     const std::string& interface_name,
     mojo::ScopedMessagePipeHandle interface_pipe) {
