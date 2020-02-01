@@ -52,8 +52,6 @@ class RendererClientBase : public content::ContentRendererClient
   // service_manager::LocalInterfaceProvider implementation.
   void GetInterface(const std::string& name,
                     mojo::ScopedMessagePipeHandle request_handle) override;
-
-  void BindReceiverOnMainThread(mojo::GenericPendingReceiver receiver) override;
 #endif
 
   virtual void DidCreateScriptContext(v8::Handle<v8::Context> context,
@@ -82,12 +80,17 @@ class RendererClientBase : public content::ContentRendererClient
   bool IsWebViewFrame(v8::Handle<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SpellCheck* GetSpellCheck() { return spellcheck_.get(); }
+#endif
+
  protected:
   void AddRenderBindings(v8::Isolate* isolate,
                          v8::Local<v8::Object> binding_object);
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
+  void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   void RenderFrameCreated(content::RenderFrame*) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
                             const blink::WebPluginParams& params,
@@ -125,7 +128,6 @@ class RendererClientBase : public content::ContentRendererClient
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   std::unique_ptr<SpellCheck> spellcheck_;
-  service_manager::BinderRegistry registry_;
 #endif
 };
 
