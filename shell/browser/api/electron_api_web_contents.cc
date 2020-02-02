@@ -1897,6 +1897,12 @@ void WebContents::Print(gin_helper::Arguments* args) {
   options.Get("duplexMode", &duplex_mode);
   settings.SetIntKey(printing::kSettingDuplexMode, duplex_mode);
 
+  // We've already done necessary parameter sanitization at the
+  // JS level, so we can simply pass this through.
+  base::Value media_size(base::Value::Type::DICTIONARY);
+  if (options.Get("mediaSize", &media_size))
+    settings.SetKey(printing::kSettingMediaSize, std::move(media_size));
+
   // Set custom dots per inch (dpi)
   gin_helper::Dictionary dpi_settings;
   int dpi = 72;
