@@ -18,8 +18,8 @@ def main():
 
   chromedriver_name = {
     'darwin': 'chromedriver',
-    'windows': 'chromedriver.exe',
-    'linux': 'chromedriver'
+    'win32': 'chromedriver.exe',
+    'linux2': 'chromedriver'
 }
 
   chromedriver_path = os.path.join(
