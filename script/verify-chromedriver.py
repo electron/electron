@@ -23,7 +23,7 @@ def main():
 }
 
   chromedriver_path = os.path.join(
-    args.source_root, args.chromedriver_path, chromedriver_name[sys.platform])
+    args.source_root, args.build_dir, chromedriver_name[sys.platform])
   proc = subprocess.Popen([chromedriver_path],
                           stdout=subprocess.PIPE, universal_newlines=True)
   try:
@@ -51,7 +51,7 @@ def parse_args():
     parser.add_argument('--source-root',
                         default=SOURCE_ROOT,
                         required=False)
-    parser.add_argument('--chromedriver-path',
+    parser.add_argument('--build-dir',
                         default=None,
                         required=True)
     return parser.parse_args()

@@ -557,7 +557,7 @@ step-verify-chromedriver: &step-verify-chromedriver
     name: Verify ChromeDriver
     command: |
       cd src
-      python electron/script/verify-chromedriver.py --source-root "$PWD" --chromedriver-path out/Default
+      python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
