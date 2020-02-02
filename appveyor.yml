@@ -190,6 +190,8 @@ test_script:
   - echo "About to verify mksnapshot"
   - if "%RUN_TESTS%"=="true" ( echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd% )
   - echo "Done verifying mksnapshot"
+  - if "%RUN_TESTS%"=="true" ( echo Verifying chromedriver & python electron\script\verify-chromedriver.py --chromedriver-path out\Default --source-root %cd% )
+  - echo "Done verifying chromedriver"
 deploy_script:
   - cd electron
   - ps: >-
