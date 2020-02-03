@@ -31,8 +31,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     // extension registry is redirected to the main session. so installing an
     // extension in an in-memory session results in it being installed in the
     // default session.
-    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-    (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+    await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
     await w.loadURL(url)
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
@@ -41,14 +41,14 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
 
   it('removes an extension', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
-    const { id } = await (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
     {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
       await w.loadURL(url)
       const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
       expect(bg).to.equal('red')
     }
-    (customSession as any).removeExtension(id)
+    customSession.removeExtension(id)
     {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
       await w.loadURL(url)
@@ -59,21 +59,21 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
 
   it('lists loaded extensions in getAllExtensions', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
-    const e = await (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
-    expect((customSession as any).getAllExtensions()).to.deep.equal([e]);
-    (customSession as any).removeExtension(e.id)
-    expect((customSession as any).getAllExtensions()).to.deep.equal([])
+    const e = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    expect(customSession.getAllExtensions()).to.deep.equal([e])
+    customSession.removeExtension(e.id)
+    expect(customSession.getAllExtensions()).to.deep.equal([])
   })
 
   it('gets an extension by id', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
-    const e = await (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
-    expect((customSession as any).getExtension(e.id)).to.deep.equal(e)
+    const e = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    expect(customSession.getExtension(e.id)).to.deep.equal(e)
   })
 
   it('confines an extension to the session it was loaded in', async () => {
-    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-    (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+    customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
     const w = new BrowserWindow({ show: false }) // not in the session
     await w.loadURL(url)
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
@@ -83,8 +83,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   describe('chrome.runtime', () => {
     let content: any
     before(async () => {
-      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'))
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'))
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
       try {
         await w.loadURL(url)
@@ -107,8 +107,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
 
   describe('chrome.storage', () => {
     it('stores and retrieves a key', async () => {
-      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'chrome-storage'))
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-storage'))
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
       try {
         const p = emittedOnce(ipcMain, 'storage-success')
@@ -124,7 +124,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   describe('chrome.tabs', () => {
     it('executeScript', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
-      ;(customSession as any).loadExtension(path.join(fixtures, 'extensions', 'chrome-api'))
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'))
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
       await w.loadURL(url)
 
@@ -139,7 +139,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
 
     it('sendMessage receives the response', async function () {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
-      ;(customSession as any).loadExtension(path.join(fixtures, 'extensions', 'chrome-api'))
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'))
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
       await w.loadURL(url)
 
@@ -157,7 +157,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   describe('background pages', () => {
     it('loads a lazy background page when sending a message', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
-      ;(customSession as any).loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'))
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'))
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
       try {
         w.loadURL(url)
@@ -169,6 +169,15 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       } finally {
         w.destroy()
       }
+    })
+
+    it('can use extension.getBackgroundPage from a ui page', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'))
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
+      await w.loadURL(`chrome-extension://${id}/page-get-background.html`)
+      const receivedMessage = await w.webContents.executeJavaScript(`window.completionPromise`)
+      expect(receivedMessage).to.deep.equal({ some: 'message' })
     })
   })
 
@@ -201,8 +210,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     }
 
     it('loads a devtools extension', async () => {
-      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      (customSession as any).loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'))
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      customSession.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'))
       const w = new BrowserWindow({ show: true, webPreferences: { session: customSession, nodeIntegration: true } })
       await w.loadURL('data:text/html,hello')
       w.webContents.openDevTools()
@@ -213,8 +222,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
 
   describe('deprecation shims', () => {
     afterEach(() => {
-      (session.defaultSession as any).getAllExtensions().forEach((e: any) => {
-        (session.defaultSession as any).removeExtension(e.id)
+      session.defaultSession.getAllExtensions().forEach((e: any) => {
+        session.defaultSession.removeExtension(e.id)
       })
     })
 
@@ -386,6 +395,30 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     generateTests(false, true)
     generateTests(true, false)
     generateTests(true, true)
+  })
+
+  describe('extension ui pages', () => {
+    afterEach(() => {
+      session.defaultSession.getAllExtensions().forEach(e => {
+        session.defaultSession.removeExtension(e.id)
+      })
+    })
+
+    it('loads a ui page of an extension', async () => {
+      const { id } = await session.defaultSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'))
+      const w = new BrowserWindow({ show: false })
+      await w.loadURL(`chrome-extension://${id}/bare-page.html`)
+      const textContent = await w.webContents.executeJavaScript(`document.body.textContent`)
+      expect(textContent).to.equal('ui page loaded ok\n')
+    })
+
+    it('can load resources', async () => {
+      const { id } = await session.defaultSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'))
+      const w = new BrowserWindow({ show: false })
+      await w.loadURL(`chrome-extension://${id}/page-script-load.html`)
+      const textContent = await w.webContents.executeJavaScript(`document.body.textContent`)
+      expect(textContent).to.equal('script loaded ok\n')
+    })
   })
 })
 
