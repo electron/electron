@@ -567,6 +567,8 @@ filenames = {
     "shell/renderer/atom_renderer_client.h",
     "shell/renderer/atom_sandboxed_renderer_client.cc",
     "shell/renderer/atom_sandboxed_renderer_client.h",
+    "shell/renderer/browser_exposed_renderer_interfaces.cc",
+    "shell/renderer/browser_exposed_renderer_interfaces.h",
     "shell/renderer/content_settings_observer.cc",
     "shell/renderer/content_settings_observer.h",
     "shell/renderer/electron_api_service_impl.cc",
