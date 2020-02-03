@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -20,8 +20,7 @@
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/websocket.mojom.h"
-#include "shell/browser/api/atom_api_web_request.h"
-#include "shell/browser/api/web_request_api.h"
+#include "shell/browser/net/web_request_api.h"
 #include "url/gurl.h"
 #include "url/origin.h"
 
@@ -29,6 +28,9 @@ namespace electron {
 
 // A ProxyingWebSocket proxies a WebSocket connection and dispatches
 // WebRequest API events.
+//
+// The code is referenced from the
+// extensions::WebRequestProxyingWebSocket class.
 class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
                           public network::mojom::AuthenticationHandler,
                           public network::mojom::TrustedHeaderClient {
@@ -36,7 +38,6 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   using WebSocketFactory = content::ContentBrowserClient::WebSocketFactory;
 
   ProxyingWebSocket(
-      scoped_refptr<api::RequestIDGenerator> request_id_generator,
       WebRequestAPI* web_request_api,
       WebSocketFactory factory,
       const network::ResourceRequest& request,
@@ -45,7 +46,8 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       bool has_extra_headers,
       int process_id,
       int render_frame_id,
-      content::BrowserContext* browser_context);
+      content::BrowserContext* browser_context,
+      uint64_t* request_id_generator);
   ~ProxyingWebSocket() override;
 
   void Start();
@@ -85,7 +87,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       int render_frame_id,
       const url::Origin& origin,
       content::BrowserContext* browser_context,
-      scoped_refptr<api::RequestIDGenerator> request_id_generator);
+      uint64_t* request_id_generator);
 
   WebRequestAPI* web_request_api() { return web_request_api_; }
 

@@ -13,7 +13,7 @@
 #include "gin/arguments.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "shell/browser/api/web_request_api.h"
+#include "shell/browser/net/web_request_api.h"
 
 namespace content {
 class BrowserContext;
@@ -22,27 +22,6 @@ class BrowserContext;
 namespace electron {
 
 namespace api {
-
-class RequestIDGenerator
-    : public base::RefCountedThreadSafe<RequestIDGenerator> {
- public:
-  RequestIDGenerator() = default;
-  int64_t Generate() {
-    // DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    return ++id_;
-  }
-
- private:
-  friend class base::RefCountedThreadSafe<RequestIDGenerator>;
-  ~RequestIDGenerator() {}
-
-  // Although this initialization can be done in a thread other than the IO
-  // thread, we expect at least one memory barrier before actually calling
-  // Generate in the IO thread, so we don't protect the variable with a lock.
-  int64_t id_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(RequestIDGenerator);
-};
 
 class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
  public:

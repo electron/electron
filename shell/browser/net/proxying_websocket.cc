@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -18,7 +18,6 @@
 namespace electron {
 
 ProxyingWebSocket::ProxyingWebSocket(
-    scoped_refptr<api::RequestIDGenerator> request_id_generator,
     WebRequestAPI* web_request_api,
     WebSocketFactory factory,
     const network::ResourceRequest& request,
@@ -27,7 +26,8 @@ ProxyingWebSocket::ProxyingWebSocket(
     bool has_extra_headers,
     int process_id,
     int render_frame_id,
-    content::BrowserContext* browser_context)
+    content::BrowserContext* browser_context,
+    uint64_t* request_id_generator)
     : web_request_api_(web_request_api),
       request_(request),
       factory_(std::move(factory)),
@@ -36,7 +36,7 @@ ProxyingWebSocket::ProxyingWebSocket(
       response_(network::mojom::URLResponseHead::New()),
       has_extra_headers_(has_extra_headers),
       info_(extensions::WebRequestInfoInitParams(
-          request_id_generator->Generate(),
+          ++(*request_id_generator),
           process_id,
           render_frame_id,
           nullptr,
@@ -238,7 +238,7 @@ void ProxyingWebSocket::StartProxying(
     int render_frame_id,
     const url::Origin& origin,
     content::BrowserContext* browser_context,
-    scoped_refptr<api::RequestIDGenerator> request_id_generator) {
+    uint64_t* request_id_generator) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   network::ResourceRequest request;
   request.url = url;
@@ -249,9 +249,9 @@ void ProxyingWebSocket::StartProxying(
   request.request_initiator = origin;
 
   auto* proxy = new ProxyingWebSocket(
-      request_id_generator, web_request_api, std::move(factory), request,
-      std::move(handshake_client), has_extra_headers, process_id,
-      render_frame_id, browser_context);
+      web_request_api, std::move(factory), request, std::move(handshake_client),
+      has_extra_headers, process_id, render_frame_id, browser_context,
+      request_id_generator);
   proxy->Start();
 }
 
