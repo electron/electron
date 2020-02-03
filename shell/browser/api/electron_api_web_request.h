@@ -49,10 +49,6 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
- private:
-  WebRequest(v8::Isolate* isolate, content::BrowserContext* browser_context);
-  ~WebRequest() override;
-
   // WebRequestAPI:
   bool HasListener() const override;
   int OnBeforeRequest(extensions::WebRequestInfo* info,
@@ -85,6 +81,10 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
                    const network::ResourceRequest& request,
                    int net_error) override;
   void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) override;
+
+ private:
+  WebRequest(v8::Isolate* isolate, content::BrowserContext* browser_context);
+  ~WebRequest() override;
 
   enum SimpleEvent {
     kOnSendHeaders,
