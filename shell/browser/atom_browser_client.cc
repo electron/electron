@@ -186,7 +186,7 @@ const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(";");
 const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(":");
 #endif
 
-#if defined(ENABLE_ELECTRON_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 // Used by the GetPrivilegeRequiredByUrl() and GetProcessPrivilege() functions
 // below.  Extension, and isolated apps require different privileges to be
 // granted to their RenderProcessHosts.  This classification allows us to make
@@ -241,7 +241,7 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
 
   return registry->enabled_extensions().GetByID(effective_url.host());
 }
-#endif  // defined(ENABLE_ELECTRON_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 }  // namespace
 
@@ -816,7 +816,7 @@ void AtomBrowserClient::SiteInstanceGotProcess(
 
 bool AtomBrowserClient::IsSuitableHost(content::RenderProcessHost* process_host,
                                        const GURL& site_url) {
-#if defined(ENABLE_ELECTRON_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context = process_host->GetBrowserContext();
   extensions::ExtensionRegistry* registry =
       extensions::ExtensionRegistry::Get(browser_context);
@@ -837,7 +837,7 @@ bool AtomBrowserClient::IsSuitableHost(content::RenderProcessHost* process_host,
 bool AtomBrowserClient::ShouldUseProcessPerSite(
     content::BrowserContext* browser_context,
     const GURL& effective_url) {
-#if defined(ENABLE_ELECTRON_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   const extensions::Extension* extension =
       GetEnabledExtensionFromEffectiveURL(browser_context, effective_url);
   return extension != nullptr;
