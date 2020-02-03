@@ -186,6 +186,63 @@ const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(";");
 const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(":");
 #endif
 
+#if defined(ENABLE_ELECTRON_EXTENSIONS)
+// Used by the GetPrivilegeRequiredByUrl() and GetProcessPrivilege() functions
+// below.  Extension, and isolated apps require different privileges to be
+// granted to their RenderProcessHosts.  This classification allows us to make
+// sure URLs are served by hosts with the right set of privileges.
+enum RenderProcessHostPrivilege {
+  PRIV_NORMAL,
+  PRIV_HOSTED,
+  PRIV_ISOLATED,
+  PRIV_EXTENSION,
+};
+
+RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(
+    const GURL& url,
+    extensions::ExtensionRegistry* registry) {
+  // Default to a normal renderer cause it is lower privileged. This should only
+  // occur if the URL on a site instance is either malformed, or uninitialized.
+  // If it is malformed, then there is no need for better privileges anyways.
+  // If it is uninitialized, but eventually settles on being an a scheme other
+  // than normal webrenderer, the navigation logic will correct us out of band
+  // anyways.
+  if (!url.is_valid())
+    return PRIV_NORMAL;
+
+  if (!url.SchemeIs(extensions::kExtensionScheme))
+    return PRIV_NORMAL;
+
+  return PRIV_EXTENSION;
+}
+
+RenderProcessHostPrivilege GetProcessPrivilege(
+    content::RenderProcessHost* process_host,
+    extensions::ProcessMap* process_map,
+    extensions::ExtensionRegistry* registry) {
+  std::set<std::string> extension_ids =
+      process_map->GetExtensionsInProcess(process_host->GetID());
+  if (extension_ids.empty())
+    return PRIV_NORMAL;
+
+  return PRIV_EXTENSION;
+}
+
+const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
+    content::BrowserContext* context,
+    const GURL& effective_url) {
+  if (!effective_url.SchemeIs(extensions::kExtensionScheme))
+    return nullptr;
+
+  extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(context);
+  if (!registry)
+    return nullptr;
+
+  return registry->enabled_extensions().GetByID(effective_url.host());
+}
+#endif  // defined(ENABLE_ELECTRON_EXTENSIONS)
+
 }  // namespace
 
 // static
@@ -757,67 +814,9 @@ void AtomBrowserClient::SiteInstanceGotProcess(
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
 
-namespace {
-
-// Used by the GetPrivilegeRequiredByUrl() and GetProcessPrivilege() functions
-// below.  Extension, and isolated apps require different privileges to be
-// granted to their RenderProcessHosts.  This classification allows us to make
-// sure URLs are served by hosts with the right set of privileges.
-enum RenderProcessHostPrivilege {
-  PRIV_NORMAL,
-  PRIV_HOSTED,
-  PRIV_ISOLATED,
-  PRIV_EXTENSION,
-};
-
-RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(
-    const GURL& url,
-    extensions::ExtensionRegistry* registry) {
-  // Default to a normal renderer cause it is lower privileged. This should only
-  // occur if the URL on a site instance is either malformed, or uninitialized.
-  // If it is malformed, then there is no need for better privileges anyways.
-  // If it is uninitialized, but eventually settles on being an a scheme other
-  // than normal webrenderer, the navigation logic will correct us out of band
-  // anyways.
-  if (!url.is_valid())
-    return PRIV_NORMAL;
-
-  if (!url.SchemeIs(extensions::kExtensionScheme))
-    return PRIV_NORMAL;
-
-  return PRIV_EXTENSION;
-}
-
-RenderProcessHostPrivilege GetProcessPrivilege(
-    content::RenderProcessHost* process_host,
-    extensions::ProcessMap* process_map,
-    extensions::ExtensionRegistry* registry) {
-  std::set<std::string> extension_ids =
-      process_map->GetExtensionsInProcess(process_host->GetID());
-  if (extension_ids.empty())
-    return PRIV_NORMAL;
-
-  return PRIV_EXTENSION;
-}
-
-const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
-    content::BrowserContext* context,
-    const GURL& effective_url) {
-  if (!effective_url.SchemeIs(extensions::kExtensionScheme))
-    return nullptr;
-
-  extensions::ExtensionRegistry* registry =
-      extensions::ExtensionRegistry::Get(context);
-  if (!registry)
-    return nullptr;
-
-  return registry->enabled_extensions().GetByID(effective_url.host());
-}
-
-}  // namespace
-
 bool AtomBrowserClient::IsSuitableHost(content::RenderProcessHost* process_host,
                                        const GURL& site_url) {
+#if defined(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context = process_host->GetBrowserContext();
   extensions::ExtensionRegistry* registry =
       extensions::ExtensionRegistry::Get(browser_context);
@@ -830,16 +829,22 @@ bool AtomBrowserClient::IsSuitableHost(content::RenderProcessHost* process_host,
       GetPrivilegeRequiredByUrl(site_url, registry);
   return GetProcessPrivilege(process_host, process_map, registry) ==
          privilege_required;
+#else
+  return content::ContentBrowserClient::IsSuitableHost(process_host, site_url);
+#endif
 }
 
 bool AtomBrowserClient::ShouldUseProcessPerSite(
     content::BrowserContext* browser_context,
     const GURL& effective_url) {
+#if defined(ENABLE_ELECTRON_EXTENSIONS)
   const extensions::Extension* extension =
       GetEnabledExtensionFromEffectiveURL(browser_context, effective_url);
-  if (!extension)
-    return false;
-  return true;
+  return extension != nullptr;
+#else
+  return content::ContentBrowserClient::ShouldUseProcessPerSite(browser_context,
+                                                                effective_url);
+#endif
 }
 
 void AtomBrowserClient::SiteInstanceDeleting(
