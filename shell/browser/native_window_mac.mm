@@ -523,6 +523,12 @@ void NativeWindowMac::RepositionTrafficLights() {
   NSButton* miniaturize =
       [window standardWindowButton:NSWindowMiniaturizeButton];
   NSButton* zoom = [window standardWindowButton:NSWindowZoomButton];
+  // Safety check just in case apple changes the view structure in a macOS
+  // update
+  DCHECK(close.superview);
+  DCHECK(close.superview.superview);
+  if (!close.superview || !close.superview.superview)
+    return;
   NSView* titleBarContainerView = close.superview.superview;
 
   // Hide the container when exiting fullscreen, otherwise traffic light buttons
