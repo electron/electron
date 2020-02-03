@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 29 Jan 2020 12:28:48 -0800
+Subject: fix: use the new MediaPlayPause key listener for internal chrome
+ logic
+
+The new kGlobalRequiresAccessibility Scope type should be upstreamed
+and then we can use that and minimize this patch to just the change in
+global_shortcut_listener_mac.mm
+
+diff --git a/chrome/browser/extensions/global_shortcut_listener_mac.mm b/chrome/browser/extensions/global_shortcut_listener_mac.mm
+index befe726af9c10b1563a7fc0bb77cc55f65943d5c..bac51f33f35f96fe4ecc764cf5ca887176642f74 100644
+--- a/chrome/browser/extensions/global_shortcut_listener_mac.mm
++++ b/chrome/browser/extensions/global_shortcut_listener_mac.mm
+@@ -39,7 +39,7 @@
+   // global MediaKeysListener to receive media keys.
+   if (!content::MediaKeysListenerManager::IsMediaKeysListenerManagerEnabled()) {
+     media_keys_listener_ = ui::MediaKeysListener::Create(
+-        this, ui::MediaKeysListener::Scope::kGlobal);
++        this, ui::MediaKeysListener::Scope::kGlobalRequiresAccessibility);
+     DCHECK(media_keys_listener_);
+   }
+ }
+diff --git a/ui/base/accelerators/media_keys_listener.h b/ui/base/accelerators/media_keys_listener.h
+index 997718d8affaa193fcaabff4cd4c8b0c23df8891..e121598d46e7c62a3b14cb7960136f655cc69ab6 100644
+--- a/ui/base/accelerators/media_keys_listener.h
++++ b/ui/base/accelerators/media_keys_listener.h
+@@ -20,8 +20,9 @@ class Accelerator;
+ class UI_BASE_EXPORT MediaKeysListener {
+  public:
+   enum class Scope {
+-    kGlobal,   // Listener works whenever application in focus or not.
+-    kFocused,  // Listener only works whan application has focus.
++    kGlobalRequiresAccessibility, // Listener works whenever application in focus or not but requires accessibility permissions on macOS
++    kGlobal,                      // Listener works whenever application in focus or not but requires media to be playnig.
++    kFocused,                     // Listener only works whan application has focus.
+   };
+ 
+   // Media keys accelerators receiver.
+diff --git a/ui/base/accelerators/media_keys_listener_linux.cc b/ui/base/accelerators/media_keys_listener_linux.cc
+index c74807dfae799851bb2e40996e634d8513e590a0..48f459941cae385e49af09410bb1812db5e6d971 100644
+--- a/ui/base/accelerators/media_keys_listener_linux.cc
++++ b/ui/base/accelerators/media_keys_listener_linux.cc
+@@ -13,7 +13,7 @@ std::unique_ptr<MediaKeysListener> MediaKeysListener::Create(
+     MediaKeysListener::Scope scope) {
+   DCHECK(delegate);
+ 
+-  if (scope == Scope::kGlobal) {
++  if (scope == Scope::kGlobal || scope == Scope::kGlobalRequiresAccessibility) {
+     if (!SystemMediaControlsMediaKeysListener::has_instance()) {
+       auto listener =
+           std::make_unique<SystemMediaControlsMediaKeysListener>(delegate);
+diff --git a/ui/base/accelerators/media_keys_listener_win.cc b/ui/base/accelerators/media_keys_listener_win.cc
+index c50ea0ca2b8d612b96c0c822f5d36e9eb4ff861d..8b89fea7c09be007d8a020eb4d75f783c887f1a7 100644
+--- a/ui/base/accelerators/media_keys_listener_win.cc
++++ b/ui/base/accelerators/media_keys_listener_win.cc
+@@ -14,7 +14,7 @@ std::unique_ptr<MediaKeysListener> MediaKeysListener::Create(
+     MediaKeysListener::Scope scope) {
+   DCHECK(delegate);
+ 
+-  if (scope == Scope::kGlobal) {
++  if (scope == Scope::kGlobal || scope == Scope::kGlobalRequiresAccessibility) {
+     // We should never have more than one global media keys listener.
+     if (!SystemMediaControlsMediaKeysListener::has_instance() &&
+         !GlobalMediaKeysListenerWin::has_instance()) {
