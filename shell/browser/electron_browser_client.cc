@@ -1079,9 +1079,9 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
 
 bool ElectronBrowserClient::WillInterceptWebSocket(
     content::RenderFrameHost* frame) {
-  if (!frame) {
+  if (!frame)
     return false;
-  }
+
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
@@ -1091,7 +1091,7 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
   if (!web_request.get())
     return false;
 
-  return true;
+  return web_request->HasListener();
 }
 
 void ElectronBrowserClient::CreateWebSocket(
