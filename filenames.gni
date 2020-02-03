@@ -559,6 +559,8 @@ filenames = {
     "shell/renderer/api/electron_api_spell_check_client.cc",
     "shell/renderer/api/electron_api_spell_check_client.h",
     "shell/renderer/api/electron_api_web_frame.cc",
+    "shell/renderer/browser_exposed_renderer_interfaces.cc",
+    "shell/renderer/browser_exposed_renderer_interfaces.h",
     "shell/renderer/content_settings_observer.cc",
     "shell/renderer/content_settings_observer.h",
     "shell/renderer/electron_api_service_impl.cc",
