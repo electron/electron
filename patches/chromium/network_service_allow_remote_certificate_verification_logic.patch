@@ -188,7 +188,7 @@ index 23a5fe596b2607fa2b95f601cb621e4e11f81d50..67f0e98426345beac34bfd41be384210
 +
    // CertNetFetcher used by the context's CertVerifier. May be nullptr if
    // CertNetFetcher is not used by the current platform.
-   scoped_refptr<cert_verifier::CertNetFetcherURLLoader> cert_net_fetcher_;
+   scoped_refptr<net::CertNetFetcherURLRequest> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
 index c37e71fb1eac0c568f91676eddcd624f491a7b69..6adfd8969148daba3f77aea4c5f89adec6338e6b 100644
 --- a/services/network/public/mojom/network_context.mojom
