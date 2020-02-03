@@ -24,8 +24,8 @@
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/api/electron_api_web_request.h"
-#include "shell/browser/api/web_request_api.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
+#include "shell/browser/net/web_request_api.h"
 
 namespace electron {
 
@@ -165,11 +165,11 @@ class ProxyingURLLoaderFactory
   };
 
   ProxyingURLLoaderFactory(
-      scoped_refptr<api::RequestIDGenerator> request_id_generator,
       WebRequestAPI* web_request_api,
       const HandlersMap& intercepted_handlers,
       content::BrowserContext* browser_context,
       int render_process_id,
+      uint64_t* request_id_generator,
       std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
       base::Optional<int64_t> navigation_id,
       network::mojom::URLLoaderFactoryRequest loader_request,
@@ -215,8 +215,6 @@ class ProxyingURLLoaderFactory
 
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
 
-  scoped_refptr<api::RequestIDGenerator> request_id_generator_;
-
   // Passed from api::WebRequest.
   WebRequestAPI* web_request_api_;
 
@@ -231,6 +229,7 @@ class ProxyingURLLoaderFactory
 
   content::BrowserContext* const browser_context_;
   const int render_process_id_;
+  uint64_t* request_id_generator_;  // managed by AtomBrowserClient
   std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data_;
   base::Optional<int64_t> navigation_id_;
   mojo::ReceiverSet<network::mojom::URLLoaderFactory> proxy_receivers_;

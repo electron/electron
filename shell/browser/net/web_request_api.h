@@ -1,5 +1,9 @@
-#ifndef SHELL_BROWSER_API_ATOM_WEB_REQUEST_API_H_
-#define SHELL_BROWSER_API_ATOM_WEB_REQUEST_API_H_
+// Copyright (c) 2020 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef SHELL_BROWSER_NET_WEB_REQUEST_API_H_
+#define SHELL_BROWSER_NET_WEB_REQUEST_API_H_
 
 #include <set>
 #include <string>
@@ -51,5 +55,7 @@ class WebRequestAPI {
                            int net_error) = 0;
   virtual void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) = 0;
 };
+
 }  // namespace electron
-#endif  // SHELL_BROWSER_API_ATOM_WEB_REQUEST_API_H_
+
+#endif  // SHELL_BROWSER_NET_WEB_REQUEST_API_H_

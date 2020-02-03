@@ -17,10 +17,7 @@
 #include "content/public/browser/render_process_host_observer.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
-#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "net/ssl/client_cert_identity.h"
-#include "services/network/public/mojom/websocket.mojom.h"
-#include "shell/browser/api/atom_api_web_request.h"
 
 namespace content {
 class ClientCertificateDelegate;
@@ -246,7 +243,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const content::ChildProcessTerminationInfo& info) override;
 
  private:
-  scoped_refptr<electron::api::RequestIDGenerator> request_id_generator_;
   struct ProcessPreferences {
     bool sandbox = false;
     bool native_window_open = false;
@@ -302,6 +298,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string user_agent_override_ = "";
 
   bool disable_process_restart_tricks_ = false;
+
+  // Simple shared ID generator, used by ProxyingURLLoaderFactory and
+  // ProxyingWebSocket classes.
+  uint64_t next_id_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };

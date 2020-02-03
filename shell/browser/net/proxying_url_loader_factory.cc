@@ -666,11 +666,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 }
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
-    scoped_refptr<api::RequestIDGenerator> request_id_generator,
     WebRequestAPI* web_request_api,
     const HandlersMap& intercepted_handlers,
     content::BrowserContext* browser_context,
     int render_process_id,
+    uint64_t* request_id_generator,
     std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
     base::Optional<int64_t> navigation_id,
     network::mojom::URLLoaderFactoryRequest loader_request,
@@ -678,11 +678,11 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
         header_client_receiver,
     content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
-    : request_id_generator_(request_id_generator),
-      web_request_api_(web_request_api),
+    : web_request_api_(web_request_api),
       intercepted_handlers_(intercepted_handlers),
       browser_context_(browser_context),
       render_process_id_(render_process_id),
+      request_id_generator_(request_id_generator),
       navigation_ui_data_(std::move(navigation_ui_data)),
       navigation_id_(std::move(navigation_id)),
       loader_factory_type_(loader_factory_type) {
@@ -760,7 +760,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // per-BrowserContext so extensions can make sense of it.  Note that
   // |network_service_request_id_| by contrast is not necessarily unique, so we
   // don't use it for identity here.
-  const uint64_t web_request_id = request_id_generator_->Generate();
+  const uint64_t web_request_id = ++(*request_id_generator_);
 
   // Notes: Chromium assumes that requests with zero-ID would never use the
   // "extraHeaders" code path, however in Electron requests started from
