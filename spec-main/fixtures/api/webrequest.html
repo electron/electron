@@ -6,7 +6,7 @@
   function checkFinish() {
     count++
     if (count === 2) {
-      ipcRenderer.send('success')
+      ipcRenderer.send('websocket-success')
     }
   }
 

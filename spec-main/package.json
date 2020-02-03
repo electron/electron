@@ -4,10 +4,10 @@
   "main": "index.js",
   "version": "0.1.0",
   "devDependencies": {
+    "@types/ws": "^7.2.0",
     "echo": "file:fixtures/native-addon/echo",
     "q": "^1.5.1",
-    "ws": "^7.2.1",
-    "@types/ws": "^7.2.0"
+    "ws": "^7.2.1"
   },
   "dependencies": {
     "chai-as-promised": "^7.1.1",

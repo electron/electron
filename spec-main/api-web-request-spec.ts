@@ -3,9 +3,9 @@ import * as http from 'http'
 import * as qs from 'querystring'
 import * as path from 'path'
 import * as WebSocket from 'ws'
-import { BrowserWindow, session, WebContents, webContents } from 'electron'
+import { ipcMain, session, WebContents, webContents } from 'electron'
 import { AddressInfo } from 'net'
-import { closeWindow } from './window-helpers'
+import { emittedOnce } from './events-helpers'
 
 const fixturesPath = path.resolve(__dirname, 'fixtures')
 
@@ -352,7 +352,8 @@ describe('webRequest module', () => {
   })
 
   describe('WebSocket connections', () => {
-    it('can be proxyed', (done) => {
+    it('can be proxyed', async () => {
+      // Setup server.
       const reqHeaders : { [key: string] : any } = {}
       const server = http.createServer((req, res) => {
         reqHeaders[req.url!] = req.headers
@@ -377,36 +378,29 @@ describe('webRequest module', () => {
         }
       })
 
-      let port : string = ''
-      before(async () => {
-        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-        port = String((server.address() as AddressInfo).port)
-      })
+      // Start server.
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+      const port = String((server.address() as AddressInfo).port)
 
-      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, webSecurity: false } })
-      after(async () => {
-        await new Promise(resolve => server.close(resolve))
-        await closeWindow(w)
-      })
-
+      // Setup listeners.
       const receivedHeaders : { [key: string] : any } = {}
-      ses.webRequest.onBeforeSendHeaders({ urls: ['<all_urls>'] }, (details, callback) => {
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
         details.requestHeaders.foo = 'bar'
         callback({ requestHeaders: details.requestHeaders })
       })
-      ses.webRequest.onHeadersReceived({ urls: ['<all_urls>'] }, (details, callback) => {
+      ses.webRequest.onHeadersReceived((details, callback) => {
         const pathname = require('url').parse(details.url).pathname
         receivedHeaders[pathname] = details.responseHeaders
         callback({ cancel: false })
       })
-      ses.webRequest.onResponseStarted({ urls: ['<all_urls>'] }, (details) => {
+      ses.webRequest.onResponseStarted((details) => {
         if (details.url.startsWith('ws://')) {
           expect(details.responseHeaders!['Connection'][0]).be.equal('Upgrade')
         } else if (details.url.startsWith('http')) {
           expect(details.responseHeaders!['foo1'][0]).be.equal('bar1')
         }
       })
-      ses.webRequest.onSendHeaders({ urls: ['<all_urls>'] }, (details) => {
+      ses.webRequest.onSendHeaders((details) => {
         if (details.url.startsWith('ws://')) {
           expect(details.requestHeaders['foo']).be.equal('bar')
           expect(details.requestHeaders['Upgrade']).be.equal('websocket')
@@ -414,23 +408,38 @@ describe('webRequest module', () => {
           expect(details.requestHeaders['foo']).be.equal('bar')
         }
       })
-      ses.webRequest.onCompleted({ urls: ['<all_urls>'] }, (details) => {
+      ses.webRequest.onCompleted((details) => {
         if (details.url.startsWith('ws://')) {
           expect(details['error']).be.equal('net::ERR_WS_UPGRADE')
         } else if (details.url.startsWith('http')) {
           expect(details['error']).be.equal('net::OK')
         }
       })
-      w.webContents.on('ipc-message', (event, channel) => {
-        if (channel === 'success') {
-          expect(receivedHeaders['/websocket']['Upgrade'][0]).to.equal('websocket')
-          expect(receivedHeaders['/']['foo1'][0]).to.equal('bar1')
-          expect(reqHeaders['/websocket']['foo']).to.equal('bar')
-          expect(reqHeaders['/']['foo']).to.equal('bar')
-          done()
-        }
+
+      const contents = (webContents as any).create({
+        nodeIntegration: true,
+        webSecurity: false
       })
-      w.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port } })
+
+      // Cleanup.
+      after(() => {
+        contents.destroy()
+        server.close()
+        ses.webRequest.onBeforeRequest(null)
+        ses.webRequest.onBeforeSendHeaders(null)
+        ses.webRequest.onHeadersReceived(null)
+        ses.webRequest.onResponseStarted(null)
+        ses.webRequest.onSendHeaders(null)
+        ses.webRequest.onCompleted(null)
+      })
+
+      contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port } })
+      await emittedOnce(ipcMain, 'websocket-success')
+
+      expect(receivedHeaders['/websocket']['Upgrade'][0]).to.equal('websocket')
+      expect(receivedHeaders['/']['foo1'][0]).to.equal('bar1')
+      expect(reqHeaders['/websocket']['foo']).to.equal('bar')
+      expect(reqHeaders['/']['foo']).to.equal('bar')
     })
   })
 })

@@ -105,6 +105,7 @@ void ProxyingWebSocket::ContinueToHeadersReceived() {
   auto continuation =
       base::BindRepeating(&ProxyingWebSocket::OnHeadersReceivedComplete,
                           weak_factory_.GetWeakPtr());
+  info_.AddResponseInfoFromResourceResponse(*response_);
   int result = web_request_api_->OnHeadersReceived(
       &info_, request_, continuation, response_->headers.get(),
       &override_headers_, &redirect_url_);
@@ -185,6 +186,7 @@ void ProxyingWebSocket::OnAuthRequired(
   auto continuation =
       base::BindRepeating(&ProxyingWebSocket::OnHeadersReceivedCompleteForAuth,
                           weak_factory_.GetWeakPtr(), auth_info);
+  info_.AddResponseInfoFromResourceResponse(*response_);
   int result = web_request_api_->OnHeadersReceived(
       &info_, request_, continuation, response_->headers.get(),
       &override_headers_, &redirect_url_);
@@ -266,6 +268,7 @@ void ProxyingWebSocket::OnBeforeRequestComplete(int error_code) {
       base::BindRepeating(&ProxyingWebSocket::OnBeforeSendHeadersComplete,
                           weak_factory_.GetWeakPtr());
 
+  info_.AddResponseInfoFromResourceResponse(*response_);
   int result = web_request_api_->OnBeforeSendHeaders(
       &info_, request_, continuation, &request_headers_);
 
@@ -299,6 +302,7 @@ void ProxyingWebSocket::OnBeforeSendHeadersComplete(
         .Run(error_code, request_headers_);
   }
 
+  info_.AddResponseInfoFromResourceResponse(*response_);
   web_request_api_->OnSendHeaders(&info_, request_, request_headers_);
 
   if (!receiver_as_header_client_.is_bound())
