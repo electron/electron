@@ -127,23 +127,32 @@ env-enable-sccache: &env-enable-sccache
 
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
+  
+env-global: &env-global
+  ELECTRON_OUT_DIR: Default
 
 env-linux-medium: &env-linux-medium
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 3
 
 env-linux-2xlarge: &env-linux-2xlarge
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 34
 
 env-linux-2xlarge-release: &env-linux-2xlarge-release
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 16
 
 env-machine-mac: &env-machine-mac
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 6
 
 env-mac-large: &env-mac-large
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 18
 
 env-mac-large-release: &env-mac-large-release
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 8
 
 env-ninja-status: &env-ninja-status
@@ -219,8 +228,6 @@ step-setup-env-for-build: &step-setup-env-for-build
     command: |
       # To find `gn` executable.
       echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
-      # So scripts know where to find the build
-      echo 'export ELECTRON_OUT_DIR=Default' >> $BASH_ENV
       # Setup Goma if applicable
       if [ ! -z "$RAW_GOMA_AUTH" ] && [ "`uname`" == "Linux" ]; then
         export USE_SCCACHE="false"
