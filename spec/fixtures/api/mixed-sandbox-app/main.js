@@ -12,7 +12,7 @@ if (process.argv.includes('--app-enable-sandbox')) {
 
 let currentWindowSandboxed = false
 
-app.once('ready', () => {
+app.whenReady().then(() => {
   function testWindow (isSandboxed, callback) {
     currentWindowSandboxed = isSandboxed
     const currentWindow = new BrowserWindow({

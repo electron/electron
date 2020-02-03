@@ -8,7 +8,7 @@ function createWindow (id) {
   windows.push(window)
 }
 
-app.once('ready', () => {
+app.whenReady().then(() => {
   for (let i = 1; i <= 5; i++) {
     createWindow(i)
   }

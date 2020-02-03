@@ -14,7 +14,7 @@ function request () {
   })
 }
 
-app.on('ready', async () => {
+app.whenReady().then(async () => {
   const netLog = session.defaultSession.netLog
 
   if (process.env.TEST_DUMP_FILE_DYNAMIC) {

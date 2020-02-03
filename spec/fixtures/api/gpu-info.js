@@ -2,7 +2,7 @@ const { app } = require('electron')
 
 app.commandLine.appendSwitch('--disable-software-rasterizer')
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   const infoType = process.argv.pop()
   app.getGPUInfo(infoType).then(
     (gpuInfo) => {

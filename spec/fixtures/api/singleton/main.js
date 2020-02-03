@@ -1,6 +1,6 @@
 const { app } = require('electron')
 
-app.once('ready', () => {
+app.whenReady().then(() => {
   console.log('started') // ping parent
 })
 
