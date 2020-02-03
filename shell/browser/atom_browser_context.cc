@@ -56,11 +56,11 @@
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/pref_names.h"
 #include "extensions/common/extension_api.h"
-#include "shell/browser/extensions/atom_browser_context_keyed_service_factories.h"
-#include "shell/browser/extensions/atom_extension_system.h"
-#include "shell/browser/extensions/atom_extension_system_factory.h"
-#include "shell/browser/extensions/atom_extensions_browser_client.h"
-#include "shell/common/extensions/atom_extensions_client.h"
+#include "shell/browser/extensions/electron_browser_context_keyed_service_factories.h"
+#include "shell/browser/extensions/electron_extension_system.h"
+#include "shell/browser/extensions/electron_extension_system_factory.h"
+#include "shell/browser/extensions/electron_extensions_browser_client.h"
+#include "shell/common/extensions/electron_extensions_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
@@ -136,7 +136,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(
       this);
 
-  extension_system_ = static_cast<extensions::AtomExtensionSystem*>(
+  extension_system_ = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(this));
   extension_system_->InitForRegularProfile(true /* extensions_enabled */);
   extension_system_->FinishInitialization();

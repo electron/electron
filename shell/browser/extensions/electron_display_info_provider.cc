@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/extensions/atom_display_info_provider.h"
+#include "shell/browser/extensions/electron_display_info_provider.h"
 
 namespace extensions {
 
-AtomDisplayInfoProvider::AtomDisplayInfoProvider() = default;
+ElectronDisplayInfoProvider::ElectronDisplayInfoProvider() = default;
 
 }  // namespace extensions

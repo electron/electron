@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "shell/common/extensions/atom_extensions_api_provider.h"
+#include "shell/common/extensions/electron_extensions_api_provider.h"
 
 #include <memory>
 #include <string>
@@ -74,50 +74,51 @@ base::span<const Alias> GetPermissionAliases() {
 
 namespace electron {
 
-AtomExtensionsAPIProvider::AtomExtensionsAPIProvider() = default;
-AtomExtensionsAPIProvider::~AtomExtensionsAPIProvider() = default;
+ElectronExtensionsAPIProvider::ElectronExtensionsAPIProvider() = default;
+ElectronExtensionsAPIProvider::~ElectronExtensionsAPIProvider() = default;
 
-void AtomExtensionsAPIProvider::AddAPIFeatures(
+void ElectronExtensionsAPIProvider::AddAPIFeatures(
     extensions::FeatureProvider* provider) {
   extensions::AddElectronAPIFeatures(provider);
 }
 
-void AtomExtensionsAPIProvider::AddManifestFeatures(
+void ElectronExtensionsAPIProvider::AddManifestFeatures(
     extensions::FeatureProvider* provider) {
   extensions::AddElectronManifestFeatures(provider);
 }
 
-void AtomExtensionsAPIProvider::AddPermissionFeatures(
+void ElectronExtensionsAPIProvider::AddPermissionFeatures(
     extensions::FeatureProvider* provider) {
   // No shell-specific permission features.
 }
 
-void AtomExtensionsAPIProvider::AddBehaviorFeatures(
+void ElectronExtensionsAPIProvider::AddBehaviorFeatures(
     extensions::FeatureProvider* provider) {
   // No shell-specific behavior features.
 }
 
-void AtomExtensionsAPIProvider::AddAPIJSONSources(
+void ElectronExtensionsAPIProvider::AddAPIJSONSources(
     extensions::JSONFeatureProviderSource* json_source) {
   // json_source->LoadJSON(IDR_SHELL_EXTENSION_API_FEATURES);
 }
 
-bool AtomExtensionsAPIProvider::IsAPISchemaGenerated(const std::string& name) {
+bool ElectronExtensionsAPIProvider::IsAPISchemaGenerated(
+    const std::string& name) {
   return extensions::api::ElectronGeneratedSchemas::IsGenerated(name);
 }
 
-base::StringPiece AtomExtensionsAPIProvider::GetAPISchema(
+base::StringPiece ElectronExtensionsAPIProvider::GetAPISchema(
     const std::string& name) {
   return extensions::api::ElectronGeneratedSchemas::Get(name);
 }
 
-void AtomExtensionsAPIProvider::RegisterPermissions(
+void ElectronExtensionsAPIProvider::RegisterPermissions(
     extensions::PermissionsInfo* permissions_info) {
   permissions_info->RegisterPermissions(extensions::GetPermissionInfos(),
                                         extensions::GetPermissionAliases());
 }
 
-void AtomExtensionsAPIProvider::RegisterManifestHandlers() {
+void ElectronExtensionsAPIProvider::RegisterManifestHandlers() {
   extensions::ManifestHandlerRegistry* registry =
       extensions::ManifestHandlerRegistry::Get();
   registry->RegisterHandler(

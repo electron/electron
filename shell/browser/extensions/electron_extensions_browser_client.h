@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSIONS_BROWSER_CLIENT_H_
-#define SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSIONS_BROWSER_CLIENT_H_
+#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_
+#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_
 
 #include <memory>
 #include <string>
@@ -31,10 +31,11 @@ namespace electron {
 // with no related incognito context.
 // Must be initialized via InitWithBrowserContext() once the BrowserContext is
 // created.
-class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
+class ElectronExtensionsBrowserClient
+    : public extensions::ExtensionsBrowserClient {
  public:
-  AtomExtensionsBrowserClient();
-  ~AtomExtensionsBrowserClient() override;
+  ElectronExtensionsBrowserClient();
+  ~ElectronExtensionsBrowserClient() override;
 
   // ExtensionsBrowserClient overrides:
   bool IsShuttingDown() override;
@@ -137,9 +138,9 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
   // The extension cache used for download and installation.
   std::unique_ptr<extensions::ExtensionCache> extension_cache_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionsBrowserClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsBrowserClient);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSIONS_BROWSER_CLIENT_H_
+#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_

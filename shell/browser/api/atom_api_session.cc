@@ -63,11 +63,12 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/process_util.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/extension_registry.h"
-#include "shell/browser/extensions/atom_extension_system.h"
+#include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/common/gin_converters/extension_converter.h"
 #endif
 
@@ -613,19 +614,23 @@ v8::Local<v8::Promise> Session::LoadExtension(
   gin_helper::Promise<const extensions::Extension*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
+  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
   extension_system->LoadExtension(
       extension_path,
       base::BindOnce(
           [](gin_helper::Promise<const extensions::Extension*> promise,
-             const extensions::Extension* extension) {
+             const extensions::Extension* extension,
+             const std::string& error_msg) {
             if (extension) {
+              if (!error_msg.empty()) {
+                node::Environment* env =
+                    node::Environment::GetCurrent(v8::Isolate::GetCurrent());
+                EmitWarning(env, error_msg, "ExtensionLoadWarning");
+              }
               promise.Resolve(extension);
             } else {
-              // TODO(nornagon): plumb through error message from extension
-              // loader.
-              promise.RejectWithErrorMessage("Failed to load extension");
+              promise.RejectWithErrorMessage(error_msg);
             }
           },
           std::move(promise)));
@@ -634,7 +639,7 @@ v8::Local<v8::Promise> Session::LoadExtension(
 }
 
 void Session::RemoveExtension(const std::string& extension_id) {
-  auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
+  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
   extension_system->RemoveExtension(extension_id);
 }

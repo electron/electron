@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/extensions/atom_extensions_browser_client.h"
+#include "shell/browser/extensions/electron_extensions_browser_client.h"
 
 #include <utility>
 
@@ -30,13 +30,13 @@
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/browser.h"
-#include "shell/browser/extensions/api/runtime/atom_runtime_api_delegate.h"
-#include "shell/browser/extensions/atom_extension_host_delegate.h"
-#include "shell/browser/extensions/atom_extension_system_factory.h"
-#include "shell/browser/extensions/atom_extension_web_contents_observer.h"
-#include "shell/browser/extensions/atom_navigation_ui_data.h"
+#include "shell/browser/extensions/api/runtime/electron_runtime_api_delegate.h"
+#include "shell/browser/extensions/electron_extension_host_delegate.h"
+#include "shell/browser/extensions/electron_extension_system_factory.h"
+#include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_extensions_api_client.h"
 #include "shell/browser/extensions/electron_extensions_browser_api_provider.h"
+#include "shell/browser/extensions/electron_navigation_ui_data.h"
 #include "shell/browser/extensions/electron_process_manager_delegate.h"
 
 using content::BrowserContext;
@@ -44,7 +44,7 @@ using content::BrowserThread;
 
 namespace electron {
 
-AtomExtensionsBrowserClient::AtomExtensionsBrowserClient()
+ElectronExtensionsBrowserClient::ElectronExtensionsBrowserClient()
     : api_client_(new extensions::ElectronExtensionsAPIClient),
       process_manager_delegate_(new extensions::ElectronProcessManagerDelegate),
       extension_cache_(new extensions::NullExtensionCache()) {
@@ -58,19 +58,19 @@ AtomExtensionsBrowserClient::AtomExtensionsBrowserClient()
       std::make_unique<extensions::ElectronExtensionsBrowserAPIProvider>());
 }
 
-AtomExtensionsBrowserClient::~AtomExtensionsBrowserClient() {}
+ElectronExtensionsBrowserClient::~ElectronExtensionsBrowserClient() {}
 
-bool AtomExtensionsBrowserClient::IsShuttingDown() {
+bool ElectronExtensionsBrowserClient::IsShuttingDown() {
   return electron::Browser::Get()->is_shutting_down();
 }
 
-bool AtomExtensionsBrowserClient::AreExtensionsDisabled(
+bool ElectronExtensionsBrowserClient::AreExtensionsDisabled(
     const base::CommandLine& command_line,
     BrowserContext* context) {
   return false;
 }
 
-bool AtomExtensionsBrowserClient::IsValidContext(BrowserContext* context) {
+bool ElectronExtensionsBrowserClient::IsValidContext(BrowserContext* context) {
   auto context_map = AtomBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second && entry.second.get() == context)
@@ -79,23 +79,23 @@ bool AtomExtensionsBrowserClient::IsValidContext(BrowserContext* context) {
   return false;
 }
 
-bool AtomExtensionsBrowserClient::IsSameContext(BrowserContext* first,
-                                                BrowserContext* second) {
+bool ElectronExtensionsBrowserClient::IsSameContext(BrowserContext* first,
+                                                    BrowserContext* second) {
   return first == second;
 }
 
-bool AtomExtensionsBrowserClient::HasOffTheRecordContext(
+bool ElectronExtensionsBrowserClient::HasOffTheRecordContext(
     BrowserContext* context) {
   return false;
 }
 
-BrowserContext* AtomExtensionsBrowserClient::GetOffTheRecordContext(
+BrowserContext* ElectronExtensionsBrowserClient::GetOffTheRecordContext(
     BrowserContext* context) {
   // app_shell only supports a single context.
   return nullptr;
 }
 
-BrowserContext* AtomExtensionsBrowserClient::GetOriginalContext(
+BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
     BrowserContext* context) {
   DCHECK(context);
   if (context->IsOffTheRecord()) {
@@ -105,24 +105,24 @@ BrowserContext* AtomExtensionsBrowserClient::GetOriginalContext(
   }
 }
 
-bool AtomExtensionsBrowserClient::IsGuestSession(
+bool ElectronExtensionsBrowserClient::IsGuestSession(
     BrowserContext* context) const {
   return false;
 }
 
-bool AtomExtensionsBrowserClient::IsExtensionIncognitoEnabled(
+bool ElectronExtensionsBrowserClient::IsExtensionIncognitoEnabled(
     const std::string& extension_id,
     content::BrowserContext* context) const {
   return false;
 }
 
-bool AtomExtensionsBrowserClient::CanExtensionCrossIncognito(
+bool ElectronExtensionsBrowserClient::CanExtensionCrossIncognito(
     const extensions::Extension* extension,
     content::BrowserContext* context) const {
   return false;
 }
 
-base::FilePath AtomExtensionsBrowserClient::GetBundleResourcePath(
+base::FilePath ElectronExtensionsBrowserClient::GetBundleResourcePath(
     const network::ResourceRequest& request,
     const base::FilePath& extension_resources_path,
     int* resource_id) const {
@@ -130,7 +130,7 @@ base::FilePath AtomExtensionsBrowserClient::GetBundleResourcePath(
   return base::FilePath();
 }
 
-void AtomExtensionsBrowserClient::LoadResourceFromResourceBundle(
+void ElectronExtensionsBrowserClient::LoadResourceFromResourceBundle(
     const network::ResourceRequest& request,
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     const base::FilePath& resource_relative_path,
@@ -172,7 +172,7 @@ bool AllowCrossRendererResourceLoad(const GURL& url,
 }
 }  // namespace
 
-bool AtomExtensionsBrowserClient::AllowCrossRendererResourceLoad(
+bool ElectronExtensionsBrowserClient::AllowCrossRendererResourceLoad(
     const GURL& url,
     content::ResourceType resource_type,
     ui::PageTransition page_transition,
@@ -192,71 +192,73 @@ bool AtomExtensionsBrowserClient::AllowCrossRendererResourceLoad(
   return false;
 }
 
-PrefService* AtomExtensionsBrowserClient::GetPrefServiceForContext(
+PrefService* ElectronExtensionsBrowserClient::GetPrefServiceForContext(
     BrowserContext* context) {
   return static_cast<AtomBrowserContext*>(context)->prefs();
 }
 
-void AtomExtensionsBrowserClient::GetEarlyExtensionPrefsObservers(
+void ElectronExtensionsBrowserClient::GetEarlyExtensionPrefsObservers(
     content::BrowserContext* context,
     std::vector<extensions::EarlyExtensionPrefsObserver*>* observers) const {}
 
 extensions::ProcessManagerDelegate*
-AtomExtensionsBrowserClient::GetProcessManagerDelegate() const {
+ElectronExtensionsBrowserClient::GetProcessManagerDelegate() const {
   return process_manager_delegate_.get();
 }
 
-std::unique_ptr<extensions::ExtensionHostDelegate> AtomExtensionsBrowserClient::
+std::unique_ptr<extensions::ExtensionHostDelegate>
+ElectronExtensionsBrowserClient::
     CreateExtensionHostDelegate() {  // TODO(samuelmaddock):
-  return base::WrapUnique(new extensions::AtomExtensionHostDelegate);
+  return base::WrapUnique(new extensions::ElectronExtensionHostDelegate);
 }
 
-bool AtomExtensionsBrowserClient::DidVersionUpdate(BrowserContext* context) {
+bool ElectronExtensionsBrowserClient::DidVersionUpdate(
+    BrowserContext* context) {
   // TODO(jamescook): We might want to tell extensions when app_shell updates.
   return false;
 }
 
-void AtomExtensionsBrowserClient::PermitExternalProtocolHandler() {}
+void ElectronExtensionsBrowserClient::PermitExternalProtocolHandler() {}
 
-bool AtomExtensionsBrowserClient::IsInDemoMode() {
+bool ElectronExtensionsBrowserClient::IsInDemoMode() {
   return false;
 }
 
-bool AtomExtensionsBrowserClient::IsScreensaverInDemoMode(
+bool ElectronExtensionsBrowserClient::IsScreensaverInDemoMode(
     const std::string& app_id) {
   return false;
 }
 
-bool AtomExtensionsBrowserClient::IsRunningInForcedAppMode() {
+bool ElectronExtensionsBrowserClient::IsRunningInForcedAppMode() {
   return false;
 }
 
-bool AtomExtensionsBrowserClient::IsAppModeForcedForApp(
+bool ElectronExtensionsBrowserClient::IsAppModeForcedForApp(
     const extensions::ExtensionId& extension_id) {
   return false;
 }
 
-bool AtomExtensionsBrowserClient::IsLoggedInAsPublicAccount() {
+bool ElectronExtensionsBrowserClient::IsLoggedInAsPublicAccount() {
   return false;
 }
 
 extensions::ExtensionSystemProvider*
-AtomExtensionsBrowserClient::GetExtensionSystemFactory() {
-  return extensions::AtomExtensionSystemFactory::GetInstance();
+ElectronExtensionsBrowserClient::GetExtensionSystemFactory() {
+  return extensions::ElectronExtensionSystemFactory::GetInstance();
 }
 
 std::unique_ptr<extensions::RuntimeAPIDelegate>
-AtomExtensionsBrowserClient::CreateRuntimeAPIDelegate(
+ElectronExtensionsBrowserClient::CreateRuntimeAPIDelegate(
     content::BrowserContext* context) const {
-  return std::make_unique<extensions::AtomRuntimeAPIDelegate>(context);
+  return std::make_unique<extensions::ElectronRuntimeAPIDelegate>(context);
 }
 
 const extensions::ComponentExtensionResourceManager*
-AtomExtensionsBrowserClient::GetComponentExtensionResourceManager() {
+ElectronExtensionsBrowserClient::GetComponentExtensionResourceManager() {
   return NULL;
 }
 
-void AtomExtensionsBrowserClient::BroadcastEventToRenderers(
+void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     extensions::events::HistogramValue histogram_value,
     const std::string& event_name,
     std::unique_ptr<base::ListValue> args,
@@ -264,9 +266,10 @@ void AtomExtensionsBrowserClient::BroadcastEventToRenderers(
   if (!BrowserThread::CurrentlyOn(BrowserThread::UI)) {
     base::PostTask(
         FROM_HERE, {BrowserThread::UI},
-        base::BindOnce(&AtomExtensionsBrowserClient::BroadcastEventToRenderers,
-                       base::Unretained(this), histogram_value, event_name,
-                       std::move(args), dispatch_to_off_the_record_profiles));
+        base::BindOnce(
+            &ElectronExtensionsBrowserClient::BroadcastEventToRenderers,
+            base::Unretained(this), histogram_value, event_name,
+            std::move(args), dispatch_to_off_the_record_profiles));
     return;
   }
 
@@ -281,49 +284,50 @@ void AtomExtensionsBrowserClient::BroadcastEventToRenderers(
   }
 }
 
-extensions::ExtensionCache* AtomExtensionsBrowserClient::GetExtensionCache() {
+extensions::ExtensionCache*
+ElectronExtensionsBrowserClient::GetExtensionCache() {
   return extension_cache_.get();
 }
 
-bool AtomExtensionsBrowserClient::IsBackgroundUpdateAllowed() {
+bool ElectronExtensionsBrowserClient::IsBackgroundUpdateAllowed() {
   return true;
 }
 
-bool AtomExtensionsBrowserClient::IsMinBrowserVersionSupported(
+bool ElectronExtensionsBrowserClient::IsMinBrowserVersionSupported(
     const std::string& min_version) {
   return true;
 }
 
-void AtomExtensionsBrowserClient::SetAPIClientForTest(
+void ElectronExtensionsBrowserClient::SetAPIClientForTest(
     extensions::ExtensionsAPIClient* api_client) {
   api_client_.reset(api_client);
 }
 
 extensions::ExtensionWebContentsObserver*
-AtomExtensionsBrowserClient::GetExtensionWebContentsObserver(
+ElectronExtensionsBrowserClient::GetExtensionWebContentsObserver(
     content::WebContents* web_contents) {
-  return extensions::AtomExtensionWebContentsObserver::FromWebContents(
+  return extensions::ElectronExtensionWebContentsObserver::FromWebContents(
       web_contents);
 }
 
-extensions::KioskDelegate* AtomExtensionsBrowserClient::GetKioskDelegate() {
+extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {
   return nullptr;
 }
 
-bool AtomExtensionsBrowserClient::IsLockScreenContext(
+bool ElectronExtensionsBrowserClient::IsLockScreenContext(
     content::BrowserContext* context) {
   return false;
 }
 
-std::string AtomExtensionsBrowserClient::GetApplicationLocale() {
+std::string ElectronExtensionsBrowserClient::GetApplicationLocale() {
   return AtomBrowserClient::Get()->GetApplicationLocale();
 }
 
-std::string AtomExtensionsBrowserClient::GetUserAgent() const {
+std::string ElectronExtensionsBrowserClient::GetUserAgent() const {
   return AtomBrowserClient::Get()->GetUserAgent();
 }
 
-void AtomExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(
+void ElectronExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(
     service_manager::BinderMapWithContext<content::RenderFrameHost*>* map,
     content::RenderFrameHost* render_frame_host,
     const extensions::Extension* extension) const {}

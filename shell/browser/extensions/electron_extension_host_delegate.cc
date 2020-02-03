@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/extensions/atom_extension_host_delegate.h"
+#include "shell/browser/extensions/electron_extension_host_delegate.h"
 
 #include <memory>
 #include <string>
@@ -11,31 +11,31 @@
 #include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "extensions/browser/media_capture_util.h"
-#include "shell/browser/extensions/atom_extension_web_contents_observer.h"
+#include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 
 namespace extensions {
 
-AtomExtensionHostDelegate::AtomExtensionHostDelegate() {}
+ElectronExtensionHostDelegate::ElectronExtensionHostDelegate() {}
 
-AtomExtensionHostDelegate::~AtomExtensionHostDelegate() {}
+ElectronExtensionHostDelegate::~ElectronExtensionHostDelegate() {}
 
-void AtomExtensionHostDelegate::OnExtensionHostCreated(
+void ElectronExtensionHostDelegate::OnExtensionHostCreated(
     content::WebContents* web_contents) {
-  AtomExtensionWebContentsObserver::CreateForWebContents(web_contents);
+  ElectronExtensionWebContentsObserver::CreateForWebContents(web_contents);
 }
 
-void AtomExtensionHostDelegate::OnRenderViewCreatedForBackgroundPage(
+void ElectronExtensionHostDelegate::OnRenderViewCreatedForBackgroundPage(
     ExtensionHost* host) {}
 
 content::JavaScriptDialogManager*
-AtomExtensionHostDelegate::GetJavaScriptDialogManager() {
+ElectronExtensionHostDelegate::GetJavaScriptDialogManager() {
   // TODO(jamescook): Create a JavaScriptDialogManager or reuse the one from
   // content_shell.
   NOTREACHED();
   return nullptr;
 }
 
-void AtomExtensionHostDelegate::CreateTab(
+void ElectronExtensionHostDelegate::CreateTab(
     std::unique_ptr<content::WebContents> web_contents,
     const std::string& extension_id,
     WindowOpenDisposition disposition,
@@ -45,7 +45,7 @@ void AtomExtensionHostDelegate::CreateTab(
   NOTREACHED();
 }
 
-void AtomExtensionHostDelegate::ProcessMediaAccessRequest(
+void ElectronExtensionHostDelegate::ProcessMediaAccessRequest(
     content::WebContents* web_contents,
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback,
@@ -55,7 +55,7 @@ void AtomExtensionHostDelegate::ProcessMediaAccessRequest(
                                               std::move(callback), extension);
 }
 
-bool AtomExtensionHostDelegate::CheckMediaAccessPermission(
+bool ElectronExtensionHostDelegate::CheckMediaAccessPermission(
     content::RenderFrameHost* render_frame_host,
     const GURL& security_origin,
     blink::mojom::MediaStreamType type,
@@ -65,7 +65,7 @@ bool AtomExtensionHostDelegate::CheckMediaAccessPermission(
 }
 
 content::PictureInPictureResult
-AtomExtensionHostDelegate::EnterPictureInPicture(
+ElectronExtensionHostDelegate::EnterPictureInPicture(
     content::WebContents* web_contents,
     const viz::SurfaceId& surface_id,
     const gfx::Size& natural_size) {
@@ -73,7 +73,7 @@ AtomExtensionHostDelegate::EnterPictureInPicture(
   return content::PictureInPictureResult();
 }
 
-void AtomExtensionHostDelegate::ExitPictureInPicture() {
+void ElectronExtensionHostDelegate::ExitPictureInPicture() {
   NOTREACHED();
 }
 

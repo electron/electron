@@ -97,9 +97,9 @@
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "extensions/browser/browser_context_keyed_service_factories.h"
 #include "extensions/common/extension_api.h"
-#include "shell/browser/extensions/atom_browser_context_keyed_service_factories.h"
-#include "shell/browser/extensions/atom_extensions_browser_client.h"
-#include "shell/common/extensions/atom_extensions_client.h"
+#include "shell/browser/extensions/electron_browser_context_keyed_service_factories.h"
+#include "shell/browser/extensions/electron_extensions_browser_client.h"
+#include "shell/common/extensions/electron_extensions_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -437,11 +437,12 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   node_bindings_->RunMessageLoop();
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_client_ = std::make_unique<AtomExtensionsClient>();
+  extensions_client_ = std::make_unique<ElectronExtensionsClient>();
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
   // BrowserContextKeyedAPIServiceFactories require an ExtensionsBrowserClient.
-  extensions_browser_client_ = std::make_unique<AtomExtensionsBrowserClient>();
+  extensions_browser_client_ =
+      std::make_unique<ElectronExtensionsBrowserClient>();
   extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
 
   extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();

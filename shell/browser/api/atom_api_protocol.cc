@@ -12,13 +12,13 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/browser.h"
-#include "shell/common/deprecate_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/process_util.h"
 #include "url/url_util.h"
 
 namespace {
@@ -217,12 +217,11 @@ bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
 v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
                                                    gin::Arguments* args) {
   node::Environment* env = node::Environment::GetCurrent(args->isolate());
-  EmitDeprecationWarning(
-      env,
-      "The protocol.isProtocolHandled API is deprecated, use "
-      "protocol.isProtocolRegistered or protocol.isProtocolIntercepted "
-      "instead.",
-      "ProtocolDeprecateIsProtocolHandled");
+  EmitWarning(env,
+              "The protocol.isProtocolHandled API is deprecated, use "
+              "protocol.isProtocolRegistered or protocol.isProtocolIntercepted "
+              "instead.",
+              "ProtocolDeprecateIsProtocolHandled");
   return gin_helper::Promise<bool>::ResolvedPromise(
       isolate(), IsProtocolRegistered(scheme) ||
                      IsProtocolIntercepted(scheme) ||
@@ -241,7 +240,7 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args,
   CompletionCallback callback;
   if (args->GetNext(&callback)) {
     node::Environment* env = node::Environment::GetCurrent(args->isolate());
-    EmitDeprecationWarning(
+    EmitWarning(
         env,
         "The callback argument of protocol module APIs is no longer needed.",
         "ProtocolDeprecateCallback");

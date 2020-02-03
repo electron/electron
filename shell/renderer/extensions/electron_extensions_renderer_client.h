@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_EXTENSIONS_ATOM_EXTENSIONS_RENDERER_CLIENT_H_
-#define SHELL_RENDERER_EXTENSIONS_ATOM_EXTENSIONS_RENDERER_CLIENT_H_
+#ifndef SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_RENDERER_CLIENT_H_
+#define SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_RENDERER_CLIENT_H_
 
 #include <memory>
 
@@ -20,11 +20,11 @@ class Dispatcher;
 
 namespace electron {
 
-class AtomExtensionsRendererClient
+class ElectronExtensionsRendererClient
     : public extensions::ExtensionsRendererClient {
  public:
-  AtomExtensionsRendererClient();
-  ~AtomExtensionsRendererClient() override;
+  ElectronExtensionsRendererClient();
+  ~ElectronExtensionsRendererClient() override;
 
   // ExtensionsRendererClient implementation.
   bool IsIncognitoProcess() const override;
@@ -43,9 +43,9 @@ class AtomExtensionsRendererClient
  private:
   std::unique_ptr<extensions::Dispatcher> dispatcher_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionsRendererClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsRendererClient);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_EXTENSIONS_ATOM_EXTENSIONS_RENDERER_CLIENT_H_
+#endif  // SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_RENDERER_CLIENT_H_

@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSION_LOADER_H_
-#define SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSION_LOADER_H_
+#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_LOADER_H_
+#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_LOADER_H_
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
@@ -27,16 +28,16 @@ namespace extensions {
 class Extension;
 
 // Handles extension loading and reloading using ExtensionRegistrar.
-class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
+class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
  public:
-  explicit AtomExtensionLoader(content::BrowserContext* browser_context);
-  ~AtomExtensionLoader() override;
+  explicit ElectronExtensionLoader(content::BrowserContext* browser_context);
+  ~ElectronExtensionLoader() override;
 
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
-  void LoadExtension(
-      const base::FilePath& extension_dir,
-      base::OnceCallback<void(const Extension* extension)> loaded);
+  void LoadExtension(const base::FilePath& extension_dir,
+                     base::OnceCallback<void(const Extension* extension,
+                                             const std::string&)> cb);
 
   // Starts reloading the extension. A keep-alive is maintained until the
   // reload succeeds/fails. If the extension is an app, it will be launched upon
@@ -51,11 +52,13 @@ class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
  private:
   // If the extension loaded successfully, enables it. If it's an app, launches
   // it. If the load failed, updates ShellKeepAliveRequester.
-  void FinishExtensionReload(const ExtensionId& old_extension_id,
-                             scoped_refptr<const Extension> extension);
+  void FinishExtensionReload(
+      const ExtensionId& old_extension_id,
+      std::pair<scoped_refptr<const Extension>, std::string> result);
 
-  void FinishExtensionLoad(base::OnceCallback<void(const Extension*)> loaded,
-                           scoped_refptr<const Extension> extension);
+  void FinishExtensionLoad(
+      base::OnceCallback<void(const Extension*, const std::string&)> cb,
+      std::pair<scoped_refptr<const Extension>, std::string> result);
 
   // ExtensionRegistrar::Delegate:
   void PreAddExtension(const Extension* extension,
@@ -84,11 +87,11 @@ class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
   // LoadExtensionForReload().
   bool did_schedule_reload_ = false;
 
-  base::WeakPtrFactory<AtomExtensionLoader> weak_factory_;
+  base::WeakPtrFactory<ElectronExtensionLoader> weak_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomExtensionLoader);
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionLoader);
 };
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ATOM_EXTENSION_LOADER_H_
+#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_LOADER_H_

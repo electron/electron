@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_API_RUNTIME_ATOM_RUNTIME_API_DELEGATE_H_
-#define SHELL_BROWSER_EXTENSIONS_API_RUNTIME_ATOM_RUNTIME_API_DELEGATE_H_
+#ifndef SHELL_BROWSER_EXTENSIONS_API_RUNTIME_ELECTRON_RUNTIME_API_DELEGATE_H_
+#define SHELL_BROWSER_EXTENSIONS_API_RUNTIME_ELECTRON_RUNTIME_API_DELEGATE_H_
 
 #include <string>
 
@@ -16,10 +16,10 @@ class BrowserContext;
 
 namespace extensions {
 
-class AtomRuntimeAPIDelegate : public RuntimeAPIDelegate {
+class ElectronRuntimeAPIDelegate : public RuntimeAPIDelegate {
  public:
-  explicit AtomRuntimeAPIDelegate(content::BrowserContext* browser_context);
-  ~AtomRuntimeAPIDelegate() override;
+  explicit ElectronRuntimeAPIDelegate(content::BrowserContext* browser_context);
+  ~ElectronRuntimeAPIDelegate() override;
 
   // RuntimeAPIDelegate implementation.
   void AddUpdateObserver(UpdateObserver* observer) override;
@@ -34,9 +34,9 @@ class AtomRuntimeAPIDelegate : public RuntimeAPIDelegate {
  private:
   content::BrowserContext* browser_context_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomRuntimeAPIDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ElectronRuntimeAPIDelegate);
 };
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_API_RUNTIME_ATOM_RUNTIME_API_DELEGATE_H_
+#endif  // SHELL_BROWSER_EXTENSIONS_API_RUNTIME_ELECTRON_RUNTIME_API_DELEGATE_H_
