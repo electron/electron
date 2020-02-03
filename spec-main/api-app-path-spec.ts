@@ -240,25 +240,25 @@ describe('app path module', () => {
     })
   })
 
-//  describe('getPath("logs")', () => {
-//    const logsPaths = {
-//      'darwin': path.resolve(os.homedir(), 'Library', 'Logs'),
-//      'linux': path.resolve(app.getPath('userData'), 'logs'),
-//      'win32': path.resolve(app.getPath('userData'), 'logs'),
-//    }
+  //  describe('getPath("logs")', () => {
+  //    const logsPaths = {
+  //      'darwin': path.resolve(os.homedir(), 'Library', 'Logs'),
+  //      'linux': path.resolve(app.getPath('userData'), 'logs'),
+  //      'win32': path.resolve(app.getPath('userData'), 'logs'),
+  //    }
 
-//    it('has no logs directory by default', () => {
-//      const osLogPath = (logsPaths as any)[process.platform]
-//      expect(fs.existsSync(osLogPath)).to.be.false()
-//    })
+  //    it('has no logs directory by default', () => {
+  //      const osLogPath = (logsPaths as any)[process.platform]
+  //      expect(fs.existsSync(osLogPath)).to.be.false()
+  //    })
 
-//    it('creates a new logs directory if one does not exist', () => {
-//      expect(() => { app.getPath('logs') }).to.not.throw()
+  //    it('creates a new logs directory if one does not exist', () => {
+  //      expect(() => { app.getPath('logs') }).to.not.throw()
 
-//      const osLogPath = (logsPaths as any)[process.platform]
-//      expect(fs.existsSync(osLogPath)).to.be.true()
-//    })
-  //})
+  //      const osLogPath = (logsPaths as any)[process.platform]
+  //      expect(fs.existsSync(osLogPath)).to.be.true()
+  //    })
+  //  })
 })
 
 async function runTestApp (name: string, ...args: any[]) {
