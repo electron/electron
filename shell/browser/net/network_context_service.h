@@ -10,7 +10,7 @@
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/network_context.mojom.h"
-#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/electron_browser_context.h"
 
 namespace electron {
 
@@ -33,7 +33,7 @@ class NetworkContextService : public KeyedService {
       bool in_memory,
       const base::FilePath& path);
 
-  AtomBrowserContext* browser_context_;
+  ElectronBrowserContext* browser_context_;
   ProxyConfigMonitor proxy_config_monitor_;
 };
 

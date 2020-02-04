@@ -6,7 +6,7 @@
 
 namespace electron {
 
-MenuModelAdapter::MenuModelAdapter(AtomMenuModel* menu_model)
+MenuModelAdapter::MenuModelAdapter(ElectronMenuModel* menu_model)
     : views::MenuModelAdapter(menu_model), menu_model_(menu_model) {}
 
 MenuModelAdapter::~MenuModelAdapter() = default;
@@ -16,7 +16,7 @@ bool MenuModelAdapter::GetAccelerator(int id,
   ui::MenuModel* model = menu_model_;
   int index = 0;
   if (ui::MenuModel::GetModelAndIndexForCommandId(id, &model, &index)) {
-    return static_cast<AtomMenuModel*>(model)->GetAcceleratorAtWithParams(
+    return static_cast<ElectronMenuModel*>(model)->GetAcceleratorAtWithParams(
         index, true, accelerator);
   }
   return false;

@@ -7,7 +7,7 @@
 #include <memory>
 
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
-#include "shell/browser/extensions/atom_extension_web_contents_observer.h"
+#include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"
 
 namespace extensions {
@@ -23,7 +23,7 @@ MessagingDelegate* ElectronExtensionsAPIClient::GetMessagingDelegate() {
 
 void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
     content::WebContents* web_contents) const {
-  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+  extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
 }
 

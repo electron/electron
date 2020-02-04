@@ -16,7 +16,7 @@
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
 class ResolveProxyHelper
     : public base::RefCountedThreadSafe<ResolveProxyHelper>,
@@ -24,7 +24,7 @@ class ResolveProxyHelper
  public:
   using ResolveProxyCallback = base::OnceCallback<void(std::string)>;
 
-  explicit ResolveProxyHelper(AtomBrowserContext* browser_context);
+  explicit ResolveProxyHelper(ElectronBrowserContext* browser_context);
 
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
 
@@ -65,7 +65,7 @@ class ResolveProxyHelper
   mojo::Receiver<network::mojom::ProxyLookupClient> receiver_{this};
 
   // Weak Ref
-  AtomBrowserContext* browser_context_;
+  ElectronBrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
 };

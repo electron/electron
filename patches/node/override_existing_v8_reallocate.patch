@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 3 Feb 2020 10:06:45 -0800
+Subject: Override existing V8 Reallocate
+
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/2007274.
+Reallocate has been implemented by V8 itself, so this function must now
+be overridden. This patch can be removed once the relevant version of V8
+makes its way into Node.js
+
+diff --git a/src/node_internals.h b/src/node_internals.h
+index c55ddf6988344eef5fd9efc3b24337d3b1e4cdbb..892c7a5ca870a3e57b08bed5a81cce6ab0fc39ee 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -115,7 +115,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+   void* AllocateUninitialized(size_t size) override
+     { return node::UncheckedMalloc(size); }
+   void Free(void* data, size_t) override { free(data); }
+-  virtual void* Reallocate(void* data, size_t old_size, size_t size) {
++  virtual void* Reallocate(void* data, size_t old_size, size_t size) override {
+     return static_cast<void*>(
+         UncheckedRealloc<char>(static_cast<char*>(data), size));
+   }

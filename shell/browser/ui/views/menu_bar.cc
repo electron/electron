@@ -18,7 +18,7 @@
 #include "ui/views/widget/widget.h"
 
 #if defined(USE_X11)
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #endif
 
 #if defined(OS_WIN)
@@ -68,7 +68,7 @@ MenuBar::~MenuBar() {
   window_->GetFocusManager()->RemoveFocusChangeListener(color_updater_.get());
 }
 
-void MenuBar::SetMenu(AtomMenuModel* model) {
+void MenuBar::SetMenu(ElectronMenuModel* model) {
   menu_model_ = model;
   RebuildChildren();
 }
@@ -101,7 +101,7 @@ int MenuBar::GetItemCount() const {
 }
 
 bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
-                                           AtomMenuModel** menu_model,
+                                           ElectronMenuModel** menu_model,
                                            views::MenuButton** button) {
   if (!GetBoundsInScreen().Contains(screenPoint))
     return false;
@@ -109,7 +109,7 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
   auto children = GetChildrenInZOrder();
   for (int i = 0, n = children.size(); i < n; ++i) {
     if (children[i]->GetBoundsInScreen().Contains(screenPoint) &&
-        (menu_model_->GetTypeAt(i) == AtomMenuModel::TYPE_SUBMENU)) {
+        (menu_model_->GetTypeAt(i) == ElectronMenuModel::TYPE_SUBMENU)) {
       *menu_model = menu_model_->GetSubmenuModelAt(i);
       *button = static_cast<views::MenuButton*>(children[i]);
       return true;
@@ -265,8 +265,8 @@ void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
     window_->RequestFocus();
 
   int id = source->tag();
-  AtomMenuModel::ItemType type = menu_model_->GetTypeAt(id);
-  if (type != AtomMenuModel::TYPE_SUBMENU) {
+  ElectronMenuModel::ItemType type = menu_model_->GetTypeAt(id);
+  if (type != ElectronMenuModel::TYPE_SUBMENU) {
     menu_model_->ActivatedAt(id, 0);
     return;
   }
@@ -283,10 +283,10 @@ void MenuBar::RefreshColorCache() {
   const ui::NativeTheme* theme = GetNativeTheme();
   if (theme) {
 #if defined(USE_X11)
-    background_color_ = libgtkui::GetBgColor("GtkMenuBar#menubar");
-    enabled_color_ = libgtkui::GetFgColor(
-        "GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
-    disabled_color_ = libgtkui::GetFgColor(
+    background_color_ = gtk::GetBgColor("GtkMenuBar#menubar");
+    enabled_color_ =
+        gtk::GetFgColor("GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
+    disabled_color_ = gtk::GetFgColor(
         "GtkMenuBar#menubar GtkMenuItem#menuitem:disabled GtkLabel");
 #else
     background_color_ =

@@ -12,7 +12,7 @@
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/ui/gtk_util.h"
 #include "shell/common/application_info.h"

@@ -68,11 +68,11 @@ bool StringToAccelerator(const std::string& shortcut,
 }
 
 void GenerateAcceleratorTable(AcceleratorTable* table,
-                              electron::AtomMenuModel* model) {
+                              electron::ElectronMenuModel* model) {
   int count = model->GetItemCount();
   for (int i = 0; i < count; ++i) {
-    electron::AtomMenuModel::ItemType type = model->GetTypeAt(i);
-    if (type == electron::AtomMenuModel::TYPE_SUBMENU) {
+    electron::ElectronMenuModel::ItemType type = model->GetTypeAt(i);
+    if (type == electron::ElectronMenuModel::TYPE_SUBMENU) {
       auto* submodel = model->GetSubmenuModelAt(i);
       GenerateAcceleratorTable(table, submodel);
     } else {

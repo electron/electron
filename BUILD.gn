@@ -136,7 +136,7 @@ webpack_build("electron_content_script_bundle") {
   out_file = "$target_gen_dir/js2c/content_script_bundle.js"
 }
 
-copy("atom_js2c_copy") {
+copy("electron_js2c_copy") {
   sources = [
     "lib/common/asar.js",
     "lib/common/asar_init.js",
@@ -144,12 +144,12 @@ copy("atom_js2c_copy") {
   outputs = [ "$target_gen_dir/js2c/{{source_file_part}}" ]
 }
 
-action("atom_js2c") {
+action("electron_js2c") {
   deps = [
-    ":atom_js2c_copy",
     ":electron_browser_bundle",
     ":electron_content_script_bundle",
     ":electron_isolated_renderer_bundle",
+    ":electron_js2c_copy",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
     ":electron_worker_bundle",
@@ -170,7 +170,7 @@ action("atom_js2c") {
             ]
 
   inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
-  outputs = [ "$root_gen_dir/atom_natives.cc" ]
+  outputs = [ "$root_gen_dir/electron_natives.cc" ]
 
   script = "tools/js2c.py"
   args = [ rebase_path("//third_party/electron_node") ] +
@@ -312,7 +312,7 @@ source_set("electron_lib") {
   ]
 
   deps = [
-    ":atom_js2c",
+    ":electron_js2c",
     ":electron_version_header",
     ":manifests",
     ":resources",
@@ -468,7 +468,7 @@ source_set("electron_lib") {
       "shell/browser/ui/views/autofill_popup_view.h",
     ]
     if (is_mas_build) {
-      sources += [ "shell/browser/api/atom_api_app_mas.mm" ]
+      sources += [ "shell/browser/api/electron_api_app_mas.mm" ]
       sources -= [
         "shell/browser/auto_updater_mac.mm",
         "shell/common/crash_reporter/crash_reporter_mac.h",
@@ -494,7 +494,7 @@ source_set("electron_lib") {
     deps += [
       ":libnotify_loader",
       "//build/config/linux/gtk",
-      "//chrome/browser/ui/libgtkui",
+      "//chrome/browser/ui/gtk",
       "//dbus",
       "//device/bluetooth",
       "//third_party/breakpad:client",
@@ -595,27 +595,27 @@ source_set("electron_lib") {
       deps += [ "//third_party/webrtc/modules/desktop_capture" ]
     }
     sources += [
-      "shell/browser/api/atom_api_desktop_capturer.cc",
-      "shell/browser/api/atom_api_desktop_capturer.h",
+      "shell/browser/api/electron_api_desktop_capturer.cc",
+      "shell/browser/api/electron_api_desktop_capturer.h",
     ]
   }
 
   if (enable_view_api) {
     sources += [
-      "shell/browser/api/views/atom_api_box_layout.cc",
-      "shell/browser/api/views/atom_api_box_layout.h",
-      "shell/browser/api/views/atom_api_button.cc",
-      "shell/browser/api/views/atom_api_button.h",
-      "shell/browser/api/views/atom_api_label_button.cc",
-      "shell/browser/api/views/atom_api_label_button.h",
-      "shell/browser/api/views/atom_api_layout_manager.cc",
-      "shell/browser/api/views/atom_api_layout_manager.h",
-      "shell/browser/api/views/atom_api_md_text_button.cc",
-      "shell/browser/api/views/atom_api_md_text_button.h",
-      "shell/browser/api/views/atom_api_resize_area.cc",
-      "shell/browser/api/views/atom_api_resize_area.h",
-      "shell/browser/api/views/atom_api_text_field.cc",
-      "shell/browser/api/views/atom_api_text_field.h",
+      "shell/browser/api/views/electron_api_box_layout.cc",
+      "shell/browser/api/views/electron_api_box_layout.h",
+      "shell/browser/api/views/electron_api_button.cc",
+      "shell/browser/api/views/electron_api_button.h",
+      "shell/browser/api/views/electron_api_label_button.cc",
+      "shell/browser/api/views/electron_api_label_button.h",
+      "shell/browser/api/views/electron_api_layout_manager.cc",
+      "shell/browser/api/views/electron_api_layout_manager.h",
+      "shell/browser/api/views/electron_api_md_text_button.cc",
+      "shell/browser/api/views/electron_api_md_text_button.h",
+      "shell/browser/api/views/electron_api_resize_area.cc",
+      "shell/browser/api/views/electron_api_resize_area.h",
+      "shell/browser/api/views/electron_api_text_field.cc",
+      "shell/browser/api/views/electron_api_text_field.h",
     ]
   }
 
@@ -817,7 +817,7 @@ if (is_mac) {
       }
       defines = [ "HELPER_EXECUTABLE" ]
       sources = filenames.app_sources
-      sources += [ "shell/common/atom_constants.cc" ]
+      sources += [ "shell/common/electron_constants.cc" ]
       include_dirs = [ "." ]
       info_plist = "shell/renderer/resources/mac/Info.plist"
       extra_substitutions =
@@ -919,7 +919,7 @@ if (is_mac) {
   mac_app_bundle("electron_app") {
     output_name = electron_product_name
     sources = filenames.app_sources
-    sources += [ "shell/common/atom_constants.cc" ]
+    sources += [ "shell/common/electron_constants.cc" ]
     include_dirs = [ "." ]
     deps = [
       ":electron_app_framework_bundle_data",

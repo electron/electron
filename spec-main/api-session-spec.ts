@@ -234,7 +234,7 @@ describe('session module', () => {
           )
 
           appProcess.stdout.on('data', data => { output += data })
-          appProcess.stdout.on('end', () => {
+          appProcess.on('exit', () => {
             resolve(output.replace(/(\r\n|\n|\r)/gm, ''))
           })
         })

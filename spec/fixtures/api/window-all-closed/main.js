@@ -14,7 +14,7 @@ app.on('quit', () => {
   process.stdout.end()
 })
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   const win = new BrowserWindow()
   win.close()
 })

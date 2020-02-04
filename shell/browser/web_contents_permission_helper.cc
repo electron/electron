@@ -10,7 +10,7 @@
 
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_process_host.h"
-#include "shell/browser/atom_permission_manager.h"
+#include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/media/media_stream_devices_controller.h"
 
 namespace {
@@ -69,7 +69,7 @@ void WebContentsPermissionHelper::RequestPermission(
     bool user_gesture,
     const base::DictionaryValue* details) {
   auto* rfh = web_contents_->GetMainFrame();
-  auto* permission_manager = static_cast<AtomPermissionManager*>(
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermissionWithDetails(
@@ -81,7 +81,7 @@ bool WebContentsPermissionHelper::CheckPermission(
     content::PermissionType permission,
     const base::DictionaryValue* details) const {
   auto* rfh = web_contents_->GetMainFrame();
-  auto* permission_manager = static_cast<AtomPermissionManager*>(
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
   return permission_manager->CheckPermissionWithDetails(permission, rfh, origin,

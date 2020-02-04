@@ -8,10 +8,10 @@ Node.js will pick this up when they roll next.
 CL: https://chromium-review.googlesource.com/c/v8/v8/+/1868620
 
 diff --git a/src/node_platform.h b/src/node_platform.h
-index d2eb325c12113e3066596cae4b0b0e9dce16c1b6..9a7395f6c93d7a90e41ad6f4263e6bdefdcc0824 100644
+index 24f7b337bb8fd7825cda4a4bfc9bafeb0f7aece2..599de93f69d2ef73b833c9138c9640202ef167a7 100644
 --- a/src/node_platform.h
 +++ b/src/node_platform.h
-@@ -145,14 +145,6 @@ class NodePlatform : public MultiIsolatePlatform {
+@@ -147,14 +147,6 @@ class NodePlatform : public MultiIsolatePlatform {
    void CallOnWorkerThread(std::unique_ptr<v8::Task> task) override;
    void CallDelayedOnWorkerThread(std::unique_ptr<v8::Task> task,
                                   double delay_in_seconds) override;

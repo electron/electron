@@ -27,7 +27,7 @@ should use `themeSource` below.
 
 ### `nativeTheme.themeSource`
 
-A `String` property that can be `system`, `light` or `dark`.  It is used to override and supercede
+A `String` property that can be `system`, `light` or `dark`.  It is used to override and supersede
 the value that Chromium has chosen to use internally.
 
 Setting this property to `system` will remove the override and

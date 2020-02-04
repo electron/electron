@@ -20,7 +20,7 @@
 #include "net/http/http_version.h"
 #include "net/url_request/redirect_info.h"
 #include "services/network/public/cpp/resource_request.h"
-#include "shell/browser/api/atom_api_data_pipe_holder.h"
+#include "shell/browser/api/electron_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -364,6 +364,7 @@ v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
   gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("hostname", val.hostname);
   dict.Set("certificate", val.certificate);
+  dict.Set("validatedCertificate", val.validated_certificate);
   dict.Set("verificationResult", val.default_result);
   dict.Set("errorCode", val.error_code);
   return ConvertToV8(isolate, dict);

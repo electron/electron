@@ -23,7 +23,7 @@
 #include "ui/gfx/native_widget_types.h"
 #include "url/gurl.h"
 
-#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 
 namespace extensions {
 

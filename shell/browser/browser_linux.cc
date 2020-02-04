@@ -16,7 +16,7 @@
 #include "shell/common/application_info.h"
 
 #if defined(USE_X11)
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "shell/browser/linux/unity_service.h"
 #endif
 

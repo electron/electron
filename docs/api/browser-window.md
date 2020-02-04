@@ -11,10 +11,7 @@ const { BrowserWindow } = require('electron')
 // Or use `remote` from the renderer process.
 // const { BrowserWindow } = require('electron').remote
 
-let win = new BrowserWindow({ width: 800, height: 600 })
-win.on('closed', () => {
-  win = null
-})
+const win = new BrowserWindow({ width: 800, height: 600 })
 
 // Load a remote URL
 win.loadURL('https://github.com')
@@ -229,6 +226,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       unless hovered over in the top left of the window. These custom buttons prevent
       issues with mouse events that occur with the standard window toolbar buttons.
       **Note:** This option is currently experimental.
+  * `trafficLightPosition` [Point](structures/point.md) (optional) - Set a custom position for the traffic light buttons. Can only be used with `titleBarStyle` set to `hidden`
   * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
     title bar in full screen mode on macOS for all `titleBarStyle` options.
     Default is `false`.
@@ -272,8 +270,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       OS-level sandbox and disabling the Node.js engine. This is not the same as
       the `nodeIntegration` option and the APIs available to the preload script
       are more limited. Read more about the option [here](sandbox-option.md).
-      **Note:** This option is currently experimental and may change or be
-      removed in future Electron releases.
     * `enableRemoteModule` Boolean (optional) - Whether to enable the [`remote`](remote.md) module.
       Default is `true`.
     * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
@@ -681,7 +677,7 @@ Returns `BrowserWindow | null` - The window that owns the given `browserView`. I
 
 Returns `BrowserWindow` - The window with the given `id`.
 
-#### `BrowserWindow.addExtension(path)`
+#### `BrowserWindow.addExtension(path)` _Deprecated_
 
 * `path` String
 
@@ -692,7 +688,10 @@ The method will also not return if the extension's manifest is missing or incomp
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `BrowserWindow.removeExtension(name)`
+**Note:** This method is deprecated. Instead, use
+[`ses.loadExtension(path)`](session.md#sesloadextensionpath).
+
+#### `BrowserWindow.removeExtension(name)` _Deprecated_
 
 * `name` String
 
@@ -701,7 +700,10 @@ Remove a Chrome extension by name.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `BrowserWindow.getExtensions()`
+**Note:** This method is deprecated. Instead, use
+[`ses.removeExtension(extension_id)`](session.md#sesremoveextensionextensionid).
+
+#### `BrowserWindow.getExtensions()` _Deprecated_
 
 Returns `Record<String, ExtensionInfo>` - The keys are the extension names and each value is
 an Object containing `name` and `version` properties.
@@ -709,7 +711,10 @@ an Object containing `name` and `version` properties.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `BrowserWindow.addDevToolsExtension(path)`
+**Note:** This method is deprecated. Instead, use
+[`ses.getAllExtensions()`](session.md#sesgetallextensions).
+
+#### `BrowserWindow.addDevToolsExtension(path)` _Deprecated_
 
 * `path` String
 
@@ -725,7 +730,10 @@ The method will also not return if the extension's manifest is missing or incomp
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `BrowserWindow.removeDevToolsExtension(name)`
+**Note:** This method is deprecated. Instead, use
+[`ses.loadExtension(path)`](session.md#sesloadextensionpath).
+
+#### `BrowserWindow.removeDevToolsExtension(name)` _Deprecated_
 
 * `name` String
 
@@ -734,7 +742,10 @@ Remove a DevTools extension by name.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `BrowserWindow.getDevToolsExtensions()`
+**Note:** This method is deprecated. Instead, use
+[`ses.removeExtension(extension_id)`](session.md#sesremoveextensionextensionid).
+
+#### `BrowserWindow.getDevToolsExtensions()` _Deprecated_
 
 Returns `Record<string, ExtensionInfo>` - The keys are the extension names and each value is
 an Object containing `name` and `version` properties.
@@ -750,6 +761,9 @@ console.log(installed)
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
+
+**Note:** This method is deprecated. Instead, use
+[`ses.getAllExtensions()`](session.md#sesgetallextensions).
 
 ### Instance Properties
 

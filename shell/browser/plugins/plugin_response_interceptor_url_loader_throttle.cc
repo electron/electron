@@ -31,7 +31,7 @@
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_stream_manager.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/common/manifest_handlers/mime_types_handler.h"
-#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/plugins/plugin_utils.h"
 
 namespace {

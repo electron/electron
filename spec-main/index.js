@@ -20,9 +20,6 @@ v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
 // Prevent the spec runner quiting when the first window closes
 app.on('window-all-closed', () => null)
-// TODO: This API should _probably_ only be enabled for the specific test that needs it
-// not the entire test suite
-app.commandLine.appendSwitch('ignore-certificate-errors')
 
 // Use fake device for Media Stream to replace actual camera and microphone.
 app.commandLine.appendSwitch('use-fake-device-for-media-stream')
@@ -35,7 +32,9 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
-  { scheme: 'no-fetch', privileges: { corsEnabled: true } }
+  { scheme: 'no-fetch', privileges: { corsEnabled: true } },
+  { scheme: 'foo', privileges: { standard: true } },
+  { scheme: 'bar', privileges: { standard: true } }
 ])
 
 app.whenReady().then(() => {

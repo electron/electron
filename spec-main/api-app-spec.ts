@@ -5,7 +5,7 @@ import * as http from 'http'
 import * as net from 'net'
 import * as fs from 'fs'
 import * as path from 'path'
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, session } from 'electron'
 import { emittedOnce } from './events-helpers'
 import { closeWindow, closeAllWindows } from './window-helpers'
 import { ifdescribe } from './spec-helpers'
@@ -160,7 +160,7 @@ describe('app module', () => {
       if (appProcess && appProcess.stdout) {
         appProcess.stdout.on('data', data => { output += data })
       }
-      const [code] = await emittedOnce(appProcess, 'close')
+      const [code] = await emittedOnce(appProcess, 'exit')
 
       if (process.platform !== 'win32') {
         expect(output).to.include('Exit event with code: 123')
@@ -173,7 +173,7 @@ describe('app module', () => {
       const electronPath = process.execPath
 
       appProcess = cp.spawn(electronPath, [appPath])
-      const [code, signal] = await emittedOnce(appProcess, 'close')
+      const [code, signal] = await emittedOnce(appProcess, 'exit')
 
       expect(signal).to.equal(null, 'exit signal should be null, if you see this please tag @MarshallOfSound')
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound')
@@ -194,7 +194,7 @@ describe('app module', () => {
       if (appProcess && appProcess.stdout) {
         appProcess.stdout.on('data', () => appProcess!.kill())
       }
-      const [code, signal] = await emittedOnce(appProcess, 'close')
+      const [code, signal] = await emittedOnce(appProcess, 'exit')
 
       const message = `code:\n${code}\nsignal:\n${signal}`
       expect(code).to.equal(0, message)
@@ -241,7 +241,7 @@ describe('app module', () => {
       const data2 = (await data2Promise)[0].toString('ascii')
       const secondInstanceArgsReceived: string[] = JSON.parse(data2.toString('ascii'))
       const expected = process.platform === 'win32'
-        ? [process.execPath, '--some-switch', '--allow-file-access-from-files', secondInstanceArgsReceived.find(x => x.includes('original-process-start-time')), appPath, 'some-arg']
+        ? [process.execPath, '--some-switch', '--allow-file-access-from-files', appPath, 'some-arg']
         : secondInstanceArgs
       expect(secondInstanceArgsReceived).to.eql(expected,
         `expected ${JSON.stringify(expected)} but got ${data2.toString('ascii')}`)
@@ -302,6 +302,15 @@ describe('app module', () => {
     it('sets the current activity', () => {
       app.setUserActivity('com.electron.testActivity', { testData: '123' })
       expect(app.getCurrentActivityType()).to.equal('com.electron.testActivity')
+    })
+  })
+
+  describe('certificate-error event', () => {
+    afterEach(closeAllWindows)
+    it('is emitted when visiting a server with a self-signed cert', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL(secureUrl)
+      await emittedOnce(app, 'certificate-error')
     })
   })
 
@@ -708,6 +717,7 @@ describe('app module', () => {
       if (process.platform === 'linux') {
         this.skip()
       }
+      session.fromPartition('empty-certificate').setCertificateVerifyProc((req, cb) => { cb(0) })
     })
 
     beforeEach(() => {
@@ -721,6 +731,8 @@ describe('app module', () => {
     })
 
     afterEach(() => closeWindow(w).then(() => { w = null as any }))
+
+    after(() => session.fromPartition('empty-certificate').setCertificateVerifyProc(null))
 
     it('can respond with empty certificate list', async () => {
       app.once('select-client-certificate', function (event, webContents, url, list, callback) {
