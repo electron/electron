@@ -432,18 +432,29 @@ step-electron-dist-store: &step-electron-dist-store
     path: src/out/Default/dist.zip
     destination: dist.zip
 
+step-electron-chromedriver-gn-gen: &step-electron-chromedriver-gn-gen
+  run:
+    name: chromedriver GN gen
+    command: |
+      cd src
+      if [ "$USE_GOMA" == "true" ]; then
+        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"//electron/build/args/goma.gn\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      else
+        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      fi
+
 step-electron-chromedriver-build: &step-electron-chromedriver-build
   run:
     name: Build chromedriver.zip
     command: |
       cd src
-      ninja -C out/Default chrome/test/chromedriver -j $NUMBER_OF_NINJA_PROCESSES
-      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/Default/chromedriver
-      ninja -C out/Default electron:electron_chromedriver_zip
+      ninja -C out/chromedriver chrome/test/chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/chromedriver/chromedriver
+      ninja -C out/chromedriver electron:electron_chromedriver_zip
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
-    path: src/out/Default/chromedriver.zip
+    path: src/out/chromedriver/chromedriver.zip
     destination: chromedriver.zip
 
 step-nodejs-headers-build: &step-nodejs-headers-build
@@ -992,6 +1003,7 @@ steps-electron-build: &steps-electron-build
     - *step-maybe-cross-arch-snapshot-store
 
     # chromedriver
+    - *step-electron-chromedriver-gn-gen
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
@@ -1082,6 +1094,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-mksnapshot-store
 
     # chromedriver
+    - *step-electron-chromedriver-gn-gen
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
@@ -1111,8 +1124,8 @@ steps-chromedriver-build: &steps-chromedriver-build
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-fix-sync-on-mac
-    - *step-gn-gen-default
 
+    - *step-electron-chromedriver-gn-gen
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
@@ -1416,6 +1429,7 @@ commands:
             - *step-maybe-cross-arch-snapshot-store
 
             # chromedriver
+            - *step-electron-chromedriver-gn-gen
             - *step-electron-chromedriver-build
             - *step-electron-chromedriver-store
 
