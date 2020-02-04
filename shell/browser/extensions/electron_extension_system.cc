@@ -47,8 +47,8 @@ ElectronExtensionSystem::~ElectronExtensionSystem() = default;
 
 void ElectronExtensionSystem::LoadExtension(
     const base::FilePath& extension_dir,
-    base::OnceCallback<void(const Extension*)> loaded) {
-  extension_loader_->LoadExtension(extension_dir, std::move(loaded));
+    base::OnceCallback<void(const Extension*, const std::string&)> cb) {
+  extension_loader_->LoadExtension(extension_dir, std::move(cb));
 }
 
 void ElectronExtensionSystem::FinishInitialization() {

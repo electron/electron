@@ -1,6 +1,6 @@
 const { app } = require('electron')
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   const payload = {
     hasSwitch: app.commandLine.hasSwitch('foobar'),
     getSwitchValue: app.commandLine.getSwitchValue('foobar')

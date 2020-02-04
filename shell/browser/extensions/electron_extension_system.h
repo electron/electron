@@ -39,8 +39,9 @@ class ElectronExtensionSystem : public ExtensionSystem {
 
   // Loads an unpacked extension from a directory. Returns the extension on
   // success, or nullptr otherwise.
-  void LoadExtension(const base::FilePath& extension_dir,
-                     base::OnceCallback<void(const Extension*)> loaded);
+  void LoadExtension(
+      const base::FilePath& extension_dir,
+      base::OnceCallback<void(const Extension*, const std::string&)> cb);
 
   // Finish initialization for the shell extension system.
   void FinishInitialization();

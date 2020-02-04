@@ -12,7 +12,7 @@ const FIVE_MINUTES = 5 * 60 * 1000
 
 let window
 
-app.once('ready', () => {
+app.whenReady().then(() => {
   window = new BrowserWindow({
     show: false,
     webPreferences: {

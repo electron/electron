@@ -12,6 +12,7 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/sequenced_task_runner.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/task_runner_util.h"
 #include "base/threading/thread_restrictions.h"
 #include "extensions/browser/extension_file_task_runner.h"
@@ -25,16 +26,15 @@ using LoadErrorBehavior = ExtensionRegistrar::LoadErrorBehavior;
 
 namespace {
 
-scoped_refptr<const Extension> LoadUnpacked(
+std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
     const base::FilePath& extension_dir) {
   // app_shell only supports unpacked extensions.
   // NOTE: If you add packed extension support consider removing the flag
   // FOLLOW_SYMLINKS_ANYWHERE below. Packed extensions should not have symlinks.
-  // TODO(nornagon): these LOG()s should surface as JS exceptions
   if (!base::DirectoryExists(extension_dir)) {
-    LOG(ERROR) << "Extension directory not found: "
-               << extension_dir.AsUTF8Unsafe();
-    return nullptr;
+    std::string err = "Extension directory not found: " +
+                      base::UTF16ToUTF8(extension_dir.LossyDisplayName());
+    return std::make_pair(nullptr, err);
   }
 
   int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;
@@ -42,20 +42,23 @@ scoped_refptr<const Extension> LoadUnpacked(
   scoped_refptr<Extension> extension = file_util::LoadExtension(
       extension_dir, Manifest::COMMAND_LINE, load_flags, &load_error);
   if (!extension.get()) {
-    LOG(ERROR) << "Loading extension at " << extension_dir.value()
-               << " failed with: " << load_error;
-    return nullptr;
+    std::string err = "Loading extension at " +
+                      base::UTF16ToUTF8(extension_dir.LossyDisplayName()) +
+                      " failed with: " + load_error;
+    return std::make_pair(nullptr, err);
   }
 
+  std::string warnings;
   // Log warnings.
   if (extension->install_warnings().size()) {
-    LOG(WARNING) << "Warnings loading extension at " << extension_dir.value()
-                 << ":";
-    for (const auto& warning : extension->install_warnings())
-      LOG(WARNING) << warning.message;
+    warnings += "Warnings loading extension at " +
+                base::UTF16ToUTF8(extension_dir.LossyDisplayName()) + ": ";
+    for (const auto& warning : extension->install_warnings()) {
+      warnings += warning.message + " ";
+    }
   }
 
-  return extension;
+  return std::make_pair(extension, warnings);
 }
 
 }  // namespace
@@ -70,12 +73,12 @@ ElectronExtensionLoader::~ElectronExtensionLoader() = default;
 
 void ElectronExtensionLoader::LoadExtension(
     const base::FilePath& extension_dir,
-    base::OnceCallback<void(const Extension*)> loaded) {
+    base::OnceCallback<void(const Extension*, const std::string&)> cb) {
   base::PostTaskAndReplyWithResult(
       GetExtensionFileTaskRunner().get(), FROM_HERE,
       base::BindOnce(&LoadUnpacked, extension_dir),
       base::BindOnce(&ElectronExtensionLoader::FinishExtensionLoad,
-                     weak_factory_.GetWeakPtr(), std::move(loaded)));
+                     weak_factory_.GetWeakPtr(), std::move(cb)));
 }
 
 void ElectronExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
@@ -101,17 +104,19 @@ void ElectronExtensionLoader::UnloadExtension(
 }
 
 void ElectronExtensionLoader::FinishExtensionLoad(
-    base::OnceCallback<void(const Extension*)> done,
-    scoped_refptr<const Extension> extension) {
+    base::OnceCallback<void(const Extension*, const std::string&)> cb,
+    std::pair<scoped_refptr<const Extension>, std::string> result) {
+  scoped_refptr<const Extension> extension = result.first;
   if (extension) {
     extension_registrar_.AddExtension(extension);
   }
-  std::move(done).Run(extension.get());
+  std::move(cb).Run(extension.get(), result.second);
 }
 
 void ElectronExtensionLoader::FinishExtensionReload(
     const ExtensionId& old_extension_id,
-    scoped_refptr<const Extension> extension) {
+    std::pair<scoped_refptr<const Extension>, std::string> result) {
+  scoped_refptr<const Extension> extension = result.first;
   if (extension) {
     extension_registrar_.AddExtension(extension);
   }

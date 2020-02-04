@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
@@ -34,9 +35,9 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
 
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
-  void LoadExtension(
-      const base::FilePath& extension_dir,
-      base::OnceCallback<void(const Extension* extension)> loaded);
+  void LoadExtension(const base::FilePath& extension_dir,
+                     base::OnceCallback<void(const Extension* extension,
+                                             const std::string&)> cb);
 
   // Starts reloading the extension. A keep-alive is maintained until the
   // reload succeeds/fails. If the extension is an app, it will be launched upon
@@ -51,11 +52,13 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
  private:
   // If the extension loaded successfully, enables it. If it's an app, launches
   // it. If the load failed, updates ShellKeepAliveRequester.
-  void FinishExtensionReload(const ExtensionId& old_extension_id,
-                             scoped_refptr<const Extension> extension);
+  void FinishExtensionReload(
+      const ExtensionId& old_extension_id,
+      std::pair<scoped_refptr<const Extension>, std::string> result);
 
-  void FinishExtensionLoad(base::OnceCallback<void(const Extension*)> loaded,
-                           scoped_refptr<const Extension> extension);
+  void FinishExtensionLoad(
+      base::OnceCallback<void(const Extension*, const std::string&)> cb,
+      std::pair<scoped_refptr<const Extension>, std::string> result);
 
   // ExtensionRegistrar::Delegate:
   void PreAddExtension(const Extension* extension,
