@@ -737,7 +737,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   if (it != intercepted_handlers_.end()) {
     // <scheme, <type, handler>>
     it->second.second.Run(
-        request, base::BindOnce(&AtomURLLoaderFactory::StartLoading,
+        request, base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
                                 std::move(loader), routing_id, request_id,
                                 options, request, std::move(client),
                                 traffic_annotation, this, it->second.first));

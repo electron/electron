@@ -14,9 +14,9 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
-#include "shell/browser/mac/atom_application.h"
-#include "shell/browser/mac/atom_application_delegate.h"
 #include "shell/browser/mac/dict_util.h"
+#include "shell/browser/mac/electron_application.h"
+#include "shell/browser/mac/electron_application_delegate.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
@@ -28,19 +28,20 @@
 namespace electron {
 
 void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
-  [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
+  [[ElectronApplication sharedApplication]
+      setShutdownHandler:std::move(handler)];
 }
 
 void Browser::Focus() {
-  [[AtomApplication sharedApplication] activateIgnoringOtherApps:NO];
+  [[ElectronApplication sharedApplication] activateIgnoringOtherApps:NO];
 }
 
 void Browser::Hide() {
-  [[AtomApplication sharedApplication] hide:nil];
+  [[ElectronApplication sharedApplication] hide:nil];
 }
 
 void Browser::Show() {
-  [[AtomApplication sharedApplication] unhide:nil];
+  [[ElectronApplication sharedApplication] unhide:nil];
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
@@ -161,7 +162,7 @@ void Browser::SetUserActivity(const std::string& type,
   std::string url_string;
   args->GetNext(&url_string);
 
-  [[AtomApplication sharedApplication]
+  [[ElectronApplication sharedApplication]
       setCurrentActivity:base::SysUTF8ToNSString(type)
             withUserInfo:DictionaryValueToNSDictionary(user_info)
           withWebpageURL:net::NSURLWithGURL(GURL(url_string))];
@@ -169,21 +170,21 @@ void Browser::SetUserActivity(const std::string& type,
 
 std::string Browser::GetCurrentActivityType() {
   NSUserActivity* userActivity =
-      [[AtomApplication sharedApplication] getCurrentActivity];
+      [[ElectronApplication sharedApplication] getCurrentActivity];
   return base::SysNSStringToUTF8(userActivity.activityType);
 }
 
 void Browser::InvalidateCurrentActivity() {
-  [[AtomApplication sharedApplication] invalidateCurrentActivity];
+  [[ElectronApplication sharedApplication] invalidateCurrentActivity];
 }
 
 void Browser::ResignCurrentActivity() {
-  [[AtomApplication sharedApplication] resignCurrentActivity];
+  [[ElectronApplication sharedApplication] resignCurrentActivity];
 }
 
 void Browser::UpdateCurrentActivity(const std::string& type,
                                     const base::DictionaryValue& user_info) {
-  [[AtomApplication sharedApplication]
+  [[ElectronApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
                withUserInfo:DictionaryValueToNSDictionary(user_info)];
 }
@@ -289,16 +290,17 @@ std::string Browser::GetExecutableFileProductName() const {
 }
 
 int Browser::DockBounce(BounceType type) {
-  return [[AtomApplication sharedApplication]
+  return [[ElectronApplication sharedApplication]
       requestUserAttention:static_cast<NSRequestUserAttentionType>(type)];
 }
 
 void Browser::DockCancelBounce(int request_id) {
-  [[AtomApplication sharedApplication] cancelUserAttentionRequest:request_id];
+  [[ElectronApplication sharedApplication]
+      cancelUserAttentionRequest:request_id];
 }
 
 void Browser::DockSetBadgeText(const std::string& label) {
-  NSDockTile* tile = [[AtomApplication sharedApplication] dockTile];
+  NSDockTile* tile = [[ElectronApplication sharedApplication] dockTile];
   [tile setBadgeLabel:base::SysUTF8ToNSString(label)];
 }
 
@@ -309,7 +311,7 @@ void Browser::DockDownloadFinished(const std::string& filePath) {
 }
 
 std::string Browser::DockGetBadgeText() {
-  NSDockTile* tile = [[AtomApplication sharedApplication] dockTile];
+  NSDockTile* tile = [[ElectronApplication sharedApplication] dockTile];
   return base::SysNSStringToUTF8([tile badgeLabel]);
 }
 
@@ -361,14 +363,14 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
   return handle;
 }
 
-void Browser::DockSetMenu(AtomMenuModel* model) {
-  AtomApplicationDelegate* delegate =
-      (AtomApplicationDelegate*)[NSApp delegate];
+void Browser::DockSetMenu(ElectronMenuModel* model) {
+  ElectronApplicationDelegate* delegate =
+      (ElectronApplicationDelegate*)[NSApp delegate];
   [delegate setApplicationDockMenu:model];
 }
 
 void Browser::DockSetIcon(const gfx::Image& image) {
-  [[AtomApplication sharedApplication]
+  [[ElectronApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
 }
 
@@ -391,7 +393,7 @@ void Browser::ShowAboutPanel() {
     options = [NSDictionary dictionaryWithDictionary:mutable_options];
   }
 
-  [[AtomApplication sharedApplication]
+  [[ElectronApplication sharedApplication]
       orderFrontStandardAboutPanelWithOptions:options];
 }
 
@@ -409,7 +411,7 @@ void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
 }
 
 void Browser::ShowEmojiPanel() {
-  [[AtomApplication sharedApplication] orderFrontCharacterPalette:nil];
+  [[ElectronApplication sharedApplication] orderFrontCharacterPalette:nil];
 }
 
 bool Browser::IsEmojiPanelSupported() {

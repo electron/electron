@@ -34,7 +34,7 @@ class Image;
 
 namespace electron {
 
-class AtomMenuModel;
+class ElectronMenuModel;
 
 // This class is used for control application-wide operations.
 class Browser : public WindowListObserver {
@@ -181,7 +181,7 @@ class Browser : public WindowListObserver {
   bool DockIsVisible();
 
   // Set docks' menu.
-  void DockSetMenu(AtomMenuModel* model);
+  void DockSetMenu(ElectronMenuModel* model);
 
   // Set docks' icon.
   void DockSetIcon(const gfx::Image& image);

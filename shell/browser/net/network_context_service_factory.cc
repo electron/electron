@@ -28,7 +28,8 @@ NetworkContextServiceFactory::~NetworkContextServiceFactory() = default;
 
 KeyedService* NetworkContextServiceFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {
-  return new NetworkContextService(static_cast<AtomBrowserContext*>(context));
+  return new NetworkContextService(
+      static_cast<ElectronBrowserContext*>(context));
 }
 
 content::BrowserContext* NetworkContextServiceFactory::GetBrowserContextToUse(

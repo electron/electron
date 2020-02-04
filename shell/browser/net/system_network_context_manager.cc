@@ -21,7 +21,7 @@
 #include "services/network/public/cpp/cross_thread_pending_shared_url_loader_factory.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
-#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/electron_browser_client.h"
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
@@ -220,7 +220,7 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
   network_context_params->context_name = std::string("system");
 
   network_context_params->user_agent =
-      electron::AtomBrowserClient::Get()->GetUserAgent();
+      electron::ElectronBrowserClient::Get()->GetUserAgent();
 
   network_context_params->http_cache_enabled = false;
 

@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "shell/browser/ui/atom_menu_model.h"
+#include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/menu_delegate.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "ui/views/accessible_pane_view.h"
@@ -46,7 +46,7 @@ class MenuBar : public views::AccessiblePaneView,
   ~MenuBar() override;
 
   // Replaces current menu with a new one.
-  void SetMenu(AtomMenuModel* menu_model);
+  void SetMenu(ElectronMenuModel* menu_model);
 
   // Shows underline under accelerators.
   void SetAcceleratorVisibility(bool visible);
@@ -62,7 +62,7 @@ class MenuBar : public views::AccessiblePaneView,
 
   // Get the menu under specified screen point.
   bool GetMenuButtonFromScreenPoint(const gfx::Point& point,
-                                    AtomMenuModel** menu_model,
+                                    ElectronMenuModel** menu_model,
                                     views::MenuButton** button);
 
   // electron::MenuDelegate::Observer:
@@ -96,7 +96,7 @@ class MenuBar : public views::AccessiblePaneView,
 #endif
 
   RootView* window_ = nullptr;
-  AtomMenuModel* menu_model_ = nullptr;
+  ElectronMenuModel* menu_model_ = nullptr;
 
   View* FindAccelChild(base::char16 key);
 

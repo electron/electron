@@ -21,11 +21,11 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "native_mate/dictionary.h"
 #include "shell/browser/native_browser_view_mac.h"
-#include "shell/browser/ui/cocoa/atom_native_widget_mac.h"
-#include "shell/browser/ui/cocoa/atom_ns_window.h"
-#include "shell/browser/ui/cocoa/atom_ns_window_delegate.h"
-#include "shell/browser/ui/cocoa/atom_preview_item.h"
-#include "shell/browser/ui/cocoa/atom_touch_bar.h"
+#include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
+#include "shell/browser/ui/cocoa/electron_ns_window.h"
+#include "shell/browser/ui/cocoa/electron_ns_window_delegate.h"
+#include "shell/browser/ui/cocoa/electron_preview_item.h"
+#include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -209,10 +209,10 @@
 
 @end
 
-@interface AtomProgressBar : NSProgressIndicator
+@interface ElectronProgressBar : NSProgressIndicator
 @end
 
-@implementation AtomProgressBar
+@implementation ElectronProgressBar
 
 - (void)drawRect:(NSRect)dirtyRect {
   if (self.style != NSProgressIndicatorBarStyle)
@@ -281,7 +281,7 @@ bool IsFramelessWindow(NSView* view) {
   NSWindow* nswindow = [view window];
   if (![nswindow respondsToSelector:@selector(shell)])
     return false;
-  NativeWindow* window = [static_cast<AtomNSWindow*>(nswindow) shell];
+  NativeWindow* window = [static_cast<ElectronNSWindow*>(nswindow) shell];
   return window && !window->has_frame();
 }
 
@@ -393,14 +393,14 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.native_widget = new AtomNativeWidgetMac(this, styleMask, widget());
+  params.native_widget = new ElectronNativeWidgetMac(this, styleMask, widget());
   widget()->Init(std::move(params));
-  window_ = static_cast<AtomNSWindow*>(
+  window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
 
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
-  window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
+  window_delegate_.reset([[ElectronNSWindowDelegate alloc] initWithShell:this]);
   [window_ setDelegate:window_delegate_];
 
   // Only use native parent window for non-modal windows.
@@ -874,7 +874,7 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
 
 void NativeWindowMac::PreviewFile(const std::string& path,
                                   const std::string& display_name) {
-  preview_item_.reset([[AtomPreviewItem alloc]
+  preview_item_.reset([[ElectronPreviewItem alloc]
       initWithURL:[NSURL fileURLWithPath:base::SysUTF8ToNSString(path)]
             title:base::SysUTF8ToNSString(display_name)]);
   [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
@@ -1298,7 +1298,7 @@ void NativeWindowMac::SetProgressBar(double progress,
 
     NSRect frame = NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0);
     NSProgressIndicator* progress_indicator =
-        [[[AtomProgressBar alloc] initWithFrame:frame] autorelease];
+        [[[ElectronProgressBar alloc] initWithFrame:frame] autorelease];
     [progress_indicator setStyle:NSProgressIndicatorBarStyle];
     [progress_indicator setIndeterminate:NO];
     [progress_indicator setBezeled:YES];
@@ -1524,7 +1524,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 void NativeWindowMac::SetTouchBar(
     const std::vector<mate::PersistentDictionary>& items) {
   if (@available(macOS 10.12.2, *)) {
-    touch_bar_.reset([[AtomTouchBar alloc]
+    touch_bar_.reset([[ElectronTouchBar alloc]
         initWithDelegate:window_delegate_.get()
                   window:this
                 settings:items]);

@@ -53,10 +53,14 @@ function cpplint (args) {
   }
 }
 
+function isObjCHeader (filename) {
+  return /\/(mac|cocoa)\//.test(filename)
+}
+
 const LINTERS = [ {
   key: 'c++',
   roots: ['shell', 'native_mate'],
-  test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
+  test: filename => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
   run: (opts, filenames) => {
     if (opts.fix) {
       spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames])

@@ -1,0 +1,145 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_
+#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_
+
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "base/compiler_specific.h"
+#include "base/macros.h"
+#include "build/build_config.h"
+#include "extensions/browser/extensions_browser_client.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
+
+class PrefService;
+
+namespace extensions {
+class ExtensionsAPIClient;
+class KioskDelegate;
+class ProcessManagerDelegate;
+class ProcessMap;
+}  // namespace extensions
+
+namespace electron {
+
+// An ExtensionsBrowserClient that supports a single content::BrowserContext
+// with no related incognito context.
+// Must be initialized via InitWithBrowserContext() once the BrowserContext is
+// created.
+class ElectronExtensionsBrowserClient
+    : public extensions::ExtensionsBrowserClient {
+ public:
+  ElectronExtensionsBrowserClient();
+  ~ElectronExtensionsBrowserClient() override;
+
+  // ExtensionsBrowserClient overrides:
+  bool IsShuttingDown() override;
+  bool AreExtensionsDisabled(const base::CommandLine& command_line,
+                             content::BrowserContext* context) override;
+  bool IsValidContext(content::BrowserContext* context) override;
+  bool IsSameContext(content::BrowserContext* first,
+                     content::BrowserContext* second) override;
+  bool HasOffTheRecordContext(content::BrowserContext* context) override;
+  content::BrowserContext* GetOffTheRecordContext(
+      content::BrowserContext* context) override;
+  content::BrowserContext* GetOriginalContext(
+      content::BrowserContext* context) override;
+  bool IsGuestSession(content::BrowserContext* context) const override;
+  bool IsExtensionIncognitoEnabled(
+      const std::string& extension_id,
+      content::BrowserContext* context) const override;
+  bool CanExtensionCrossIncognito(
+      const extensions::Extension* extension,
+      content::BrowserContext* context) const override;
+  base::FilePath GetBundleResourcePath(
+      const network::ResourceRequest& request,
+      const base::FilePath& extension_resources_path,
+      int* resource_id) const override;
+  void LoadResourceFromResourceBundle(
+      const network::ResourceRequest& request,
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      const base::FilePath& resource_relative_path,
+      int resource_id,
+      const std::string& content_security_policy,
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      bool send_cors_header) override;
+  bool AllowCrossRendererResourceLoad(
+      const GURL& url,
+      content::ResourceType resource_type,
+      ui::PageTransition page_transition,
+      int child_id,
+      bool is_incognito,
+      const extensions::Extension* extension,
+      const extensions::ExtensionSet& extensions,
+      const extensions::ProcessMap& process_map) override;
+  PrefService* GetPrefServiceForContext(
+      content::BrowserContext* context) override;
+  void GetEarlyExtensionPrefsObservers(
+      content::BrowserContext* context,
+      std::vector<extensions::EarlyExtensionPrefsObserver*>* observers)
+      const override;
+  extensions::ProcessManagerDelegate* GetProcessManagerDelegate()
+      const override;
+  std::unique_ptr<extensions::ExtensionHostDelegate>
+  CreateExtensionHostDelegate() override;
+  bool DidVersionUpdate(content::BrowserContext* context) override;
+  void PermitExternalProtocolHandler() override;
+  bool IsInDemoMode() override;
+  bool IsScreensaverInDemoMode(const std::string& app_id) override;
+  bool IsRunningInForcedAppMode() override;
+  bool IsAppModeForcedForApp(
+      const extensions::ExtensionId& extension_id) override;
+  bool IsLoggedInAsPublicAccount() override;
+  extensions::ExtensionSystemProvider* GetExtensionSystemFactory() override;
+  void RegisterExtensionInterfaces(
+      service_manager::BinderRegistryWithArgs<content::RenderFrameHost*>*
+          registry,
+      content::RenderFrameHost* render_frame_host,
+      const extensions::Extension* extension) const override;
+  std::unique_ptr<extensions::RuntimeAPIDelegate> CreateRuntimeAPIDelegate(
+      content::BrowserContext* context) const override;
+  const extensions::ComponentExtensionResourceManager*
+  GetComponentExtensionResourceManager() override;
+  void BroadcastEventToRenderers(
+      extensions::events::HistogramValue histogram_value,
+      const std::string& event_name,
+      std::unique_ptr<base::ListValue> args) override;
+  extensions::ExtensionCache* GetExtensionCache() override;
+  bool IsBackgroundUpdateAllowed() override;
+  bool IsMinBrowserVersionSupported(const std::string& min_version) override;
+  extensions::ExtensionWebContentsObserver* GetExtensionWebContentsObserver(
+      content::WebContents* web_contents) override;
+  extensions::KioskDelegate* GetKioskDelegate() override;
+  bool IsLockScreenContext(content::BrowserContext* context) override;
+  std::string GetApplicationLocale() override;
+  std::string GetUserAgent() const override;
+  void RegisterBrowserInterfaceBindersForFrame(
+      service_manager::BinderMapWithContext<content::RenderFrameHost*>* map,
+      content::RenderFrameHost* render_frame_host,
+      const extensions::Extension* extension) const override;
+
+  // |context| is the single BrowserContext used for IsValidContext().
+  // |pref_service| is used for GetPrefServiceForContext().
+  void InitWithBrowserContext(content::BrowserContext* context,
+                              PrefService* pref_service);
+
+  // Sets the API client.
+  void SetAPIClientForTest(extensions::ExtensionsAPIClient* api_client);
+
+ private:
+  // Support for extension APIs.
+  std::unique_ptr<extensions::ExtensionsAPIClient> api_client_;
+
+  // The extension cache used for download and installation.
+  std::unique_ptr<extensions::ExtensionCache> extension_cache_;
+
+  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsBrowserClient);
+};
+
+}  // namespace electron
+
+#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_

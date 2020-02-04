@@ -121,10 +121,10 @@ ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
 
 }  // namespace
 
-class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
+class ElectronBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
  public:
-  AtomBeginFrameTimer(int frame_rate_threshold_us,
-                      const base::Closure& callback)
+  ElectronBeginFrameTimer(int frame_rate_threshold_us,
+                          const base::Closure& callback)
       : callback_(callback) {
     time_source_ = std::make_unique<viz::DelayBasedTimeSource>(
         base::CreateSingleThreadTaskRunner({content::BrowserThread::UI}).get());
@@ -150,12 +150,13 @@ class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
   const base::Closure callback_;
   std::unique_ptr<viz::DelayBasedTimeSource> time_source_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomBeginFrameTimer);
+  DISALLOW_COPY_AND_ASSIGN(ElectronBeginFrameTimer);
 };
 
-class AtomDelegatedFrameHostClient : public content::DelegatedFrameHostClient {
+class ElectronDelegatedFrameHostClient
+    : public content::DelegatedFrameHostClient {
  public:
-  explicit AtomDelegatedFrameHostClient(OffScreenRenderWidgetHostView* view)
+  explicit ElectronDelegatedFrameHostClient(OffScreenRenderWidgetHostView* view)
       : view_(view) {}
 
   ui::Layer* DelegatedFrameHostGetLayer() const override {
@@ -194,7 +195,7 @@ class AtomDelegatedFrameHostClient : public content::DelegatedFrameHostClient {
  private:
   OffScreenRenderWidgetHostView* const view_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomDelegatedFrameHostClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronDelegatedFrameHostClient);
 };
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
@@ -231,7 +232,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
 
   delegated_frame_host_client_ =
-      std::make_unique<AtomDelegatedFrameHostClient>(this);
+      std::make_unique<ElectronDelegatedFrameHostClient>(this);
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack),
       delegated_frame_host_client_.get(),
@@ -1055,7 +1056,7 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
   if (begin_frame_timer_.get()) {
     begin_frame_timer_->SetFrameRateThresholdUs(frame_rate_threshold_us_);
   } else {
-    begin_frame_timer_ = std::make_unique<AtomBeginFrameTimer>(
+    begin_frame_timer_ = std::make_unique<ElectronBeginFrameTimer>(
         frame_rate_threshold_us_,
         base::BindRepeating(
             &OffScreenRenderWidgetHostView::OnBeginFrameTimerTick,

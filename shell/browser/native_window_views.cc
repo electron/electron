@@ -19,7 +19,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "native_mate/dictionary.h"
-#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_browser_view_views.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -27,7 +27,7 @@
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_view_manager.h"
 #include "shell/browser/window_list.h"
-#include "shell/common/atom_constants.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/native_mate_converters/image_converter.h"
 #include "shell/common/options_switches.h"
 #include "ui/aura/window_tree_host.h"
@@ -59,7 +59,7 @@
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "shell/browser/ui/views/win_frame_view.h"
-#include "shell/browser/ui/win/atom_desktop_native_widget_aura.h"
+#include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/display/screen.h"
@@ -189,7 +189,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget = new AtomDesktopNativeWidgetAura(this);
+  params.native_widget = new ElectronDesktopNativeWidgetAura(this);
 #elif defined(USE_X11)
   std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
@@ -989,7 +989,7 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 #endif
 }
 
-void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
+void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
 #if defined(USE_X11)
   // Remove global menu bar.
   if (global_menu_bar_ && menu_model == nullptr) {

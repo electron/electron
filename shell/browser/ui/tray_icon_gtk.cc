@@ -63,7 +63,7 @@ void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
   icon_->SetToolTip(tool_tip_);
 }
 
-void TrayIconGtk::SetContextMenu(AtomMenuModel* menu_model) {
+void TrayIconGtk::SetContextMenu(ElectronMenuModel* menu_model) {
   menu_model_ = menu_model;
   icon_->UpdatePlatformContextMenu(menu_model_);
 }

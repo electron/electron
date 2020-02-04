@@ -23,7 +23,7 @@
 #include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
-#include "shell/browser/net/atom_url_loader_factory.h"
+#include "shell/browser/net/electron_url_loader_factory.h"
 
 namespace electron {
 

@@ -31,13 +31,13 @@
 #include "content/public/browser/security_style_explanation.h"
 #include "content/public/browser/security_style_explanations.h"
 #include "printing/buildflags/buildflags.h"
-#include "shell/browser/atom_browser_client.h"
-#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/electron_browser_client.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_dialog_helper.h"
-#include "shell/common/atom_constants.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/options_switches.h"
 #include "storage/browser/file_system/isolated_context.h"
 
@@ -148,7 +148,7 @@ void AppendToFile(const base::FilePath& path, const std::string& content) {
 
 PrefService* GetPrefService(content::WebContents* web_contents) {
   auto* context = web_contents->GetBrowserContext();
-  return static_cast<electron::AtomBrowserContext*>(context)->prefs();
+  return static_cast<electron::ElectronBrowserContext*>(context)->prefs();
 }
 
 std::map<std::string, std::string> GetAddedFileSystemPaths(
@@ -186,7 +186,7 @@ CommonWebContentsDelegate::~CommonWebContentsDelegate() = default;
 
 void CommonWebContentsDelegate::InitWithWebContents(
     content::WebContents* web_contents,
-    AtomBrowserContext* browser_context,
+    ElectronBrowserContext* browser_context,
     bool is_guest) {
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
@@ -242,7 +242,7 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
     base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
         FROM_HERE,
         base::BindOnce(
-            [](scoped_refptr<AtomBrowserContext> browser_context,
+            [](scoped_refptr<ElectronBrowserContext> browser_context,
                std::unique_ptr<InspectableWebContents> web_contents) {
               web_contents.reset();
             },
