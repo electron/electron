@@ -15,9 +15,9 @@
 #include "base/run_loop.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "shell/browser/atom_browser_main_parts.h"
-#include "shell/browser/atom_paths.h"
 #include "shell/browser/browser_observer.h"
+#include "shell/browser/electron_browser_main_parts.h"
+#include "shell/browser/electron_paths.h"
 #include "shell/browser/login_handler.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
@@ -56,7 +56,7 @@ Browser::~Browser() {
 
 // static
 Browser* Browser::Get() {
-  return AtomBrowserMainParts::Get()->browser();
+  return ElectronBrowserMainParts::Get()->browser();
 }
 
 void Browser::Quit() {
@@ -77,7 +77,7 @@ void Browser::Exit(gin_helper::Arguments* args) {
   int code = 0;
   args->GetNext(&code);
 
-  if (!AtomBrowserMainParts::Get()->SetExitCode(code)) {
+  if (!ElectronBrowserMainParts::Get()->SetExitCode(code)) {
     // Message loop is not ready, quit directly.
     exit(code);
   } else {

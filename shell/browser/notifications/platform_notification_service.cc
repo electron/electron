@@ -7,7 +7,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/notification_event_dispatcher.h"
 #include "content/public/browser/render_process_host.h"
-#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/electron_browser_client.h"
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
@@ -72,7 +72,7 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
 }  // namespace
 
 PlatformNotificationService::PlatformNotificationService(
-    AtomBrowserClient* browser_client)
+    ElectronBrowserClient* browser_client)
     : browser_client_(browser_client) {}
 
 PlatformNotificationService::~PlatformNotificationService() = default;

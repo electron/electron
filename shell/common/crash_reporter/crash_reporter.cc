@@ -15,7 +15,7 @@
 #include "content/public/common/content_switches.h"
 #include "electron/electron_version.h"
 #include "shell/browser/browser.h"
-#include "shell/common/atom_constants.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 

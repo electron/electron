@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "base/observer_list.h"
-#include "shell/browser/ui/atom_menu_model.h"
+#include "shell/browser/ui/electron_menu_model.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 
 namespace views {
@@ -25,7 +25,7 @@ class MenuDelegate : public views::MenuDelegate {
   explicit MenuDelegate(MenuBar* menu_bar);
   ~MenuDelegate() override;
 
-  void RunMenu(AtomMenuModel* model,
+  void RunMenu(ElectronMenuModel* model,
                views::Button* button,
                ui::MenuSourceType source_type);
 

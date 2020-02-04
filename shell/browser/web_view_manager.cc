@@ -7,7 +7,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
-#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/electron_browser_context.h"
 
 namespace electron {
 

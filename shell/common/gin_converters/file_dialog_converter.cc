@@ -5,7 +5,7 @@
 #include "shell/common/gin_converters/file_dialog_converter.h"
 
 #include "gin/dictionary.h"
-#include "shell/browser/api/atom_api_browser_window.h"
+#include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
 

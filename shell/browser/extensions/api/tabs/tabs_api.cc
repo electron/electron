@@ -11,7 +11,7 @@
 #include "extensions/common/error_utils.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/permissions/permissions_data.h"
-#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 
 namespace extensions {
 
