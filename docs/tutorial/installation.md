@@ -69,6 +69,12 @@ For instance, to use the China mirror:
 ELECTRON_MIRROR="https://cdn.npm.taobao.org/dist/electron/"
 ```
 
+You may need to specify `ELECTRON_CUSTOM_DIR` to avoid url compose problem([#330](https://github.com/electron/electron-quick-start/issues/330#issuecomment-549865511)).
+E.g.:
+```plantext
+ELECTRON_CUSTOM_DIR="7.1.11"
+```
+
 #### Cache
 Alternatively, you can override the local cache. `@electron/get` will cache
 downloaded binaries in a local directory to not stress your network. You can use
