@@ -497,7 +497,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       # Build artifacts
       - src/out/Default/dist.zip
       - src/out/Default/mksnapshot.zip
-      - src/out/Default/chromedriver.zip
+      - src/out/chromedriver/chromedriver.zip
       - src/out/Default/shell_browser_ui_unittests
       - src/out/Default/gen/node_headers
       - src/out/ffmpeg/ffmpeg.zip
@@ -532,7 +532,7 @@ step-chromedriver-unzip: &step-chromedriver-unzip
   run:
     name: Unzip chromedriver.zip
     command: |
-      cd src/out/Default
+      cd src/out/chromedriver
       unzip -o chromedriver.zip
 
 step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
@@ -577,7 +577,7 @@ step-verify-chromedriver: &step-verify-chromedriver
     name: Verify ChromeDriver
     command: |
       cd src
-      python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
+      python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/chromedriver
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
