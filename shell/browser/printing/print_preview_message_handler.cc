@@ -23,6 +23,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "shell/common/api/locker.h"
 
 #include "shell/common/node_includes.h"
@@ -98,10 +99,16 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
     auto* client =
         printing::PrintCompositeClient::FromWebContents(web_contents());
     DCHECK(client);
+
+    auto callback =
+        base::BindOnce(&PrintPreviewMessageHandler::OnCompositePdfDocumentDone,
+                       weak_ptr_factory_.GetWeakPtr(), ids);
     client->DoCompositeDocumentToPdf(
         params.document_cookie, render_frame_host, content,
-        base::BindOnce(&PrintPreviewMessageHandler::OnCompositePdfDocumentDone,
-                       weak_ptr_factory_.GetWeakPtr(), ids));
+        mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+            std::move(callback),
+            printing::mojom::PdfCompositor::Status::kCompositingFailure,
+            base::ReadOnlySharedMemoryRegion()));
   } else {
     ResolvePromise(ids.request_id,
                    base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(
