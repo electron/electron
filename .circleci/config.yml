@@ -570,7 +570,6 @@ step-mksnapshot-build: &step-mksnapshot-build
       cd src
       ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
       gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
-      cat out/Default/mksnapshot_args
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
