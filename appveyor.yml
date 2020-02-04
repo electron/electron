@@ -187,7 +187,8 @@ test_script:
   - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --enable-logging)
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
-  - echo "About to verify mksnapshot"
+  - echo "About to verify mksnapshot"  
+  - if "%RUN_TESTS%"=="true" ( gn desc out\Default v8:run_mksnapshot_default args > out\Default\mksnapshot_args )
   - if "%RUN_TESTS%"=="true" ( echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd% )
   - echo "Done verifying mksnapshot"
   - if "%RUN_TESTS%"=="true" ( echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd% )
