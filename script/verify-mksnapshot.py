@@ -27,7 +27,7 @@ def main():
     with scoped_cwd(app_path):
       if args.snapshot_files_dir is None:
         with open(os.path.join(app_path, 'mksnapshot_args')) as f:
-          mkargs = f.readlines()
+          mkargs = file.read().splitlines()
         print(mkargs, sep = ", ")
         subprocess.check_call(mkargs + [ SNAPSHOT_SOURCE ], cwd=app_path)
         print('ok mksnapshot successfully created snapshot_blob.bin.')
