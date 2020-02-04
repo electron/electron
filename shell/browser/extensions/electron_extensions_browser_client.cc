@@ -27,9 +27,9 @@
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_url_handlers.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
-#include "shell/browser/atom_browser_client.h"
-#include "shell/browser/atom_browser_context.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/electron_browser_client.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/extensions/api/runtime/electron_runtime_api_delegate.h"
 #include "shell/browser/extensions/electron_extension_host_delegate.h"
 #include "shell/browser/extensions/electron_extension_system_factory.h"
@@ -71,7 +71,7 @@ bool ElectronExtensionsBrowserClient::AreExtensionsDisabled(
 }
 
 bool ElectronExtensionsBrowserClient::IsValidContext(BrowserContext* context) {
-  auto context_map = AtomBrowserContext::browser_context_map();
+  auto context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second && entry.second.get() == context)
       return true;
@@ -99,7 +99,7 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
     BrowserContext* context) {
   DCHECK(context);
   if (context->IsOffTheRecord()) {
-    return AtomBrowserContext::From("", false).get();
+    return ElectronBrowserContext::From("", false).get();
   } else {
     return context;
   }
@@ -194,7 +194,7 @@ bool ElectronExtensionsBrowserClient::AllowCrossRendererResourceLoad(
 
 PrefService* ElectronExtensionsBrowserClient::GetPrefServiceForContext(
     BrowserContext* context) {
-  return static_cast<AtomBrowserContext*>(context)->prefs();
+  return static_cast<ElectronBrowserContext*>(context)->prefs();
 }
 
 void ElectronExtensionsBrowserClient::GetEarlyExtensionPrefsObservers(
@@ -275,7 +275,7 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
 
   std::unique_ptr<extensions::Event> event(
       new extensions::Event(histogram_value, event_name, std::move(args)));
-  auto context_map = AtomBrowserContext::browser_context_map();
+  auto context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second) {
       extensions::EventRouter::Get(entry.second.get())
@@ -320,11 +320,11 @@ bool ElectronExtensionsBrowserClient::IsLockScreenContext(
 }
 
 std::string ElectronExtensionsBrowserClient::GetApplicationLocale() {
-  return AtomBrowserClient::Get()->GetApplicationLocale();
+  return ElectronBrowserClient::Get()->GetApplicationLocale();
 }
 
 std::string ElectronExtensionsBrowserClient::GetUserAgent() const {
-  return AtomBrowserClient::Get()->GetUserAgent();
+  return ElectronBrowserClient::Get()->GetUserAgent();
 }
 
 void ElectronExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(

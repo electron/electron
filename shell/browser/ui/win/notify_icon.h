@@ -68,9 +68,9 @@ class NotifyIcon : public TrayIcon {
   void RemoveBalloon() override;
   void Focus() override;
   void PopUpContextMenu(const gfx::Point& pos,
-                        AtomMenuModel* menu_model) override;
+                        ElectronMenuModel* menu_model) override;
   void CloseContextMenu() override;
-  void SetContextMenu(AtomMenuModel* menu_model) override;
+  void SetContextMenu(ElectronMenuModel* menu_model) override;
   gfx::Rect GetBounds() override;
 
  private:
@@ -93,7 +93,7 @@ class NotifyIcon : public TrayIcon {
   base::win::ScopedHICON icon_;
 
   // The context menu.
-  AtomMenuModel* menu_model_ = nullptr;
+  ElectronMenuModel* menu_model_ = nullptr;
 
   // An optional GUID used for identifying tray entries on Windows
   GUID guid_ = GUID_DEFAULT;

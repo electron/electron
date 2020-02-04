@@ -7,14 +7,14 @@
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/network_service_instance.h"
 #include "services/network/network_service.h"
-#include "shell/browser/atom_browser_client.h"
 #include "shell/browser/browser_process_impl.h"
+#include "shell/browser/electron_browser_client.h"
 #include "shell/browser/net/system_network_context_manager.h"
 
 namespace electron {
 
 NetworkContextService::NetworkContextService(content::BrowserContext* context)
-    : browser_context_(static_cast<AtomBrowserContext*>(context)),
+    : browser_context_(static_cast<ElectronBrowserContext*>(context)),
       proxy_config_monitor_(browser_context_->prefs()) {}
 
 NetworkContextService::~NetworkContextService() = default;
@@ -42,7 +42,7 @@ NetworkContextService::CreateNetworkContextParams(bool in_memory,
 
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
-          AtomBrowserClient::Get()->GetApplicationLocale());
+          ElectronBrowserClient::Get()->GetApplicationLocale());
 
   // Enable the HTTP cache.
   network_context_params->http_cache_enabled =

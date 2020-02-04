@@ -8,7 +8,7 @@
 
 namespace electron {
 
-const char NativeFrameView::kViewClassName[] = "AtomNativeFrameView";
+const char NativeFrameView::kViewClassName[] = "ElectronNativeFrameView";
 
 NativeFrameView::NativeFrameView(NativeWindow* window, views::Widget* widget)
     : views::NativeFrameView(widget), window_(window) {}
