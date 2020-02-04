@@ -101,6 +101,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
       storage_policy_(new SpecialStoragePolicy),
       in_memory_(in_memory),
       weak_factory_(this) {
+  base::ScopedAllowBlockingForTesting allow_blocking;
   user_agent_ = AtomBrowserClient::Get()->GetUserAgent();
 
   // Read options.
