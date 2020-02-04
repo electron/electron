@@ -179,6 +179,24 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       const receivedMessage = await w.webContents.executeJavaScript(`window.completionPromise`)
       expect(receivedMessage).to.deep.equal({ some: 'message' })
     })
+
+    it('can use extension.getBackgroundPage from a ui page', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'))
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
+      await w.loadURL(`chrome-extension://${id}/page-get-background.html`)
+      const receivedMessage = await w.webContents.executeJavaScript(`window.completionPromise`)
+      expect(receivedMessage).to.deep.equal({ some: 'message' })
+    })
+
+    it('can use runtime.getBackgroundPage from a ui page', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'))
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
+      await w.loadURL(`chrome-extension://${id}/page-runtime-get-background.html`)
+      const receivedMessage = await w.webContents.executeJavaScript(`window.completionPromise`)
+      expect(receivedMessage).to.deep.equal({ some: 'message' })
+    })
   })
 
   describe('devtools extensions', () => {
