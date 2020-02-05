@@ -495,6 +495,14 @@ Returns `Boolean` - Whether the word was successfully written to the custom dict
 
 **Note:** On macOS and Windows 10 this word will be written to the OS custom dictionary as well
 
+#### `ses.removeWordFromSpellCheckerDictionary(word)`
+
+* `word` String - The word you want to remove from the dictionary
+
+Returns `Boolean` - Whether the word was successfully removed from the custom dictionary.
+
+**Note:** On macOS and Windows 10 this word will be removed from the OS custom dictionary as well
+
 #### `ses.loadExtension(path)`
 
 * `path` String - Path to a directory containing an unpacked Chrome extension
