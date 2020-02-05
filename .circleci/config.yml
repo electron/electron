@@ -953,7 +953,6 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
           sudo chown -R $(id -u):$(id -g) /portal
           mv ./src /portal
     - *step-save-src-cache
-    - *step-save-brew-cache
 
 steps-electron-gn-check: &steps-electron-gn-check
   steps:
@@ -1349,6 +1348,7 @@ commands:
                 at: .
       - *step-restore-brew-cache
       - *step-install-gnutar-on-mac
+      - *step-save-brew-cache
       - when:
           condition: << parameters.checkout-and-assume-cache >>
           steps:
