@@ -69,7 +69,7 @@ To enable the geolocation webservice for your project, enable it through the
 [API library](https://console.cloud.google.com/apis/library).
 
 N.B. You will need to add a [Billing Account](https://cloud.google.com/billing/docs/how-to/payment-methods#add_a_payment_method) to your project before being able to use your
-API key. Read more about Billing Accounts and how to set one up on
+API key.
 [this page](https://cloud.google.com/billing/docs/how-to/payment-methods#add_a_payment_method).
 
 ### `ELECTRON_NO_ASAR`
