@@ -386,8 +386,7 @@ bool RendererClientBase::IsPluginHandledExternally(
 
 bool RendererClientBase::IsOriginIsolatedPepperPlugin(
     const base::FilePath& plugin_path) {
-  // return plugin_path.value() == ChromeContentClient::kPDFPluginPath;
-  return true;  // TODO
+  return plugin_path.value() == FILE_PATH_LITERAL("internal-pdf-viewer2");
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>
