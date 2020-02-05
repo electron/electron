@@ -132,6 +132,7 @@ build_script:
         $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
         $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
         cd ..
+        .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
       }
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
