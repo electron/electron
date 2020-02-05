@@ -74,10 +74,16 @@ void WrappableBase::FirstWeakCallback(
 // static
 void WrappableBase::SecondWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
-  WrappableBase* wrappable =
-      static_cast<WrappableBase*>(data.GetInternalField(0));
-  if (wrappable)
-    delete wrappable;
+  // Certain classes (for example api::WebContents and api::WebContentsView)
+  // are running JS code in the destructor, while V8 may crash when JS code
+  // runs inside weak callback.
+  //
+  // We work around this problem by delaying the deletion to next tick where
+  // garbage collection is done.
+  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+      FROM_HERE,
+      base::BindOnce([](WrappableBase* wrappable) { delete wrappable; },
+                     base::Unretained(data.GetParameter())));
 }
 
 namespace internal {
