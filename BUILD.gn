@@ -645,13 +645,17 @@ source_set("electron_lib") {
       "shell/common/extensions/api",
       "shell/common/extensions/api:extensions_features",
       "//chrome/browser/resources:component_extension_resources",
+      "//components/zoom",
     ]
   }
 
   if (enable_pdf) {
     # Printing depends on some //pdf code, so it needs to be built even if the
     # pdf viewer isn't enabled.
-    deps += [ "//pdf" ]
+    deps += [
+      "//pdf",
+      "//pdf:features",
+    ]
   }
   if (enable_pdf_viewer) {
     deps += [
