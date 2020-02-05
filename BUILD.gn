@@ -700,14 +700,12 @@ if (is_mac) {
     outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
   }
 
-  if (!is_component_build) {
+  if (!is_component_build && is_component_ffmpeg) {
     bundle_data("electron_framework_libraries") {
       sources = []
       public_deps = []
-      if (is_component_ffmpeg) {
-        sources += [ "$root_out_dir/libffmpeg.dylib" ]
-        public_deps += [ "//third_party/ffmpeg:ffmpeg" ]
-      }
+      sources += [ "$root_out_dir/libffmpeg.dylib" ]
+      public_deps += [ "//third_party/ffmpeg:ffmpeg" ]
       outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
     }
   } else {
@@ -1240,12 +1238,20 @@ dist_zip("electron_ffmpeg_zip") {
   outputs = [ "$root_build_dir/ffmpeg.zip" ]
 }
 
+electron_chromedriver_deps = [
+  ":licenses",
+  "//chrome/test/chromedriver",
+  "//electron/buildflags",
+]
+
+group("electron_chromedriver") {
+  testonly = true
+  public_deps = electron_chromedriver_deps
+}
+
 dist_zip("electron_chromedriver_zip") {
   testonly = true
-  data_deps = [
-    ":licenses",
-    "//chrome/test/chromedriver",
-  ]
+  data_deps = electron_chromedriver_deps
   outputs = [ "$root_build_dir/chromedriver.zip" ]
 }
 
