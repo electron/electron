@@ -382,6 +382,9 @@ describe('webRequest module', () => {
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
       const port = String((server.address() as AddressInfo).port)
 
+      // Use a separate session for testing.
+      const ses = session.fromPartition('WebRequestWebSocket')
+
       // Setup listeners.
       const receivedHeaders : { [key: string] : any } = {}
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
@@ -417,6 +420,7 @@ describe('webRequest module', () => {
       })
 
       const contents = (webContents as any).create({
+        session: ses,
         nodeIntegration: true,
         webSecurity: false
       })
