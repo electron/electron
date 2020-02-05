@@ -98,6 +98,7 @@ class Session : public gin_helper::TrackableObject<Session>,
                                 const std::vector<std::string>& languages);
   v8::Local<v8::Promise> ListWordsInSpellCheckerDictionary();
   bool AddWordToSpellCheckerDictionary(const std::string& word);
+  bool RemoveWordFromSpellCheckerDictionary(const std::string& word);
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
