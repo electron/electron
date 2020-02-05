@@ -77,6 +77,11 @@ void BrowserProcessImpl::ApplyProxyModeFromCommandLine(
   }
 }
 
+BuildState* BrowserProcessImpl::GetBuildState() {
+  NOTIMPLEMENTED();
+  return nullptr;
+}
+
 void BrowserProcessImpl::PostEarlyInitialization() {
   // Mock user prefs, as we only need to track changes for a
   // in memory pref store. There are no persistent preferences
