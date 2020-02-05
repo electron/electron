@@ -44,6 +44,48 @@ class TabsExecuteScriptFunction : public ExecuteCodeInTabFunction {
   DECLARE_EXTENSION_FUNCTION("tabs.executeScript", TABS_EXECUTESCRIPT)
 };
 
+class TabsGetFunction : public ExtensionFunction {
+  ~TabsGetFunction() override {}
+  ResponseAction Run() override;
+  DECLARE_EXTENSION_FUNCTION("tabs.get", TABS_GET)
+};
+
+class TabsSetZoomFunction : public ExtensionFunction {
+ private:
+  ~TabsSetZoomFunction() override {}
+
+  ResponseAction Run() override;
+
+  DECLARE_EXTENSION_FUNCTION("tabs.setZoom", TABS_SETZOOM)
+};
+
+class TabsGetZoomFunction : public ExtensionFunction {
+ private:
+  ~TabsGetZoomFunction() override {}
+
+  ResponseAction Run() override;
+
+  DECLARE_EXTENSION_FUNCTION("tabs.getZoom", TABS_GETZOOM)
+};
+
+class TabsSetZoomSettingsFunction : public ExtensionFunction {
+ private:
+  ~TabsSetZoomSettingsFunction() override {}
+
+  ResponseAction Run() override;
+
+  DECLARE_EXTENSION_FUNCTION("tabs.setZoomSettings", TABS_SETZOOMSETTINGS)
+};
+
+class TabsGetZoomSettingsFunction : public ExtensionFunction {
+ private:
+  ~TabsGetZoomSettingsFunction() override {}
+
+  ResponseAction Run() override;
+
+  DECLARE_EXTENSION_FUNCTION("tabs.getZoomSettings", TABS_GETZOOMSETTINGS)
+};
+
 }  // namespace extensions
 
 #endif  // SHELL_BROWSER_EXTENSIONS_API_TABS_TABS_API_H_
