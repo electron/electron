@@ -6,7 +6,7 @@
 
 #include "shell/browser/native_browser_view.h"
 
-#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 
 namespace electron {

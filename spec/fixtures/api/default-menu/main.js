@@ -18,7 +18,7 @@ try {
     Menu.setApplicationMenu(null)
   }
 
-  app.on('ready', () => {
+  app.whenReady().then(() => {
     setImmediate(() => {
       try {
         output(Menu.getApplicationMenu() === expectedMenu)

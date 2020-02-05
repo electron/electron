@@ -54,7 +54,7 @@ if (!gotLock) {
 
 // This method will be called when Electron has done everything
 // initialization and ready for creating browser windows.
-app.on('ready', () => {
+app.whenReady().then(() => {
   // Create the browser window.
   mainWindow = new BrowserWindow({ width: 800, height: 600 })
 
@@ -147,7 +147,7 @@ app.on('ready', () => {
 
 app.commandLine.appendSwitch('enable-web-bluetooth')
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault()
 
@@ -322,7 +322,7 @@ app.setAboutPanelOptions({
 
 let onlineStatusWindow: Electron.BrowserWindow
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false, vibrancy: 'sidebar' })
   onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
 })
@@ -335,7 +335,7 @@ ipcMain.on('online-status-changed', (event: any, status: any) => {
 // Synopsis
 // https://github.com/atom/electron/blob/master/docs/api/synopsis.md
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   window = new BrowserWindow({
     width: 800,
     height: 600,
@@ -737,7 +737,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
 
 menu = Menu.buildFromTemplate(template)
 
-Menu.setApplicationMenu(menu) // Must be called within app.on('ready', function(){ ... });
+Menu.setApplicationMenu(menu) // Must be called within app.whenReady().then(function(){ ... });
 
 Menu.buildFromTemplate([
   { label: '4', id: '4' },
@@ -807,7 +807,7 @@ Menu.buildFromTemplate([
 // net
 // https://github.com/electron/electron/blob/master/docs/api/net.md
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   const request = net.request('https://github.com')
   request.setHeader('Some-Custom-Header-Name', 'Some-Custom-Header-Value')
   const header = request.getHeader('Some-Custom-Header-Name')
@@ -852,7 +852,7 @@ app.on('ready', () => {
 // power-monitor
 // https://github.com/atom/electron/blob/master/docs/api/power-monitor.md
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   powerMonitor.on('suspend', () => {
     console.log('The system is going to sleep')
   })
@@ -878,7 +878,7 @@ powerSaveBlocker.stop(id)
 // protocol
 // https://github.com/atom/electron/blob/master/docs/api/protocol.md
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   protocol.registerSchemesAsPrivileged([{ scheme: 'https', privileges: { standard: true, allowServiceWorkers: true } }])
 
   protocol.registerFileProtocol('atom', (request, callback) => {
@@ -910,7 +910,7 @@ app.on('ready', () => {
 // https://github.com/atom/electron/blob/master/docs/api/tray.md
 
 let appIcon: Electron.Tray = null
-app.on('ready', () => {
+app.whenReady().then(() => {
   appIcon = new Tray('/path/to/my/icon')
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Item1', type: 'radio' },
@@ -1016,12 +1016,12 @@ process.setFdLimit(8192)
 // screen
 // https://github.com/atom/electron/blob/master/docs/api/screen.md
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   const size = screen.getPrimaryDisplay().workAreaSize
   mainWindow = new BrowserWindow({ width: size.width, height: size.height })
 })
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   const displays = screen.getAllDisplays()
   let externalDisplay: any = null
   for (const i in displays) {
@@ -1190,7 +1190,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function (details:
   callback({ cancel: false, requestHeaders: details.requestHeaders })
 })
 
-app.on('ready', function () {
+app.whenReady().then(function () {
   const protocol = session.defaultSession.protocol
   protocol.registerFileProtocol('atom', function (request, callback) {
     const url = request.url.substr(7)

@@ -127,23 +127,32 @@ env-enable-sccache: &env-enable-sccache
 
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
+  
+env-global: &env-global
+  ELECTRON_OUT_DIR: Default
 
 env-linux-medium: &env-linux-medium
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 3
 
 env-linux-2xlarge: &env-linux-2xlarge
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 34
 
 env-linux-2xlarge-release: &env-linux-2xlarge-release
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 16
 
 env-machine-mac: &env-machine-mac
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 6
 
 env-mac-large: &env-mac-large
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 18
 
 env-mac-large-release: &env-mac-large-release
+  <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 8
 
 env-ninja-status: &env-ninja-status
@@ -423,18 +432,29 @@ step-electron-dist-store: &step-electron-dist-store
     path: src/out/Default/dist.zip
     destination: dist.zip
 
+step-electron-chromedriver-gn-gen: &step-electron-chromedriver-gn-gen
+  run:
+    name: chromedriver GN gen
+    command: |
+      cd src
+      if [ "$USE_GOMA" == "true" ]; then
+        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"//electron/build/args/goma.gn\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      else
+        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      fi
+
 step-electron-chromedriver-build: &step-electron-chromedriver-build
   run:
     name: Build chromedriver.zip
     command: |
       cd src
-      ninja -C out/Default chrome/test/chromedriver -j $NUMBER_OF_NINJA_PROCESSES
-      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/Default/chromedriver
-      ninja -C out/Default electron:electron_chromedriver_zip
+      ninja -C out/chromedriver electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/chromedriver/chromedriver
+      ninja -C out/chromedriver electron:electron_chromedriver_zip
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
-    path: src/out/Default/chromedriver.zip
+    path: src/out/chromedriver/chromedriver.zip
     destination: chromedriver.zip
 
 step-nodejs-headers-build: &step-nodejs-headers-build
@@ -477,7 +497,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       # Build artifacts
       - src/out/Default/dist.zip
       - src/out/Default/mksnapshot.zip
-      - src/out/Default/chromedriver.zip
+      - src/out/chromedriver/chromedriver.zip
       - src/out/Default/shell_browser_ui_unittests
       - src/out/Default/gen/node_headers
       - src/out/ffmpeg/ffmpeg.zip
@@ -512,7 +532,7 @@ step-chromedriver-unzip: &step-chromedriver-unzip
   run:
     name: Unzip chromedriver.zip
     command: |
-      cd src/out/Default
+      cd src/out/chromedriver
       unzip -o chromedriver.zip
 
 step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
@@ -557,7 +577,7 @@ step-verify-chromedriver: &step-verify-chromedriver
     name: Verify ChromeDriver
     command: |
       cd src
-      python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
+      python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/chromedriver
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
@@ -584,6 +604,7 @@ step-mksnapshot-build: &step-mksnapshot-build
     command: |
       cd src
       ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+      gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
@@ -596,6 +617,7 @@ step-mksnapshot-build: &step-mksnapshot-build
       fi
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
 
 step-mksnapshot-store: &step-mksnapshot-store
@@ -981,6 +1003,7 @@ steps-electron-build: &steps-electron-build
     - *step-maybe-cross-arch-snapshot-store
 
     # chromedriver
+    - *step-electron-chromedriver-gn-gen
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
@@ -1071,6 +1094,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-mksnapshot-store
 
     # chromedriver
+    - *step-electron-chromedriver-gn-gen
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
@@ -1100,8 +1124,8 @@ steps-chromedriver-build: &steps-chromedriver-build
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-fix-sync-on-mac
-    - *step-gn-gen-default
 
+    - *step-electron-chromedriver-gn-gen
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
@@ -1198,7 +1222,6 @@ steps-tests: &steps-tests
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           cd src
-          export ELECTRON_OUT_DIR=Default
           (cd electron && node script/yarn test --runners=main --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
           (cd electron && node script/yarn test --runners=remote --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
     - run:
@@ -1234,7 +1257,6 @@ steps-test-nan: &steps-test-nan
         name: Run Nan Tests
         command: |
           cd src
-          export ELECTRON_OUT_DIR=Default
           node electron/script/nan-spec-runner.js
 
 steps-test-node: &steps-test-node
@@ -1250,7 +1272,6 @@ steps-test-node: &steps-test-node
         name: Run Node Tests
         command: |
           cd src
-          export ELECTRON_OUT_DIR=Default
           node electron/script/node-spec-runner.js junit
     - store_test_results:
         path: src/junit
@@ -1408,6 +1429,7 @@ commands:
             - *step-maybe-cross-arch-snapshot-store
 
             # chromedriver
+            - *step-electron-chromedriver-gn-gen
             - *step-electron-chromedriver-build
             - *step-electron-chromedriver-store
 

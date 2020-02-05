@@ -13,7 +13,7 @@ module is emitted.
 ```javascript
 const { app, contentTracing } = require('electron')
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   (async () => {
     await contentTracing.startRecording({
       include_categories: ['*']

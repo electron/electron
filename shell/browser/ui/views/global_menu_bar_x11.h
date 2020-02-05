@@ -9,7 +9,7 @@
 
 #include "base/compiler_specific.h"
 #include "base/macros.h"
-#include "shell/browser/ui/atom_menu_model.h"
+#include "shell/browser/ui/electron_menu_model.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/native_widget_types.h"
 
@@ -43,7 +43,7 @@ class GlobalMenuBarX11 {
   // Creates the object path for DbusmenuServer which is attached to |xid|.
   static std::string GetPathForWindow(gfx::AcceleratedWidget xid);
 
-  void SetMenu(AtomMenuModel* menu_model);
+  void SetMenu(ElectronMenuModel* menu_model);
   bool IsServerStarted() const;
 
   // Called by NativeWindow when it show/hides.
@@ -55,7 +55,7 @@ class GlobalMenuBarX11 {
   void InitServer(gfx::AcceleratedWidget xid);
 
   // Create a menu from menu model.
-  void BuildMenuFromModel(AtomMenuModel* model, DbusmenuMenuitem* parent);
+  void BuildMenuFromModel(ElectronMenuModel* model, DbusmenuMenuitem* parent);
 
   // Sets the accelerator for |item|.
   void RegisterAccelerator(DbusmenuMenuitem* item,

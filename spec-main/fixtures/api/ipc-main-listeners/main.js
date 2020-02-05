@@ -1,6 +1,6 @@
 const { app, ipcMain } = require('electron')
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   process.stdout.write(JSON.stringify(ipcMain.eventNames()))
   process.stdout.end()
 

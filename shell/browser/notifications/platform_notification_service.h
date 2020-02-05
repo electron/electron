@@ -12,12 +12,12 @@
 
 namespace electron {
 
-class AtomBrowserClient;
+class ElectronBrowserClient;
 
 class PlatformNotificationService
     : public content::PlatformNotificationService {
  public:
-  explicit PlatformNotificationService(AtomBrowserClient* browser_client);
+  explicit PlatformNotificationService(ElectronBrowserClient* browser_client);
   ~PlatformNotificationService() override;
 
  protected:
@@ -45,7 +45,7 @@ class PlatformNotificationService
   base::Time ReadNextTriggerTimestamp() override;
 
  private:
-  AtomBrowserClient* browser_client_;
+  ElectronBrowserClient* browser_client_;
 
   DISALLOW_COPY_AND_ASSIGN(PlatformNotificationService);
 };

@@ -7,7 +7,7 @@ process.on('uncaughtException', () => {
   app.exit(1)
 })
 
-app.once('ready', () => {
+app.whenReady().then(() => {
   const lastArg = process.argv[process.argv.length - 1]
   const client = net.connect(socketPath)
   client.once('connect', () => {

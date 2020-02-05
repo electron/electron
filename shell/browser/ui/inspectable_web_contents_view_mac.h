@@ -10,7 +10,7 @@
 
 #include "base/mac/scoped_nsobject.h"
 
-@class AtomInspectableWebContentsView;
+@class ElectronInspectableWebContentsView;
 
 namespace electron {
 
@@ -40,7 +40,7 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   // Owns us.
   InspectableWebContentsImpl* inspectable_web_contents_;
 
-  base::scoped_nsobject<AtomInspectableWebContentsView> view_;
+  base::scoped_nsobject<ElectronInspectableWebContentsView> view_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewMac);
 };

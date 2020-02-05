@@ -195,7 +195,7 @@ void NotifyIcon::Focus() {
 }
 
 void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
-                                  AtomMenuModel* menu_model) {
+                                  ElectronMenuModel* menu_model) {
   // Returns if context menu isn't set.
   if (menu_model == nullptr && menu_model_ == nullptr)
     return;
@@ -243,7 +243,7 @@ void NotifyIcon::CloseContextMenu() {
   }
 }
 
-void NotifyIcon::SetContextMenu(AtomMenuModel* menu_model) {
+void NotifyIcon::SetContextMenu(ElectronMenuModel* menu_model) {
   menu_model_ = menu_model;
 }
 
