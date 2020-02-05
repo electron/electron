@@ -1,0 +1,9 @@
+{
+  "resourcesPrivate": {
+    "channel": "stable",
+    "extension_types": [
+      "extension"
+    ],
+    "location": "component"
+  }
+}

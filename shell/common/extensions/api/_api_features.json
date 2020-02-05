@@ -17,5 +17,15 @@
     "contexts": "all",
     "channel": "stable",
     "matches": ["<all_urls>"]
-  }
+  },
+  "resourcesPrivate": [{
+    "dependencies": ["permission:resourcesPrivate"],
+    "contexts": ["blessed_extension"]
+  }, {
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://print/*"
+    ]
+  }]
 }

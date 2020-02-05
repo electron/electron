@@ -23,6 +23,7 @@
 #include "extensions/common/permissions/permissions_info.h"
 #include "shell/common/extensions/api/api_features.h"
 #include "shell/common/extensions/api/manifest_features.h"
+#include "shell/common/extensions/api/permission_features.h"
 
 namespace extensions {
 
@@ -62,6 +63,8 @@ constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
      APIPermissionInfo::kFlagImpliesFullURLAccess |
          APIPermissionInfo::kFlagCannotBeOptional |
          APIPermissionInfo::kFlagInternal},
+    {APIPermission::kResourcesPrivate, "resourcesPrivate",
+     APIPermissionInfo::kFlagCannotBeOptional},
 };
 base::span<const APIPermissionInfo::InitInfo> GetPermissionInfos() {
   return base::make_span(permissions_to_register);
@@ -89,7 +92,7 @@ void ElectronExtensionsAPIProvider::AddManifestFeatures(
 
 void ElectronExtensionsAPIProvider::AddPermissionFeatures(
     extensions::FeatureProvider* provider) {
-  // No shell-specific permission features.
+  extensions::AddElectronPermissionFeatures(provider);
 }
 
 void ElectronExtensionsAPIProvider::AddBehaviorFeatures(
