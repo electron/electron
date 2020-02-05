@@ -1455,7 +1455,7 @@ describe('webContents module', () => {
 
     it('rejects on incorrectly typed parameters', async () => {
       const badTypes = {
-        marginsType: 'terrible',
+        margins: 'terrible',
         scaleFactor: 'not-a-number',
         landscape: [],
         pageRanges: { 'oops': 'im-not-the-right-key' },

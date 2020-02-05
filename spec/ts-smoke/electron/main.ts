@@ -86,7 +86,9 @@ app.whenReady().then(() => {
   mainWindow.webContents.print()
 
   mainWindow.webContents.printToPDF({
-    marginsType: 1,
+    margins: {
+      marginType: 'default',
+    },
     pageSize: 'A3',
     printBackground: true,
     printSelectionOnly: true,

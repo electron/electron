@@ -79,6 +79,72 @@ interface ContextMenuItem {
   subItems: ContextMenuItem[];
 }
 
+interface PageSize {
+  custom_display_name: string;
+  height_microns: number;
+  name: string;
+  is_default?: string;
+  width_microns: number;
+}
+
+interface MarginType {
+  marginType: 'default' | 'none' | 'printableArea' | 'custom';
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+}
+
+type PageRange = {from: number, to: number};
+type Size = { width: number, height: number};
+
+interface PrintSettings {
+  // Sent to Chromium
+  bottom?: number;
+  collate: boolean;
+  color: 1 | 2;
+  copies: number;
+  deviceName?: string;
+  dpiHorizontal: number;
+  dpiVertical: number;
+  duplex: 0 | 1 | 2;
+  generateDraftData: boolean;
+  headerFooterEnabled: boolean;
+  isFirstRequest: boolean;
+  landscape: boolean;
+  left?: number;
+  marginsType: 0 | 1 | 2 | 3;
+  mediaSize: PageSize;
+  pageRanges?: PageRange[];
+  pagesPerSheet: 1,
+  previewModifiable: boolean;
+  previewUIID: number;
+  printerType?: 0 | 1 | 2 | 3 | 4;
+  printWithCloudPrint: boolean;
+  printWithExtension: boolean;
+  printWithPrivet: boolean;
+  rasterizePDF: boolean;
+  requestID?: number;
+  right?: number;
+  scaleFactor: number;
+  shouldPrintBackgrounds: boolean;
+  shouldPrintSelectionOnly: boolean;
+  silent?: boolean;
+  title?: string;
+  top?: number;
+  url?: string;
+  // Used internally only
+  dpi?: {horizontal: number, vertical: number}
+  duplexMode?: 'simplex' | 'longEdge' | 'shortEdge';
+  headerFooter?: {title: string, url: string};
+  pageSize?: Size | string;
+  printBackground?: boolean;
+  printSelectionOnly?: boolean;
+  printToPDF?: boolean;
+  pageRange?: PageRange[];
+  margins?: MarginType;
+}
+
 declare interface Window {
   ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean;
   ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean;
