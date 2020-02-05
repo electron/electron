@@ -5,6 +5,7 @@
 #include "shell/browser/extensions/electron_extensions_browser_api_provider.h"
 
 #include "extensions/browser/extension_function_registry.h"
+#include "shell/browser/extensions/api/generated_api_registration.h"
 #include "shell/browser/extensions/api/tabs/tabs_api.h"
 
 namespace extensions {
@@ -16,11 +17,8 @@ ElectronExtensionsBrowserAPIProvider::~ElectronExtensionsBrowserAPIProvider() =
 
 void ElectronExtensionsBrowserAPIProvider::RegisterExtensionFunctions(
     ExtensionFunctionRegistry* registry) {
-  registry->RegisterFunction<TabsExecuteScriptFunction>();
-  /*
   // Generated APIs from Electron.
   api::ElectronGeneratedFunctionRegistry::RegisterAll(registry);
-  */
 }
 
 }  // namespace extensions
