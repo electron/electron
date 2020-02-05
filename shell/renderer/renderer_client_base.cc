@@ -384,6 +384,12 @@ bool RendererClientBase::IsPluginHandledExternally(
 #endif
 }
 
+bool RendererClientBase::IsOriginIsolatedPepperPlugin(
+    const base::FilePath& plugin_path) {
+  // return plugin_path.value() == ChromeContentClient::kPDFPluginPath;
+  return true;  // TODO
+}
+
 std::unique_ptr<blink::WebPrescientNetworking>
 RendererClientBase::CreatePrescientNetworking(
     content::RenderFrame* render_frame) {
