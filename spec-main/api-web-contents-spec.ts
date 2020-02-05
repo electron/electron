@@ -128,6 +128,13 @@ describe('webContents module', () => {
       }).to.throw('webContents.print(): Invalid deviceName provided.')
     })
 
+    it('throws when an invalid pageSize is passed', () => {
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print({ pageSize: 'i-am-a-bad-pagesize' }, () => {})
+      }).to.throw('Unsupported pageSize: i-am-a-bad-pagesize')
+    })
+
     it('does not crash', () => {
       expect(() => {
         w.webContents.print({ silent: true })
