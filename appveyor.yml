@@ -135,7 +135,7 @@ build_script:
       }
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
-  - if DEFINED GN_GOMA_FILE (gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE\") %GN_EXTRA_ARGS% ") else (gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS% cc_wrapper=\"%SCCACHE_PATH%\"")
+  - if DEFINED GN_GOMA_FILE (gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% ") else (gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS% cc_wrapper=\"%SCCACHE_PATH%\"")
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
   - gn check out/Default //electron:manifests
