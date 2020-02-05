@@ -13,9 +13,9 @@
 /patches/                               @electron/wg-upgrades
 DEPS                                    @electron/wg-upgrades
 
-# Docs & Tooling WG
-/default_app/ @electron/wg-docs-tools
-/docs/                                  @electron/wg-docs-tools
+# Ecosystem WG
+/default_app/                           @electron/wg-ecosystem
+/docs/                                  @electron/wg-ecosystem
 
 # Releases WG
 /npm/                                   @electron/wg-releases
