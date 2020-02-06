@@ -9,7 +9,11 @@ async function checkIfDocOnlyChange () {
     try {
       let pullRequestNumber = args.prNumber
       if (!pullRequestNumber || isNaN(pullRequestNumber)) {
-        if (args.prBranch) {
+        if (args.prURL) {
+          // CircleCI doesn't provide the PR number for branch builds, but it does provide the PR URL
+          const pullRequestParts = args.prURL.split('/')
+          pullRequestNumber = pullRequestParts[pullRequestParts.length - 1]
+        } else if (args.prBranch) {
           // AppVeyor doesn't provide a PR number for branch builds - figure it out from the branch
           const prsForBranch = await octokit.pulls.list({
             owner: 'electron',
@@ -23,10 +27,6 @@ async function checkIfDocOnlyChange () {
             // If there are 0 PRs or more than one PR on a branch, just assume that this is more than a doc change
             process.exit(1)
           }
-        } else if (args.prURL) {
-          // CircleCI doesn't provide the PR number for branch builds, but it does provide the PR URL
-          const pullRequestParts = args.prURL.split('/')
-          pullRequestNumber = pullRequestParts[pullRequestParts.length - 1]
         }
       }
       const filesChanged = await octokit.pulls.listFiles({
