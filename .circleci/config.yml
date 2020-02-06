@@ -465,6 +465,7 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
       ninja -C out/chromedriver electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
       electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/chromedriver/chromedriver
       ninja -C out/chromedriver electron:electron_chromedriver_zip
+      cp out/chromedriver/chromedriver.zip out/Default/chromedriver
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
