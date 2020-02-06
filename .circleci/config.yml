@@ -773,6 +773,14 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
       - v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
 
+step-restore-out-cache: &step-restore-out-cache
+  restore_cache:
+    paths:
+      - ./src/out/Default
+    keys:
+      - v7-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+    name: Restoring out cache
+
 step-set-git-cache-path: &step-set-git-cache-path
   run:
     name: Set GIT_CACHE_PATH to make gclient to use the cache
@@ -789,6 +797,13 @@ step-save-git-cache: &step-save-git-cache
       - ~/.gclient-cache
     key: v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
+
+step-save-out-cache: &step-save-out-cache
+  save_cache:
+    paths:
+      - ./src/out/Default
+    key: v7-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+    name: Persisting out cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
   run:
@@ -1012,9 +1027,9 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-get-more-space-on-mac
     - *step-gclient-sync
     - *step-setup-env-for-build
-    - *step-delete-git-directories
     - *step-minimize-workspace-size-from-checkout
     - *step-gn-gen-default
+    - *step-delete-git-directories
 
     # Electron app
     - *step-electron-build
@@ -1274,6 +1289,9 @@ commands:
       build:
         type: boolean
         default: true
+      use-out-cache:
+        type: boolean
+        default: true
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1330,10 +1348,14 @@ commands:
             - *step-setup-goma-for-build
             - *step-get-more-space-on-mac
             - *step-fix-sync-on-mac
-            - *step-delete-git-directories
 
             # Electron app
+            - when:
+                condition: << parameters.use-out-cache >>
+                steps:
+                  - *step-restore-out-cache
             - *step-gn-gen-default
+            - *step-delete-git-directories
             - *step-electron-build
             - *step-ninja-summary
             - *step-ninja-report
@@ -1399,6 +1421,10 @@ commands:
                     # These files do not seem to like being in a cache, let us remove them
                     find . -type f -name '*_pkg_info' -delete
                   fi
+            - when:
+                condition: << parameters.use-out-cache >>
+                steps:
+                  - *step-save-out-cache
 
       # Trigger tests on arm hardware if needed
       - *step-maybe-trigger-arm-test
@@ -1500,6 +1526,7 @@ jobs:
       - electron-build:
           persist: true
           checkout: true
+          use-out-cache: false
 
   linux-x64-testing-no-run-as-node:
     <<: *machine-linux-2xlarge
@@ -1513,6 +1540,7 @@ jobs:
       - electron-build:
           persist: false
           checkout: true
+          use-out-cache: false
 
   linux-x64-testing-gn-check:
     <<: *machine-linux-medium
@@ -1564,6 +1592,7 @@ jobs:
       - electron-build:
           persist: true
           checkout: true
+          use-out-cache: false
 
   linux-ia32-chromedriver:
     <<: *machine-linux-medium
@@ -1613,6 +1642,7 @@ jobs:
       - electron-build:
           persist: false
           checkout: true
+          use-out-cache: false
 
   linux-arm-chromedriver:
     <<: *machine-linux-medium
@@ -1662,6 +1692,7 @@ jobs:
       - electron-build:
           persist: false
           checkout: true
+          use-out-cache: false
 
   linux-arm64-testing-gn-check:
     <<: *machine-linux-medium
