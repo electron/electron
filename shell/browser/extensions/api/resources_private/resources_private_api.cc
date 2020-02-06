@@ -95,8 +95,12 @@ ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
       AddStringsForPdf(dict.get());
       AddAdditionalDataForPdf(dict.get());
       break;
+    case api::resources_private::COMPONENT_IDENTITY:
+      NOTREACHED();
+      break;
     case api::resources_private::COMPONENT_NONE:
       NOTREACHED();
+      break;
   }
 
   const std::string& app_locale = g_browser_process->GetApplicationLocale();
