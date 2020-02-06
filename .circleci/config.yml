@@ -475,13 +475,18 @@ step-native-unittests-store: &step-native-unittests-store
     path: src/out/Default/shell_browser_ui_unittests
     destination: shell_browser_ui_unittests
 
-step-electron-publish: &step-electron-publish
+step-maybe-clear-obj: &step-maybe-clear-obj
   run:
-    name: Publish Electron Dist
+    name: Clear obj directory to free up space
     command: |
       if [ "`uname`" == "Darwin" ]; then
         rm -rf src/out/Default/obj
       fi
+
+step-electron-publish: &step-electron-publish
+  run:
+    name: Publish Electron Dist
+    command: |
       cd src/electron
       if [ "$UPLOAD_TO_S3" == "1" ]; then
         echo 'Uploading Electron release distribution to S3'
@@ -1083,12 +1088,6 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Electron app
     - *step-electron-build
-    - *step-maybe-generate-breakpad-symbols
-    - *step-maybe-electron-dist-strip
-    - *step-electron-dist-build
-    - *step-electron-dist-store
-    - *step-maybe-zip-symbols
-    - *step-symbols-store
 
     # mksnapshot
     - *step-mksnapshot-build
@@ -1114,6 +1113,14 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # typescript defs
     - *step-maybe-generate-typescript-defs
+
+    - *step-maybe-generate-breakpad-symbols
+    - *step-maybe-electron-dist-strip
+    - *step-electron-dist-build
+    - *step-electron-dist-store
+    - *step-maybe-clear-obj
+    - *step-maybe-zip-symbols
+    - *step-symbols-store
 
     # Publish
     - *step-electron-publish
