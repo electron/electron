@@ -870,7 +870,7 @@ step-ts-compile: &step-ts-compile
     command: |
       cd src
       ninja -C out/Default electron:default_app_js -j $NUMBER_OF_NINJA_PROCESSES
-      ninja -C out/Default electron:atom_js2c -j $NUMBER_OF_NINJA_PROCESSES
+      ninja -C out/Default electron:electron_js2c -j $NUMBER_OF_NINJA_PROCESSES
 
 # Lists of steps.
 steps-lint: &steps-lint
