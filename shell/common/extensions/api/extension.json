@@ -13,6 +13,20 @@
     },
     "functions": [
       {
+        "name": "getBackgroundPage",
+        "nocompile": true,
+        "type": "function",
+        "description": "Returns the JavaScript 'window' object for the background page running inside the current extension. Returns null if the extension has no background page.",
+        "parameters": [],
+        "returns": {
+            "type": "object",
+            "optional": true,
+            "name": "backgroundPageGlobal",
+            "isInstanceOf": "Window",
+            "additionalProperties": { "type": "any" }
+         }
+      },
+      {
         "name": "getURL",
         "deprecated": "Please use $(ref:runtime.getURL).",
         "nocompile": true,

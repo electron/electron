@@ -221,6 +221,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool first_auth_attempt,
       LoginAuthRequiredCallback auth_required_callback) override;
   void SiteInstanceGotProcess(content::SiteInstance* site_instance) override;
+  bool IsSuitableHost(content::RenderProcessHost* process_host,
+                      const GURL& site_url) override;
+  bool ShouldUseProcessPerSite(content::BrowserContext* browser_context,
+                               const GURL& effective_url) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
