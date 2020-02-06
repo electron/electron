@@ -53,16 +53,23 @@ Unsupported options are:
 
 ### `GOOGLE_API_KEY`
 
-You can provide an API key for making requests to Google's geocoding webservice. To do this, place the following code in your main process
-file, before opening any browser windows that will make geocoding requests:
+Geolocation support in Electron requires the use of Google Cloud Platform's
+geolocation webservice. To enable this feature, acquire a
+[Google API key](https://developers.google.com/maps/documentation/geolocation/get-api-key)
+and place the following code in your main process file, before opening any
+browser windows that will make geolocation requests:
 
 ```javascript
 process.env.GOOGLE_API_KEY = 'YOUR_KEY_HERE'
 ```
 
-For instructions on how to acquire a Google API key, visit [this page](https://developers.google.com/maps/documentation/javascript/get-api-key).
-By default, a newly generated Google API key may not be allowed to make
-geocoding requests. To enable geocoding requests, visit [this page](https://developers.google.com/maps/documentation/geocoding/get-api-key).
+By default, a newly generated Google API key may not be allowed to make geolocation requests.
+To enable the geolocation webservice for your project, enable it through the
+[API library](https://console.cloud.google.com/apis/library).
+
+N.B. You will need to add a
+[Billing Account](https://cloud.google.com/billing/docs/how-to/payment-methods#add_a_payment_method)
+to the project associated to the API key for the geolocation webservice to work.
 
 ### `ELECTRON_NO_ASAR`
 
