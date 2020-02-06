@@ -767,17 +767,18 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
 }
 
 bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
-#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
-  if (spellcheck::UseBrowserSpellChecker()) {
-    spellcheck_platform::AddWord(base::UTF8ToUTF16(word));
-  }
-#endif
-  SpellcheckService* spellcheck =
+  SpellcheckService* service =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
-  if (!spellcheck)
+  if (!service)
     return false;
 
-  return spellcheck->GetCustomDictionary()->AddWord(word);
+#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+  if (spellcheck::UseBrowserSpellChecker()) {
+    spellcheck_platform::AddWord(service->platform_spell_checker(),
+                                 base::UTF8ToUTF16(word));
+  }
+#endif
+  return service->GetCustomDictionary()->AddWord(word);
 }
 #endif
 
