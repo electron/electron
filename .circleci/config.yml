@@ -1027,9 +1027,9 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-get-more-space-on-mac
     - *step-gclient-sync
     - *step-setup-env-for-build
+    - *step-delete-git-directories
     - *step-minimize-workspace-size-from-checkout
     - *step-gn-gen-default
-    - *step-delete-git-directories
 
     # Electron app
     - *step-electron-build
@@ -1348,6 +1348,7 @@ commands:
             - *step-setup-goma-for-build
             - *step-get-more-space-on-mac
             - *step-fix-sync-on-mac
+            - *step-delete-git-directories
 
             # Electron app
             - when:
@@ -1355,7 +1356,6 @@ commands:
                 steps:
                   - *step-restore-out-cache
             - *step-gn-gen-default
-            - *step-delete-git-directories
             - *step-electron-build
             - *step-ninja-summary
             - *step-ninja-report
