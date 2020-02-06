@@ -49,6 +49,7 @@
 #include "extensions/common/constants.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
+#include "ppapi/buildflags/buildflags.h"
 #include "ppapi/host/ppapi_host.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
@@ -148,7 +149,6 @@
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
-#include "ppapi/buildflags/buildflags.h"
 #if BUILDFLAG(ENABLE_PLUGINS)
 #include "shell/browser/plugins/plugin_response_interceptor_url_loader_throttle.h"
 #include "shell/browser/plugins/plugin_utils.h"
@@ -1194,7 +1194,7 @@ bool ElectronBrowserClient::ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
     bool is_embedded_origin_secure) {
   if (is_embedded_origin_secure && scheme == content::kChromeUIScheme)
     return true;
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   return scheme == extensions::kExtensionScheme;
 #else
   return false;

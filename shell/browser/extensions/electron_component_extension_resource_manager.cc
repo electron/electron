@@ -18,19 +18,8 @@ namespace extensions {
 
 ElectronComponentExtensionResourceManager::
     ElectronComponentExtensionResourceManager() {
-  /*
-static const GritResourceMap kExtraComponentExtensionResources[] = {
-  {"web_store/webstore_icon_128.png", IDR_WEBSTORE_ICON},
-  {"web_store/webstore_icon_16.png", IDR_WEBSTORE_ICON_16},
-};
-*/
-
   AddComponentResourceEntries(kComponentExtensionResources,
                               kComponentExtensionResourcesSize);
-  /*
-  AddComponentResourceEntries(kExtraComponentExtensionResources,
-                              base::size(kExtraComponentExtensionResources));
-                              */
 }
 
 ElectronComponentExtensionResourceManager::

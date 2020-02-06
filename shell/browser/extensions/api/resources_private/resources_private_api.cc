@@ -33,11 +33,6 @@ namespace extensions {
 
 namespace {
 
-void AddStringsForIdentity(base::DictionaryValue* dict) {
-  dict->SetString("window-title",
-                  l10n_util::GetStringUTF16(IDS_EXTENSION_CONFIRM_PERMISSIONS));
-}
-
 void AddStringsForPdf(base::DictionaryValue* dict) {
 #if BUILDFLAG(ENABLE_PDF)
   static constexpr webui::LocalizedString kPdfResources[] = {
@@ -96,9 +91,6 @@ ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
   api::resources_private::Component component = params->component;
 
   switch (component) {
-    case api::resources_private::COMPONENT_IDENTITY:
-      AddStringsForIdentity(dict.get());
-      break;
     case api::resources_private::COMPONENT_PDF:
       AddStringsForPdf(dict.get());
       AddAdditionalDataForPdf(dict.get());

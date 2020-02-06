@@ -175,22 +175,16 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   if (!contents)
     return RespondNow(Error("No such tab"));
 
-  return RespondNow(ArgumentList(tabs::Get::Results::Create(tabs::Tab())));
+  tabs::Tab tab;
 
-  /*
-  TabStripModel* tab_strip = NULL;
-  WebContents* contents = NULL;
-  int tab_index = -1;
-  std::string error;
-  if (!GetTabById(tab_id, browser_context(), include_incognito_information(),
-                  NULL, &tab_strip, &contents, &tab_index, &error)) {
-    return RespondNow(Error(error));
-  }
+  tab.id.reset(new int(tab_id));
+  // TODO(nornagon): in Chrome, the tab URL is only available to extensions
+  // that have the "tabs" (or "activeTab") permission. We should do the same
+  // permission check here.
+  tab.url = std::make_unique<std::string>(
+      contents->web_contents()->GetLastCommittedURL().spec());
 
-  return RespondNow(ArgumentList(tabs::Get::Results::Create(
-      *CreateTabObjectHelper(contents, extension(), source_context_type(),
-                             tab_strip, tab_index))));
-                             */
+  return RespondNow(ArgumentList(tabs::Get::Results::Create(std::move(tab))));
 }
 
 ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
@@ -217,13 +211,6 @@ ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
           : blink::PageZoomFactorToZoomLevel(
                 zoom_controller->GetDefaultZoomFactor());
 
-  /*
-  auto client = base::MakeRefCounted<ExtensionZoomRequestClient>(extension());
-  if (!zoom_controller->SetZoomLevelByClient(zoom_level, client)) {
-    // Tried to zoom a tab in disabled mode.
-    return RespondNow(Error(tabs_constants::kCannotZoomDisabledTabError));
-  }
-  */
   zoom_controller->SetZoomLevel(zoom_level);
 
   return RespondNow(NoArguments());
