@@ -69,6 +69,7 @@
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/common/webplugininfo.h"
+#include "extensions/common/constants.h"
 #include "extensions/common/extensions_client.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
@@ -370,7 +371,8 @@ bool RendererClientBase::IsPluginHandledExternally(
   content::WebPluginInfo info;
   info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
   info.name = base::UTF8ToUTF16("Chromium PDF Viewer");
-  info.path = base::FilePath(FILE_PATH_LITERAL("internal-pdf-viewer"));
+  info.path =
+      base::FilePath(FILE_PATH_LITERAL(extension_misc::kPdfExtensionId));
   info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
   info.mime_types.emplace_back("application/pdf", "pdf",
                                "Portable Document Format");
@@ -386,7 +388,7 @@ bool RendererClientBase::IsPluginHandledExternally(
 
 bool RendererClientBase::IsOriginIsolatedPepperPlugin(
     const base::FilePath& plugin_path) {
-  return plugin_path.value() == FILE_PATH_LITERAL("internal-pdf-viewer2");
+  return plugin_path.value() == kPdfPluginPath;
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>

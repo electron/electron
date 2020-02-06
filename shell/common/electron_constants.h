@@ -40,11 +40,6 @@ extern const char kRunAsNode[];
 // The MIME type used for the PDF plugin.
 extern const char kPdfPluginMimeType[];
 extern const char kPdfPluginPath[];
-extern const char kPdfPluginSrc[];
-
-// Constants for PDF viewer webui.
-extern const char kPdfViewerUIOrigin[];
-extern const char kPdfViewerUIHost[];
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 }  // namespace electron
