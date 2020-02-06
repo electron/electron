@@ -1,5 +1,9 @@
 # Electron FAQ
 
+## Why did the doc only PR CI fail?
+
+We renamed stuff from atom_ to electron_, but missed the building of electron:atom_js2c for testing doc only changes.
+
 ## Why am I having trouble installing Electron?
 
 When running `npm install electron`, some users occasionally encounter
