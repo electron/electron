@@ -1,6 +1,7 @@
 [
   {
     "namespace": "tabs",
+    "description": "Use the <code>chrome.tabs</code> API to interact with the browser's tab system. You can use this API to create, modify, and rearrange tabs in the browser.",
     "functions": [
       {
         "name": "executeScript",
