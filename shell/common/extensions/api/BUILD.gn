@@ -37,8 +37,8 @@ group("extensions_features") {
 generated_json_strings("generated_api_json_strings") {
   sources = [
     "extension.json",
-    "tabs.json",
     "resources_private.idl",
+    "tabs.json",
   ]
 
   configs = [ "//build/config:precompiled_headers" ]
@@ -53,8 +53,8 @@ generated_json_strings("generated_api_json_strings") {
 
 generated_types("generated_api_types") {
   sources = [
-    "tabs.json",
     "resources_private.idl",
+    "tabs.json",
   ]
   configs = [ "//build/config:precompiled_headers" ]
   schema_include_rules = "extensions/common/api:extensions::api::%(namespace)s"
