@@ -172,13 +172,13 @@ void SetNodeCliFlags() {
   const int exit_code = ProcessGlobalArgs(&args, nullptr, &errors,
                                           node::kDisallowedInEnvironment);
 
+  const std::string err_str = "Error parsing Node.js cli flags ";
   if (exit_code != 0) {
-    if (!errors.empty())
-      LOG(INFO) << base::JoinString(errors, " ");
-    else
-      LOG(INFO) << "Error parsing Node.js cli flags";
+    LOG(ERROR) << err_str;
+  } else if (!errors.empty()) {
+    LOG(ERROR) << err_str << base::JoinString(errors, " ");
   }
-}
+}  // namespace
 
 // Initialize NODE_OPTIONS to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_node_options_options
