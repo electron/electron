@@ -202,6 +202,14 @@ describe('app module', () => {
     })
   })
 
+  ifdescribe(process.platform === 'darwin')('app.setActivationPolicy', () => {
+    it('throws an error on invalid application policies', () => {
+      expect(() => {
+        app.setActivationPolicy('terrible' as any)
+      }).to.throw(/Invalid activation policy: must be one of 'regular', 'accessory', or 'prohibited'/)
+    })
+  })
+
   describe('app.requestSingleInstanceLock', () => {
     it('prevents the second launch of app', function (done) {
       this.timeout(120000)

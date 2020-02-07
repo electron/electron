@@ -5,6 +5,7 @@
 #include "shell/common/gin_helper/wrappable.h"
 
 #include "base/logging.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "shell/common/gin_helper/dictionary.h"
 
 namespace gin_helper {
@@ -69,8 +70,16 @@ void WrappableBase::FirstWeakCallback(
 // static
 void WrappableBase::SecondWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
-  WrappableBase* wrappable = data.GetParameter();
-  delete wrappable;
+  // Certain classes (for example api::WebContents and api::WebContentsView)
+  // are running JS code in the destructor, while V8 may crash when JS code
+  // runs inside weak callback.
+  //
+  // We work around this problem by delaying the deletion to next tick where
+  // garbage collection is done.
+  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+      FROM_HERE,
+      base::BindOnce([](WrappableBase* wrappable) { delete wrappable; },
+                     base::Unretained(data.GetParameter())));
 }
 
 namespace internal {

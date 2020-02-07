@@ -233,6 +233,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       int frame_tree_node_id) override;
   base::flat_set<std::string> GetPluginMimeTypesWithExternalHandlers(
       content::BrowserContext* browser_context) override;
+  bool IsSuitableHost(content::RenderProcessHost* process_host,
+                      const GURL& site_url) override;
+  bool ShouldUseProcessPerSite(content::BrowserContext* browser_context,
+                               const GURL& effective_url) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

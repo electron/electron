@@ -1745,6 +1745,14 @@ void WebContents::OnGetDefaultPrinter(
     base::string16 device_name,
     bool silent,
     base::string16 default_printer) {
+  // The content::WebContents might be already deleted at this point, and the
+  // PrintViewManagerBasic class does not do null check.
+  if (!web_contents()) {
+    if (print_callback)
+      std::move(print_callback).Run(false, "failed");
+    return;
+  }
+
   base::string16 printer_name =
       device_name.empty() ? default_printer : device_name;
   print_settings.SetStringKey(printing::kSettingDeviceName, printer_name);
@@ -1896,6 +1904,12 @@ void WebContents::Print(gin_helper::Arguments* args) {
   printing::DuplexMode duplex_mode;
   options.Get("duplexMode", &duplex_mode);
   settings.SetIntKey(printing::kSettingDuplexMode, duplex_mode);
+
+  // We've already done necessary parameter sanitization at the
+  // JS level, so we can simply pass this through.
+  base::Value media_size(base::Value::Type::DICTIONARY);
+  if (options.Get("mediaSize", &media_size))
+    settings.SetKey(printing::kSettingMediaSize, std::move(media_size));
 
   // Set custom dots per inch (dpi)
   gin_helper::Dictionary dpi_settings;

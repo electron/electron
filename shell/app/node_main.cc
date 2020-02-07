@@ -6,10 +6,14 @@
 
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "electron/electron_version.h"
@@ -28,6 +32,49 @@
 #if defined(_WIN64)
 #include "shell/common/crash_reporter/crash_reporter_win.h"
 #endif
+
+namespace {
+
+// Initialize Node.js cli options to pass to Node.js
+// See https://nodejs.org/api/cli.html#cli_options
+void SetNodeCliFlags() {
+  // Options that are unilaterally disallowed
+  const std::unordered_set<base::StringPiece, base::StringPieceHash>
+      disallowed = {"--openssl-config", "--use-bundled-ca", "--use-openssl-ca",
+                    "--force-fips", "--enable-fips"};
+
+  const auto argv = base::CommandLine::ForCurrentProcess()->argv();
+  std::vector<std::string> args;
+
+  // TODO(codebytere): We need to set the first entry in args to the
+  // process name owing to src/node_options-inl.h#L286-L290 but this is
+  // redundant and so should be refactored upstream.
+  args.reserve(argv.size() + 1);
+  args.emplace_back("electron");
+
+  for (const auto& arg : argv) {
+#if defined(OS_WIN)
+    const auto& option = base::UTF16ToUTF8(arg);
+#else
+    const auto& option = arg;
+#endif
+    const auto stripped = base::StringPiece(option).substr(0, option.find('='));
+    if (disallowed.count(stripped) != 0) {
+      LOG(ERROR) << "The Node.js cli flag " << stripped
+                 << " is not supported in Electron";
+    } else {
+      args.push_back(option);
+    }
+  }
+
+  std::vector<std::string> errors;
+
+  // Node.js itself will output parsing errors to
+  // console so we don't need to handle that ourselves
+  ProcessGlobalArgs(&args, nullptr, &errors, node::kDisallowedInEnvironment);
+}
+
+}  // namespace
 
 namespace electron {
 
@@ -63,6 +110,9 @@ int NodeMain(int argc, char* argv[]) {
 
     // Explicitly register electron's builtin modules.
     NodeBindings::RegisterBuiltinModules();
+
+    // Parse and set Node.js cli flags.
+    SetNodeCliFlags();
 
     int exec_argc;
     const char** exec_argv;

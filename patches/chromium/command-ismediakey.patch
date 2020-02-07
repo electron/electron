@@ -52,15 +52,6 @@ index 392cf3d58c64c088596e8d321a2ce37b0ec60b6e..43e30f47240dc10a3a9b950255d4e487
  
    return modifiers;
  }
-@@ -151,6 +152,8 @@ void GlobalShortcutListenerX11::OnXKeyPressEvent(::XEvent* x_event) {
-   modifiers |= (x_event->xkey.state & ShiftMask) ? ui::EF_SHIFT_DOWN : 0;
-   modifiers |= (x_event->xkey.state & ControlMask) ? ui::EF_CONTROL_DOWN : 0;
-   modifiers |= (x_event->xkey.state & Mod1Mask) ? ui::EF_ALT_DOWN : 0;
-+  // For Windows key
-+  modifiers |= (x_event->xkey.state & Mod4Mask) ? ui::EF_COMMAND_DOWN: 0;
- 
-   ui::Accelerator accelerator(
-       ui::KeyboardCodeFromXKeyEvent(x_event), modifiers);
 diff --git a/ui/base/accelerators/media_keys_listener.cc b/ui/base/accelerators/media_keys_listener.cc
 index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc7951d372 100644
 --- a/ui/base/accelerators/media_keys_listener.cc

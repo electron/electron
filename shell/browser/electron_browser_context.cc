@@ -102,6 +102,8 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
       storage_policy_(new SpecialStoragePolicy),
       in_memory_(in_memory),
       weak_factory_(this) {
+  // TODO(nornagon): remove once https://crbug.com/1048822 is fixed.
+  base::ScopedAllowBlockingForTesting allow_blocking;
   user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
 
   // Read options.
