@@ -457,7 +457,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
           }
         })
         await w.loadURL('about:blank')
@@ -474,7 +475,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
           }
         })
         await w.loadURL('about:blank')
@@ -491,7 +493,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
           }
         })
         await w.loadURL('about:blank')
@@ -508,7 +511,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
           }
         })
         await w.loadURL('about:blank')
@@ -524,7 +528,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
           }
         })
         await w.loadURL('about:blank')
