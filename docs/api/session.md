@@ -507,6 +507,8 @@ requests an API that Electron does not support) then they will be logged to the
 console.
 
 Note that Electron does not support the full range of Chrome extensions APIs.
+See [Supported Extensions APIs](extensions.md#supported-extensions-apis) for
+more details on what is supported.
 
 Note that in previous versions of Electron, extensions that were loaded would
 be remembered for future runs of the application. This is no longer the case:
@@ -528,6 +530,9 @@ This API does not support loading packed (.crx) extensions.
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
+
+**Note:** Loading extensions into in-memory (non-persistent) sessions is not
+supported and will throw an error.
 
 #### `ses.removeExtension(extensionId)`
 
