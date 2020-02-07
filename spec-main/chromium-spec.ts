@@ -977,15 +977,6 @@ describe('chromium features', () => {
       protocol: 'file',
       slashes: true
     })
-    const pdfSourceWithParams = url.format({
-      pathname: path.join(fixturesPath, 'assets', 'cat.pdf').replace(/\\/g, '/'),
-      query: {
-        a: 1,
-        b: 2
-      },
-      protocol: 'file',
-      slashes: true
-    })
 
     const createBrowserWindow = ({ plugins, preload }: { plugins: boolean, preload: string }) => {
       return new BrowserWindow({
@@ -1019,38 +1010,11 @@ describe('chromium features', () => {
       w.loadFile(path.join(fixturesPath, 'pages', page))
     }
 
-    it('opens when loading a pdf resource as top level navigation', (done) => {
-      const w = createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
-      ipcMain.once('pdf-loaded', (event, state) => {
-        expect(state).to.equal('success')
-        done()
-      })
-      w.webContents.on('page-title-updated', () => {
-        const parsedURL = url.parse(w.webContents.getURL(), true)
-        expect(parsedURL.protocol).to.equal('chrome:')
-        expect(parsedURL.hostname).to.equal('pdf-viewer')
-        expect(parsedURL.query.src).to.equal(pdfSource)
-        expect(w.webContents.getTitle()).to.equal('cat.pdf')
-      })
-      w.webContents.loadURL(pdfSource)
-    })
-
-    it('opens a pdf link given params, the query string should be escaped', (done) => {
-      const w = createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
-      ipcMain.once('pdf-loaded', (event, state) => {
-        expect(state).to.equal('success')
-        done()
-      })
-      w.webContents.on('page-title-updated', () => {
-        const parsedURL = url.parse(w.webContents.getURL(), true)
-        expect(parsedURL.protocol).to.equal('chrome:')
-        expect(parsedURL.hostname).to.equal('pdf-viewer')
-        expect(parsedURL.query.src).to.equal(pdfSourceWithParams)
-        expect(parsedURL.query.b).to.be.undefined()
-        expect(parsedURL.search!.endsWith('%3Fa%3D1%26b%3D2')).to.be.true()
-        expect(w.webContents.getTitle()).to.equal('cat.pdf')
-      })
-      w.webContents.loadURL(pdfSourceWithParams)
+    it('opens when loading a pdf resource as top level navigation', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL(pdfSource)
+      const [, contents] = await emittedOnce(app, 'web-contents-created')
+      expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html')
     })
 
     it('should download a pdf when plugins are disabled', async () => {

@@ -89,7 +89,8 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   extension_loader_ =
       std::make_unique<ElectronExtensionLoader>(browser_context_);
 
-  LoadComponentExtensions();
+  if (!browser_context_->IsOffTheRecord())
+    LoadComponentExtensions();
 }
 
 std::unique_ptr<base::DictionaryValue> ParseManifest(
