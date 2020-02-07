@@ -1230,6 +1230,9 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   if (factory)
     factories->emplace(extensions::kExtensionScheme, std::move(factory));
 
+  if (!web_contents)
+    return;
+
   extensions::ElectronExtensionWebContentsObserver* web_observer =
       extensions::ElectronExtensionWebContentsObserver::FromWebContents(
           web_contents);
