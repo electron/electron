@@ -392,7 +392,7 @@ step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
         fi
         cd src
         electron/script/copy-debug-symbols.py --target-cpu="$target_cpu" --out-dir=out/Default/debug --compress
-        electron/script/strip-binaries.py --target-cpu="$target_cpu"
+        electron/script/strip-binaries.py -v --target-cpu="$target_cpu"
         electron/script/add-debug-link.py --target-cpu="$target_cpu" --debug-dir=out/Default/debug
       fi
 
@@ -432,15 +432,17 @@ step-electron-dist-store: &step-electron-dist-store
     path: src/out/Default/dist.zip
     destination: dist.zip
 
-step-electron-chromedriver-gn-gen: &step-electron-chromedriver-gn-gen
+step-electron-maybe-chromedriver-gn-gen: &step-electron-maybe-chromedriver-gn-gen
   run:
     name: chromedriver GN gen
     command: |
       cd src
-      if [ "$USE_GOMA" == "true" ]; then
-        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"//electron/build/args/goma.gn\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-      else
-        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+        if [ "$USE_GOMA" == "true" ]; then
+          gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"//electron/build/args/goma.gn\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+        else
+          gn gen out/chromedriver --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+        fi
       fi
 
 step-electron-chromedriver-build: &step-electron-chromedriver-build
@@ -448,14 +450,21 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
     name: Build chromedriver.zip
     command: |
       cd src
-      ninja -C out/chromedriver electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
-      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/chromedriver/chromedriver
-      ninja -C out/chromedriver electron:electron_chromedriver_zip
-      cp out/chromedriver/chromedriver.zip out/Default/chromedriver
+      if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+        export CHROMEDRIVER_DIR="out/chromedriver"
+      else
+        export CHROMEDRIVER_DIR="out/Default"
+      fi
+      ninja -C $CHROMEDRIVER_DIR electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+      electron/script/strip-binaries.py -v --target-cpu="$TARGET_ARCH" --file $PWD/$CHROMEDRIVER_DIR/chromedriver
+      ninja -C $CHROMEDRIVER_DIR electron:electron_chromedriver_zip
+      if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+        cp out/chromedriver/chromedriver.zip out/Default
+      fi
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
-    path: src/out/chromedriver/chromedriver.zip
+    path: src/out/Default/chromedriver.zip
     destination: chromedriver.zip
 
 step-nodejs-headers-build: &step-nodejs-headers-build
@@ -482,6 +491,7 @@ step-electron-publish: &step-electron-publish
       if [ "`uname`" == "Darwin" ]; then
         rm -rf src/out/Default/obj
       fi
+
       cd src/electron
       if [ "$UPLOAD_TO_S3" == "1" ]; then
         echo 'Uploading Electron release distribution to S3'
@@ -498,7 +508,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       # Build artifacts
       - src/out/Default/dist.zip
       - src/out/Default/mksnapshot.zip
-      - src/out/chromedriver/chromedriver.zip
+      - src/out/Default/chromedriver.zip
       - src/out/Default/shell_browser_ui_unittests
       - src/out/Default/gen/node_headers
       - src/out/ffmpeg/ffmpeg.zip
@@ -533,7 +543,7 @@ step-chromedriver-unzip: &step-chromedriver-unzip
   run:
     name: Unzip chromedriver.zip
     command: |
-      cd src/out/chromedriver
+      cd src/out/Default
       unzip -o chromedriver.zip
 
 step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
@@ -578,7 +588,7 @@ step-verify-chromedriver: &step-verify-chromedriver
     name: Verify ChromeDriver
     command: |
       cd src
-      python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/chromedriver
+      python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
@@ -608,12 +618,12 @@ step-mksnapshot-build: &step-mksnapshot-build
       gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
-          electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
+          electron/script/strip-binaries.py -v --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
         elif [ "$TARGET_ARCH" == "arm64" ]; then
-          electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
+          electron/script/strip-binaries.py -v --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
         else
-          electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
-          electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
+          electron/script/strip-binaries.py -v --file $PWD/out/Default/mksnapshot
+          electron/script/strip-binaries.py -v --file $PWD/out/Default/v8_context_snapshot_generator
         fi
       fi
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
@@ -1004,7 +1014,7 @@ steps-electron-build: &steps-electron-build
     - *step-maybe-cross-arch-snapshot-store
 
     # chromedriver
-    - *step-electron-chromedriver-gn-gen
+    - *step-electron-maybe-chromedriver-gn-gen
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
@@ -1095,7 +1105,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-mksnapshot-store
 
     # chromedriver
-    - *step-electron-chromedriver-gn-gen
+    - *step-electron-maybe-chromedriver-gn-gen
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
@@ -1126,7 +1136,7 @@ steps-chromedriver-build: &steps-chromedriver-build
     - *step-setup-env-for-build
     - *step-fix-sync-on-mac
 
-    - *step-electron-chromedriver-gn-gen
+    - *step-electron-maybe-chromedriver-gn-gen
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
@@ -1430,7 +1440,7 @@ commands:
             - *step-maybe-cross-arch-snapshot-store
 
             # chromedriver
-            - *step-electron-chromedriver-gn-gen
+            - *step-electron-maybe-chromedriver-gn-gen
             - *step-electron-chromedriver-build
             - *step-electron-chromedriver-store
 
