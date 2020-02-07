@@ -1014,7 +1014,7 @@ steps-electron-build: &steps-electron-build
     - *step-maybe-cross-arch-snapshot-store
 
     # chromedriver
-    - *step-electron-chromedriver-gn-gen
+    - *step-electron-maybe-chromedriver-gn-gen
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
