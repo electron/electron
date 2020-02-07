@@ -61,20 +61,20 @@ index 95679ab2915ad496ca0018aa13874b84eb11d7fd..c278e0fc072409677beafc7f252ebcf6
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 463906df3f761bb321c8580185c5e12dceb96854..053abd33b8f73b0f12a7729b507914516dff584e 100644
+index 69e3232a648bb74e946e69a8d7a88a3b102f0fbc..9d6296e2ec0ecb8d2865c42b5d26d9d699122fd2 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -1192,6 +1192,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -1191,6 +1191,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+   bool handled = true;
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
-     IPC_MESSAGE_HANDLER(ViewMsg_SetPageScale, OnSetPageScale)
      IPC_MESSAGE_HANDLER(ViewMsg_SetInitialFocus, OnSetInitialFocus)
 +    IPC_MESSAGE_HANDLER(ViewMsg_SetSchedulerThrottling,
 +                        OnSetSchedulerThrottling)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_ClosePage, OnClosePage)
-@@ -1748,6 +1750,12 @@ void RenderViewImpl::OnSetPageScale(float page_scale_factor) {
-   webview()->SetPageScaleFactor(page_scale_factor);
+@@ -1736,6 +1738,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
+   return send_content_state_immediately_;
  }
  
 +void RenderViewImpl::OnSetSchedulerThrottling(bool allowed) {
