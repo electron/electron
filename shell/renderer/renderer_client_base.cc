@@ -371,8 +371,7 @@ bool RendererClientBase::IsPluginHandledExternally(
   content::WebPluginInfo info;
   info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
   info.name = base::UTF8ToUTF16("Chromium PDF Viewer");
-  info.path =
-      base::FilePath(FILE_PATH_LITERAL(extension_misc::kPdfExtensionId));
+  info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
   info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
   info.mime_types.emplace_back("application/pdf", "pdf",
                                "Portable Document Format");
