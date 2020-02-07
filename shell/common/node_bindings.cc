@@ -8,6 +8,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -136,7 +137,51 @@ bool IsPackagedApp() {
 #endif
 }
 
+// Initialize Node.js cli options to pass to Node.js
+// See https://nodejs.org/api/cli.html#cli_options
+void SetNodeCliFlags() {
+  // Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode
+  const std::unordered_set<base::StringPiece, base::StringPieceHash> allowed = {
+      "--inspect",          "--inspect-brk",
+      "--inspect-port",     "--debug",
+      "--debug-brk",        "--debug-port",
+      "--inspect-brk-node", "--inspect-publish-uid",
+  };
+
+  const auto argv = base::CommandLine::ForCurrentProcess()->argv();
+  std::vector<std::string> args;
+
+  // TODO(codebytere): We need to set the first entry in args to the
+  // process name owing to src/node_options-inl.h#L286-L290 but this is
+  // redundant and so should be refactored upstream.
+  args.reserve(argv.size() + 1);
+  args.emplace_back("electron");
+
+  for (const auto& arg : argv) {
+#if defined(OS_WIN)
+    const auto& option = base::UTF16ToUTF8(arg);
+#else
+    const auto& option = arg;
+#endif
+    const auto stripped = base::StringPiece(option).substr(0, option.find('='));
+    if (allowed.count(stripped) != 0)
+      args.push_back(option);
+  }
+
+  std::vector<std::string> errors;
+  const int exit_code = ProcessGlobalArgs(&args, nullptr, &errors,
+                                          node::kDisallowedInEnvironment);
+
+  if (exit_code != 0) {
+    if (!errors.empty())
+      LOG(INFO) << base::JoinString(errors, " ");
+    else
+      LOG(INFO) << "Error parsing Node.js cli flags";
+  }
+}
+
 // Initialize NODE_OPTIONS to pass to Node.js
+// See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
   // Options that are unilaterally disallowed
   const std::set<std::string> disallowed = {
@@ -157,7 +202,7 @@ void SetNodeOptions(base::Environment* env) {
 
     for (const auto& part : parts) {
       // Strip off values passed to individual NODE_OPTIONs
-      std::string option = part.substr(0, part.find("="));
+      std::string option = part.substr(0, part.find('='));
 
       if (is_packaged_app &&
           allowed_in_packaged.find(option) == allowed_in_packaged.end()) {
@@ -269,6 +314,9 @@ void NodeBindings::Initialize() {
 
   // Explicitly register electron's builtin modules.
   RegisterBuiltinModules();
+
+  // Parse and set Node.js cli flags.
+  SetNodeCliFlags();
 
   // pass non-null program name to argv so it doesn't crash
   // trying to index into a nullptr
