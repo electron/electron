@@ -487,6 +487,11 @@ to host here.
 
 **Note:** On macOS the OS spellchecker is used and therefore we do not download any dictionary files.  This API is a no-op on macOS.
 
+#### `ses.listWordsInSpellCheckerDictionary()`
+
+Returns `Promise<String[]>` - An array of all words in app's custom dictionary.
+Resolves when the full dictionary is loaded from disk.
+
 #### `ses.addWordToSpellCheckerDictionary(word)`
 
 * `word` String - The word you want to add to the dictionary
