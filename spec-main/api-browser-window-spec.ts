@@ -1628,6 +1628,7 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
+            enableRemoteModule: true,
             preload
           }
         })
@@ -2108,7 +2109,8 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             preload,
-            sandbox: true
+            sandbox: true,
+            enableRemoteModule: true
           }
         })
         w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'reload-remote' })
@@ -2140,7 +2142,8 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             preload,
-            sandbox: true
+            sandbox: true,
+            enableRemoteModule: true
           }
         })
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
