@@ -16,7 +16,7 @@ Electron 10, the remote module is now disabled by default. To use the remote
 module, `enableRemoteModule: true` must be specified in WebPreferences:
 
 ```js
-new BrowserWindow({
+const w = new BrowserWindow({
   webPreferences: {
     enableRemoteModule: true
   }
