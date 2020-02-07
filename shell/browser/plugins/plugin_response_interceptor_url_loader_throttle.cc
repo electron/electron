@@ -11,28 +11,26 @@
 #include "base/feature_list.h"
 #include "base/guid.h"
 #include "base/task/post_task.h"
-
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_utils.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/common/resource_type.h"
 #include "content/public/common/transferrable_url_loader.mojom.h"
+#include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
+#include "extensions/browser/extension_registry.h"
+#include "extensions/browser/guest_view/mime_handler_view/mime_handler_stream_manager.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_attach_helper.h"
+#include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/common/extension.h"
+#include "extensions/common/manifest_handlers/mime_types_handler.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
-
-#include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
-#include "extensions/browser/extension_registry.h"
-#include "extensions/browser/guest_view/mime_handler_view/mime_handler_stream_manager.h"
-#include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
-#include "extensions/common/manifest_handlers/mime_types_handler.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/plugins/plugin_utils.h"
+#include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
 
 namespace {
 
@@ -190,8 +188,8 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
   transferrable_loader->head = std::move(deep_copied_response);
   transferrable_loader->head->intercepted_by_plugin = true;
 
-  bool embedded =
-      resource_type_ != static_cast<int>(content::ResourceType::kMainFrame);
+  bool embedded = resource_type_ !=
+                  static_cast<int>(blink::mojom::ResourceType::kMainFrame);
   base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&SendExecuteMimeTypeHandlerEvent, extension_id, view_id,
