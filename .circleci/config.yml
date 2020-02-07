@@ -848,7 +848,7 @@ step-check-for-doc-only-change: &step-check-for-doc-only-change
     command: |
       cd src/electron
       node script/yarn install --frozen-lockfile
-      if node script/doc-only-change.js --prNumber=$CIRCLE_PR_NUMBER --prURL=$CIRCLE_PULL_REQUEST; then
+      if node script/doc-only-change.js --prNumber=$CIRCLE_PR_NUMBER --prURL=$CIRCLE_PULL_REQUEST --prBranch=$CIRCLE_BRANCH; then
         #PR is doc only change; save file with value true to indicate doc only change
         echo "true" > .skip-ci-build
       else
@@ -884,7 +884,7 @@ step-ts-compile: &step-ts-compile
     command: |
       cd src
       ninja -C out/Default electron:default_app_js -j $NUMBER_OF_NINJA_PROCESSES
-      ninja -C out/Default electron:atom_js2c -j $NUMBER_OF_NINJA_PROCESSES
+      ninja -C out/Default electron:electron_js2c -j $NUMBER_OF_NINJA_PROCESSES
 
 # Lists of steps.
 steps-lint: &steps-lint
