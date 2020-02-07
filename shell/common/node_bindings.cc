@@ -164,7 +164,9 @@ void SetNodeCliFlags() {
     const auto& option = arg;
 #endif
     const auto stripped = base::StringPiece(option).substr(0, option.find('='));
-    if (allowed.count(stripped) != 0)
+
+    // Only allow in no-op (--) option or DebugOptions
+    if (allowed.count(stripped) != 0 || stripped == "--")
       args.push_back(option);
   }
 
