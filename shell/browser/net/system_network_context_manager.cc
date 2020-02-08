@@ -151,7 +151,8 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
       network::mojom::NetworkContextParams::New();
 
-  //This is required to avoid blocking X-Requested-With headers sent by PPAPI plugins, more info crbug.com/940331
+  // This is required to avoid blocking X-Requested-With headers sent by PPAPI
+  // plugins, more info crbug.com/940331
   content::UpdateCorsExemptHeader(network_context_params.get());
 
   network_context_params->enable_brotli = true;
