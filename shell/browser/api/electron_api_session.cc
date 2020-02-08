@@ -226,47 +226,39 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
   }
 }
 
-class DictionaryObserver : public SpellcheckCustomDictionary::Observer {
-  //   private:
-  //     base::OnceCallback<std::set<std::string>>& _callback;
+class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
+ private:
+  std::unique_ptr<gin_helper::Promise<std::set<std::string>>> _promise;
+  base::WeakPtr<SpellcheckService> _spellcheck;
+
  public:
-  DictionaryObserver(base::OnceCallback<void(std::set<std::string>)> callback) {
-    LOG(INFO) << "[ERICK] Observer set up";
-    // _callback = callback;
-    // ERICK: HOW DO I GET BROWSER_CONTEXT_ IN?
-    // SpellcheckService* spellcheck =
-    //   SpellcheckServiceFactory::GetForContext(browser_context_.get());
-    // spellcheck->GetCustomDictionary()->AddObserver(this);
+  DictionaryObserver(
+      std::unique_ptr<gin_helper::Promise<std::set<std::string>>> promise,
+      base::WeakPtr<SpellcheckService> spellcheck)
+      : _spellcheck(spellcheck) {
+    _promise = std::move(promise);
+    if (_spellcheck)
+      _spellcheck->GetCustomDictionary()->AddObserver(this);
   }
 
-  //     // ERICK: SpellcheckCustomDictionary::Observer has no virtual
-  //     destructor
-
-  //     // ~DictionaryObserver() {
-  //     //   // SpellcheckService* spellcheck =
-  //     //   //
-  //     SpellcheckServiceFactory::GetForContext(browser_context_.get());
-  //     //   // spellcheck->GetCustomDictionary()->RemoveObserver(this);
-  //     // }
+  ~DictionaryObserver() {
+    if (_spellcheck)
+      _spellcheck->GetCustomDictionary()->RemoveObserver(this);
+  }
 
   void OnCustomDictionaryLoaded() override {
-    LOG(INFO) << "[ERICK] Custom dictionary loaded!";
-    //       std::set<std::string> st = {};
-    //       // SpellcheckService* spellcheck =
-    //       // SpellcheckServiceFactory::GetForContext(browser_context_.get());
-    //       // if (!spellcheck)
-    //       //   _callback(std::set<std::string>);
-
-    //       // _callback(spellcheck->GetCustomDictionary()->GetWords());
-    //       _callback.Run(std::move(st));
-    //       // delete this;
+    if (_spellcheck) {
+      _promise->Resolve(_spellcheck->GetCustomDictionary()->GetWords());
+    } else {
+      _promise->RejectWithErrorMessage(
+          "Spellcheck in unexpected state: failed to load custom dictionary.");
+    }
+    delete this;
   }
 
   void OnCustomDictionaryChanged(
       const SpellcheckCustomDictionary::Change& dictionary_change) override {
-    //       // noop
-    //       // ERICK: not sure what to do with this since it's mandatory to
-    //       implement in the observer
+    // noop
   }
 };
 
@@ -811,32 +803,24 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
 }
 
 v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
-  // Chromium Promise stuff
-  gin_helper::Promise<std::set<std::string>> promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
+  std::unique_ptr<gin_helper::Promise<std::set<std::string>>> promise =
+      std::make_unique<gin_helper::Promise<std::set<std::string>>>(isolate());
+  v8::Local<v8::Promise> handle = promise->GetHandle();
 
-  // spellcheck stuff
   SpellcheckService* spellcheck =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
 
-  // if no spellcheck service in context, resolve with empty array.
   if (!spellcheck)
-    promise.Resolve(std::set<std::string>());
+    promise->RejectWithErrorMessage(
+        "Spellcheck in unexpected state: failed to load custom dictionary.");
 
-  // check if we've already loaded the custom dictionary from file to cache
   if (spellcheck->GetCustomDictionary()->IsLoaded()) {
-    // can simply return the cached dictionary
-    promise.Resolve(spellcheck->GetCustomDictionary()->GetWords());
+    promise->Resolve(spellcheck->GetCustomDictionary()->GetWords());
   } else {
-    // Create a new observer and add it to the dictionary
-    DictionaryObserver* obs = new DictionaryObserver(base::BindOnce(
-        gin_helper::Promise<std::set<std::string>>::ResolvePromise,
-        std::move(promise)));
-    spellcheck->GetCustomDictionary()->AddObserver(obs);
-
-    // ERICK: Seems like this call is unneeded because the
-    // OnCustomDictionaryLoad() fires regardless.
-    // spellcheck->GetCustomDictionary()->Load();
+    new DictionaryObserver(std::move(promise), spellcheck->GetWeakPtr());
+    // Dictionary loads by default asynchronously,
+    // call the load function anyways just to be sure.
+    spellcheck->GetCustomDictionary()->Load();
   }
 
   return handle;
