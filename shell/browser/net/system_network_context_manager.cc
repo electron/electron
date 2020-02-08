@@ -10,7 +10,6 @@
 #include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
-#include "components/variations/net/variations_http_headers.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_exempt_headers.h"
 #include "content/public/browser/network_service_instance.h"
@@ -152,8 +151,8 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
       network::mojom::NetworkContextParams::New();
 
+  //This is required to avoid blocking X-Requested-With headers sent by PPAPI plugins, more info crbug.com/940331
   content::UpdateCorsExemptHeader(network_context_params.get());
-  variations::UpdateCorsExemptHeaderForVariations(network_context_params.get());
 
   network_context_params->enable_brotli = true;
 
