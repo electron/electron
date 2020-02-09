@@ -1455,8 +1455,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
                            relativeTo:nil];
   }
 
-  std::string dep_warn =
-      " has been deprecated and will be removed in a future version of macOS.";
+  std::string dep_warn = " has been deprecated and removed as of macOS 10.15.";
   node::Environment* env =
       node::Environment::GetCurrent(v8::Isolate::GetCurrent());
 
@@ -1477,61 +1476,44 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   }
 
   if (@available(macOS 10.11, *)) {
-    // TODO(codebytere): Use NSVisualEffectMaterial* constants directly once
-    // they are available in the minimum SDK version
     if (type == "selection") {
-      // NSVisualEffectMaterialSelection
-      vibrancyType = static_cast<NSVisualEffectMaterial>(4);
+      vibrancyType = NSVisualEffectMaterialSelection;
     } else if (type == "menu") {
-      // NSVisualEffectMaterialMenu
-      vibrancyType = static_cast<NSVisualEffectMaterial>(5);
+      vibrancyType = NSVisualEffectMaterialMenu;
     } else if (type == "popover") {
-      // NSVisualEffectMaterialPopover
-      vibrancyType = static_cast<NSVisualEffectMaterial>(6);
+      vibrancyType = NSVisualEffectMaterialPopover;
     } else if (type == "sidebar") {
-      // NSVisualEffectMaterialSidebar
-      vibrancyType = static_cast<NSVisualEffectMaterial>(7);
+      vibrancyType = NSVisualEffectMaterialSidebar;
     } else if (type == "medium-light") {
-      // NSVisualEffectMaterialMediumLight
       EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
                   "electron");
-      vibrancyType = static_cast<NSVisualEffectMaterial>(8);
+      vibrancyType = NSVisualEffectMaterialMediumLight;
     } else if (type == "ultra-dark") {
-      // NSVisualEffectMaterialUltraDark
       EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn,
                   "electron");
-      vibrancyType = static_cast<NSVisualEffectMaterial>(9);
+      vibrancyType = NSVisualEffectMaterialUltraDark;
     }
   }
 
   if (@available(macOS 10.14, *)) {
     if (type == "header") {
-      // NSVisualEffectMaterialHeaderView
-      vibrancyType = static_cast<NSVisualEffectMaterial>(10);
+      vibrancyType = NSVisualEffectMaterialHeaderView;
     } else if (type == "sheet") {
-      // NSVisualEffectMaterialSheet
-      vibrancyType = static_cast<NSVisualEffectMaterial>(11);
+      vibrancyType = NSVisualEffectMaterialSheet;
     } else if (type == "window") {
-      // NSVisualEffectMaterialWindowBackground
-      vibrancyType = static_cast<NSVisualEffectMaterial>(12);
+      vibrancyType = NSVisualEffectMaterialWindowBackground;
     } else if (type == "hud") {
-      // NSVisualEffectMaterialHUDWindow
-      vibrancyType = static_cast<NSVisualEffectMaterial>(13);
+      vibrancyType = NSVisualEffectMaterialHUDWindow;
     } else if (type == "fullscreen-ui") {
-      // NSVisualEffectMaterialFullScreenUI
-      vibrancyType = static_cast<NSVisualEffectMaterial>(16);
+      vibrancyType = NSVisualEffectMaterialFullScreenUI;
     } else if (type == "tooltip") {
-      // NSVisualEffectMaterialToolTip
-      vibrancyType = static_cast<NSVisualEffectMaterial>(17);
+      vibrancyType = NSVisualEffectMaterialToolTip;
     } else if (type == "content") {
-      // NSVisualEffectMaterialContentBackground
-      vibrancyType = static_cast<NSVisualEffectMaterial>(18);
+      vibrancyType = NSVisualEffectMaterialContentBackground;
     } else if (type == "under-window") {
-      // NSVisualEffectMaterialUnderWindowBackground
-      vibrancyType = static_cast<NSVisualEffectMaterial>(21);
+      vibrancyType = NSVisualEffectMaterialUnderWindowBackground;
     } else if (type == "under-page") {
-      // NSVisualEffectMaterialUnderPageBackground
-      vibrancyType = static_cast<NSVisualEffectMaterial>(22);
+      vibrancyType = NSVisualEffectMaterialUnderPageBackground;
     }
   }
 
