@@ -111,25 +111,31 @@ bool IsPlainArray(const v8::Local<v8::Value>& arr) {
 
 class FunctionLifeMonitor final : public ObjectLifeMonitor {
  public:
-  static void BindTo(v8::Isolate* isolate,
-                     v8::Local<v8::Object> target,
-                     context_bridge::RenderFramePersistenceStore* store,
-                     size_t func_id) {
+  static void BindTo(
+      v8::Isolate* isolate,
+      v8::Local<v8::Object> target,
+      base::WeakPtr<context_bridge::RenderFramePersistenceStore> store,
+      size_t func_id) {
     new FunctionLifeMonitor(isolate, target, store, func_id);
   }
 
  protected:
-  FunctionLifeMonitor(v8::Isolate* isolate,
-                      v8::Local<v8::Object> target,
-                      context_bridge::RenderFramePersistenceStore* store,
-                      size_t func_id)
+  FunctionLifeMonitor(
+      v8::Isolate* isolate,
+      v8::Local<v8::Object> target,
+      base::WeakPtr<context_bridge::RenderFramePersistenceStore> store,
+      size_t func_id)
       : ObjectLifeMonitor(isolate, target), store_(store), func_id_(func_id) {}
   ~FunctionLifeMonitor() override = default;
 
-  void RunDestructor() override { store_->functions().erase(func_id_); }
+  void RunDestructor() override {
+    if (!store_)
+      return;
+    store_->functions().erase(func_id_);
+  }
 
  private:
-  context_bridge::RenderFramePersistenceStore* store_;
+  base::WeakPtr<context_bridge::RenderFramePersistenceStore> store_;
   size_t func_id_;
 };
 
@@ -176,7 +182,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
           base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
       FunctionLifeMonitor::BindTo(destination_context->GetIsolate(),
                                   v8::Local<v8::Object>::Cast(proxy_func),
-                                  store, func_id);
+                                  store->GetWeakPtr(), func_id);
       store->CacheProxiedObject(value, proxy_func);
       return v8::MaybeLocal<v8::Value>(proxy_func);
     }
