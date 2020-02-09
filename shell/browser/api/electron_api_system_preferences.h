@@ -99,8 +99,6 @@ class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
 
   static bool IsTrustedAccessibilityClient(bool prompt);
 
-  // TODO(codebytere): Write tests for these methods once we
-  // are running tests on a Mojave machine
   std::string GetMediaAccessStatus(const std::string& media_type,
                                    gin_helper::Arguments* args);
   v8::Local<v8::Promise> AskForMediaAccess(v8::Isolate* isolate,
