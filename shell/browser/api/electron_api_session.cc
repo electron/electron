@@ -660,7 +660,8 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
   auto installed_extensions = registry->GenerateInstalledExtensionsSet();
   std::vector<const extensions::Extension*> extensions_vector;
   for (const auto& extension : *installed_extensions) {
-    extensions_vector.emplace_back(extension.get());
+    if (extension->location() != extensions::Manifest::COMPONENT)
+      extensions_vector.emplace_back(extension.get());
   }
   return gin::ConvertToV8(isolate(), extensions_vector);
 }
