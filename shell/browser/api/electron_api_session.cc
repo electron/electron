@@ -651,6 +651,11 @@ v8::Local<v8::Promise> Session::LoadExtension(
     const base::FilePath& extension_path) {
   gin_helper::Promise<const extensions::Extension*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
+  if (browser_context()->IsOffTheRecord()) {
+    promise.RejectWithErrorMessage(
+        "Extensions cannot be loaded in a temporary session");
+    return handle;
+  }
 
   auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
