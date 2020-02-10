@@ -143,14 +143,14 @@
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/process_manager.h"
 #include "extensions/browser/process_map.h"
-#include "extensions/common/api/mime_handler.mojom.h"  // nogncheck
+#include "extensions/common/api/mime_handler.mojom.h"
 #include "extensions/common/extension.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)
-#include "shell/browser/plugins/plugin_response_interceptor_url_loader_throttle.h"
+#include "chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.h"  // nogncheck
 #include "shell/browser/plugins/plugin_utils.h"
 #endif
 
