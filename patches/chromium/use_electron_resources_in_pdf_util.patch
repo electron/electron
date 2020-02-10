@@ -3,7 +3,7 @@ From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Mon, 10 Feb 2020 10:37:48 -0800
 Subject: use electron resources in pdf_util
 
-Without this, the ID for IDR_PDF_MANIFEST will be wrong on linux/windows
+Without this, the ID for IDR_PDF_MANIFEST will be wrong on linux
 and cause a DCHECK(), since the resource will be loaded as an empty
 string.
 
