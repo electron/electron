@@ -82,3 +82,4 @@ accessible_pane_view.patch
 fixme_grit_conflicts.patch
 fix_use_the_new_mediaplaypause_key_listener_for_internal_chrome.patch
 fix_use_native_window_button_positions_when_macos_locale_is_rtl.patch
+use_electron_resources_in_pdf_util.patch
