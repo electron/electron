@@ -1262,9 +1262,12 @@ commands:
       use-out-cache:
         type: boolean
         default: true
-      restore-portal-cache:
+      restore-caches:
         type: boolean
         default: true
+      preserve-vendor-dirs:
+        type: boolean
+        default: false
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1292,19 +1295,37 @@ commands:
             - *step-generate-deps-hash
             - *step-touch-sync-done
             - when:
-                condition: << parameters.restore-portal-cache >>
+                condition: << parameters.restore-caches >>
                 steps:
                   - maybe-restore-portaled-src-cache
-            - *step-maybe-restore-git-cache
-            - *step-set-git-cache-path
+                  - *step-maybe-restore-git-cache
+                  - *step-set-git-cache-path
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
             # These next few steps reset Electron to the correct commit regardless of which cache was restored
+            - when:
+                condition: << parameters.preserve-vendor-dirs >>
+                steps:
+                  - run:
+                      name: Preserve vendor dirs for release
+                      command: |
+                        mv src/electron/vendor/boto .
+                        mv src/electron/vendor/requests .
             - run:
                 name: Wipe Electron
                 command: rm -rf src/electron
             - *step-checkout-electron
             - *step-run-electron-only-hooks
+            - when:
+                condition: << parameters.preserve-vendor-dirs >>
+                steps:
+                  - run:
+                      name: Preserve vendor dirs for release
+                      command: |
+                        rm -rf src/electron/vendor/boto
+                        rm -rf src/electron/vendor/requests
+                        mv boto src/electron/vendor
+                        mv requests src/electron/vendor/requests
             - *step-generate-deps-hash-cleanly
             - *step-mark-sync-done
             - *step-minimize-workspace-size-from-checkout
@@ -1403,10 +1424,10 @@ commands:
                 steps:
                   - *step-save-out-cache
 
-      # Trigger tests on arm hardware if needed
-      - *step-maybe-trigger-arm-test
+            # Trigger tests on arm hardware if needed
+            - *step-maybe-trigger-arm-test
 
-      - *step-maybe-notify-slack-failure
+            - *step-maybe-notify-slack-failure
 
   electron-publish:
     parameters:
@@ -1507,7 +1528,8 @@ jobs:
           build: false
           checkout: true
           persist-checkout: true
-          restore-portal-cache: false
+          restore-caches: false
+          preserve-vendor-dirs: true
 
   linux-checkout-fast:
     <<: *machine-linux-2xlarge
@@ -1565,7 +1587,8 @@ jobs:
           build: false
           checkout: true
           persist-checkout: true
-          restore-portal-cache: false
+          restore-caches: false
+          preserve-vendor-dirs: true
 
   mac-checkout-fast:
     <<: *machine-linux-2xlarge
