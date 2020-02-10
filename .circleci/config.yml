@@ -41,6 +41,14 @@ parameters:
     type: boolean
     default: false
 
+  run-linux-publish:
+    type: boolean
+    default: false
+
+  run-macos-publish:
+    type: boolean
+    default: false
+
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
 #
@@ -1080,56 +1088,6 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     #Compile ts/js to verify doc change didn't break anything
     - *step-ts-compile
 
-steps-electron-build-for-publish: &steps-electron-build-for-publish
-  steps:
-    - *step-checkout-electron
-    - *step-depot-tools-get
-    - *step-depot-tools-add-to-path
-    - *step-restore-brew-cache
-    - *step-get-more-space-on-mac
-    - *step-gclient-sync
-    - *step-setup-env-for-build
-    - *step-delete-git-directories
-    - *step-minimize-workspace-size-from-checkout
-    - *step-gn-gen-default
-
-    # Electron app
-    - *step-electron-build
-    - *step-maybe-generate-breakpad-symbols
-    - *step-maybe-electron-dist-strip
-    - *step-electron-dist-build
-    - *step-electron-dist-store
-    - *step-maybe-zip-symbols
-    - *step-symbols-store
-
-    # mksnapshot
-    - *step-mksnapshot-build
-    - *step-mksnapshot-store
-
-    # chromedriver
-    - *step-electron-maybe-chromedriver-gn-gen
-    - *step-electron-chromedriver-build
-    - *step-electron-chromedriver-store
-
-    # Node.js headers
-    - *step-nodejs-headers-build
-    - *step-nodejs-headers-store
-
-    # ffmpeg
-    - *step-ffmpeg-gn-gen
-    - *step-ffmpeg-build
-    - *step-ffmpeg-store
-
-    # hunspell
-    - *step-hunspell-build
-    - *step-hunspell-store
-
-    # typescript defs
-    - *step-maybe-generate-typescript-defs
-
-    # Publish
-    - *step-electron-publish
-
 steps-chromedriver-build: &steps-chromedriver-build
   steps:
     - attach_workspace:
@@ -1493,6 +1451,71 @@ commands:
 
       - *step-maybe-notify-slack-failure
 
+  electron-publish:
+    parameters:
+      attach:
+        type: boolean
+        default: false
+      checkout:
+        type: boolean
+        default: true
+    steps:
+      - when:
+          condition: << parameters.attach >>
+          steps:
+            - attach_workspace:
+                at: .
+      - *step-depot-tools-get
+      - *step-depot-tools-add-to-path
+      - *step-restore-brew-cache
+      - *step-get-more-space-on-mac
+      - when:
+          condition: << parameters.checkout >>
+          steps:
+            - *step-checkout-electron
+            - *step-gclient-sync
+            - *step-delete-git-directories
+            - *step-minimize-workspace-size-from-checkout
+      - *step-setup-env-for-build
+      - *step-gn-gen-default
+
+      # Electron app
+      - *step-electron-build
+      - *step-maybe-generate-breakpad-symbols
+      - *step-maybe-electron-dist-strip
+      - *step-electron-dist-build
+      - *step-electron-dist-store
+      - *step-maybe-zip-symbols
+      - *step-symbols-store
+
+      # mksnapshot
+      - *step-mksnapshot-build
+      - *step-mksnapshot-store
+
+      # chromedriver
+      - *step-electron-maybe-chromedriver-gn-gen
+      - *step-electron-chromedriver-build
+      - *step-electron-chromedriver-store
+
+      # Node.js headers
+      - *step-nodejs-headers-build
+      - *step-nodejs-headers-store
+
+      # ffmpeg
+      - *step-ffmpeg-gn-gen
+      - *step-ffmpeg-build
+      - *step-ffmpeg-store
+
+      # hunspell
+      - *step-hunspell-build
+      - *step-hunspell-store
+
+      # typescript defs
+      - *step-maybe-generate-typescript-defs
+
+      # Publish
+      - *step-electron-publish      
+
 # List of all jobs.
 jobs:
   # Layer 0: Lint. Standalone.
@@ -1640,7 +1663,23 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  linux-x64-publish-skip-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge-release
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   linux-ia32-testing:
     <<: *machine-linux-2xlarge
@@ -1688,7 +1727,25 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  linux-ia32-publish-skip-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge-release
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      <<: *env-ia32
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-32bit-release
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   linux-arm-testing:
     <<: *machine-linux-2xlarge
@@ -1737,7 +1794,25 @@ jobs:
       <<: *env-32bit-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  linux-arm-publish-skip-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-arm
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-32bit-release
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   linux-arm64-testing:
     <<: *machine-linux-2xlarge
@@ -1793,7 +1868,24 @@ jobs:
       <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  linux-arm64-publish-skip-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-arm64
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   osx-testing:
     <<: *machine-mac-large
@@ -1844,7 +1936,23 @@ jobs:
       <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  osx-publish-skip-checkout:
+    <<: *machine-mac-large
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   mas-testing:
     <<: *machine-mac-large
@@ -1899,7 +2007,24 @@ jobs:
       <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  mas-publish-skip-checkout:
+    <<: *machine-mac-large
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-mas
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   # Layer 3: Tests.
   linux-x64-unittests:
@@ -2193,10 +2318,34 @@ workflows:
   # will need to be updated and there will most likely need to be changes to
   # sudowoodo
 
+  publish-linux:
+    when: << pipeline.parameters.run-linux-publish >>
+    jobs:
+    - linux-checkout-fast
+    - linux-x64-publish-skip-checkout:
+        requires:
+          - linux-checkout-fast
+        context: release-env
+    - linux-ia32-publish-skip-checkout:
+        requires:
+          - linux-checkout-fast
+        context: release-env
+    - linux-arm-publish-skip-checkout:
+        requires:
+          - linux-checkout-fast
+        context: release-env
+    - linux-arm64-publish-skip-checkout:
+        requires:
+          - linux-checkout-fast
+        context: release-env
+
   publish-x64-linux:
     when: << pipeline.parameters.run-linux-x64-publish >>
     jobs:
+    - linux-checkout-fast
     - linux-x64-publish:
+        requires:
+          - linux-checkout-fast
         context: release-env
 
   publish-ia32-linux:
@@ -2228,6 +2377,17 @@ workflows:
     jobs:
     - mas-publish:
         context: release-env
+
+  publish-macos:
+    when: << pipeline.parameters.run-macos-publish >>
+    jobs:
+    - mac-checkout-fast
+    - osx-publish-skip-checkout:
+        requires:
+          - mac-checkout-fast
+    - mas-publish-skip-checkout:
+        requires:
+          - mac-checkout-fast
 
   lint:
     when: << pipeline.parameters.run-lint >>
