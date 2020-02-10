@@ -1312,7 +1312,7 @@ commands:
       use-out-cache:
         type: boolean
         default: true
-      restore-caches:
+      restore-src-cache:
         type: boolean
         default: true
       preserve-vendor-dirs:
@@ -1344,11 +1344,11 @@ commands:
             - *step-generate-deps-hash
             - *step-touch-sync-done
             - when:
-                condition: << parameters.restore-caches >>
+                condition: << parameters.restore-src-cache >>
                 steps:
                   - maybe-restore-portaled-src-cache
-                  - *step-maybe-restore-git-cache
-                  - *step-set-git-cache-path
+            - *step-maybe-restore-git-cache
+            - *step-set-git-cache-path
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
             # These next few steps reset Electron to the correct commit regardless of which cache was restored
@@ -1577,7 +1577,7 @@ jobs:
           build: false
           checkout: true
           persist-checkout: true
-          restore-caches: false
+          restore-src-cache: false
           preserve-vendor-dirs: true
 
   linux-checkout-fast:
@@ -1636,7 +1636,7 @@ jobs:
           build: false
           checkout: true
           persist-checkout: true
-          restore-caches: false
+          restore-src-cache: false
           preserve-vendor-dirs: true
 
   mac-checkout-fast:
