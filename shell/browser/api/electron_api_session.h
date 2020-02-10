@@ -95,6 +95,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,
                                 const std::vector<std::string>& languages);
+  v8::Local<v8::Promise> ListWordsInSpellCheckerDictionary();
   bool AddWordToSpellCheckerDictionary(const std::string& word);
   bool RemoveWordFromSpellCheckerDictionary(const std::string& word);
 #endif

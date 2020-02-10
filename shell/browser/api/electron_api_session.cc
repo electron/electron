@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -225,6 +226,42 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
     }
   }
 }
+
+class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
+ private:
+  std::unique_ptr<gin_helper::Promise<std::set<std::string>>> promise_;
+  base::WeakPtr<SpellcheckService> spellcheck_;
+
+ public:
+  DictionaryObserver(gin_helper::Promise<std::set<std::string>> promise,
+                     base::WeakPtr<SpellcheckService> spellcheck)
+      : spellcheck_(spellcheck) {
+    promise_ = std::make_unique<gin_helper::Promise<std::set<std::string>>>(
+        std::move(promise));
+    if (spellcheck_)
+      spellcheck_->GetCustomDictionary()->AddObserver(this);
+  }
+
+  ~DictionaryObserver() {
+    if (spellcheck_)
+      spellcheck_->GetCustomDictionary()->RemoveObserver(this);
+  }
+
+  void OnCustomDictionaryLoaded() override {
+    if (spellcheck_) {
+      promise_->Resolve(spellcheck_->GetCustomDictionary()->GetWords());
+    } else {
+      promise_->RejectWithErrorMessage(
+          "Spellcheck in unexpected state: failed to load custom dictionary.");
+    }
+    delete this;
+  }
+
+  void OnCustomDictionaryChanged(
+      const SpellcheckCustomDictionary::Change& dictionary_change) override {
+    // noop
+  }
+};
 
 }  // namespace
 
@@ -771,6 +808,29 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
   SpellcheckHunspellDictionary::SetDownloadURLForTesting(url);
 }
 
+v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
+  gin_helper::Promise<std::set<std::string>> promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  SpellcheckService* spellcheck =
+      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+
+  if (!spellcheck)
+    promise.RejectWithErrorMessage(
+        "Spellcheck in unexpected state: failed to load custom dictionary.");
+
+  if (spellcheck->GetCustomDictionary()->IsLoaded()) {
+    promise.Resolve(spellcheck->GetCustomDictionary()->GetWords());
+  } else {
+    new DictionaryObserver(std::move(promise), spellcheck->GetWeakPtr());
+    // Dictionary loads by default asynchronously,
+    // call the load function anyways just to be sure.
+    spellcheck->GetCustomDictionary()->Load();
+  }
+
+  return handle;
+}
+
 bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
   SpellcheckService* service =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
@@ -886,6 +946,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                    &spellcheck::SpellCheckLanguages)
       .SetMethod("setSpellCheckerDictionaryDownloadURL",
                  &SetSpellCheckerDictionaryDownloadURL)
+      .SetMethod("listWordsInSpellCheckerDictionary",
+                 &Session::ListWordsInSpellCheckerDictionary)
       .SetMethod("addWordToSpellCheckerDictionary",
                  &Session::AddWordToSpellCheckerDictionary)
       .SetMethod("removeWordFromSpellCheckerDictionary",
