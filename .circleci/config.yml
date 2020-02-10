@@ -1416,7 +1416,10 @@ commands:
           steps:
             - attach_workspace:
                 at: .
-      - *step-depot-tools-get
+      - when:
+          condition: << parameters.checkout >>
+          steps:
+            - *step-depot-tools-get
       - *step-depot-tools-add-to-path
       - *step-restore-brew-cache
       - *step-get-more-space-on-mac
