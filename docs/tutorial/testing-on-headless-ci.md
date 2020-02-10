@@ -1,4 +1,4 @@
-# Testing on Headless CI Systems (Travis CI, Github Actions, Jenkins)
+# Testing on Headless CI Systems (Travis CI, Jenkins)
 
 Being based on Chromium, Electron requires a display driver to function.
 If Chromium can't find a display driver, Electron will fail to launch -
@@ -44,10 +44,6 @@ install:
   - export DISPLAY=':99.0'
   - Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
 ```
-
-### Github Actions
-
-For Github Actions, a [Xvfb action is available](https://github.com/marketplace/actions/gabrielbb-xvfb-action).
 
 ### Jenkins
 
