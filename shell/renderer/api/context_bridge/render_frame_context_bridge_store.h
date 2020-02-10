@@ -50,6 +50,10 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
                           v8::Local<v8::Value> proxy_value);
   v8::MaybeLocal<v8::Value> GetCachedProxiedObject(v8::Local<v8::Value> from);
 
+  base::WeakPtr<RenderFramePersistenceStore> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
  private:
   // func_id ==> { function, owning_context }
   std::map<size_t, FunctionContextPair> functions_;
