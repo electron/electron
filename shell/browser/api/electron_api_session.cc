@@ -781,17 +781,18 @@ bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
 }
 
 bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
-#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
-  if (spellcheck::UseBrowserSpellChecker()) {
-    spellcheck_platform::RemoveWord(base::UTF8ToUTF16(word));
-  }
-#endif
-  SpellcheckService* spellcheck =
+  SpellcheckService* service =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
-  if (!spellcheck)
+  if (!service)
     return false;
 
-  return spellcheck->GetCustomDictionary()->RemoveWord(word);
+#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+  if (spellcheck::UseBrowserSpellChecker()) {
+    spellcheck_platform::RemoveWord(service->platform_spell_checker(),
+                                    base::UTF8ToUTF16(word));
+  }
+#endif
+  return service->GetCustomDictionary()->RemoveWord(word);
 }
 #endif
 
