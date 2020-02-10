@@ -1628,6 +1628,7 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
+            enableRemoteModule: true,
             preload
           }
         })
@@ -1749,7 +1750,7 @@ describe('BrowserWindow module', () => {
         describe(description, () => {
           const preload = path.join(__dirname, 'fixtures', 'module', 'preload-remote.js')
 
-          it('enables the remote module by default', async () => {
+          it('disables the remote module by default', async () => {
             const w = new BrowserWindow({
               show: false,
               webPreferences: {
@@ -1760,7 +1761,7 @@ describe('BrowserWindow module', () => {
             const p = emittedOnce(ipcMain, 'remote')
             w.loadFile(path.join(fixtures, 'api', 'blank.html'))
             const [, remote] = await p
-            expect(remote).to.equal('object')
+            expect(remote).to.equal('undefined')
           })
 
           it('disables the remote module when false', async () => {
@@ -1776,6 +1777,21 @@ describe('BrowserWindow module', () => {
             w.loadFile(path.join(fixtures, 'api', 'blank.html'))
             const [, remote] = await p
             expect(remote).to.equal('undefined')
+          })
+
+          it('enables the remote module when true', async () => {
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: {
+                preload,
+                sandbox,
+                enableRemoteModule: true
+              }
+            })
+            const p = emittedOnce(ipcMain, 'remote')
+            w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+            const [, remote] = await p
+            expect(remote).to.equal('object')
           })
         })
       }
@@ -2093,7 +2109,8 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             preload,
-            sandbox: true
+            sandbox: true,
+            enableRemoteModule: true
           }
         })
         w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'reload-remote' })
@@ -2125,7 +2142,8 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             preload,
-            sandbox: true
+            sandbox: true,
+            enableRemoteModule: true
           }
         })
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
