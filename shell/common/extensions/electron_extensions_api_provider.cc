@@ -10,6 +10,7 @@
 
 #include "base/containers/span.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/extensions/api/generated_schemas.h"
 #include "extensions/common/alias.h"
@@ -29,34 +30,6 @@ namespace extensions {
 
 namespace keys = manifest_keys;
 namespace errors = manifest_errors;
-
-// Parses the "devtools_page" manifest key.
-class DevToolsPageHandler : public ManifestHandler {
- public:
-  DevToolsPageHandler() = default;
-  ~DevToolsPageHandler() override = default;
-
-  bool Parse(Extension* extension, base::string16* error) override {
-    std::unique_ptr<ManifestURL> manifest_url(new ManifestURL);
-    std::string devtools_str;
-    if (!extension->manifest()->GetString(keys::kDevToolsPage, &devtools_str)) {
-      *error = base::ASCIIToUTF16(errors::kInvalidDevToolsPage);
-      return false;
-    }
-    manifest_url->url_ = extension->GetResourceURL(devtools_str);
-    extension->SetManifestData(keys::kDevToolsPage, std::move(manifest_url));
-    PermissionsParser::AddAPIPermission(extension, APIPermission::kDevtools);
-    return true;
-  }
-
- private:
-  base::span<const char* const> Keys() const override {
-    static constexpr const char* kKeys[] = {keys::kDevToolsPage};
-    return kKeys;
-  }
-
-  DISALLOW_COPY_AND_ASSIGN(DevToolsPageHandler);
-};
 
 constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
     {APIPermission::kDevtools, "devtools",

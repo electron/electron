@@ -13,6 +13,7 @@
 #include "build/build_config.h"
 #include "chrome/browser/extensions/chrome_url_request_util.h"
 #include "chrome/common/chrome_paths.h"
+#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "components/version_info/version_info.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -194,8 +195,7 @@ bool AllowCrossRendererResourceLoad(const GURL& url,
   // If there aren't any explicitly marked web accessible resources, the
   // load should be allowed only if it is by DevTools. A close approximation is
   // checking if the extension contains a DevTools page.
-  if (extension && !extensions::ManifestURL::Get(
-                        extension, extensions::manifest_keys::kDevToolsPage)
+  if (extension && !extensions::chrome_manifest_urls::GetDevToolsPage(extension)
                         .is_empty()) {
     *allowed = true;
     return true;
