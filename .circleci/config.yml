@@ -1262,6 +1262,9 @@ commands:
       use-out-cache:
         type: boolean
         default: true
+      restore-portal-cache:
+        type: boolean
+        default: true
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1288,7 +1291,10 @@ commands:
             - *step-get-more-space-on-mac
             - *step-generate-deps-hash
             - *step-touch-sync-done
-            - maybe-restore-portaled-src-cache
+            - when:
+                condition: << parameters.restore-portal-cache >>
+                steps:
+                  - maybe-restore-portaled-src-cache
             - *step-maybe-restore-git-cache
             - *step-set-git-cache-path
             # This sync call only runs if .circle-sync-done is an EMPTY file
@@ -1430,6 +1436,7 @@ commands:
             - *step-gclient-sync
             - *step-delete-git-directories
             - *step-minimize-workspace-size-from-checkout
+      - *step-fix-sync-on-mac            
       - *step-setup-env-for-build
       - *step-gn-gen-default
 
@@ -1464,6 +1471,8 @@ commands:
       - *step-hunspell-build
       - *step-hunspell-store
 
+      - *step-show-sccache-stats
+
       # typescript defs
       - *step-maybe-generate-typescript-defs
 
@@ -1487,6 +1496,19 @@ jobs:
     <<: *steps-electron-ts-compile-for-doc-change
 
   # Layer 1: Checkout.
+  linux-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          persist-checkout: true
+          restore-portal-cache: false
+
   linux-checkout-fast:
     <<: *machine-linux-2xlarge
     environment:
@@ -1529,6 +1551,21 @@ jobs:
           build: false
           checkout: true
           persist-checkout: true
+
+  mac-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          persist-checkout: true
+          restore-portal-cache: false
 
   mac-checkout-fast:
     <<: *machine-linux-2xlarge
@@ -2280,31 +2317,28 @@ workflows:
   publish-linux:
     when: << pipeline.parameters.run-linux-publish >>
     jobs:
-    - linux-checkout-fast
+    - linux-checkout
     - linux-x64-publish-skip-checkout:
         requires:
-          - linux-checkout-fast
+          - linux-checkout
         context: release-env
     - linux-ia32-publish-skip-checkout:
         requires:
-          - linux-checkout-fast
+          - linux-checkout
         context: release-env
     - linux-arm-publish-skip-checkout:
         requires:
-          - linux-checkout-fast
+          - linux-checkout
         context: release-env
     - linux-arm64-publish-skip-checkout:
         requires:
-          - linux-checkout-fast
+          - linux-checkout
         context: release-env
 
   publish-x64-linux:
     when: << pipeline.parameters.run-linux-x64-publish >>
     jobs:
-    - linux-checkout-fast
     - linux-x64-publish:
-        requires:
-          - linux-checkout-fast
         context: release-env
 
   publish-ia32-linux:
@@ -2340,13 +2374,13 @@ workflows:
   publish-macos:
     when: << pipeline.parameters.run-macos-publish >>
     jobs:
-    - mac-checkout-fast
+    - mac-checkout
     - osx-publish-skip-checkout:
         requires:
-          - mac-checkout-fast
+          - mac-checkout
     - mas-publish-skip-checkout:
         requires:
-          - mac-checkout-fast
+          - mac-checkout
 
   lint:
     when: << pipeline.parameters.run-lint >>
