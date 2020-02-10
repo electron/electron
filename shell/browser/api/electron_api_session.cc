@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -228,29 +229,29 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
 
 class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
  private:
-  std::unique_ptr<gin_helper::Promise<std::set<std::string>>> _promise;
-  base::WeakPtr<SpellcheckService> _spellcheck;
+  std::unique_ptr<gin_helper::Promise<std::set<std::string>>> promise_;
+  base::WeakPtr<SpellcheckService> spellcheck_;
 
  public:
-  DictionaryObserver(
-      std::unique_ptr<gin_helper::Promise<std::set<std::string>>> promise,
-      base::WeakPtr<SpellcheckService> spellcheck)
-      : _spellcheck(spellcheck) {
-    _promise = std::move(promise);
-    if (_spellcheck)
-      _spellcheck->GetCustomDictionary()->AddObserver(this);
+  DictionaryObserver(gin_helper::Promise<std::set<std::string>> promise,
+                     base::WeakPtr<SpellcheckService> spellcheck)
+      : spellcheck_(spellcheck) {
+    promise_ = std::make_unique<gin_helper::Promise<std::set<std::string>>>(
+        std::move(promise));
+    if (spellcheck_)
+      spellcheck_->GetCustomDictionary()->AddObserver(this);
   }
 
   ~DictionaryObserver() {
-    if (_spellcheck)
-      _spellcheck->GetCustomDictionary()->RemoveObserver(this);
+    if (spellcheck_)
+      spellcheck_->GetCustomDictionary()->RemoveObserver(this);
   }
 
   void OnCustomDictionaryLoaded() override {
-    if (_spellcheck) {
-      _promise->Resolve(_spellcheck->GetCustomDictionary()->GetWords());
+    if (spellcheck_) {
+      promise_->Resolve(spellcheck_->GetCustomDictionary()->GetWords());
     } else {
-      _promise->RejectWithErrorMessage(
+      promise_->RejectWithErrorMessage(
           "Spellcheck in unexpected state: failed to load custom dictionary.");
     }
     delete this;
@@ -803,19 +804,18 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
 }
 
 v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
-  std::unique_ptr<gin_helper::Promise<std::set<std::string>>> promise =
-      std::make_unique<gin_helper::Promise<std::set<std::string>>>(isolate());
-  v8::Local<v8::Promise> handle = promise->GetHandle();
+  gin_helper::Promise<std::set<std::string>> promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   SpellcheckService* spellcheck =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
 
   if (!spellcheck)
-    promise->RejectWithErrorMessage(
+    promise.RejectWithErrorMessage(
         "Spellcheck in unexpected state: failed to load custom dictionary.");
 
   if (spellcheck->GetCustomDictionary()->IsLoaded()) {
-    promise->Resolve(spellcheck->GetCustomDictionary()->GetWords());
+    promise.Resolve(spellcheck->GetCustomDictionary()->GetWords());
   } else {
     new DictionaryObserver(std::move(promise), spellcheck->GetWeakPtr());
     // Dictionary loads by default asynchronously,
