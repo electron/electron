@@ -37,7 +37,8 @@ const char kRunAsNode[] = "ELECTRON_RUN_AS_NODE";
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 const char kPdfPluginMimeType[] = "application/x-google-chrome-pdf";
-const char kPdfPluginPath[] = "internal-pdf-viewer";
+const base::FilePath::CharType kPdfPluginPath[] =
+    FILE_PATH_LITERAL("internal-pdf-viewer");
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 }  // namespace electron
