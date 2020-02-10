@@ -177,8 +177,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
   info.name = base::UTF8ToUTF16("Chromium PDF Viewer");
   // This isn't a real file path; it's just used as a unique identifier.
-  info.path =
-      base::FilePath(FILE_PATH_LITERAL(extension_misc::kPdfExtensionId));
+  info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
   info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
   info.mime_types.emplace_back("application/pdf", "pdf",
                                "Portable Document Format");
