@@ -45,7 +45,8 @@ async function main () {
       (lastSpecInstallHash !== currentSpecInstallHash)
 
   if (somethingChanged) {
-    await installSpecModules()
+    await installSpecModules(path.resolve(__dirname, '..', 'spec'))
+    await installSpecModules(path.resolve(__dirname, '..', 'spec-main'))
     await getSpecHash().then(saveSpecHash)
   }
 
@@ -140,7 +141,7 @@ async function runMainProcessElectronTests () {
   }
 }
 
-async function installSpecModules () {
+async function installSpecModules (dir) {
   const nodeDir = path.resolve(BASE, `out/${utils.OUT_DIR}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
@@ -148,11 +149,12 @@ async function installSpecModules () {
   })
   const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
     env,
-    cwd: path.resolve(__dirname, '../spec'),
+    cwd: dir,
     stdio: 'inherit'
   })
   if (status !== 0 && !process.env.IGNORE_YARN_INSTALL_ERROR) {
-    throw new Error('Failed to yarn install in the spec folder')
+    console.log(`Failed to yarn install in '${dir}'`)
+    process.exit(1)
   }
 }
 
@@ -161,7 +163,9 @@ function getSpecHash () {
     (async () => {
       const hasher = crypto.createHash('SHA256')
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package.json')))
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/package.json')))
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/yarn.lock')))
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/yarn.lock')))
       return hasher.digest('hex')
     })(),
     (async () => {
