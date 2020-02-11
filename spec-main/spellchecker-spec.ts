@@ -62,9 +62,9 @@ describe('spellchecker', () => {
       ses = session.fromPartition(`persist:customdictionary-test-${Date.now()}`)
     })
 
-    afterEach(() => {
+    afterEach(async () => {
       if (ses) {
-        ses.clearStorageData({})
+        await ses.clearStorageData()
         ses.destroy()
       }
     })
