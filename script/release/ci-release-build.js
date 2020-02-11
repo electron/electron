@@ -92,8 +92,11 @@ async function circleCIcall (targetBranch, job, options) {
     if (workflowId === -1) {
       return
     }
-    console.log(`CircleCI release build workflow running at https://circleci.com/workflow-run/${workflowId} for the workflow ${job}.`)
-    if (!options.runningPublishWorkflows) {
+    const workFlowUrl = `https://circleci.com/workflow-run/${workflowId}`
+    if (options.runningPublishWorkflows) {
+      console.log(`CircleCI release workflow request for ${job} successful. Check ${workFlowUrl} for status.`)
+    } else {
+      console.log(`CircleCI release build workflow running at https://circleci.com/workflow-run/${workflowId} for ${job}.`)
       const jobNumber = await getCircleCIJobNumber(workflowId)
       if (jobNumber === -1) {
         return
