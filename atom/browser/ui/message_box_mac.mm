@@ -61,7 +61,9 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
   int button_count = static_cast<int>([ns_buttons count]);
 
   if (default_id >= 0 && default_id < button_count) {
-    // Focus the button at default_id if the user opted to do so.
+    // Highlight the button at default_id
+    [[ns_buttons objectAtIndex:default_id] highlight:YES];
+
     // The first button added gets set as the default selected.
     // So remove that default, and make the requested button the default.
     [[ns_buttons objectAtIndex:0] setKeyEquivalent:@""];
