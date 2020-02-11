@@ -146,6 +146,7 @@ response are visible by the time this listener is fired.
     * `timestamp` Double
     * `statusLine` String
     * `statusCode` Integer
+    * `requestHeaders` Record<string, string>
     * `responseHeaders` Record<string, string[]> (optional)
   * `callback` Function
     * `headersReceivedResponse` Object
@@ -228,6 +229,7 @@ redirect is about to occur.
     * `fromCache` Boolean
     * `statusCode` Integer
     * `statusLine` String
+    * `error` String
 
 The `listener` will be called with `listener(details)` when a request is
 completed.
