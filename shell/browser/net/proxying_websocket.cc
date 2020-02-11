@@ -72,15 +72,8 @@ void ProxyingWebSocket::Start() {
                             weak_factory_.GetWeakPtr());
   }
 
-  // TODO(yhirano): Consider having throttling here (probably with aligned with
-  // WebRequestProxyingURLLoaderFactory).
-  bool should_collapse_initiator = false;
   int result = web_request_api_->OnBeforeRequest(&info_, request_, continuation,
                                                  &redirect_url_);
-
-  // It doesn't make sense to collapse WebSocket requests since they won't be
-  // associated with a DOM element.
-  DCHECK(!should_collapse_initiator);
 
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     OnError(result);
@@ -297,7 +290,7 @@ void ProxyingWebSocket::OnBeforeSendHeadersComplete(
   }
 
   if (receiver_as_header_client_.is_bound()) {
-    DCHECK(on_before_send_headers_callback_);
+    CHECK(on_before_send_headers_callback_);
     std::move(on_before_send_headers_callback_)
         .Run(error_code, request_headers_);
   }
@@ -381,7 +374,7 @@ void ProxyingWebSocket::OnHeadersReceivedComplete(int error_code) {
 
 void ProxyingWebSocket::OnAuthRequiredComplete(
     extensions::ExtensionWebRequestEventRouter::AuthRequiredResponse rv) {
-  DCHECK(auth_required_callback_);
+  CHECK(auth_required_callback_);
   ResumeIncomingMethodCallProcessing();
   switch (rv) {
     case extensions::ExtensionWebRequestEventRouter::AuthRequiredResponse::

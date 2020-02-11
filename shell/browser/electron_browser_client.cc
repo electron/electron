@@ -1110,8 +1110,8 @@ void ElectronBrowserClient::CreateWebSocket(
       web_request.get(), std::move(factory), url,
       site_for_cookies.RepresentativeUrl(), user_agent,
       std::move(handshake_client), true, frame->GetProcess()->GetID(),
-      frame->GetRoutingID(), frame->GetLastCommittedOrigin(),
-      frame->GetProcess()->GetBrowserContext(), &next_id_);
+      frame->GetRoutingID(), frame->GetLastCommittedOrigin(), browser_context,
+      &next_id_);
 }
 
 bool ElectronBrowserClient::WillCreateURLLoaderFactory(

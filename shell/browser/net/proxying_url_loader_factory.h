@@ -25,7 +25,7 @@
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
-#include "shell/browser/net/web_request_api.h"
+#include "shell/browser/net/web_request_api_interface.h"
 
 namespace electron {
 
