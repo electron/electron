@@ -542,17 +542,27 @@ void NativeWindowMac::RepositionTrafficLights() {
   CGFloat buttonHeight = [close frame].size.height;
   CGFloat titleBarFrameHeight = buttonHeight + traffic_light_position_.y();
   CGRect titleBarRect = titleBarContainerView.frame;
+  CGFloat titleBarWidth = NSWidth(titleBarRect);
   titleBarRect.size.height = titleBarFrameHeight;
   titleBarRect.origin.y = window.frame.size.height - titleBarFrameHeight;
   [titleBarContainerView setFrame:titleBarRect];
 
+  BOOL isRTL = [titleBarContainerView userInterfaceLayoutDirection] ==
+               NSUserInterfaceLayoutDirectionRightToLeft;
   NSArray* windowButtons = @[ close, miniaturize, zoom ];
   const CGFloat space_between =
       [miniaturize frame].origin.x - [close frame].origin.x;
   for (NSUInteger i = 0; i < windowButtons.count; i++) {
     NSView* view = [windowButtons objectAtIndex:i];
     CGRect rect = [view frame];
-    rect.origin.x = traffic_light_position_.x() + (i * space_between);
+    if (isRTL) {
+      CGFloat buttonWidth = NSWidth(rect);
+      // origin is always top-left, even in RTL
+      rect.origin.x = titleBarWidth - traffic_light_position_.x() +
+                      (i * space_between) - buttonWidth;
+    } else {
+      rect.origin.x = traffic_light_position_.x() + (i * space_between);
+    }
     rect.origin.y = (titleBarFrameHeight - rect.size.height) / 2;
     [view setFrameOrigin:rect.origin];
   }
