@@ -13,7 +13,7 @@
 #include "gin/arguments.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "shell/browser/net/web_request_api.h"
+#include "shell/browser/net/web_request_api_interface.h"
 
 namespace content {
 class BrowserContext;

@@ -20,7 +20,7 @@
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/websocket.mojom.h"
-#include "shell/browser/net/web_request_api.h"
+#include "shell/browser/net/web_request_api_interface.h"
 #include "url/gurl.h"
 #include "url/origin.h"
 
