@@ -70,13 +70,11 @@ SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 
 REM Install nodejs python git and yarn needed dependencies
 choco install -y nodejs python2 git yarn vcredist140 windows-sdk-10-version-1903-windbg
-cmd /c refreshenv
+cmd /c C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;%PATH%
 
 pip install pywin32
-rename C:\Python38\python.exe python3.exe
-rename C:\Python38\pythonw.exe pythonw3.exe
-cmd /c refreshenv
+cmd /c C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 pip2 install pywin32
 
 REM Setup Depot Tools
