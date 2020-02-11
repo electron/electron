@@ -6,6 +6,18 @@ Subject: chore: use electron resources not chrome for spellchecker
 spellchecker uses a few IDS_ resources.  We need to load these from
 Electrons grit header instead of Chromes
 
+diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
+index d730660c086f..ba9b098d848e 100644
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -5049,6 +5049,7 @@ jumbo_split_static_library("browser") {
+     deps += [
+       "//components/spellcheck/browser",
+       "//components/spellcheck/common",
++      "//electron:resources",
+     ]
+ 
+     if (!is_android) {
 diff --git a/chrome/browser/spellchecker/spellcheck_factory.cc b/chrome/browser/spellchecker/spellcheck_factory.cc
 index 48ac0a24efde0cb7d3ba71c8b8bdf5178f606e80..e2beefc276098fdc8f1cdab2e0edb8fae4ee67ca 100644
 --- a/chrome/browser/spellchecker/spellcheck_factory.cc
@@ -19,6 +31,18 @@ index 48ac0a24efde0cb7d3ba71c8b8bdf5178f606e80..e2beefc276098fdc8f1cdab2e0edb8fa
  #include "components/keyed_service/content/browser_context_dependency_manager.h"
  #include "components/pref_registry/pref_registry_syncable.h"
  #include "components/prefs/pref_service.h"
+diff --git a/components/language/core/browser/BUILD.gn b/components/language/core/browser/BUILD.gn
+index f28230ea94fe..c10eea103852 100644
+--- a/components/language/core/browser/BUILD.gn
++++ b/components/language/core/browser/BUILD.gn
+@@ -31,6 +31,7 @@ static_library("browser") {
+     "//components/pref_registry",
+     "//components/prefs",
+     "//components/strings",
++    "//electron:resources",
+     "//ui/base",
+   ]
+ }
 diff --git a/components/language/core/browser/language_prefs.cc b/components/language/core/browser/language_prefs.cc
 index 7e06f689632ae67e3e17d7985c6e7b6ea0057f3c..0b4676f4c40b4a0eda927a51016ec91ec230291d 100644
 --- a/components/language/core/browser/language_prefs.cc
