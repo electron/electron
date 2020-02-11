@@ -1463,6 +1463,7 @@ commands:
 
       # Electron app
       - *step-electron-build
+      - *step-show-sccache-stats
       - *step-maybe-generate-breakpad-symbols
       - *step-maybe-electron-dist-strip
       - *step-electron-dist-build
@@ -1491,8 +1492,6 @@ commands:
       # hunspell
       - *step-hunspell-build
       - *step-hunspell-store
-
-      - *step-show-sccache-stats
 
       # typescript defs
       - *step-maybe-generate-typescript-defs
