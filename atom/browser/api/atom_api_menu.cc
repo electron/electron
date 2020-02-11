@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 
+#include <map>
 #include <utility>
 
 #include "atom/browser/native_window.h"
@@ -15,6 +16,13 @@
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+
+namespace {
+// We need this map to keep references to currently opened menus.
+// Without this menus would be destroyed by js garbage collector
+// even when they are still displayed.
+std::map<uint32_t, v8::Global<v8::Object>> g_menus;
+}  // unnamed namespace
 
 namespace atom {
 
@@ -194,10 +202,12 @@ bool Menu::WorksWhenHiddenAt(int index) const {
 }
 
 void Menu::OnMenuWillClose() {
+  g_menus.erase(weak_map_id());
   Emit("menu-will-close");
 }
 
 void Menu::OnMenuWillShow() {
+  g_menus[weak_map_id()] = v8::Global<v8::Object>(isolate(), GetWrapper());
   Emit("menu-will-show");
 }
 
