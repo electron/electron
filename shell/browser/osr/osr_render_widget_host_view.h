@@ -50,10 +50,10 @@ class CursorManager;
 
 namespace electron {
 
-class AtomCopyFrameGenerator;
-class AtomBeginFrameTimer;
+class ElectronCopyFrameGenerator;
+class ElectronBeginFrameTimer;
 
-class AtomDelegatedFrameHostClient;
+class ElectronDelegatedFrameHostClient;
 
 typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
 typedef base::Callback<void(const gfx::Rect&)> OnPopupPaintCallback;
@@ -279,7 +279,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   std::unique_ptr<content::CursorManager> cursor_manager_;
 
-  std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
+  std::unique_ptr<ElectronBeginFrameTimer> begin_frame_timer_;
   OffScreenHostDisplayClient* host_display_client_;
   std::unique_ptr<OffScreenVideoConsumer> video_consumer_;
 
@@ -287,7 +287,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   viz::StubBeginFrameSource begin_frame_source_;
   uint64_t begin_frame_number_ = viz::BeginFrameArgs::kStartingFrameNumber;
 
-  std::unique_ptr<AtomDelegatedFrameHostClient> delegated_frame_host_client_;
+  std::unique_ptr<ElectronDelegatedFrameHostClient>
+      delegated_frame_host_client_;
 
   content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
 

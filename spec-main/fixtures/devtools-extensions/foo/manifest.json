@@ -1,0 +1,10 @@
+{
+  "manifest_version": 2,
+  "name": "foo",
+  "permissions": [
+    "storage"
+  ],
+  "version": "1.0",
+  "devtools_page": "foo.html",
+  "default_locale": "en"
+}

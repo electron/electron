@@ -20,7 +20,7 @@
 #include "net/http/http_version.h"
 #include "net/url_request/redirect_info.h"
 #include "services/network/public/cpp/resource_request.h"
-#include "shell/browser/api/atom_api_data_pipe_holder.h"
+#include "shell/browser/api/electron_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -162,7 +162,7 @@ v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
       base::Value* values = response_headers.FindListKey(key);
       if (!values)
         values = response_headers.SetKey(key, base::ListValue());
-      values->GetList().emplace_back(value);
+      values->Append(value);
     }
   }
   return ConvertToV8(isolate, response_headers);
@@ -364,6 +364,7 @@ v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
   gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("hostname", val.hostname);
   dict.Set("certificate", val.certificate);
+  dict.Set("validatedCertificate", val.validated_certificate);
   dict.Set("verificationResult", val.default_result);
   dict.Set("errorCode", val.error_code);
   return ConvertToV8(isolate, dict);
@@ -388,7 +389,7 @@ v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
   dict.Set("statusCode", val.status_code);
   dict.Set("newMethod", val.new_method);
   dict.Set("newUrl", val.new_url);
-  dict.Set("newSiteForCookies", val.new_site_for_cookies);
+  dict.Set("newSiteForCookies", val.new_site_for_cookies.RepresentativeUrl());
   dict.Set("newReferrer", val.new_referrer);
   dict.Set("insecureSchemeWasUpgraded", val.insecure_scheme_was_upgraded);
   dict.Set("isSignedExchangeFallbackRedirect",

@@ -224,10 +224,10 @@ describe('BrowserView module', () => {
 
   describe('new BrowserView()', () => {
     it('does not crash on exit', async () => {
-      const appPath = path.join(fixtures, 'api', 'leak-exit-browserview.js')
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-browserview.js')
       const electronPath = process.execPath
       const appProcess = ChildProcess.spawn(electronPath, [appPath])
-      const [code] = await emittedOnce(appProcess, 'close')
+      const [code] = await emittedOnce(appProcess, 'exit')
       expect(code).to.equal(0)
     })
   })

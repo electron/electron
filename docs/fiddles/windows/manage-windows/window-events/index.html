@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Window events</title>
+  </head>
+
+  <body>
+    <div>
+      <h1>Create and Manage Windows</h1>
+
+      <h3>
+        The <code>BrowserWindow</code> module in Electron allows you to create a
+        new browser window or manage an existing one.
+      </h3>
+
+      <p>
+        Each browser window is a separate process, known as the renderer
+        process. This process, like the main process that controls the life
+        cycle of the app, has full access to the Node.js APIs.
+      </p>
+
+      <p>
+        Open the
+        <a href="http://electron.atom.io/docs/api/browser-window">
+          full API documentation (opens in new window)
+        </a>
+        in your browser.
+      </p>
+    </div>
+
+    <div>
+      <div>
+        <h2>Window events</h2>
+        <div>
+          <div>
+            <button id="listen-to-window">View Demo</button>
+            <button id="focus-on-modal-window">
+              Focus on Demo
+            </button>
+          </div>
+          <p>
+            In this demo, we create a new window and listen for
+            <code>blur</code> event on it. Click the demo button to create a new
+            modal window, and switch focus back to the parent window by clicking
+            on it. You can click the <i>Focus on Demo</i> button to switch focus
+            to the modal window again.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // You can also require other files to run in this process
+      require("./renderer.js");
+    </script>
+  </body>
+</html>

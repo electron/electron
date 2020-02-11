@@ -12,8 +12,8 @@ namespace gin_helper {
 // Like Dictionary, but stores object in persistent handle so you can keep it
 // safely on heap.
 //
-// TODO(zcbenz): The only user of this class is AtomTouchBar, we should migrate
-// away from this class.
+// TODO(zcbenz): The only user of this class is ElectronTouchBar, we should
+// migrate away from this class.
 class PersistentDictionary {
  public:
   PersistentDictionary();

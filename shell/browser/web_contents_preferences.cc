@@ -174,10 +174,6 @@ WebContentsPreferences::~WebContentsPreferences() {
 }
 
 void WebContentsPreferences::SetDefaults() {
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  SetDefaultBoolIfUndefined(options::kEnableRemoteModule, true);
-#endif
-
   if (IsEnabled(options::kSandbox)) {
     SetBool(options::kNativeWindowOpen, true);
   }
@@ -331,7 +327,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
   // Whether to enable the remote module
-  if (IsEnabled(options::kEnableRemoteModule))
+  if (IsEnabled(options::kEnableRemoteModule, false))
     command_line->AppendSwitch(switches::kEnableRemoteModule);
 #endif
 

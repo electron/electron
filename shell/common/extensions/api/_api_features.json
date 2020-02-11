@@ -1,0 +1,19 @@
+{
+  "tabs": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "contexts": ["blessed_extension"]
+  },
+  "extension": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "contexts": ["blessed_extension"]
+  },
+  "extension.getBackgroundPage": {
+    "contexts": ["blessed_extension"],
+    "disallow_for_service_workers": true
+  },
+  "extension.getURL": {
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
+  }
+}

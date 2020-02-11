@@ -7,7 +7,7 @@ This tweaks Chrome's pepper flash and PDF plugin support to make it
 usable from Electron.
 
 diff --git a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
-index 4bb88c55a82a83cef8330ec8157b49d5adb097ce..48f4e385a57eb0e00c90488fbf052900b6884775 100644
+index d72a867594acee97d50c5f905fc1a4df9aa9352e..8a4cc159cb490ebadbb1b54aa88223c0cbf8ffdb 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 @@ -7,10 +7,12 @@
@@ -40,7 +40,7 @@ index 4bb88c55a82a83cef8330ec8157b49d5adb097ce..48f4e385a57eb0e00c90488fbf052900
 +  return PP_OK;
  }
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
-index 860c5738d5731c901aeb9074074f3337d7fc4053..27435c3c91440e8c83e209097aae2b2231061eee 100644
+index c1fdd9dd86e4a205c6e2b51910f2bd2901501c75..77d65652808f2405881a8e1bb53d70d020866781 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 @@ -8,9 +8,11 @@
@@ -55,7 +55,7 @@ index 860c5738d5731c901aeb9074074f3337d7fc4053..27435c3c91440e8c83e209097aae2b22
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/browser_ppapi_host.h"
  #include "content/public/browser/browser_task_traits.h"
-@@ -43,6 +45,7 @@ using content::RenderProcessHost;
+@@ -41,6 +43,7 @@ using content::RenderProcessHost;
  
  namespace {
  
@@ -63,15 +63,15 @@ index 860c5738d5731c901aeb9074074f3337d7fc4053..27435c3c91440e8c83e209097aae2b22
  // Get the CookieSettings on the UI thread for the given render process ID.
  scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
      int render_process_id) {
-@@ -56,6 +59,7 @@ scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
+@@ -54,6 +57,7 @@ scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
    }
    return nullptr;
  }
 +#endif
  
- void PepperBindConnectorReceiver(
-     mojo::PendingReceiver<service_manager::mojom::Connector>
-@@ -72,7 +76,9 @@ PepperFlashBrowserHost::PepperFlashBrowserHost(BrowserPpapiHost* host,
+ void BindWakeLockProviderOnUIThread(
+     mojo::PendingReceiver<device::mojom::WakeLockProvider> receiver) {
+@@ -67,7 +71,9 @@ PepperFlashBrowserHost::PepperFlashBrowserHost(BrowserPpapiHost* host,
                                                 PP_Instance instance,
                                                 PP_Resource resource)
      : ResourceHost(host->GetPpapiHost(), instance, resource),
@@ -81,7 +81,7 @@ index 860c5738d5731c901aeb9074074f3337d7fc4053..27435c3c91440e8c83e209097aae2b22
        delay_timer_(FROM_HERE,
                     base::TimeDelta::FromSeconds(45),
                     this,
-@@ -125,6 +131,7 @@ int32_t PepperFlashBrowserHost::OnGetLocalTimeZoneOffset(
+@@ -120,6 +126,7 @@ int32_t PepperFlashBrowserHost::OnGetLocalTimeZoneOffset(
  
  int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
      ppapi::host::HostMessageContext* context) {
@@ -89,9 +89,9 @@ index 860c5738d5731c901aeb9074074f3337d7fc4053..27435c3c91440e8c83e209097aae2b22
    // Getting the Flash LSO settings requires using the CookieSettings which
    // belong to the profile which lives on the UI thread. We lazily initialize
    // |cookie_settings_| by grabbing the reference from the UI thread and then
-@@ -145,9 +152,11 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
-                    context->MakeReplyMessageContext(), document_url,
-                    plugin_url));
+@@ -140,9 +147,11 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
+                        context->MakeReplyMessageContext(), document_url,
+                        plugin_url));
    }
 -  return PP_OK_COMPLETIONPENDING;
 +#endif
@@ -102,7 +102,7 @@ index 860c5738d5731c901aeb9074074f3337d7fc4053..27435c3c91440e8c83e209097aae2b22
  void PepperFlashBrowserHost::GetLocalDataRestrictions(
      ppapi::host::ReplyMessageContext reply_context,
      const GURL& document_url,
-@@ -176,6 +185,7 @@ void PepperFlashBrowserHost::GetLocalDataRestrictions(
+@@ -171,6 +180,7 @@ void PepperFlashBrowserHost::GetLocalDataRestrictions(
              PpapiPluginMsg_Flash_GetLocalDataRestrictionsReply(
                  static_cast<int32_t>(restrictions)));
  }
@@ -237,7 +237,7 @@ index b9d2ce7f7f6837ee7b304daac82d21a3147c6faf..4d4b023d62d12b4d119acbfdee64f415
  
    base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_{this};
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index 0fa0fa341e93bd089ef2a22f74450af55db69f5b..9a6d8e5740d6ccede998efd3a96496acd9efabfb 100644
+index c94e1947dc1b1ea83b27107c36e87c3dad5a61b1..b38862b776713958c54c3523b61a36f99fd42e9e 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -8,17 +8,21 @@
@@ -337,7 +337,7 @@ index 0fa0fa341e93bd089ef2a22f74450af55db69f5b..9a6d8e5740d6ccede998efd3a96496ac
  int32_t PepperIsolatedFileSystemMessageFilter::OpenPluginPrivateFileSystem(
      ppapi::host::HostMessageContext* context) {
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-index b36248debee4f5e0503e7611f7d1c47d59650f5b..7af31ee0d2cbb4c8fc7cd41c356305d6476815c5 100644
+index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec89599280 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 @@ -20,7 +20,9 @@

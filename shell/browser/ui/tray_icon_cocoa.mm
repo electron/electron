@@ -14,14 +14,14 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"
-#include "shell/browser/ui/cocoa/atom_menu_controller.h"
+#include "shell/browser/ui/cocoa/electron_menu_controller.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/native_theme/native_theme.h"
 
 @interface StatusItemView : NSView {
-  electron::TrayIconCocoa* trayIcon_;   // weak
-  AtomMenuController* menuController_;  // weak
+  electron::TrayIconCocoa* trayIcon_;       // weak
+  ElectronMenuController* menuController_;  // weak
   BOOL ignoreDoubleClickEvents_;
   base::scoped_nsobject<NSStatusItem> statusItem_;
   base::scoped_nsobject<NSTrackingArea> trackingArea_;
@@ -125,12 +125,16 @@
   return [statusItem_ button].title;
 }
 
-- (void)setMenuController:(AtomMenuController*)menu {
+- (void)setMenuController:(ElectronMenuController*)menu {
   menuController_ = menu;
   [statusItem_ setMenu:[menuController_ menu]];
 }
 
 - (void)mouseDown:(NSEvent*)event {
+  trayIcon_->NotifyMouseDown(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
+
   // Pass click to superclass to show menu. Custom mouseUp handler won't be
   // invoked.
   if (menuController_) {
@@ -142,6 +146,10 @@
 
 - (void)mouseUp:(NSEvent*)event {
   [[statusItem_ button] highlight:NO];
+
+  trayIcon_->NotifyMouseUp(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
 
   // If we are ignoring double click events, we should ignore the `clickCount`
   // value and immediately emit a click event.
@@ -162,15 +170,15 @@
         ui::EventFlagsFromModifiers([event modifierFlags]));
 }
 
-- (void)popUpContextMenu:(electron::AtomMenuModel*)menu_model {
+- (void)popUpContextMenu:(electron::ElectronMenuModel*)menu_model {
   // Make sure events can be pumped while the menu is up.
   base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
 
   // Show a custom menu.
   if (menu_model) {
-    base::scoped_nsobject<AtomMenuController> menuController(
-        [[AtomMenuController alloc] initWithModel:menu_model
-                            useDefaultAccelerator:NO]);
+    base::scoped_nsobject<ElectronMenuController> menuController(
+        [[ElectronMenuController alloc] initWithModel:menu_model
+                                useDefaultAccelerator:NO]);
     // Hacky way to mimic design of ordinary tray menu.
     [statusItem_ setMenu:[menuController menu]];
     [[statusItem_ button] performClick:self];
@@ -183,6 +191,12 @@
     base::ScopedPumpMessagesInPrivateModes pump_private;
 
     [[statusItem_ button] performClick:self];
+  }
+}
+
+- (void)closeContextMenu {
+  if (menuController_) {
+    [menuController_ cancel];
   }
 }
 
@@ -295,23 +309,27 @@ bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
   return [status_item_view_ getIgnoreDoubleClickEvents];
 }
 
-void TrayIconCocoa::PopUpOnUI(AtomMenuModel* menu_model) {
+void TrayIconCocoa::PopUpOnUI(ElectronMenuModel* menu_model) {
   [status_item_view_ popUpContextMenu:menu_model];
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
-                                     AtomMenuModel* menu_model) {
+                                     ElectronMenuModel* menu_model) {
   base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
                      base::Unretained(menu_model)));
 }
 
-void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {
+void TrayIconCocoa::CloseContextMenu() {
+  [status_item_view_ closeContextMenu];
+}
+
+void TrayIconCocoa::SetContextMenu(ElectronMenuModel* menu_model) {
   if (menu_model) {
     // Create native menu.
-    menu_.reset([[AtomMenuController alloc] initWithModel:menu_model
-                                    useDefaultAccelerator:NO]);
+    menu_.reset([[ElectronMenuController alloc] initWithModel:menu_model
+                                        useDefaultAccelerator:NO]);
   } else {
     menu_.reset();
   }
@@ -323,7 +341,7 @@ gfx::Rect TrayIconCocoa::GetBounds() {
 }
 
 // static
-TrayIcon* TrayIcon::Create() {
+TrayIcon* TrayIcon::Create(base::Optional<UUID> guid) {
   return new TrayIconCocoa;
 }
 

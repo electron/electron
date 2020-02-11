@@ -3,7 +3,7 @@
 ## Finding Support
 
 If you have a security concern,
-please see the [security document](../../SECURITY.md).
+please see the [security document](https://github.com/electron/electron/tree/master/SECURITY.md).
 
 If you're looking for programming help,
 for answers to questions,
@@ -22,7 +22,7 @@ forums
 - [`electron-pl`](https://electronpl.github.io) *(Poland)*
 
 If you'd like to contribute to Electron,
-see the [contributing document](../../CONTRIBUTING.md).
+see the [contributing document](https://github.com/electron/electron/blob/master/CONTRIBUTING.md).
 
 If you've found a bug in a [supported version](#supported-versions) of Electron,
 please report it with the [issue tracker](../development/issues.md).
@@ -48,9 +48,9 @@ basis for some older supported lines. All contested decisions around release
 line backports will be resolved by the [Releases Working Group](https://github.com/electron/governance/tree/master/wg-releases) as an agenda item at their weekly meeting the week the backport PR is raised.
 
 ### Currently supported versions
+- 8.x.y
 - 7.x.y
 - 6.x.y
-- 5.x.y
 
 ### End-of-life
 
@@ -108,4 +108,4 @@ are also verified to be able to run the prebuilt binaries of Electron:
 * Fedora 21
 * Debian 8
 
-[arm-breaking-change]: https://github.com/electron/electron/blob/master/docs/api/breaking-changes.md#duplicate-arm-assets
+[arm-breaking-change]: ../breaking-changes.md#duplicate-arm-assets

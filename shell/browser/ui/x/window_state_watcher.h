@@ -5,24 +5,24 @@
 #ifndef SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_
 #define SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_
 
-#include "ui/events/platform/platform_event_observer.h"
+#include "ui/events/platform/x11/x11_event_source.h"
 
 #include "shell/browser/native_window_views.h"
 
 namespace electron {
 
-class WindowStateWatcher : public ui::PlatformEventObserver {
+class WindowStateWatcher : public ui::XEventObserver {
  public:
   explicit WindowStateWatcher(NativeWindowViews* window);
   ~WindowStateWatcher() override;
 
  protected:
-  // ui::PlatformEventObserver:
-  void WillProcessEvent(const ui::PlatformEvent& event) override;
-  void DidProcessEvent(const ui::PlatformEvent& event) override;
+  // ui::XEventObserver:
+  void WillProcessXEvent(XEvent* xev) override;
+  void DidProcessXEvent(XEvent* xev) override;
 
  private:
-  bool IsWindowStateEvent(const ui::PlatformEvent& event);
+  bool IsWindowStateEvent(XEvent* xev);
 
   NativeWindowViews* window_;
   gfx::AcceleratedWidget widget_;

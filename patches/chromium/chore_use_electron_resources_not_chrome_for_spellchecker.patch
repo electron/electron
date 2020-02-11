@@ -20,7 +20,7 @@ index 48ac0a24efde0cb7d3ba71c8b8bdf5178f606e80..e2beefc276098fdc8f1cdab2e0edb8fa
  #include "components/pref_registry/pref_registry_syncable.h"
  #include "components/prefs/pref_service.h"
 diff --git a/components/language/core/browser/language_prefs.cc b/components/language/core/browser/language_prefs.cc
-index 4fd35c8d5bba01c25c906b19bb251222ba3d25b4..4770f0d6a8d145e5d16931d5caf4f1f85abead20 100644
+index 7e06f689632ae67e3e17d7985c6e7b6ea0057f3c..0b4676f4c40b4a0eda927a51016ec91ec230291d 100644
 --- a/components/language/core/browser/language_prefs.cc
 +++ b/components/language/core/browser/language_prefs.cc
 @@ -21,7 +21,7 @@

@@ -6,7 +6,7 @@ Subject: fix: key gen APIs are not available in BoringSSL
 This will make Node's key pair generation APIs fail.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 2d539094a0589e9945bf2f27fa8a8afce47031b0..2c702d2f051d6b8f59ac53a4e2729ee02ba98a47 100644
+index ad06141752eae90a655d710932b479f9cd8482ff..861d321d6170b25e874080d4c70dda201cab3248 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -290,24 +290,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
@@ -80,7 +80,7 @@ index 2d539094a0589e9945bf2f27fa8a8afce47031b0..2c702d2f051d6b8f59ac53a4e2729ee0
    }
  
   private:
-@@ -7112,9 +7112,12 @@ void Initialize(Local<Object> target,
+@@ -7101,9 +7101,12 @@ void Initialize(Local<Object> target,
    env->SetMethod(target, "generateKeyPairEC", GenerateKeyPairEC);
    env->SetMethod(target, "generateKeyPairNid", GenerateKeyPairNid);
    NODE_DEFINE_CONSTANT(target, EVP_PKEY_ED25519);

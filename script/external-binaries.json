@@ -1,48 +1,50 @@
 {
-  "baseUrl": "https://github.com/electron/electron-frameworks/releases/download",
-  "version": "v1.4.1",
-  "binaries": [
+  "baseUrl": "https://electron-build-tools.s3-us-west-2.amazonaws.com/build-dependencies",
+  "files": [
     {
-      "url": "Mantle.zip",
+      "name": "Mantle.zip",
       "platform": "darwin",
       "sha": "f9865e115c03871b45d3a2d8734220cb147a02dace46c92f766ca5d3059281dd"
     },
     {
-      "url": "ReactiveCocoa.zip",
+      "name": "ReactiveCocoa.zip",
       "platform": "darwin",
       "sha": "8ae85cd226fa4076472bfdfcda4745b5c7edf31fbe695868068eeaf62e7fa962"
     },
     {
-      "url": "Squirrel.zip",
+      "name": "Squirrel.zip",
       "platform": "darwin",
       "sha": "e516fd5c24c0ad267fd854848b04be0552be977aa846fa7f3c65ef4618699511"
     },
     {
-      "url": "directxsdk-ia32.zip",
-      "platform": "win32",
-      "targetArch": "ia32",
-      "sha": "f777bd5ab524bf39c3bfc68ac2b3f95ff2136c92328cf63e857f399e849db037"
-    },
-    {
-      "url": "directxsdk-x64.zip",
-      "platform": "win32",
-      "targetArch": "x64",
-      "sha": "46c1f8afb9180516013c39e8d73182a7f15f0ea89c61dc94f92605b4734d447b"
-    },
-    {
-      "url": "sccache-darwin-x64.zip",
+      "name": "sccache-darwin-x64.zip",
       "platform": "darwin",
       "sha": "3bfe114b49a15e4f15e2e3a9ee6699f1acdb89446badbaa4144869c72a7690ca"
     },
     {
-      "url": "sccache-linux-x64.zip",
+      "name": "sccache-linux-x64.zip",
       "platform": "linux",
       "sha": "dd379b494122f9e85bdae3597b02c67b0a46192f20f4f16cae3f1258a57b39dd"
     },
     {
-      "url": "sccache-win32-x64.zip",
+      "name": "sccache-win32-x64.zip",
       "platform": "win32",
       "sha": "b6a20fd1c2026f3792e7286bc768a7ebc261847b76449b49f55455e1f841fecd"
+    },
+    {
+      "name": "goma-win.zip",
+      "platform": "win32",
+      "sha": "f97c88aa5d49395ae20387b6329ad406fd019f5fb4aac4ba639ca928b7151f6b"
+    },
+    {
+      "name": "goma-linux.tgz",
+      "platform": "linux",
+      "sha": "1cb3099a40f6200ae57216efa26af795c587b6ac7ae97955d1078d0b1e3011a6"
+    },
+    {
+      "name": "goma-mac.tgz",
+      "platform": "darwin",
+      "sha": "da1e7de82fbf3b99f1a9d0f9bf51b25e75e8778fec180deb72cff873813d717c"
     }
   ]
 }

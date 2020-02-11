@@ -194,7 +194,8 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          preload
+          preload,
+          enableRemoteModule: true
         }
       })
       w.loadURL('about:blank')
@@ -207,7 +208,8 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          enableRemoteModule: true
         }
       })
 
@@ -227,7 +229,8 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          enableRemoteModule: true
         }
       })
       await w.loadFile(path.join(fixtures, 'api', 'remote-event-handler.html'))

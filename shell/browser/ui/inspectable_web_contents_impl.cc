@@ -12,6 +12,7 @@
 #include "base/guid.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
+#include "base/json/string_escape.h"
 #include "base/metrics/histogram.h"
 #include "base/stl_util.h"
 #include "base/strings/pattern.h"
@@ -47,6 +48,16 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/render_process_host.h"
+#include "extensions/browser/extension_registry.h"
+#include "extensions/common/manifest_constants.h"
+#include "extensions/common/manifest_url_handlers.h"
+#include "extensions/common/permissions/permissions_data.h"
+#include "shell/browser/electron_browser_context.h"
+#endif
 
 namespace electron {
 
@@ -571,9 +582,50 @@ void InspectableWebContentsImpl::LoadCompleted() {
         javascript, base::NullCallback());
   }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  AddDevToolsExtensionsToClient();
+#endif
+
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsOpened();
 }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+void InspectableWebContentsImpl::AddDevToolsExtensionsToClient() {
+  // get main browser context
+  auto* browser_context = web_contents_->GetBrowserContext();
+  const extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(browser_context);
+  if (!registry)
+    return;
+
+  base::ListValue results;
+  for (auto& extension : registry->enabled_extensions()) {
+    auto devtools_page_url = extensions::ManifestURL::Get(
+        extension.get(), extensions::manifest_keys::kDevToolsPage);
+    if (devtools_page_url.is_empty())
+      continue;
+
+    // Each devtools extension will need to be able to run in the devtools
+    // process. Grant the devtools process the ability to request URLs from the
+    // extension.
+    content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
+        web_contents_->GetMainFrame()->GetProcess()->GetID(),
+        url::Origin::Create(extension->url()));
+
+    std::unique_ptr<base::DictionaryValue> extension_info(
+        new base::DictionaryValue());
+    extension_info->SetString("startPage", devtools_page_url.spec());
+    extension_info->SetString("name", extension->name());
+    extension_info->SetBoolean("exposeExperimentalAPIs",
+                               extension->permissions_data()->HasAPIPermission(
+                                   extensions::APIPermission::kExperimental));
+    results.Append(std::move(extension_info));
+  }
+
+  CallClientFunction("DevToolsAPI.addExtensions", &results, NULL, NULL);
+}
+#endif
 
 void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
   DevToolsContentsResizingStrategy strategy(rect);
@@ -628,7 +680,7 @@ void InspectableWebContentsImpl::LoadNetworkResource(
 
   network::ResourceRequest resource_request;
   resource_request.url = gurl;
-  resource_request.site_for_cookies = gurl;
+  resource_request.site_for_cookies = net::SiteForCookies::FromUrl(gurl);
   resource_request.headers.AddHeadersFromString(headers);
 
   NetworkResourceLoader::URLLoaderFactoryHolder url_loader_factory;
@@ -779,7 +831,8 @@ void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
   }
 
   if (agent_host_)
-    agent_host_->DispatchProtocolMessage(this, message);
+    agent_host_->DispatchProtocolMessage(
+        this, base::as_bytes(base::make_span(message)));
 }
 
 void InspectableWebContentsImpl::SendJsonRequest(
@@ -851,21 +904,26 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(
 
 void InspectableWebContentsImpl::DispatchProtocolMessage(
     content::DevToolsAgentHost* agent_host,
-    const std::string& message) {
+    base::span<const uint8_t> message) {
   if (!frontend_loaded_)
     return;
 
-  if (message.length() < kMaxMessageChunkSize) {
+  base::StringPiece str_message(reinterpret_cast<const char*>(message.data()),
+                                message.size());
+  if (str_message.size() < kMaxMessageChunkSize) {
+    std::string param;
+    base::EscapeJSONString(str_message, true, &param);
     base::string16 javascript =
-        base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + message + ");");
+        base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + param + ");");
     GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
     return;
   }
 
-  base::Value total_size(static_cast<int>(message.length()));
-  for (size_t pos = 0; pos < message.length(); pos += kMaxMessageChunkSize) {
-    base::Value message_value(message.substr(pos, kMaxMessageChunkSize));
+  base::Value total_size(static_cast<int>(str_message.length()));
+  for (size_t pos = 0; pos < str_message.length();
+       pos += kMaxMessageChunkSize) {
+    base::Value message_value(str_message.substr(pos, kMaxMessageChunkSize));
     CallClientFunction("DevToolsAPI.dispatchMessageChunk", &message_value,
                        pos ? nullptr : &total_size, nullptr);
   }

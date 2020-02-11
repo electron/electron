@@ -22,7 +22,7 @@ index 18acd9d2b64774efdb9261e69923a5ba320a7f0e..0f36697ce5ed0b5bb6df74ceca219574
  process.config = JSON.parse(internalBinding('native_module').config);
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 03247551074e1ad3cdd412e6adc0d865746225d1..18fdf148ccca5d92f10b78144eee39bdff7919d2 100644
+index fc0f953820fa6222ff8cca2e27d3087e05288ff5..2fddd3766ffb28dc9176ed1b7a4b01361dd72fcd 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -42,10 +42,7 @@ const assert = require('internal/assert');

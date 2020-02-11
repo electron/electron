@@ -6,14 +6,15 @@ gclient_gn_args = [
   'checkout_libaom',
   'checkout_nacl',
   'checkout_oculus_sdk',
-  'checkout_openxr'
+  'checkout_openxr',
+  'checkout_google_benchmark'
 ]
 
 vars = {
   'chromium_version':
-    'd0c764fc71894cc24d3bb17a7406ba6c6cc6dc29',
+    'ddac4c3cc1528254008f9e7a2aea5d4426906bfd',
   'node_version':
-    'v12.14.0',
+    'v12.14.1',
   'nan_version':
     '2ee313aaca52e2b478965ac50eb5082520380d1b',
 
@@ -68,6 +69,8 @@ vars = {
   'checkout_android':
     False,
   'checkout_android_native_support':
+    False,
+  'checkout_google_benchmark':
     False,
 }
 

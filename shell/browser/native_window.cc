@@ -322,7 +322,7 @@ bool NativeWindow::IsDocumentEdited() {
 
 void NativeWindow::SetFocusable(bool focusable) {}
 
-void NativeWindow::SetMenu(AtomMenuModel* menu) {}
+void NativeWindow::SetMenu(ElectronMenuModel* menu) {}
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
@@ -577,11 +577,7 @@ void NativeWindow::NotifyWindowMessage(UINT message,
 }
 #endif
 
-views::Widget* NativeWindow::GetWidget() {
-  return widget();
-}
-
-const views::Widget* NativeWindow::GetWidget() const {
+const views::Widget* NativeWindow::GetWidgetImpl() const {
   return widget();
 }
 

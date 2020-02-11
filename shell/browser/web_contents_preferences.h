@@ -67,7 +67,7 @@ class WebContentsPreferences
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
-  friend class AtomBrowserClient;
+  friend class ElectronBrowserClient;
 
   // Get WebContents according to process ID.
   static content::WebContents* GetWebContentsFromProcessID(int process_id);

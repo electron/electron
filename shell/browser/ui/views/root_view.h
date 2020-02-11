@@ -18,7 +18,7 @@ struct NativeWebKeyboardEvent;
 
 namespace electron {
 
-class AtomMenuModel;
+class ElectronMenuModel;
 class MenuBar;
 class NativeWindow;
 
@@ -27,7 +27,7 @@ class RootView : public views::View {
   explicit RootView(NativeWindow* window);
   ~RootView() override;
 
-  void SetMenu(AtomMenuModel* menu_model);
+  void SetMenu(ElectronMenuModel* menu_model);
   bool HasMenu() const;
   int GetMenuBarHeight() const;
   void SetAutoHideMenuBar(bool auto_hide);
@@ -38,7 +38,7 @@ class RootView : public views::View {
   void ResetAltState();
   void RestoreFocus();
   // Register/Unregister accelerators supported by the menu model.
-  void RegisterAcceleratorsWithFocusManager(AtomMenuModel* menu_model);
+  void RegisterAcceleratorsWithFocusManager(ElectronMenuModel* menu_model);
   void UnregisterAcceleratorsWithFocusManager();
 
   // views::View:

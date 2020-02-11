@@ -1,0 +1,51 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+[
+  {
+    "namespace": "extension",
+    "description": "The <code>chrome.extension</code> API has utilities that can be used by any extension page. It includes support for exchanging messages between an extension and its content scripts or between extensions, as described in detail in <a href='messaging'>Message Passing</a>.",
+    "compiler_options": {
+      "implemented_in": "chrome/browser/extensions/api/module/module.h"
+    },
+    "properties": {
+    },
+    "functions": [
+      {
+        "name": "getBackgroundPage",
+        "nocompile": true,
+        "type": "function",
+        "description": "Returns the JavaScript 'window' object for the background page running inside the current extension. Returns null if the extension has no background page.",
+        "parameters": [],
+        "returns": {
+            "type": "object",
+            "optional": true,
+            "name": "backgroundPageGlobal",
+            "isInstanceOf": "Window",
+            "additionalProperties": { "type": "any" }
+         }
+      },
+      {
+        "name": "getURL",
+        "deprecated": "Please use $(ref:runtime.getURL).",
+        "nocompile": true,
+        "type": "function",
+        "description": "Converts a relative path within an extension install directory to a fully-qualified URL.",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "path",
+            "description": "A path to a resource within an extension expressed relative to its install directory."
+          }
+        ],
+        "returns": {
+          "type": "string",
+          "description": "The fully-qualified URL to the resource."
+        }
+      }
+    ],
+    "events": [
+    ]
+  }
+]

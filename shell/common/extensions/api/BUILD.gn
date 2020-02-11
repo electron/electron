@@ -11,8 +11,16 @@ assert(enable_extensions)
 ################################################################################
 # Public Targets
 
+group("api") {
+  public_deps = [
+    ":generated_api_json_strings",
+    ":generated_api_types",
+  ]
+}
+
 group("extensions_features") {
   public_deps = [
+    ":api_features",
     ":manifest_features",
 
     # TODO(devlin): It would be nicer to have this dependency hoisted up to
@@ -25,11 +33,43 @@ group("extensions_features") {
 ################################################################################
 # Private Targets
 
+generated_json_strings("generated_api_json_strings") {
+  sources = [
+    "extension.json",
+    "tabs.json",
+  ]
+
+  configs = [ "//build/config:precompiled_headers" ]
+  bundle_name = "Electron"
+  schema_include_rules = "extensions/common/api:extensions::api::%(namespace)s"
+
+  root_namespace = "extensions::api::%(namespace)s"
+  deps = [ "//extensions/common/api" ]
+
+  visibility = [ ":api" ]
+}
+
+generated_types("generated_api_types") {
+  sources = [ "tabs.json" ]
+  configs = [ "//build/config:precompiled_headers" ]
+  schema_include_rules = "extensions/common/api:extensions::api::%(namespace)s"
+
+  root_namespace = "extensions::api::%(namespace)s"
+  deps = [ "//extensions/common/api" ]
+
+  visibility = [ ":api" ]
+}
+
 json_features("manifest_features") {
   feature_type = "ManifestFeature"
-  method_name = "AddAtomManifestFeatures"
-  sources = [
-    "_manifest_features.json",
-  ]
+  method_name = "AddElectronManifestFeatures"
+  sources = [ "_manifest_features.json" ]
+  visibility = [ ":extensions_features" ]
+}
+
+json_features("api_features") {
+  feature_type = "APIFeature"
+  method_name = "AddElectronAPIFeatures"
+  sources = [ "_api_features.json" ]
   visibility = [ ":extensions_features" ]
 }

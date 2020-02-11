@@ -105,9 +105,9 @@ class AsarURLLoader : public network::mojom::URLLoader {
     // Determine whether it is an asar file.
     base::FilePath asar_path, relative_path;
     if (!GetAsarArchivePath(path, &asar_path, &relative_path)) {
-      content::CreateFileURLLoader(request, std::move(loader),
-                                   std::move(client), nullptr, false,
-                                   extra_response_headers);
+      content::CreateFileURLLoaderBypassingSecurityChecks(
+          request, std::move(loader), std::move(client), nullptr, false,
+          extra_response_headers);
       MaybeDeleteSelf();
       return;
     }

@@ -27,8 +27,6 @@ template("webpack_build") {
       rebase_path(invoker.out_file),
     ]
 
-    outputs = [
-      invoker.out_file,
-    ]
+    outputs = [ invoker.out_file ]
   }
 }

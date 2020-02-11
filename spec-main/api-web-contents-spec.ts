@@ -9,6 +9,7 @@ import { emittedOnce } from './events-helpers'
 import { closeAllWindows } from './window-helpers'
 import { ifdescribe, ifit } from './spec-helpers'
 
+const pdfjs = require('pdfjs-dist')
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 const features = process.electronBinding('features')
 
@@ -99,22 +100,42 @@ describe('webContents module', () => {
   })
 
   ifdescribe(features.isPrintingEnabled())('webContents.print()', () => {
+    let w: BrowserWindow
+
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false })
+    })
+
     afterEach(closeAllWindows)
+
     it('throws when invalid settings are passed', () => {
-      const w = new BrowserWindow({ show: false })
       expect(() => {
         // @ts-ignore this line is intentionally incorrect
         w.webContents.print(true)
       }).to.throw('webContents.print(): Invalid print settings specified.')
+    })
 
+    it('throws when an invalid callback is passed', () => {
       expect(() => {
         // @ts-ignore this line is intentionally incorrect
         w.webContents.print({}, true)
       }).to.throw('webContents.print(): Invalid optional callback provided.')
     })
 
+    ifit(process.platform !== 'linux')('throws when an invalid deviceName is passed', () => {
+      expect(() => {
+        w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, () => {})
+      }).to.throw('webContents.print(): Invalid deviceName provided.')
+    })
+
+    it('throws when an invalid pageSize is passed', () => {
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print({ pageSize: 'i-am-a-bad-pagesize' }, () => {})
+      }).to.throw('Unsupported pageSize: i-am-a-bad-pagesize')
+    })
+
     it('does not crash', () => {
-      const w = new BrowserWindow({ show: false })
       expect(() => {
         w.webContents.print({ silent: true })
       }).to.not.throw()
@@ -800,7 +821,7 @@ describe('webContents module', () => {
     })
 
     it('can persist zoom level across navigation', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } })
       let finalNavigation = false
       ipcMain.on('set-zoom', (e, host) => {
         const zoomLevel = hostZoomMap[host]
@@ -826,7 +847,7 @@ describe('webContents module', () => {
     })
 
     it('can propagate zoom level across same session', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } })
       const w2 = new BrowserWindow({ show: false })
       w2.webContents.on('did-finish-load', () => {
         const zoomLevel1 = w.webContents.zoomLevel
@@ -1122,7 +1143,12 @@ describe('webContents module', () => {
       { name: 'did-fail-load', url: '/net-error' }
     ]
     for (const e of events) {
-      it(`should not crash when invoked synchronously inside ${e.name} handler`, async () => {
+      it(`should not crash when invoked synchronously inside ${e.name} handler`, async function () {
+        // This test is flaky on Windows CI and we don't know why, but the
+        // purpose of this test is to make sure Electron does not crash so it
+        // is fine to retry this test for a few times.
+        this.retries(3)
+
         const contents = (webContents as any).create() as WebContents
         const originalEmit = contents.emit.bind(contents)
         contents.emit = (...args) => { return originalEmit(...args) }
@@ -1408,19 +1434,64 @@ describe('webContents module', () => {
     })
   })
 
-  // TODO(deepak1556): Fix and enable after upgrade.
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
-    afterEach(closeAllWindows)
-    it.skip('can print to PDF', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+    let w: BrowserWindow
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
+    })
+
+    afterEach(closeAllWindows)
+
+    it('rejects on incorrectly typed parameters', async () => {
+      const badTypes = {
+        marginsType: 'terrible',
+        scaleFactor: 'not-a-number',
+        landscape: [],
+        pageRanges: { 'oops': 'im-not-the-right-key' },
+        headerFooter: '123',
+        printSelectionOnly: 1,
+        printBackground: 2,
+        pageSize: 'IAmAPageSize'
+      }
+
+      // These will hard crash in Chromium unless we type-check
+      for (const [key, value] of Object.entries(badTypes)) {
+        const param = { [key]: value }
+        await expect(w.webContents.printToPDF(param)).to.eventually.be.rejected()
+      }
+    })
+
+    it('can print to PDF', async () => {
       const data = await w.webContents.printToPDF({})
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
     })
 
-    it.skip('does not crash when called multiple times', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
-      await w.loadURL('data:text/html,<h1>Hello, World!</h1>')
+    it('respects custom settings', async () => {
+      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'))
+      await emittedOnce(w.webContents, 'did-finish-load')
+
+      const data = await w.webContents.printToPDF({
+        pageRanges: {
+          from: 0,
+          to: 2
+        },
+        landscape: true
+      })
+
+      const doc = await pdfjs.getDocument(data).promise
+
+      // Check that correct # of pages are rendered.
+      expect(doc.numPages).to.equal(3)
+
+      // Check that PDF is generated in landscape mode.
+      const firstPage = await doc.getPage(1)
+      const { width, height } = firstPage.getViewport({ scale: 100 })
+      expect(width).to.be.greaterThan(height)
+    })
+
+    it('does not crash when called multiple times', async () => {
       const promises = []
       for (let i = 0; i < 2; i++) {
         promises.push(w.webContents.printToPDF({}))

@@ -12,7 +12,7 @@
 
 #include "base/environment.h"
 #include "base/logging.h"
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "electron/electron_version.h"
 #include "shell/common/platform_util.h"
 

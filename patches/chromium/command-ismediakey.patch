@@ -52,15 +52,6 @@ index 392cf3d58c64c088596e8d321a2ce37b0ec60b6e..43e30f47240dc10a3a9b950255d4e487
  
    return modifiers;
  }
-@@ -151,6 +152,8 @@ void GlobalShortcutListenerX11::OnXKeyPressEvent(::XEvent* x_event) {
-   modifiers |= (x_event->xkey.state & ShiftMask) ? ui::EF_SHIFT_DOWN : 0;
-   modifiers |= (x_event->xkey.state & ControlMask) ? ui::EF_CONTROL_DOWN : 0;
-   modifiers |= (x_event->xkey.state & Mod1Mask) ? ui::EF_ALT_DOWN : 0;
-+  // For Windows key
-+  modifiers |= (x_event->xkey.state & Mod4Mask) ? ui::EF_COMMAND_DOWN: 0;
- 
-   ui::Accelerator accelerator(
-       ui::KeyboardCodeFromXKeyEvent(x_event), modifiers);
 diff --git a/ui/base/accelerators/media_keys_listener.cc b/ui/base/accelerators/media_keys_listener.cc
 index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc7951d372 100644
 --- a/ui/base/accelerators/media_keys_listener.cc
@@ -76,7 +67,7 @@ index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc
  
  }  // namespace ui
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 85378bb565de617b1bd611d28c8714361747a357..94a899e76586d2c7bb199828bfa4aa1ef9ccfcbc 100644
+index 85378bb565de617b1bd611d28c8714361747a357..d67d558b91b49835dfa927893093948093c54f7a 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
 @@ -11,6 +11,7 @@
@@ -112,18 +103,3 @@ index 85378bb565de617b1bd611d28c8714361747a357..94a899e76586d2c7bb199828bfa4aa1e
      return event;
    }
  
-@@ -223,12 +233,14 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
-   // For Mac OS 10.12.2 or later, we want to use MPRemoteCommandCenter for
-   // getting media keys globally if there is a RemoteCommandCenterDelegate
-   // available.
-+#if !BUILDFLAG(ENABLE_MEDIA_KEY_OVERRIDES)
-   if (scope == Scope::kGlobal) {
-     auto listener =
-         std::make_unique<SystemMediaControlsMediaKeysListener>(delegate);
-     if (listener->Initialize())
-       return listener;
-   }
-+#endif
- 
-   return std::make_unique<MediaKeysListenerImpl>(delegate, scope);
- }

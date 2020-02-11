@@ -321,7 +321,7 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
 
 const isRemoteModuleEnabledImpl = function (contents: electron.WebContents) {
   const webPreferences = (contents as any).getLastWebPreferences() || {}
-  return !!webPreferences.enableRemoteModule
+  return webPreferences.enableRemoteModule != null ? !!webPreferences.enableRemoteModule : false
 }
 
 const isRemoteModuleEnabledCache = new WeakMap()

@@ -33,6 +33,8 @@ class TrayIconObserver : public base::CheckedObserver {
   virtual void OnDragEntered() {}
   virtual void OnDragExited() {}
   virtual void OnDragEnded() {}
+  virtual void OnMouseUp(const gfx::Point& location, int modifiers) {}
+  virtual void OnMouseDown(const gfx::Point& location, int modifiers) {}
   virtual void OnMouseEntered(const gfx::Point& location, int modifiers) {}
   virtual void OnMouseExited(const gfx::Point& location, int modifiers) {}
   virtual void OnMouseMoved(const gfx::Point& location, int modifiers) {}

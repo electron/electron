@@ -2,7 +2,7 @@
 
 const { app } = require('electron')
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   let returnCode = 0
   try {
     const testValue = f() // eslint-disable-line no-undef

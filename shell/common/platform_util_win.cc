@@ -272,19 +272,15 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
   hr = desktop->ParseDisplayName(NULL, NULL,
                                  const_cast<wchar_t*>(dir.value().c_str()),
                                  NULL, &dir_item, NULL);
-  if (FAILED(hr)) {
-    ui::win::OpenFolderViaShell(dir);
+  if (FAILED(hr))
     return;
-  }
 
   base::win::ScopedCoMem<ITEMIDLIST> file_item;
   hr = desktop->ParseDisplayName(
       NULL, NULL, const_cast<wchar_t*>(full_path.value().c_str()), NULL,
       &file_item, NULL);
-  if (FAILED(hr)) {
-    ui::win::OpenFolderViaShell(dir);
+  if (FAILED(hr))
     return;
-  }
 
   const ITEMIDLIST* highlight[] = {file_item};
   hr = SHOpenFolderAndSelectItems(dir_item, base::size(highlight), highlight,
@@ -299,7 +295,6 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
       LOG(WARNING) << " " << __func__ << "(): Can't open full_path = \""
                    << full_path.value() << "\""
                    << " hr = " << logging::SystemErrorCodeToString(hr);
-      ui::win::OpenFolderViaShell(dir);
     }
   }
 }

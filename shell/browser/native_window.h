@@ -44,7 +44,7 @@ class PersistentDictionary;
 
 namespace electron {
 
-class AtomMenuModel;
+class ElectronMenuModel;
 class NativeBrowserView;
 
 #if defined(OS_MACOSX)
@@ -161,7 +161,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetIgnoreMouseEvents(bool ignore, bool forward) = 0;
   virtual void SetContentProtection(bool enable) = 0;
   virtual void SetFocusable(bool focusable);
-  virtual void SetMenu(AtomMenuModel* menu);
+  virtual void SetMenu(ElectronMenuModel* menu);
   virtual void SetParentWindow(NativeWindow* parent);
   virtual void AddBrowserView(NativeBrowserView* browser_view) = 0;
   virtual void RemoveBrowserView(NativeBrowserView* browser_view) = 0;
@@ -185,8 +185,7 @@ class NativeWindow : public base::SupportsUserData,
                               const std::string& description) = 0;
 
   // Workspace APIs.
-  virtual void SetVisibleOnAllWorkspaces(bool visible,
-                                         bool visibleOnFullScreen = false) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
 
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 
@@ -307,8 +306,7 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   // views::WidgetDelegate:
-  views::Widget* GetWidget() override;
-  const views::Widget* GetWidget() const override;
+  const views::Widget* GetWidgetImpl() const override;
   base::string16 GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }

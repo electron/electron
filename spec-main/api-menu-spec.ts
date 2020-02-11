@@ -878,7 +878,7 @@ describe('Menu module', function () {
       let output = ''
       appProcess.stdout.on('data', data => { output += data })
 
-      await emittedOnce(appProcess, 'close')
+      await emittedOnce(appProcess, 'exit')
       expect(output).to.include('Window has no menu')
     })
 
@@ -888,8 +888,12 @@ describe('Menu module', function () {
 
       let output = ''
       appProcess.stdout.on('data', data => { output += data })
+      appProcess.stderr.on('data', data => { output += data })
 
-      await emittedOnce(appProcess, 'close')
+      const [code] = await emittedOnce(appProcess, 'exit')
+      if (!output.includes('Window has no menu')) {
+        console.log(code, output)
+      }
       expect(output).to.include('Window has no menu')
     })
   })

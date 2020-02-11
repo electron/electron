@@ -8,6 +8,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -23,7 +24,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
-#include "shell/common/atom_command_line.h"
+#include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -136,7 +137,53 @@ bool IsPackagedApp() {
 #endif
 }
 
+// Initialize Node.js cli options to pass to Node.js
+// See https://nodejs.org/api/cli.html#cli_options
+void SetNodeCliFlags() {
+  // Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode
+  const std::unordered_set<base::StringPiece, base::StringPieceHash> allowed = {
+      "--inspect",          "--inspect-brk",
+      "--inspect-port",     "--debug",
+      "--debug-brk",        "--debug-port",
+      "--inspect-brk-node", "--inspect-publish-uid",
+  };
+
+  const auto argv = base::CommandLine::ForCurrentProcess()->argv();
+  std::vector<std::string> args;
+
+  // TODO(codebytere): We need to set the first entry in args to the
+  // process name owing to src/node_options-inl.h#L286-L290 but this is
+  // redundant and so should be refactored upstream.
+  args.reserve(argv.size() + 1);
+  args.emplace_back("electron");
+
+  for (const auto& arg : argv) {
+#if defined(OS_WIN)
+    const auto& option = base::UTF16ToUTF8(arg);
+#else
+    const auto& option = arg;
+#endif
+    const auto stripped = base::StringPiece(option).substr(0, option.find('='));
+
+    // Only allow in no-op (--) option or DebugOptions
+    if (allowed.count(stripped) != 0 || stripped == "--")
+      args.push_back(option);
+  }
+
+  std::vector<std::string> errors;
+  const int exit_code = ProcessGlobalArgs(&args, nullptr, &errors,
+                                          node::kDisallowedInEnvironment);
+
+  const std::string err_str = "Error parsing Node.js cli flags ";
+  if (exit_code != 0) {
+    LOG(ERROR) << err_str;
+  } else if (!errors.empty()) {
+    LOG(ERROR) << err_str << base::JoinString(errors, " ");
+  }
+}  // namespace
+
 // Initialize NODE_OPTIONS to pass to Node.js
+// See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
   // Options that are unilaterally disallowed
   const std::set<std::string> disallowed = {
@@ -144,7 +191,8 @@ void SetNodeOptions(base::Environment* env) {
       "--force-fips", "--enable-fips"};
 
   // Subset of options allowed in packaged apps
-  const std::set<std::string> allowed_in_packaged = {"--max-http-header-size"};
+  const std::set<std::string> allowed_in_packaged = {"--max-http-header-size",
+                                                     "--http-parser"};
 
   if (env->HasVar("NODE_OPTIONS")) {
     std::string options;
@@ -156,7 +204,7 @@ void SetNodeOptions(base::Environment* env) {
 
     for (const auto& part : parts) {
       // Strip off values passed to individual NODE_OPTIONs
-      std::string option = part.substr(0, part.find("="));
+      std::string option = part.substr(0, part.find('='));
 
       if (is_packaged_app &&
           allowed_in_packaged.find(option) == allowed_in_packaged.end()) {
@@ -263,11 +311,14 @@ void NodeBindings::Initialize() {
 #if defined(OS_LINUX)
   // Get real command line in renderer process forked by zygote.
   if (browser_env_ != BrowserEnvironment::BROWSER)
-    AtomCommandLine::InitializeFromCommandLine();
+    ElectronCommandLine::InitializeFromCommandLine();
 #endif
 
   // Explicitly register electron's builtin modules.
   RegisterBuiltinModules();
+
+  // Parse and set Node.js cli flags.
+  SetNodeCliFlags();
 
   // pass non-null program name to argv so it doesn't crash
   // trying to index into a nullptr
@@ -301,12 +352,12 @@ node::Environment* NodeBindings::CreateEnvironment(
     node::MultiIsolatePlatform* platform,
     bool bootstrap_env) {
 #if defined(OS_WIN)
-  auto& atom_args = AtomCommandLine::argv();
+  auto& atom_args = ElectronCommandLine::argv();
   std::vector<std::string> args(atom_args.size());
   std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
                  [](auto& a) { return base::WideToUTF8(a); });
 #else
-  auto args = AtomCommandLine::argv();
+  auto args = ElectronCommandLine::argv();
 #endif
 
   // Feed node the path to initialization script.

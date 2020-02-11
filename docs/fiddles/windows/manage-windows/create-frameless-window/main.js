@@ -20,6 +20,6 @@ function createWindow () {
   })
 }
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   createWindow()
 })

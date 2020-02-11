@@ -1,0 +1,19 @@
+{
+  "name": "chrome-api",
+  "version": "1.0",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["main.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "permissions": [
+    "<all_urls>"
+  ],
+  "manifest_version": 2
+}

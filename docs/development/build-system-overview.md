@@ -57,7 +57,7 @@ you're currently working on using Mocha's
 `.only` to any `describe` or `it` function call:
 
 ```js
-describe.only('some feature', function () {
+describe.only('some feature', () => {
   // ... only tests in this block will be run
 })
 ```

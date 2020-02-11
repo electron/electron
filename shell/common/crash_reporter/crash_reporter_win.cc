@@ -15,7 +15,7 @@
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/ui/inspectable_web_contents_impl.h"
-#include "shell/common/atom_constants.h"
+#include "shell/common/electron_constants.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/crashpad/crashpad/client/crashpad_client.h"
 #include "third_party/crashpad/crashpad/client/crashpad_info.h"

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "chai-as-promised": "^7.1.1",
-    "dirty-chai": "^2.0.1"
+    "dirty-chai": "^2.0.1",
+    "pdfjs-dist": "^2.2.228"
   }
 }

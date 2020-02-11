@@ -11,15 +11,16 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
-#include "shell/browser/api/atom_api_session.h"
-#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "v8/include/v8.h"
 
 NetworkHintsHandlerImpl::NetworkHintsHandlerImpl(
     content::RenderFrameHost* frame_host)
     : network_hints::SimpleNetworkHintsHandlerImpl(
-          frame_host->GetProcess()->GetID()),
+          frame_host->GetProcess()->GetID(),
+          frame_host->GetRoutingID()),
       render_frame_host_(frame_host) {}
 
 NetworkHintsHandlerImpl::~NetworkHintsHandlerImpl() = default;
@@ -32,7 +33,7 @@ void NetworkHintsHandlerImpl::Preconnect(const GURL& url,
       render_frame_host_->GetProcess()->GetBrowserContext();
   auto* session = electron::api::Session::FromWrappedClass(
       v8::Isolate::GetCurrent(),
-      static_cast<electron::AtomBrowserContext*>(browser_context));
+      static_cast<electron::ElectronBrowserContext*>(browser_context));
   if (session) {
     session->Emit("preconnect", url, allow_credentials);
   }

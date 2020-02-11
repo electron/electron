@@ -9,15 +9,16 @@
 #include <vector>
 
 #include "base/observer_list.h"
-#include "shell/browser/ui/atom_menu_model.h"
+#include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/tray_icon_observer.h"
+#include "shell/common/gin_converters/guid_converter.h"
 #include "ui/gfx/geometry/rect.h"
 
 namespace electron {
 
 class TrayIcon {
  public:
-  static TrayIcon* Create();
+  static TrayIcon* Create(base::Optional<UUID> guid);
 
 #if defined(OS_WIN)
   using ImageType = HICON;
@@ -79,10 +80,12 @@ class TrayIcon {
 
   // Popups the menu.
   virtual void PopUpContextMenu(const gfx::Point& pos,
-                                AtomMenuModel* menu_model);
+                                ElectronMenuModel* menu_model);
+
+  virtual void CloseContextMenu();
 
   // Set the context menu for this icon.
-  virtual void SetContextMenu(AtomMenuModel* menu_model) = 0;
+  virtual void SetContextMenu(ElectronMenuModel* menu_model) = 0;
 
   // Returns the bounds of tray icon.
   virtual gfx::Rect GetBounds();
@@ -105,6 +108,10 @@ class TrayIcon {
   void NotifyDragEntered();
   void NotifyDragExited();
   void NotifyDragEnded();
+  void NotifyMouseUp(const gfx::Point& location = gfx::Point(),
+                     int modifiers = 0);
+  void NotifyMouseDown(const gfx::Point& location = gfx::Point(),
+                       int modifiers = 0);
   void NotifyMouseEntered(const gfx::Point& location = gfx::Point(),
                           int modifiers = 0);
   void NotifyMouseExited(const gfx::Point& location = gfx::Point(),

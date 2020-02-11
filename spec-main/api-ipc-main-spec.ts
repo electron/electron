@@ -6,7 +6,7 @@ import { emittedOnce } from './events-helpers'
 import { ipcMain, BrowserWindow } from 'electron'
 
 describe('ipc main module', () => {
-  const fixtures = path.join(__dirname, '..', 'spec', 'fixtures')
+  const fixtures = path.join(__dirname, 'fixtures')
 
   afterEach(closeAllWindows)
 

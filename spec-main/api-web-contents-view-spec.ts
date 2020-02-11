@@ -29,8 +29,14 @@ describe('WebContentsView', () => {
     it('does not crash on exit', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-webcontentsview.js')
       const electronPath = process.execPath
-      const appProcess = ChildProcess.spawn(electronPath, [appPath])
-      const [code] = await emittedOnce(appProcess, 'close')
+      const appProcess = ChildProcess.spawn(electronPath, ['--enable-logging', appPath])
+      let output = ''
+      appProcess.stdout.on('data', data => { output += data })
+      appProcess.stderr.on('data', data => { output += data })
+      const [code] = await emittedOnce(appProcess, 'exit')
+      if (code !== 0) {
+        console.log(code, output)
+      }
       expect(code).to.equal(0)
     })
   })

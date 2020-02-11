@@ -22,7 +22,6 @@ boringssl_build_gn.patch
 pepper_plugin_support.patch
 no_cache_storage_check.patch
 blink_fix_prototype_assert.patch
-libgtkui_export.patch
 gtk_visibility.patch
 sysroot.patch
 mas_blink_no_private_api.patch
@@ -32,9 +31,11 @@ scroll_bounce_flag.patch
 mas-cfisobjc.patch
 mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
+mas_disable_remote_accessibility.patch
+mas_disable_custom_window_frame.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
-blink_initialization_order.patch
+add_didinstallconditionalfeatures.patch
 ssl_security_state_tab_helper.patch
 desktop_media_list.patch
 proxy_config_monitor.patch
@@ -78,3 +79,6 @@ chore_use_electron_resources_not_chrome_for_spellchecker.patch
 add_trustedauthclient_to_urlloaderfactory.patch
 feat_allow_disabling_blink_scheduler_throttling_per_renderview.patch
 accessible_pane_view.patch
+fixme_grit_conflicts.patch
+fix_use_the_new_mediaplaypause_key_listener_for_internal_chrome.patch
+fix_use_native_window_button_positions_when_macos_locale_is_rtl.patch

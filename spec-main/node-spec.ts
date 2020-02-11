@@ -12,7 +12,7 @@ describe('node feature', () => {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures')
   describe('child_process', () => {
     describe('child_process.fork', () => {
-      it('works in browser process', (done) => {
+      it('Works in browser process', (done) => {
         const child = childProcess.fork(path.join(fixtures, 'module', 'ping.js'))
         child.on('message', (msg) => {
           expect(msg).to.equal('message')
@@ -25,11 +25,11 @@ describe('node feature', () => {
 
   describe('contexts', () => {
     describe('setTimeout called under Chromium event loop in browser process', () => {
-      it('can be scheduled in time', (done) => {
+      it('Can be scheduled in time', (done) => {
         setTimeout(done, 0)
       })
 
-      it('can be promisified', (done) => {
+      it('Can be promisified', (done) => {
         util.promisify(setTimeout)(0).then(done)
       })
     })
@@ -57,54 +57,104 @@ describe('node feature', () => {
     let child: childProcess.ChildProcessWithoutNullStreams
     let exitPromise: Promise<any[]>
 
-    afterEach(async () => {
-      if (child && exitPromise) {
+    it('Fails for options disallowed by Node.js itself', (done) => {
+      after(async () => {
         const [code, signal] = await exitPromise
         expect(signal).to.equal(null)
-        expect(code).to.equal(0)
-      } else if (child) {
-        child.kill()
-      }
-    })
 
-    it('fails for options disallowed by Node.js itself', (done) => {
+        // Exit code 9 indicates cli flag parsing failure
+        expect(code).to.equal(9)
+        child.kill()
+      })
+
       const env = Object.assign({}, process.env, { NODE_OPTIONS: '--v8-options' })
       child = childProcess.spawn(process.execPath, { env })
+      exitPromise = emittedOnce(child, 'exit')
 
-      function cleanup () {
+      let output = ''
+      let success = false
+      const cleanup = () => {
         child.stderr.removeListener('data', listener)
         child.stdout.removeListener('data', listener)
       }
 
-      let output = ''
-      function listener (data: Buffer) {
+      const listener = (data: Buffer) => {
         output += data
         if (/electron: --v8-options is not allowed in NODE_OPTIONS/m.test(output)) {
+          success = true
           cleanup()
           done()
         }
       }
+
       child.stderr.on('data', listener)
       child.stdout.on('data', listener)
+      child.on('exit', () => {
+        if (!success) {
+          cleanup()
+          done(new Error(`Unexpected output: ${output.toString()}`))
+        }
+      })
     })
 
-    it('disallows crypto-related options', (done) => {
+    it('Disallows crypto-related options', (done) => {
+      after(() => {
+        child.kill()
+      })
+
       const env = Object.assign({}, process.env, { NODE_OPTIONS: '--use-openssl-ca' })
       child = childProcess.spawn(process.execPath, ['--enable-logging'], { env })
 
-      function cleanup () {
+      let output = ''
+      const cleanup = () => {
         child.stderr.removeListener('data', listener)
         child.stdout.removeListener('data', listener)
       }
 
-      let output = ''
-      function listener (data: Buffer) {
+      const listener = (data: Buffer) => {
         output += data
         if (/The NODE_OPTION --use-openssl-ca is not supported in Electron/m.test(output)) {
           cleanup()
           done()
         }
       }
+
+      child.stderr.on('data', listener)
+      child.stdout.on('data', listener)
+    })
+  })
+
+  describe('Node.js cli flags', () => {
+    let child: childProcess.ChildProcessWithoutNullStreams
+    let exitPromise: Promise<any[]>
+
+    it('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', (done) => {
+      after(async () => {
+        const [code, signal] = await exitPromise
+        expect(signal).to.equal(null)
+        expect(code).to.equal(9)
+        child.kill()
+      })
+
+      child = childProcess.spawn(process.execPath, ['--force-fips'], {
+        env: { ELECTRON_RUN_AS_NODE: 'true' }
+      })
+      exitPromise = emittedOnce(child, 'exit')
+
+      let output = ''
+      const cleanup = () => {
+        child.stderr.removeListener('data', listener)
+        child.stdout.removeListener('data', listener)
+      }
+
+      const listener = (data: Buffer) => {
+        output += data
+        if (/.*The Node.js cli flag --force-fips is not supported in Electron/m.test(output)) {
+          cleanup()
+          done()
+        }
+      }
+
       child.stderr.on('data', listener)
       child.stdout.on('data', listener)
     })
@@ -124,72 +174,63 @@ describe('node feature', () => {
       }
     })
 
-    it('supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
+    it('Supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
       child = childProcess.spawn(process.execPath, ['--inspect-brk', path.join(fixtures, 'module', 'run-as-node.js')], {
-        env: {
-          ELECTRON_RUN_AS_NODE: 'true'
-        }
+        env: { ELECTRON_RUN_AS_NODE: 'true' }
       })
 
       let output = ''
-      function cleanup () {
-        child.stderr.removeListener('data', errorDataListener)
-        child.stdout.removeListener('data', outDataHandler)
+      const cleanup = () => {
+        child.stderr.removeListener('data', listener)
+        child.stdout.removeListener('data', listener)
       }
-      function errorDataListener (data: Buffer) {
+
+      const listener = (data: Buffer) => {
         output += data
-        if (/^Debugger listening on ws:/m.test(output)) {
+        if (/Debugger listening on ws:/m.test(output)) {
           cleanup()
           done()
         }
       }
-      function outDataHandler (data: Buffer) {
-        cleanup()
-        done(new Error(`Unexpected output: ${data.toString()}`))
-      }
-      child.stderr.on('data', errorDataListener)
-      child.stdout.on('data', outDataHandler)
+
+      child.stderr.on('data', listener)
+      child.stdout.on('data', listener)
     })
 
-    it('supports starting the v8 inspector with --inspect and a provided port', (done) => {
+    it('Supports starting the v8 inspector with --inspect and a provided port', (done) => {
       child = childProcess.spawn(process.execPath, ['--inspect=17364', path.join(fixtures, 'module', 'run-as-node.js')], {
-        env: {
-          ELECTRON_RUN_AS_NODE: 'true'
-        }
+        env: { ELECTRON_RUN_AS_NODE: 'true' }
       })
       exitPromise = emittedOnce(child, 'exit')
 
       let output = ''
-      function cleanup () {
-        child.stderr.removeListener('data', errorDataListener)
-        child.stdout.removeListener('data', outDataHandler)
+      const listener = (data: Buffer) => { output += data }
+      const cleanup = () => {
+        child.stderr.removeListener('data', listener)
+        child.stdout.removeListener('data', listener)
       }
-      function errorDataListener (data: Buffer) {
-        output += data
+
+      child.stderr.on('data', listener)
+      child.stdout.on('data', listener)
+      child.on('exit', () => {
+        cleanup()
         if (/^Debugger listening on ws:/m.test(output)) {
           expect(output.trim()).to.contain(':17364', 'should be listening on port 17364')
-          cleanup()
           done()
+        } else {
+          done(new Error(`Unexpected output: ${output.toString()}`))
         }
-      }
-      function outDataHandler (data: Buffer) {
-        cleanup()
-        done(new Error(`Unexpected output: ${data.toString()}`))
-      }
-      child.stderr.on('data', errorDataListener)
-      child.stdout.on('data', outDataHandler)
+      })
     })
 
-    it('does not start the v8 inspector when --inspect is after a -- argument', (done) => {
+    it('Does not start the v8 inspector when --inspect is after a -- argument', (done) => {
       child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'noop.js'), '--', '--inspect'])
       exitPromise = emittedOnce(child, 'exit')
 
       let output = ''
-      function dataListener (data: Buffer) {
-        output += data
-      }
-      child.stderr.on('data', dataListener)
-      child.stdout.on('data', dataListener)
+      const listener = (data: Buffer) => { output += data }
+      child.stderr.on('data', listener)
+      child.stdout.on('data', listener)
       child.on('exit', () => {
         if (output.trim().startsWith('Debugger listening on ws://')) {
           done(new Error('Inspector was started when it should not have been'))
@@ -200,22 +241,24 @@ describe('node feature', () => {
     })
 
     // IPC Electron child process not supported on Windows
-    ifit(process.platform !== 'win32')('does does not crash when quitting with the inspector connected', function (done) {
+    ifit(process.platform !== 'win32')('Does does not crash when quitting with the inspector connected', function (done) {
       child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
         stdio: ['ipc']
       }) as childProcess.ChildProcessWithoutNullStreams
       exitPromise = emittedOnce(child, 'exit')
 
-      let output = ''
-      function dataListener (data: Buffer) {
-        output += data
+      const cleanup = () => {
+        child.stderr.removeListener('data', listener)
+        child.stdout.removeListener('data', listener)
+      }
 
+      let output = ''
+      let success = false
+      function listener (data: Buffer) {
+        output += data
         if (output.trim().indexOf('Debugger listening on ws://') > -1 && output.indexOf('\n') > -1) {
           const socketMatch = output.trim().match(/(ws:\/\/.+:[0-9]+\/.+?)\n/gm)
           if (socketMatch && socketMatch[0]) {
-            child.stderr.removeListener('data', dataListener)
-            child.stdout.removeListener('data', dataListener)
-
             const w = (webContents as any).create({}) as WebContents
             w.loadURL('about:blank')
               .then(() => w.executeJavaScript(`new Promise(resolve => {
@@ -228,20 +271,24 @@ describe('node feature', () => {
               .then(() => {
                 (w as any).destroy()
                 child.send('plz-quit')
+                success = true
+                cleanup()
                 done()
               })
           }
         }
       }
-      child.stderr.on('data', dataListener)
-      child.stdout.on('data', dataListener)
+
+      child.stderr.on('data', listener)
+      child.stdout.on('data', listener)
+      child.on('exit', () => {
+        if (!success) cleanup()
+      })
     })
 
-    it('supports js binding', (done) => {
+    it('Supports js binding', (done) => {
       child = childProcess.spawn(process.execPath, ['--inspect', path.join(fixtures, 'module', 'inspector-binding.js')], {
-        env: {
-          ELECTRON_RUN_AS_NODE: 'true'
-        },
+        env: { ELECTRON_RUN_AS_NODE: 'true' },
         stdio: ['ipc']
       }) as childProcess.ChildProcessWithoutNullStreams
       exitPromise = emittedOnce(child, 'exit')
@@ -256,7 +303,7 @@ describe('node feature', () => {
     })
   })
 
-  it('can find a module using a package.json main field', () => {
+  it('Can find a module using a package.json main field', () => {
     const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')])
     expect(result.status).to.equal(0)
   })

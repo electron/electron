@@ -323,7 +323,7 @@ and allow the page to be unloaded.
 const { BrowserWindow, dialog } = require('electron')
 const win = new BrowserWindow({ width: 800, height: 600 })
 win.webContents.on('will-prevent-unload', (event) => {
-  const choice = dialog.showMessageBox(win, {
+  const choice = dialog.showMessageBoxSync(win, {
     type: 'question',
     buttons: ['Leave', 'Stay'],
     title: 'Do you want to leave this site?',
@@ -637,7 +637,7 @@ const { app, BrowserWindow } = require('electron')
 let win = null
 app.commandLine.appendSwitch('enable-experimental-web-platform-features')
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   win = new BrowserWindow({ width: 800, height: 600 })
   win.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault()
@@ -1000,7 +1000,7 @@ Injects CSS into the current web page and returns a unique key for the inserted
 stylesheet.
 
 ```js
-contents.on('did-finish-load', function () {
+contents.on('did-finish-load', () => {
   contents.insertCSS('html, body { background-color: #f00; }')
 })
 ```
@@ -1015,7 +1015,7 @@ Removes the inserted CSS from the current web page. The stylesheet is identified
 by its key, which is returned from `contents.insertCSS(css)`.
 
 ```js
-contents.on('did-finish-load', async function () {
+contents.on('did-finish-load', async () => {
   const key = await contents.insertCSS('html, body { background-color: #f00; }')
   contents.removeInsertedCSS(key)
 })
@@ -1238,6 +1238,29 @@ Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 
+#### `contents.isBeingCaptured()`
+
+Returns `Boolean` - Whether this page is being captured. It returns true when the capturer count
+is large then 0.
+
+#### `contents.incrementCapturerCount([size, stayHidden])`
+
+* `size` [Size](structures/size.md) (optional) - The perferred size for the capturer.
+* `stayHidden` Boolean (optional) -  Keep the page hidden instead of visible.
+
+Increase the capturer count by one. The page is considered visible when its browser window is
+hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
+
+This also affects the Page Visibility API.
+
+#### `contents.decrementCapturerCount([stayHidden])`
+
+* `stayHidden` Boolean (optional) -  Keep the page in hidden state instead of visible.
+
+Decrease the capturer count by one. The page will be set to hidden or occluded state when its
+browser window is hidden or occluded and the capturer count reaches zero. If you want to
+decrease the hidden capturer count instead you should set `stayHidden` to true.
+
 #### `contents.getPrinters()`
 
 Get the system printer list.
@@ -1250,7 +1273,7 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
   * `silent` Boolean (optional) - Don't ask user for print settings. Default is `false`.
   * `printBackground` Boolean (optional) - Prints the background color and image of
     the web page. Default is `false`.
-  * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
+  * `deviceName` String (optional) - Set the printer device name to use. Must be the system-defined name and not the 'friendly' name, e.g 'Brother_QL_820NWB' and not 'Brother QL-820NWB'.
   * `color` Boolean (optional) - Set whether the printed web page will be in color or grayscale. Default is `true`.
   * `margins` Object (optional)
     * `marginType` String (optional) - Can be `default`, `none`, `printableArea`, or `custom`. If `custom` is chosen, you will also need to specify `top`, `bottom`, `left`, and `right`.
@@ -1263,13 +1286,17 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
   * `pagesPerSheet` Number (optional) - The number of pages to print per page sheet.
   * `collate` Boolean (optional) - Whether the web page should be collated.
   * `copies` Number (optional) - The number of copies of the web page to print.
-  * `pageRanges` Record<string, number> (optional) - The page range to print. Should have two keys: `from` and `to`.
+  * `pageRanges` Record<string, number> (optional) - The page range to print.
+    * `from` Number - the start page.
+    * `to` Number - the end page.
   * `duplexMode` String (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
-  * `dpi` Object (optional)
+  * `dpi` Record<string, number> (optional)
     * `horizontal` Number (optional) - The horizontal dpi.
     * `vertical` Number (optional) - The vertical dpi.
   * `header` String (optional) - String to be printed as page header.
   * `footer` String (optional) - String to be printed as page footer.
+  * `pageSize` String | Size (optional) - Specify page size of the printed document. Can be `A3`,
+  `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`.
 * `callback` Function (optional)
   * `success` Boolean - Indicates success of the print call.
   * `failureReason` String - Called back if the print fails; can be `cancelled` or `failed`.
@@ -1291,14 +1318,21 @@ win.webContents.print(options, (success, errorType) => {
 #### `contents.printToPDF(options)`
 
 * `options` Object
+  * `headerFooter` Record<string, string> (optional) - the header and footer for the PDF.
+    * `title` String - The title for the PDF header.
+    * `url` String - the url for the PDF footer.
+  * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
   * `marginsType` Integer (optional) - Specifies the type of margins to use. Uses 0 for
     default margin, 1 for no margin, and 2 for minimum margin.
-  * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
-    `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
     and `width` in microns.
+  * `scaleFactor` Number (optional) - The scale factor of the web page. Can range from 0 to 100.
+  * `pageRanges` Record<string, number> (optional) - The page range to print.
+    * `from` Number - the first page to print.
+    * `to` Number - the last page to print (inclusive).
+  * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
+  `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
   * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
   * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
-  * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
 
 Returns `Promise<Buffer>` - Resolves with the generated PDF data.
 
@@ -1314,7 +1348,9 @@ By default, an empty `options` will be regarded as:
   marginsType: 0,
   printBackground: false,
   printSelectionOnly: false,
-  landscape: false
+  landscape: false,
+  pageSize: 'A4',
+  scaleFactor: 100
 }
 ```
 
@@ -1423,7 +1459,7 @@ const { app, BrowserWindow } = require('electron')
 let win = null
 let devtools = null
 
-app.once('ready', () => {
+app.whenReady().then(() => {
   win = new BrowserWindow()
   devtools = new BrowserWindow()
   win.loadURL('https://github.com')
@@ -1512,7 +1548,7 @@ An example of sending messages from the main process to the renderer process:
 const { app, BrowserWindow } = require('electron')
 let win = null
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   win = new BrowserWindow({ width: 800, height: 600 })
   win.loadURL(`file://${__dirname}/index.html`)
   win.webContents.on('did-finish-load', () => {

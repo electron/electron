@@ -32,7 +32,7 @@ describe('debugger module', () => {
         expect(w.webContents.debugger.isAttached()).to.be.true()
         done()
       })
-      w.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'))
+      w.webContents.loadURL('about:blank')
     })
 
     it('fails when protocol version is not supported', done => {
@@ -134,7 +134,7 @@ describe('debugger module', () => {
       const url = process.platform !== 'win32'
         ? `file://${path.join(fixtures, 'pages', 'a.html')}`
         : `file:///${path.join(fixtures, 'pages', 'a.html').replace(/\\/g, '/')}`
-      w.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'))
+      w.webContents.loadURL(url)
 
       try {
         w.webContents.debugger.attach()
@@ -144,12 +144,16 @@ describe('debugger module', () => {
 
       w.webContents.debugger.on('message', (e, method, params) => {
         if (method === 'Console.messageAdded') {
-          expect(params.message.level).to.equal('log')
-          expect(params.message.url).to.equal(url)
-          expect(params.message.text).to.equal('a')
-
-          w.webContents.debugger.detach()
-          done()
+          try {
+            expect(params.message.level).to.equal('log')
+            expect(params.message.url).to.equal(url)
+            expect(params.message.text).to.equal('a')
+            done()
+          } catch (e) {
+            done(e)
+          } finally {
+            w.webContents.debugger.detach()
+          }
         }
       })
       w.webContents.debugger.sendCommand('Console.enable')

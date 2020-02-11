@@ -12,7 +12,7 @@
 #include "base/nix/xdg_util.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "url/gurl.h"
 
 #define ELECTRON_TRASH "ELECTRON_TRASH"

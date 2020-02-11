@@ -5,7 +5,7 @@ Subject: fix: expose tracing::Agent and use tracing::TracingController instead
  of v8::TracingController
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 2c0fe1306319b25c378d0aae73e4045560a9b683..ae26cb7e9ef55fc0b965e28de4686aec87f42522 100644
+index 138f9ada984a952a6ecf8089ddb31bc258a8d35b..356131156b4a714eebf4e202cd105f0f184e3852 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -314,6 +314,10 @@ MultiIsolatePlatform* GetMainThreadMultiIsolatePlatform() {
@@ -20,7 +20,7 @@ index 2c0fe1306319b25c378d0aae73e4045560a9b683..ae26cb7e9ef55fc0b965e28de4686aec
      int thread_pool_size,
      node::tracing::TracingController* tracing_controller) {
 diff --git a/src/node.h b/src/node.h
-index 2baf51c3181fe2d390246f655ad35c3aac51f229..80a27dc734a81a7ca8d888d1d55fc8d24a536280 100644
+index 892dafd8031533d23a88298406356107409cbd0a..e3258434eba34124c71562225e295cd1807fdf7c 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -108,6 +108,7 @@ namespace node {

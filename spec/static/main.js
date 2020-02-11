@@ -94,7 +94,7 @@ app.on('renderer-process-crashed', (event, contents, killed) => {
   console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`)
 })
 
-app.on('ready', async function () {
+app.whenReady().then(async function () {
   await session.defaultSession.clearCache()
   await session.defaultSession.clearStorageData()
   // Test if using protocol module would crash.

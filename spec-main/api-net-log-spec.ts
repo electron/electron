@@ -71,7 +71,8 @@ describe('netLog module', () => {
 
     expect(testNetLog().currentlyLoggingPath).to.equal(dumpFileDynamic)
 
-    await testNetLog().stopLogging()
+    const path = await testNetLog().stopLogging()
+    expect(path).to.equal(dumpFileDynamic)
 
     expect(fs.existsSync(dumpFileDynamic)).to.be.true('currently logging')
   })
@@ -161,7 +162,7 @@ describe('netLog module', () => {
         }
       })
 
-    await emittedOnce(appProcess, 'close')
+    await emittedOnce(appProcess, 'exit')
     expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists')
   })
 })

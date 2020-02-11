@@ -39,7 +39,7 @@ To create a sandboxed window, pass `sandbox: true` to `webPreferences`:
 
 ```js
 let win
-app.on('ready', () => {
+app.whenReady().then(() => {
   win = new BrowserWindow({
     webPreferences: {
       sandbox: true
@@ -59,7 +59,7 @@ and returns a proxy to this via `window.open`).
 ```js
 let win
 app.enableSandbox()
-app.on('ready', () => {
+app.whenReady().then(() => {
   // no need to pass `sandbox: true` since `app.enableSandbox()` was called.
   win = new BrowserWindow()
   win.loadURL('http://google.com')
@@ -73,7 +73,7 @@ Here's an example:
 
 ```js
 let win
-app.on('ready', () => {
+app.whenReady().then(() => {
   win = new BrowserWindow({
     webPreferences: {
       sandbox: true,
