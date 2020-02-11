@@ -222,6 +222,31 @@ void BrowserWindow::OnDraggableRegionsUpdated(
   UpdateDraggableRegions(regions);
 }
 
+void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {
+  // window.resizeTo(...)
+  // window.moveTo(...)
+  window()->SetBounds(rect, false);
+}
+
+void BrowserWindow::OnActivateContents() {
+  // Hide the auto-hide menu when webContents is focused.
+#if !defined(OS_MACOSX)
+  if (IsMenuBarAutoHide() && IsMenuBarVisible())
+    window()->SetMenuBarVisibility(false);
+#endif
+}
+
+void BrowserWindow::OnPageTitleUpdated(const base::string16& title,
+                                       bool explicit_set) {
+  // Change window title to page title.
+  auto self = GetWeakPtr();
+  if (!Emit("page-title-updated", title, explicit_set)) {
+    // |this| might be deleted, or marked as destroyed by close().
+    if (self && !IsDestroyed())
+      SetTitle(base::UTF16ToUTF8(title));
+  }
+}
+
 void BrowserWindow::RequestPreferredWidth(int* width) {
   *width = web_contents()->GetPreferredSize().width();
 }
@@ -251,6 +276,8 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
 
 void BrowserWindow::OnWindowClosed() {
   Cleanup();
+  // See TopLevelWindow::OnWindowClosed on why calling InvalidateWeakPtrs.
+  weak_factory_.InvalidateWeakPtrs();
   TopLevelWindow::OnWindowClosed();
 }
 

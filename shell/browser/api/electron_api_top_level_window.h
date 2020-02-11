@@ -259,6 +259,9 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
 
   std::unique_ptr<NativeWindow> window_;
 
+  // Reference to JS wrapper to prevent garbage collection.
+  v8::Global<v8::Value> self_ref_;
+
   base::WeakPtrFactory<TopLevelWindow> weak_factory_;
 };
 

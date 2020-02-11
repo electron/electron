@@ -9,7 +9,7 @@ import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDe
 
 import { emittedOnce } from './events-helpers'
 import { ifit, ifdescribe } from './spec-helpers'
-import { closeWindow } from './window-helpers'
+import { closeWindow, closeAllWindows } from './window-helpers'
 
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
@@ -37,12 +37,6 @@ const expectBoundsEqual = (actual: any, expected: any) => {
   }
 }
 
-const closeAllWindows = async () => {
-  for (const w of BrowserWindow.getAllWindows()) {
-    await closeWindow(w, { assertNotWindows: false })
-  }
-}
-
 describe('BrowserWindow module', () => {
   describe('BrowserWindow constructor', () => {
     it('allows passing void 0 as the webContents', async () => {
@@ -55,6 +49,28 @@ describe('BrowserWindow module', () => {
         } as any)
         w.destroy()
       }).not.to.throw()
+    })
+  })
+
+  describe('garbage collection', () => {
+    const v8Util = process.electronBinding('v8_util')
+    afterEach(closeAllWindows)
+
+    it('window does not get garbage collected when opened', (done) => {
+      const w = new BrowserWindow({ show: false })
+      // Keep a weak reference to the window.
+      const map = v8Util.createIDWeakMap<Electron.BrowserWindow>()
+      map.set(0, w)
+      setTimeout(() => {
+        // Do garbage collection, since |w| is not referenced in this closure
+        // it would be gone after next call if there is no other reference.
+        v8Util.requestGarbageCollectionForTesting()
+
+        setTimeout(() => {
+          expect(map.has(0)).to.equal(true)
+          done()
+        })
+      })
     })
   })
 

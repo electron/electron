@@ -57,6 +57,10 @@ class BrowserWindow : public TopLevelWindow,
   void OnRendererResponsive() override;
   void OnDraggableRegionsUpdated(
       const std::vector<mojom::DraggableRegionPtr>& regions) override;
+  void OnSetContentBounds(const gfx::Rect& rect) override;
+  void OnActivateContents() override;
+  void OnPageTitleUpdated(const base::string16& title,
+                          bool explicit_set) override;
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
