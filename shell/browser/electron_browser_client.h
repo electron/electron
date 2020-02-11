@@ -173,6 +173,15 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       int render_process_id,
       int render_frame_id,
       NonNetworkURLLoaderFactoryMap* factories) override;
+  void CreateWebSocket(
+      content::RenderFrameHost* frame,
+      WebSocketFactory factory,
+      const GURL& url,
+      const net::SiteForCookies& site_for_cookies,
+      const base::Optional<std::string>& user_agent,
+      mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
+          handshake_client) override;
+  bool WillInterceptWebSocket(content::RenderFrameHost*) override;
   bool WillCreateURLLoaderFactory(
       content::BrowserContext* browser_context,
       content::RenderFrameHost* frame,
@@ -285,6 +294,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string user_agent_override_ = "";
 
   bool disable_process_restart_tricks_ = false;
+
+  // Simple shared ID generator, used by ProxyingURLLoaderFactory and
+  // ProxyingWebSocket classes.
+  uint64_t next_id_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };
