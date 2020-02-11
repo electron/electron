@@ -58,6 +58,7 @@ describe('spellchecker', () => {
     let ses: Session
 
     beforeEach(async () => {
+      // ensure a new session runs on each test run
       ses = session.fromPartition(`persist:customdictionary-test-${Date.now()}`)
     })
 
