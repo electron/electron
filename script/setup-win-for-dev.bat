@@ -50,7 +50,8 @@ powershell -command "& { iwr %buildtools_link% -OutFile C:\TEMP\vs_buildtools.ex
 REM Install Visual Studio Toolchain
 C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache ^
     --installPath "%ProgramFiles(x86)%/Microsoft Visual Studio/2019/Community" ^
-    --add Microsoft.VisualStudio.Workload.NativeDesktop ^
+    --add Microsoft.VisualStudio.Workload.VCTools ^
+    --add Microsoft.VisualStudio.Component.VC.140 ^
     --add Microsoft.VisualStudio.Component.VC.ATLMFC ^
     --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 ^
     --add Microsoft.VisualStudio.Component.VC.MFC.ARM64 ^
@@ -69,14 +70,12 @@ set chocolateyUseWindowsCompression='true'
 SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 
 REM Install nodejs python git and yarn needed dependencies
-choco install -y nodejs python2 git yarn vcredist140 windows-sdk-10-version-1903-windbg
-cmd /c refreshenv
+choco install -y nodejs python2 git yarn windows-sdk-10-version-1903-windbg
+cmd /c C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;%PATH%
 
 pip install pywin32
-rename C:\Python38\python.exe python3.exe
-rename C:\Python38\pythonw.exe pythonw3.exe
-cmd /c refreshenv
+cmd /c C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 pip2 install pywin32
 
 REM Setup Depot Tools
