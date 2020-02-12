@@ -10,7 +10,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..ec06e14dd327cdf89dc6fd584b6972ae64311ea0
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,370 @@
+@@ -0,0 +1,357 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -88,28 +88,15 @@ index 0000000000000000000000000000000000000000..ec06e14dd327cdf89dc6fd584b6972ae
 +    ":generate_config_gypi",
 +    ":node_js2c_inputs",
 +  ]
-+
-+  macro_inputs = []
-+  if (!node_use_dtrace && !node_use_etw) {
-+    macro_inputs += [ "tools/js2c_macros/notrace_macros.py" ]
-+  }
-+  if (node_debug_lib) {
-+    macro_inputs += [ "tools/js2c_macros/nodcheck_macros.py" ]
-+  } else {
-+    macro_inputs += [ "tools/js2c_macros/dcheck_macros.py" ]
-+  }
-+  macro_inputs += [ "tools/js2c_macros/check_macros.py" ]
-+
 +  config_gypi = [ "$target_gen_dir/config.gypi" ]
-+
-+  inputs = library_files + macro_inputs + config_gypi
++  inputs = library_files + config_gypi
 +  outputs = [
 +    "$target_gen_dir/node_javascript.cc",
 +  ]
 +
 +  cwd = "$target_gen_dir/js2c_inputs"
 +  script = "tools/js2c.py"
-+  args = library_files + rebase_path(macro_inputs + config_gypi) + ["--target"] + rebase_path(outputs)
++  args = library_files + rebase_path(config_gypi) + ["--target"] + rebase_path(outputs)
 +}
 +
 +config("node_features") {
