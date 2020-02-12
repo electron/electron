@@ -15,7 +15,7 @@
 #include "gin/wrappable.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
-#include "shell/browser/net/proxying_url_loader_factory.h"
+#include "shell/browser/net/web_request_api_interface.h"
 
 namespace content {
 class BrowserContext;
@@ -52,10 +52,6 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
- private:
-  WebRequestNS(v8::Isolate* isolate, content::BrowserContext* browser_context);
-  ~WebRequestNS() override;
-
   // WebRequestAPI:
   bool HasListener() const override;
   int OnBeforeRequest(extensions::WebRequestInfo* info,
@@ -88,6 +84,10 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
                    const network::ResourceRequest& request,
                    int net_error) override;
   void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) override;
+
+ private:
+  WebRequestNS(v8::Isolate* isolate, content::BrowserContext* browser_context);
+  ~WebRequestNS() override;
 
   enum SimpleEvent {
     kOnSendHeaders,
