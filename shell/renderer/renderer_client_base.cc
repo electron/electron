@@ -368,6 +368,8 @@ bool RendererClientBase::IsPluginHandledExternally(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) && BUILDFLAG(ENABLE_PLUGINS)
   DCHECK(plugin_element.HasHTMLTagName("object") ||
          plugin_element.HasHTMLTagName("embed"));
+  // TODO(nornagon): this info should be shared with the data in
+  // electron_content_client.cc / ComputeBuiltInPlugins.
   content::WebPluginInfo info;
   info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
   info.name = base::UTF8ToUTF16("Chromium PDF Viewer");
