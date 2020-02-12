@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 12 Feb 2020 14:23:09 -0800
+Subject: fix: explicitly override mark_arraybuffer_as_untransferable
+
+We need to mark overridden functions explicitly. This has already been
+fixed upstream at https://github.com/nodejs/node/pull/30549.
+
+diff --git a/src/node_api.cc b/src/node_api.cc
+index 0f7981cd5605ae2dad029b6bfb6a032afc09dfe0..5e467dded5bdb75a1831492b6b45c0d5eacab7f2 100644
+--- a/src/node_api.cc
++++ b/src/node_api.cc
+@@ -26,7 +26,7 @@ struct node_napi_env__ : public napi_env__ {
+   }
+ 
+   v8::Maybe<bool> mark_arraybuffer_as_untransferable(
+-      v8::Local<v8::ArrayBuffer> ab) const {
++      v8::Local<v8::ArrayBuffer> ab) const override {
+     return ab->SetPrivate(
+         context(),
+         node_env()->arraybuffer_untransferable_private_symbol(),

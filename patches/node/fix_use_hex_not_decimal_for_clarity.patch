@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 12 Feb 2020 14:19:11 -0800
+Subject: fix: use hex not decimal for clarity
+
+In Electron, clang enforces -Wxor-used-as-pow, so we should use hex
+here to clarify intent for the compiler.
+
+Upstreamed at https://github.com/nodejs/node/pull/31758.
+
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index b53aab6dc16c7ae42530998c94ddc845035b1256..c6aa5751a1bbaa693b915e418de8eb69ea8139f8 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -923,7 +923,7 @@ bool IsArrayIndex(Environment* env, Local<Value> p) {
+   if (!n->ToInteger(context).ToLocal(&cmp_integer)) {
+     return false;
+   }
+-  return n_dbl > 0 && n_dbl < (2 ^ 32) - 1;
++  return n_dbl > 0 && n_dbl < (1LL << 32) - 1;
+ }
+ 
+ Maybe<URL> ResolveExportsTarget(Environment* env,
