@@ -12,6 +12,26 @@
 
 namespace extensions {
 
+class ElectronMimeHandlerViewGuestDelegate
+    : public MimeHandlerViewGuestDelegate {
+ public:
+  ElectronMimeHandlerViewGuestDelegate() {}
+  ~ElectronMimeHandlerViewGuestDelegate() override {}
+
+  // MimeHandlerViewGuestDelegate.
+  bool HandleContextMenu(content::WebContents* web_contents,
+                         const content::ContextMenuParams& params) override {
+    // TODO(nornagon): surface this event to JS
+    LOG(INFO) << "HCM";
+    return true;
+  }
+  void RecordLoadMetric(bool in_main_frame,
+                        const std::string& mime_type) override {}
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(ElectronMimeHandlerViewGuestDelegate);
+};
+
 ElectronExtensionsAPIClient::ElectronExtensionsAPIClient() = default;
 ElectronExtensionsAPIClient::~ElectronExtensionsAPIClient() = default;
 
@@ -30,7 +50,7 @@ void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
 std::unique_ptr<MimeHandlerViewGuestDelegate>
 ElectronExtensionsAPIClient::CreateMimeHandlerViewGuestDelegate(
     MimeHandlerViewGuest* guest) const {
-  return std::make_unique<MimeHandlerViewGuestDelegate>();
+  return std::make_unique<ElectronMimeHandlerViewGuestDelegate>();
 }
 
 }  // namespace extensions
