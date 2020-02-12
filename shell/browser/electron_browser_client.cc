@@ -1247,28 +1247,15 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   if (!extension)
     return;
 
-  std::vector<std::string> allowed_webui_hosts;
   // Support for chrome:// scheme if appropriate.
   if (extension->is_extension() &&
       extensions::Manifest::IsComponentLocation(extension->location())) {
     // Components of chrome that are implemented as extensions or platform apps
     // are allowed to use chrome://resources/ and chrome://theme/ URLs.
-    allowed_webui_hosts.emplace_back(content::kChromeUIResourcesHost);
-  }
-  if (extension->is_extension()) {
-    // Extensions are allowed to use chrome://favicon/,
-    // chrome://extension-icon/ and chrome://app-icon URLs. Hosted apps are not
-    // allowed because they are served via web servers (and are generally never
-    // given access to Chrome APIs).
-    allowed_webui_hosts.emplace_back(chrome::kChromeUIExtensionIconHost);
-    allowed_webui_hosts.emplace_back(chrome::kChromeUIFaviconHost);
-    allowed_webui_hosts.emplace_back(chrome::kChromeUIAppIconHost);
-  }
-  if (!allowed_webui_hosts.empty()) {
     factories->emplace(
         content::kChromeUIScheme,
         content::CreateWebUIURLLoader(frame_host, content::kChromeUIScheme,
-                                      std::move(allowed_webui_hosts)));
+                                      {content::kChromeUIResourcesHost}));
   }
 
   // Extension with a background page get file access that gets approval from
