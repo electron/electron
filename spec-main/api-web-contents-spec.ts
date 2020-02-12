@@ -135,9 +135,18 @@ describe('webContents module', () => {
       }).to.throw('Unsupported pageSize: i-am-a-bad-pagesize')
     })
 
-    it('does not crash', () => {
+    it('does not crash with custom margins', () => {
       expect(() => {
-        w.webContents.print({ silent: true })
+        w.webContents.print({
+          silent: true,
+          margins: {
+            marginType: 'custom',
+            top: 1,
+            bottom: 1,
+            left: 1,
+            right: 1
+          }
+        })
       }).to.not.throw()
     })
   })
