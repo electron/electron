@@ -10,7 +10,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..ec06e14dd327cdf89dc6fd584b6972ae64311ea0
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,357 @@
+@@ -0,0 +1,358 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -208,6 +208,7 @@ index 0000000000000000000000000000000000000000..ec06e14dd327cdf89dc6fd584b6972ae
 +    "deps/http_parser",
 +    "deps/llhttp",
 +    "deps/nghttp2",
++    "deps/uvwasi",
 +    "deps/zlib",
 +    "//third_party/brotli:dec",
 +    "//third_party/brotli:enc",
@@ -366,6 +367,55 @@ index 0000000000000000000000000000000000000000..ec06e14dd327cdf89dc6fd584b6972ae
 +group("headers") {
 +  public_deps = [
 +    ":tar_headers",
++  ]
++}
+diff --git a/deps/uvwasi/BUILD.gn b/deps/uvwasi/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..cb4f4d4fa196da7513d7b43b44a0dd0e77a3d1c0
+--- /dev/null
++++ b/deps/uvwasi/BUILD.gn
+@@ -0,0 +1,43 @@
++config("uvwasi_config") {
++  include_dirs = [ "include" ]
++}
++
++static_library("uvwasi") {
++  include_dirs = [
++    "include",
++    "src",
++  ]
++
++  defines = []
++  if (is_linux) {
++    defines += [
++      "_GNU_SOURCE",
++      "_POSIX_C_SOURCE=200112"
++    ]
++  }
++
++  deps = [ "../../deps/uv" ]
++
++  public_configs = [ ":uvwasi_config" ]
++  cflags_c = [
++    "-Wall",
++    "-Wsign-compare",
++    "-Wextra",
++    "-Wstrict-prototypes",
++    "-Wno-unused-parameter"
++  ]
++
++  if (is_linux) {
++    cflags_c += [
++      "-fvisibility=hidden",
++      "--std=gnu89",
++    ]
++  }
++
++  sources = [
++    "src/clocks.c",
++    "src/fd_table.c",
++    "src/uv_mapping.c",
++    "src/uvwasi.c",
 +  ]
 +}
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
