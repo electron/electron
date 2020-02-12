@@ -5,6 +5,7 @@
 #include "shell/browser/extensions/electron_extensions_api_client.h"
 
 #include <memory>
+#include <string>
 
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
