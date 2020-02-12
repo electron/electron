@@ -180,6 +180,14 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
                                      LRESULT* result) {
   NotifyWindowMessage(message, w_param, l_param);
 
+  // See code below for why blocking Chromium from handling messages.
+  if (block_chromium_message_handler_) {
+    // Handle the message with default proc.
+    *result = DefWindowProc(GetAcceleratedWidget(), message, w_param, l_param);
+    // Tell Chromium to ignore this message.
+    return true;
+  }
+
   switch (message) {
     // Screen readers send WM_GETOBJECT in order to get the accessibility
     // object, so take this opportunity to push Chromium into accessible
@@ -222,7 +230,18 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       if (!last_normal_placement_bounds_.IsEmpty() &&
           GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
         wp.rcNormalPosition = last_normal_placement_bounds_.ToRECT();
+
+        // When calling SetWindowPlacement, Chromium would do window messages
+        // handling. But since we are already in PreHandleMSG this would cause
+        // crash in Chromium under some cases.
+        //
+        // We work around the crash by prevent Chromium from handling window
+        // messages until the SetWindowPlacement call is done.
+        //
+        // See https://github.com/electron/electron/issues/21614 for more.
+        block_chromium_message_handler_ = true;
         SetWindowPlacement(GetAcceleratedWidget(), &wp);
+        block_chromium_message_handler_ = false;
 
         last_normal_placement_bounds_ = gfx::Rect();
       }
