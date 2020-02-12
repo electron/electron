@@ -3179,7 +3179,9 @@ describe('BrowserWindow module', () => {
     })
 
     it('does not crash when restoring hidden minimized window', () => {
-      const w = new BrowserWindow({})
+      if (w != null) w.destroy()
+      w = new BrowserWindow()
+
       w.minimize()
       w.hide()
       w.show()
