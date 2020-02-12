@@ -1697,18 +1697,14 @@ index 655802980a6ea94d1d4ca1dc63c8c8e905fbb83a..ab1a18a215cb7393310324c6dbcacc66
    if 'false' == variables.get('node_shared_libuv'):
      subdir_files('deps/uv/include', 'include/node/', action)
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 1346b2a87046d3472577875c887b3b44a63280ed..752344d68c3f63b4c5e491b33d4576ed48f8b74f 100755
+index 4594694a2cab0d878d86127a72714ed60c251b6e..9e9883129bed62c591d23f71d139514c5034ac8d 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
-@@ -261,10 +261,18 @@ def NormalizeFileName(filename):
-     split = ['internal'] + split
-   else:  # `lib/**/*.js` so drop the 'lib' part
+@@ -130,6 +130,14 @@ def NormalizeFileName(filename):
      split = split[1:]
-+
    if len(split):
      filename = '/'.join(split)
--  return os.path.splitext(filename)[0]
- 
++
 +  # Electron-specific: when driving the node build from Electron, we generate
 +  # config.gypi in a separate directory and pass the absolute path to js2c.
 +  # This overrides the absolute path so that the variable names in the
@@ -1716,10 +1712,9 @@ index 1346b2a87046d3472577875c887b3b44a63280ed..752344d68c3f63b4c5e491b33d4576ed
 +  if filename.endswith("/config.gypi"):
 +    filename = "config.gypi"
 +
-+  return os.path.splitext(filename)[0]
+   return os.path.splitext(filename)[0]
  
- def JS2C(source_files, target):
-   # Process input from all *macro.py files
+ 
 diff --git a/tools/tar.py b/tools/tar.py
 new file mode 100644
 index 0000000000000000000000000000000000000000..eb697be25779db62c829aac45a509804e9fff331
