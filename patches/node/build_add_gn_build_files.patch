@@ -668,7 +668,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d1cf42562
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,185 @@
+@@ -0,0 +1,190 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -728,6 +728,7 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +    "src/idna.c",
 +    "src/idna.h",
 +    "src/inet.c",
++    "src/random.c",
 +    "src/queue.h",
 +    "src/strscpy.c",
 +    "src/strscpy.h",
@@ -806,6 +807,7 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +      "src/unix/pipe.c",
 +      "src/unix/poll.c",
 +      "src/unix/process.c",
++      "src/unix/random-devurandom.c",
 +      "src/unix/pthread-fixes.c",
 +      "src/unix/signal.c",
 +      "src/unix/spinlock.h",
@@ -824,6 +826,7 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +  if (is_mac) {
 +    sources += [
 +      "src/unix/darwin-proctitle.c",
++      "src/unix/random-getentropy.c",
 +      "src/unix/darwin.c",
 +      "src/unix/fsevents.c",
 +    ]
@@ -840,6 +843,8 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +      "src/unix/linux-syscalls.c",
 +      "src/unix/linux-syscalls.h",
 +      "src/unix/procfs-exepath.c",
++      "src/unix/random-getrandom.c",
++      "src/unix/random-sysctl-linux.c",
 +      "src/unix/sysinfo-loadavg.c",
 +    ]
 +    libs += [
