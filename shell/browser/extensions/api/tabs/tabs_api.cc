@@ -12,12 +12,47 @@
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/web_contents_zoom_controller.h"
+#include "shell/common/extensions/api/tabs.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
+
+using electron::WebContentsZoomController;
 
 namespace extensions {
 
+namespace tabs = api::tabs;
+
 const char kFrameNotFoundError[] = "No frame with id * in tab *.";
+const char kPerOriginOnlyInAutomaticError[] =
+    "Can only set scope to "
+    "\"per-origin\" in \"automatic\" mode.";
 
 using api::extension_types::InjectDetails;
+
+namespace {
+void ZoomModeToZoomSettings(WebContentsZoomController::ZoomMode zoom_mode,
+                            api::tabs::ZoomSettings* zoom_settings) {
+  DCHECK(zoom_settings);
+  switch (zoom_mode) {
+    case WebContentsZoomController::ZoomMode::DEFAULT:
+      zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_AUTOMATIC;
+      zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_ORIGIN;
+      break;
+    case WebContentsZoomController::ZoomMode::ISOLATED:
+      zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_AUTOMATIC;
+      zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
+      break;
+    case WebContentsZoomController::ZoomMode::MANUAL:
+      zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_MANUAL;
+      zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
+      break;
+    case WebContentsZoomController::ZoomMode::DISABLED:
+      zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_DISABLED;
+      zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
+      break;
+  }
+}
+}  // namespace
 
 ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() : execute_tab_id_(-1) {}
 
@@ -128,6 +163,151 @@ const GURL& ExecuteCodeInTabFunction::GetWebViewSrc() const {
 
 bool TabsExecuteScriptFunction::ShouldInsertCSS() const {
   return false;
+}
+
+ExtensionFunction::ResponseAction TabsGetFunction::Run() {
+  std::unique_ptr<tabs::Get::Params> params(tabs::Get::Params::Create(*args_));
+  EXTENSION_FUNCTION_VALIDATE(params.get());
+  int tab_id = params->tab_id;
+
+  auto* contents = electron::api::WebContents::FromWeakMapID(
+      v8::Isolate::GetCurrent(), tab_id);
+  if (!contents)
+    return RespondNow(Error("No such tab"));
+
+  tabs::Tab tab;
+
+  tab.id.reset(new int(tab_id));
+  // TODO(nornagon): in Chrome, the tab URL is only available to extensions
+  // that have the "tabs" (or "activeTab") permission. We should do the same
+  // permission check here.
+  tab.url = std::make_unique<std::string>(
+      contents->web_contents()->GetLastCommittedURL().spec());
+
+  return RespondNow(ArgumentList(tabs::Get::Results::Create(std::move(tab))));
+}
+
+ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
+  std::unique_ptr<tabs::SetZoom::Params> params(
+      tabs::SetZoom::Params::Create(*args_));
+  EXTENSION_FUNCTION_VALIDATE(params);
+
+  int tab_id = params->tab_id ? *params->tab_id : -1;
+  auto* contents = electron::api::WebContents::FromWeakMapID(
+      v8::Isolate::GetCurrent(), tab_id);
+  if (!contents)
+    return RespondNow(Error("No such tab"));
+
+  auto* web_contents = contents->web_contents();
+  GURL url(web_contents->GetVisibleURL());
+  std::string error;
+  if (extension()->permissions_data()->IsRestrictedUrl(url, &error))
+    return RespondNow(Error(error));
+
+  auto* zoom_controller = contents->GetZoomController();
+  double zoom_level =
+      params->zoom_factor > 0
+          ? blink::PageZoomFactorToZoomLevel(params->zoom_factor)
+          : blink::PageZoomFactorToZoomLevel(
+                zoom_controller->GetDefaultZoomFactor());
+
+  zoom_controller->SetZoomLevel(zoom_level);
+
+  return RespondNow(NoArguments());
+}
+
+ExtensionFunction::ResponseAction TabsGetZoomFunction::Run() {
+  std::unique_ptr<tabs::GetZoom::Params> params(
+      tabs::GetZoom::Params::Create(*args_));
+  EXTENSION_FUNCTION_VALIDATE(params);
+
+  int tab_id = params->tab_id ? *params->tab_id : -1;
+  auto* contents = electron::api::WebContents::FromWeakMapID(
+      v8::Isolate::GetCurrent(), tab_id);
+  if (!contents)
+    return RespondNow(Error("No such tab"));
+
+  double zoom_level = contents->GetZoomController()->GetZoomLevel();
+  double zoom_factor = blink::PageZoomLevelToZoomFactor(zoom_level);
+
+  return RespondNow(ArgumentList(tabs::GetZoom::Results::Create(zoom_factor)));
+}
+
+ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
+  std::unique_ptr<tabs::GetZoomSettings::Params> params(
+      tabs::GetZoomSettings::Params::Create(*args_));
+  EXTENSION_FUNCTION_VALIDATE(params);
+
+  int tab_id = params->tab_id ? *params->tab_id : -1;
+  auto* contents = electron::api::WebContents::FromWeakMapID(
+      v8::Isolate::GetCurrent(), tab_id);
+  if (!contents)
+    return RespondNow(Error("No such tab"));
+
+  auto* zoom_controller = contents->GetZoomController();
+  WebContentsZoomController::ZoomMode zoom_mode =
+      contents->GetZoomController()->zoom_mode();
+  api::tabs::ZoomSettings zoom_settings;
+  ZoomModeToZoomSettings(zoom_mode, &zoom_settings);
+  zoom_settings.default_zoom_factor.reset(
+      new double(blink::PageZoomLevelToZoomFactor(
+          zoom_controller->GetDefaultZoomLevel())));
+
+  return RespondNow(
+      ArgumentList(api::tabs::GetZoomSettings::Results::Create(zoom_settings)));
+}
+
+ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
+  using api::tabs::ZoomSettings;
+
+  std::unique_ptr<tabs::SetZoomSettings::Params> params(
+      tabs::SetZoomSettings::Params::Create(*args_));
+  EXTENSION_FUNCTION_VALIDATE(params);
+
+  int tab_id = params->tab_id ? *params->tab_id : -1;
+  auto* contents = electron::api::WebContents::FromWeakMapID(
+      v8::Isolate::GetCurrent(), tab_id);
+  if (!contents)
+    return RespondNow(Error("No such tab"));
+
+  std::string error;
+  GURL url(contents->web_contents()->GetVisibleURL());
+  if (extension()->permissions_data()->IsRestrictedUrl(url, &error))
+    return RespondNow(Error(error));
+
+  // "per-origin" scope is only available in "automatic" mode.
+  if (params->zoom_settings.scope == tabs::ZOOM_SETTINGS_SCOPE_PER_ORIGIN &&
+      params->zoom_settings.mode != tabs::ZOOM_SETTINGS_MODE_AUTOMATIC &&
+      params->zoom_settings.mode != tabs::ZOOM_SETTINGS_MODE_NONE) {
+    return RespondNow(Error(kPerOriginOnlyInAutomaticError));
+  }
+
+  // Determine the correct internal zoom mode to set |web_contents| to from the
+  // user-specified |zoom_settings|.
+  WebContentsZoomController::ZoomMode zoom_mode =
+      WebContentsZoomController::ZoomMode::DEFAULT;
+  switch (params->zoom_settings.mode) {
+    case tabs::ZOOM_SETTINGS_MODE_NONE:
+    case tabs::ZOOM_SETTINGS_MODE_AUTOMATIC:
+      switch (params->zoom_settings.scope) {
+        case tabs::ZOOM_SETTINGS_SCOPE_NONE:
+        case tabs::ZOOM_SETTINGS_SCOPE_PER_ORIGIN:
+          zoom_mode = WebContentsZoomController::ZoomMode::DEFAULT;
+          break;
+        case tabs::ZOOM_SETTINGS_SCOPE_PER_TAB:
+          zoom_mode = WebContentsZoomController::ZoomMode::ISOLATED;
+      }
+      break;
+    case tabs::ZOOM_SETTINGS_MODE_MANUAL:
+      zoom_mode = WebContentsZoomController::ZoomMode::MANUAL;
+      break;
+    case tabs::ZOOM_SETTINGS_MODE_DISABLED:
+      zoom_mode = WebContentsZoomController::ZoomMode::DISABLED;
+  }
+
+  contents->GetZoomController()->SetZoomMode(zoom_mode);
+
+  return RespondNow(NoArguments());
 }
 
 }  // namespace extensions

@@ -1,7 +1,143 @@
 [
   {
     "namespace": "tabs",
+    "description": "Use the <code>chrome.tabs</code> API to interact with the browser's tab system. You can use this API to create, modify, and rearrange tabs in the browser.",
+    "types": [
+      { "id": "MutedInfoReason",
+        "type": "string",
+        "description": "An event that caused a muted state change.",
+        "enum": [
+          {"name": "user", "description": "A user input action set the muted state."},
+          {"name": "capture", "description": "Tab capture was started, forcing a muted state change."},
+          {"name": "extension", "description": "An extension, identified by the extensionId field, set the muted state."}
+        ]
+      },
+      {
+        "id": "MutedInfo",
+        "type": "object",
+        "description": "The tab's muted state and the reason for the last state change.",
+        "properties": {
+          "muted": {
+            "type": "boolean",
+            "description": "Whether the tab is muted (prevented from playing sound). The tab may be muted even if it has not played or is not currently playing sound. Equivalent to whether the 'muted' audio indicator is showing."
+          },
+          "reason": {
+            "$ref": "MutedInfoReason",
+            "optional": true,
+            "description": "The reason the tab was muted or unmuted. Not set if the tab's mute state has never been changed."
+          },
+          "extensionId": {
+            "type": "string",
+            "optional": true,
+            "description": "The ID of the extension that changed the muted state. Not set if an extension was not the reason the muted state last changed."
+          }
+        }
+      },
+      {
+        "id": "Tab",
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer", "minimum": -1, "optional": true, "description": "The ID of the tab. Tab IDs are unique within a browser session. Under some circumstances a tab may not be assigned an ID; for example, when querying foreign tabs using the $(ref:sessions) API, in which case a session ID may be present. Tab ID can also be set to <code>chrome.tabs.TAB_ID_NONE</code> for apps and devtools windows."},
+          // TODO(kalman): Investigate how this is ending up as -1 (based on window type? a bug?) and whether it should be optional instead.
+          "index": {"type": "integer", "minimum": -1, "description": "The zero-based index of the tab within its window."},
+          "windowId": {"type": "integer", "minimum": 0, "description": "The ID of the window that contains the tab."},
+          "openerTabId": {"type": "integer", "minimum": 0, "optional": true, "description": "The ID of the tab that opened this tab, if any. This property is only present if the opener tab still exists."},
+          "selected": {"type": "boolean", "description": "Whether the tab is selected.", "deprecated": "Please use $(ref:tabs.Tab.highlighted)."},
+          "highlighted": {"type": "boolean", "description": "Whether the tab is highlighted."},
+          "active": {"type": "boolean", "description": "Whether the tab is active in its window. Does not necessarily mean the window is focused."},
+          "pinned": {"type": "boolean", "description": "Whether the tab is pinned."},
+          "audible": {"type": "boolean", "optional": true, "description": "Whether the tab has produced sound over the past couple of seconds (but it might not be heard if also muted). Equivalent to whether the 'speaker audio' indicator is showing."},
+          "discarded": {"type": "boolean", "description": "Whether the tab is discarded. A discarded tab is one whose content has been unloaded from memory, but is still visible in the tab strip. Its content is reloaded the next time it is activated."},
+          "autoDiscardable":  {"type": "boolean", "description": "Whether the tab can be discarded automatically by the browser when resources are low."},
+          "mutedInfo": {"$ref": "MutedInfo", "optional": true, "description": "The tab's muted state and the reason for the last state change."},
+          "url": {"type": "string", "optional": true, "description": "The last committed URL of the main frame of the tab. This property is only present if the extension's manifest includes the <code>\"tabs\"</code> permission and may be an empty string if the tab has not yet committed. See also $(ref:Tab.pendingUrl)."},
+          "pendingUrl": {"type": "string", "optional": true, "description": "The URL the tab is navigating to, before it has committed. This property is only present if the extension's manifest includes the <code>\"tabs\"</code> permission and there is a pending navigation."},
+          "title": {"type": "string", "optional": true, "description": "The title of the tab. This property is only present if the extension's manifest includes the <code>\"tabs\"</code> permission."},
+          "favIconUrl": {"type": "string", "optional": true, "description": "The URL of the tab's favicon. This property is only present if the extension's manifest includes the <code>\"tabs\"</code> permission. It may also be an empty string if the tab is loading."},
+          "status": {"type": "string", "optional": true, "description": "Either <em>loading</em> or <em>complete</em>."},
+          "incognito": {"type": "boolean", "description": "Whether the tab is in an incognito window."},
+          "width": {"type": "integer", "optional": true, "description": "The width of the tab in pixels."},
+          "height": {"type": "integer", "optional": true, "description": "The height of the tab in pixels."},
+          "sessionId": {"type": "string", "optional": true, "description": "The session ID used to uniquely identify a tab obtained from the $(ref:sessions) API."}
+        }
+      },
+      {
+        "id": "ZoomSettingsMode",
+        "type": "string",
+        "description": "Defines how zoom changes are handled, i.e., which entity is responsible for the actual scaling of the page; defaults to <code>automatic</code>.",
+        "enum": [
+          {
+            "name": "automatic",
+            "description": "Zoom changes are handled automatically by the browser."
+          },
+          {
+            "name": "manual",
+            "description": "Overrides the automatic handling of zoom changes. The <code>onZoomChange</code> event will still be dispatched, and it is the extension's responsibility to listen for this event and manually scale the page. This mode does not support <code>per-origin</code> zooming, and thus ignores the <code>scope</code> zoom setting and assumes <code>per-tab</code>."
+          },
+          {
+            "name": "disabled",
+            "description": "Disables all zooming in the tab. The tab reverts to the default zoom level, and all attempted zoom changes are ignored."
+          }
+        ]
+      },
+      {
+        "id": "ZoomSettingsScope",
+        "type": "string",
+        "description": "Defines whether zoom changes persist for the page's origin, or only take effect in this tab; defaults to <code>per-origin</code> when in <code>automatic</code> mode, and <code>per-tab</code> otherwise.",
+        "enum": [
+          {
+            "name": "per-origin",
+            "description": "Zoom changes persist in the zoomed page's origin, i.e., all other tabs navigated to that same origin are zoomed as well. Moreover, <code>per-origin</code> zoom changes are saved with the origin, meaning that when navigating to other pages in the same origin, they are all zoomed to the same zoom factor. The <code>per-origin</code> scope is only available in the <code>automatic</code> mode."
+          },
+          {
+            "name": "per-tab",
+            "description": "Zoom changes only take effect in this tab, and zoom changes in other tabs do not affect the zooming of this tab. Also, <code>per-tab</code> zoom changes are reset on navigation; navigating a tab always loads pages with their <code>per-origin</code> zoom factors."
+          }
+        ]
+      },
+      {
+        "id": "ZoomSettings",
+        "type": "object",
+        "description": "Defines how zoom changes in a tab are handled and at what scope.",
+        "properties": {
+          "mode": {
+            "$ref": "ZoomSettingsMode",
+            "description": "Defines how zoom changes are handled, i.e., which entity is responsible for the actual scaling of the page; defaults to <code>automatic</code>.",
+            "optional": true
+          },
+          "scope": {
+            "$ref": "ZoomSettingsScope",
+            "description": "Defines whether zoom changes persist for the page's origin, or only take effect in this tab; defaults to <code>per-origin</code> when in <code>automatic</code> mode, and <code>per-tab</code> otherwise.",
+            "optional": true
+          },
+          "defaultZoomFactor": {
+            "type": "number",
+            "optional": true,
+            "description": "Used to return the default zoom level for the current tab in calls to tabs.getZoomSettings."
+          }
+        }
+      }
+    ],
     "functions": [
+      {
+        "name": "get",
+        "type": "function",
+        "description": "Retrieves details about the specified tab.",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "minimum": 0
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {"name": "tab", "$ref": "Tab"}
+            ]
+          }
+        ]
+      },
       {
         "name": "executeScript",
         "type": "function",
@@ -80,6 +216,127 @@
             ]
           }
         ]
+      },
+      {
+        "name": "setZoom",
+        "type": "function",
+        "description": "Zooms a specified tab.",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "minimum": 0,
+            "optional": true,
+            "description": "The ID of the tab to zoom; defaults to the active tab of the current window."
+          },
+          {
+            "type": "number",
+            "name": "zoomFactor",
+            "description": "The new zoom factor. A value of <code>0</code> sets the tab to its current default zoom factor. Values greater than <code>0</code> specify a (possibly non-default) zoom factor for the tab."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called after the zoom factor has been changed.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "getZoom",
+        "type": "function",
+        "description": "Gets the current zoom factor of a specified tab.",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "minimum": 0,
+            "optional": true,
+            "description": "The ID of the tab to get the current zoom factor from; defaults to the active tab of the current window."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "description": "Called with the tab's current zoom factor after it has been fetched.",
+            "parameters": [
+              {
+                "type": "number",
+                "name": "zoomFactor",
+                "description": "The tab's current zoom factor."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "setZoomSettings",
+        "type": "function",
+        "description": "Sets the zoom settings for a specified tab, which define how zoom changes are handled. These settings are reset to defaults upon navigating the tab.",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "optional": true,
+            "minimum": 0,
+            "description": "The ID of the tab to change the zoom settings for; defaults to the active tab of the current window."
+          },
+          {
+            "$ref": "ZoomSettings",
+            "name": "zoomSettings",
+            "description": "Defines how zoom changes are handled and at what scope."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called after the zoom settings are changed.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "getZoomSettings",
+        "type": "function",
+        "description": "Gets the current zoom settings of a specified tab.",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "optional": true,
+            "minimum": 0,
+            "description": "The ID of the tab to get the current zoom settings from; defaults to the active tab of the current window."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "description": "Called with the tab's current zoom settings.",
+            "parameters": [
+              {
+                "$ref": "ZoomSettings",
+                "name": "zoomSettings",
+                "description": "The tab's current zoom settings."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "name": "onZoomChange",
+        "type": "function",
+        "description": "Fired when a tab is zoomed.",
+        "parameters": [{
+          "type": "object",
+          "name": "ZoomChangeInfo",
+          "properties": {
+            "tabId": {"type": "integer", "minimum": 0},
+            "oldZoomFactor": {"type": "number"},
+            "newZoomFactor": {"type": "number"},
+            "zoomSettings": {"$ref": "ZoomSettings"}
+          }
+        }]
       }
     ]
   }

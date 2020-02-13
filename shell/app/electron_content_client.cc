@@ -33,12 +33,13 @@
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "pdf/pdf.h"                          // nogncheck
-#include "pdf/pdf_ppapi.h"                    // nogncheck
-#include "shell/common/electron_constants.h"  // nogncheck
-#endif                                        // BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "pdf/pdf.h"        // nogncheck
+#include "pdf/pdf_ppapi.h"  // nogncheck
+#include "shell/common/electron_constants.h"
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
+#include "content/public/browser/plugin_service.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #endif  // BUILDFLAG(ENABLE_PLUGINS)
@@ -155,7 +156,8 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   pdf_info.is_out_of_process = true;
   pdf_info.name = "Chromium PDF Viewer";
   pdf_info.description = "Portable Document Format";
-  pdf_info.path = base::FilePath(FILE_PATH_LITERAL("internal-pdf-viewer"));
+  // This isn't a real file path; it's just used as a unique identifier.
+  pdf_info.path = base::FilePath(kPdfPluginPath);
   content::WebPluginMimeType pdf_mime_type(kPdfPluginMimeType, "pdf",
                                            "Portable Document Format");
   pdf_info.mime_types.push_back(pdf_mime_type);
@@ -166,6 +168,21 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
       chrome_pdf::PPP_ShutdownModule;
   pdf_info.permissions = ppapi::PERMISSION_PDF | ppapi::PERMISSION_DEV;
   plugins->push_back(pdf_info);
+
+  // NB. in Chrome, this plugin isn't registered until the PDF extension is
+  // loaded. However, in Electron, we load the PDF extension unconditionally
+  // when it is enabled in the build, so we're OK to load the plugin eagerly
+  // here.
+  content::WebPluginInfo info;
+  info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
+  info.name = base::UTF8ToUTF16("Chromium PDF Viewer");
+  // This isn't a real file path; it's just used as a unique identifier.
+  info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
+  info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
+  info.mime_types.emplace_back("application/pdf", "pdf",
+                               "Portable Document Format");
+  content::PluginService::GetInstance()->RefreshPlugins();
+  content::PluginService::GetInstance()->RegisterInternalPlugin(info, true);
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 #endif  // BUILDFLAG(ENABLE_PLUGINS)
