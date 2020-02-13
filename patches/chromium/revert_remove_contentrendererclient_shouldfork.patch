@@ -9,7 +9,7 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index a9b2e3fa8067e0adc7430c5e566d7734c2f75681..c564b64b72a604ee7beee2e4d617ca7c18a00d6b 100644
+index f4164c6d41ea1b10bf8c4f4b75ee788c7529cbcf..b15a72fe6d02617e227395461dbbdf3c830a3dd8 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
 @@ -1269,6 +1269,25 @@ bool ChromeContentRendererClient::AllowPopup() {
@@ -39,7 +39,7 @@ index a9b2e3fa8067e0adc7430c5e566d7734c2f75681..c564b64b72a604ee7beee2e4d617ca7c
      WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/chrome_content_renderer_client.h
-index b5d52afedb94475f05318bfc35f7e0b595047ee3..c40a6ec13f3ee366dcf9cc5b6440045c89c310b8 100644
+index f46086288686d68c0ee0078c9deb97ba4177f79c..5422bb4bc6310da74cb60068455d1f58cd93ba65 100644
 --- a/chrome/renderer/chrome_content_renderer_client.h
 +++ b/chrome/renderer/chrome_content_renderer_client.h
 @@ -131,6 +131,11 @@ class ChromeContentRendererClient
@@ -92,10 +92,10 @@ index 0a4ec619e96a840b4b4d5b51246de6c91e0f94f2..5dabb49f061b4e0643256cbf9162d128
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |attach_same_site_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 3800b761af945bc1592eda7f054199da03183b05..6cabed55988cdfaab422b36a697fc8b0310870a8 100644
+index e79e4abf6ca24dd55dfa2c2351d5d0c6114cff3c..5694ff61ed2f0993431a002ae5cd7cc97b5665db 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5798,6 +5798,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5808,6 +5808,23 @@ void RenderFrameImpl::BeginNavigation(
      int cumulative_bindings = RenderProcess::current()->GetEnabledBindings();
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (cumulative_bindings & kWebUIBindingsPolicyMask);
