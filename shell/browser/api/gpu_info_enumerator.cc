@@ -129,6 +129,18 @@ void GPUInfoEnumerator::EndDx12VulkanVersionInfo() {
   value_stack.pop();
 }
 
+void GPUInfoEnumerator::BeginOverlayInfo() {
+  value_stack.push(std::move(current));
+  current = std::make_unique<base::DictionaryValue>();
+}
+
+void GPUInfoEnumerator::EndOverlayInfo() {
+  auto& top_value = value_stack.top();
+  top_value->SetDictionary(kOverlayInfo, std::move(current));
+  current = std::move(top_value);
+  value_stack.pop();
+}
+
 std::unique_ptr<base::DictionaryValue> GPUInfoEnumerator::GetDictionary() {
   return std::move(current);
 }
