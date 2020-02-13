@@ -195,6 +195,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool* bypass_redirect_checks,
       bool* disable_secure_dns,
       network::mojom::URLLoaderFactoryOverridePtr* factory_override) override;
+  bool ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
+      base::StringPiece scheme,
+      bool is_embedded_origin_secure) override;
   void OverrideURLLoaderFactoryParams(
       content::BrowserContext* browser_context,
       const url::Origin& origin,
@@ -230,6 +233,15 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool first_auth_attempt,
       LoginAuthRequiredCallback auth_required_callback) override;
   void SiteInstanceGotProcess(content::SiteInstance* site_instance) override;
+  std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
+  CreateURLLoaderThrottles(
+      const network::ResourceRequest& request,
+      content::BrowserContext* browser_context,
+      const base::RepeatingCallback<content::WebContents*()>& wc_getter,
+      content::NavigationUIData* navigation_ui_data,
+      int frame_tree_node_id) override;
+  base::flat_set<std::string> GetPluginMimeTypesWithExternalHandlers(
+      content::BrowserContext* browser_context) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

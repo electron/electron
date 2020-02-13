@@ -23,6 +23,7 @@ class KioskDelegate;
 class ProcessManagerDelegate;
 class ElectronProcessManagerDelegate;
 class ProcessMap;
+class ElectronComponentExtensionResourceManager;
 }  // namespace extensions
 
 namespace electron {
@@ -137,6 +138,9 @@ class ElectronExtensionsBrowserClient
 
   // The extension cache used for download and installation.
   std::unique_ptr<extensions::ExtensionCache> extension_cache_;
+
+  std::unique_ptr<extensions::ElectronComponentExtensionResourceManager>
+      resource_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsBrowserClient);
 };

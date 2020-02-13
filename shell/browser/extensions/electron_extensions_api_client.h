@@ -22,6 +22,9 @@ class ElectronExtensionsAPIClient : public ExtensionsAPIClient {
   MessagingDelegate* GetMessagingDelegate() override;
   void AttachWebContentsHelpers(
       content::WebContents* web_contents) const override;
+  std::unique_ptr<MimeHandlerViewGuestDelegate>
+  CreateMimeHandlerViewGuestDelegate(
+      MimeHandlerViewGuest* guest) const override;
 
  private:
   std::unique_ptr<ElectronMessagingDelegate> messaging_delegate_;

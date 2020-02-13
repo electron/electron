@@ -117,7 +117,6 @@ extensions::URLPatternSet
 ElectronExtensionsClient::GetPermittedChromeSchemeHosts(
     const extensions::Extension* extension,
     const extensions::APIPermissionSet& api_permissions) const {
-  NOTIMPLEMENTED();
   return extensions::URLPatternSet();
 }
 

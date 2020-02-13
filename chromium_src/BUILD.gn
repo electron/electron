@@ -233,6 +233,12 @@ static_library("chrome") {
 
   if (enable_electron_extensions) {
     sources += [
+      "//chrome/browser/extensions/chrome_url_request_util.cc",
+      "//chrome/browser/extensions/chrome_url_request_util.h",
+      "//chrome/browser/pdf/pdf_extension_util.cc",
+      "//chrome/browser/pdf/pdf_extension_util.h",
+      "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc",
+      "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.h",
       "//chrome/renderer/extensions/extension_hooks_delegate.cc",
       "//chrome/renderer/extensions/extension_hooks_delegate.h",
       "//chrome/renderer/extensions/tabs_hooks_delegate.cc",

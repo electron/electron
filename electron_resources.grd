@@ -17,7 +17,8 @@
       <part file="electron_strings.grdp" />
     </messages>
     <includes>
-      <include name="IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE" file="${target_gen_dir}\shell_devtools_discovery_page.html" use_base_dir="false" type="BINDATA" />
+      <include name="IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE" file="${target_gen_dir}/shell_devtools_discovery_page.html" use_base_dir="false" type="BINDATA" />
+      <include name="IDR_PDF_MANIFEST" file="../chrome/browser/resources/pdf/manifest.json" type="BINDATA" />
     </includes>
   </release>
 </grit>
