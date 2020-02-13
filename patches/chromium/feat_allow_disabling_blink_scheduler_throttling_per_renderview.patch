@@ -111,10 +111,10 @@ index a6d03eca18db4566002d71ec0b6aedae39a78be7..5eaf6fa6e7568d89d3051617f3ac99b3
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 6710b7a19312ab8b999ee281b21afafc3f64c3d6..81b3391fc5cdedd1a7486f3cc325743e06d10ba3 100644
+index cee2e9a8c2d72ce27d3496023f102a231390cec5..bbe4ffef747c01d8fd2fe8722d068109355160b7 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3328,12 +3328,20 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3332,12 +3332,20 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -138,10 +138,10 @@ index 6710b7a19312ab8b999ee281b21afafc3f64c3d6..81b3391fc5cdedd1a7486f3cc325743e
  
  PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 2bac9e77e5e12584493bed4323c634858fd55ce3..7f41b52c4e1c58bec0b03a02b7f72943591d852b 100644
+index 4cd0387325448e568de6baff3f8eae18498498ea..5a4a4dafc5ec2aa983f4501a203c9f2e5345600a 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -310,6 +310,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -313,6 +313,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -149,7 +149,7 @@ index 2bac9e77e5e12584493bed4323c634858fd55ce3..7f41b52c4e1c58bec0b03a02b7f72943
    void SetVisibilityState(PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    PageVisibilityState GetVisibilityState() override;
-@@ -681,6 +682,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -684,6 +685,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // WebViewImpl::Close while handling an input event.
    bool debug_inside_input_handling_ = false;
  

@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index e2947996a58711960583fd30fdabc03dde798322..1939f14636a5558d78912308668bd85efa0ca024 100644
+index e6728badc74522f4aa633bcec00f7f9acdea552f..ac26b9bd7bdf710816035413dfdbe44ee953471b 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1222,6 +1222,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1223,6 +1223,24 @@ void NavigationRequest::BeginNavigation() {
      TRACE_EVENT_ASYNC_STEP_INTO0("navigation", "NavigationRequest", this,
                                   "ResponseStarted");
  
@@ -194,7 +194,7 @@ index caa100b3889e17a9afdc8127e0e13bb6b86e8042..f08d3a2eb28f0f6fff89b5759eff5369
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 98763c8966f809fcfbc74360e5ab765f4cb6f4a1..fa1ccfd53a8716af0cc0b5739ef3365320c94898 100644
+index a7000c7ee15c5c988bff448e1d762d91cd6f5141..a4ee01d118a7c4e4375bd42926a150553f3f1f92 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -58,6 +58,21 @@
@@ -220,7 +220,7 @@ index 98763c8966f809fcfbc74360e5ab765f4cb6f4a1..fa1ccfd53a8716af0cc0b5739ef33653
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index c839bd8dee8dadfa8648552f380dfe043e12982f..5fffe904104e81f2d57f013cc4e3f82be700ffa2 100644
+index cfb548239a9bd4582344cc332ca4c253628d7438..8beaad24a22647a6a3f8b92e4343b55ec61e1ada 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -231,8 +231,45 @@ class CONTENT_EXPORT ContentBrowserClient {
