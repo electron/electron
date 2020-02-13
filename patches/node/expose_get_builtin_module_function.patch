@@ -1,13 +1,28 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Thiago de Arruda <tpadilha84@gmail.com>
 Date: Mon, 6 Mar 2017 10:42:34 -0300
-Subject: Expose `get_builtin_module` function
+Subject: Expose `get_linked_module` function
 
-This is a requirement for electron/electron#8815, which exposes some builtin
-modules to sandboxed renderers.
+This is a requirement for electron/electron#8815, which exposes some linked
+modules to sandboxed renderers. 
 
-(cherry picked from commit 4c058a6cb5331eef1c7f51c042dd074a2d4f9234)
+TODO(codebytere): removed and replace with a public facing API.
 
+diff --git a/src/node_binding.cc b/src/node_binding.cc
+index 0facfc36cbcb784cd0a1802a7748dff3366710fd..db60617cebee83ac09371aa1e2200280e29bd772 100644
+--- a/src/node_binding.cc
++++ b/src/node_binding.cc
+@@ -611,6 +611,10 @@ void GetInternalBinding(const FunctionCallbackInfo<Value>& args) {
+   args.GetReturnValue().Set(exports);
+ }
+ 
++node_module* get_linked_module(const char* name) {
++  return FindModule(modlist_linked, name, NM_F_LINKED);
++}
++
+ void GetLinkedBinding(const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
+ 
 diff --git a/src/node_binding.h b/src/node_binding.h
 index 42f3c5b8d00880588f442a4e724e080128c56dfe..cefb6419ebb7f5c5c79927d179eef0a790e234ad 100644
 --- a/src/node_binding.h
