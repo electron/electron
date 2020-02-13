@@ -522,6 +522,7 @@ void WebContents::InitWithSessionAndOptions(
 
   auto* prefs = web_contents()->GetMutableRendererPrefs();
   prefs->accept_languages = g_browser_process->GetApplicationLocale();
+  prefs->browser_handles_all_top_level_requests = true;
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   // Update font settings.
