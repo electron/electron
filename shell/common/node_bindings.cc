@@ -32,56 +32,56 @@
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 
-#define ELECTRON_BUILTIN_MODULES(V)  \
-  V(atom_browser_app)                \
-  V(atom_browser_auto_updater)       \
-  V(atom_browser_browser_view)       \
-  V(atom_browser_content_tracing)    \
-  V(atom_browser_debugger)           \
-  V(atom_browser_dialog)             \
-  V(atom_browser_download_item)      \
-  V(atom_browser_event)              \
-  V(atom_browser_global_shortcut)    \
-  V(atom_browser_in_app_purchase)    \
-  V(atom_browser_menu)               \
-  V(atom_browser_net)                \
-  V(atom_browser_power_monitor)      \
-  V(atom_browser_power_save_blocker) \
-  V(atom_browser_protocol)           \
-  V(atom_browser_session)            \
-  V(atom_browser_system_preferences) \
-  V(atom_browser_top_level_window)   \
-  V(atom_browser_tray)               \
-  V(atom_browser_web_contents)       \
-  V(atom_browser_web_contents_view)  \
-  V(atom_browser_view)               \
-  V(atom_browser_web_view_manager)   \
-  V(atom_browser_window)             \
-  V(atom_common_asar)                \
-  V(atom_common_clipboard)           \
-  V(atom_common_command_line)        \
-  V(atom_common_crash_reporter)      \
-  V(atom_common_features)            \
-  V(atom_common_native_image)        \
-  V(atom_common_native_theme)        \
-  V(atom_common_notification)        \
-  V(atom_common_screen)              \
-  V(atom_common_shell)               \
-  V(atom_common_v8_util)             \
-  V(atom_renderer_context_bridge)    \
-  V(atom_renderer_ipc)               \
-  V(atom_renderer_web_frame)
+#define ELECTRON_BUILTIN_MODULES(V)      \
+  V(electron_browser_app)                \
+  V(electron_browser_auto_updater)       \
+  V(electron_browser_browser_view)       \
+  V(electron_browser_content_tracing)    \
+  V(electron_browser_debugger)           \
+  V(electron_browser_dialog)             \
+  V(electron_browser_download_item)      \
+  V(electron_browser_event)              \
+  V(electron_browser_global_shortcut)    \
+  V(electron_browser_in_app_purchase)    \
+  V(electron_browser_menu)               \
+  V(electron_browser_net)                \
+  V(electron_browser_power_monitor)      \
+  V(electron_browser_power_save_blocker) \
+  V(electron_browser_protocol)           \
+  V(electron_browser_session)            \
+  V(electron_browser_system_preferences) \
+  V(electron_browser_top_level_window)   \
+  V(electron_browser_tray)               \
+  V(electron_browser_web_contents)       \
+  V(electron_browser_web_contents_view)  \
+  V(electron_browser_view)               \
+  V(electron_browser_web_view_manager)   \
+  V(electron_browser_window)             \
+  V(electron_common_asar)                \
+  V(electron_common_clipboard)           \
+  V(electron_common_command_line)        \
+  V(electron_common_crash_reporter)      \
+  V(electron_common_features)            \
+  V(electron_common_native_image)        \
+  V(electron_common_native_theme)        \
+  V(electron_common_notification)        \
+  V(electron_common_screen)              \
+  V(electron_common_shell)               \
+  V(electron_common_v8_util)             \
+  V(electron_renderer_context_bridge)    \
+  V(electron_renderer_ipc)               \
+  V(electron_renderer_web_frame)
 
-#define ELECTRON_VIEW_MODULES(V) \
-  V(atom_browser_box_layout)     \
-  V(atom_browser_button)         \
-  V(atom_browser_label_button)   \
-  V(atom_browser_layout_manager) \
-  V(atom_browser_md_text_button) \
-  V(atom_browser_resize_area)    \
-  V(atom_browser_text_field)
+#define ELECTRON_VIEW_MODULES(V)     \
+  V(electron_browser_box_layout)     \
+  V(electron_browser_button)         \
+  V(electron_browser_label_button)   \
+  V(electron_browser_layout_manager) \
+  V(electron_browser_md_text_button) \
+  V(electron_browser_resize_area)    \
+  V(electron_browser_text_field)
 
-#define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(atom_browser_desktop_capturer)
+#define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(electron_browser_desktop_capturer)
 
 // This is used to load built-in modules. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
