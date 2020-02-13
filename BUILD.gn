@@ -629,8 +629,6 @@ source_set("electron_lib") {
     deps += [ "//components/printing/common:mojo_interfaces" ]
   }
 
-  deps += [ "shell/common/extensions/api:extensions_features" ]
-  deps += [ "shell/common/extensions/api" ]
   deps += [
     "//components/pref_registry",
     "//components/user_prefs",
@@ -642,12 +640,22 @@ source_set("electron_lib") {
   ]
   if (enable_electron_extensions) {
     sources += filenames.lib_sources_extensions
+    deps += [
+      "shell/browser/extensions/api:api_registration",
+      "shell/common/extensions/api",
+      "shell/common/extensions/api:extensions_features",
+      "//chrome/browser/resources:component_extension_resources",
+      "//components/zoom",
+    ]
   }
 
   if (enable_pdf) {
     # Printing depends on some //pdf code, so it needs to be built even if the
     # pdf viewer isn't enabled.
-    deps += [ "//pdf" ]
+    deps += [
+      "//pdf",
+      "//pdf:features",
+    ]
   }
   if (enable_pdf_viewer) {
     deps += [

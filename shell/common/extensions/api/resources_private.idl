@@ -1,0 +1,23 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// resourcesPrivate.
+namespace resourcesPrivate {
+  enum Component { identity, pdf };
+
+  callback GetStringsCallback = void (object result);
+
+  interface Functions {
+    // Gets localized strings for a component extension. Includes default WebUI
+    // loadTimeData values for text and language settings (fontsize, fontfamily,
+    // language, textdirection). See
+    // chrome/browser/extensions/api/resources_private/resources_private_api.cc
+    // for instructions on adding a new component to this API.
+    //
+    // |component| : Internal chrome component to get strings for.
+    // |callback| : Called with a dictionary mapping names to strings.
+    static void getStrings(Component component,
+                           GetStringsCallback callback);
+  };
+};

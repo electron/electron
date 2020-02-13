@@ -5,6 +5,7 @@
 #ifndef SHELL_COMMON_ELECTRON_CONSTANTS_H_
 #define SHELL_COMMON_ELECTRON_CONSTANTS_H_
 
+#include "base/files/file_path.h"
 #include "build/build_config.h"
 #include "electron/buildflags/buildflags.h"
 
@@ -39,12 +40,7 @@ extern const char kRunAsNode[];
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 // The MIME type used for the PDF plugin.
 extern const char kPdfPluginMimeType[];
-extern const char kPdfPluginPath[];
-extern const char kPdfPluginSrc[];
-
-// Constants for PDF viewer webui.
-extern const char kPdfViewerUIOrigin[];
-extern const char kPdfViewerUIHost[];
+extern const base::FilePath::CharType kPdfPluginPath[];
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 }  // namespace electron

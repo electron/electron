@@ -8,8 +8,12 @@
 
 #include "base/bind.h"
 #include "base/memory/ptr_util.h"
+#include "base/path_service.h"
 #include "base/task/post_task.h"
 #include "build/build_config.h"
+#include "chrome/browser/extensions/chrome_url_request_util.h"
+#include "chrome/common/chrome_paths.h"
+#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "components/version_info/version_info.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -20,17 +24,21 @@
 #include "extensions/browser/component_extension_resource_manager.h"
 #include "extensions/browser/core_extensions_browser_api_provider.h"
 #include "extensions/browser/event_router.h"
+#include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
 #include "extensions/common/features/feature_channel.h"
+#include "extensions/common/file_util.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_url_handlers.h"
+#include "net/base/mime_util.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/extensions/api/runtime/electron_runtime_api_delegate.h"
+#include "shell/browser/extensions/electron_component_extension_resource_manager.h"
 #include "shell/browser/extensions/electron_extension_host_delegate.h"
 #include "shell/browser/extensions/electron_extension_system_factory.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
@@ -38,9 +46,11 @@
 #include "shell/browser/extensions/electron_extensions_browser_api_provider.h"
 #include "shell/browser/extensions/electron_navigation_ui_data.h"
 #include "shell/browser/extensions/electron_process_manager_delegate.h"
+#include "ui/base/resource/resource_bundle.h"
 
 using content::BrowserContext;
 using content::BrowserThread;
+using extensions::ExtensionsBrowserClient;
 
 namespace electron {
 
@@ -51,6 +61,8 @@ ElectronExtensionsBrowserClient::ElectronExtensionsBrowserClient()
   // Electron does not have a concept of channel, so leave UNKNOWN to
   // enable all channel-dependent extension APIs.
   extensions::SetCurrentChannel(version_info::Channel::UNKNOWN);
+  resource_manager_.reset(
+      new extensions::ElectronComponentExtensionResourceManager());
 
   AddAPIProvider(
       std::make_unique<extensions::CoreExtensionsBrowserAPIProvider>());
@@ -127,7 +139,28 @@ base::FilePath ElectronExtensionsBrowserClient::GetBundleResourcePath(
     const base::FilePath& extension_resources_path,
     int* resource_id) const {
   *resource_id = 0;
-  return base::FilePath();
+  base::FilePath chrome_resources_path;
+  if (!base::PathService::Get(chrome::DIR_RESOURCES, &chrome_resources_path))
+    return base::FilePath();
+
+  // Since component extension resources are included in
+  // component_extension_resources.pak file in |chrome_resources_path|,
+  // calculate the extension |request_relative_path| against
+  // |chrome_resources_path|.
+  if (!chrome_resources_path.IsParent(extension_resources_path))
+    return base::FilePath();
+
+  const base::FilePath request_relative_path =
+      extensions::file_util::ExtensionURLToRelativeFilePath(request.url);
+  if (!ExtensionsBrowserClient::Get()
+           ->GetComponentExtensionResourceManager()
+           ->IsComponentExtensionResource(extension_resources_path,
+                                          request_relative_path, resource_id)) {
+    return base::FilePath();
+  }
+  DCHECK_NE(0, *resource_id);
+
+  return request_relative_path;
 }
 
 void ElectronExtensionsBrowserClient::LoadResourceFromResourceBundle(
@@ -138,7 +171,9 @@ void ElectronExtensionsBrowserClient::LoadResourceFromResourceBundle(
     const std::string& content_security_policy,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     bool send_cors_header) {
-  NOTREACHED() << "Load resources from bundles not supported.";
+  extensions::chrome_url_request_util::LoadResourceFromResourceBundle(
+      request, std::move(loader), resource_relative_path, resource_id,
+      content_security_policy, std::move(client), send_cors_header);
 }
 
 namespace {
@@ -160,8 +195,7 @@ bool AllowCrossRendererResourceLoad(const GURL& url,
   // If there aren't any explicitly marked web accessible resources, the
   // load should be allowed only if it is by DevTools. A close approximation is
   // checking if the extension contains a DevTools page.
-  if (extension && !extensions::ManifestURL::Get(
-                        extension, extensions::manifest_keys::kDevToolsPage)
+  if (extension && !extensions::chrome_manifest_urls::GetDevToolsPage(extension)
                         .is_empty()) {
     *allowed = true;
     return true;
@@ -255,7 +289,7 @@ ElectronExtensionsBrowserClient::CreateRuntimeAPIDelegate(
 
 const extensions::ComponentExtensionResourceManager*
 ElectronExtensionsBrowserClient::GetComponentExtensionResourceManager() {
-  return NULL;
+  return resource_manager_.get();
 }
 
 void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
