@@ -434,110 +434,128 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('navigation events', () => {
-    let w = null as unknown as BrowserWindow
-    beforeEach(() => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+  for (const sandbox of [false, true]) {
+    describe(`navigation events${sandbox ? ' with sandbox' : ''}`, () => {
+      let w = null as unknown as BrowserWindow
+      beforeEach(() => {
+        w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, sandbox } })
+      })
+      afterEach(async () => {
+        await closeWindow(w)
+        w = null as unknown as BrowserWindow
+      })
+
+      describe('will-navigate event', () => {
+        it('allows the window to be closed from the event listener', (done) => {
+          w.webContents.once('will-navigate', () => {
+            w.close()
+            done()
+          })
+          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'))
+        })
+
+        it('can be prevented', (done) => {
+          let willNavigate = false
+          w.webContents.once('will-navigate', (e) => {
+            willNavigate = true
+            e.preventDefault()
+          })
+          w.webContents.on('did-stop-loading', () => {
+            if (willNavigate) {
+              // i.e. it shouldn't have had '?navigated' appended to it.
+              expect(w.webContents.getURL().endsWith('will-navigate.html')).to.be.true()
+              done()
+            }
+          })
+          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'))
+        })
+      })
+
+      describe('will-redirect event', () => {
+        let server = null as unknown as http.Server
+        let url = null as unknown as string
+        before((done) => {
+          server = http.createServer((req, res) => {
+            if (req.url === '/302') {
+              res.setHeader('Location', '/200')
+              res.statusCode = 302
+              res.end()
+            } else if (req.url === '/navigate-302') {
+              res.end(`<html><body><script>window.location='${url}/302'</script></body></html>`)
+            } else {
+              res.end()
+            }
+          })
+          server.listen(0, '127.0.0.1', () => {
+            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+            done()
+          })
+        })
+
+        after(() => {
+          server.close()
+        })
+        it('is emitted on redirects', (done) => {
+          w.webContents.on('will-redirect', () => {
+            done()
+          })
+          w.loadURL(`${url}/302`)
+        })
+
+        it('is emitted after will-navigate on redirects', (done) => {
+          let navigateCalled = false
+          w.webContents.on('will-navigate', () => {
+            navigateCalled = true
+          })
+          w.webContents.on('will-redirect', () => {
+            expect(navigateCalled).to.equal(true, 'should have called will-navigate first')
+            done()
+          })
+          w.loadURL(`${url}/navigate-302`)
+        })
+
+        it('is emitted before did-stop-loading on redirects', (done) => {
+          let stopCalled = false
+          w.webContents.on('did-stop-loading', () => {
+            stopCalled = true
+          })
+          w.webContents.on('will-redirect', () => {
+            expect(stopCalled).to.equal(false, 'should not have called did-stop-loading first')
+            done()
+          })
+          w.loadURL(`${url}/302`)
+        })
+
+        it('allows the window to be closed from the event listener', (done) => {
+          w.webContents.once('will-redirect', () => {
+            w.close()
+            done()
+          })
+          w.loadURL(`${url}/302`)
+        })
+
+        it('can be prevented', (done) => {
+          w.webContents.once('will-redirect', (event) => {
+            event.preventDefault()
+          })
+          w.webContents.on('will-navigate', (e, u) => {
+            expect(u).to.equal(`${url}/302`)
+          })
+          w.webContents.on('did-stop-loading', () => {
+            expect(w.webContents.getURL()).to.equal(
+              `${url}/navigate-302`,
+              'url should not have changed after navigation event'
+            )
+            done()
+          })
+          w.webContents.on('will-redirect', (e, u) => {
+            expect(u).to.equal(`${url}/200`)
+          })
+          w.loadURL(`${url}/navigate-302`)
+        })
+      })
     })
-    afterEach(async () => {
-      await closeWindow(w)
-      w = null as unknown as BrowserWindow
-    })
-
-    describe('will-navigate event', () => {
-      it('allows the window to be closed from the event listener', (done) => {
-        w.webContents.once('will-navigate', () => {
-          w.close()
-          done()
-        })
-        w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'))
-      })
-    })
-
-    describe('will-redirect event', () => {
-      let server = null as unknown as http.Server
-      let url = null as unknown as string
-      before((done) => {
-        server = http.createServer((req, res) => {
-          if (req.url === '/302') {
-            res.setHeader('Location', '/200')
-            res.statusCode = 302
-            res.end()
-          } else if (req.url === '/navigate-302') {
-            res.end(`<html><body><script>window.location='${url}/302'</script></body></html>`)
-          } else {
-            res.end()
-          }
-        })
-        server.listen(0, '127.0.0.1', () => {
-          url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
-          done()
-        })
-      })
-
-      after(() => {
-        server.close()
-      })
-      it('is emitted on redirects', (done) => {
-        w.webContents.on('will-redirect', () => {
-          done()
-        })
-        w.loadURL(`${url}/302`)
-      })
-
-      it('is emitted after will-navigate on redirects', (done) => {
-        let navigateCalled = false
-        w.webContents.on('will-navigate', () => {
-          navigateCalled = true
-        })
-        w.webContents.on('will-redirect', () => {
-          expect(navigateCalled).to.equal(true, 'should have called will-navigate first')
-          done()
-        })
-        w.loadURL(`${url}/navigate-302`)
-      })
-
-      it('is emitted before did-stop-loading on redirects', (done) => {
-        let stopCalled = false
-        w.webContents.on('did-stop-loading', () => {
-          stopCalled = true
-        })
-        w.webContents.on('will-redirect', () => {
-          expect(stopCalled).to.equal(false, 'should not have called did-stop-loading first')
-          done()
-        })
-        w.loadURL(`${url}/302`)
-      })
-
-      it('allows the window to be closed from the event listener', (done) => {
-        w.webContents.once('will-redirect', () => {
-          w.close()
-          done()
-        })
-        w.loadURL(`${url}/302`)
-      })
-
-      it('can be prevented', (done) => {
-        w.webContents.once('will-redirect', (event) => {
-          event.preventDefault()
-        })
-        w.webContents.on('will-navigate', (e, u) => {
-          expect(u).to.equal(`${url}/302`)
-        })
-        w.webContents.on('did-stop-loading', () => {
-          expect(w.webContents.getURL()).to.equal(
-            `${url}/navigate-302`,
-            'url should not have changed after navigation event'
-          )
-          done()
-        })
-        w.webContents.on('will-redirect', (e, u) => {
-          expect(u).to.equal(`${url}/200`)
-        })
-        w.loadURL(`${url}/navigate-302`)
-      })
-    })
-  })
+  }
 
   describe('focus and visibility', () => {
     let w = null as unknown as BrowserWindow
