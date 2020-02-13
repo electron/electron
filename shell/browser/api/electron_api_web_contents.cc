@@ -1785,18 +1785,21 @@ void WebContents::Print(mate::Arguments* args) {
     settings.SetIntKey(printing::kSettingMarginsType, margin_type);
 
     if (margin_type == printing::CUSTOM_MARGINS) {
+      base::Value custom_margins(base::Value::Type::DICTIONARY);
       int top = 0;
       margins.Get("top", &top);
-      settings.SetIntKey(printing::kSettingMarginTop, top);
+      custom_margins.SetIntKey(printing::kSettingMarginTop, top);
       int bottom = 0;
       margins.Get("bottom", &bottom);
-      settings.SetIntKey(printing::kSettingMarginBottom, bottom);
+      custom_margins.SetIntKey(printing::kSettingMarginBottom, bottom);
       int left = 0;
       margins.Get("left", &left);
-      settings.SetIntKey(printing::kSettingMarginLeft, left);
+      custom_margins.SetIntKey(printing::kSettingMarginLeft, left);
       int right = 0;
       margins.Get("right", &right);
-      settings.SetIntKey(printing::kSettingMarginRight, right);
+      custom_margins.SetIntKey(printing::kSettingMarginRight, right);
+      settings.SetPath(printing::kSettingMarginsCustom,
+                       std::move(custom_margins));
     }
   } else {
     settings.SetIntKey(printing::kSettingMarginsType,
