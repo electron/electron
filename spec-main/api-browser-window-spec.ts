@@ -446,6 +446,20 @@ describe('BrowserWindow module', () => {
       })
 
       describe('will-navigate event', () => {
+        let server = null as unknown as http.Server
+        let url = null as unknown as string
+        before((done) => {
+          server = http.createServer((req, res) => { res.end('') })
+          server.listen(0, '127.0.0.1', () => {
+            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`
+            done()
+          })
+        })
+
+        after(() => {
+          server.close()
+        })
+
         it('allows the window to be closed from the event listener', (done) => {
           w.webContents.once('will-navigate', () => {
             w.close()
@@ -468,6 +482,32 @@ describe('BrowserWindow module', () => {
             }
           })
           w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'))
+        })
+
+        it('is triggered when navigating from file: to http:', async () => {
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`)
+          const navigatedTo = await new Promise(resolve => {
+            w.webContents.once('will-navigate', (e, url) => {
+              e.preventDefault()
+              resolve(url)
+            })
+          })
+          expect(navigatedTo).to.equal(url)
+          expect(w.webContents.getURL()).to.match(/^file:/)
+        })
+
+        it('is triggered when navigating from about:blank to http:', async () => {
+          await w.loadURL('about:blank')
+          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`)
+          const navigatedTo = await new Promise(resolve => {
+            w.webContents.once('will-navigate', (e, url) => {
+              e.preventDefault()
+              resolve(url)
+            })
+          })
+          expect(navigatedTo).to.equal(url)
+          expect(w.webContents.getURL()).to.equal('about:blank')
         })
       })
 
