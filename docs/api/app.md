@@ -124,7 +124,7 @@ Returns:
 
 Emitted when the user wants to open a URL with the application. Your application's
 `Info.plist` file must define the URL scheme within the `CFBundleURLTypes` key, and
-set `NSPrincipalClass` to `AtomApplication`.
+set `NSPrincipalClass` to `ElectronApplication`.
 
 You should call `event.preventDefault()` if you want to handle this event.
 
