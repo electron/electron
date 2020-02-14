@@ -66,7 +66,7 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   bool use_context_isolation = renderer_client_->isolated_world();
-  // This logic matches the EXPLAINED logic in atom_renderer_client.cc
+  // This logic matches the EXPLAINED logic in electron_renderer_client.cc
   // to avoid explaining it twice go check that implementation in
   // DidCreateScriptContext();
   bool is_main_world = IsMainWorld(world_id);
