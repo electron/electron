@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Dill <andy.dill@gmail.com>
+Date: Thu, 13 Feb 2020 20:06:42 -0800
+Subject: fix: explicitly specify `typeRoots`
+
+fix: explicitly specify `typeRoots` to avoid crawling parent directories
+
+Upstream CL: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/2070561
+
+diff --git a/third_party/typescript/ts_library.py b/third_party/typescript/ts_library.py
+index 10f07e63..2ac797d3 100644
+--- a/third_party/typescript/ts_library.py
++++ b/third_party/typescript/ts_library.py
+@@ -41,6 +41,7 @@ def main():
+     parser.add_argument('-deps', '--deps', nargs='*', help='List of Ninja build dependencies')
+     parser.add_argument('-dir', '--front_end_directory', required=True, help='Folder that contains source files')
+     parser.add_argument('-b', '--tsconfig_output_location', required=True)
++    parser.add_argument('-r', '--tsconfig_type_root', required=True)
+     opts = parser.parse_args()
+     with open(ROOT_TS_CONFIG_LOCATION) as root_tsconfig:
+         try:
+@@ -53,6 +54,7 @@ def main():
+     tsconfig['files'] = [path.join(os.getcwd(), src) for src in opts.sources] + [path.abspath(GLOBAL_DEFS)]
+     if (opts.deps is not None):
+         tsconfig['references'] = [{'path': src} for src in opts.deps]
++    tsconfig['compilerOptions']['typeRoots'] = [path.abspath(opts.tsconfig_type_root)]
+     tsconfig['compilerOptions']['declaration'] = True
+     tsconfig['compilerOptions']['composite'] = True
+     tsconfig['compilerOptions']['rootDir'] = path.join(os.getcwd(), opts.front_end_directory)
+diff --git a/third_party/typescript/typescript.gni b/third_party/typescript/typescript.gni
+index 8a44f0e8..cc6fd295 100644
+--- a/third_party/typescript/typescript.gni
++++ b/third_party/typescript/typescript.gni
+@@ -40,6 +40,11 @@ template("ts_library") {
+           "/$target_name-tsconfig.json",
+     ]
+
++    args += [
++      "--tsconfig_type_root",
++      rebase_path("//third_party/devtools-frontend/src/node_modules/@types"),
++    ]
++
+     assert(defined(sources), "You must specify TypeScript sources")
+
+     args += [ "--sources" ] + rebase_path(sources, root_build_dir)
