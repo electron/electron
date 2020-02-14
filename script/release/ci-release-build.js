@@ -94,7 +94,7 @@ async function circleCIcall (targetBranch, job, options) {
     }
     const workFlowUrl = `https://circleci.com/workflow-run/${workflowId}`
     if (options.runningPublishWorkflows) {
-      console.log(`CircleCI release workflow request for ${job} successful. Check ${workFlowUrl} for status.`)
+      console.log(`CircleCI release workflow request for ${job} successful.  Check ${workFlowUrl} for status.`)
     } else {
       console.log(`CircleCI release build workflow running at https://circleci.com/workflow-run/${workflowId} for ${job}.`)
       const jobNumber = await getCircleCIJobNumber(workflowId)
