@@ -5,7 +5,7 @@ import * as http from 'http'
 import * as net from 'net'
 import * as fs from 'fs'
 import * as path from 'path'
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, session } from 'electron'
 import { emittedOnce } from './events-helpers'
 import { closeWindow, closeAllWindows } from './window-helpers'
 import { ifdescribe } from './spec-helpers'
@@ -202,6 +202,14 @@ describe('app module', () => {
     })
   })
 
+  ifdescribe(process.platform === 'darwin')('app.setActivationPolicy', () => {
+    it('throws an error on invalid application policies', () => {
+      expect(() => {
+        app.setActivationPolicy('terrible' as any)
+      }).to.throw(/Invalid activation policy: must be one of 'regular', 'accessory', or 'prohibited'/)
+    })
+  })
+
   describe('app.requestSingleInstanceLock', () => {
     it('prevents the second launch of app', function (done) {
       this.timeout(120000)
@@ -302,6 +310,15 @@ describe('app module', () => {
     it('sets the current activity', () => {
       app.setUserActivity('com.electron.testActivity', { testData: '123' })
       expect(app.getCurrentActivityType()).to.equal('com.electron.testActivity')
+    })
+  })
+
+  describe('certificate-error event', () => {
+    afterEach(closeAllWindows)
+    it('is emitted when visiting a server with a self-signed cert', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL(secureUrl)
+      await emittedOnce(app, 'certificate-error')
     })
   })
 
@@ -440,7 +457,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
           }
         })
         await w.loadURL('about:blank')
@@ -457,7 +475,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
           }
         })
         await w.loadURL('about:blank')
@@ -474,7 +493,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
           }
         })
         await w.loadURL('about:blank')
@@ -491,7 +511,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
           }
         })
         await w.loadURL('about:blank')
@@ -507,7 +528,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
           }
         })
         await w.loadURL('about:blank')
@@ -652,6 +674,7 @@ describe('app module', () => {
       if (process.platform === 'linux') {
         this.skip()
       }
+      session.fromPartition('empty-certificate').setCertificateVerifyProc((req, cb) => { cb(0) })
     })
 
     beforeEach(() => {
@@ -665,6 +688,8 @@ describe('app module', () => {
     })
 
     afterEach(() => closeWindow(w).then(() => { w = null as any }))
+
+    after(() => session.fromPartition('empty-certificate').setCertificateVerifyProc(null))
 
     it('can respond with empty certificate list', async () => {
       app.once('select-client-certificate', function (event, webContents, url, list, callback) {

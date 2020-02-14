@@ -1010,14 +1010,35 @@ describe('<webview> tag', function () {
   })
 
   describe('<webview>.printToPDF()', () => {
-    before(function () {
+    before(() => {
       if (!features.isPrintingEnabled()) {
         this.skip()
       }
     })
 
-    // TODO(deepak1556): Fix and enable after upgrade.
-    it.skip('can print to PDF', async () => {
+    it('rejects on incorrectly typed parameters', async () => {
+      const badTypes = {
+        marginsType: 'terrible',
+        scaleFactor: 'not-a-number',
+        landscape: [],
+        pageRanges: { 'oops': 'im-not-the-right-key' },
+        headerFooter: '123',
+        printSelectionOnly: 1,
+        printBackground: 2,
+        pageSize: 'IAmAPageSize'
+      }
+
+      // These will hard crash in Chromium unless we type-check
+      for (const [key, value] of Object.entries(badTypes)) {
+        const param = { [key]: value }
+
+        const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E'
+        await loadWebView(webview, { src })
+        await expect(webview.printToPDF(param)).to.eventually.be.rejected()
+      }
+    })
+
+    it('can print to PDF', async () => {
       const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E'
       await loadWebView(webview, { src })
 

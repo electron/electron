@@ -41,7 +41,7 @@ app.disableHardwareAcceleration()
 
 let win
 
-app.once('ready', () => {
+app.whenReady().then(() => {
   win = new BrowserWindow({
     webPreferences: {
       offscreen: true

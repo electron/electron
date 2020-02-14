@@ -22,6 +22,7 @@ group("extensions_features") {
   public_deps = [
     ":api_features",
     ":manifest_features",
+    ":permission_features",
 
     # TODO(devlin): It would be nicer to have this dependency hoisted up to
     # //extensions/common (since that's where it's consumed), but there's some
@@ -36,6 +37,7 @@ group("extensions_features") {
 generated_json_strings("generated_api_json_strings") {
   sources = [
     "extension.json",
+    "resources_private.idl",
     "tabs.json",
   ]
 
@@ -50,7 +52,10 @@ generated_json_strings("generated_api_json_strings") {
 }
 
 generated_types("generated_api_types") {
-  sources = [ "tabs.json" ]
+  sources = [
+    "resources_private.idl",
+    "tabs.json",
+  ]
   configs = [ "//build/config:precompiled_headers" ]
   schema_include_rules = "extensions/common/api:extensions::api::%(namespace)s"
 
@@ -71,5 +76,12 @@ json_features("api_features") {
   feature_type = "APIFeature"
   method_name = "AddElectronAPIFeatures"
   sources = [ "_api_features.json" ]
+  visibility = [ ":extensions_features" ]
+}
+
+json_features("permission_features") {
+  feature_type = "PermissionFeature"
+  method_name = "AddElectronPermissionFeatures"
+  sources = [ "_permission_features.json" ]
   visibility = [ ":extensions_features" ]
 }

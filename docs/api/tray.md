@@ -10,7 +10,7 @@ Process: [Main](../glossary.md#main-process)
 const { app, Menu, Tray } = require('electron')
 
 let tray = null
-app.on('ready', () => {
+app.whenReady().then(() => {
   tray = new Tray('/path/to/my/icon')
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Item1', type: 'radio' },
@@ -38,7 +38,7 @@ __Platform limitations:__
 const { app, Menu, Tray } = require('electron')
 
 let appIcon = null
-app.on('ready', () => {
+app.whenReady().then(() => {
   appIcon = new Tray('/path/to/my/icon')
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Item1', type: 'radio' },

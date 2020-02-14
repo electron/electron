@@ -5,6 +5,7 @@
           "es6",
           "dom"
       ],
+      "typeRoots" : ["../../node_modules/@types"],
       "noImplicitAny": true,
       "noImplicitThis": true,
       "strictNullChecks": false,

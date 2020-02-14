@@ -9,7 +9,7 @@ import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDe
 
 import { emittedOnce } from './events-helpers'
 import { ifit, ifdescribe } from './spec-helpers'
-import { closeWindow } from './window-helpers'
+import { closeWindow, closeAllWindows } from './window-helpers'
 
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
@@ -37,12 +37,6 @@ const expectBoundsEqual = (actual: any, expected: any) => {
   }
 }
 
-const closeAllWindows = async () => {
-  for (const w of BrowserWindow.getAllWindows()) {
-    await closeWindow(w, { assertNotWindows: false })
-  }
-}
-
 describe('BrowserWindow module', () => {
   describe('BrowserWindow constructor', () => {
     it('allows passing void 0 as the webContents', async () => {
@@ -55,6 +49,28 @@ describe('BrowserWindow module', () => {
         } as any)
         w.destroy()
       }).not.to.throw()
+    })
+  })
+
+  describe('garbage collection', () => {
+    const v8Util = process.electronBinding('v8_util')
+    afterEach(closeAllWindows)
+
+    it('window does not get garbage collected when opened', (done) => {
+      const w = new BrowserWindow({ show: false })
+      // Keep a weak reference to the window.
+      const map = v8Util.createIDWeakMap<Electron.BrowserWindow>()
+      map.set(0, w)
+      setTimeout(() => {
+        // Do garbage collection, since |w| is not referenced in this closure
+        // it would be gone after next call if there is no other reference.
+        v8Util.requestGarbageCollectionForTesting()
+
+        setTimeout(() => {
+          expect(map.has(0)).to.equal(true)
+          done()
+        })
+      })
     })
   })
 
@@ -1628,6 +1644,7 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
+            enableRemoteModule: true,
             preload
           }
         })
@@ -1749,7 +1766,7 @@ describe('BrowserWindow module', () => {
         describe(description, () => {
           const preload = path.join(__dirname, 'fixtures', 'module', 'preload-remote.js')
 
-          it('enables the remote module by default', async () => {
+          it('disables the remote module by default', async () => {
             const w = new BrowserWindow({
               show: false,
               webPreferences: {
@@ -1760,7 +1777,7 @@ describe('BrowserWindow module', () => {
             const p = emittedOnce(ipcMain, 'remote')
             w.loadFile(path.join(fixtures, 'api', 'blank.html'))
             const [, remote] = await p
-            expect(remote).to.equal('object')
+            expect(remote).to.equal('undefined')
           })
 
           it('disables the remote module when false', async () => {
@@ -1776,6 +1793,21 @@ describe('BrowserWindow module', () => {
             w.loadFile(path.join(fixtures, 'api', 'blank.html'))
             const [, remote] = await p
             expect(remote).to.equal('undefined')
+          })
+
+          it('enables the remote module when true', async () => {
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: {
+                preload,
+                sandbox,
+                enableRemoteModule: true
+              }
+            })
+            const p = emittedOnce(ipcMain, 'remote')
+            w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+            const [, remote] = await p
+            expect(remote).to.equal('object')
           })
         })
       }
@@ -2093,7 +2125,8 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             preload,
-            sandbox: true
+            sandbox: true,
+            enableRemoteModule: true
           }
         })
         w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'reload-remote' })
@@ -2125,7 +2158,8 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             preload,
-            sandbox: true
+            sandbox: true,
+            enableRemoteModule: true
           }
         })
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
@@ -3575,201 +3609,6 @@ describe('BrowserWindow module', () => {
       // https://github.com/electron/node-is-valid-window
       const isValidWindow = require('is-valid-window')
       expect(isValidWindow(w.getNativeWindowHandle())).to.be.true('is valid window')
-    })
-  })
-
-  describe('extensions and dev tools extensions', () => {
-    let showPanelTimeoutId: NodeJS.Timeout | null = null
-
-    const showLastDevToolsPanel = (w: BrowserWindow) => {
-      w.webContents.once('devtools-opened', () => {
-        const show = () => {
-          if (w == null || w.isDestroyed()) return
-          const { devToolsWebContents } = w as unknown as { devToolsWebContents: WebContents | undefined }
-          if (devToolsWebContents == null || devToolsWebContents.isDestroyed()) {
-            return
-          }
-
-          const showLastPanel = () => {
-            // this is executed in the devtools context, where UI is a global
-            const { UI } = (window as any)
-            const lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id
-            UI.inspectorView.showPanel(lastPanelId)
-          }
-          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false).then(() => {
-            showPanelTimeoutId = setTimeout(show, 100)
-          })
-        }
-        showPanelTimeoutId = setTimeout(show, 100)
-      })
-    }
-
-    afterEach(() => {
-      if (showPanelTimeoutId != null) {
-        clearTimeout(showPanelTimeoutId)
-        showPanelTimeoutId = null
-      }
-    })
-
-    describe('BrowserWindow.addDevToolsExtension', () => {
-      describe('for invalid extensions', () => {
-        it('throws errors for missing manifest.json files', () => {
-          const nonexistentExtensionPath = path.join(__dirname, 'does-not-exist')
-          expect(() => {
-            BrowserWindow.addDevToolsExtension(nonexistentExtensionPath)
-          }).to.throw(/ENOENT: no such file or directory/)
-        })
-
-        it('throws errors for invalid manifest.json files', () => {
-          const badManifestExtensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'bad-manifest')
-          expect(() => {
-            BrowserWindow.addDevToolsExtension(badManifestExtensionPath)
-          }).to.throw(/Unexpected token }/)
-        })
-      })
-
-      describe('for a valid extension', () => {
-        const extensionName = 'foo'
-
-        before(() => {
-          const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
-          BrowserWindow.addDevToolsExtension(extensionPath)
-          expect(BrowserWindow.getDevToolsExtensions()).to.have.property(extensionName)
-        })
-
-        after(() => {
-          BrowserWindow.removeDevToolsExtension('foo')
-          expect(BrowserWindow.getDevToolsExtensions()).to.not.have.property(extensionName)
-        })
-
-        describe('when the devtools is docked', () => {
-          let message: any
-          let w: BrowserWindow
-          before(async () => {
-            w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-            const p = new Promise(resolve => ipcMain.once('answer', (event, message) => {
-              resolve(message)
-            }))
-            showLastDevToolsPanel(w)
-            w.loadURL('about:blank')
-            w.webContents.openDevTools({ mode: 'bottom' })
-            message = await p
-          })
-          after(closeAllWindows)
-
-          describe('created extension info', function () {
-            it('has proper "runtimeId"', async function () {
-              expect(message).to.have.ownProperty('runtimeId')
-              expect(message.runtimeId).to.equal(extensionName)
-            })
-            it('has "tabId" matching webContents id', function () {
-              expect(message).to.have.ownProperty('tabId')
-              expect(message.tabId).to.equal(w.webContents.id)
-            })
-            it('has "i18nString" with proper contents', function () {
-              expect(message).to.have.ownProperty('i18nString')
-              expect(message.i18nString).to.equal('foo - bar (baz)')
-            })
-            it('has "storageItems" with proper contents', function () {
-              expect(message).to.have.ownProperty('storageItems')
-              expect(message.storageItems).to.deep.equal({
-                local: {
-                  set: { hello: 'world', world: 'hello' },
-                  remove: { world: 'hello' },
-                  clear: {}
-                },
-                sync: {
-                  set: { foo: 'bar', bar: 'foo' },
-                  remove: { foo: 'bar' },
-                  clear: {}
-                }
-              })
-            })
-          })
-        })
-
-        describe('when the devtools is undocked', () => {
-          let message: any
-          let w: BrowserWindow
-          before(async () => {
-            w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-            showLastDevToolsPanel(w)
-            w.loadURL('about:blank')
-            w.webContents.openDevTools({ mode: 'undocked' })
-            message = await new Promise(resolve => ipcMain.once('answer', (event, message) => {
-              resolve(message)
-            }))
-          })
-          after(closeAllWindows)
-
-          describe('created extension info', function () {
-            it('has proper "runtimeId"', function () {
-              expect(message).to.have.ownProperty('runtimeId')
-              expect(message.runtimeId).to.equal(extensionName)
-            })
-            it('has "tabId" matching webContents id', function () {
-              expect(message).to.have.ownProperty('tabId')
-              expect(message.tabId).to.equal(w.webContents.id)
-            })
-          })
-        })
-      })
-    })
-
-    it('works when used with partitions', async () => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          partition: 'temp'
-        }
-      })
-
-      const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
-      BrowserWindow.addDevToolsExtension(extensionPath)
-      try {
-        showLastDevToolsPanel(w)
-
-        const p: Promise<any> = new Promise(resolve => ipcMain.once('answer', function (event, message) {
-          resolve(message)
-        }))
-
-        w.loadURL('about:blank')
-        w.webContents.openDevTools({ mode: 'bottom' })
-        const message = await p
-        expect(message.runtimeId).to.equal('foo')
-      } finally {
-        BrowserWindow.removeDevToolsExtension('foo')
-        await closeAllWindows()
-      }
-    })
-
-    it('serializes the registered extensions on quit', () => {
-      const extensionName = 'foo'
-      const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', extensionName)
-      const serializedPath = path.join(app.getPath('userData'), 'DevTools Extensions')
-
-      BrowserWindow.addDevToolsExtension(extensionPath)
-      app.emit('will-quit')
-      expect(JSON.parse(fs.readFileSync(serializedPath, 'utf8'))).to.deep.equal([extensionPath])
-
-      BrowserWindow.removeDevToolsExtension(extensionName)
-      app.emit('will-quit')
-      expect(fs.existsSync(serializedPath)).to.be.false('file exists')
-    })
-
-    describe('BrowserWindow.addExtension', () => {
-      it('throws errors for missing manifest.json files', () => {
-        expect(() => {
-          BrowserWindow.addExtension(path.join(__dirname, 'does-not-exist'))
-        }).to.throw('ENOENT: no such file or directory')
-      })
-
-      it('throws errors for invalid manifest.json files', () => {
-        expect(() => {
-          BrowserWindow.addExtension(path.join(__dirname, 'fixtures', 'devtools-extensions', 'bad-manifest'))
-        }).to.throw('Unexpected token }')
-      })
     })
   })
 

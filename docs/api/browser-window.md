@@ -677,7 +677,7 @@ Returns `BrowserWindow | null` - The window that owns the given `browserView`. I
 
 Returns `BrowserWindow` - The window with the given `id`.
 
-#### `BrowserWindow.addExtension(path)`
+#### `BrowserWindow.addExtension(path)` _Deprecated_
 
 * `path` String
 
@@ -688,7 +688,10 @@ The method will also not return if the extension's manifest is missing or incomp
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `BrowserWindow.removeExtension(name)`
+**Note:** This method is deprecated. Instead, use
+[`ses.loadExtension(path)`](session.md#sesloadextensionpath).
+
+#### `BrowserWindow.removeExtension(name)` _Deprecated_
 
 * `name` String
 
@@ -697,7 +700,10 @@ Remove a Chrome extension by name.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `BrowserWindow.getExtensions()`
+**Note:** This method is deprecated. Instead, use
+[`ses.removeExtension(extension_id)`](session.md#sesremoveextensionextensionid).
+
+#### `BrowserWindow.getExtensions()` _Deprecated_
 
 Returns `Record<String, ExtensionInfo>` - The keys are the extension names and each value is
 an Object containing `name` and `version` properties.
@@ -705,7 +711,10 @@ an Object containing `name` and `version` properties.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `BrowserWindow.addDevToolsExtension(path)`
+**Note:** This method is deprecated. Instead, use
+[`ses.getAllExtensions()`](session.md#sesgetallextensions).
+
+#### `BrowserWindow.addDevToolsExtension(path)` _Deprecated_
 
 * `path` String
 
@@ -721,7 +730,10 @@ The method will also not return if the extension's manifest is missing or incomp
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `BrowserWindow.removeDevToolsExtension(name)`
+**Note:** This method is deprecated. Instead, use
+[`ses.loadExtension(path)`](session.md#sesloadextensionpath).
+
+#### `BrowserWindow.removeDevToolsExtension(name)` _Deprecated_
 
 * `name` String
 
@@ -730,7 +742,10 @@ Remove a DevTools extension by name.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `BrowserWindow.getDevToolsExtensions()`
+**Note:** This method is deprecated. Instead, use
+[`ses.removeExtension(extension_id)`](session.md#sesremoveextensionextensionid).
+
+#### `BrowserWindow.getDevToolsExtensions()` _Deprecated_
 
 Returns `Record<string, ExtensionInfo>` - The keys are the extension names and each value is
 an Object containing `name` and `version` properties.
@@ -746,6 +761,9 @@ console.log(installed)
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
+
+**Note:** This method is deprecated. Instead, use
+[`ses.getAllExtensions()`](session.md#sesgetallextensions).
 
 ### Instance Properties
 

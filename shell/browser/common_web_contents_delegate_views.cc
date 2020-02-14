@@ -6,7 +6,7 @@
 
 #include "base/strings/string_util.h"
 #include "content/public/browser/native_web_keyboard_event.h"
-#include "shell/browser/api/atom_api_web_contents_view.h"
+#include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "ui/events/keycodes/keyboard_codes.h"

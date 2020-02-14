@@ -191,12 +191,12 @@ const app = remote.app
 
 let mainWindow: Electron.BrowserWindow = null
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   const size = screen.getPrimaryDisplay().workAreaSize
   mainWindow = new BrowserWindow({ width: size.width, height: size.height })
 })
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   const displays = screen.getAllDisplays()
   let externalDisplay: any = null
   for (const i in displays) {

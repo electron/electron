@@ -14,13 +14,14 @@
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
 // Retrieves handle to the in memory pref store that gets
 // initialized with the pref service.
 class PrefStoreDelegate : public PrefValueStore::Delegate {
  public:
-  explicit PrefStoreDelegate(base::WeakPtr<AtomBrowserContext> browser_context);
+  explicit PrefStoreDelegate(
+      base::WeakPtr<ElectronBrowserContext> browser_context);
   ~PrefStoreDelegate() override;
 
   void Init(PrefStore* managed_prefs,
@@ -42,7 +43,7 @@ class PrefStoreDelegate : public PrefValueStore::Delegate {
   void UpdateCommandLinePrefStore(PrefStore* command_line_prefs) override;
 
  private:
-  base::WeakPtr<AtomBrowserContext> browser_context_;
+  base::WeakPtr<ElectronBrowserContext> browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(PrefStoreDelegate);
 };

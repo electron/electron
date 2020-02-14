@@ -10,7 +10,7 @@
 
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
-#include "shell/renderer/atom_render_frame_observer.h"
+#include "shell/renderer/electron_render_frame_observer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
@@ -49,6 +49,10 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
   void CacheProxiedObject(v8::Local<v8::Value> from,
                           v8::Local<v8::Value> proxy_value);
   v8::MaybeLocal<v8::Value> GetCachedProxiedObject(v8::Local<v8::Value> from);
+
+  base::WeakPtr<RenderFramePersistenceStore> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
  private:
   // func_id ==> { function, owning_context }

@@ -34,10 +34,11 @@ Returns:
 
 * `launchInfo` unknown _macOS_
 
-Emitted when Electron has finished initializing. On macOS, `launchInfo` holds
-the `userInfo` of the `NSUserNotification` that was used to open the application,
-if it was launched from Notification Center. You can call `app.isReady()` to
-check if this event has already fired.
+Emitted once, when Electron has finished initializing. On macOS, `launchInfo`
+holds the `userInfo` of the `NSUserNotification` that was used to open the
+application, if it was launched from Notification Center. You can also call
+`app.isReady()` to check if this event has already fired and `app.whenReady()`
+to get a Promise that is fulfilled when Electron is initialized.
 
 ### Event: 'window-all-closed'
 
@@ -545,6 +546,7 @@ app.exit(0)
 ### `app.isReady()`
 
 Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
+See also `app.whenReady()`.
 
 ### `app.whenReady()`
 
@@ -937,7 +939,7 @@ if (!gotTheLock) {
   })
 
   // Create myWindow, load the rest of the app, etc...
-  app.on('ready', () => {
+  app.whenReady().then(() => {
   })
 }
 ```
@@ -993,6 +995,17 @@ Updates the current activity if its type matches `type`, merging the entries fro
 * `id` String
 
 Changes the [Application User Model ID][app-user-model-id] to `id`.
+
+### `app.setActivationPolicy(policy)` _macOS_
+
+* `policy` String - Can be 'regular', 'accessory', or 'prohibited'.
+
+Sets the activation policy for a given app.
+
+Activation policy types:
+* 'regular' - The application is an ordinary app that appears in the Dock and may have a user interface.
+* 'accessory' - The application doesn’t appear in the Dock and doesn’t have a menu bar, but it may be activated programmatically or by clicking on one of its windows.
+* 'prohibited' - The application doesn’t appear in the Dock and may not create windows or be activated.
 
 ### `app.importCertificate(options, callback)` _Linux_
 

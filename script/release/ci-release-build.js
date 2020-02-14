@@ -23,6 +23,11 @@ const circleCIJobs = [
   'osx-publish'
 ]
 
+const circleCIPublishWorkflows = [
+  'linux-publish',
+  'macos-publish'
+]
+
 const vstsArmJobs = [
   'electron-arm-testing',
   'electron-arm64-testing',
@@ -87,13 +92,18 @@ async function circleCIcall (targetBranch, job, options) {
     if (workflowId === -1) {
       return
     }
-    console.log(`CircleCI release build workflow running at https://circleci.com/workflow-run/${workflowId} for ${job}.`)
-    const jobNumber = await getCircleCIJobNumber(workflowId)
-    if (jobNumber === -1) {
-      return
+    const workFlowUrl = `https://circleci.com/workflow-run/${workflowId}`
+    if (options.runningPublishWorkflows) {
+      console.log(`CircleCI release workflow request for ${job} successful.  Check ${workFlowUrl} for status.`)
+    } else {
+      console.log(`CircleCI release build workflow running at https://circleci.com/workflow-run/${workflowId} for ${job}.`)
+      const jobNumber = await getCircleCIJobNumber(workflowId)
+      if (jobNumber === -1) {
+        return
+      }
+      const jobUrl = `https://circleci.com/gh/electron/electron/${jobNumber}`
+      console.log(`CircleCI release build request for ${job} successful.  Check ${jobUrl} for status.`)
     }
-    const jobUrl = `https://circleci.com/gh/electron/electron/${jobNumber}`
-    console.log(`CircleCI release build request for ${job} successful.  Check ${jobUrl} for status.`)
   } catch (err) {
     console.log('Error calling CircleCI: ', err)
   }
@@ -232,7 +242,8 @@ function buildCircleCI (targetBranch, options) {
     assert(circleCIJobs.includes(options.job), `Unknown CircleCI job name: ${options.job}. Valid values are: ${circleCIJobs}.`)
     circleCIcall(targetBranch, options.job, options)
   } else {
-    circleCIJobs.forEach((job) => circleCIcall(targetBranch, job, options))
+    options.runningPublishWorkflows = true
+    circleCIPublishWorkflows.forEach((job) => circleCIcall(targetBranch, job, options))
   }
 }
 

@@ -18,8 +18,10 @@ require('@electron/internal/common/init')
 if (process.platform === 'win32') {
   // Redirect node's console to use our own implementations, since node can not
   // handle console output when running as GUI program.
-  const consoleLog = (format: any, ...args: any[]) => {
-    return process.log(util.format(format, ...args) + '\n')
+  const consoleLog = (...args: any[]) => {
+    // @ts-ignore this typing is incorrect; 'format' is an optional parameter
+    // See https://nodejs.org/api/util.html#util_util_format_format_args
+    return process.log(util.format(...args) + '\n')
   }
   const streamWrite: NodeJS.WritableStream['write'] = function (chunk: Buffer | string, encoding?: any, callback?: Function) {
     if (Buffer.isBuffer(chunk)) {
@@ -204,7 +206,7 @@ const { setDefaultApplicationMenu } = require('@electron/internal/browser/defaul
 // Note that the task must be added before loading any app, so we can make sure
 // the call is maded before any user window is created, otherwise the default
 // menu may show even when user explicitly hides the menu.
-app.once('ready', setDefaultApplicationMenu)
+app.whenReady().then(setDefaultApplicationMenu)
 
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.

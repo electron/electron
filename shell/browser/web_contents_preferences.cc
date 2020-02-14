@@ -327,7 +327,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
   // Whether to enable the remote module
-  if (IsEnabled(options::kEnableRemoteModule, true))
+  if (IsEnabled(options::kEnableRemoteModule, false))
     command_line->AppendSwitch(switches::kEnableRemoteModule);
 #endif
 

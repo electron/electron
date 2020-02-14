@@ -27,34 +27,13 @@ void NodeDebugger::Start() {
   if (inspector == nullptr)
     return;
 
-  std::vector<std::string> args;
-  for (auto& arg : base::CommandLine::ForCurrentProcess()->argv()) {
-#if defined(OS_WIN)
-    args.push_back(base::UTF16ToUTF8(arg));
-#else
-    args.push_back(arg);
-#endif
-  }
-
-  node::DebugOptions options;
-  std::vector<std::string> exec_args;
-  std::vector<std::string> v8_args;
-  std::vector<std::string> errors;
-
-  node::options_parser::Parse(&args, &exec_args, &v8_args, &options,
-                              node::options_parser::kDisallowedInEnvironment,
-                              &errors);
-
-  if (!errors.empty()) {
-    // TODO(jeremy): what's the appropriate behaviour here?
-    LOG(ERROR) << "Error parsing node options: "
-               << base::JoinString(errors, " ");
-  }
-
-  const char* path = "";
-  if (inspector->Start(path, options,
-                       std::make_shared<node::HostPort>(options.host_port),
-                       true /* is_main */))
+  // DebugOptions will already have been set by ProcessGlobalArgs,
+  // so just pull the ones from there to pass to the InspectorAgent
+  const auto debug_options = env_->options()->debug_options();
+  if (inspector->Start(
+          "" /* path */, debug_options,
+          std::make_shared<node::HostPort>(debug_options.host_port),
+          true /* is_main */))
     DCHECK(env_->inspector_agent()->IsListening());
 }
 

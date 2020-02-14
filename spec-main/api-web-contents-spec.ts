@@ -128,9 +128,25 @@ describe('webContents module', () => {
       }).to.throw('webContents.print(): Invalid deviceName provided.')
     })
 
-    it('does not crash', () => {
+    it('throws when an invalid pageSize is passed', () => {
       expect(() => {
-        w.webContents.print({ silent: true })
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print({ pageSize: 'i-am-a-bad-pagesize' }, () => {})
+      }).to.throw('Unsupported pageSize: i-am-a-bad-pagesize')
+    })
+
+    it('does not crash with custom margins', () => {
+      expect(() => {
+        w.webContents.print({
+          silent: true,
+          margins: {
+            marginType: 'custom',
+            top: 1,
+            bottom: 1,
+            left: 1,
+            right: 1
+          }
+        })
       }).to.not.throw()
     })
   })
@@ -814,7 +830,7 @@ describe('webContents module', () => {
     })
 
     it('can persist zoom level across navigation', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } })
       let finalNavigation = false
       ipcMain.on('set-zoom', (e, host) => {
         const zoomLevel = hostZoomMap[host]
@@ -840,7 +856,7 @@ describe('webContents module', () => {
     })
 
     it('can propagate zoom level across same session', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } })
       const w2 = new BrowserWindow({ show: false })
       w2.webContents.on('did-finish-load', () => {
         const zoomLevel1 = w.webContents.zoomLevel

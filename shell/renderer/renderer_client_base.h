@@ -35,7 +35,7 @@ class ExtensionsClient;
 namespace electron {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-class AtomExtensionsRendererClient;
+class ElectronExtensionsRendererClient;
 #endif
 
 class RendererClientBase : public content::ContentRendererClient
@@ -52,8 +52,6 @@ class RendererClientBase : public content::ContentRendererClient
   // service_manager::LocalInterfaceProvider implementation.
   void GetInterface(const std::string& name,
                     mojo::ScopedMessagePipeHandle request_handle) override;
-
-  void BindReceiverOnMainThread(mojo::GenericPendingReceiver receiver) override;
 #endif
 
   virtual void DidCreateScriptContext(v8::Handle<v8::Context> context,
@@ -82,12 +80,17 @@ class RendererClientBase : public content::ContentRendererClient
   bool IsWebViewFrame(v8::Handle<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SpellCheck* GetSpellCheck() { return spellcheck_.get(); }
+#endif
+
  protected:
   void AddRenderBindings(v8::Isolate* isolate,
                          v8::Local<v8::Object> binding_object);
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
+  void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   void RenderFrameCreated(content::RenderFrame*) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
                             const blink::WebPluginParams& params,
@@ -97,6 +100,16 @@ class RendererClientBase : public content::ContentRendererClient
       override;
   bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
+  content::BrowserPluginDelegate* CreateBrowserPluginDelegate(
+      content::RenderFrame* render_frame,
+      const content::WebPluginInfo& info,
+      const std::string& mime_type,
+      const GURL& original_url) override;
+  bool IsPluginHandledExternally(content::RenderFrame* render_frame,
+                                 const blink::WebElement& plugin_element,
+                                 const GURL& original_url,
+                                 const std::string& mime_type) override;
+  bool IsOriginIsolatedPepperPlugin(const base::FilePath& plugin_path) override;
 
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
@@ -112,7 +125,7 @@ class RendererClientBase : public content::ContentRendererClient
  private:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<extensions::ExtensionsClient> extensions_client_;
-  std::unique_ptr<AtomExtensionsRendererClient> extensions_renderer_client_;
+  std::unique_ptr<ElectronExtensionsRendererClient> extensions_renderer_client_;
 #endif
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
@@ -125,7 +138,6 @@ class RendererClientBase : public content::ContentRendererClient
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   std::unique_ptr<SpellCheck> spellcheck_;
-  service_manager::BinderRegistry registry_;
 #endif
 };
 

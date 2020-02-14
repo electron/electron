@@ -6,7 +6,7 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index d82aff3ef7f2606cc996501bfbd5222a354c8639..56ab9fca845a0c84579b4a874c8007edebbb12fb 100644
+index 95724e75d7c9d1582bb820321c1c47774e49dd7d..7d8c0f47e41e2bcf4ef29aec1c0873098e40d8ee 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -618,6 +618,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
@@ -24,7 +24,7 @@ index d82aff3ef7f2606cc996501bfbd5222a354c8639..56ab9fca845a0c84579b4a874c8007ed
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index a662f8bac41b01a9d8e56b8aa1b9f5336bfe265c..04c7913dc8c7b987bef4208fa417f8f79fe33977 100644
+index 226e7c96a2b7539890b297c05d3c963c5d4d193f..8a75e5253dd8ee66fc05232fccb3502b320ac353 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -23,9 +23,11 @@
@@ -33,7 +33,7 @@ index a662f8bac41b01a9d8e56b8aa1b9f5336bfe265c..04c7913dc8c7b987bef4208fa417f8f7
  #include "content/browser/renderer_host/event_with_latency_info.h"
 +#include "content/browser/web_contents/web_contents_view.h"
  #include "content/common/content_export.h"
- #include "content/common/tab_switch_time_recorder.h"
+ #include "content/common/content_to_visible_time_reporter.h"
  #include "content/public/browser/render_frame_metadata_provider.h"
 +#include "content/public/browser/render_widget_host.h"
  #include "content/public/browser/render_widget_host_view.h"
@@ -51,9 +51,9 @@ index a662f8bac41b01a9d8e56b8aa1b9f5336bfe265c..04c7913dc8c7b987bef4208fa417f8f7
  class WebCursor;
  class DelegatedFrameHost;
  struct TextInputState;
-@@ -123,6 +127,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
-                                      bool destination_is_loaded,
-                                      bool destination_is_frozen) final;
+@@ -126,6 +130,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+       bool show_reason_tab_switching,
+       bool show_reason_unoccluded) final;
  
 +  virtual void InitAsGuest(RenderWidgetHostView* parent_host_view,
 +                           RenderWidgetHostViewGuest* guest_view) {}
@@ -61,7 +61,7 @@ index a662f8bac41b01a9d8e56b8aa1b9f5336bfe265c..04c7913dc8c7b987bef4208fa417f8f7
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -312,6 +319,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -316,6 +323,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  
