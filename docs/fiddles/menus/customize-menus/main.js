@@ -159,7 +159,7 @@ const template = [
       {
         label: 'Learn More',
         click: () => {
-          shell.openExternal('http://electron.atom.io')
+          shell.openExternal('https://electronjs.org')
         }
       }
     ]

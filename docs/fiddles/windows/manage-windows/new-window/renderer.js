@@ -15,5 +15,5 @@ newWindowBtn.addEventListener('click', (event) => {
 
 link.addEventListener('click', (e) => {
   e.preventDefault()
-  shell.openExternal("http://electron.atom.io/docs/api/browser-window")
+  shell.openExternal("https://electronjs.org/docs/api/browser-window")
 })
