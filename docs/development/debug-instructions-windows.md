@@ -48,7 +48,7 @@ still set breakpoints - Visual Studio will automatically figure out that the
 source code matches the code running in the attached process and break
 accordingly.
 
-Relevant code files can be found in `./atom/`.
+Relevant code files can be found in `./shell/`.
 
 ### Attaching
 
