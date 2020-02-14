@@ -7,7 +7,7 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..ec06e14dd327cdf89dc6fd584b6972ae64311ea0
+index 0000000000000000000000000000000000000000..e4aab62b85e6ea1eac68cc21056081b4ff4bd1d6
 --- /dev/null
 +++ b/BUILD.gn
 @@ -0,0 +1,358 @@
@@ -369,55 +369,6 @@ index 0000000000000000000000000000000000000000..ec06e14dd327cdf89dc6fd584b6972ae
 +    ":tar_headers",
 +  ]
 +}
-diff --git a/deps/uvwasi/BUILD.gn b/deps/uvwasi/BUILD.gn
-new file mode 100644
-index 0000000000000000000000000000000000000000..cb4f4d4fa196da7513d7b43b44a0dd0e77a3d1c0
---- /dev/null
-+++ b/deps/uvwasi/BUILD.gn
-@@ -0,0 +1,43 @@
-+config("uvwasi_config") {
-+  include_dirs = [ "include" ]
-+}
-+
-+static_library("uvwasi") {
-+  include_dirs = [
-+    "include",
-+    "src",
-+  ]
-+
-+  defines = []
-+  if (is_linux) {
-+    defines += [
-+      "_GNU_SOURCE",
-+      "_POSIX_C_SOURCE=200112"
-+    ]
-+  }
-+
-+  deps = [ "../../deps/uv" ]
-+
-+  public_configs = [ ":uvwasi_config" ]
-+  cflags_c = [
-+    "-Wall",
-+    "-Wsign-compare",
-+    "-Wextra",
-+    "-Wstrict-prototypes",
-+    "-Wno-unused-parameter"
-+  ]
-+
-+  if (is_linux) {
-+    cflags_c += [
-+      "-fvisibility=hidden",
-+      "--std=gnu89",
-+    ]
-+  }
-+
-+  sources = [
-+    "src/clocks.c",
-+    "src/fd_table.c",
-+    "src/uv_mapping.c",
-+    "src/uvwasi.c",
-+  ]
-+}
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
 index 0000000000000000000000000000000000000000..0b7737ca061ae6a12647f5d7bf0c2d1bc7d5bdd9
@@ -665,7 +616,7 @@ index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d1cf42562
+index 0000000000000000000000000000000000000000..510d86194ed71d78b2c89c7a77422afc0ef614ad
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
 @@ -0,0 +1,190 @@
@@ -858,6 +809,46 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +      "src/unix/kqueue.c",
 +    ]
 +  }
++}
+diff --git a/deps/uvwasi/BUILD.gn b/deps/uvwasi/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..52d0c08bd9818b9436175ea8157e462e4d0fbafe
+--- /dev/null
++++ b/deps/uvwasi/BUILD.gn
+@@ -0,0 +1,34 @@
++config("uvwasi_config") {
++  include_dirs = [ "include" ]
++}
++
++static_library("uvwasi") {
++  include_dirs = [
++    "include",
++    "src",
++  ]
++
++  defines = []
++  if (is_linux) {
++    defines += [
++      "_GNU_SOURCE",
++      "_POSIX_C_SOURCE=200112"
++    ]
++  }
++
++  deps = [ "../../deps/uv" ]
++
++  public_configs = [ ":uvwasi_config" ]
++ 
++  cflags_c = []
++  if (!is_win) {
++    cflags_c += [ "-fvisibility=hidden" ]
++  }
++
++  sources = [
++    "src/clocks.c",
++    "src/fd_table.c",
++    "src/uv_mapping.c",
++    "src/uvwasi.c",
++  ]
 +}
 diff --git a/deps/zlib/BUILD.gn b/deps/zlib/BUILD.gn
 new file mode 100644
