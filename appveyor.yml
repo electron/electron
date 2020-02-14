@@ -61,7 +61,7 @@ build_script:
   - git config --global core.longpaths true
   - cd ..
   - mkdir src
-  - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
+  - ps: Copy-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"
   - ps: >-
@@ -144,7 +144,8 @@ build_script:
   - gn check out/Default //electron/shell/common/api:mojo
   - ninja -j %NUMBER_OF_NINJA_PROCESSES% -C out/Default electron:electron_app
   - echo Exit Code is %errorlevel%
-  - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
+  - python C:\depot_tools\post_build_ninja_summary.py -C out\Default
+  - echo %cd%
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
   - ninja -C out/Default electron:electron_dist_zip
