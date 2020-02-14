@@ -68,30 +68,55 @@ describe('systemPreferences module', () => {
     });
 
     it('returns values for unknown user defaults', () => {
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'boolean')).to.equal(false);
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'integer')).to.equal(0);
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'float')).to.equal(0);
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'double')).to.equal(0);
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'string')).to.equal('');
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'url')).to.equal('');
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype' as any)).to.be.undefined('user default');
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'array')).to.deep.equal([]);
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'dictionary')).to.deep.equal({});
+      const KEY = 'UserDefaultDoesNotExist';
+
+      expect(systemPreferences.getUserDefault(KEY, 'boolean')).to.equal(false);
+      expect(systemPreferences.getUserDefault(KEY, 'integer')).to.equal(0);
+      expect(systemPreferences.getUserDefault(KEY, 'float')).to.equal(0);
+      expect(systemPreferences.getUserDefault(KEY, 'double')).to.equal(0);
+      expect(systemPreferences.getUserDefault(KEY, 'string')).to.equal('');
+      expect(systemPreferences.getUserDefault(KEY, 'url')).to.equal('');
+      expect(systemPreferences.getUserDefault(KEY, 'badtype' as any)).to.be.undefined('user default');
+      expect(systemPreferences.getUserDefault(KEY, 'array')).to.deep.equal([]);
+      expect(systemPreferences.getUserDefault(KEY, 'dictionary')).to.deep.equal({});
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('systemPreferences.getUserDefaultInDomain(domain, key, type)', () => {
+    it('returns values for known user defaults', () => {
+      const value = systemPreferences.getUserDefaultInDomain('com.apple.notificationcenterui', 'doNotDisturb', 'boolean');
+      expect(value).to.be.a('boolean');
+    });
+
+    it('returns values for unknown user defaults', () => {
+      const DOMAIN = 'DomainDoesNotExist';
+      const KEY = 'UserDefaultDoesNotExist';
+
+      expect(systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, 'boolean')).to.equal(false);
+      expect(systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, 'integer')).to.equal(0);
+      expect(systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, 'float')).to.equal(0);
+      expect(systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, 'double')).to.equal(0);
+      expect(systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, 'string')).to.equal('');
+      expect(systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, 'url')).to.equal('');
+      expect(systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, 'badtype' as any)).to.be.undefined('user default');
+      expect(systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, 'array')).to.deep.equal([]);
+      expect(systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, 'dictionary')).to.deep.equal({});
+    });
+  });
+
+  const TEST_CASES = [
+    ['string', 'abc'],
+    ['boolean', true],
+    ['float', 2.5],
+    ['double', 10.1],
+    ['integer', 11],
+    ['url', 'https://github.com/electron'],
+    ['array', [1, 2, 3]],
+    ['dictionary', { 'a': 1, 'b': 2 }]
+  ];
+
   ifdescribe(process.platform === 'darwin')('systemPreferences.setUserDefault(key, type, value)', () => {
     const KEY = 'SystemPreferencesTest';
-    const TEST_CASES = [
-      ['string', 'abc'],
-      ['boolean', true],
-      ['float', 2.5],
-      ['double', 10.1],
-      ['integer', 11],
-      ['url', 'https://github.com/electron'],
-      ['array', [1, 2, 3]],
-      ['dictionary', { a: 1, b: 2 }]
-    ];
 
     it('sets values', () => {
       for (const [type, value] of TEST_CASES) {
@@ -112,6 +137,33 @@ describe('systemPreferences module', () => {
     it('throws when type is not valid', () => {
       expect(() => {
         systemPreferences.setUserDefault(KEY, 'abc' as any, 'foo');
+      }).to.throw('Invalid type: abc');
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('systemPreferences.setUserDefaultInDomain(domain, key, type, value)', () => {
+    const DOMAIN = 'org.electronjs.spec';
+    const KEY = 'SystemPreferencesTest';
+
+    it('sets values', () => {
+      for (const [type, value] of TEST_CASES) {
+        systemPreferences.setUserDefaultInDomain(DOMAIN, KEY, type as any, value as any);
+        const retrievedValue = systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, type as any);
+        expect(retrievedValue).to.deep.equal(value);
+      }
+    });
+
+    it('throws when type and value conflict', () => {
+      for (const [type, value] of TEST_CASES) {
+        expect(() => {
+          systemPreferences.setUserDefaultInDomain(DOMAIN, KEY, type as any, typeof value === 'string' ? {} : 'foo' as any);
+        }).to.throw(`Unable to convert value to: ${type}`);
+      }
+    });
+
+    it('throws when type is not valid', () => {
+      expect(() => {
+        systemPreferences.setUserDefaultInDomain(DOMAIN, KEY, 'abc', 'foo');
       }).to.throw('Invalid type: abc');
     });
   });
@@ -231,7 +283,7 @@ describe('systemPreferences module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'darwin')('systemPreferences.setUserDefault(key, type, value)', () => {
+  ifdescribe(process.platform === 'darwin')('systemPreferences.removeUserDefault(key)', () => {
     it('removes keys', () => {
       const KEY = 'SystemPreferencesTest';
       systemPreferences.setUserDefault(KEY, 'string', 'foo');
@@ -241,6 +293,21 @@ describe('systemPreferences module', () => {
 
     it('does not throw for missing keys', () => {
       systemPreferences.removeUserDefault('some-missing-key');
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('systemPreferences.removeUserDefaultInDomain(domain, key)', () => {
+    const DOMAIN = 'org.electronjs.spec';
+
+    it('removes keys', () => {
+      const KEY = 'SystemPreferencesTest';
+      systemPreferences.setUserDefaultInDomain(DOMAIN, KEY, 'string', 'foo');
+      systemPreferences.removeUserDefaultInDomain(DOMAIN, KEY);
+      expect(systemPreferences.getUserDefaultInDomain(DOMAIN, KEY, 'string')).to.equal('');
+    });
+
+    it('does not throw for missing keys', () => {
+      systemPreferences.removeUserDefaultInDomain(DOMAIN, 'some-missing-key');
     });
   });
 

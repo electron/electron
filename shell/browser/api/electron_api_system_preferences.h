@@ -81,13 +81,22 @@ class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
   int SubscribeWorkspaceNotification(const std::string& name,
                                      const NotificationCallback& callback);
   void UnsubscribeWorkspaceNotification(int request_id);
-  v8::Local<v8::Value> GetUserDefault(const std::string& name,
+  v8::Local<v8::Value> GetUserDefault(const std::string& key,
                                       const std::string& type);
+  v8::Local<v8::Value> GetUserDefaultInDomain(const std::string& domain,
+                                              const std::string& key,
+                                              const std::string& type);
   void RegisterDefaults(gin_helper::Arguments* args);
-  void SetUserDefault(const std::string& name,
+  void SetUserDefault(const std::string& key,
                       const std::string& type,
                       gin_helper::Arguments* args);
-  void RemoveUserDefault(const std::string& name);
+  void SetUserDefaultInDomain(const std::string& domain,
+                              const std::string& key,
+                              const std::string& type,
+                              gin_helper::Arguments* args);
+  void RemoveUserDefault(const std::string& key);
+  void RemoveUserDefaultInDomain(const std::string& domain,
+                                 const std::string& key);
   bool IsSwipeTrackingFromScrollEventsEnabled();
 
   std::string GetSystemColor(gin_helper::ErrorThrower thrower,

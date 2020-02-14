@@ -165,7 +165,7 @@ Add the specified defaults to your application's `NSUserDefaults`.
 * `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`,
   `url`, `array` or `dictionary`.
 
-Returns `any` - The value of `key` in `NSUserDefaults`.
+Returns `any` - The value of `key` in `NSUserDefaults` for the app and current user.
 
 Some popular `key` and `type`s are:
 
@@ -177,13 +177,22 @@ Some popular `key` and `type`s are:
 * `NSPreferredWebServices`: `dictionary`
 * `NSUserDictionaryReplacementItems`: `array`
 
+### `systemPreferences.getUserDefaultInDomain(domain, key, type)` _macOS_
+
+* `domain` String
+* `key` String
+* `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`,
+  `url`, `array` or `dictionary`.
+
+Returns `any` - The value of `key` in `NSUserDefaults` for the given `domain`.
+
 ### `systemPreferences.setUserDefault(key, type, value)` _macOS_
 
 * `key` String
 * `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`, `url`, `array` or `dictionary`.
 * `value` String
 
-Set the value of `key` in `NSUserDefaults`.
+Set the value of `key` in `NSUserDefaults` for the app and current user.
 
 Note that `type` should match actual type of `value`. An exception is thrown
 if they don't.
@@ -192,12 +201,31 @@ Some popular `key` and `type`s are:
 
 * `ApplePressAndHoldEnabled`: `boolean`
 
+### `systemPreferences.setUserDefaultInDomain(domain, key, type, value)` _macOS_
+
+* `domain` String
+* `key` String
+* `type` String - See [`getUserDefault`](#systempreferencesgetuserdefaultkey-type-macos).
+* `value` String
+
+Set the value of `key` in `NSUserDefaults` for the given `domain`.
+
+Note that `type` should match actual type of `value`. An exception is thrown
+if they don't.
+
 ### `systemPreferences.removeUserDefault(key)` _macOS_
 
 * `key` String
 
-Removes the `key` in `NSUserDefaults`. This can be used to restore the default
-or global value of a `key` previously set with `setUserDefault`.
+Removes the `key` in `NSUserDefaults` for the app and current user.
+This can be used to restore the default or global value of a `key` previously set with `setUserDefault`.
+
+### `systemPreferences.removeUserDefaultInDomain(domain, key)` _macOS_
+
+* `domain` String
+* `key` String
+
+Removes the `key` in `NSUserDefaults` for the given `domain`.
 
 ### `systemPreferences.isAeroGlassEnabled()` _Windows_
 

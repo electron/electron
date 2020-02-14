@@ -121,6 +121,103 @@ std::string ConvertSystemPermission(
   }
 }
 
+v8::Local<v8::Value> GetUserDefaultImpl(v8::Isolate* isolate,
+                                        NSUserDefaults* defaults,
+                                        const std::string& name,
+                                        const std::string& type) {
+  NSString* key = base::SysUTF8ToNSString(name);
+  if (type == "string") {
+    return gin::StringToV8(
+        isolate, base::SysNSStringToUTF8([defaults stringForKey:key]));
+  } else if (type == "boolean") {
+    return v8::Boolean::New(isolate, [defaults boolForKey:key]);
+  } else if (type == "float") {
+    return v8::Number::New(isolate, [defaults floatForKey:key]);
+  } else if (type == "integer") {
+    return v8::Integer::New(isolate, [defaults integerForKey:key]);
+  } else if (type == "double") {
+    return v8::Number::New(isolate, [defaults doubleForKey:key]);
+  } else if (type == "url") {
+    return gin::ConvertToV8(isolate,
+                            net::GURLWithNSURL([defaults URLForKey:key]));
+  } else if (type == "array") {
+    return gin::ConvertToV8(isolate,
+                            NSArrayToListValue([defaults arrayForKey:key]));
+  } else if (type == "dictionary") {
+    return gin::ConvertToV8(isolate, NSDictionaryToDictionaryValue(
+                                         [defaults dictionaryForKey:key]));
+  } else {
+    return v8::Undefined(isolate);
+  }
+}
+
+void SetUserDefaultImpl(NSUserDefaults* defaults,
+                        const std::string& name,
+                        const std::string& type,
+                        gin_helper::Arguments* args) {
+  NSString* key = base::SysUTF8ToNSString(name);
+  if (type == "string") {
+    std::string value;
+    if (args->GetNext(&value)) {
+      [defaults setObject:base::SysUTF8ToNSString(value) forKey:key];
+      return;
+    }
+  } else if (type == "boolean") {
+    bool value;
+    if (args->GetNext(&value)) {
+      [defaults setBool:value forKey:key];
+      return;
+    }
+  } else if (type == "float") {
+    float value;
+    if (args->GetNext(&value)) {
+      [defaults setFloat:value forKey:key];
+      return;
+    }
+  } else if (type == "integer") {
+    int value;
+    if (args->GetNext(&value)) {
+      [defaults setInteger:value forKey:key];
+      return;
+    }
+  } else if (type == "double") {
+    double value;
+    if (args->GetNext(&value)) {
+      [defaults setDouble:value forKey:key];
+      return;
+    }
+  } else if (type == "url") {
+    GURL value;
+    if (args->GetNext(&value)) {
+      if (NSURL* url = net::NSURLWithGURL(value)) {
+        [defaults setURL:url forKey:key];
+        return;
+      }
+    }
+  } else if (type == "array") {
+    base::ListValue value;
+    if (args->GetNext(&value)) {
+      if (NSArray* array = ListValueToNSArray(value)) {
+        [defaults setObject:array forKey:key];
+        return;
+      }
+    }
+  } else if (type == "dictionary") {
+    base::DictionaryValue value;
+    if (args->GetNext(&value)) {
+      if (NSDictionary* dict = DictionaryValueToNSDictionary(value)) {
+        [defaults setObject:dict forKey:key];
+        return;
+      }
+    }
+  } else {
+    args->ThrowError("Invalid type: " + type);
+    return;
+  }
+
+  args->ThrowError("Unable to convert value to: " + type);
+}
+
 }  // namespace
 
 void SystemPreferences::PostNotification(const std::string& name,
@@ -257,33 +354,19 @@ void SystemPreferences::DoUnsubscribeNotification(int request_id,
 }
 
 v8::Local<v8::Value> SystemPreferences::GetUserDefault(
-    const std::string& name,
+    const std::string& key,
     const std::string& type) {
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-  NSString* key = base::SysUTF8ToNSString(name);
-  if (type == "string") {
-    return gin::StringToV8(
-        isolate(), base::SysNSStringToUTF8([defaults stringForKey:key]));
-  } else if (type == "boolean") {
-    return v8::Boolean::New(isolate(), [defaults boolForKey:key]);
-  } else if (type == "float") {
-    return v8::Number::New(isolate(), [defaults floatForKey:key]);
-  } else if (type == "integer") {
-    return v8::Integer::New(isolate(), [defaults integerForKey:key]);
-  } else if (type == "double") {
-    return v8::Number::New(isolate(), [defaults doubleForKey:key]);
-  } else if (type == "url") {
-    return gin::ConvertToV8(isolate(),
-                            net::GURLWithNSURL([defaults URLForKey:key]));
-  } else if (type == "array") {
-    return gin::ConvertToV8(isolate(),
-                            NSArrayToListValue([defaults arrayForKey:key]));
-  } else if (type == "dictionary") {
-    return gin::ConvertToV8(isolate(), NSDictionaryToDictionaryValue(
-                                           [defaults dictionaryForKey:key]));
-  } else {
-    return v8::Undefined(isolate());
-  }
+  return GetUserDefaultImpl(isolate(), defaults, key, type);
+}
+
+v8::Local<v8::Value> SystemPreferences::GetUserDefaultInDomain(
+    const std::string& domain,
+    const std::string& key,
+    const std::string& type) {
+  base::scoped_nsobject<NSUserDefaults> defaults([[NSUserDefaults alloc]
+      initWithSuiteName:base::SysUTF8ToNSString(domain)]);
+  return GetUserDefaultImpl(isolate(), defaults, key, type);
 }
 
 void SystemPreferences::RegisterDefaults(gin_helper::Arguments* args) {
@@ -308,89 +391,20 @@ void SystemPreferences::RegisterDefaults(gin_helper::Arguments* args) {
   }
 }
 
-void SystemPreferences::SetUserDefault(const std::string& name,
+void SystemPreferences::SetUserDefault(const std::string& key,
                                        const std::string& type,
                                        gin_helper::Arguments* args) {
-  const auto throwConversionError = [&] {
-    args->ThrowError("Unable to convert value to: " + type);
-  };
-
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-  NSString* key = base::SysUTF8ToNSString(name);
-  if (type == "string") {
-    std::string value;
-    if (!args->GetNext(&value)) {
-      throwConversionError();
-      return;
-    }
+  SetUserDefaultImpl(defaults, key, type, args);
+}
 
-    [defaults setObject:base::SysUTF8ToNSString(value) forKey:key];
-  } else if (type == "boolean") {
-    bool value;
-    if (!args->GetNext(&value)) {
-      throwConversionError();
-      return;
-    }
-
-    [defaults setBool:value forKey:key];
-  } else if (type == "float") {
-    float value;
-    if (!args->GetNext(&value)) {
-      throwConversionError();
-      return;
-    }
-
-    [defaults setFloat:value forKey:key];
-  } else if (type == "integer") {
-    int value;
-    if (!args->GetNext(&value)) {
-      throwConversionError();
-      return;
-    }
-
-    [defaults setInteger:value forKey:key];
-  } else if (type == "double") {
-    double value;
-    if (!args->GetNext(&value)) {
-      throwConversionError();
-      return;
-    }
-
-    [defaults setDouble:value forKey:key];
-  } else if (type == "url") {
-    GURL value;
-    if (!args->GetNext(&value)) {
-      throwConversionError();
-      return;
-    }
-
-    if (NSURL* url = net::NSURLWithGURL(value)) {
-      [defaults setURL:url forKey:key];
-    }
-  } else if (type == "array") {
-    base::ListValue value;
-    if (!args->GetNext(&value)) {
-      throwConversionError();
-      return;
-    }
-
-    if (NSArray* array = ListValueToNSArray(value)) {
-      [defaults setObject:array forKey:key];
-    }
-  } else if (type == "dictionary") {
-    base::DictionaryValue value;
-    if (!args->GetNext(&value)) {
-      throwConversionError();
-      return;
-    }
-
-    if (NSDictionary* dict = DictionaryValueToNSDictionary(value)) {
-      [defaults setObject:dict forKey:key];
-    }
-  } else {
-    args->ThrowError("Invalid type: " + type);
-    return;
-  }
+void SystemPreferences::SetUserDefaultInDomain(const std::string& domain,
+                                               const std::string& key,
+                                               const std::string& type,
+                                               gin_helper::Arguments* args) {
+  base::scoped_nsobject<NSUserDefaults> defaults([[NSUserDefaults alloc]
+      initWithSuiteName:base::SysUTF8ToNSString(domain)]);
+  SetUserDefaultImpl(defaults, key, type, args);
 }
 
 std::string SystemPreferences::GetAccentColor() {
@@ -633,9 +647,16 @@ v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
   return handle;
 }
 
-void SystemPreferences::RemoveUserDefault(const std::string& name) {
+void SystemPreferences::RemoveUserDefault(const std::string& key) {
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-  [defaults removeObjectForKey:base::SysUTF8ToNSString(name)];
+  [defaults removeObjectForKey:base::SysUTF8ToNSString(key)];
+}
+
+void SystemPreferences::RemoveUserDefaultInDomain(const std::string& domain,
+                                                  const std::string& key) {
+  base::scoped_nsobject<NSUserDefaults> defaults([[NSUserDefaults alloc]
+      initWithSuiteName:base::SysUTF8ToNSString(domain)]);
+  [defaults removeObjectForKey:base::SysUTF8ToNSString(key)];
 }
 
 bool SystemPreferences::IsDarkMode() {
