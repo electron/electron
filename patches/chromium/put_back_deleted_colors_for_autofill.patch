@@ -18,22 +18,22 @@ index 0bc7a7ecdacd666cc0cc4769f5bb36053515a732..4f6affd265d53d82bb041006ae02f738
 +    // Results Table
 +    case ui::NativeTheme::kColorId_ResultsTableNormalBackground:
 +      return SkColorFromColorId(
-+          ui::NativeTheme::kColorId_TextfieldDefaultBackground);
++          ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
 +    case ui::NativeTheme::kColorId_ResultsTableHoveredBackground:
 +      return color_utils::AlphaBlend(
 +          SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground),
++              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme),
 +          SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldSelectionBackgroundFocused),
++              ui::NativeTheme::kColorId_TextfieldSelectionBackgroundFocused, base_theme, color_scheme),
 +          0.5f);
 +    case ui::NativeTheme::kColorId_ResultsTableNormalText:
 +      return SkColorFromColorId(
-+          ui::NativeTheme::kColorId_TextfieldDefaultColor);
++          ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme);
 +    case ui::NativeTheme::kColorId_ResultsTableDimmedText:
 +      return color_utils::AlphaBlend(
-+          SkColorFromColorId(ui::NativeTheme::kColorId_TextfieldDefaultColor),
++          SkColorFromColorId(ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme),
 +          SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground),
++              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme),
 +          0.5f);
 +
      // Throbber
