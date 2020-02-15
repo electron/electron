@@ -24,7 +24,7 @@
 		</object>
 		<array class="NSMutableArray" key="IBDocument.RootObjects" id="1048">
 			<object class="NSCustomObject" id="1021">
-				<string key="NSClassName">ElectronApplication</string>
+				<string key="NSClassName">AtomApplication</string>
 			</object>
 			<object class="NSCustomObject" id="1014">
 				<string key="NSClassName">FirstResponder</string>
