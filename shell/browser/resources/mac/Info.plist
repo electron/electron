@@ -27,7 +27,7 @@
     <key>NSMainNibFile</key>
     <string>MainMenu</string>
     <key>NSPrincipalClass</key>
-    <string>ElectronApplication</string>
+    <string>AtomApplication</string>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>NSHighResolutionCapable</key>
