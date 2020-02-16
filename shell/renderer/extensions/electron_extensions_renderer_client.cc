@@ -6,7 +6,7 @@
 
 #include "content/public/renderer/render_thread.h"
 #include "extensions/renderer/dispatcher.h"
-#include "shell/renderer/electron_render_frame_observer.h"
+#include "shell/common/world_ids.h"
 #include "shell/renderer/extensions/electron_extensions_dispatcher_delegate.h"
 
 namespace electron {
@@ -25,7 +25,7 @@ bool ElectronExtensionsRendererClient::IsIncognitoProcess() const {
 }
 
 int ElectronExtensionsRendererClient::GetLowestIsolatedWorldId() const {
-  return World::ISOLATED_WORLD_EXTENSIONS;
+  return WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS;
 }
 
 extensions::Dispatcher* ElectronExtensionsRendererClient::GetDispatcher() {

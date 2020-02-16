@@ -20,6 +20,7 @@
 #include "net/grit/net_resources.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/world_ids.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -90,8 +91,8 @@ void ElectronRenderFrameObserver::DidCreateScriptContext(
   }
 
 #if !BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (world_id >= World::ISOLATED_WORLD_EXTENSIONS &&
-      world_id <= World::ISOLATED_WORLD_EXTENSIONS_END) {
+  if (world_id >= WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS &&
+      world_id <= WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS_END) {
     renderer_client_->SetupExtensionWorldOverrides(context, render_frame_,
                                                    world_id);
   }
@@ -136,19 +137,19 @@ void ElectronRenderFrameObserver::CreateIsolatedWorldContext() {
       blink::WebString::FromUTF8("Electron Isolated Context");
   // Setup document's origin policy in isolated world
   info.security_origin = frame->GetDocument().GetSecurityOrigin();
-  frame->SetIsolatedWorldInfo(World::ISOLATED_WORLD, info);
+  frame->SetIsolatedWorldInfo(WorldIDs::ISOLATED_WORLD_ID, info);
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");
-  frame->ExecuteScriptInIsolatedWorld(World::ISOLATED_WORLD, source);
+  frame->ExecuteScriptInIsolatedWorld(WorldIDs::ISOLATED_WORLD_ID, source);
 }
 
 bool ElectronRenderFrameObserver::IsMainWorld(int world_id) {
-  return world_id == World::MAIN_WORLD;
+  return world_id == WorldIDs::MAIN_WORLD_ID;
 }
 
 bool ElectronRenderFrameObserver::IsIsolatedWorld(int world_id) {
-  return world_id == World::ISOLATED_WORLD;
+  return world_id == WorldIDs::ISOLATED_WORLD_ID;
 }
 
 bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) {

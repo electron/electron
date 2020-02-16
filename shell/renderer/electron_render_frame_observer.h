@@ -11,7 +11,6 @@
 #include "content/public/renderer/render_frame_observer.h"
 #include "ipc/ipc_platform_file.h"
 #include "shell/renderer/renderer_client_base.h"
-#include "third_party/blink/public/platform/web_isolated_world_ids.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace base {
@@ -19,23 +18,6 @@ class ListValue;
 }
 
 namespace electron {
-
-enum World {
-  MAIN_WORLD = 0,
-
-  // Use a high number far away from 0 to not collide with any other world
-  // IDs created internally by Chrome.
-  ISOLATED_WORLD = 999,
-
-  // Numbers for isolated worlds for extensions are set in
-  // lib/renderer/content-script-injector.ts, and are greater than or equal to
-  // this number, up to ISOLATED_WORLD_EXTENSIONS_END.
-  ISOLATED_WORLD_EXTENSIONS = 1 << 20,
-
-  // Last valid isolated world ID.
-  ISOLATED_WORLD_EXTENSIONS_END =
-      blink::IsolatedWorldId::kEmbedderWorldIdLimit - 1
-};
 
 // Helper class to forward the messages to the client.
 class ElectronRenderFrameObserver : public content::RenderFrameObserver {

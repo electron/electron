@@ -20,8 +20,8 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/world_ids.h"
 #include "shell/renderer/api/context_bridge/render_frame_context_bridge_store.h"
-#include "shell/renderer/electron_render_frame_observer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
@@ -477,7 +477,7 @@ void ExposeAPIInMainWorld(const std::string& key,
   }
 
   v8::Local<v8::Context> isolated_context =
-      frame->WorldScriptContext(args->isolate(), World::ISOLATED_WORLD);
+      frame->WorldScriptContext(args->isolate(), WorldIDs::ISOLATED_WORLD_ID);
 
   v8::Context::Scope main_context_scope(main_context);
   {
