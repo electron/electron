@@ -48,6 +48,8 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/common/view_type.h"
+
 namespace extensions {
 class ScriptExecutor;
 }
@@ -144,7 +146,7 @@ class WebContents : public gin::Wrappable<WebContents>,
                     public mojom::ElectronBrowser {
  public:
   enum class Type {
-    BACKGROUND_PAGE,  // A DevTools extension background page.
+    BACKGROUND_PAGE,  // An extension background page.
     BROWSER_WINDOW,   // Used by BrowserWindow.
     BROWSER_VIEW,     // Used by BrowserView.
     REMOTE,           // Thin wrap around an existing WebContents.
@@ -452,6 +454,12 @@ class WebContents : public gin::Wrappable<WebContents>,
       std::unique_ptr<content::WebContents> web_contents,
       gin::Handle<class Session> session,
       const gin_helper::Dictionary& options);
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  void InitWithExtensionView(v8::Isolate* isolate,
+                             content::WebContents* web_contents,
+                             extensions::ViewType view_type);
+#endif
 
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
