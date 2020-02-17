@@ -130,9 +130,18 @@ describe('webContents module', () => {
       }).to.throw('webContents.print(): Invalid deviceName provided.')
     })
 
-    it('does not crash', () => {
+    it('does not crash with custom margins', () => {
       expect(() => {
-        w.webContents.print({ silent: true })
+        w.webContents.print({
+          silent: true,
+          margins: {
+            marginType: 'custom',
+            top: 1,
+            bottom: 1,
+            left: 1,
+            right: 1
+          }
+        })
       }).to.not.throw()
     })
   })
