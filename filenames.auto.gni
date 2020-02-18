@@ -55,6 +55,7 @@ auto_filenames = {
     "docs/api/touch-bar-color-picker.md",
     "docs/api/touch-bar-group.md",
     "docs/api/touch-bar-label.md",
+    "docs/api/touch-bar-other-items-proxy.md",
     "docs/api/touch-bar-popover.md",
     "docs/api/touch-bar-scrubber.md",
     "docs/api/touch-bar-segmented-control.md",

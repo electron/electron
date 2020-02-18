@@ -64,6 +64,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     (const std::vector<gin_helper::PersistentDictionary>&)dicts {
   NSMutableArray* identifiers = [NSMutableArray array];
 
+  bool has_other_items_proxy = false;
+
   if (@available(macOS 10.12.2, *)) {
     for (const auto& item : dicts) {
       std::string type;
@@ -80,6 +82,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
           } else {
             identifier = NSTouchBarItemIdentifierFixedSpaceSmall;
           }
+        } else if (type == "other_items_proxy") {
+          identifier = NSTouchBarItemIdentifierOtherItemsProxy;
+          has_other_items_proxy = true;
         } else {
           identifier = [self identifierFromID:item_id type:type];
         }
@@ -90,7 +95,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
         }
       }
     }
-    [identifiers addObject:NSTouchBarItemIdentifierOtherItemsProxy];
+    if (!has_other_items_proxy)
+      [identifiers addObject:NSTouchBarItemIdentifierOtherItemsProxy];
   }
 
   return identifiers;
