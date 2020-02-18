@@ -39,6 +39,14 @@ describe('TouchBar module', () => {
     }).to.throw('Must only have one OtherItemsProxy per TouchBar')
   })
 
+  it('throws an error if the same TouchBarItem is added multiple times', () => {
+    expect(() => {
+      const item = new TouchBarLabel({ label: 'Label' })
+      const touchBar = new TouchBar({ items: [item, item] })
+      touchBar.toString()
+    }).to.throw('Cannot add a single instance of TouchBarItem multiple times in a TouchBar')
+  })
+
   describe('BrowserWindow behavior', () => {
     let window: BrowserWindow
 
