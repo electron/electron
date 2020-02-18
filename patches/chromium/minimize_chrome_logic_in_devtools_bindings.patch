@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Mon, 17 Feb 2020 23:50:06 -0800
+Subject: minimize chrome logic in devtools bindings
+
+This patch effectively comments our a large portion of chromes devtools bindings that we don't use so we can rely on some of their sanitization logic. The path forward here is to upstream a change that extracts the sanitization logic to //content or at least separate files in //chrome so that we can use it easier.  For now this patch is quite minimal.
+
+diff --git a/chrome/browser/devtools/devtools_ui_bindings.cc b/chrome/browser/devtools/devtools_ui_bindings.cc
+index 5369351868e0d189006effd3b6b8aa977eaf56f5..83af71126b20a34e55f40428b158c09d12a82444 100644
+--- a/chrome/browser/devtools/devtools_ui_bindings.cc
++++ b/chrome/browser/devtools/devtools_ui_bindings.cc
+@@ -37,7 +37,9 @@
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/browser/ui/browser_list.h"
++#if 0
+ #include "chrome/browser/ui/browser_window.h"
++#endif
+ #include "chrome/browser/ui/tabs/tab_strip_model.h"
+ #include "chrome/common/chrome_switches.h"
+ #include "chrome/common/extensions/chrome_manifest_url_handlers.h"
+@@ -92,6 +94,7 @@ struct FrameNavigateParams;
+ 
+ namespace {
+ 
++#if 0
+ static const char kFrontendHostId[] = "id";
+ static const char kFrontendHostMethod[] = "method";
+ static const char kFrontendHostParams[] = "params";
+@@ -227,6 +230,7 @@ std::unique_ptr<base::DictionaryValue> BuildObjectForResponse(
+   response->Set("headers", std::move(headers));
+   return response;
+ }
++#endif
+ 
+ GURL SanitizeFrontendURL(const GURL& url,
+                          const std::string& scheme,
+@@ -255,6 +259,7 @@ std::string SanitizeRemoteVersion(const std::string& remoteVersion) {
+   return remoteVersion;
+ }
+ 
++#if 0
+ std::string SanitizeFrontendPath(const std::string& path) {
+   for (size_t i = 0; i < path.length(); i++) {
+     if (path[i] != '/' && path[i] != '-' && path[i] != '_'
+@@ -267,6 +272,7 @@ std::string SanitizeFrontendPath(const std::string& path) {
+   }
+   return path;
+ }
++#endif
+ 
+ std::string SanitizeEndpoint(const std::string& value) {
+   if (value.find('&') != std::string::npos
+@@ -384,6 +390,7 @@ GURL SanitizeFrontendURL(const GURL& url,
+   return result;
+ }
+ 
++#if 0
+ constexpr base::TimeDelta kInitialBackoffDelay =
+     base::TimeDelta::FromMilliseconds(250);
+ constexpr base::TimeDelta kMaxBackoffDelay = base::TimeDelta::FromSeconds(10);
+@@ -570,13 +577,15 @@ bool DevToolsUIBindings::IsValidFrontendURL(const GURL& url) {
+ 
+   return SanitizeFrontendURL(url).spec() == url.spec();
+ }
+-
++#endif
++}
+ bool DevToolsUIBindings::IsValidRemoteFrontendURL(const GURL& url) {
+   return ::SanitizeFrontendURL(url, url::kHttpsScheme, kRemoteFrontendDomain,
+                                url.path(), true)
+              .spec() == url.spec();
+ }
+ 
++#if 0
+ void DevToolsUIBindings::FrontendWebContentsObserver::RenderProcessGone(
+     base::TerminationStatus status) {
+   bool crashed = true;
+@@ -1585,3 +1594,4 @@ void DevToolsUIBindings::FrontendLoaded() {
+ 
+   AddDevToolsExtensionsToClient();
+ }
++#endif
+\ No newline at end of file
