@@ -86,19 +86,29 @@ build_script:
         }
       }
   - ps: >-
-      if (Test-Path 'env:RAW_GOMA_AUTH') {
-        $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
-        $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
-        .\src\electron\script\start-goma.ps1 -gomaDir "$pwd\src\electron\external_binaries\goma"
+      if ($env:GN_CONFIG -ne 'release') {
+        if (Test-Path 'env:RAW_GOMA_AUTH') {
+          $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
+          $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE      
+        }
+        git clone https://github.com/electron/build-tools.git
+        cd build-tools
+        npm install
+        mkdir third_party
+        node -e "require('./src/utils/goma.js').downloadAndPrepare()"
+        $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
+        $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
+        cd ..
+        .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
       }
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
-  - if DEFINED RAW_GOMA_AUTH (gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"//electron/build/args/goma.gn\") %GN_EXTRA_ARGS% ") else (gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS% cc_wrapper=\"%SCCACHE_PATH%\"")
+  - if DEFINED GN_GOMA_FILE (gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% ") else (gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS% cc_wrapper=\"%SCCACHE_PATH%\"")
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
   - gn check out/Default //electron:manifests
   - gn check out/Default //electron/shell/common/api:mojo
-  - if DEFINED RAW_GOMA_AUTH (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
+  - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
   - if "%GN_CONFIG%"=="testing" ( python C:\Users\electron\depot_tools\post_build_ninja_summary.py -C out\Default )
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
@@ -108,7 +118,7 @@ build_script:
   - ninja -C out/Default electron:hunspell_dictionaries_zip
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
-  - if DEFINED RAW_GOMA_AUTH (python electron\external_binaries\goma\goma_ctl.py stat)
+  - if "%GN_CONFIG%"=="testing" ( python %LOCAL_GOMA_DIR%\goma_ctl.py stat )
   - appveyor PushArtifact out/Default/dist.zip
   - appveyor PushArtifact out/Default/shell_browser_ui_unittests.exe
   - appveyor PushArtifact out/Default/chromedriver.zip
