@@ -18,7 +18,7 @@ const CHECK_INTERVAL = 5000
 
 const CACHE_DIR = path.resolve(__dirname, '.cache')
 const NO_NOTES = 'No notes'
-const FOLLOW_REPOS = [ 'electron/electron', 'electron/libchromiumcontent', 'electron/node' ]
+const FOLLOW_REPOS = [ 'electron/electron', 'electron/node' ]
 
 const breakTypes = new Set(['breaking-change'])
 const docTypes = new Set(['doc', 'docs'])
@@ -341,44 +341,6 @@ const addRepoToPool = async (pool, repo, from, to) => {
 ****  Other Repos
 ***/
 
-// other repos - gyp
-
-const getGypSubmoduleRef = async (dir, point) => {
-  // example: '160000 commit 028b0af83076cec898f4ebce208b7fadb715656e libchromiumcontent'
-  const response = await runGit(
-    path.dirname(dir),
-    ['ls-tree', '-t', point, path.basename(dir)]
-  )
-
-  const line = response.split('\n').filter(line => line.startsWith('160000')).shift()
-  const tokens = line ? line.split(/\s/).map(token => token.trim()) : null
-  const ref = tokens && tokens.length >= 3 ? tokens[2] : null
-
-  return ref
-}
-
-const getDependencyCommitsGyp = async (pool, fromRef, toRef) => {
-  const commits = []
-
-  const repos = [{
-    owner: 'electron',
-    repo: 'libchromiumcontent',
-    dir: path.resolve(ELECTRON_VERSION, 'vendor', 'libchromiumcontent')
-  }, {
-    owner: 'electron',
-    repo: 'node',
-    dir: path.resolve(ELECTRON_VERSION, 'vendor', 'node')
-  }]
-
-  for (const repo of repos) {
-    const from = await getGypSubmoduleRef(repo.dir, fromRef)
-    const to = await getGypSubmoduleRef(repo.dir, toRef)
-    await addRepoToPool(pool, repo, from, to)
-  }
-
-  return commits
-}
-
 // other repos - gn
 
 const getDepsVariable = async (ref, key) => {
@@ -414,17 +376,6 @@ const getDependencyCommitsGN = async (pool, fromRef, toRef) => {
     const to = await getDepsVariable(toRef, key)
     await addRepoToPool(pool, repo, from, to)
   }
-}
-
-// other repos - controller
-
-const getDependencyCommits = async (pool, from, to) => {
-  const filename = path.resolve(ELECTRON_VERSION, 'vendor', 'libchromiumcontent')
-  const useGyp = fs.existsSync(filename)
-
-  return useGyp
-    ? getDependencyCommitsGyp(pool, from, to)
-    : getDependencyCommitsGN(pool, from, to)
 }
 
 // Changes are interesting if they make a change relative to a previous
@@ -474,7 +425,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
                       semver.major(fromRef) === semver.major(toRef)
 
   if (includeDeps) {
-    await getDependencyCommits(pool, fromRef, toRef)
+    await getDependencyCommitsGN(pool, fromRef, toRef)
   }
 
   // remove any old commits
