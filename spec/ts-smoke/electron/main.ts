@@ -90,8 +90,8 @@ app.whenReady().then(() => {
       marginType: 'default',
     },
     pageSize: 'A3',
-    printBackground: true,
-    printSelectionOnly: true,
+    shouldPrintBackgrounds: true,
+    shouldPrintSelectionOnly: true,
     landscape: true
   }).then((data: Buffer) => console.log(data))
 

@@ -1727,19 +1727,16 @@ void WebContents::OnGetDefaultPrinter(
 }
 
 void WebContents::Print(gin_helper::Arguments* args) {
+  base::Value settings(base::Value::Type::DICTIONARY);
   gin_helper::Dictionary options =
       gin::Dictionary::CreateEmpty(args->isolate());
-  base::Value settings(base::Value::Type::DICTIONARY);
 
-  if (args->Length() >= 1 && !args->GetNext(&options)) {
-    args->ThrowError("webContents.print(): Invalid print settings specified.");
-    return;
-  }
+  // This is sanitized at the JS level.
+  args->GetNext(&options);
 
   printing::CompletionCallback callback;
   if (args->Length() == 2 && !args->GetNext(&callback)) {
-    args->ThrowError(
-        "webContents.print(): Invalid optional callback provided.");
+    args->ThrowError("Invalid optional callback provided");
     return;
   }
 
@@ -1754,8 +1751,9 @@ void WebContents::Print(gin_helper::Arguments* args) {
   // network.
   base::string16 device_name;
   options.Get("deviceName", &device_name);
+  LOG(INFO) << device_name;
   if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
-    args->ThrowError("webContents.print(): Invalid deviceName provided.");
+    args->ThrowError("Invalid deviceName provided");
     return;
   }
 

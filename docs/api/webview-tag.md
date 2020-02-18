@@ -596,8 +596,8 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
     * `to` Number - the last page to print (inclusive).
   * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
-  * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
-  * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
+  * `shouldPrintBackgrounds` Boolean (optional) - Whether to print CSS backgrounds.
+  * `shouldPrintSelectionOnly` Boolean (optional) - Whether to print selection only.
 
 Returns `Promise<Uint8Array>` - Resolves with the generated PDF data.
 

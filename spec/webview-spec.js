@@ -1018,14 +1018,19 @@ describe('<webview> tag', function () {
 
     it('rejects on incorrectly typed parameters', async () => {
       const badTypes = {
-        marginsType: 'terrible',
+        margins: 'terrible',
         scaleFactor: 'not-a-number',
         landscape: [],
         pageRanges: { 'oops': 'im-not-the-right-key' },
         headerFooter: '123',
-        printSelectionOnly: 1,
-        printBackground: 2,
-        pageSize: 'IAmAPageSize'
+        shouldPrintSelectionOnly: 1,
+        shouldPrintBackgrounds: 2,
+        pageSize: 'IAmAPageSize',
+        pagesPerSheet: 'omg',
+        collate: 'COLLATE',
+        copies: 'mAnY cOpIeS',
+        dpi: 'dots per inch',
+        deviceName: 999
       }
 
       // These will hard crash in Chromium unless we type-check

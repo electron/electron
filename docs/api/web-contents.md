@@ -1322,8 +1322,8 @@ win.webContents.print(options, (success, errorType) => {
     * `to` Number - the last page to print (inclusive).
   * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
-  * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
-  * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
+  * `shouldPrintBackgrounds` Boolean (optional) - Whether to print CSS backgrounds.
+  * `shouldPrintSelectionOnly` Boolean (optional) - Whether to print selection only.
 
 Returns `Promise<Buffer>` - Resolves with the generated PDF data.
 
@@ -1337,8 +1337,8 @@ By default, an empty `options` will be regarded as:
 ```javascript
 {
   marginsType: 0,
-  printBackground: false,
-  printSelectionOnly: false,
+  shouldPrintBackgrounds: false,
+  shouldPrintSelectionOnly: false,
   landscape: false,
   pageSize: 'A4',
   scaleFactor: 100
