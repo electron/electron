@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <andy@slack-corp.com>
+Date: Tue, 18 Feb 2020 14:35:04 -0800
+Subject: don't lock the protocol scheme registry
+
+Chrome locks the scheme registry because it's not thread-safe and
+therefore potentially dangerous. Before this refactor from Chrome, we
+had upstreamed a patch that asked the embedder for permission to lock
+the scheme registry, to which Electron, as the embedder, responded: no.
+In the refactor, this was lost. For the roll, this patch will comment it
+out, but we should consider resubmitting a similar change to nornagon's,
+linked below.
+
+Previously upstreamed patch: https://chromium-review.googlesource.com/c/chromium/src/+/1637040
+CL: https://chromium-review.googlesource.com/c/chromium/src/+/1901591
+
+diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
+index 686c7157e5db3530fc2ea9ad682808c07b421288..dc93bd3deb11d3a66908b60657c5ee7a5c2f5ab5 100644
+--- a/content/common/url_schemes.cc
++++ b/content/common/url_schemes.cc
+@@ -103,7 +103,7 @@ void RegisterContentSchemes() {
+   // threadsafe so must be called when GURL isn't used on any other thread. This
+   // is really easy to mess up, so we say that all calls to Add*Scheme in Chrome
+   // must be inside this function.
+-  url::LockSchemeRegistries();
++  // url::LockSchemeRegistries();
+ 
+   // Combine the default savable schemes with the additional ones given.
+   GetMutableSavableSchemes().assign(std::begin(kDefaultSavableSchemes),
