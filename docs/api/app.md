@@ -749,7 +749,7 @@ protocol (aka URI scheme). If so, it will remove the app as the default handler.
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
 * `args` String[] (optional) _Windows_ - Defaults to an empty array
 
-Returns `Boolean` - whether the current executable is the default handler for a
+Returns `Boolean` - Whether the current executable is the default handler for a
 protocol (aka URI scheme).
 
 **Note:** On macOS, you can use this method to check if the app has been
