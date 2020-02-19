@@ -7,7 +7,7 @@ const v8Util = process.electronBinding('v8_util')
 const IsolatedWorldIDs = {
   /**
    * Start of extension isolated world IDs, as defined in
-   * atom_render_frame_observer.h
+   * electron_render_frame_observer.h
    */
   ISOLATED_WORLD_EXTENSIONS: 1 << 20
 }

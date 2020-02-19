@@ -57,4 +57,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_command_line, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_common_command_line, Initialize)
