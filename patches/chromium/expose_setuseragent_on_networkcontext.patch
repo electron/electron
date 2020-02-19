@@ -33,10 +33,10 @@ index 0ccfe130f00ec3b6c75cd8ee04d5a2777e1fd00c..653829457d58bf92057cc36aa8a28970
    DISALLOW_COPY_AND_ASSIGN(StaticHttpUserAgentSettings);
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 7e7e50880804583acf75206d3f5f1c6f4c3b158d..3e69113249366e4bb6e62a9fe7085f608dd59755 100644
+index 1e73a5c4eb015bcbfacb4f7ae0a36f3855f320a6..0b8cc7a550422445e4c07800682b5f60277a39d2 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -991,6 +991,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -978,6 +978,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,10 +51,10 @@ index 7e7e50880804583acf75206d3f5f1c6f4c3b158d..3e69113249366e4bb6e62a9fe7085f60
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 67f0e98426345beac34bfd41be384210be5911e4..b6fcd9920fcc047d58501dccc492bb0a118e654f 100644
+index 68a8a0e228103ea4e9fe58f416a53587b2d26f6e..7c3055e6250b693546c29ac315ce3f418ab478f8 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -234,6 +234,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -231,6 +231,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CloseIdleConnections(CloseIdleConnectionsCallback callback) override;
    void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
                              mojom::NetworkConditionsPtr conditions) override;
@@ -63,10 +63,10 @@ index 67f0e98426345beac34bfd41be384210be5911e4..b6fcd9920fcc047d58501dccc492bb0a
    void SetEnableReferrers(bool enable_referrers) override;
  #if defined(OS_CHROMEOS)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 6adfd8969148daba3f77aea4c5f89adec6338e6b..78fd4bd72b07f38b447840b584253883756fe021 100644
+index 4729cc2bc74d410100a0c1946b867cd5d8428d31..f6672a20f1eb0914b8e103ae38079e9e0e6bfbdc 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -984,6 +984,9 @@ interface NetworkContext {
+@@ -1001,6 +1001,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  

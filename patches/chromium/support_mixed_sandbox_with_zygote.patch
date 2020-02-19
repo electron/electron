@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index baf9e4ed20a41b9c1320ec6fbae290319e8e05e5..89fa83bbda39e90c1fcd6df83cd248c1f2de7195 100644
+index fb7995dc1e80ba4bce5c466526d4119bbcf8f28a..8205a898bc368543ffe150a641c9f04c137fc072 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -414,6 +414,11 @@ class RendererSandboxedProcessLauncherDelegate
@@ -62,7 +62,7 @@ index baf9e4ed20a41b9c1320ec6fbae290319e8e05e5..89fa83bbda39e90c1fcd6df83cd248c1
  };
  
  const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1746,11 +1757,18 @@ bool RenderProcessHostImpl::Init() {
+@@ -1790,11 +1801,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  

@@ -19,28 +19,11 @@ This can be removed once web content (including WebGL) learn how
 to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
-diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 4691cedce6d16b5ffcbed995bc2a4a49dda2556b..7c95c65dbb7067524f8696ea4d86e27dacc815cb 100644
---- a/cc/trees/layer_tree_host_impl.cc
-+++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1814,6 +1814,12 @@ const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpace() const {
- 
- const gfx::ColorSpace& LayerTreeHostImpl::GetRasterColorSpaceAndId(
-     int* id) const {
-+  if (!settings_.enable_color_correct_rendering) {
-+    static gfx::ColorSpace invalid_color_space;
-+    *id = -1;
-+    return invalid_color_space;
-+  }
-+
-   const gfx::ColorSpace* result = nullptr;
-   // The pending tree will have the most recently updated color space, so
-   // prefer that.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 161ce54e75c0047797e9d0db27aafc3d0bfe7140..61838deb281cc11db50d195cf960970ee9cdac89 100644
+index 799ea55b4d74fa5b86034e0dc63e0ab81e7f47fb..9960298ea2306db6482f610c2f5fdb2977dc232b 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -100,6 +100,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -101,6 +101,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -50,7 +33,7 @@ index 161ce54e75c0047797e9d0db27aafc3d0bfe7140..61838deb281cc11db50d195cf960970e
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 389f2ed29bd85c35b38df92346a8d6c76ce22fd6..02cf492fa4068d10c4b8b2addee8102b35aac3e0 100644
+index f4d5e4daf5db36da88e5dfabc698a51a32d55010..33ecf4ac5792b38d5d2b5e4a81dd79478c562e24 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -83,7 +66,7 @@ index cb69e08c0185f55497089505ed5b226e57140321..362f28accc248248f3bcb54955c23528
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index be727deec562337330e29570cfc232d57cc69a83..fee41b66cf4b3b14c6f5b1b7278c9070ac6f80fa 100644
+index a89c6e85d86dd035e834c9ff4be3387024082815..a0833574662cbcedd38bb0c38526b08f9aa57fc5 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -84,6 +84,9 @@
@@ -101,10 +84,10 @@ index be727deec562337330e29570cfc232d57cc69a83..fee41b66cf4b3b14c6f5b1b7278c9070
    SetBlendEnabled(quad->ShouldDrawWithBlending());
  
 -  SetUseProgram(ProgramKey::DebugBorder(), gfx::ColorSpace::CreateSRGB(),
--                current_frame()->current_render_pass->color_space);
+-                CurrentRenderPassColorSpace());
 +  SetUseProgram(ProgramKey::DebugBorder(),
 +                PATCH_CS(gfx::ColorSpace::CreateSRGB()),
-+                PATCH_CS(current_frame()->current_render_pass->color_space));
++                PATCH_CS(CurrentRenderPassColorSpace()));
  
    // Use the full quad_rect for debug quads to not move the edges based on
    // partial swaps.
@@ -118,71 +101,67 @@ index be727deec562337330e29570cfc232d57cc69a83..fee41b66cf4b3b14c6f5b1b7278c9070
  }
  
  void GLRenderer::UpdateRPDQUniforms(DrawRenderPassDrawQuadParams* params) {
-@@ -1979,8 +1984,8 @@ void GLRenderer::DrawSolidColorQuad(const SolidColorDrawQuad* quad,
+@@ -1979,7 +1984,8 @@ void GLRenderer::DrawSolidColorQuad(const SolidColorDrawQuad* quad,
    SetUseProgram(ProgramKey::SolidColor(use_aa ? USE_AA : NO_AA,
                                         tint_gl_composited_content_,
                                         ShouldApplyRoundedCorner(quad)),
--                quad_color_space,
--                current_frame()->current_render_pass->color_space);
+-                quad_color_space, CurrentRenderPassColorSpace());
 +                PATCH_CS(quad_color_space),
-+                PATCH_CS(current_frame()->current_render_pass->color_space));
++                PATCH_CS(CurrentRenderPassColorSpace());
    SetShaderColor(color, opacity);
    if (current_program_->rounded_corner_rect_location() != -1) {
      SetShaderRoundedCorner(
-@@ -2135,8 +2140,8 @@ void GLRenderer::DrawContentQuadAA(const ContentDrawQuadBase* quad,
+@@ -2134,7 +2140,8 @@ void GLRenderer::DrawContentQuadAA(const ContentDrawQuadBase* quad,
                                                : NON_PREMULTIPLIED_ALPHA,
                         false, false, tint_gl_composited_content_,
                         ShouldApplyRoundedCorner(quad)),
--      quad_resource_lock.color_space(),
--      current_frame()->current_render_pass->color_space);
+-      quad_resource_lock.color_space(), CurrentRenderPassColorSpace());
 +      PATCH_CS(quad_resource_lock.color_space()),
-+      PATCH_CS(current_frame()->current_render_pass->color_space));
++      PATCH_CS(CurrentRenderPassColorSpace());
  
    if (current_program_->tint_color_matrix_location() != -1) {
      auto matrix = cc::DebugColors::TintCompositedContentColorTransformMatrix();
-@@ -2232,8 +2237,8 @@ void GLRenderer::DrawContentQuadNoAA(const ContentDrawQuadBase* quad,
+@@ -2230,7 +2237,8 @@ void GLRenderer::DrawContentQuadNoAA(const ContentDrawQuadBase* quad,
                         !quad->ShouldDrawWithBlending(), has_tex_clamp_rect,
                         tint_gl_composited_content_,
                         ShouldApplyRoundedCorner(quad)),
--      quad_resource_lock.color_space(),
--      current_frame()->current_render_pass->color_space);
+-      quad_resource_lock.color_space(), CurrentRenderPassColorSpace());
 +      PATCH_CS(quad_resource_lock.color_space()),
-+      PATCH_CS(current_frame()->current_render_pass->color_space));
++      PATCH_CS(CurrentRenderPassColorSpace());
  
    if (current_program_->tint_color_matrix_location() != -1) {
      auto matrix = cc::DebugColors::TintCompositedContentColorTransformMatrix();
-@@ -2336,7 +2341,7 @@ void GLRenderer::DrawYUVVideoQuad(const YUVVideoDrawQuad* quad,
+@@ -2332,7 +2340,7 @@ void GLRenderer::DrawYUVVideoQuad(const YUVVideoDrawQuad* quad,
+   // The source color space should never be RGB.
    DCHECK_NE(src_color_space, src_color_space.GetAsFullRangeRGB());
  
-   gfx::ColorSpace dst_color_space =
--      current_frame()->current_render_pass->color_space;
-+      PATCH_CS(current_frame()->current_render_pass->color_space);
+-  gfx::ColorSpace dst_color_space = CurrentRenderPassColorSpace();
++  gfx::ColorSpace dst_color_space = PATCH_CS(CurrentRenderPassColorSpace());
  
  #if defined(OS_WIN)
    // Force sRGB output on Windows for overlay candidate video quads to match
-@@ -2499,8 +2504,8 @@ void GLRenderer::DrawStreamVideoQuad(const StreamVideoDrawQuad* quad,
+@@ -2496,7 +2504,8 @@ void GLRenderer::DrawStreamVideoQuad(const StreamVideoDrawQuad* quad,
  
    SetUseProgram(ProgramKey::VideoStream(tex_coord_precision,
                                          ShouldApplyRoundedCorner(quad)),
--                lock.color_space(),
--                current_frame()->current_render_pass->color_space);
+-                lock.color_space(), CurrentRenderPassColorSpace());
 +                PATCH_CS(lock.color_space()),
-+                PATCH_CS(current_frame()->current_render_pass->color_space));
++                PATCH_CS(CurrentRenderPassColorSpace());
  
    DCHECK_EQ(GL_TEXTURE0, GetActiveTextureUnit(gl_));
    gl_->BindTexture(GL_TEXTURE_EXTERNAL_OES, lock.texture_id());
-@@ -2562,8 +2567,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
+@@ -2561,8 +2570,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
        draw_cache_.nearest_neighbor ? GL_NEAREST : GL_LINEAR);
  
    // Bind the program to the GL state.
 -  SetUseProgram(draw_cache_.program_key, locked_quad.color_space(),
--                current_frame()->current_render_pass->color_space);
+-                CurrentRenderPassColorSpace());
 +  SetUseProgram(draw_cache_.program_key, PATCH_CS(locked_quad.color_space()),
-+                PATCH_CS(current_frame()->current_render_pass->color_space));
++                PATCH_CS(CurrentRenderPassColorSpace());
  
    if (current_program_->rounded_corner_rect_location() != -1) {
      SetShaderRoundedCorner(
-@@ -3300,7 +3305,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
+@@ -3299,7 +3308,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
  void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& src_color_space,
                                 const gfx::ColorSpace& dst_color_space) {
@@ -193,37 +172,41 @@ index be727deec562337330e29570cfc232d57cc69a83..fee41b66cf4b3b14c6f5b1b7278c9070
  
    // If the input color space is PQ, and it did not specify a white level,
    // override it with the frame's white level.
-@@ -3683,7 +3690,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -3681,9 +3692,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+         cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
+   }
  
-   *overlay_texture = FindOrCreateOverlayTexture(
-       params.quad->render_pass_id, iosurface_width, iosurface_height,
--      current_frame()->root_render_pass->color_space);
-+      PATCH_CS(current_frame()->root_render_pass->color_space));
+-  *overlay_texture =
+-      FindOrCreateOverlayTexture(params.quad->render_pass_id, iosurface_width,
+-                                 iosurface_height, RootRenderPassColorSpace());
++  *overlay_texture = FindOrCreateOverlayTexture(
++      params.quad->render_pass_id, iosurface_width, iosurface_height,
++      PATCH_CS(RootRenderPassColorSpace());
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -3902,8 +3909,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -3902,8 +3913,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
 -  SetUseProgram(ProgramKey::DebugBorder(), gfx::ColorSpace::CreateSRGB(),
--                current_frame()->root_render_pass->color_space);
+-                CurrentRenderPassColorSpace());
 +  SetUseProgram(ProgramKey::DebugBorder(), PATCH_CS(gfx::ColorSpace::CreateSRGB()),
-+                PATCH_CS(current_frame()->root_render_pass->color_space));
++                PATCH_CS(CurrentRenderPassColorSpace());
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4012,3 +4019,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -4012,3 +4023,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 34510d80f708b2e61dac8605526d7b34c484a962..3ba61b3c1fbec6e9d5d9fe62704f6a9d05c4cbdd 100644
+index fcca8876d3d2ac935dd02303319b070ff6c6e099..97a21a042e2e9f2ad78ea97999de5ad1de1a5cca 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -221,6 +221,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -209,6 +209,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -232,7 +215,7 @@ index 34510d80f708b2e61dac8605526d7b34c484a962..3ba61b3c1fbec6e9d5d9fe62704f6a9d
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 89fa83bbda39e90c1fcd6df83cd248c1f2de7195..8d69e9a2f2ee1ea7e639c1bfcdf42eb89a4099ff 100644
+index 8205a898bc368543ffe150a641c9f04c137fc072..9aa8cb0bb65af9c506e928fdcd5b3e26c220f6a2 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -228,6 +228,7 @@
@@ -243,7 +226,7 @@ index 89fa83bbda39e90c1fcd6df83cd248c1f2de7195..8d69e9a2f2ee1ea7e639c1bfcdf42eb8
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3083,6 +3084,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3149,6 +3150,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -252,10 +235,10 @@ index 89fa83bbda39e90c1fcd6df83cd248c1f2de7195..8d69e9a2f2ee1ea7e639c1bfcdf42eb8
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index bef9630bc7a15b9b8fcebd064d4cea013e6adc4d..c376dab8247eb8352f045dbcd1b8d01a6571aaa3 100644
+index 13affc02e2bde412faa258ea872640219ad0eddd..98ff1d26d92c03c83c0f8cae29c217d95e7102ee 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2853,6 +2853,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2806,6 +2806,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
