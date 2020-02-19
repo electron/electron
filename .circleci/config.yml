@@ -423,7 +423,9 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
     command: |
       cd src
       ninja -C out/Default chrome/test/chromedriver -j $NUMBER_OF_NINJA_PROCESSES
-      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/Default/chromedriver
+      if [ "`uname`" == "Linux" ]; then
+        electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/Default/chromedriver
+      fi
       ninja -C out/Default electron:electron_chromedriver_zip
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
