@@ -67,8 +67,9 @@ v8::Local<v8::Value> ServiceWorkerRunningInfoToDict(
 
 }  // namespace
 
-ServiceWorkerContext::ServiceWorkerContext(v8::Isolate* isolate,
-                                           AtomBrowserContext* browser_context)
+ServiceWorkerContext::ServiceWorkerContext(
+    v8::Isolate* isolate,
+    ElectronBrowserContext* browser_context)
     : browser_context_(browser_context), weak_ptr_factory_(this) {
   Init(isolate);
   service_worker_context_ =
@@ -131,7 +132,7 @@ v8::Local<v8::Value> ServiceWorkerContext::GetWorkerInfoFromID(
 // static
 gin::Handle<ServiceWorkerContext> ServiceWorkerContext::Create(
     v8::Isolate* isolate,
-    AtomBrowserContext* browser_context) {
+    ElectronBrowserContext* browser_context) {
   return gin::CreateHandle(isolate,
                            new ServiceWorkerContext(isolate, browser_context));
 }

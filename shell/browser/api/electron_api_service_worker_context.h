@@ -12,7 +12,7 @@
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
 namespace api {
 
@@ -22,7 +22,7 @@ class ServiceWorkerContext
  public:
   static gin::Handle<ServiceWorkerContext> Create(
       v8::Isolate* isolate,
-      AtomBrowserContext* browser_context);
+      ElectronBrowserContext* browser_context);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -38,11 +38,11 @@ class ServiceWorkerContext
 
  protected:
   explicit ServiceWorkerContext(v8::Isolate* isolate,
-                                AtomBrowserContext* browser_context);
+                                ElectronBrowserContext* browser_context);
   ~ServiceWorkerContext() override;
 
  private:
-  AtomBrowserContext* browser_context_;
+  ElectronBrowserContext* browser_context_;
 
   content::ServiceWorkerContext* service_worker_context_;
 
