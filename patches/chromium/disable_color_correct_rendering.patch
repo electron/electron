@@ -107,7 +107,7 @@ index a89c6e85d86dd035e834c9ff4be3387024082815..a0833574662cbcedd38bb0c38526b08f
                                         ShouldApplyRoundedCorner(quad)),
 -                quad_color_space, CurrentRenderPassColorSpace());
 +                PATCH_CS(quad_color_space),
-+                PATCH_CS(CurrentRenderPassColorSpace());
++                PATCH_CS(CurrentRenderPassColorSpace()));
    SetShaderColor(color, opacity);
    if (current_program_->rounded_corner_rect_location() != -1) {
      SetShaderRoundedCorner(
@@ -117,7 +117,7 @@ index a89c6e85d86dd035e834c9ff4be3387024082815..a0833574662cbcedd38bb0c38526b08f
                         ShouldApplyRoundedCorner(quad)),
 -      quad_resource_lock.color_space(), CurrentRenderPassColorSpace());
 +      PATCH_CS(quad_resource_lock.color_space()),
-+      PATCH_CS(CurrentRenderPassColorSpace());
++      PATCH_CS(CurrentRenderPassColorSpace()));
  
    if (current_program_->tint_color_matrix_location() != -1) {
      auto matrix = cc::DebugColors::TintCompositedContentColorTransformMatrix();
@@ -127,7 +127,7 @@ index a89c6e85d86dd035e834c9ff4be3387024082815..a0833574662cbcedd38bb0c38526b08f
                         ShouldApplyRoundedCorner(quad)),
 -      quad_resource_lock.color_space(), CurrentRenderPassColorSpace());
 +      PATCH_CS(quad_resource_lock.color_space()),
-+      PATCH_CS(CurrentRenderPassColorSpace());
++      PATCH_CS(CurrentRenderPassColorSpace()));
  
    if (current_program_->tint_color_matrix_location() != -1) {
      auto matrix = cc::DebugColors::TintCompositedContentColorTransformMatrix();
@@ -146,7 +146,7 @@ index a89c6e85d86dd035e834c9ff4be3387024082815..a0833574662cbcedd38bb0c38526b08f
                                          ShouldApplyRoundedCorner(quad)),
 -                lock.color_space(), CurrentRenderPassColorSpace());
 +                PATCH_CS(lock.color_space()),
-+                PATCH_CS(CurrentRenderPassColorSpace());
++                PATCH_CS(CurrentRenderPassColorSpace()));
  
    DCHECK_EQ(GL_TEXTURE0, GetActiveTextureUnit(gl_));
    gl_->BindTexture(GL_TEXTURE_EXTERNAL_OES, lock.texture_id());
@@ -157,7 +157,7 @@ index a89c6e85d86dd035e834c9ff4be3387024082815..a0833574662cbcedd38bb0c38526b08f
 -  SetUseProgram(draw_cache_.program_key, locked_quad.color_space(),
 -                CurrentRenderPassColorSpace());
 +  SetUseProgram(draw_cache_.program_key, PATCH_CS(locked_quad.color_space()),
-+                PATCH_CS(CurrentRenderPassColorSpace());
++                PATCH_CS(CurrentRenderPassColorSpace()));
  
    if (current_program_->rounded_corner_rect_location() != -1) {
      SetShaderRoundedCorner(
@@ -181,7 +181,7 @@ index a89c6e85d86dd035e834c9ff4be3387024082815..a0833574662cbcedd38bb0c38526b08f
 -                                 iosurface_height, RootRenderPassColorSpace());
 +  *overlay_texture = FindOrCreateOverlayTexture(
 +      params.quad->render_pass_id, iosurface_width, iosurface_height,
-+      PATCH_CS(RootRenderPassColorSpace());
++      PATCH_CS(RootRenderPassColorSpace()));
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
@@ -192,7 +192,7 @@ index a89c6e85d86dd035e834c9ff4be3387024082815..a0833574662cbcedd38bb0c38526b08f
 -  SetUseProgram(ProgramKey::DebugBorder(), gfx::ColorSpace::CreateSRGB(),
 -                CurrentRenderPassColorSpace());
 +  SetUseProgram(ProgramKey::DebugBorder(), PATCH_CS(gfx::ColorSpace::CreateSRGB()),
-+                PATCH_CS(CurrentRenderPassColorSpace());
++                PATCH_CS(CurrentRenderPassColorSpace()));
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
