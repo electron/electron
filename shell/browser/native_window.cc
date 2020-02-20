@@ -577,7 +577,11 @@ void NativeWindow::NotifyWindowMessage(UINT message,
 }
 #endif
 
-const views::Widget* NativeWindow::GetWidgetImpl() const {
+views::Widget* NativeWindow::GetWidget() {
+  return widget();
+}
+
+const views::Widget* NativeWindow::GetWidget() const {
   return widget();
 }
 
