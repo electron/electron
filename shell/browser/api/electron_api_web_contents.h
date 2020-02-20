@@ -205,7 +205,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                            base::string16 device_name,
                            bool silent,
                            base::string16 default_printer);
-  void Print(gin_helper::Arguments* args);
+  v8::Local<v8::Promise> Print(base::Value settings);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);

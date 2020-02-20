@@ -1726,44 +1726,51 @@ void WebContents::OnGetDefaultPrinter(
                                std::move(print_callback));
 }
 
-void WebContents::Print(gin_helper::Arguments* args) {
-  base::Value settings(base::Value::Type::DICTIONARY);
-  gin_helper::Dictionary options =
-      gin::Dictionary::CreateEmpty(args->isolate());
+void OnPrintingDone(gin_helper::Promise<gin_helper::Dictionary> promise,
+                    bool success,
+                    const std::string& reason) {
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
+  dict.Set("success", success);
+  dict.Set("failureReason", reason);
+  promise.Resolve(dict);
+}
 
-  // This is sanitized at the JS level.
-  args->GetNext(&options);
-
-  printing::CompletionCallback callback;
-  if (args->Length() == 2 && !args->GetNext(&callback)) {
-    args->ThrowError("Invalid optional callback provided");
-    return;
-  }
+v8::Local<v8::Promise> WebContents::Print(base::Value settings) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Set optional silent printing
   bool silent = false;
-  options.Get("silent", &silent);
+  auto* s = settings.FindKey("silent");
+  if (s)
+    silent = s->GetBool();
 
   // Printer device name as opened by the OS; we set the default to the system's
   // default printer and only update at the Chromium level if the user overrides
   // it. We *must* check this here even though it was sanitized on the JS level
   // because Chromium will crash unless the printer actually exists on the
-  // network.
+  // network and that's a massive pain to check with JS.
   base::string16 device_name;
-  options.Get("deviceName", &device_name);
-  LOG(INFO) << device_name;
-  if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
-    args->ThrowError("Invalid deviceName provided");
-    return;
+  auto* name = settings.FindKey("deviceName");
+  if (name) {
+    device_name = base::UTF8ToUTF16(name->GetString());
+    if (!IsDeviceNameValid(device_name)) {
+      promise.RejectWithErrorMessage("Invalid deviceName provided");
+      return handle;
+    }
   }
 
+  //  printing::CompletionCallback cb;
+  auto promise_cb = base::BindOnce(&OnPrintingDone, std::move(promise));
   base::PostTaskAndReplyWithResult(
       FROM_HERE,
       {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_BLOCKING},
       base::BindOnce(&GetDefaultPrinterAsync),
       base::BindOnce(&WebContents::OnGetDefaultPrinter,
                      weak_factory_.GetWeakPtr(), std::move(settings),
-                     std::move(callback), device_name, silent));
+                     std::move(promise_cb), device_name, silent));
+
+  return handle;
 }
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {

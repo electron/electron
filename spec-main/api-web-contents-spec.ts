@@ -115,13 +115,6 @@ describe('webContents module', () => {
       }).to.throw('Invalid print settings specified')
     })
 
-    it('throws when an invalid callback is passed', () => {
-      expect(() => {
-        // @ts-ignore this line is intentionally incorrect
-        w.webContents.print({}, true)
-      }).to.throw('Invalid optional callback provided')
-    })
-
     ifit(process.platform !== 'linux')('throws when an invalid deviceName is passed', () => {
       expect(() => {
         w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' })
