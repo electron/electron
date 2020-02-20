@@ -23,17 +23,17 @@ describe('session.serviceWorkers', () => {
 
     server = http.createServer((req, res) => {
       // /{uuid}/{file}
-      const file = req.url!.split('/')[2]!;
+      const file = req.url!.split('/')[2]!
 
       if (file.endsWith('.js')) {
         res.setHeader('Content-Type', 'application/javascript')
       }
       res.end(fs.readFileSync(path.resolve(__dirname, 'fixtures', 'api', 'service-workers', file)))
     })
-    await new Promise(r => {
+    await new Promise(resolve => {
       server.listen(0, '127.0.0.1', () => {
         baseUrl = `http://localhost:${(server.address() as AddressInfo).port}/${uuid}`
-        r()
+        resolve()
       })
     })
   })
@@ -47,7 +47,7 @@ describe('session.serviceWorkers', () => {
     await closeWindow(w)
     w = null as any
   })
-  
+
   after(async () => {
     server.close()
   })
