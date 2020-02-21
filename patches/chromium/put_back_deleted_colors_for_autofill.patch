@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/chrome/browser/ui/gtk/native_theme_gtk.cc b/chrome/browser/ui/gtk/native_theme_gtk.cc
-index 0bc7a7ecdacd666cc0cc4769f5bb36053515a732..4f6affd265d53d82bb041006ae02f7383e412ad9 100644
+index 0bc7a7ecdacd666cc0cc4769f5bb36053515a732..d7f86718224418643265ab616a86b8ce2d0a5207 100644
 --- a/chrome/browser/ui/gtk/native_theme_gtk.cc
 +++ b/chrome/browser/ui/gtk/native_theme_gtk.cc
-@@ -300,6 +300,27 @@ base::Optional<SkColor> SkColorFromColorId(
+@@ -300,6 +300,29 @@ base::Optional<SkColor> SkColorFromColorId(
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -19,22 +19,24 @@ index 0bc7a7ecdacd666cc0cc4769f5bb36053515a732..4f6affd265d53d82bb041006ae02f738
 +    case ui::NativeTheme::kColorId_ResultsTableNormalBackground:
 +      return SkColorFromColorId(
 +          ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
-+    case ui::NativeTheme::kColorId_ResultsTableHoveredBackground:
-+      return color_utils::AlphaBlend(
-+          SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme),
-+          SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldSelectionBackgroundFocused, base_theme, color_scheme),
-+          0.5f);
++    case ui::NativeTheme::kColorId_ResultsTableHoveredBackground: {
++      auto default_background = SkColorFromColorId(
++              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
++      auto selection_background = SkColorFromColorId(
++              ui::NativeTheme::kColorId_TextfieldSelectionBackgroundFocused, base_theme, color_scheme);
++      if (!default_background || !selection_background) return base::nullopt;
++      return color_utils::AlphaBlend(default_background.value(), selection_background.value(), 0.5f);
++    }
 +    case ui::NativeTheme::kColorId_ResultsTableNormalText:
 +      return SkColorFromColorId(
 +          ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme);
-+    case ui::NativeTheme::kColorId_ResultsTableDimmedText:
-+      return color_utils::AlphaBlend(
-+          SkColorFromColorId(ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme),
-+          SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme),
-+          0.5f);
++    case ui::NativeTheme::kColorId_ResultsTableDimmedText: {
++      auto default_textfield_color = SkColorFromColorId(ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme);
++      auto default_textfield_background = SkColorFromColorId(
++              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
++      if (!default_textfield_color || !default_textfield_background) return base::nullopt;
++      return color_utils::AlphaBlend(default_textfield_color.value(), default_textfield_background.value(), 0.5f);
++    }
 +
      // Throbber
      // TODO(thomasanderson): Render GtkSpinner directly.
