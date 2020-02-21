@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 18 Feb 2020 16:42:14 -0800
+Subject: fix: include io.h in uvwasi for win
+
+io.h must be explicitly included, or '_lseeki64' will error
+as undefined.
+
+Already fixed upstream in https://github.com/cjihrig/uvwasi/pull/81.
+
+diff --git a/deps/uvwasi/src/uvwasi.c b/deps/uvwasi/src/uvwasi.c
+index 28c6dcc26104c928f132117b790ee63d17bad805..44b353caaf3966fa5cc1d5b7ae8ba9f47c6ea057 100644
+--- a/deps/uvwasi/src/uvwasi.c
++++ b/deps/uvwasi/src/uvwasi.c
+@@ -3,6 +3,7 @@
+ 
+ #ifndef _WIN32
+ # include <sched.h>
++# include <stdio.h>
+ # include <sys/types.h>
+ # include <unistd.h>
+ # include <dirent.h>
+@@ -11,6 +12,7 @@
+ # define SLASH_STR "/"
+ # define IS_SLASH(c) ((c) == '/')
+ #else
++# include <io.h>
+ # define SLASH '\\'
+ # define SLASH_STR "\\"
+ # define IS_SLASH(c) ((c) == '/' || (c) == '\\')

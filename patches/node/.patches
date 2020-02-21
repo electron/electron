@@ -36,3 +36,4 @@ fix_use_hex_not_decimal_for_clarity.patch
 fix_use_crypto_impls_for_compat.patch
 fix_ensure_clocks_header_included_in_impl.patch
 fix_remove_implicit_type_conversions.patch
+fix_include_io_h_in_uvwasi_for_win.patch
