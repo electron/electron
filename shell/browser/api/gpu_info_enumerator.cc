@@ -101,6 +101,10 @@ void GPUInfoEnumerator::EndImageDecodeAcceleratorSupportedProfile() {
   value_stack.pop();
 }
 
+void BeginOverlayInfo() {}
+
+void EndOverlayInfo() {}
+
 void GPUInfoEnumerator::BeginAuxAttributes() {
   value_stack.push(std::move(current));
   current = std::make_unique<base::DictionaryValue>();
