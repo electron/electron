@@ -74,6 +74,17 @@ void SetNodeCliFlags() {
   ProcessGlobalArgs(&args, nullptr, &errors, node::kDisallowedInEnvironment);
 }
 
+// TODO(codebytere): expose this from Node.js itself?
+void HostCleanupFinalizationGroupCallback(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::FinalizationGroup> group) {
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (env == nullptr) {
+    return;
+  }
+  env->RegisterFinalizationGroupForCleanup(group);
+}
+
 }  // namespace
 
 namespace electron {
@@ -142,6 +153,10 @@ int NodeMain(int argc, char* argv[]) {
 
     node::BootstrapEnvironment(env);
     env->InitializeDiagnostics();
+
+    // This is needed in order to enable v8 host weakref hooks.
+    gin_env.isolate()->SetHostCleanupFinalizationGroupCallback(
+        HostCleanupFinalizationGroupCallback);
 
     gin_helper::Dictionary process(gin_env.isolate(), env->process_object());
 #if defined(OS_WIN)
