@@ -36,6 +36,8 @@
   "message/esm_display_syntax_error_import",
   "message/esm_display_syntax_error_import_module",
   "message/esm_display_syntax_error_module",
+  "message/esm_loader_not_found",
+  "message/esm_loader_syntax_error",
   "message/source_map_throw_catch",
   "message/source_map_throw_first_tick",
   "message/source_map_throw_set_immediate",
