@@ -37,6 +37,11 @@ BrowserProcessImpl::~BrowserProcessImpl() {
   g_browser_process = nullptr;
 }
 
+BuildState* BrowserProcessImpl::GetBuildState() {
+  NOTIMPLEMENTED();
+  return nullptr;
+}
+
 // static
 void BrowserProcessImpl::ApplyProxyModeFromCommandLine(
     ValueMapPrefStore* pref_store) {
