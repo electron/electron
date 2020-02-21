@@ -342,13 +342,6 @@ int ElectronMainDelegate::RunProcess(
     return -1;
 }
 
-#if defined(OS_MACOSX)
-bool ElectronMainDelegate::DelaySandboxInitialization(
-    const std::string& process_type) {
-  return process_type == kRelauncherProcess;
-}
-#endif
-
 bool ElectronMainDelegate::ShouldCreateFeatureList() {
   return false;
 }
