@@ -2070,11 +2070,11 @@ void WebContents::CopyImageAt(int x, int y) {
     host->CopyImageAt(x, y);
 }
 
+#if !defined(OS_MACOSX)
 void WebContents::Focus() {
   web_contents()->Focus();
 }
 
-#if !defined(OS_MACOSX)
 bool WebContents::IsFocused() const {
   auto* view = web_contents()->GetRenderWidgetHostView();
   if (!view)
