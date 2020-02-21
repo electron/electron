@@ -61,7 +61,7 @@ index 95679ab2915ad496ca0018aa13874b84eb11d7fd..c278e0fc072409677beafc7f252ebcf6
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index cc33b1b54e812e0284b4c66b228b3a0a8b88e85f..c97666e16b6ae5f804e6a6add1466a852f97d69f 100644
+index cc33b1b54e812e0284b4c66b228b3a0a8b88e85f..5d5e06fc90bd09458054720b03436cae80111370 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -1188,6 +1188,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
@@ -73,6 +73,19 @@ index cc33b1b54e812e0284b4c66b228b3a0a8b88e85f..c97666e16b6ae5f804e6a6add1466a85
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_ClosePage, OnClosePage)
+@@ -1733,6 +1735,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
+   return send_content_state_immediately_;
+ }
+ 
++void RenderViewImpl::OnSetSchedulerThrottling(bool allowed) {
++  if (!webview())
++    return;
++  webview()->SetSchedulerThrottling(allowed);
++}
++
+ void RenderViewImpl::ApplyPageVisibilityState(
+     PageVisibilityState visibility_state,
+     bool initial_setting) {
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
 index 828303a718e17c98c4dfd6222a482c5d978b5762..3ccbbd3d012e065ab839c1a7ac2f1d2641e4dde6 100644
 --- a/content/renderer/render_view_impl.h
