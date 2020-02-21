@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 20 Feb 2020 17:22:58 -0800
+Subject: fix: --perf-prof only works on Linux
+
+`--perf-prof`-related flags have been removed in V8 on non-linux devices.
+
+See:
+* https://chromium-review.googlesource.com/c/v8/v8/+/1993969
+* https://chromium-review.googlesource.com/c/v8/v8/+/1993978
+
+Upstreamed in https://github.com/nodejs/node/pull/31892.
+
+diff --git a/test/parallel/test-cli-node-options.js b/test/parallel/test-cli-node-options.js
+index 698f463b627644a85db0fcddfcd471ebd91934e5..63cb22c8693447da94f4ba2f8c4082ea6bf49d6a 100644
+--- a/test/parallel/test-cli-node-options.js
++++ b/test/parallel/test-cli-node-options.js
+@@ -41,15 +41,14 @@ expect('--trace-event-file-pattern {pid}-${rotation}.trace_events ' +
+        '--trace-event-categories node.async_hooks', 'B\n');
+ expect('--unhandled-rejections=none', 'B\n');
+ 
+-if (!common.isWindows) {
++if (common.isLinux) {
+   expect('--perf-basic-prof', 'B\n');
+   expect('--perf-basic-prof-only-functions', 'B\n');
+-}
+ 
+-if (common.isLinux && ['arm', 'x64'].includes(process.arch)) {
+-  // PerfJitLogger is only implemented in Linux.
+-  expect('--perf-prof', 'B\n');
+-  expect('--perf-prof-unwinding-info', 'B\n');
++  if (['arm', 'x64'].includes(process.arch)) {
++    expect('--perf-prof', 'B\n');
++    expect('--perf-prof-unwinding-info', 'B\n');
++  }
+ }
+ 
+ if (common.hasCrypto) {
