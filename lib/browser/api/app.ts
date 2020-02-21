@@ -117,6 +117,10 @@ deprecate.fnToProperty(App.prototype, 'accessibilitySupportEnabled', '_isAccessi
 deprecate.fnToProperty(App.prototype, 'badgeCount', '_getBadgeCount', '_setBadgeCount')
 deprecate.fnToProperty(App.prototype, 'name', '_getName', '_setName')
 
+// Deprecate allowRendererProcessReuse but only if they set it to false, no need to log if
+// they are setting it to true
+deprecate.removeProperty(app, 'allowRendererProcessReuse', [false])
+
 // Wrappers for native classes.
 const { DownloadItem } = process.electronBinding('download_item')
 Object.setPrototypeOf(DownloadItem.prototype, EventEmitter.prototype)
