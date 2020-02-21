@@ -1660,7 +1660,7 @@ describe('webContents module', () => {
     })
 
     afterEach(async () => {
-      await session.defaultSession.clearAuthCache({ type: 'password' })
+      await session.defaultSession.clearAuthCache()
     })
 
     after(() => {

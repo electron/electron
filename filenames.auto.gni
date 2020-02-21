@@ -108,8 +108,6 @@ auto_filenames = {
     "docs/api/structures/protocol-response.md",
     "docs/api/structures/rectangle.md",
     "docs/api/structures/referrer.md",
-    "docs/api/structures/remove-client-certificate.md",
-    "docs/api/structures/remove-password.md",
     "docs/api/structures/scrubber-item.md",
     "docs/api/structures/segmented-control-segment.md",
     "docs/api/structures/service-worker-info.md",
