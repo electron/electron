@@ -28,6 +28,18 @@ module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-
 
 ## Planned Breaking API Changes (9.0)
 
+### Loading non-context-aware native modules in the renderer process
+
+As of Electron 9 we do not allow loading of non-context-aware native modules in
+the renderer process.  This is to improve security, performance and maintainability
+of Electron as a project.
+
+If this impacts you, you can temporarily set `app.allowRendererProcessReuse` to `false`
+to revert to the old behavior.  This flag will only be an option until Electron 11 so
+you should plan to update your native modules to be context aware.
+
+For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
+
 ### `<webview>.getWebContents()`
 
 This API, which was deprecated in Electron 8.0, is now removed.
