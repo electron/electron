@@ -38,3 +38,4 @@ fix_ensure_clocks_header_included_in_impl.patch
 fix_remove_implicit_type_conversions.patch
 fix_include_io_h_in_uvwasi_for_win.patch
 fix_--perf-prof_only_works_on_linux.patch
+fix_we_need_to_eager-load_cjs_modules.patch
