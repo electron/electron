@@ -141,6 +141,7 @@ int NodeMain(int argc, char* argv[]) {
     node_debugger.Start();
 
     node::BootstrapEnvironment(env);
+    env->InitializeDiagnostics();
 
     gin_helper::Dictionary process(gin_env.isolate(), env->process_object());
 #if defined(OS_WIN)
