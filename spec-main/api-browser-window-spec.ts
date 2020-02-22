@@ -2415,9 +2415,9 @@ describe('BrowserWindow module', () => {
             nativeWindowOpen: true
           }
         })
-        app.allowRendererProcessReuse = true
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-argv.html'))
         const [, typeofProcess] = await emittedOnce(ipcMain, 'answer')
+        app.allowRendererProcessReuse = true
         expect(typeofProcess).to.eql('undefined')
       })
 
