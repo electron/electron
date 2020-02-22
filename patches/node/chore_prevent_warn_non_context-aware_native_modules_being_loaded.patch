@@ -8,7 +8,7 @@ once we stop warning and begin to unilaterally prevent non-context aware modules
 from being loaded.
 
 diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
-index e7bd18855fb98a822833b4366bfb595dccfc1b6f..a96f891f675cc598e912a5e010c24938a9f6fc98 100644
+index c86b5851ca9332ca440443e5feab2e65c7ac30b9..9416cf377871c217413bd9bcc27a7b35c9de1ca2 100644
 --- a/lib/internal/bootstrap/pre_execution.js
 +++ b/lib/internal/bootstrap/pre_execution.js
 @@ -80,8 +80,10 @@ function patchProcessObject(expandArgv1) {
