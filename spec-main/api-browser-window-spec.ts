@@ -2406,7 +2406,8 @@ describe('BrowserWindow module', () => {
         const webPreferences = (childWebContents as any).getLastWebPreferences()
         expect(webPreferences.foo).to.equal('bar')
       })
-      it('should have nodeIntegration disabled in child windows', async () => {
+      it('should have nodeIntegration disabled in child windows if rendererProcessReuse is disabled', async () => {
+        app.allowRendererProcessReuse = false
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -2414,6 +2415,7 @@ describe('BrowserWindow module', () => {
             nativeWindowOpen: true
           }
         })
+        app.allowRendererProcessReuse = true
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-argv.html'))
         const [, typeofProcess] = await emittedOnce(ipcMain, 'answer')
         expect(typeofProcess).to.eql('undefined')
