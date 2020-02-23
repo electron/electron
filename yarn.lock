@@ -812,18 +812,15 @@ arrify@^1.0.0, arrify@^1.0.1:
   resolved "https://registry.yarnpkg.com/arrify/-/arrify-1.0.1.tgz#898508da2226f380df904728456849c1501a4b0d"
   integrity sha1-iYUI2iIm84DfkEcoRWhJwVAaSw0=
 
-asar@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/asar/-/asar-2.1.0.tgz#97c6a570408c4e38a18d4a3fb748a621b5a7844e"
-  integrity sha512-d2Ovma+bfqNpvBzY/KU8oPY67ZworixTpkjSx0PCXnQi67c2cXmssaTxpFDUM0ttopXoGx/KRxNg/GDThYbXQA==
+asar@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/asar/-/asar-3.0.1.tgz#fbf352cba5b833efbdebbf7118440e5b492c01c5"
+  integrity sha512-43sVUKSX0VLNfavair0OLzPoVX5rRdqAxcUUhtwKLGkKQPs2ePreOG7zpp3gZOLvZGhZxixD9JZBxWKgqH8r1g==
   dependencies:
     chromium-pickle-js "^0.2.0"
-    commander "^2.20.0"
-    cuint "^0.2.2"
-    glob "^7.1.3"
+    commander "^4.1.1"
+    glob "^7.1.6"
     minimatch "^3.0.4"
-    mkdirp "^0.5.1"
-    tmp-promise "^1.0.5"
   optionalDependencies:
     "@types/glob" "^7.1.1"
 
@@ -968,7 +965,7 @@ bl@^1.0.0:
     readable-stream "^2.3.5"
     safe-buffer "^5.1.1"
 
-bluebird@^3.5.0, bluebird@^3.5.5:
+bluebird@^3.5.5:
   version "3.5.5"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.5.5.tgz#a8d0afd73251effbbd5fe384a77d73003c17a71f"
   integrity sha512-5am6HnnfN+urzt4yfg7IgTbotDjIT/u8AJpEt0sIU9FtXfVeezXAPKswrG+xKUCOYAINpSdgZVDU6QFh+cuH3w==
@@ -1544,6 +1541,11 @@ commander@^2.14.1, commander@^2.18.0, commander@^2.20.0, commander@^2.9.0:
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.20.0.tgz#d58bb2b5c1ee8f87b0d340027e9e94e222c5a422"
   integrity sha512-7j2y+40w61zy6YC2iRNpUe/NwhNyoXrYpHMrSunaMG64nRnaf96zO/KMQR4OyN/UnE5KLyEBnKHd4aG3rskjpQ==
 
+commander@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-4.1.1.tgz#9fd602bd936294e9e9ef46a3f4d6964044b18068"
+  integrity sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==
+
 commondir@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/commondir/-/commondir-1.0.1.tgz#ddd800da0c66127393cca5950ea968a3aaf1253b"
@@ -1710,11 +1712,6 @@ crypto-browserify@^3.11.0:
     public-encrypt "^4.0.0"
     randombytes "^2.0.0"
     randomfill "^1.0.3"
-
-cuint@^0.2.2:
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/cuint/-/cuint-0.2.2.tgz#408086d409550c2631155619e9fa7bcadc3b991b"
-  integrity sha1-QICG1AlVDCYxFVYZ6fp7ytw7mRs=
 
 currently-unhandled@^0.4.1:
   version "0.4.1"
@@ -7336,21 +7333,6 @@ timers-browserify@^2.0.4:
   integrity sha512-YvC1SV1XdOUaL6gx5CoGroT3Gu49pK9+TZ38ErPldOWW4j49GI1HKs9DV+KGq/w6y+LZ72W1c8cKz2vzY+qpzg==
   dependencies:
     setimmediate "^1.0.4"
-
-tmp-promise@^1.0.5:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/tmp-promise/-/tmp-promise-1.1.0.tgz#bb924d239029157b9bc1d506a6aa341f8b13e64c"
-  integrity sha512-8+Ah9aB1IRXCnIOxXZ0uFozV1nMU5xiu7hhFVUSxZ3bYu+psD4TzagCzVbexUCgNNGJnsmNDQlS4nG3mTyoNkw==
-  dependencies:
-    bluebird "^3.5.0"
-    tmp "0.1.0"
-
-tmp@0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/tmp/-/tmp-0.1.0.tgz#ee434a4e22543082e294ba6201dcc6eafefa2877"
-  integrity sha512-J7Z2K08jbGcdA1kkQpJSqLF6T0tdQqpR2pnSUXsIchbPdTI9v3e85cLW0d6WDhwuAleOV71j2xWs8qMPfK7nKw==
-  dependencies:
-    rimraf "^2.6.3"
 
 tmp@^0.0.33:
   version "0.0.33"
