@@ -558,6 +558,7 @@ filenames = {
     "shell/common/skia_util.h",
     "shell/common/v8_value_converter.cc",
     "shell/common/v8_value_converter.h",
+    "shell/common/world_ids.h",
     "shell/renderer/api/context_bridge/render_frame_context_bridge_store.cc",
     "shell/renderer/api/context_bridge/render_frame_context_bridge_store.h",
     "shell/renderer/api/electron_api_context_bridge.cc",
