@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 20 Feb 2020 19:04:18 -0800
+Subject: fix: we need to eager-load cjs modules
+
+Node.js added a check to prevent commonjs modules being loaded before prepareMainThreadExecution,
+but Electron needs to do that in our asar logic in order to override child_process. I plan to
+either tweak this logic and upstream it to Nodejs, or to find an alternate approach in Electron
+for overriding the child_process apis.
+
+diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
+index 35ad9ee1a685177894bb5c13c58c16af2ccee362..865ade2b6917321e16ef3b5f12121e8bfcc25b07 100644
+--- a/lib/internal/bootstrap/pre_execution.js
++++ b/lib/internal/bootstrap/pre_execution.js
+@@ -64,7 +64,7 @@ function prepareMainThreadExecution(expandArgv1 = false) {
+   initializeESMLoader();
+ 
+   const CJSLoader = require('internal/modules/cjs/loader');
+-  assert(!CJSLoader.hasLoadedAnyUserCJSModule);
++  // assert(!CJSLoader.hasLoadedAnyUserCJSModule);
+   loadPreloadModules();
+   initializeFrozenIntrinsics();
+   setupAsarSupport();
+diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
+index 56ccd9df5e9b539297856a31691f577a5ab56bf0..abc1efcef3822c84f5f70ed64e1e9a80a16be98c 100644
+--- a/lib/internal/main/worker_thread.js
++++ b/lib/internal/main/worker_thread.js
+@@ -115,7 +115,7 @@ port.on('message', (message) => {
+     initializeESMLoader();
+ 
+     const CJSLoader = require('internal/modules/cjs/loader');
+-    assert(!CJSLoader.hasLoadedAnyUserCJSModule);
++    // assert(!CJSLoader.hasLoadedAnyUserCJSModule);
+     loadPreloadModules();
+     initializeFrozenIntrinsics();
+     if (argv !== undefined) {

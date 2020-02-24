@@ -59,18 +59,7 @@ index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c4
  
  }}  // namespace native_module
  
-@@ -243,8 +245,8 @@ def GetDefinition(var, source, step=30):
-   return definition, len(code_points)
- 
- 
--def AddModule(filename, consts, macros, definitions, initializers):
--  code = ReadFile(filename)
-+def AddModule(filename, consts, macros, definitions, initializers, FileReadFn=ReadFile):
-+  code = FileReadFn(filename)
-   code = ExpandConstants(code, consts)
-   code = ExpandMacros(code, macros)
-   name = NormalizeFileName(filename)
-@@ -256,7 +258,7 @@ def AddModule(filename, consts, macros, definitions, initializers):
+@@ -256,7 +258,7 @@ def AddModule(filename, definitions, initializers):
    initializers.append(initializer)
  
  def NormalizeFileName(filename):
@@ -79,23 +68,30 @@ index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c4
    if split[0] == 'deps':
      split = ['internal'] + split
    else:  # `lib/**/*.js` so drop the 'lib' part
-@@ -274,9 +276,9 @@ def NormalizeFileName(filename):
+@@ -114,8 +114,8 @@ def GetDefinition(var, source, step=30):
+   return definition, len(code_points)
  
+ 
+-def AddModule(filename, definitions, initializers):
+-  code = ReadFile(filename)
++def AddModule(filename, definitions, initializers, ReadFileFn=ReadFile):
++  code = ReadFileFn(filename)
+   name = NormalizeFileName(filename)
+   slug = SLUGGER_RE.sub('_', name)
+   var = slug + '_raw'
+@@ -141,7 +141,7 @@ def NormalizeFileName(filename):
    return os.path.splitext(filename)[0]
+ 
  
 -def JS2C(source_files, target):
 +def JS2C(source_files, target, only_js):
-   # Process input from all *macro.py files
--  consts, macros = ReadMacros(source_files['.py'])
-+  consts, macros = ReadMacros([] if only_js else source_files['.py'])
- 
    # Build source code lines
    definitions = []
-@@ -284,14 +286,26 @@ def JS2C(source_files, target):
- 
+   initializers = []
+@@ -149,13 +149,26 @@ def JS2C(source_files, target):
    for filename in source_files['.js']:
-     AddModule(filename, consts, macros, definitions, initializers)
--
+     AddModule(filename, definitions, initializers)
+ 
 -  config_def, config_size = handle_config_gypi(source_files['config.gypi'])
 -  definitions.append(config_def)
 +    # Electron: Expose fs module without asar support.
@@ -105,9 +101,9 @@ index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c4
 +      # we have to copy both 'fs' *and* 'internal/fs/streams' and modify the
 +      # copies to depend on each other instead of on our asarified 'fs' code.
 +      # See https://github.com/electron/electron/pull/16028 for more.
-+      AddModule('lib/original-fs.js', consts, macros, definitions, initializers, lambda _: ReadFile(filename).replace("require('internal/fs/streams')", "require('internal/original-fs/streams')"))
++      AddModule('lib/original-fs.js', definitions, initializers, lambda _: ReadFile(filename).replace("require('internal/fs/streams')", "require('internal/original-fs/streams')"))
 +    elif filename == 'lib/internal/fs/streams.js':
-+      AddModule('lib/internal/original-fs/streams.js', consts, macros, definitions, initializers, lambda _: ReadFile(filename).replace("require('fs')", "require('original-fs')"))
++      AddModule('lib/internal/original-fs/streams.js', definitions, initializers, lambda _: ReadFile(filename).replace("require('fs')", "require('original-fs')"))
 +
 +  config_size = 0
 +  if not only_js:
@@ -132,8 +128,8 @@ index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c4
    global is_verbose
    is_verbose = options.verbose
    source_files = functools.reduce(SourceFileByExt, options.sources, {})
-   # Should have exactly 3 types: `.js`, `.py`, and `.gypi`
--  assert len(source_files) == 3
+   # Should have exactly 2 types: `.js`, and `.gypi`
+-  assert len(source_files) == 2
 -  # Currently config.gypi is the only `.gypi` file allowed
 -  assert source_files['.gypi'] == ['config.gypi']
 -  source_files['config.gypi'] = source_files.pop('.gypi')[0]
@@ -141,7 +137,7 @@ index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c4
 +  if options.only_js:
 +    assert len(source_files) == 1
 +  else:
-+    assert len(source_files) == 3
++    assert len(source_files) == 2
 +    # Currently config.gypi is the only `.gypi` file allowed
 +    assert source_files['.gypi'][0].endswith('config.gypi')
 +    source_files['config.gypi'] = source_files.pop('.gypi')[0]

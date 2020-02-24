@@ -8,10 +8,10 @@ The BoringSSL incompatibilities (OPENSSL_memdup) will be shimmed in and this sho
 be removed when the associated update is rolled into Chromium.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 861d321d6170b25e874080d4c70dda201cab3248..ef96843c820a5361056022cea5546e94e5572918 100644
+index 7950c68f52050b7c9a6798b653a9c831256b21b5..41b72d010824234c567586524d22cae6ac849edb 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -5365,17 +5365,6 @@ bool PublicKeyCipher::Cipher(Environment* env,
+@@ -5514,18 +5514,6 @@ bool PublicKeyCipher::Cipher(Environment* env,
        return false;
    }
  
@@ -19,8 +19,9 @@ index 861d321d6170b25e874080d4c70dda201cab3248..ef96843c820a5361056022cea5546e94
 -    // OpenSSL takes ownership of the label, so we need to create a copy.
 -    void* label = OPENSSL_memdup(oaep_label, oaep_label_len);
 -    CHECK_NOT_NULL(label);
--    if (0 >= EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(), label,
--                                              oaep_label_len)) {
+-    if (0 >= EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(),
+-                reinterpret_cast<unsigned char*>(label),
+-                                      oaep_label_len)) {
 -      OPENSSL_free(label);
 -      return false;
 -    }

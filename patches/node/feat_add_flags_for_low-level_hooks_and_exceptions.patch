@@ -87,25 +87,23 @@ index 9d182d2aeb48c8b600bace036df868fb695dfa7c..38c467c7d49589ef5d985ad999fe22d9
  
  #ifdef NODE_REPORT
    // Cache the original command line to be
-@@ -811,6 +824,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -849,6 +849,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+     if (exit_code != 0) return exit_code;
    }
  #endif
- 
 +  if (g_upstream_node_mode) {
 +  // NOTE(jeremy): indentation is intentionally wrong here, to ease rebasing.
-+
-   const int exit_code = ProcessGlobalArgs(argv, exec_argv, errors, false);
-   if (exit_code != 0) return exit_code;
  
-@@ -833,6 +849,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+   const int exit_code = ProcessGlobalArgs(argv,
+                                           exec_argv,
+@@ -893,6 +895,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+   }
    per_process::metadata.versions.InitializeIntlVersions();
  #endif
- 
 +  }  // g_upstream_node_mode
-+
+ 
    NativeModuleEnv::InitializeCodeCache();
  
-   // We should set node_is_initialized here instead of in node::Start,
 diff --git a/src/node.h b/src/node.h
 index 025c6b949dc438a98a960d3630c723376f731ca7..892dafd8031533d23a88298406356107409cbd0a 100644
 --- a/src/node.h

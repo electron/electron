@@ -23,10 +23,10 @@ index e7bd18855fb98a822833b4366bfb595dccfc1b6f..a96f891f675cc598e912a5e010c24938
  
    // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 2fddd3766ffb28dc9176ed1b7a4b01361dd72fcd..c14cbe0279bbce98ea875bc3487996da679b4f40 100644
+index 38f4d277a51e3c3ff6d1fe37128e975b888207f0..b21a3e12e7b9dd49e0ffb7ef6495443ecb1d156f 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -932,6 +932,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1128,6 +1128,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.
@@ -38,8 +38,8 @@ index 2fddd3766ffb28dc9176ed1b7a4b01361dd72fcd..c14cbe0279bbce98ea875bc3487996da
 +        delete process._firstFileName
 +      } else
        if (process.argv[1]) {
-         resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
-       } else {
+         try {
+           resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
 diff --git a/src/env.h b/src/env.h
 index 60cb1b6d113e7e0687d96806f8940b5a715144cf..eef7b7bc244b4231419b4ec3013fa1cf700c97ef 100644
 --- a/src/env.h
