@@ -8,6 +8,14 @@ The `FIXME` string is used in code comments to denote things that should be fixe
 
 ## Planned Breaking API Changes (10.0)
 
+### Browser Window Affinity
+
+The `affinity` option when constructing a new `BrowserWindow` will be removed
+as part of our plan to more closely align with Chromiums process model for security,
+performance and maintainability.
+
+For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
+
 ### `enableRemoteModule` defaults to `false`
 
 In Electron 9, using the remote module without explicitly enabling it via the
