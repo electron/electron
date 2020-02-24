@@ -29,16 +29,16 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 
 }  // namespace
 
-@interface ElectronApplication () <NativeEventProcessor> {
+@interface AtomApplication () <NativeEventProcessor> {
   base::ObserverList<content::NativeEventProcessorObserver>::Unchecked
       observers_;
 }
 @end
 
-@implementation ElectronApplication
+@implementation AtomApplication
 
-+ (ElectronApplication*)sharedApplication {
-  return (ElectronApplication*)[super sharedApplication];
++ (AtomApplication*)sharedApplication {
+  return (AtomApplication*)[super sharedApplication];
 }
 
 - (void)terminate:(id)sender {
