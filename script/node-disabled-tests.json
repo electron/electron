@@ -106,6 +106,7 @@
   "parallel/test-inspector-heap-allocation-tracker",
   "parallel/test-module-loading-globalpaths",
   "parallel/test-module-version",
+  "parallel/test-module-run-main-monkey-patch",
   "parallel/test-openssl-ca-options",
   "parallel/test-policy-integrity",
   "parallel/test-preload",
