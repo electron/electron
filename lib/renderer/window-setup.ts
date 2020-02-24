@@ -175,7 +175,7 @@ class BrowserWindowProxy {
 }
 
 export const windowSetup = (
-  guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
+  guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean, rendererProcessReuseEnabled: boolean
 ) => {
   if (!process.sandboxed && guestInstanceId == null) {
     // Override default window.close.
@@ -229,7 +229,7 @@ export const windowSetup = (
     })
   }
 
-  if (!process.sandboxed) {
+  if (!process.sandboxed && !rendererProcessReuseEnabled) {
     window.history.back = function () {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK')
     }
