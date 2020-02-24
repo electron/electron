@@ -29,20 +29,19 @@
 namespace electron {
 
 void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
-  [[ElectronApplication sharedApplication]
-      setShutdownHandler:std::move(handler)];
+  [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
 }
 
 void Browser::Focus() {
-  [[ElectronApplication sharedApplication] activateIgnoringOtherApps:NO];
+  [[AtomApplication sharedApplication] activateIgnoringOtherApps:NO];
 }
 
 void Browser::Hide() {
-  [[ElectronApplication sharedApplication] hide:nil];
+  [[AtomApplication sharedApplication] hide:nil];
 }
 
 void Browser::Show() {
-  [[ElectronApplication sharedApplication] unhide:nil];
+  [[AtomApplication sharedApplication] unhide:nil];
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
@@ -163,7 +162,7 @@ void Browser::SetUserActivity(const std::string& type,
   std::string url_string;
   args->GetNext(&url_string);
 
-  [[ElectronApplication sharedApplication]
+  [[AtomApplication sharedApplication]
       setCurrentActivity:base::SysUTF8ToNSString(type)
             withUserInfo:DictionaryValueToNSDictionary(user_info)
           withWebpageURL:net::NSURLWithGURL(GURL(url_string))];
@@ -171,21 +170,21 @@ void Browser::SetUserActivity(const std::string& type,
 
 std::string Browser::GetCurrentActivityType() {
   NSUserActivity* userActivity =
-      [[ElectronApplication sharedApplication] getCurrentActivity];
+      [[AtomApplication sharedApplication] getCurrentActivity];
   return base::SysNSStringToUTF8(userActivity.activityType);
 }
 
 void Browser::InvalidateCurrentActivity() {
-  [[ElectronApplication sharedApplication] invalidateCurrentActivity];
+  [[AtomApplication sharedApplication] invalidateCurrentActivity];
 }
 
 void Browser::ResignCurrentActivity() {
-  [[ElectronApplication sharedApplication] resignCurrentActivity];
+  [[AtomApplication sharedApplication] resignCurrentActivity];
 }
 
 void Browser::UpdateCurrentActivity(const std::string& type,
                                     base::DictionaryValue user_info) {
-  [[ElectronApplication sharedApplication]
+  [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
                withUserInfo:DictionaryValueToNSDictionary(user_info)];
 }
@@ -291,17 +290,16 @@ std::string Browser::GetExecutableFileProductName() const {
 }
 
 int Browser::DockBounce(BounceType type) {
-  return [[ElectronApplication sharedApplication]
+  return [[AtomApplication sharedApplication]
       requestUserAttention:static_cast<NSRequestUserAttentionType>(type)];
 }
 
 void Browser::DockCancelBounce(int request_id) {
-  [[ElectronApplication sharedApplication]
-      cancelUserAttentionRequest:request_id];
+  [[AtomApplication sharedApplication] cancelUserAttentionRequest:request_id];
 }
 
 void Browser::DockSetBadgeText(const std::string& label) {
-  NSDockTile* tile = [[ElectronApplication sharedApplication] dockTile];
+  NSDockTile* tile = [[AtomApplication sharedApplication] dockTile];
   [tile setBadgeLabel:base::SysUTF8ToNSString(label)];
 }
 
@@ -312,7 +310,7 @@ void Browser::DockDownloadFinished(const std::string& filePath) {
 }
 
 std::string Browser::DockGetBadgeText() {
-  NSDockTile* tile = [[ElectronApplication sharedApplication] dockTile];
+  NSDockTile* tile = [[AtomApplication sharedApplication] dockTile];
   return base::SysNSStringToUTF8([tile badgeLabel]);
 }
 
@@ -371,7 +369,7 @@ void Browser::DockSetMenu(ElectronMenuModel* model) {
 }
 
 void Browser::DockSetIcon(const gfx::Image& image) {
-  [[ElectronApplication sharedApplication]
+  [[AtomApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
 }
 
@@ -394,7 +392,7 @@ void Browser::ShowAboutPanel() {
     options = [NSDictionary dictionaryWithDictionary:mutable_options];
   }
 
-  [[ElectronApplication sharedApplication]
+  [[AtomApplication sharedApplication]
       orderFrontStandardAboutPanelWithOptions:options];
 }
 
@@ -411,7 +409,7 @@ void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
 }
 
 void Browser::ShowEmojiPanel() {
-  [[ElectronApplication sharedApplication] orderFrontCharacterPalette:nil];
+  [[AtomApplication sharedApplication] orderFrontCharacterPalette:nil];
 }
 
 bool Browser::IsEmojiPanelSupported() {
