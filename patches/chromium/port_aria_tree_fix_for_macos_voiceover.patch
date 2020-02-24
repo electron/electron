@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <andy@slack-corp.com>
+Date: Mon, 24 Feb 2020 14:52:25 -0800
+Subject: port ARIA tree fix for macOS VoiceOver
+
+Port a CL that fixes the ARIA tree implementation so that voiceover can
+correctly announce tree items.
+
+CL: https://chromium-review.googlesource.com/c/chromium/src/+/2062913
+
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
+index a7e81072194c00baa0aa3159a6bfe374aaffa54f..f029ffdd0980b0d199d8e8d870255bd44118b1a5 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.h
++++ b/content/browser/accessibility/browser_accessibility_cocoa.h
+@@ -75,6 +75,8 @@ struct AXTextEdit {
+ // left).
+ - (NSRect)rectInScreen:(gfx::Rect)rect;
+ 
++- (void)getTreeItemDescendants:(NSMutableArray*)tree_items;
++
+ // Return the method name for the given attribute. For testing only.
+ - (NSString*)methodNameForAttribute:(NSString*)attribute;
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index ac2343f648ba3db19ffcb1fc1503e5d68cdb5135..eda671d3a04263fe4c5895c1bcb1359edc11f65b 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -2012,7 +2012,9 @@ - (NSArray*)rows {
+     return nil;
+   NSMutableArray* ret = [[[NSMutableArray alloc] init] autorelease];
+ 
+-  if (ui::IsTableLike(owner_->GetRole())) {
++  if (owner_->GetRole() == ax::mojom::Role::kTree) {
++    [self getTreeItemDescendants:ret];
++  } else if (ui::IsTableLike(owner_->GetRole())) {
+     for (BrowserAccessibilityCocoa* child in [self children]) {
+       if ([[child role] isEqualToString:NSAccessibilityRowRole])
+         [ret addObject:child];
+@@ -2465,6 +2467,19 @@ - (id)window {
+   return manager->GetWindow();
+ }
+ 
++- (void)getTreeItemDescendants:(NSMutableArray*)tree_items {
++  for (auto it = owner_->PlatformChildrenBegin();
++       it != owner_->PlatformChildrenEnd(); ++it) {
++    const BrowserAccessibilityCocoa* child =
++        ToBrowserAccessibilityCocoa(it.get());
++
++    if ([child internalRole] == ax::mojom::Role::kTreeItem) {
++      [tree_items addObject:child];
++    }
++    [child getTreeItemDescendants:tree_items];
++  }
++}
++
+ - (NSString*)methodNameForAttribute:(NSString*)attribute {
+   return [attributeToMethodNameMap objectForKey:attribute];
+ }
