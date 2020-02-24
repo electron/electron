@@ -30,7 +30,7 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Context>& source_context,
     const v8::Local<v8::Context>& target_context,
     context_bridge::RenderFrameFunctionStore* store,
-    context_bridge::ObjectCache& object_cache,
+    context_bridge::ObjectCache* object_cache,
     int recursion_depth);
 
 }  // namespace api
