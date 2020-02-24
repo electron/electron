@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <alocascio@slack-corp.com>
+Date: Mon, 24 Feb 2020 13:50:29 -0800
+Subject: Expose ARIA trees as tables for macOS accessibility
+
+ARIA trees were previously un-navigable with VoiceOver on macOS. This
+was because it didn't properly fulfill the NSAccessibilityRowsAttribute
+attribute.
+
+In webkit, this attribute is fulfilled by diving on the row's children
+and surfacing any TreeItem elements. This CL represents a port of their
+implementation.
+
+Additionally, I noticed a confusing spot where the subrole is being
+compared in a long line of role comparisons. I moved this around to be
+less foot-gunny/confusing and added more attributes for the OutlineRow
+subrole that macOS accessibility suggests are necessary (and exist in
+the webkit implementation).
+
+Link to webkit impl:
+https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/accessibility/mac/WebAccessibilityObjectWrapperMac.mm#L2836
+https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/accessibility/AccessibilityObject.cpp#L1804
+
+Bug: 868480
+Test: Use VoiceOver to navigate the table at https://cookiecrook.com/test/aria/tree/ariatree2.html. Note that the table is no longer announced as empty.
+Change-Id: Ibb86049efa23e12875aa9aeda541e0145242e3b5
+
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
+index 0216501dda1dc8b8fb4307785a0dab868bc3315a..f9730f71c122965f7ce7815a1b9a7b32f8a224f0 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.h
++++ b/content/browser/accessibility/browser_accessibility_cocoa.h
+@@ -6,6 +6,7 @@
+ #define CONTENT_BROWSER_ACCESSIBILITY_BROWSER_ACCESSIBILITY_COCOA_H_
+ 
+ #import <Cocoa/Cocoa.h>
++#include <vector>
+ 
+ #import "base/mac/scoped_nsobject.h"
+ #include "base/strings/string16.h"
+@@ -75,6 +76,8 @@ struct AXTextEdit {
+ // left).
+ - (NSRect)rectInScreen:(gfx::Rect)rect;
+ 
++- (void)getTreeItemDescendantNodeIds:(std::vector<int32_t>*)tree_item_ids;
++
+ // Return the method name for the given attribute. For testing only.
+ - (NSString*)methodNameForAttribute:(NSString*)attribute;
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index 1381a64458dd37d07c72c3265e46166935012cad..5a9ab09b5214f9a8c38756fb627d32b52b028539 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -2110,7 +2110,9 @@ - (NSArray*)rows {
+   NSMutableArray* ret = [[[NSMutableArray alloc] init] autorelease];
+ 
+   std::vector<int32_t> node_id_list;
+-  if (ui::IsTableLike(_owner->GetRole()))
++  if (_owner->GetRole() == ax::mojom::Role::kTree)
++    [self getTreeItemDescendantNodeIds:&node_id_list];
++  else if (ui::IsTableLike(_owner->GetRole()))
+     node_id_list = _owner->node()->GetTableRowNodeIds();
+   // Rows attribute for a column is the list of all the elements in that column
+   // at each row.
+@@ -2543,6 +2545,19 @@ - (id)window {
+   return manager->GetWindow();
+ }
+ 
++- (void)getTreeItemDescendantNodeIds:(std::vector<int32_t>*)tree_item_ids {
++  for (auto it = _owner->PlatformChildrenBegin();
++       it != _owner->PlatformChildrenEnd(); ++it) {
++    const BrowserAccessibilityCocoa* child =
++        ToBrowserAccessibilityCocoa(it.get());
++
++    if ([child internalRole] == ax::mojom::Role::kTreeItem) {
++      tree_item_ids->push_back([child hash]);
++    }
++    [child getTreeItemDescendantNodeIds:tree_item_ids];
++  }
++}
++
+ - (NSString*)methodNameForAttribute:(NSString*)attribute {
+   return [attributeToMethodNameMap objectForKey:attribute];
+ }
+@@ -3361,18 +3376,12 @@ - (NSArray*)accessibilityAttributeNames {
+       NSAccessibilityMaxValueAttribute, NSAccessibilityMinValueAttribute,
+       NSAccessibilityValueDescriptionAttribute
+     ]];
+-  } else if ([subrole isEqualToString:NSAccessibilityOutlineRowSubrole]) {
+-    [ret addObjectsFromArray:@[
+-      NSAccessibilityDisclosingAttribute,
+-      NSAccessibilityDisclosedByRowAttribute,
+-      NSAccessibilityDisclosureLevelAttribute,
+-      NSAccessibilityDisclosedRowsAttribute
+-    ]];
+   } else if ([role isEqualToString:NSAccessibilityRowRole]) {
+     BrowserAccessibility* container = _owner->PlatformGetParent();
+     if (container && container->GetRole() == ax::mojom::Role::kRowGroup)
+       container = container->PlatformGetParent();
+-    if (container && container->GetRole() == ax::mojom::Role::kTreeGrid) {
++    if ([subrole isEqualToString:NSAccessibilityOutlineRowSubrole] ||
++        (container && container->GetRole() == ax::mojom::Role::kTreeGrid)) {
+       [ret addObjectsFromArray:@[
+         NSAccessibilityDisclosingAttribute,
+         NSAccessibilityDisclosedByRowAttribute,
+@@ -3387,6 +3396,13 @@ - (NSArray*)accessibilityAttributeNames {
+       NSAccessibilitySelectedChildrenAttribute,
+       NSAccessibilityVisibleChildrenAttribute
+     ]];
++  } else if ([role isEqualToString:NSAccessibilityOutlineRole]) {
++    [ret addObjectsFromArray:@[
++      NSAccessibilitySelectedRowsAttribute,
++      NSAccessibilityRowsAttribute,
++      NSAccessibilityColumnsAttribute,
++      NSAccessibilityOrientationAttribute
++    ]];
+   }
+ 
+   // Caret navigation and text selection attributes.
