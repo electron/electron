@@ -32,7 +32,7 @@ struct ObjectCachePairNode {
 
 class ObjectCache final {
  public:
-  explicit ObjectCache();
+  ObjectCache();
   ~ObjectCache();
 
   void CacheProxiedObject(v8::Local<v8::Value> from,
