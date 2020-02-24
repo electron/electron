@@ -22,6 +22,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/world_ids.h"
 #include "shell/renderer/api/context_bridge/render_frame_context_bridge_store.h"
+#include "shell/renderer/api/context_bridge/render_frame_function_store.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {

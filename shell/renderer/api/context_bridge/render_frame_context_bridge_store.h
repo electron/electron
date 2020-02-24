@@ -69,8 +69,6 @@ class RenderFramePersistenceStore final : public content::RenderFrameObserver {
   base::WeakPtrFactory<RenderFramePersistenceStore> weak_factory_{this};
 };
 
-std::map<int32_t, RenderFramePersistenceStore*>& GetStoreMap();
-
 }  // namespace context_bridge
 
 }  // namespace api

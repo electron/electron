@@ -10,7 +10,7 @@
 
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
-#include "shell/renderer/atom_render_frame_observer.h"
+#include "shell/renderer/electron_render_frame_observer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
@@ -33,6 +33,10 @@ class RenderFrameFunctionStore final : public content::RenderFrameObserver {
   size_t take_func_id() { return next_func_id_++; }
 
   std::map<size_t, FunctionContextPair>& functions() { return functions_; }
+
+  base::WeakPtr<RenderFrameFunctionStore> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
  private:
   // func_id ==> { function, owning_context }
