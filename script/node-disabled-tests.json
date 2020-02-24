@@ -163,6 +163,8 @@
   "parallel/test-tls-multi-pfx",
   "parallel/test-tls-no-cert-required",
   "parallel/test-tls-options-boolean-check",
+  "parallel/test-tls-psk-circuit",
+  "parallel/test-tls-handshake-exception",
   "parallel/test-tls-passphrase",
   "parallel/test-tls-peer-certificate",
   "parallel/test-tls-pfx-authorizationerror",

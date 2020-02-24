@@ -6,7 +6,7 @@ Subject: Expose `get_linked_module` function
 This is a requirement for electron/electron#8815, which exposes some linked
 modules to sandboxed renderers. 
 
-TODO(codebytere): removed and replace with a public facing API.
+TODO(codebytere): remove and replace with a public facing API.
 
 diff --git a/src/node_binding.cc b/src/node_binding.cc
 index 0facfc36cbcb784cd0a1802a7748dff3366710fd..db60617cebee83ac09371aa1e2200280e29bd772 100644
