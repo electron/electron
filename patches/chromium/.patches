@@ -36,7 +36,7 @@ mas_disable_remote_accessibility.patch
 mas_disable_custom_window_frame.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
-blink_initialization_order.patch
+add_didinstallconditionalfeatures.patch
 ssl_security_state_tab_helper.patch
 desktop_media_list.patch
 proxy_config_monitor.patch
