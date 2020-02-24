@@ -2070,11 +2070,17 @@ void WebContents::CopyImageAt(int x, int y) {
     host->CopyImageAt(x, y);
 }
 
-#if !defined(OS_MACOSX)
 void WebContents::Focus() {
+  // Focusing on WebContents does not automatically focus the window on macOS,
+  // do it manually to match the behavior on Windows.
+#if defined(OS_MACOSX)
+  if (owner_window())
+    owner_window()->Focus(true);
+#endif
   web_contents()->Focus();
 }
 
+#if !defined(OS_MACOSX)
 bool WebContents::IsFocused() const {
   auto* view = web_contents()->GetRenderWidgetHostView();
   if (!view)

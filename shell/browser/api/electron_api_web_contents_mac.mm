@@ -11,13 +11,6 @@ namespace electron {
 
 namespace api {
 
-void WebContents::Focus() {
-  if (GetType() != Type::BACKGROUND_PAGE) {
-    auto window = [web_contents()->GetNativeView().GetNativeNSView() window];
-    [window makeKeyAndOrderFront:nil];
-  }
-}
-
 bool WebContents::IsFocused() const {
   auto* view = web_contents()->GetRenderWidgetHostView();
   if (!view)

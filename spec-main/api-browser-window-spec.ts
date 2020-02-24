@@ -3837,9 +3837,9 @@ describe('BrowserWindow module', () => {
 
   describe('window.webContents.focus()', () => {
     it('focuses window', (done) => {
-      const w1 = new BrowserWindow({ x:100, y: 300, width: 300, height: 200 })
+      const w1 = new BrowserWindow({ x: 100, y: 300, width: 300, height: 200 })
       w1.loadURL('about:blank')
-      const w2 = new BrowserWindow({ x:300, y: 300, width: 300, height: 200 })
+      const w2 = new BrowserWindow({ x: 300, y: 300, width: 300, height: 200 })
       w2.loadURL('about:blank')
       w1.webContents.focus()
       // Give focus some time to switch to w1
