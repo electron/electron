@@ -37,7 +37,8 @@ class ObjectCache final {
 
   void CacheProxiedObject(v8::Local<v8::Value> from,
                           v8::Local<v8::Value> proxy_value);
-  v8::MaybeLocal<v8::Value> GetCachedProxiedObject(v8::Local<v8::Value> from);
+  v8::MaybeLocal<v8::Value> GetCachedProxiedObject(
+      v8::Local<v8::Value> from) const;
 
  private:
   // object_identity ==> [from_value, proxy_value]

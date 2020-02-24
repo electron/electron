@@ -45,7 +45,7 @@ void ObjectCache::CacheProxiedObject(v8::Local<v8::Value> from,
 }
 
 v8::MaybeLocal<v8::Value> ObjectCache::GetCachedProxiedObject(
-    v8::Local<v8::Value> from) {
+    v8::Local<v8::Value> from) const {
   if (!from->IsObject() || from->IsNullOrUndefined())
     return v8::MaybeLocal<v8::Value>();
 
