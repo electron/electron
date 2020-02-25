@@ -1092,7 +1092,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false })
       let rvhDeletedCount = 0
       w.webContents.once('destroyed', () => {
-        const expectedRenderViewDeletedEventCount = 3 // 1 speculative upon redirection + 2 upon window close.
+        const expectedRenderViewDeletedEventCount = 1
         expect(rvhDeletedCount).to.equal(expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times')
         done()
       })
