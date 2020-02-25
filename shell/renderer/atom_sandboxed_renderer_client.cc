@@ -294,10 +294,10 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
 }
 
 bool AtomSandboxedRendererClient::ShouldFork(blink::WebLocalFrame* frame,
-                                                 const GURL& url,
-                                                 const std::string& http_method,
-                                                 bool is_initial_navigation,
-                                                 bool is_server_redirect) {
+                                             const GURL& url,
+                                             const std::string& http_method,
+                                             bool is_initial_navigation,
+                                             bool is_server_redirect) {
   return true;
 }
 
