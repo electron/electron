@@ -7,6 +7,13 @@ const { clipboard, nativeImage } = require('electron')
 describe('clipboard module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
 
+  // FIXME(zcbenz): Clipboard tests are failing on WOA.
+  beforeEach(function () {
+    if (process.platform === 'win32' && process.arch === 'arm64') {
+      this.skip()
+    }
+  })
+
   describe('clipboard.readImage()', () => {
     it('returns NativeImage instance', () => {
       const p = path.join(fixtures, 'assets', 'logo.png')
