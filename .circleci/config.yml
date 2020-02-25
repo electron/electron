@@ -213,6 +213,9 @@ step-gclient-sync: &step-gclient-sync
         $GCLIENT_EXTRA_ARGS \
         "$CIRCLE_REPOSITORY_URL"
         gclient sync --with_branch_heads --with_tags
+
+        # Manually run update-external-binaries.py with system python
+        python src/electron/script/update-external-binaries.py
       fi
 
 step-setup-env-for-build: &step-setup-env-for-build
