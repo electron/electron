@@ -13,11 +13,11 @@
 #include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
-#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/v8_value_serializer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
 
@@ -70,7 +70,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
             const std::string& channel,
             v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+    if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
     electron_browser_ptr_->Message(internal, channel, std::move(message));
@@ -81,18 +81,21 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
                                 const std::string& channel,
                                 v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+    if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return v8::Local<v8::Promise>();
     }
-    gin_helper::Promise<blink::CloneableMessage> p(isolate);
+    gin_helper::Promise<v8::Local<v8::Value>> p(isolate);
     auto handle = p.GetHandle();
 
     electron_browser_ptr_->Invoke(
         internal, channel, std::move(message),
         base::BindOnce(
-            [](gin_helper::Promise<blink::CloneableMessage> p,
-               blink::CloneableMessage result) { p.Resolve(result); },
-            std::move(p)));
+            [](v8::Isolate* isolate,
+               gin_helper::Promise<v8::Local<v8::Value>> p,
+               blink::CloneableMessage result) {
+              p.Resolve(electron::DeserializeV8Value(isolate, result));
+            },
+            isolate, std::move(p)));
 
     return handle;
   }
@@ -155,7 +158,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
               const std::string& channel,
               v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+    if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
     electron_browser_ptr_->MessageTo(internal, send_to_all, web_contents_id,
@@ -166,25 +169,25 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
                   const std::string& channel,
                   v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+    if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
     electron_browser_ptr_->MessageHost(channel, std::move(message));
   }
 
-  blink::CloneableMessage SendSync(v8::Isolate* isolate,
-                                   bool internal,
-                                   const std::string& channel,
-                                   v8::Local<v8::Value> arguments) {
+  v8::Local<v8::Value> SendSync(v8::Isolate* isolate,
+                                bool internal,
+                                const std::string& channel,
+                                v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
-      return blink::CloneableMessage();
+    if (!electron::SerializeV8Value(isolate, arguments, &message)) {
+      return v8::Local<v8::Value>();
     }
 
     blink::CloneableMessage result;
     electron_browser_ptr_->MessageSync(internal, channel, std::move(message),
                                        &result);
-    return result;
+    return electron::DeserializeV8Value(isolate, result);
   }
 
   electron::mojom::ElectronBrowserPtr electron_browser_ptr_;
