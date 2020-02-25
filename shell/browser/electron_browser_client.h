@@ -246,6 +246,11 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
                       const GURL& site_url) override;
   bool ShouldUseProcessPerSite(content::BrowserContext* browser_context,
                                const GURL& effective_url) override;
+  bool ArePersistentMediaDeviceIDsAllowed(
+      content::BrowserContext* browser_context,
+      const GURL& scope,
+      const GURL& site_for_cookies,
+      const base::Optional<url::Origin>& top_frame_origin) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
