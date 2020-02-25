@@ -293,7 +293,7 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
   InvokeHiddenCallback(context, kLifecycleKey, "onExit");
 }
 
-bool ElectronSandboxedRendererClient::ShouldFork(blink::WebLocalFrame* frame,
+bool AtomSandboxedRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                                  const GURL& url,
                                                  const std::string& http_method,
                                                  bool is_initial_navigation,
