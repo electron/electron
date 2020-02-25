@@ -458,7 +458,7 @@ describe('BrowserWindow module', () => {
           w.webContents.on('did-stop-loading', () => {
             if (willNavigate) {
               // i.e. it shouldn't have had '?navigated' appended to it.
-              expect(w.webContents.getURL().endsWith('will-navigate.html')).to.be.true()
+              expect(w.webContents.getURL().endsWith('will-navigate.html')).to.be.true('no ?navigated')
               done()
             }
           })
