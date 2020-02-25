@@ -5,7 +5,7 @@
 #ifndef SHELL_BROWSER_ATOM_PATHS_H_
 #define SHELL_BROWSER_ATOM_PATHS_H_
 
-#include "electron_paths.h"
+#include "shell/browser/electron_paths.h"
 
 namespace base {
 class FilePath;
