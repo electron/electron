@@ -205,16 +205,15 @@ step-gclient-sync: &step-gclient-sync
   run:
     name: Gclient sync
     command: |
-      gclient config \
+      # If we did not restore a complete sync then we need to sync for realz
+      if [ ! -s "src/electron/.circle-sync-done" ]; then
+        gclient config \
         --name "src/electron" \
         --unmanaged \
         $GCLIENT_EXTRA_ARGS \
         "$CIRCLE_REPOSITORY_URL"
-
-      gclient sync --with_branch_heads --with_tags
-      
-      # Manually run update-external-binaries.py with system python
-      python src/electron/script/update-external-binaries.py
+        gclient sync --with_branch_heads --with_tags
+      fi
 
 step-setup-env-for-build: &step-setup-env-for-build
   run:
