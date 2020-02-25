@@ -5,11 +5,11 @@ Subject: Call process.log from fallback stream on Windows
 
 (cherry picked from commit d31e629b4f2daf3500a485caab2b2990a41e3ad4)
 
-diff --git a/lib/internal/process/stdio.js b/lib/internal/process/stdio.js
-index 2491f14cdf01409e4625d6793279ef87dbcc6942..54d3fb23dc1b51fec206e8989e4873d95884583f 100644
---- a/lib/internal/process/stdio.js
-+++ b/lib/internal/process/stdio.js
-@@ -192,6 +192,11 @@ function createWritableStdioStream(fd) {
+diff --git a/lib/internal/bootstrap/switches/is_main_thread.js b/lib/internal/bootstrap/switches/is_main_thread.js
+index ac8336fb6229e7f44eb00f43abb07bea83a9463c..2005e8ef9ebd090c1be19ff320f48b9cd365239e 100644
+--- a/lib/internal/bootstrap/switches/is_main_thread.js
++++ b/lib/internal/bootstrap/switches/is_main_thread.js
+@@ -80,6 +80,11 @@ function createWritableStdioStream(fd) {
        const { Writable } = require('stream');
        stream = new Writable({
          write(buf, enc, cb) {

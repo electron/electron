@@ -74,6 +74,17 @@ void SetNodeCliFlags() {
   ProcessGlobalArgs(&args, nullptr, &errors, node::kDisallowedInEnvironment);
 }
 
+// TODO(codebytere): expose this from Node.js itself?
+void HostCleanupFinalizationGroupCallback(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::FinalizationGroup> group) {
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (env == nullptr) {
+    return;
+  }
+  env->RegisterFinalizationGroupForCleanup(group);
+}
+
 }  // namespace
 
 namespace electron {
@@ -142,6 +153,14 @@ int NodeMain(int argc, char* argv[]) {
 
     node::BootstrapEnvironment(env);
 
+    // TODO(codebytere): we shouldn't have to call this - upstream?
+    env->InitializeDiagnostics();
+
+    // This is needed in order to enable v8 host weakref hooks.
+    // TODO(codebytere): we shouldn't have to call this - upstream?
+    gin_env.isolate()->SetHostCleanupFinalizationGroupCallback(
+        HostCleanupFinalizationGroupCallback);
+
     gin_helper::Dictionary process(gin_env.isolate(), env->process_object());
 #if defined(OS_WIN)
     process.SetMethod("log", &ElectronBindings::Log);
@@ -165,7 +184,15 @@ int NodeMain(int argc, char* argv[]) {
       versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
     }
 
-    node::LoadEnvironment(env);
+    // TODO(codebytere): we should try to handle this upstream.
+    {
+      node::InternalCallbackScope callback_scope(
+          env, v8::Local<v8::Object>(), {1, 0},
+          node::InternalCallbackScope::kAllowEmptyResource |
+              node::InternalCallbackScope::kSkipAsyncHooks);
+      node::LoadEnvironment(env);
+    }
+
     v8::Isolate* isolate = env->isolate();
 
     {

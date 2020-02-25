@@ -2,10 +2,16 @@ const cp = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
+const args = require('minimist')(process.argv.slice(2), {
+  boolean: ['default'],
+  string: ['jUnitDir']
+})
+
 const BASE = path.resolve(__dirname, '../..')
+const DISABLED_TESTS = require('./node-disabled-tests.json')
 const NODE_DIR = path.resolve(BASE, 'third_party', 'electron_node')
 const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
-const JUNIT_DIR = process.argv[2] ? path.resolve(process.argv[2]) : null
+const JUNIT_DIR = args.jUnitDir ? path.resolve(args.jUnitDir) : null
 const TAP_FILE_NAME = 'test.tap'
 
 const utils = require('./lib/utils')
@@ -15,10 +21,43 @@ if (!process.mainModule) {
   throw new Error('Must call the node spec runner directly')
 }
 
-async function main () {
-  const DISABLED_TESTS = require('./node-disabled-tests.json')
+const defaultOptions = [
+  'tools/test.py',
+  '-p',
+  'tap',
+  '--logfile',
+  TAP_FILE_NAME,
+  '--mode=debug',
+  'default',
+  `--skip-tests=${DISABLED_TESTS.join(',')}`,
+  '--shell',
+  utils.getAbsoluteElectronExec(),
+  '-J'
+]
 
-  const testChild = cp.spawn('python', ['tools/test.py', '--verbose', '-p', 'tap', '--logfile', TAP_FILE_NAME, '--mode=debug', 'default', `--skip-tests=${DISABLED_TESTS.join(',')}`, '--shell', utils.getAbsoluteElectronExec(), '-J'], {
+const getCustomOptions = () => {
+  let customOptions = ['tools/test.py']
+
+  // Add all custom arguments.
+  const extra = process.argv.slice(2)
+  if (extra) {
+    customOptions = customOptions.concat(extra)
+  }
+
+  // We need this unilaterally or Node.js will try
+  // to run from out/Release/node.
+  customOptions = customOptions.concat([
+    '--shell',
+    utils.getAbsoluteElectronExec()
+  ])
+
+  return customOptions
+}
+
+async function main () {
+  const options = args.default ? defaultOptions : getCustomOptions()
+
+  const testChild = cp.spawn('python', options, {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: 'true',

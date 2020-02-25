@@ -1504,17 +1504,23 @@ void WebContents::Stop() {
 }
 
 void WebContents::GoBack() {
-  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
+    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  }
   web_contents()->GetController().GoBack();
 }
 
 void WebContents::GoForward() {
-  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
+    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  }
   web_contents()->GetController().GoForward();
 }
 
 void WebContents::GoToOffset(int offset) {
-  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
+    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  }
   web_contents()->GetController().GoToOffset(offset);
 }
 

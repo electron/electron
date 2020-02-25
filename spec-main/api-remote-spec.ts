@@ -246,9 +246,17 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       expect(w.webContents.listenerCount('remote-handler')).to.equal(2)
       let warnMessage: string | null = null
       const originalWarn = console.warn
+      let warned: Function
+      const warnPromise = new Promise(resolve => {
+        warned = resolve
+      })
       try {
-        console.warn = (message: string) => { warnMessage = message }
+        console.warn = (message: string) => {
+          warnMessage = message
+          warned()
+        }
         w.webContents.emit('remote-handler', { sender: w.webContents })
+        await warnPromise
       } finally {
         console.warn = originalWarn
       }

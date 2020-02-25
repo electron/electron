@@ -6,6 +6,9 @@
 
 #include "extensions/common/extension.h"
 #include "gin/dictionary.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 
 namespace gin {
 
@@ -16,7 +19,11 @@ v8::Local<v8::Value> Converter<const extensions::Extension*>::ToV8(
   auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("id", extension->id());
   dict.Set("name", extension->name());
+  dict.Set("path", extension->path());
+  dict.Set("url", extension->url());
   dict.Set("version", extension->VersionString());
+  dict.Set("manifest", *(extension->manifest()->value()));
+
   return gin::ConvertToV8(isolate, dict);
 }
 

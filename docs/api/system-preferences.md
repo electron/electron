@@ -404,8 +404,6 @@ Returns `Boolean` - whether or not this device has the ability to use Touch ID.
 
 **NOTE:** This API will return `false` on macOS systems older than Sierra 10.12.2.
 
-**[Deprecated](modernization/property-updates.md)**
-
 ### `systemPreferences.promptTouchID(reason)` _macOS_
 
 * `reason` String - The reason you are asking for Touch ID authentication

@@ -35,7 +35,7 @@ void ElectronBrowserMainParts::FreeAppDelegate() {
 }
 
 void ElectronBrowserMainParts::RegisterURLHandler() {
-  [[ElectronApplication sharedApplication] registerURLHandler];
+  [[AtomApplication sharedApplication] registerURLHandler];
 }
 
 // Replicates NSApplicationMain, but doesn't start a run loop.
