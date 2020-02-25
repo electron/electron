@@ -625,7 +625,7 @@ step-maybe-restore-src-cache: &step-maybe-restore-src-cache
     paths:
       - ./src
     keys:
-      - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+      - v6-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -690,7 +690,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - ./src
-    key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+    key: v6-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
     name: Persisting src cache
 
 # Lists of steps.
