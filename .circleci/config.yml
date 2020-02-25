@@ -1194,7 +1194,7 @@ steps-test-node: &steps-test-node
         name: Run Node Tests
         command: |
           cd src
-          node electron/script/node-spec-runner.js junit
+          node electron/script/node-spec-runner.js --default --jUnitDir=junit
     - store_test_results:
         path: src/junit
 
