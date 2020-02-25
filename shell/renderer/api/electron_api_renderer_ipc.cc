@@ -19,18 +19,6 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "third_party/blink/public/web/web_local_frame.h"
-
-/*
-#include "third_party/blink/renderer/bindings/core/v8/script_value.h"
-#include
-"third_party/blink/renderer/bindings/core/v8/serialization/post_message_helper.h"
-#include
-"third_party/blink/renderer/bindings/core/v8/serialization/serialized_script_value.h"
-#include "third_party/blink/renderer/core/messaging/message_port.h"
-#include "third_party/blink/renderer/core/messaging/post_message_options.h"
-#include "third_party/blink/renderer/platform/bindings/exception_state.h"
-*/
-
 #include "third_party/blink/public/web/web_message_port_converter.h"
 
 using blink::WebLocalFrame;
