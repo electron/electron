@@ -17,10 +17,6 @@
 #include "base/base_paths_posix.h"
 #endif
 
-namespace base {
-class FilePath;
-}
-
 namespace electron {
 
 enum {
@@ -48,13 +44,6 @@ enum {
 };
 
 static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
-
-class AtomPaths {
- public:
-  static void Register();
-
-  static bool GetDefault(int key, base::FilePath* path);
-};
 
 }  // namespace electron
 
