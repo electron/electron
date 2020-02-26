@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 
+process.noDeprecation = true
+
 process.on('uncaughtException', (e) => {
   console.error(e)
   process.exit(1)
