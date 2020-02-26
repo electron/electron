@@ -77,12 +77,11 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
 
 class V8Deserializer : public v8::ValueDeserializer::Delegate {
  public:
-  V8Deserializer(v8::Isolate* isolate, const blink::CloneableMessage& message)
+  V8Deserializer(v8::Isolate* isolate, base::span<const uint8_t> data)
       : isolate_(isolate),
-        deserializer_(isolate,
-                      message.encoded_message.data(),
-                      message.encoded_message.size(),
-                      this) {}
+        deserializer_(isolate, data.data(), data.size(), this) {}
+  V8Deserializer(v8::Isolate* isolate, const blink::CloneableMessage& message)
+      : V8Deserializer(isolate, message.encoded_message) {}
 
   v8::Local<v8::Value> Deserialize() {
     v8::EscapableHandleScope scope(isolate_);
@@ -135,6 +134,11 @@ bool SerializeV8Value(v8::Isolate* isolate,
 v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
                                         const blink::CloneableMessage& in) {
   return V8Deserializer(isolate, in).Deserialize();
+}
+
+v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
+                                        base::span<const uint8_t> data) {
+  return V8Deserializer(isolate, data).Deserialize();
 }
 
 }  // namespace electron

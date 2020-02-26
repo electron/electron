@@ -56,7 +56,7 @@ interface ElectronBrowser {
       string channel,
       blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
 
-  PostMessage(blink.mojom.TransferableMessage message);
+  PostMessage(string channel, blink.mojom.TransferableMessage message);
 
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process, and waits synchronously for a response.

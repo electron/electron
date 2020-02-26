@@ -5,6 +5,8 @@
 #ifndef SHELL_COMMON_V8_VALUE_SERIALIZER_H_
 #define SHELL_COMMON_V8_VALUE_SERIALIZER_H_
 
+#include "base/containers/span.h"
+
 namespace v8 {
 class Isolate;
 template <class T>
@@ -23,6 +25,8 @@ bool SerializeV8Value(v8::Isolate* isolate,
                       blink::CloneableMessage* out);
 v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
                                         const blink::CloneableMessage& in);
+v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
+                                        base::span<const uint8_t> data);
 
 }  // namespace electron
 

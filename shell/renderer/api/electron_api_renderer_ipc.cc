@@ -13,6 +13,7 @@
 #include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
+#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_bindings.h"
@@ -84,34 +85,48 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return v8::Local<v8::Promise>();
     }
-    gin_helper::Promise<v8::Local<v8::Value>> p(isolate);
+    gin_helper::Promise<blink::CloneableMessage> p(isolate);
     auto handle = p.GetHandle();
 
     electron_browser_ptr_->Invoke(
         internal, channel, std::move(message),
         base::BindOnce(
-            [](v8::Isolate* isolate,
-               gin_helper::Promise<v8::Local<v8::Value>> p,
-               blink::CloneableMessage result) {
-              p.Resolve(electron::DeserializeV8Value(isolate, result));
-            },
-            isolate, std::move(p)));
+            [](gin_helper::Promise<blink::CloneableMessage> p,
+               blink::CloneableMessage result) { p.Resolve(result); },
+            std::move(p)));
 
     return handle;
   }
 
   void PostMessage(gin::Arguments* args) {
-    std::vector<blink::MessagePortChannel> ports;
-    std::vector<v8::Local<v8::Object>> objs;
-    if (!args->GetNext(&objs)) {
+    std::string channel;
+    if (!args->GetNext(&channel)) {
       args->ThrowError();
       return;
     }
 
-    for (auto& obj : objs) {
-      base::Optional<blink::MessagePortChannel> port =
-          blink::WebMessagePortConverter::
-              DisentangleAndExtractMessagePortChannel(args->isolate(), obj);
+    v8::Local<v8::Value> message_value;
+    if (!args->GetNext(&message_value)) {
+      args->ThrowError();
+      return;
+    }
+
+    blink::TransferableMessage transferable_message;
+    if (!electron::SerializeV8Value(args->isolate(), message_value,
+                                    &transferable_message)) {
+      return;
+    }
+
+    std::vector<v8::Local<v8::Object>> transferables;
+    if (!args->GetNext(&transferables)) {
+      return;
+    }
+
+    std::vector<blink::MessagePortChannel> ports;
+    for (auto& transferable : transferables) {
+      base::Optional<blink::MessagePortChannel> port = blink::
+          WebMessagePortConverter::DisentangleAndExtractMessagePortChannel(
+              args->isolate(), transferable);
       if (!port.has_value()) {
         args->ThrowError();
         return;
@@ -119,36 +134,9 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
       ports.emplace_back(port.value());
     }
 
-    blink::TransferableMessage transferable_message;
     transferable_message.ports = std::move(ports);
-    electron_browser_ptr_->PostMessage(std::move(transferable_message));
-#if 0
-    blink::ExceptionState exception_state(isolate,
-                                blink::ExceptionState::kExecutionContext,
-                                "ipcRenderer", "postMessage");
-    /*
-    auto serialized_value = blink::SerializedScriptValue::Serialize(
-      isolate, message, blink::SerializedScriptValue::SerializeOptions(),
-      exception_state);
-    */
-    blink::Transferables transferables;
-    auto serialized_value = blink::PostMessageHelper::SerializeMessageByMove(
-        isolate,
-        blink::ScriptValue(isolate, message),
-        blink::PostMessageOptions::Create(),
-        transferables,
-        exception_state);
-    if (exception_state.HadException()) {
-      return;
-    }
-
-    blink::TransferableMessage transferable_message;
-    transferable_message.encoded_message = serialized_value->GetWireData();
-    transferable_message.EnsureDataIsOwned(); // TODO: remove memcpy?
-    transferable_message.ports = blink::MessagePort::DisentanglePorts(
-      nullptr, transferables.message_ports, exception_state);
-    electron_browser_ptr_->get()->PostMessage(std::move(transferable_message));
-#endif
+    electron_browser_ptr_->PostMessage(channel,
+                                       std::move(transferable_message));
   }
 
   void SendTo(v8::Isolate* isolate,

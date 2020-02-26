@@ -84,11 +84,14 @@
 #include "shell/common/mouse_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/v8_value_serializer.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
+#include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
+#include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 #include "third_party/blink/public/platform/web_cursor_info.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
@@ -1090,43 +1093,135 @@ void WebContents::Invoke(bool internal,
                  std::move(callback), internal, channel, std::move(arguments));
 }
 
-class BrowserSideMessagePort : public gin::Wrappable<BrowserSideMessagePort> {
+class BrowserSideMessagePort : public gin::Wrappable<BrowserSideMessagePort>,
+                               mojo::MessageReceiver {
  public:
   ~BrowserSideMessagePort() override {}
-  static gin::Handle<BrowserSideMessagePort> Create(
-      v8::Isolate* isolate,
-      blink::MessagePortChannel channel) {
-    return gin::CreateHandle(isolate, new BrowserSideMessagePort(channel));
+  static gin::Handle<BrowserSideMessagePort> Create(v8::Isolate* isolate) {
+    return gin::CreateHandle(isolate, new BrowserSideMessagePort());
+  }
+
+  void PostMessage(gin::Arguments* args) {
+    if (!IsEntangled())
+      return;
+    DCHECK(!IsNeutered());
+
+    blink::TransferableMessage msg;
+
+    v8::Local<v8::Value> message_value;
+    if (!args->GetNext(&message_value)) {
+      args->ThrowTypeError("Expected at least one argument to postMessage");
+      return;
+    }
+
+    electron::SerializeV8Value(args->isolate(), message_value, &msg);
+
+    // TODO: get transferables
+
+    mojo::Message mojo_message =
+        blink::mojom::TransferableMessage::WrapAsMessage(std::move(msg));
+    connector_->Accept(&mojo_message);
+  }
+
+  void Start() {
+    if (!IsEntangled())
+      return;
+
+    if (started_)
+      return;
+
+    started_ = true;
+    connector_->ResumeIncomingMethodCallProcessing();
+  }
+
+  void Close() {
+    if (closed_)
+      return;
+    if (!IsNeutered()) {
+      connector_ = nullptr;
+      Entangle(mojo::MessagePipe().handle0);
+    }
+    closed_ = true;
+  }
+
+  void Entangle(mojo::ScopedMessagePipeHandle handle) {
+    DCHECK(handle.is_valid());
+    DCHECK(!connector_);
+    connector_ = std::make_unique<mojo::Connector>(
+        std::move(handle), mojo::Connector::SINGLE_THREADED_SEND,
+        base::ThreadTaskRunnerHandle::Get());
+    connector_->PauseIncomingMethodCallProcessing();
+    connector_->set_incoming_receiver(this);
+    connector_->set_connection_error_handler(
+        base::Bind(&BrowserSideMessagePort::Close, weak_factory_.GetWeakPtr()));
+  }
+
+  void Entangle(blink::MessagePortChannel channel) {
+    Entangle(channel.ReleaseHandle());
   }
 
   // gin::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
     return gin::Wrappable<BrowserSideMessagePort>::GetObjectTemplateBuilder(
-        isolate);
+               isolate)
+        .SetMethod("postMessage", &BrowserSideMessagePort::PostMessage)
+        .SetMethod("start", &BrowserSideMessagePort::Start)
+        .SetMethod("close", &BrowserSideMessagePort::Close);
   }
 
   static gin::WrapperInfo kWrapperInfo;
 
-  blink::MessagePortChannel ReleaseChannel() { return std::move(channel_); }
+  // blink::MessagePortChannel ReleaseChannel() { return std::move(channel_); }
+
+  bool IsEntangled() const { return !closed_ && !IsNeutered(); }
+  bool IsNeutered() const { return !connector_ || !connector_->is_valid(); }
 
  private:
-  explicit BrowserSideMessagePort(blink::MessagePortChannel channel)
-      : channel_(channel) {}
+  explicit BrowserSideMessagePort() {}
 
-  blink::MessagePortChannel channel_;
+  // mojo::MessageReceiver
+  bool Accept(mojo::Message* mojo_message) override {
+    blink::TransferableMessage message;
+    if (!blink::mojom::TransferableMessage::DeserializeFromMessage(
+            std::move(*mojo_message), &message)) {
+      return false;
+    }
+    // TODO: extract message ports from |message|
+
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
+    v8::Local<v8::Value> message_value = DeserializeV8Value(isolate, message);
+
+    v8::Local<v8::Object> self;
+    if (!GetWrapper(isolate).ToLocal(&self))
+      return false;
+    // TODO: emit an "event", not the message object directly
+    gin_helper::EmitEvent(isolate, self, "message", message_value);
+    return true;
+  }
+
+  std::unique_ptr<mojo::Connector> connector_;
+  bool started_ = false;
+  bool closed_ = false;
+
+  base::WeakPtrFactory<BrowserSideMessagePort> weak_factory_{this};
 };
 gin::WrapperInfo BrowserSideMessagePort::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
-void WebContents::PostMessage(blink::TransferableMessage message) {
+void WebContents::PostMessage(const std::string& channel,
+                              blink::TransferableMessage message) {
   std::vector<gin::Handle<BrowserSideMessagePort>> wrapped_ports;
   for (auto& port : message.ports) {
-    wrapped_ports.emplace_back(
-        BrowserSideMessagePort::Create(isolate(), std::move(port)));
+    auto wrapped_port = BrowserSideMessagePort::Create(isolate());
+    wrapped_port->Entangle(std::move(port));
+    wrapped_ports.emplace_back(wrapped_port);
   }
+  v8::Local<v8::Value> message_value =
+      electron::DeserializeV8Value(isolate(), message);
   EmitWithSender("-ipc-ports", bindings_.dispatch_context(), InvokeCallback(),
-                 false, "foo", std::move(wrapped_ports));
+                 false, channel, message_value, std::move(wrapped_ports));
 }
 
 void WebContents::PostIPCMessage(v8::Local<v8::Value> message) {
@@ -1137,9 +1232,11 @@ void WebContents::PostIPCMessage(v8::Local<v8::Value> message) {
         v8::Exception::Error(gin::StringToV8(isolate(), "not ports")));
     return;
   }
+  /*
   for (auto& wrapped_port : wrapped_ports) {
-    transferable_message.ports.emplace_back(wrapped_port->ReleaseChannel());
+    //transferable_message.ports.emplace_back(wrapped_port->ReleaseChannel());
   }
+  */
 
   content::RenderFrameHost* frame_host = web_contents()->GetMainFrame();
   mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;

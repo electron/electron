@@ -526,7 +526,8 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
               const std::string& channel,
               blink::CloneableMessage arguments,
               InvokeCallback callback) override;
-  void PostMessage(blink::TransferableMessage message) override;
+  void PostMessage(const std::string& channel,
+                   blink::TransferableMessage message) override;
   void MessageSync(bool internal,
                    const std::string& channel,
                    blink::CloneableMessage arguments,
