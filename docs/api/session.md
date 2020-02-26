@@ -485,7 +485,7 @@ to host here.
 
 If the files present in `hunspell_dictionaries.zip` are available at `https://example.com/dictionaries/language-code.bdic`
 then you should call this api with `ses.setSpellCheckerDictionaryDownloadURL('https://example.com/dictionaries/')`.  Please
-note the trailing slash.  The URL to the dictionaries is formed as `${baseURL}${filename}`.
+note the trailing slash.  The URL to the dictionaries is formed as `${url}${filename}`.
 
 **Note:** On macOS the OS spellchecker is used and therefore we do not download any dictionary files.  This API is a no-op on macOS.
 
