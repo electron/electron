@@ -10,6 +10,10 @@
 
 namespace electron {
 
+namespace {
+const uint8_t kVersionTag = 0xFF;
+}  // namespace
+
 class V8Serializer : public v8::ValueSerializer::Delegate {
  public:
   explicit V8Serializer(v8::Isolate* isolate)
@@ -17,6 +21,8 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   ~V8Serializer() override = default;
 
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
+    WriteBlinkEnvelope(19);
+
     serializer_.WriteHeader();
     bool wrote_value;
     if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
@@ -55,6 +61,15 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   }
 
  private:
+  void WriteTag(uint8_t tag) { serializer_.WriteRawBytes(&tag, 1); }
+
+  void WriteBlinkEnvelope(uint32_t blink_version) {
+    // Write a dummy blink version envelope for compatibility with
+    // blink::V8ScriptValueSerializer
+    WriteTag(kVersionTag);
+    serializer_.WriteUint32(blink_version);
+  }
+
   v8::Isolate* isolate_;
   std::vector<uint8_t> data_;
   v8::ValueSerializer serializer_;
@@ -72,18 +87,41 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
   v8::Local<v8::Value> Deserialize() {
     v8::EscapableHandleScope scope(isolate_);
     auto context = isolate_->GetCurrentContext();
+
+    uint32_t blink_version;
+    if (!ReadBlinkEnvelope(&blink_version))
+      return v8::Null(isolate_);
+
     bool read_header;
     if (!deserializer_.ReadHeader(context).To(&read_header))
       return v8::Null(isolate_);
     DCHECK(read_header);
     v8::Local<v8::Value> value;
-    if (!deserializer_.ReadValue(context).ToLocal(&value)) {
+    if (!deserializer_.ReadValue(context).ToLocal(&value))
       return v8::Null(isolate_);
-    }
     return scope.Escape(value);
   }
 
  private:
+  bool ReadTag(uint8_t* tag) {
+    const void* tag_bytes = nullptr;
+    if (!deserializer_.ReadRawBytes(1, &tag_bytes))
+      return false;
+    *tag = *reinterpret_cast<const uint8_t*>(tag_bytes);
+    return true;
+  }
+
+  bool ReadBlinkEnvelope(uint32_t* blink_version) {
+    // Read a dummy blink version envelope for compatibility with
+    // blink::V8ScriptValueDeserializer
+    uint8_t tag = 0;
+    if (!ReadTag(&tag) || tag != kVersionTag)
+      return false;
+    if (!deserializer_.ReadUint32(blink_version))
+      return false;
+    return true;
+  }
+
   v8::Isolate* isolate_;
   v8::ValueDeserializer deserializer_;
 };
