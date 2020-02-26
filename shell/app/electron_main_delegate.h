@@ -40,6 +40,7 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
       const std::string& process_type,
       const content::MainFunctionParams& main_function_params) override;
   bool ShouldCreateFeatureList() override;
+  bool ShouldLockSchemeRegistry() override;
 
  private:
 #if defined(OS_MACOSX)
