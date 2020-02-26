@@ -806,6 +806,7 @@ steps-electron-build: &steps-electron-build
         at: .
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
+    - *step-fixup-external-binaries
     - *step-gn-gen-default
 
     # Electron app
