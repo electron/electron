@@ -13,7 +13,7 @@ interface ElectronRenderer {
       blink.mojom.CloneableMessage arguments,
       int32 sender_id);
 
-  PostMessage(blink.mojom.TransferableMessage message);
+  PostMessage(string channel, blink.mojom.TransferableMessage message);
 
   UpdateCrashpadPipeName(string pipe_name);
 

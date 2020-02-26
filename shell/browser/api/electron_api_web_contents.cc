@@ -44,6 +44,10 @@
 #include "content/public/common/context_menu_params.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "gin/data_object_builder.h"
+#include "gin/handle.h"
+#include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ppapi/buildflags/buildflags.h"
@@ -95,10 +99,6 @@
 #include "third_party/blink/public/platform/web_cursor_info.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
-
-#include "gin/handle.h"
-#include "gin/object_template_builder.h"
-#include "gin/wrappable.h"
 
 #if BUILDFLAG(ENABLE_OSR)
 #include "shell/browser/osr/osr_render_widget_host_view.h"
@@ -1160,6 +1160,13 @@ class BrowserSideMessagePort : public gin::Wrappable<BrowserSideMessagePort>,
     Entangle(channel.ReleaseHandle());
   }
 
+  blink::MessagePortChannel Disentangle() {
+    DCHECK(!IsNeutered());
+    auto result = blink::MessagePortChannel(connector_->PassMessagePipe());
+    connector_ = nullptr;
+    return result;
+  }
+
   // gin::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
@@ -1177,6 +1184,57 @@ class BrowserSideMessagePort : public gin::Wrappable<BrowserSideMessagePort>,
   bool IsEntangled() const { return !closed_ && !IsNeutered(); }
   bool IsNeutered() const { return !connector_ || !connector_->is_valid(); }
 
+  static std::vector<gin::Handle<BrowserSideMessagePort>> EntanglePorts(
+      v8::Isolate* isolate,
+      std::vector<blink::MessagePortChannel> channels) {
+    std::vector<gin::Handle<BrowserSideMessagePort>> wrapped_ports;
+    for (auto& port : channels) {
+      auto wrapped_port = BrowserSideMessagePort::Create(isolate);
+      wrapped_port->Entangle(std::move(port));
+      wrapped_ports.emplace_back(wrapped_port);
+    }
+    return wrapped_ports;
+  }
+
+  static std::vector<blink::MessagePortChannel> DisentanglePorts(
+      v8::Isolate* isolate,
+      const std::vector<gin::Handle<BrowserSideMessagePort>>& ports) {
+    if (!ports.size())
+      return std::vector<blink::MessagePortChannel>();
+
+    // HeapHashSet<Member<MessagePort>> visited;
+    std::unordered_set<BrowserSideMessagePort*> visited;
+
+    // Walk the incoming array - if there are any duplicate ports, or null ports
+    // or cloned ports, throw an error (per section 8.3.3 of the HTML5 spec).
+    for (unsigned i = 0; i < ports.size(); ++i) {
+      auto* port = ports[i].get();
+      if (!port || port->IsNeutered() || visited.find(port) != visited.end()) {
+        std::string type;
+        if (!port)
+          type = "null";
+        else if (port->IsNeutered())
+          type = "already neutered";
+        else
+          type = "a duplicate";
+        /*
+        exception_state.ThrowDOMException(
+            DOMExceptionCode::kDataCloneError,
+            "Port at index " + String::Number(i) + " is " + type + ".");
+            */
+        return std::vector<blink::MessagePortChannel>();
+      }
+      visited.insert(port);
+    }
+
+    // Passed-in ports passed validity checks, so we can disentangle them.
+    std::vector<blink::MessagePortChannel> channels;
+    channels.reserve(ports.size());
+    for (unsigned i = 0; i < ports.size(); ++i)
+      channels.push_back(ports[i]->Disentangle());
+    return channels;
+  }
+
  private:
   explicit BrowserSideMessagePort() {}
 
@@ -1187,17 +1245,24 @@ class BrowserSideMessagePort : public gin::Wrappable<BrowserSideMessagePort>,
             std::move(*mojo_message), &message)) {
       return false;
     }
-    // TODO: extract message ports from |message|
 
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::HandleScope scope(isolate);
+
+    auto ports = EntanglePorts(isolate, std::move(message.ports));
+
     v8::Local<v8::Value> message_value = DeserializeV8Value(isolate, message);
 
     v8::Local<v8::Object> self;
     if (!GetWrapper(isolate).ToLocal(&self))
       return false;
-    // TODO: emit an "event", not the message object directly
-    gin_helper::EmitEvent(isolate, self, "message", message_value);
+
+    // TODO: inherit from the "Event" object..?
+    auto event = gin::DataObjectBuilder(isolate)
+                     .Set("data", message_value)
+                     .Set("ports", ports)
+                     .Build();
+    gin_helper::EmitEvent(isolate, self, "message", event);
     return true;
   }
 
@@ -1212,36 +1277,52 @@ gin::WrapperInfo BrowserSideMessagePort::kWrapperInfo = {
 
 void WebContents::PostMessage(const std::string& channel,
                               blink::TransferableMessage message) {
-  std::vector<gin::Handle<BrowserSideMessagePort>> wrapped_ports;
-  for (auto& port : message.ports) {
-    auto wrapped_port = BrowserSideMessagePort::Create(isolate());
-    wrapped_port->Entangle(std::move(port));
-    wrapped_ports.emplace_back(wrapped_port);
-  }
+  auto wrapped_ports =
+      BrowserSideMessagePort::EntanglePorts(isolate(), message.ports);
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate(), message);
   EmitWithSender("-ipc-ports", bindings_.dispatch_context(), InvokeCallback(),
                  false, channel, message_value, std::move(wrapped_ports));
 }
 
-void WebContents::PostIPCMessage(v8::Local<v8::Value> message) {
+void WebContents::PostIPCMessage(gin::Arguments* args) {
+  std::string channel;
+  if (!args->GetNext(&channel)) {
+    args->ThrowError();
+    return;
+  }
+
+  v8::Local<v8::Value> message_value;
+  if (!args->GetNext(&message_value)) {
+    args->ThrowError();
+    return;
+  }
+
   blink::TransferableMessage transferable_message;
+  if (!electron::SerializeV8Value(args->isolate(), message_value,
+                                  &transferable_message)) {
+    return;
+  }
+
+  v8::Local<v8::Value> transferables;
+  if (!args->GetNext(&transferables)) {
+    return;
+  }
+
   std::vector<gin::Handle<BrowserSideMessagePort>> wrapped_ports;
-  if (!gin::ConvertFromV8(isolate(), message, &wrapped_ports)) {
+  if (!gin::ConvertFromV8(isolate(), transferables, &wrapped_ports)) {
     isolate()->ThrowException(
         v8::Exception::Error(gin::StringToV8(isolate(), "not ports")));
     return;
   }
-  /*
-  for (auto& wrapped_port : wrapped_ports) {
-    //transferable_message.ports.emplace_back(wrapped_port->ReleaseChannel());
-  }
-  */
+  transferable_message.ports =
+      BrowserSideMessagePort::DisentanglePorts(isolate(), wrapped_ports);
+  // TODO: check for exception
 
   content::RenderFrameHost* frame_host = web_contents()->GetMainFrame();
   mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
   frame_host->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
-  electron_renderer->PostMessage(std::move(transferable_message));
+  electron_renderer->PostMessage(channel, std::move(transferable_message));
 }
 
 void WebContents::MessageSync(bool internal,

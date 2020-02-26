@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events'
 import { expect } from 'chai'
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
 import { closeAllWindows } from './window-helpers'
@@ -186,16 +187,82 @@ describe('ipc module', () => {
 
   describe('MessagePort', () => {
     afterEach(closeAllWindows)
-    it('can send a message port to the main process', async () => {
-      const w = new BrowserWindow({show: false, webPreferences: { nodeIntegration: true }})
+    it('can send a port to the main process', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
       w.loadURL('about:blank')
       const p = emittedOnce(ipcMain, 'port')
-      await w.webContents.executeJavaScript(`(${function() {
-        const channel = new MessageChannel
-        require('electron').ipcRenderer.send('port', channel.port1)
+      await w.webContents.executeJavaScript(`(${function () {
+        const channel = new MessageChannel();
+        (require('electron').ipcRenderer as any).postMessage('port', 'hi', [channel.port1])
       }})()`)
-      const [, port] = await p
-      console.log(port)
+      const [ev, msg] = await p
+      expect(msg).to.equal('hi')
+      expect(ev.ports).to.have.length(1)
+      const [port] = ev.ports
+      expect(port).to.be.an.instanceOf(EventEmitter)
+    })
+
+    it('can communicate between main and renderer', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      w.loadURL('about:blank')
+      const p = emittedOnce(ipcMain, 'port')
+      await w.webContents.executeJavaScript(`(${function () {
+        const channel = new MessageChannel()
+        channel.port2.onmessage = (ev) => {
+          channel.port2.postMessage(ev.data * 2)
+        }
+        (require('electron').ipcRenderer as any).postMessage('port', '', [channel.port1])
+      }})()`)
+      const [ev] = await p
+      expect(ev.ports).to.have.length(1)
+      const [port] = ev.ports
+      port.start()
+      port.postMessage(42)
+      const [ev2] = await emittedOnce(port, 'message')
+      expect(ev2.data).to.equal(84)
+    })
+
+    it('can send a port created in the main process to a renderer')
+    it('can receive a port from a renderer over a MessagePort connection', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      w.loadURL('about:blank')
+      function fn () {
+        const channel1 = new MessageChannel()
+        const channel2 = new MessageChannel()
+        channel1.port2.postMessage('', [channel2.port1])
+        channel2.port2.postMessage('matryoshka')
+        ;(require('electron').ipcRenderer as any).postMessage('port', '', [channel1.port1])
+      }
+      w.webContents.executeJavaScript(`(${fn})()`)
+      const [{ ports: [port1] }] = await emittedOnce(ipcMain, 'port')
+      port1.start()
+      const [{ ports: [port2] }] = await emittedOnce(port1, 'message')
+      port2.start()
+      const [{ data }] = await emittedOnce(port2, 'message')
+      expect(data).to.equal('matryoshka')
+    })
+    it('can send a port to a renderer over a MessagePort connection')
+    it('can forward a port from one renderer to another renderer', async () => {
+      const w1 = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      const w2 = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      w1.loadURL('about:blank')
+      w2.loadURL('about:blank')
+      w1.webContents.executeJavaScript(`(${function () {
+        const channel = new MessageChannel()
+        channel.port2.onmessage = (ev) => {
+          require('electron').ipcRenderer.send('message received', ev.data)
+        }
+        (require('electron').ipcRenderer as any).postMessage('port', '', [channel.port1])
+      }})()`)
+      w2.webContents.executeJavaScript(`(${function () {
+        (require('electron').ipcRenderer as any).on('port', ({ ports: [port] }: any) => {
+          port.postMessage('a message')
+        })
+      }})()`)
+      const [{ ports: [port] }] = await emittedOnce(ipcMain, 'port')
+      ;(w2.webContents as any).postMessage('port', '', [port])
+      const [, data] = await emittedOnce(ipcMain, 'message received')
+      expect(data).to.equal('a message')
     })
   })
 })
