@@ -372,6 +372,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       consecutive dialog protection is triggered. If not defined the default
       message would be used, note that currently the default message is in
       English and not localized.
+    * `disableDialogs` Boolean (optional) - Whether to disable dialogs
+      completely. Overrides `safeDialogs`. Default is `false`.
     * `navigateOnDragDrop` Boolean (optional) - Whether dragging and dropping a
       file or link onto the page causes a navigation. Default is `false`.
     * `autoplayPolicy` String (optional) - Autoplay policy to apply to
