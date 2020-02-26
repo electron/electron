@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/chrome/browser/ui/gtk/native_theme_gtk.cc b/chrome/browser/ui/gtk/native_theme_gtk.cc
-index 0bc7a7ecdacd666cc0cc4769f5bb36053515a732..4f6affd265d53d82bb041006ae02f7383e412ad9 100644
+index 0bc7a7ecdacd666cc0cc4769f5bb36053515a732..aecde5b7ee8e28a14ba7f3ee6b77f421041c4443 100644
 --- a/chrome/browser/ui/gtk/native_theme_gtk.cc
 +++ b/chrome/browser/ui/gtk/native_theme_gtk.cc
 @@ -300,6 +300,27 @@ base::Optional<SkColor> SkColorFromColorId(

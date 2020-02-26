@@ -66,7 +66,7 @@ index cb69e08c0185f55497089505ed5b226e57140321..362f28accc248248f3bcb54955c23528
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index a89c6e85d86dd035e834c9ff4be3387024082815..a0833574662cbcedd38bb0c38526b08f9aa57fc5 100644
+index a89c6e85d86dd035e834c9ff4be3387024082815..a89a1b393ea95dea52b5c78c0b0be075a80a0118 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -84,6 +84,9 @@
