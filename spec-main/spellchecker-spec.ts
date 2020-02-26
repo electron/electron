@@ -4,6 +4,7 @@ import { expect } from 'chai'
 import * as path from 'path'
 import { closeWindow } from './window-helpers'
 import { emittedOnce } from './events-helpers'
+import { ifit } from './spec-helpers'
 
 describe('spellchecker', () => {
   let w: BrowserWindow
@@ -19,7 +20,7 @@ describe('spellchecker', () => {
     await closeWindow(w)
   })
 
-  it('should detect correctly spelled words as correct', async () => {
+  ifit(process.platform !== 'win32')('should detect correctly spelled words as correct', async () => {
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautiful and lovely"')
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()')
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu')
@@ -36,7 +37,7 @@ describe('spellchecker', () => {
     expect(contextMenuParams.dictionarySuggestions).to.have.lengthOf(0)
   })
 
-  it('should detect incorrectly spelled words as incorrect', async () => {
+  ifit(process.platform !== 'win32')('should detect incorrectly spelled words as incorrect', async () => {
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautifulllll asd asd"')
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()')
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu')
