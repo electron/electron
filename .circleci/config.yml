@@ -213,9 +213,6 @@ step-gclient-sync: &step-gclient-sync
         $GCLIENT_EXTRA_ARGS \
         "$CIRCLE_REPOSITORY_URL"
         gclient sync --with_branch_heads --with_tags
-
-        # Manually run update-external-binaries.py with system python
-        python src/electron/script/update-external-binaries.py
       fi
 
 step-setup-env-for-build: &step-setup-env-for-build
@@ -289,10 +286,15 @@ step-fix-sync-on-mac: &step-fix-sync-on-mac
         # Fix Clang Install (wrong binary)
         rm -rf src/third_party/llvm-build
         python src/tools/clang/scripts/update.py
-        # Fix Framework Header Installs (symlinks not retained)
-        rm -rf src/electron/external_binaries
-        python src/electron/script/update-external-binaries.py
       fi
+
+# Manually run update-external-binaries.py with system python
+step-fixup-external-binaries: &step-fixup-external-binaries
+  run:
+    name: Update external binaries
+    command: |
+      rm -rf src/electron/external_binaries
+      python src/electron/script/update-external-binaries.py
 
 step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
   run:
@@ -625,7 +627,7 @@ step-maybe-restore-src-cache: &step-maybe-restore-src-cache
     paths:
       - ./src
     keys:
-      - v6-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+      - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -690,7 +692,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - ./src
-    key: v6-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+    key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
     name: Persisting src cache
 
 # Lists of steps.
@@ -827,6 +829,7 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync-on-mac
+    - *step-fixup-external-binaries
     - *step-gn-gen-default
     - *step-delete-git-directories
 
@@ -914,6 +917,7 @@ steps-chromedriver-build: &steps-chromedriver-build
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-fix-sync-on-mac
+    - *step-fixup-external-binaries
     - *step-gn-gen-default
 
     - *step-electron-chromedriver-build
