@@ -52,7 +52,7 @@ void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> worker_context) {
   bool initialized = node::InitializeContext(worker_context);
   CHECK(initialized);
   node::Environment* env =
-      node_bindings_->CreateEnvironment(worker_context, nullptr, true);
+      node_bindings_->CreateEnvironment(worker_context, nullptr);
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());

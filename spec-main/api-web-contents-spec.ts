@@ -963,29 +963,44 @@ describe('webContents module', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'webframe-zoom.html'))
     })
 
-    it('cannot persist zoom level after navigation with webFrame', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-      let initialNavigation = true
-      const source = `
-        const {ipcRenderer, webFrame} = require('electron')
-        webFrame.setZoomLevel(0.6)
-        ipcRenderer.send('zoom-level-set', webFrame.getZoomLevel())
-      `
-      w.webContents.on('did-finish-load', () => {
-        if (initialNavigation) {
-          w.webContents.executeJavaScript(source)
-        } else {
-          const zoomLevel = w.webContents.zoomLevel
-          expect(zoomLevel).to.equal(0)
+    describe('with unique domains', () => {
+      let server: http.Server
+      let serverUrl: string
+      let crossSiteUrl: string
+
+      before((done) => {
+        server = http.createServer((req, res) => {
+          setTimeout(() => res.end('hey'), 0)
+        })
+        server.listen(0, '127.0.0.1', () => {
+          serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+          crossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}`
           done()
-        }
+        })
       })
-      ipcMain.once('zoom-level-set', (e, zoomLevel) => {
+
+      after(() => {
+        server.close()
+      })
+
+      it('cannot persist zoom level after navigation with webFrame', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+        const source = `
+          const {ipcRenderer, webFrame} = require('electron')
+          webFrame.setZoomLevel(0.6)
+          ipcRenderer.send('zoom-level-set', webFrame.getZoomLevel())
+        `
+        const zoomLevelPromise = emittedOnce(ipcMain, 'zoom-level-set')
+        await w.loadURL(serverUrl)
+        await w.webContents.executeJavaScript(source)
+        let [, zoomLevel] = await zoomLevelPromise
         expect(zoomLevel).to.equal(0.6)
-        w.loadFile(path.join(fixturesPath, 'pages', 'd.html'))
-        initialNavigation = false
+        const loadPromise = emittedOnce(w.webContents, 'did-finish-load')
+        await w.loadURL(crossSiteUrl)
+        await loadPromise
+        zoomLevel = w.webContents.zoomLevel
+        expect(zoomLevel).to.equal(0)
       })
-      w.loadFile(path.join(fixturesPath, 'pages', 'c.html'))
     })
   })
 
@@ -1077,7 +1092,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false })
       let rvhDeletedCount = 0
       w.webContents.once('destroyed', () => {
-        const expectedRenderViewDeletedEventCount = 3 // 1 speculative upon redirection + 2 upon window close.
+        const expectedRenderViewDeletedEventCount = 1
         expect(rvhDeletedCount).to.equal(expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times')
         done()
       })

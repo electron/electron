@@ -125,7 +125,7 @@ void ElectronRendererClient::DidCreateScriptContext(
   CHECK(initialized);
 
   node::Environment* env =
-      node_bindings_->CreateEnvironment(renderer_context, nullptr, true);
+      node_bindings_->CreateEnvironment(renderer_context, nullptr);
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module

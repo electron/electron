@@ -43,8 +43,7 @@ class NodeBindings {
 
   // Create the environment and load node.js.
   node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
-                                       node::MultiIsolatePlatform* platform,
-                                       bool bootstrap_env);
+                                       node::MultiIsolatePlatform* platform);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);
