@@ -346,4 +346,8 @@ bool ElectronMainDelegate::ShouldCreateFeatureList() {
   return false;
 }
 
+bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
+  return false;
+}
+
 }  // namespace electron
