@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Thu, 27 Feb 2020 11:47:31 -0800
+Subject: Fix bug in receiver maps inference
+
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/2062404
+
+diff --git a/src/compiler/node-properties.cc b/src/compiler/node-properties.cc
+index f43a348bb2d5b803270e42f64a3c790c52a3581b..ab4ced69ab60d6078aeb27c3d8b97e87400687ce 100644
+--- a/src/compiler/node-properties.cc
++++ b/src/compiler/node-properties.cc
+@@ -386,6 +386,7 @@ NodeProperties::InferReceiverMapsResult NodeProperties::InferReceiverMapsUnsafe(
+           // We reached the allocation of the {receiver}.
+           return kNoReceiverMaps;
+         }
++        result = kUnreliableReceiverMaps;  // JSCreate can have side-effect.
+         break;
+       }
+       case IrOpcode::kJSCreatePromise: {
