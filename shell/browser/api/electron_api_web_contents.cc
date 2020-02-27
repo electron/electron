@@ -1180,8 +1180,6 @@ class BrowserSideMessagePort : public gin::Wrappable<BrowserSideMessagePort>,
 
   static gin::WrapperInfo kWrapperInfo;
 
-  // blink::MessagePortChannel ReleaseChannel() { return std::move(channel_); }
-
   bool IsEntangled() const { return !closed_ && !IsNeutered(); }
   bool IsNeutered() const { return !connector_ || !connector_->is_valid(); }
 
@@ -1203,7 +1201,6 @@ class BrowserSideMessagePort : public gin::Wrappable<BrowserSideMessagePort>,
     if (!ports.size())
       return std::vector<blink::MessagePortChannel>();
 
-    // HeapHashSet<Member<MessagePort>> visited;
     std::unordered_set<BrowserSideMessagePort*> visited;
 
     // Walk the incoming array - if there are any duplicate ports, or null ports

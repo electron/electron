@@ -22,6 +22,7 @@ declare namespace NodeJS {
     sendToHost(channel: string, args: any[]): void;
     sendTo(internal: boolean, sendToAll: boolean, webContentsId: number, channel: string, args: any[]): void;
     invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string, result: T }>;
+    postMessage(channel: string, message: any, transferables: any[] | Object): void;
   }
 
   interface V8UtilBinding {
