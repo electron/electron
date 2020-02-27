@@ -143,6 +143,34 @@ Sends a message to a window with `webContentsId` via `channel`.
 Like `ipcRenderer.send` but the event will be sent to the `<webview>` element in
 the host page instead of the main process.
 
+### `ipcRenderer.postMessage(channel, message, [options])`
+
+* `channel` String
+* `message` any
+* `options` MessagePort[] (optional)
+
+Send a message to the main process, optionally transferring ownership of zero
+or more [`MessagePort`][] objects.
+
+The transferred `MessagePort` objects will be available in the main process by
+accessing the `ports` property of the emitted event.
+
+For example:
+```js
+// Renderer process
+const { port1, port2 } = new MessageChannel
+ipcRenderer.postMessage('port', {message: "hello"}, [port1])
+
+// Main process
+ipcMain.on('port', (e, msg) => {
+  const [port] = e.ports
+  // ...
+})
+```
+
+For more information on using `MessagePort` and `MessageChannel`, see the [MDN
+documentation](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel).
+
 ## Event object
 
 The documentation for the `event` object passed to the `callback` can be found
@@ -151,3 +179,4 @@ in the [`ipc-renderer-event`](structures/ipc-renderer-event.md) structure docs.
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+[`MessagePort`]: https://developer.mozilla.org/en-US/docs/Web/API/MessagePort

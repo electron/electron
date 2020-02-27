@@ -192,8 +192,8 @@ describe('ipc module', () => {
       w.loadURL('about:blank')
       const p = emittedOnce(ipcMain, 'port')
       await w.webContents.executeJavaScript(`(${function () {
-        const channel = new MessageChannel();
-        (require('electron').ipcRenderer as any).postMessage('port', 'hi', [channel.port1])
+        const channel = new MessageChannel()
+        require('electron').ipcRenderer.postMessage('port', 'hi', [channel.port1])
       }})()`)
       const [ev, msg] = await p
       expect(msg).to.equal('hi')
@@ -211,7 +211,7 @@ describe('ipc module', () => {
         channel.port2.onmessage = (ev) => {
           channel.port2.postMessage(ev.data * 2)
         }
-        (require('electron').ipcRenderer as any).postMessage('port', '', [channel.port1])
+        require('electron').ipcRenderer.postMessage('port', '', [channel.port1])
       }})()`)
       const [ev] = await p
       expect(ev.ports).to.have.length(1)
@@ -231,7 +231,7 @@ describe('ipc module', () => {
         const channel2 = new MessageChannel()
         channel1.port2.postMessage('', [channel2.port1])
         channel2.port2.postMessage('matryoshka')
-        ;(require('electron').ipcRenderer as any).postMessage('port', '', [channel1.port1])
+        require('electron').ipcRenderer.postMessage('port', '', [channel1.port1])
       }
       w.webContents.executeJavaScript(`(${fn})()`)
       const [{ ports: [port1] }] = await emittedOnce(ipcMain, 'port')
@@ -252,15 +252,15 @@ describe('ipc module', () => {
         channel.port2.onmessage = (ev) => {
           require('electron').ipcRenderer.send('message received', ev.data)
         }
-        (require('electron').ipcRenderer as any).postMessage('port', '', [channel.port1])
+        require('electron').ipcRenderer.postMessage('port', '', [channel.port1])
       }})()`)
       w2.webContents.executeJavaScript(`(${function () {
-        (require('electron').ipcRenderer as any).on('port', ({ ports: [port] }: any) => {
+        require('electron').ipcRenderer.on('port', ({ ports: [port] }: any) => {
           port.postMessage('a message')
         })
       }})()`)
       const [{ ports: [port] }] = await emittedOnce(ipcMain, 'port')
-      ;(w2.webContents as any).postMessage('port', '', [port])
+      w2.webContents.postMessage('port', '', [port])
       const [, data] = await emittedOnce(ipcMain, 'message received')
       expect(data).to.equal('a message')
     })

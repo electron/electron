@@ -1593,6 +1593,31 @@ ipcMain.on('ping', (event) => {
 })
 ```
 
+#### `contents.postMessage(channel, message, [options])`
+
+* `channel` String
+* `message` any
+* `options` MessagePort[] (optional)
+
+Send a message to the renderer process, optionally transferring ownership of
+zero or more [`MessagePort`][] objects.
+
+The transferred `MessagePort` objects will be available in the renderer process
+by accessing the `ports` property of the emitted event.
+
+For example:
+```js
+// Main process
+const { port1, port2 } = new MessageChannel
+webContents.postMessage('port', {message: 'hello'}, [port1])
+
+// Renderer process
+ipcRenderer.on('port', (e, msg) => {
+  const [port] = e.ports
+  // ...
+})
+```
+
 #### `contents.enableDeviceEmulation(parameters)`
 
 * `parameters` Object
