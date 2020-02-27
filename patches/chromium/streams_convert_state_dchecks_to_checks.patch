@@ -40,7 +40,7 @@ index 653cab070a3e995ea62d1ca5d604d6b674089efe..d9e69a72280f4f098ebe25d99f90806a
  }
  
 diff --git a/third_party/blink/renderer/core/streams/readable_stream_native.cc b/third_party/blink/renderer/core/streams/readable_stream_native.cc
-index a46bb9a572a3fc8284064b94c2c55ebd3912f173..f91c1c6529aaba4179e5f503416c2e77a7e88ec3 100644
+index 9f2f7b8cbef30e8c69cb3d4ca1c5b74d6b0073e4..0c5bbb02ccbb2ac7b60acb13117ea43880c621cf 100644
 --- a/third_party/blink/renderer/core/streams/readable_stream_native.cc
 +++ b/third_party/blink/renderer/core/streams/readable_stream_native.cc
 @@ -1333,7 +1333,7 @@ void ReadableStreamNative::Initialize(ReadableStreamNative* stream) {
