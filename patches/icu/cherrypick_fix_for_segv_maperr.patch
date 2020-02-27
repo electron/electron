@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 27 Feb 2020 10:24:00 -0800
+Subject: Cherrypick fix for SEGV_MAPERR
+
+Avoid int32_t overflow in length addition
+
+See
+https://bugs.chromium.org/p/chromium/issues/detail?id=1044570
+https://unicode-org.atlassian.net/browse/ICU-20958
+https://github.com/unicode-org/icu/pull/971
+
+diff --git a/source/common/unistr.cpp b/source/common/unistr.cpp
+index 8f065158654e0c8ad69a921df627a9cef1019324..61f471da40e01251ad02092ead72c9e1bc53e541 100644
+--- a/source/common/unistr.cpp
++++ b/source/common/unistr.cpp
+@@ -1563,7 +1563,11 @@ UnicodeString::doAppend(const UChar *srcChars, int32_t srcStart, int32_t srcLeng
+   }
+ 
+   int32_t oldLength = length();
+-  int32_t newLength = oldLength + srcLength;
++  int32_t newLength;
++  if (uprv_add32_overflow(oldLength, srcLength, &newLength)) {
++    setToBogus();
++    return *this;
++  }
+ 
+   // Check for append onto ourself
+   const UChar* oldArray = getArrayStart();

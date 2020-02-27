@@ -1,2 +1,3 @@
 date_time_generator_default_locale.patch
 posix_util_invalid_locale.patch
+cherrypick_fix_for_segv_maperr.patch
