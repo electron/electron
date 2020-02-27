@@ -1,0 +1,259 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 27 Feb 2020 12:53:52 -0800
+Subject: Streams: Convert state DCHECKs to CHECKs
+
+For "cheap" checks of state in the streams implementation, use CHECKs
+instead of DCHECKs. This will improve robustness against logic errors.
+
+Cherry-picked from 122b074f0354079f3d9044cc14890dcfd2d72918.
+
+diff --git a/third_party/blink/renderer/core/streams/readable_stream_default_controller.cc b/third_party/blink/renderer/core/streams/readable_stream_default_controller.cc
+index b5fca428366e351896d414300c0f716a4c0dd936..984ca569b11ae0015511f2013618d9082bd1a6a4 100644
+--- a/third_party/blink/renderer/core/streams/readable_stream_default_controller.cc
++++ b/third_party/blink/renderer/core/streams/readable_stream_default_controller.cc
+@@ -110,7 +110,7 @@ void ReadableStreamDefaultController::Close(
+ 
+   // 2. Assert: ! ReadableStreamDefaultControllerCanCloseOrEnqueue(controller)
+   //    is true.
+-  DCHECK(CanCloseOrEnqueue(controller));
++  CHECK(CanCloseOrEnqueue(controller));
+ 
+   // 3. Set controller.[[closeRequested]] to true.
+   controller->is_close_requested_ = true;
+@@ -136,7 +136,7 @@ void ReadableStreamDefaultController::Enqueue(
+ 
+   // 2. Assert: ! ReadableStreamDefaultControllerCanCloseOrEnqueue(controller)
+   //    is true.
+-  DCHECK(CanCloseOrEnqueue(controller));
++  CHECK(CanCloseOrEnqueue(controller));
+ 
+   // 3. If ! IsReadableStreamLocked(stream) is true and !
+   //    ReadableStreamGetNumReadRequests(stream) > 0, perform !
+@@ -261,7 +261,7 @@ const char* ReadableStreamDefaultController::EnqueueExceptionMessage(
+   if (state == ReadableStreamNative::kErrored) {
+     return "Cannot enqueue a chunk into an errored readable stream";
+   }
+-  DCHECK(state == ReadableStreamNative::kClosed);
++  CHECK(state == ReadableStreamNative::kClosed);
+   return "Cannot enqueue a chunk into a closed readable stream";
+ }
+ 
+diff --git a/third_party/blink/renderer/core/streams/readable_stream_native.cc b/third_party/blink/renderer/core/streams/readable_stream_native.cc
+index 45233e6607109634a7504d7bc28eeec7a5ae4b43..4155ac247e6a4c83c31606dc65caac0606fbdab1 100644
+--- a/third_party/blink/renderer/core/streams/readable_stream_native.cc
++++ b/third_party/blink/renderer/core/streams/readable_stream_native.cc
+@@ -1342,7 +1342,7 @@ void ReadableStreamNative::Initialize(ReadableStreamNative* stream) {
+   // initialised correctly.
+   // https://streams.spec.whatwg.org/#initialize-readable-stream
+   // 1. Set stream.[[state]] to "readable".
+-  DCHECK_EQ(stream->state_, kReadable);
++  CHECK_EQ(stream->state_, kReadable);
+   // 2. Set stream.[[reader]] and stream.[[storedError]] to undefined.
+   DCHECK(!stream->reader_);
+   DCHECK(stream->stored_error_.IsEmpty());
+@@ -1433,7 +1433,7 @@ StreamPromiseResolver* ReadableStreamNative::AddReadRequest(
+   DCHECK(stream->reader_);
+ 
+   // 2. Assert: stream.[[state]] is "readable".
+-  DCHECK_EQ(stream->state_, kReadable);
++  CHECK_EQ(stream->state_, kReadable);
+ 
+   // 3. Let promise be a new promise.
+   auto* promise = MakeGarbageCollected<StreamPromiseResolver>(script_state);
+@@ -1500,7 +1500,7 @@ void ReadableStreamNative::Close(ScriptState* script_state,
+                                  ReadableStreamNative* stream) {
+   // https://streams.spec.whatwg.org/#readable-stream-close
+   // 1. Assert: stream.[[state]] is "readable".
+-  DCHECK_EQ(stream->state_, kReadable);
++  CHECK_EQ(stream->state_, kReadable);
+ 
+   // 2. Set stream.[[state]] to "closed".
+   stream->state_ = kClosed;
+@@ -1587,7 +1587,7 @@ void ReadableStreamNative::Error(ScriptState* script_state,
+                                  v8::Local<v8::Value> e) {
+   // https://streams.spec.whatwg.org/#readable-stream-error
+   // 2. Assert: stream.[[state]] is "readable".
+-  DCHECK_EQ(stream->state_, kReadable);
++  CHECK_EQ(stream->state_, kReadable);
+   auto* isolate = script_state->GetIsolate();
+ 
+   // 3. Set stream.[[state]] to "errored".
+diff --git a/third_party/blink/renderer/core/streams/transform_stream_native.cc b/third_party/blink/renderer/core/streams/transform_stream_native.cc
+index 79040dae29f8a38359fb3394ae28558c732502b8..e28a2b1a86b88addd234d9222a0442bb63a888ab 100644
+--- a/third_party/blink/renderer/core/streams/transform_stream_native.cc
++++ b/third_party/blink/renderer/core/streams/transform_stream_native.cc
+@@ -488,7 +488,7 @@ class TransformStreamNative::DefaultSinkWriteAlgorithm final
+           }
+ 
+           // 4. Assert: state is "writable".
+-          DCHECK(writable->IsWritable());
++          CHECK(writable->IsWritable());
+ 
+           // 5. Return ! TransformStreamDefaultControllerPerformTransform(
+           //    controller, chunk).
+diff --git a/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc b/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc
+index 08652a65c0a142031890a7a0005babf08162f41a..afded82d46da46a156a87be2379c428824b53e66 100644
+--- a/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc
++++ b/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc
+@@ -146,8 +146,8 @@ void WritableStreamDefaultController::SetUp(
+       // 16. Upon fulfillment of startPromise
+       //      a. Assert: stream.[[state]] is "writable" or "erroring".
+       const auto state = stream_->GetState();
+-      DCHECK(state == WritableStreamNative::kWritable ||
+-             state == WritableStreamNative::kErroring);
++      CHECK(state == WritableStreamNative::kWritable ||
++            state == WritableStreamNative::kErroring);
+ 
+       //      b. Set controller.[[started]] to true.
+       WritableStreamDefaultController* controller = stream_->Controller();
+@@ -178,8 +178,8 @@ void WritableStreamDefaultController::SetUp(
+       // 17. Upon rejection of startPromise with reason r,
+       //      a. Assert: stream.[[state]] is "writable" or "erroring".
+       const auto state = stream_->GetState();
+-      DCHECK(state == WritableStreamNative::kWritable ||
+-             state == WritableStreamNative::kErroring);
++      CHECK(state == WritableStreamNative::kWritable ||
++            state == WritableStreamNative::kErroring);
+ 
+       //      b. Set controller.[[started]] to true.
+       WritableStreamDefaultController* controller = stream_->Controller();
+@@ -578,8 +578,8 @@ void WritableStreamDefaultController::ProcessWrite(
+       const auto state = stream_->GetState();
+ 
+       //      c. Assert: state is "writable" or "erroring".
+-      DCHECK(state == WritableStreamNative::kWritable ||
+-             state == WritableStreamNative::kErroring);
++      CHECK(state == WritableStreamNative::kWritable ||
++            state == WritableStreamNative::kErroring);
+ 
+       //      d. Perform ! DequeueValue(controller).
+       controller_->queue_->DequeueValue(script_state->GetIsolate());
+diff --git a/third_party/blink/renderer/core/streams/writable_stream_default_writer.cc b/third_party/blink/renderer/core/streams/writable_stream_default_writer.cc
+index de107de2f5cbedd436ed66aa8e1bf382651afd6e..fa5f424d563f969d5620a028f091b16381bfc0d5 100644
+--- a/third_party/blink/renderer/core/streams/writable_stream_default_writer.cc
++++ b/third_party/blink/renderer/core/streams/writable_stream_default_writer.cc
+@@ -346,8 +346,8 @@ v8::Local<v8::Promise> WritableStreamDefaultWriter::CloseWithErrorPropagation(
+   }
+ 
+   //  6. Assert: state is "writable" or "erroring".
+-  DCHECK(state == WritableStreamNative::kWritable ||
+-         state == WritableStreamNative::kErroring);
++  CHECK(state == WritableStreamNative::kWritable ||
++        state == WritableStreamNative::kErroring);
+ 
+   //  7. Return ! WritableStreamDefaultWriterClose(writer).
+   return Close(script_state, writer);
+@@ -538,11 +538,11 @@ v8::Local<v8::Promise> WritableStreamDefaultWriter::Close(
+   }
+ 
+   //  5. Assert: state is "writable" or "erroring".
+-  DCHECK(state == WritableStreamNative::kWritable ||
+-         state == WritableStreamNative::kErroring);
++  CHECK(state == WritableStreamNative::kWritable ||
++        state == WritableStreamNative::kErroring);
+ 
+   //  6. Assert: ! WritableStreamCloseQueuedOrInFlight(stream) is false.
+-  DCHECK(!WritableStreamNative::CloseQueuedOrInFlight(stream));
++  CHECK(!WritableStreamNative::CloseQueuedOrInFlight(stream));
+ 
+   //  7. Let promise be a new promise.
+   auto* promise = MakeGarbageCollected<StreamPromiseResolver>(script_state);
+diff --git a/third_party/blink/renderer/core/streams/writable_stream_native.cc b/third_party/blink/renderer/core/streams/writable_stream_native.cc
+index 262a9833c1b8393b627aa30ac25be2b74c947930..1a2e4dad96762fbdcab1fa96cea60511b2047cb4 100644
+--- a/third_party/blink/renderer/core/streams/writable_stream_native.cc
++++ b/third_party/blink/renderer/core/streams/writable_stream_native.cc
+@@ -251,7 +251,7 @@ v8::Local<v8::Promise> WritableStreamNative::Abort(
+   }
+ 
+   //  4. Assert: state is "writable" or "erroring".
+-  DCHECK(state == kWritable || state == kErroring);
++  CHECK(state == kWritable || state == kErroring);
+ 
+   //  5. Let wasAlreadyErroring be false.
+   //  6. If state is "erroring",
+@@ -290,7 +290,7 @@ v8::Local<v8::Promise> WritableStreamNative::AddWriteRequest(
+   DCHECK(IsLocked(stream));
+ 
+   //  2. Assert: stream.[[state]] is "writable".
+-  DCHECK_EQ(stream->state_, kWritable);
++  CHECK_EQ(stream->state_, kWritable);
+ 
+   //  3. Let promise be a new promise.
+   auto* promise = MakeGarbageCollected<StreamPromiseResolver>(script_state);
+@@ -328,7 +328,7 @@ void WritableStreamNative::DealWithRejection(ScriptState* script_state,
+   }
+ 
+   //  3. Assert: state is "erroring".
+-  DCHECK_EQ(state, kErroring);
++  CHECK_EQ(state, kErroring);
+ 
+   //  4. Perform ! WritableStreamFinishErroring(stream).
+   FinishErroring(script_state, stream);
+@@ -342,7 +342,7 @@ void WritableStreamNative::StartErroring(ScriptState* script_state,
+   DCHECK(stream->stored_error_.IsEmpty());
+ 
+   //  2. Assert: stream.[[state]] is "writable".
+-  DCHECK_EQ(stream->state_, kWritable);
++  CHECK_EQ(stream->state_, kWritable);
+ 
+   //  3. Let controller be stream.[[writableStreamController]].
+   WritableStreamDefaultController* controller =
+@@ -379,7 +379,7 @@ void WritableStreamNative::FinishErroring(ScriptState* script_state,
+                                           WritableStreamNative* stream) {
+   // https://streams.spec.whatwg.org/#writable-stream-finish-erroring
+   //  1. Assert: stream.[[state]] is "erroring".
+-  DCHECK_EQ(stream->state_, kErroring);
++  CHECK_EQ(stream->state_, kErroring);
+ 
+   //  2. Assert: ! WritableStreamHasOperationMarkedInFlight(stream) is false.
+   DCHECK(!HasOperationMarkedInFlight(stream));
+@@ -528,7 +528,7 @@ void WritableStreamNative::FinishInFlightWriteWithError(
+ 
+   //  4. Assert: stream.[[state]] is "writable" or "erroring".
+   const auto state = stream->state_;
+-  DCHECK(state == kWritable || state == kErroring);
++  CHECK(state == kWritable || state == kErroring);
+ 
+   //  5. Perform ! WritableStreamDealWithRejection(stream, error).
+   DealWithRejection(script_state, stream, error);
+@@ -550,7 +550,7 @@ void WritableStreamNative::FinishInFlightClose(ScriptState* script_state,
+   const auto state = stream->state_;
+ 
+   //  5. Assert: stream.[[state]] is "writable" or "erroring".
+-  DCHECK(state == kWritable || state == kErroring);
++  CHECK(state == kWritable || state == kErroring);
+ 
+   //  6. If state is "erroring",
+   if (state == kErroring) {
+@@ -604,7 +604,7 @@ void WritableStreamNative::FinishInFlightCloseWithError(
+ 
+   //  4. Assert: stream.[[state]] is "writable" or "erroring".
+   const auto state = stream->state_;
+-  DCHECK(state == kWritable || state == kErroring);
++  CHECK(state == kWritable || state == kErroring);
+ 
+   //  5. If stream.[[pendingAbortRequest]] is not undefined,
+   if (stream->pending_abort_request_) {
+@@ -660,10 +660,10 @@ void WritableStreamNative::UpdateBackpressure(ScriptState* script_state,
+                                               bool backpressure) {
+   // https://streams.spec.whatwg.org/#writable-stream-update-backpressure
+   //  1. Assert: stream.[[state]] is "writable".
+-  DCHECK_EQ(stream->state_, kWritable);
++  CHECK_EQ(stream->state_, kWritable);
+ 
+   //  2. Assert: ! WritableStreamCloseQueuedOrInFlight(stream) is false.
+-  DCHECK(!CloseQueuedOrInFlight(stream));
++  CHECK(!CloseQueuedOrInFlight(stream));
+ 
+   //  3. Let writer be stream.[[writer]].
+   WritableStreamDefaultWriter* writer = stream->writer_;
+@@ -735,7 +735,7 @@ void WritableStreamNative::RejectCloseAndClosedPromiseIfNeeded(
+     WritableStreamNative* stream) {
+   // https://streams.spec.whatwg.org/#writable-stream-reject-close-and-closed-promise-if-needed
+   // //  1. Assert: stream.[[state]] is "errored".
+-  DCHECK_EQ(stream->state_, kErrored);
++  CHECK_EQ(stream->state_, kErrored);
+ 
+   auto* isolate = script_state->GetIsolate();
+ 
