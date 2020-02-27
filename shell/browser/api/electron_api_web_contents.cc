@@ -7,6 +7,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -1236,7 +1237,7 @@ class BrowserSideMessagePort : public gin::Wrappable<BrowserSideMessagePort>,
   }
 
  private:
-  explicit BrowserSideMessagePort() {}
+  BrowserSideMessagePort() {}
 
   // mojo::MessageReceiver
   bool Accept(mojo::Message* mojo_message) override {

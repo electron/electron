@@ -4,6 +4,9 @@
 
 #include "shell/common/v8_value_serializer.h"
 
+#include <utility>
+#include <vector>
+
 #include "gin/converter.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "v8/include/v8.h"
