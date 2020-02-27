@@ -8,7 +8,7 @@ This might be subject to concurrent modification by script.
 Cherry-picked from 12310ed05f15fea5fa6824c6a6b5d86f81532e25.
 
 diff --git a/third_party/blink/renderer/core/streams/readable_stream_native.cc b/third_party/blink/renderer/core/streams/readable_stream_native.cc
-index 4567ec4b712cf3167088eaf4fac6cbcdca7ebec3..234f5c23962c92c607d781ad7ed05b20a3a7b4ce 100644
+index 4567ec4b712cf3167088eaf4fac6cbcdca7ebec3..45233e6607109634a7504d7bc28eeec7a5ae4b43 100644
 --- a/third_party/blink/renderer/core/streams/readable_stream_native.cc
 +++ b/third_party/blink/renderer/core/streams/readable_stream_native.cc
 @@ -714,7 +714,9 @@ class ReadableStreamNative::TeeEngine::PullAlgorithm final
@@ -18,7 +18,7 @@ index 4567ec4b712cf3167088eaf4fac6cbcdca7ebec3..234f5c23962c92c607d781ad7ed05b20
 -          if (!engine_->canceled_[branch]) {
 +          if (!engine_->canceled_[branch] &&
 +              ReadableStreamDefaultController::CanCloseOrEnqueue(
-+                  engine_->controller[branch])) {
++                  engine_->controller_[branch])) {
              ReadableStreamDefaultController::Close(
                  script_state, engine_->controller_[branch]);
            }
@@ -29,7 +29,7 @@ index 4567ec4b712cf3167088eaf4fac6cbcdca7ebec3..234f5c23962c92c607d781ad7ed05b20
 -        if (!engine_->canceled_[branch]) {
 +        if (!engine_->canceled_[branch] &&
 +            ReadableStreamDefaultController::CanCloseOrEnqueue(
-+                engine_->controller[branch])) {
++                engine_->controller_[branch])) {
            ReadableStreamDefaultController::Enqueue(script_state,
                                                     engine_->controller_[branch],
                                                     value, exception_state);
