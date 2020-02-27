@@ -1,7 +1,7 @@
-From 974193d9ea7ea14544538c85fdb04dd5fd6ac216 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: "Steven R. Loomis" <srloomis@us.ibm.com>
 Date: Thu, 25 Apr 2019 10:40:28 -0700
-Subject: [PATCH] ICU-20575 fix broken default locale mapping for C.UTF-8
+Subject: ICU-20575 fix broken default locale mapping for C.UTF-8
 
 Regression was in 1afef30549d93c17bb966c6803d5d943cf055925
 PR #418 [ICU-20187]
@@ -18,7 +18,7 @@ PR #418 [ICU-20187]
   (incorrectly doubled __BB)
 
 diff --git a/source/common/putil.cpp b/source/common/putil.cpp
-index 532a0903cdd..289a8aaa141 100644
+index 532a0903cdd6ef74e3a1637ee24559ce961eaff7..289a8aaa14108877cd0a8c891d05717a372c62be 100644
 --- a/source/common/putil.cpp
 +++ b/source/common/putil.cpp
 @@ -1560,6 +1560,10 @@ static const char *uprv_getPOSIXIDForCategory(int category)

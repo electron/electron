@@ -1,7 +1,7 @@
-From 3da02cadcd589bc1b660179860e2125b4277ceca Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeff Genovy <29107334+jefgen@users.noreply.github.com>
 Date: Wed, 24 Apr 2019 14:02:06 -0700
-Subject: [PATCH] ICU-20558 Fix regression in DateTimePatternGenerator
+Subject: ICU-20558 Fix regression in DateTimePatternGenerator
 
 This fixes a regression introduced by commit
 b12a927c9365bb38831afbf76fdd0999f8f33deb for issue ICU-13778.
