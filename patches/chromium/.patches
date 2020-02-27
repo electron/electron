@@ -95,3 +95,5 @@ never_let_a_non-zero-size_pixel_snap_to_zero_size.patch
 fix_hi-dpi_transitions_on_catalina.patch
 typemap.patch
 allow_restricted_clock_nanosleep_in_linux_sandbox.patch
+move_readablestream_requests_onto_the_stack_before_iteration.patch
+streams_convert_state_dchecks_to_checks.patch

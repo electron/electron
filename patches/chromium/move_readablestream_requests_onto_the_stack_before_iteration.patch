@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 27 Feb 2020 12:40:02 -0800
+Subject: Move ReadableStream requests onto the stack before iteration.
+
+This might be subject to concurrent modification by script.
+
+Cherry-picked from 12310ed05f15fea5fa6824c6a6b5d86f81532e25.
+
+diff --git a/third_party/blink/renderer/core/streams/readable_stream_native.cc b/third_party/blink/renderer/core/streams/readable_stream_native.cc
+index 632ea367d6861cc45625d3ff305f21249ccd6db6..9f2f7b8cbef30e8c69cb3d4ca1c5b74d6b0073e4 100644
+--- a/third_party/blink/renderer/core/streams/readable_stream_native.cc
++++ b/third_party/blink/renderer/core/streams/readable_stream_native.cc
+@@ -708,7 +708,9 @@ class ReadableStreamNative::TeeEngine::PullAlgorithm final
+         //        b. Perform ! ReadableStreamDefaultControllerClose(branch2.
+         //           [[readableStreamController]]).
+         for (int branch = 0; branch < 2; ++branch) {
+-          if (!engine_->canceled_[branch]) {
++          if (!engine_->canceled_[branch] &&
++              ReadableStreamDefaultController::CanCloseOrEnqueue(
++                  engine_->controller_[branch])) {
+             ReadableStreamDefaultController::Close(
+                 script_state, engine_->controller_[branch]);
+           }
+@@ -734,7 +736,9 @@ class ReadableStreamNative::TeeEngine::PullAlgorithm final
+       //       ReadableStreamDefaultControllerEnqueue(branch2.
+       //       [[readableStreamController]], value2).
+       for (int branch = 0; branch < 2; ++branch) {
+-        if (!engine_->canceled_[branch]) {
++        if (!engine_->canceled_[branch] &&
++            ReadableStreamDefaultController::CanCloseOrEnqueue(
++                engine_->controller_[branch])) {
+           ReadableStreamDefaultController::Enqueue(script_state,
+                                                    engine_->controller_[branch],
+                                                    value, exception_state);
+@@ -1532,7 +1536,9 @@ void ReadableStreamNative::Close(ScriptState* script_state,
+   // 5. If ! IsReadableStreamDefaultReader(reader) is true,
+   //   a. Repeat for each readRequest that is an element of reader.
+   //      [[readRequests]],
+-  for (StreamPromiseResolver* promise : reader->read_requests_) {
++  HeapDeque<Member<StreamPromiseResolver>> requests;
++  requests.Swap(reader->read_requests_);
++  for (StreamPromiseResolver* promise : requests) {
+     //   i. Resolve readRequest.[[promise]] with !
+     //      ReadableStreamCreateReadResult(undefined, true, reader.
+     //      [[forAuthorCode]]).
+@@ -1543,7 +1549,7 @@ void ReadableStreamNative::Close(ScriptState* script_state,
+   }
+ 
+   //   b. Set reader.[[readRequests]] to an empty List.
+-  reader->read_requests_.clear();
++  //      This is not required since we've already called Swap().
+ 
+   // 6. Resolve reader.[[closedPromise]] with undefined.
+   reader->closed_promise_->ResolveWithUndefined(script_state);
