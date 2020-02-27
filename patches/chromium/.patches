@@ -34,6 +34,7 @@ scroll_bounce_flag.patch
 mas-cfisobjc.patch
 mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
+mas_disable_remote_layer.patch
 mas_disable_remote_accessibility.patch
 mas_disable_custom_window_frame.patch
 chrome_key_systems.patch
@@ -85,3 +86,5 @@ accessible_pane_view.patch
 fix_add_executable_to_chromedriver_s_rpath_for_electron_8.patch
 fix_use_the_new_mediaplaypause_key_listener_for_internal_chrome.patch
 port_aria_tree_fix_for_macos_voiceover.patch
+fix_route_mouse_event_navigations_through_the_web_contents_delegate.patch
+feat_add_support_for_overriding_the_base_spellchecker_download_url.patch

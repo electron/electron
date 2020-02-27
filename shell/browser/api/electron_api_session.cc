@@ -713,7 +713,7 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
         "valid URL");
     return;
   }
-  SpellcheckHunspellDictionary::SetDownloadURLForTesting(url);
+  SpellcheckHunspellDictionary::SetBaseDownloadURL(url);
 }
 
 bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
