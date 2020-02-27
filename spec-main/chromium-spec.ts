@@ -697,6 +697,21 @@ describe('chromium features', () => {
       expect(labels.some((l: any) => l)).to.be.false()
     })
 
+    it('returns the same device ids across reloads', async () => {
+      const ses = session.fromPartition('persist:media-device-id')
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          session: ses
+        }
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', 'media-id-reset.html'))
+      const [, firstDeviceIds] = await emittedOnce(ipcMain, 'deviceIds')
+      const [, secondDeviceIds] = await emittedOnce(ipcMain, 'deviceIds', () => w.webContents.reload())
+      expect(firstDeviceIds).to.deep.equal(secondDeviceIds)
+    })
+
     it('can return new device id when cookie storage is cleared', async () => {
       const ses = session.fromPartition('persist:media-device-id')
       const w = new BrowserWindow({
@@ -709,8 +724,7 @@ describe('chromium features', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'media-id-reset.html'))
       const [, firstDeviceIds] = await emittedOnce(ipcMain, 'deviceIds')
       await ses.clearStorageData({ storages: ['cookies'] })
-      w.webContents.reload()
-      const [, secondDeviceIds] = await emittedOnce(ipcMain, 'deviceIds')
+      const [, secondDeviceIds] = await emittedOnce(ipcMain, 'deviceIds', () => w.webContents.reload())
       expect(firstDeviceIds).to.not.deep.equal(secondDeviceIds)
     })
   })
