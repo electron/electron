@@ -7,5 +7,7 @@
 
   "src/electron/patches/common/v8":  "src/v8",
 
+  "src/electron/patches/common/icu":  "src/third_party/icu",
+
   "src/electron/patches/node": "src/third_party/electron_node"
 }
