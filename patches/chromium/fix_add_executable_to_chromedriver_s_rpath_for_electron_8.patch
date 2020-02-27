@@ -13,10 +13,10 @@ in Electron's BUILD.gn because one of Chromedriver's deps
 is not on.
 
 diff --git a/chrome/test/chromedriver/BUILD.gn b/chrome/test/chromedriver/BUILD.gn
-index 1ce029a1ba3ec9da3527008d8c2b38446ab4b2f3..de2cc3074fef3d75f041ec8230bd18d3827192cc 100644
+index 2caa79d19ed0e6a16c39086ebb5e049eb50959be..f1db93f7da98f59c115acac2d22ea003d14a8b20 100644
 --- a/chrome/test/chromedriver/BUILD.gn
 +++ b/chrome/test/chromedriver/BUILD.gn
-@@ -330,6 +330,13 @@ executable("chromedriver") {
+@@ -331,6 +331,13 @@ executable("chromedriver") {
      "//net/traffic_annotation:test_support",
      "//services/network/public/mojom",
    ]

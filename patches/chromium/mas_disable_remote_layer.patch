@@ -6,7 +6,7 @@ Subject: mas_disable_remote_layer.patch
 Disable remote layer APIs (CAContext and CALayerHost) for MAS build.
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index f343b7e0e04a..d0ecefd4333c 100644
+index f65ad035e90cc6d9196416c7d974d6156eb7438d..9edb62e713e8d5da1f2a99a7b4795b46e42e4a41 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -20,7 +20,9 @@
@@ -30,7 +30,7 @@ index f343b7e0e04a..d0ecefd4333c 100644
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 10b345d3727c..b52f03be6351 100644
+index c1af03a268dc409b043ce3a085a7365f07e0f9e7..b883883ad52b0d625ec7be6e3b0c86503ab33582 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -63,6 +63,7 @@
@@ -49,7 +49,7 @@ index 10b345d3727c..b52f03be6351 100644
    return true;
  }
  
-@@ -136,7 +138,9 @@
+@@ -139,7 +141,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
@@ -60,7 +60,7 @@ index 10b345d3727c..b52f03be6351 100644
        IOSurfaceRef io_surface =
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index 60abe639bd9c..c38eed5fbdef 100644
+index 60abe639bd9c9cf6885f811c741a45eeb683ec58..c38eed5fbdefc96a3d60e4ab70d3b007264ccb3c 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 @@ -98,6 +98,7 @@ - (void)setContentsChanged;
@@ -82,7 +82,7 @@ index 60abe639bd9c..c38eed5fbdef 100644
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/base/cocoa/remote_layer_api.h b/ui/base/cocoa/remote_layer_api.h
-index 2057fe69d1bb..2aba330fc488 100644
+index 2057fe69d1bb4a2eb0b1dabc5473a30d676847fe..2aba330fc488660ef874caae26a06e6847cdaf93 100644
 --- a/ui/base/cocoa/remote_layer_api.h
 +++ b/ui/base/cocoa/remote_layer_api.h
 @@ -13,6 +13,7 @@
@@ -103,7 +103,7 @@ index 2057fe69d1bb..2aba330fc488 100644
  
  // This function will check if all of the interfaces listed above are supported
 diff --git a/ui/base/cocoa/remote_layer_api.mm b/ui/base/cocoa/remote_layer_api.mm
-index bbaf9f466f49..8c846ce9523a 100644
+index bbaf9f466f4999acb5bfccf3b9565fd8f556ca2f..8c846ce9523a4b2f6fbdbdbeae4f94b45ac3c115 100644
 --- a/ui/base/cocoa/remote_layer_api.mm
 +++ b/ui/base/cocoa/remote_layer_api.mm
 @@ -12,6 +12,7 @@
