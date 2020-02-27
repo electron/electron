@@ -1,0 +1,146 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matthew Denton <mpdenton@chromium.org>
+Date: Tue, 26 Nov 2019 23:56:36 +0000
+Subject: Allow restricted clock_nanosleep in Linux sandbox
+
+To support glibc 2.30, allow clock_nanosleep in the baseline BPF
+policy, with the same clock_id restrictions as clock_gettime and
+other clock_* syscalls.
+
+Bug: 1025739
+Change-Id: Ic53a782fef01049bc61c535b50735a4a7d4c23c0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1935715
+Commit-Queue: Matthew Denton <mpdenton@chromium.org>
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#719421}
+
+diff --git a/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc b/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
+index 806d13c1a84f74e108d9375791889e465432862a..768025ce1928addc929509a4a0a814b0fc47cb35 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
+@@ -148,7 +148,7 @@ ResultExpr EvaluateSyscallImpl(int fs_denied_errno,
+     return Allow();
+ #endif
+ 
+-  if (sysno == __NR_clock_gettime) {
++  if (sysno == __NR_clock_gettime || sysno == __NR_clock_nanosleep) {
+     return RestrictClockID();
+   }
+ 
+diff --git a/sandbox/linux/seccomp-bpf-helpers/baseline_policy_unittest.cc b/sandbox/linux/seccomp-bpf-helpers/baseline_policy_unittest.cc
+index 060181bd42f67e53ea24eff0e70b037c8435e5bf..553114ddcb24fe729d247c7fbf046c2387f7c25f 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/baseline_policy_unittest.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/baseline_policy_unittest.cc
+@@ -396,6 +396,17 @@ BPF_DEATH_TEST_C(BaselinePolicy,
+   syscall(SYS_clock_gettime, CLOCK_MONOTONIC_RAW, &ts);
+ }
+ 
++BPF_DEATH_TEST_C(BaselinePolicy,
++                 ClockNanosleepWithDisallowedClockCrashes,
++                 DEATH_SEGV_MESSAGE(GetErrorMessageContentForTests()),
++                 BaselinePolicy) {
++  struct timespec ts;
++  struct timespec out_ts;
++  ts.tv_sec = 0;
++  ts.tv_nsec = 0;
++  syscall(SYS_clock_nanosleep, (~0) | CLOCKFD, 0, &ts, &out_ts);
++}
++
+ #if !defined(GRND_RANDOM)
+ #define GRND_RANDOM 2
+ #endif
+diff --git a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.h b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.h
+index cb563dfc55058215563e90265a22af415eb40caf..a2d4ff33ca8ec127af308e5aa1255c37f1ed21d9 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.h
++++ b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.h
+@@ -86,11 +86,11 @@ SANDBOX_EXPORT bpf_dsl::ResultExpr RestrictPrlimit64(pid_t target_pid);
+ // process).
+ SANDBOX_EXPORT bpf_dsl::ResultExpr RestrictGetrusage();
+ 
+-// Restrict |clk_id| for clock_getres(), clock_gettime() and clock_settime().
+-// We allow accessing only CLOCK_MONOTONIC, CLOCK_PROCESS_CPUTIME_ID,
+-// CLOCK_REALTIME, and CLOCK_THREAD_CPUTIME_ID.  In particular, this disallows
+-// access to arbitrary per-{process,thread} CPU-time clock IDs (such as those
+-// returned by {clock,pthread}_getcpuclockid), which can leak information
++// Restrict |clk_id| for clock_getres(), clock_gettime() and clock_settime(), and
++// clock_nanosleep(). We allow accessing only CLOCK_MONOTONIC, CLOCK_REALTIME,
++// CLOCK_PROCESS_CPUTIME_ID, and CLOCK_THREAD_CPUTIME_ID. In particular, this
++// disallows access to arbitrary per-{process,thread} CPU-time clock IDs (such as
++// those returned by {clock,pthread}_getcpuclockid), which can leak information
+ // about the state of the host OS.
+ SANDBOX_EXPORT bpf_dsl::ResultExpr RestrictClockID();
+ 
+diff --git a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions_unittests.cc b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions_unittests.cc
+index f1160ff45ea26771db61ef61fc71c0fc0322b63e..7f546968dca3d5c0046c18911a873423505de332 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions_unittests.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions_unittests.cc
+@@ -59,6 +59,7 @@ class RestrictClockIdPolicy : public bpf_dsl::Policy {
+     switch (sysno) {
+       case __NR_clock_gettime:
+       case __NR_clock_getres:
++      case __NR_clock_nanosleep:
+         return RestrictClockID();
+       default:
+         return Allow();
+@@ -99,6 +100,25 @@ BPF_TEST_C(ParameterRestrictions,
+ #endif
+ }
+ 
++void CheckClockNanosleep(clockid_t clockid) {
++  struct timespec ts;
++  struct timespec out_ts;
++  ts.tv_sec = 0;
++  ts.tv_nsec = 0;
++  clock_nanosleep(clockid, 0, &ts, &out_ts);
++}
++
++BPF_TEST_C(ParameterRestrictions,
++           clock_nanosleep_allowed,
++           RestrictClockIdPolicy) {
++  CheckClockNanosleep(CLOCK_MONOTONIC);
++  CheckClockNanosleep(CLOCK_MONOTONIC_COARSE);
++  CheckClockNanosleep(CLOCK_MONOTONIC_RAW);
++  CheckClockNanosleep(CLOCK_BOOTTIME);
++  CheckClockNanosleep(CLOCK_REALTIME);
++  CheckClockNanosleep(CLOCK_REALTIME_COARSE);
++}
++
+ BPF_DEATH_TEST_C(ParameterRestrictions,
+                  clock_gettime_crash_monotonic_raw,
+                  DEATH_SEGV_MESSAGE(sandbox::GetErrorMessageContentForTests()),
+@@ -107,6 +127,17 @@ BPF_DEATH_TEST_C(ParameterRestrictions,
+   syscall(SYS_clock_gettime, CLOCK_MONOTONIC_RAW, &ts);
+ }
+ 
++BPF_DEATH_TEST_C(ParameterRestrictions,
++                 clock_nanosleep_crash_clock_fd,
++                 DEATH_SEGV_MESSAGE(sandbox::GetErrorMessageContentForTests()),
++                 RestrictClockIdPolicy) {
++  struct timespec ts;
++  struct timespec out_ts;
++  ts.tv_sec = 0;
++  ts.tv_nsec = 0;
++  syscall(SYS_clock_nanosleep, (~0) | CLOCKFD, 0, &ts, &out_ts);
++}
++
+ #if !defined(OS_ANDROID)
+ BPF_DEATH_TEST_C(ParameterRestrictions,
+                  clock_gettime_crash_cpu_clock,
+diff --git a/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc b/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
+index 816c0d63deed50a75fb2923f35545074ec185166..417232bece1c0dc5c2b7f6026cbf7a0229634e0d 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
+@@ -35,9 +35,10 @@ bool SyscallSets::IsAllowedGettime(int sysno) {
+       return true;
+     case __NR_adjtimex:         // Privileged.
+     case __NR_clock_adjtime:    // Privileged.
+-    case __NR_clock_getres:     // Could be allowed.
+-    case __NR_clock_gettime:
+-    case __NR_clock_nanosleep:  // Could be allowed.
++    case __NR_clock_getres:     // Allowed only on Android with parameters
++                                // filtered by RestrictClokID().
++    case __NR_clock_gettime:    // Parameters filtered by RestrictClockID().
++    case __NR_clock_nanosleep:  // Parameters filtered by RestrictClockID().
+     case __NR_clock_settime:    // Privileged.
+ #if defined(__i386__) || \
+     (defined(ARCH_CPU_MIPS_FAMILY) && defined(ARCH_CPU_32_BITS))

@@ -36,6 +36,7 @@ mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
 mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
 ignore_rc_check.patch
+mas_disable_remote_layer.patch
 mas_disable_remote_accessibility.patch
 mas_disable_custom_window_frame.patch
 mas_disable_spi_file_type_mappings.patch
@@ -93,3 +94,5 @@ only_apply_transform_when_outermost_outer_webcontents.patch
 never_let_a_non-zero-size_pixel_snap_to_zero_size.patch
 fix_hi-dpi_transitions_on_catalina.patch
 port_aria_tree_fix_for_macos_voiceover.patch
+typemap.patch
+allow_restricted_clock_nanosleep_in_linux_sandbox.patch

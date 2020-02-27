@@ -213,6 +213,21 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
                << " is not supported. See https://crbug.com/638180.";
 #endif
 
+#if defined(MAS_BUILD)
+  // In MAS build we are using --disable-remote-core-animation.
+  //
+  // According to ccameron:
+  // If you're running with --disable-remote-core-animation, you may want to
+  // also run with --disable-gpu-memory-buffer-compositor-resources as well.
+  // That flag makes it so we use regular GL textures instead of IOSurfaces
+  // for compositor resources. IOSurfaces are very heavyweight to
+  // create/destroy, but they can be displayed directly by CoreAnimation (and
+  // --disable-remote-core-animation makes it so we don't use this property,
+  // so they're just heavyweight with no upside).
+  command_line->AppendSwitch(
+      ::switches::kDisableGpuMemoryBufferCompositorResources);
+#endif
+
   content_client_ = std::make_unique<AtomContentClient>();
   SetContentClient(content_client_.get());
 

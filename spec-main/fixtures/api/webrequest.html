@@ -1,0 +1,27 @@
+<script>
+  var url = new URL(location.href)
+  const port = new URLSearchParams(url.search).get("port")
+  const ipcRenderer = require('electron').ipcRenderer
+  let count = 0
+  function checkFinish() {
+    count++
+    if (count === 2) {
+      ipcRenderer.send('websocket-success')
+    }
+  }
+
+  var conn = new WebSocket(`ws://127.0.0.1:${port}/websocket`)
+  conn.onopen = data => conn.send('foo')
+  conn.onmessage = wsMsg
+  function wsMsg(msg) {
+    if (msg.data === 'bar') {
+      checkFinish()
+    } else {
+      ipcRenderer.send('fail')
+    }
+  }
+
+  fetch(`http://127.0.0.1:${port}/`).then(() => {
+    checkFinish()
+  })
+</script>

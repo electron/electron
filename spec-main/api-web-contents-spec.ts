@@ -6,7 +6,7 @@ import * as http from 'http'
 import { BrowserWindow, ipcMain, webContents, session } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe, ifit } from './spec-helpers';
 
 const { expect } = chai
 
@@ -102,23 +102,46 @@ describe('webContents module', () => {
   })
 
   ifdescribe(features.isPrintingEnabled())('webContents.print()', () => {
+    let w: BrowserWindow
+
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false })
+    })
+
+    afterEach(closeAllWindows)
+
     it('throws when invalid settings are passed', () => {
-      const w = new BrowserWindow({ show: false })
       expect(() => {
         // @ts-ignore this line is intentionally incorrect
         w.webContents.print(true)
       }).to.throw('webContents.print(): Invalid print settings specified.')
+    })
 
+    it('throws when an invalid callback is passed', () => {
       expect(() => {
         // @ts-ignore this line is intentionally incorrect
         w.webContents.print({}, true)
       }).to.throw('webContents.print(): Invalid optional callback provided.')
     })
 
-    it('does not crash', () => {
-      const w = new BrowserWindow({ show: false })
+    ifit(process.platform !== 'linux')('throws when an invalid deviceName is passed', () => {
       expect(() => {
-        w.webContents.print({ silent: true })
+        w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, () => {})
+      }).to.throw('webContents.print(): Invalid deviceName provided.')
+    })
+
+    it('does not crash with custom margins', () => {
+      expect(() => {
+        w.webContents.print({
+          silent: true,
+          margins: {
+            marginType: 'custom',
+            top: 1,
+            bottom: 1,
+            left: 1,
+            right: 1
+          }
+        })
       }).to.not.throw()
     })
   })

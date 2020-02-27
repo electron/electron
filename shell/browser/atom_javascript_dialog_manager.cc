@@ -93,6 +93,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
   electron::MessageBoxSettings settings;
   settings.parent_window = window;
+  settings.checkbox_label = checkbox;
   settings.buttons = buttons;
   settings.default_id = default_id;
   settings.cancel_id = cancel_id;

@@ -20,51 +20,9 @@
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "shell/browser/net/atom_url_loader_factory.h"
+#include "shell/browser/net/web_request_api_interface.h"
 
 namespace electron {
-
-// Defines the interface for WebRequest API, implemented by api::WebRequestNS.
-class WebRequestAPI {
- public:
-  virtual ~WebRequestAPI() {}
-
-  using BeforeSendHeadersCallback =
-      base::OnceCallback<void(const std::set<std::string>& removed_headers,
-                              const std::set<std::string>& set_headers,
-                              int error_code)>;
-
-  virtual bool HasListener() const = 0;
-  virtual int OnBeforeRequest(extensions::WebRequestInfo* info,
-                              const network::ResourceRequest& request,
-                              net::CompletionOnceCallback callback,
-                              GURL* new_url) = 0;
-  virtual int OnBeforeSendHeaders(extensions::WebRequestInfo* info,
-                                  const network::ResourceRequest& request,
-                                  BeforeSendHeadersCallback callback,
-                                  net::HttpRequestHeaders* headers) = 0;
-  virtual int OnHeadersReceived(
-      extensions::WebRequestInfo* info,
-      const network::ResourceRequest& request,
-      net::CompletionOnceCallback callback,
-      const net::HttpResponseHeaders* original_response_headers,
-      scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
-      GURL* allowed_unsafe_redirect_url) = 0;
-  virtual void OnSendHeaders(extensions::WebRequestInfo* info,
-                             const network::ResourceRequest& request,
-                             const net::HttpRequestHeaders& headers) = 0;
-  virtual void OnBeforeRedirect(extensions::WebRequestInfo* info,
-                                const network::ResourceRequest& request,
-                                const GURL& new_location) = 0;
-  virtual void OnResponseStarted(extensions::WebRequestInfo* info,
-                                 const network::ResourceRequest& request) = 0;
-  virtual void OnErrorOccurred(extensions::WebRequestInfo* info,
-                               const network::ResourceRequest& request,
-                               int net_error) = 0;
-  virtual void OnCompleted(extensions::WebRequestInfo* info,
-                           const network::ResourceRequest& request,
-                           int net_error) = 0;
-  virtual void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) = 0;
-};
 
 // This class is responsible for following tasks when NetworkService is enabled:
 // 1. handling intercepted protocols;
@@ -203,6 +161,7 @@ class ProxyingURLLoaderFactory
       WebRequestAPI* web_request_api,
       const HandlersMap& intercepted_handlers,
       int render_process_id,
+      uint64_t* request_id_generator,
       network::mojom::URLLoaderFactoryRequest loader_request,
       network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
       mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
@@ -254,6 +213,7 @@ class ProxyingURLLoaderFactory
   const int render_process_id_;
   mojo::BindingSet<network::mojom::URLLoaderFactory> proxy_bindings_;
   network::mojom::URLLoaderFactoryPtr target_factory_;
+  uint64_t* request_id_generator_;  // managed by AtomBrowserClient
   mojo::Receiver<network::mojom::TrustedURLLoaderHeaderClient>
       url_loader_header_client_receiver_{this};
   const content::ContentBrowserClient::URLLoaderFactoryType

@@ -18,13 +18,6 @@
 #include "shell/common/options_switches.h"
 
 namespace electron {
-
-namespace {
-
-int64_t g_request_id = 0;
-
-}  // namespace
-
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
     FollowRedirectParams() = default;
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
@@ -668,6 +661,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     WebRequestAPI* web_request_api,
     const HandlersMap& intercepted_handlers,
     int render_process_id,
+    uint64_t* request_id_generator,
     network::mojom::URLLoaderFactoryRequest loader_request,
     network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
@@ -676,6 +670,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     : web_request_api_(web_request_api),
       intercepted_handlers_(intercepted_handlers),
       render_process_id_(render_process_id),
+      request_id_generator_(request_id_generator),
       loader_factory_type_(loader_factory_type) {
   target_factory_.Bind(std::move(target_factory_info));
   target_factory_.set_connection_error_handler(base::BindOnce(
@@ -751,7 +746,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // per-BrowserContext so extensions can make sense of it.  Note that
   // |network_service_request_id_| by contrast is not necessarily unique, so we
   // don't use it for identity here.
-  const uint64_t web_request_id = ++g_request_id;
+  const uint64_t web_request_id = ++(*request_id_generator_);
 
   // Notes: Chromium assumes that requests with zero-ID would never use the
   // "extraHeaders" code path, however in Electron requests started from
