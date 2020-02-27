@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import * as path from 'path'
 
-import { ipcMain, BrowserWindow, WebPreferences } from 'electron'
+import { ipcMain, BrowserWindow, WebPreferences, app } from 'electron'
 import { closeWindow } from './window-helpers'
 
 describe('BrowserWindow with affinity module', () => {
@@ -9,6 +9,14 @@ describe('BrowserWindow with affinity module', () => {
   const myAffinityName = 'myAffinity'
   const myAffinityNameUpper = 'MYAFFINITY'
   const anotherAffinityName = 'anotherAffinity'
+
+  before(() => {
+    app.allowRendererProcessReuse = false
+  })
+
+  after(() => {
+    app.allowRendererProcessReuse = true
+  })
 
   async function createWindowWithWebPrefs (webPrefs: WebPreferences) {
     const w = new BrowserWindow({
