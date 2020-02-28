@@ -1597,13 +1597,14 @@ ipcMain.on('ping', (event) => {
 
 * `channel` String
 * `message` any
-* `options` MessagePort[] (optional)
+* `options` MessagePortMain[] (optional)
 
 Send a message to the renderer process, optionally transferring ownership of
-zero or more [`MessagePort`][] objects.
+zero or more [`MessagePortMain`][] objects.
 
-The transferred `MessagePort` objects will be available in the renderer process
-by accessing the `ports` property of the emitted event.
+The transferred `MessagePortMain` objects will be available in the renderer
+process by accessing the `ports` property of the emitted event. When they
+arrive in the renderer, they will be native DOM `MessagePort` objects.
 
 For example:
 ```js

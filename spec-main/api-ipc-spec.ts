@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import { expect } from 'chai'
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain } from 'electron'
 import { closeAllWindows } from './window-helpers'
 import { emittedOnce } from './events-helpers'
 
@@ -208,8 +208,8 @@ describe('ipc module', () => {
       w.loadURL('about:blank')
       const p = emittedOnce(ipcMain, 'port')
       await w.webContents.executeJavaScript(`(${function () {
-        const channel = new MessageChannel()
-        channel.port2.onmessage = (ev) => {
+        const channel = new MessageChannel();
+        (channel.port2 as any).onmessage = (ev: any) => {
           channel.port2.postMessage(ev.data * 2)
         }
         require('electron').ipcRenderer.postMessage('port', '', [channel.port1])
@@ -223,7 +223,6 @@ describe('ipc module', () => {
       expect(ev2.data).to.equal(84)
     })
 
-    it('can send a port created in the main process to a renderer')
     it('can receive a port from a renderer over a MessagePort connection', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
       w.loadURL('about:blank')
@@ -242,15 +241,15 @@ describe('ipc module', () => {
       const [{ data }] = await emittedOnce(port2, 'message')
       expect(data).to.equal('matryoshka')
     })
-    it('can send a port to a renderer over a MessagePort connection')
+
     it('can forward a port from one renderer to another renderer', async () => {
       const w1 = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
       const w2 = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
       w1.loadURL('about:blank')
       w2.loadURL('about:blank')
       w1.webContents.executeJavaScript(`(${function () {
-        const channel = new MessageChannel()
-        channel.port2.onmessage = (ev) => {
+        const channel = new MessageChannel();
+        (channel.port2 as any).onmessage = (ev: any) => {
           require('electron').ipcRenderer.send('message received', ev.data)
         }
         require('electron').ipcRenderer.postMessage('port', '', [channel.port1])
@@ -264,6 +263,62 @@ describe('ipc module', () => {
       w2.webContents.postMessage('port', '', [port])
       const [, data] = await emittedOnce(ipcMain, 'message received')
       expect(data).to.equal('a message')
+    })
+
+    describe('MessageChannelMain', () => {
+      it('can be created', () => {
+        const { port1, port2 } = new MessageChannelMain()
+        expect(port1).not.to.be.null()
+        expect(port2).not.to.be.null()
+      })
+
+      it('can send messages within the process', async () => {
+        const { port1, port2 } = new MessageChannelMain()
+        port2.postMessage('hello')
+        port1.start()
+        const [ev] = await emittedOnce(port1, 'message')
+        expect(ev.data).to.equal('hello')
+      })
+
+      it('can pass one end to a WebContents', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+        w.loadURL('about:blank')
+        await w.webContents.executeJavaScript(`(${function () {
+          const { ipcRenderer } = require('electron')
+          ipcRenderer.on('port', (ev) => {
+            const [port] = ev.ports
+            port.onmessage = () => {
+              ipcRenderer.send('done')
+            }
+          })
+        }})()`)
+        const { port1, port2 } = new MessageChannelMain()
+        port1.postMessage('hello')
+        w.webContents.postMessage('port', null, [port2])
+        await emittedOnce(ipcMain, 'done')
+      })
+
+      it('can be passed over another channel', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+        w.loadURL('about:blank')
+        await w.webContents.executeJavaScript(`(${function () {
+          const { ipcRenderer } = require('electron')
+          ipcRenderer.on('port', (e1) => {
+            e1.ports[0].onmessage = (e2) => {
+              e2.ports[0].onmessage = (e3) => {
+                ipcRenderer.send('done', e3.data)
+              }
+            }
+          })
+        }})()`)
+        const { port1, port2 } = new MessageChannelMain()
+        const { port1: port3, port2: port4 } = new MessageChannelMain()
+        port1.postMessage(null, [port4])
+        port3.postMessage('hello')
+        w.webContents.postMessage('port', null, [port2])
+        const [, message] = await emittedOnce(ipcMain, 'done')
+        expect(message).to.equal('hello')
+      })
     })
 
     describe('WebContents.postMessage', () => {

@@ -44,6 +44,7 @@
   V(electron_browser_global_shortcut)    \
   V(electron_browser_in_app_purchase)    \
   V(electron_browser_menu)               \
+  V(electron_browser_message_port)       \
   V(electron_browser_net)                \
   V(electron_browser_power_monitor)      \
   V(electron_browser_power_save_blocker) \
