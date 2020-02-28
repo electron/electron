@@ -138,9 +138,15 @@ int NodeMain(int argc, char* argv[]) {
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
 
+    v8::Isolate* isolate = gin_env.isolate();
+
     node::IsolateData* isolate_data =
-        node::CreateIsolateData(gin_env.isolate(), loop, gin_env.platform());
+        node::CreateIsolateData(isolate, loop, gin_env.platform());
     CHECK_NE(nullptr, isolate_data);
+
+    v8::Locker locker(isolate);
+    v8::Isolate::Scope isolate_scope(isolate);
+    v8::HandleScope handle_scope(isolate);
 
     node::Environment* env = node::CreateEnvironment(
         isolate_data, gin_env.context(), argc, argv, exec_argc, exec_argv);
@@ -155,18 +161,17 @@ int NodeMain(int argc, char* argv[]) {
 
     // This is needed in order to enable v8 host weakref hooks.
     // TODO(codebytere): we shouldn't have to call this - upstream?
-    gin_env.isolate()->SetHostCleanupFinalizationGroupCallback(
+    isolate->SetHostCleanupFinalizationGroupCallback(
         HostCleanupFinalizationGroupCallback);
 
-    gin_helper::Dictionary process(gin_env.isolate(), env->process_object());
+    gin_helper::Dictionary process(isolate, env->process_object());
 #if defined(OS_WIN)
     process.SetMethod("log", &ElectronBindings::Log);
 #endif
     process.SetMethod("crash", &ElectronBindings::Crash);
 
     // Setup process.crashReporter.start in child node processes
-    gin_helper::Dictionary reporter =
-        gin::Dictionary::CreateEmpty(gin_env.isolate());
+    gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
     reporter.SetMethod("start", &crash_reporter::CrashReporter::StartInstance);
 
 #if !defined(OS_LINUX)
@@ -190,15 +195,13 @@ int NodeMain(int argc, char* argv[]) {
       node::LoadEnvironment(env);
     }
 
-    v8::Isolate* isolate = env->isolate();
-
     {
       v8::SealHandleScope seal(isolate);
       bool more;
       do {
         uv_run(env->event_loop(), UV_RUN_DEFAULT);
 
-        gin_env.platform()->DrainTasks(env->isolate());
+        gin_env.platform()->DrainTasks(isolate);
 
         more = uv_loop_alive(env->event_loop());
         if (more && !env->is_stopping())
