@@ -121,6 +121,8 @@ filenames = {
     "shell/browser/api/gpu_info_enumerator.h",
     "shell/browser/api/gpuinfo_manager.cc",
     "shell/browser/api/gpuinfo_manager.h",
+    "shell/browser/api/message_port.cc",
+    "shell/browser/api/message_port.h",
     "shell/browser/api/process_metric.cc",
     "shell/browser/api/process_metric.h",
     "shell/browser/api/save_page_handler.cc",
