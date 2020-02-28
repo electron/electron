@@ -90,8 +90,8 @@ class FileChooserDialog {
     if (parent_) {
       parent_->SetEnabled(false);
       if (GTK_IS_DIALOG(dialog_))
-        libgtkui::SetGtkTransientForAura(GTK_WIDGET(dialog_),
-                                         parent_->GetNativeWindow());
+        gtk::SetGtkTransientForAura(GTK_WIDGET(dialog_),
+                                    parent_->GetNativeWindow());
       else
         SetGtkTransientForAura(parent_->GetNativeWindow());
       if (GTK_IS_DIALOG(dialog_)) {
