@@ -1117,23 +1117,22 @@ void WebContents::PostMessage(gin::Arguments* args) {
     return;
   }
 
+  v8::Local<v8::Value> transferables;
+  std::vector<gin::Handle<MessagePort>> wrapped_ports;
+  if (args->GetNext(&transferables)) {
+    if (!gin::ConvertFromV8(isolate(), transferables, &wrapped_ports)) {
+      args->ThrowError();
+      return;
+    }
+  }
+
   blink::TransferableMessage transferable_message;
   if (!electron::SerializeV8Value(args->isolate(), message_value,
                                   &transferable_message)) {
+    args->ThrowError();
     return;
   }
 
-  v8::Local<v8::Value> transferables;
-  if (!args->GetNext(&transferables)) {
-    return;
-  }
-
-  std::vector<gin::Handle<MessagePort>> wrapped_ports;
-  if (!gin::ConvertFromV8(isolate(), transferables, &wrapped_ports)) {
-    isolate()->ThrowException(
-        v8::Exception::Error(gin::StringToV8(isolate(), "not ports")));
-    return;
-  }
   transferable_message.ports =
       MessagePort::DisentanglePorts(isolate(), wrapped_ports);
   // TODO: check for exception

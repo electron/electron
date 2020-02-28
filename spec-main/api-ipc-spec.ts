@@ -187,6 +187,7 @@ describe('ipc module', () => {
 
   describe('MessagePort', () => {
     afterEach(closeAllWindows)
+
     it('can send a port to the main process', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
       w.loadURL('about:blank')
@@ -263,6 +264,64 @@ describe('ipc module', () => {
       w2.webContents.postMessage('port', '', [port])
       const [, data] = await emittedOnce(ipcMain, 'message received')
       expect(data).to.equal('a message')
+    })
+
+    describe('WebContents.postMessage', () => {
+      it('sends a message', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+        w.loadURL('about:blank')
+        await w.webContents.executeJavaScript(`(${function () {
+          const { ipcRenderer } = require('electron')
+          ipcRenderer.on('foo', (e, msg) => {
+            ipcRenderer.send('bar', msg)
+          })
+        }})()`)
+        w.webContents.postMessage('foo', { some: 'message' })
+        const [, msg] = await emittedOnce(ipcMain, 'bar')
+        expect(msg).to.deep.equal({ some: 'message' })
+      })
+
+      describe('error handling', () => {
+        it('throws on missing channel', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            (w.webContents.postMessage as any)()
+          }).to.throw(/Insufficient number of arguments/)
+        })
+
+        it('throws on invalid channel', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            w.webContents.postMessage(null as any, '', [])
+          }).to.throw(/Error processing argument at index 0/)
+        })
+
+        it('throws on missing message', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            (w.webContents.postMessage as any)('channel')
+          }).to.throw(/Insufficient number of arguments/)
+        })
+
+        it('throws on invalid transferable list', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            w.webContents.postMessage('', '', null as any)
+          }).to.throw(/Error processing argument at index 2/)
+        })
+
+        it('throws on transferring non-transferable', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            (w.webContents.postMessage as any)('channel', '', [123])
+          }).to.throw(/Error processing argument at index 2/)
+        })
+      })
     })
   })
 })
