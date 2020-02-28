@@ -816,7 +816,7 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
         "valid URL");
     return;
   }
-  SpellcheckHunspellDictionary::SetDownloadURLForTesting(url);
+  SpellcheckHunspellDictionary::SetBaseDownloadURL(url);
 }
 
 v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {

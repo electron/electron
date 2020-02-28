@@ -74,6 +74,17 @@ void SetNodeCliFlags() {
   ProcessGlobalArgs(&args, nullptr, &errors, node::kDisallowedInEnvironment);
 }
 
+// TODO(codebytere): expose this from Node.js itself?
+void HostCleanupFinalizationGroupCallback(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::FinalizationGroup> group) {
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (env == nullptr) {
+    return;
+  }
+  env->RegisterFinalizationGroupForCleanup(group);
+}
+
 }  // namespace
 
 namespace electron {
@@ -131,16 +142,21 @@ int NodeMain(int argc, char* argv[]) {
         node::CreateIsolateData(gin_env.isolate(), loop, gin_env.platform());
     CHECK_NE(nullptr, isolate_data);
 
-    node::Environment* env =
-        node::CreateEnvironment(isolate_data, gin_env.context(), argc, argv,
-                                exec_argc, exec_argv, false);
+    node::Environment* env = node::CreateEnvironment(
+        isolate_data, gin_env.context(), argc, argv, exec_argc, exec_argv);
     CHECK_NE(nullptr, env);
 
     // Enable support for v8 inspector.
     NodeDebugger node_debugger(env);
     node_debugger.Start();
 
-    node::BootstrapEnvironment(env);
+    // TODO(codebytere): we shouldn't have to call this - upstream?
+    env->InitializeDiagnostics();
+
+    // This is needed in order to enable v8 host weakref hooks.
+    // TODO(codebytere): we shouldn't have to call this - upstream?
+    gin_env.isolate()->SetHostCleanupFinalizationGroupCallback(
+        HostCleanupFinalizationGroupCallback);
 
     gin_helper::Dictionary process(gin_env.isolate(), env->process_object());
 #if defined(OS_WIN)
@@ -165,7 +181,15 @@ int NodeMain(int argc, char* argv[]) {
       versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
     }
 
-    node::LoadEnvironment(env);
+    // TODO(codebytere): we should try to handle this upstream.
+    {
+      node::InternalCallbackScope callback_scope(
+          env, v8::Local<v8::Object>(), {1, 0},
+          node::InternalCallbackScope::kAllowEmptyResource |
+              node::InternalCallbackScope::kSkipAsyncHooks);
+      node::LoadEnvironment(env);
+    }
+
     v8::Isolate* isolate = env->isolate();
 
     {

@@ -23,8 +23,8 @@ index f07e65f719a1a5939997dfcae7bc787ee6391f4d..f4d03a2fdfd47a4e6a71c7146d92ce7c
  
      'node_tag%': '',
 @@ -240,6 +240,26 @@
-             'cflags': [ '-fPIE' ],
-             'ldflags': [ '-fPIE', '-pie' ]
+             'cflags': [ '-fPIC' ],
+             'ldflags': [ '-fPIC' ]
            }],
 +          ['node_with_ltcg=="true"', {
 +            'msvs_settings': {

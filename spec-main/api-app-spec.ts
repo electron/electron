@@ -1367,8 +1367,8 @@ describe('default behavior', () => {
   })
 
   describe('app.allowRendererProcessReuse', () => {
-    it('should default to false', () => {
-      expect(app.allowRendererProcessReuse).to.equal(false)
+    it('should default to true', () => {
+      expect(app.allowRendererProcessReuse).to.equal(true)
     })
 
     it('should cause renderer processes to get new PIDs when false', async () => {
