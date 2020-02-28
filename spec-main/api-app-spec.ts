@@ -1096,9 +1096,11 @@ describe('app module', () => {
         // Gl version is present in the complete info.
         expect(completeInfo).to.have.ownProperty('auxAttributes')
           .that.is.an('object')
-        expect(completeInfo.auxAttributes).to.have.ownProperty('glVersion')
-          .that.is.a('string')
-          .and.does.not.equal([])
+        if (completeInfo.gpuDevice.active) {
+          expect(completeInfo.auxAttributes).to.have.ownProperty('glVersion')
+            .that.is.a('string')
+            .and.does.not.equal([])
+        }
       }
     })
 
