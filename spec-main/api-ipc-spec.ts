@@ -254,12 +254,12 @@ describe('ipc module', () => {
         }
         require('electron').ipcRenderer.postMessage('port', '', [channel.port1])
       }})()`)
-      w2.webContents.executeJavaScript(`(${function () {
+      const [{ ports: [port] }] = await emittedOnce(ipcMain, 'port')
+      await w2.webContents.executeJavaScript(`(${function () {
         require('electron').ipcRenderer.on('port', ({ ports: [port] }: any) => {
           port.postMessage('a message')
         })
       }})()`)
-      const [{ ports: [port] }] = await emittedOnce(ipcMain, 'port')
       w2.webContents.postMessage('port', '', [port])
       const [, data] = await emittedOnce(ipcMain, 'message received')
       expect(data).to.equal('a message')
