@@ -13,7 +13,7 @@ interface ElectronRenderer {
       blink.mojom.CloneableMessage arguments,
       int32 sender_id);
 
-  PostMessage(string channel, blink.mojom.TransferableMessage message);
+  ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
   UpdateCrashpadPipeName(string pipe_name);
 
@@ -56,7 +56,7 @@ interface ElectronBrowser {
       string channel,
       blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
 
-  PostMessage(string channel, blink.mojom.TransferableMessage message);
+  ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process, and waits synchronously for a response.

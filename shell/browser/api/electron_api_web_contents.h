@@ -255,7 +255,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                              const std::string& channel,
                              v8::Local<v8::Value> args);
 
-  void PostIPCMessage(gin::Arguments* args);
+  void PostMessage(gin::Arguments* args);
 
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
@@ -526,8 +526,8 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
               const std::string& channel,
               blink::CloneableMessage arguments,
               InvokeCallback callback) override;
-  void PostMessage(const std::string& channel,
-                   blink::TransferableMessage message) override;
+  void ReceivePostMessage(const std::string& channel,
+                          blink::TransferableMessage message) override;
   void MessageSync(bool internal,
                    const std::string& channel,
                    blink::CloneableMessage arguments,

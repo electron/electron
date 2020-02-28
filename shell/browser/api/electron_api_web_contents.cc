@@ -1095,8 +1095,8 @@ void WebContents::Invoke(bool internal,
                  std::move(callback), internal, channel, std::move(arguments));
 }
 
-void WebContents::PostMessage(const std::string& channel,
-                              blink::TransferableMessage message) {
+void WebContents::ReceivePostMessage(const std::string& channel,
+                                     blink::TransferableMessage message) {
   auto wrapped_ports = MessagePort::EntanglePorts(isolate(), message.ports);
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate(), message);
@@ -1104,7 +1104,7 @@ void WebContents::PostMessage(const std::string& channel,
                  false, channel, message_value, std::move(wrapped_ports));
 }
 
-void WebContents::PostIPCMessage(gin::Arguments* args) {
+void WebContents::PostMessage(gin::Arguments* args) {
   std::string channel;
   if (!args->GetNext(&channel)) {
     args->ThrowError();
@@ -1141,7 +1141,8 @@ void WebContents::PostIPCMessage(gin::Arguments* args) {
   content::RenderFrameHost* frame_host = web_contents()->GetMainFrame();
   mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
   frame_host->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
-  electron_renderer->PostMessage(channel, std::move(transferable_message));
+  electron_renderer->ReceivePostMessage(channel,
+                                        std::move(transferable_message));
 }
 
 void WebContents::MessageSync(bool internal,
@@ -2700,7 +2701,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isFocused", &WebContents::IsFocused)
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)
-      .SetMethod("_postMessage", &WebContents::PostIPCMessage)
+      .SetMethod("_postMessage", &WebContents::PostMessage)
       .SetMethod("_sendToFrame", &WebContents::SendIPCMessageToFrame)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
       .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)

@@ -135,8 +135,8 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     }
 
     transferable_message.ports = std::move(ports);
-    electron_browser_ptr_->PostMessage(channel,
-                                       std::move(transferable_message));
+    electron_browser_ptr_->ReceivePostMessage(channel,
+                                              std::move(transferable_message));
   }
 
   void SendTo(v8::Isolate* isolate,

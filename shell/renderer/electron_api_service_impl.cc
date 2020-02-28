@@ -181,8 +181,9 @@ void ElectronApiServiceImpl::Message(bool internal,
   }
 }
 
-void ElectronApiServiceImpl::PostMessage(const std::string& channel,
-                                         blink::TransferableMessage message) {
+void ElectronApiServiceImpl::ReceivePostMessage(
+    const std::string& channel,
+    blink::TransferableMessage message) {
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
     return;
