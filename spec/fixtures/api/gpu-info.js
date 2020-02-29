@@ -5,7 +5,7 @@ app.commandLine.appendSwitch('--disable-software-rasterizer')
 app.whenReady().then(() => {
   const infoType = process.argv.pop()
   const w = new BrowserWindow({ show: false })
-  w.webContents.once('did-finish-load', () =>  {
+  w.webContents.once('did-finish-load', () => {
     app.getGPUInfo(infoType).then(
       (gpuInfo) => {
         console.log(JSON.stringify(gpuInfo))
