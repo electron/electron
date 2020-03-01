@@ -5,6 +5,7 @@
 #include "shell/browser/extensions/electron_extension_message_filter.h"
 
 #include <stdint.h>
+#include <memory>
 
 #include "base/bind.h"
 #include "base/bind_helpers.h"
