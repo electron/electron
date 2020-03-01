@@ -47,10 +47,10 @@ index 0216501dda1dc8b8fb4307785a0dab868bc3315a..f9730f71c122965f7ce7815a1b9a7b32
  - (NSString*)methodNameForAttribute:(NSString*)attribute;
  
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 1381a64458dd37d07c72c3265e46166935012cad..5a9ab09b5214f9a8c38756fb627d32b52b028539 100644
+index 42923fcf189c6684bb25b4093b43fabc0818454f..8ec96495fe97efcc1fe88bafa9e1f424fc4547a4 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
-@@ -2110,7 +2110,9 @@ - (NSArray*)rows {
+@@ -2114,7 +2114,9 @@ - (NSArray*)rows {
    NSMutableArray* ret = [[[NSMutableArray alloc] init] autorelease];
  
    std::vector<int32_t> node_id_list;
@@ -61,7 +61,7 @@ index 1381a64458dd37d07c72c3265e46166935012cad..5a9ab09b5214f9a8c38756fb627d32b5
      node_id_list = _owner->node()->GetTableRowNodeIds();
    // Rows attribute for a column is the list of all the elements in that column
    // at each row.
-@@ -2543,6 +2545,19 @@ - (id)window {
+@@ -2547,6 +2549,19 @@ - (id)window {
    return manager->GetWindow();
  }
  
@@ -81,7 +81,7 @@ index 1381a64458dd37d07c72c3265e46166935012cad..5a9ab09b5214f9a8c38756fb627d32b5
  - (NSString*)methodNameForAttribute:(NSString*)attribute {
    return [attributeToMethodNameMap objectForKey:attribute];
  }
-@@ -3361,18 +3376,12 @@ - (NSArray*)accessibilityAttributeNames {
+@@ -3365,18 +3380,12 @@ - (NSArray*)accessibilityAttributeNames {
        NSAccessibilityMaxValueAttribute, NSAccessibilityMinValueAttribute,
        NSAccessibilityValueDescriptionAttribute
      ]];
@@ -102,7 +102,7 @@ index 1381a64458dd37d07c72c3265e46166935012cad..5a9ab09b5214f9a8c38756fb627d32b5
        [ret addObjectsFromArray:@[
          NSAccessibilityDisclosingAttribute,
          NSAccessibilityDisclosedByRowAttribute,
-@@ -3387,6 +3396,13 @@ - (NSArray*)accessibilityAttributeNames {
+@@ -3391,6 +3400,13 @@ - (NSArray*)accessibilityAttributeNames {
        NSAccessibilitySelectedChildrenAttribute,
        NSAccessibilityVisibleChildrenAttribute
      ]];
