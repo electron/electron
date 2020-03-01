@@ -211,11 +211,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   GetRootLayer()->SetFillsBoundsOpaquely(opaque);
   GetRootLayer()->SetColor(background_color_);
 
-  ui::ContextFactoryPrivate* context_factory_private =
-      content::GetContextFactoryPrivate();
+  ui::ContextFactory* context_factory = content::GetContextFactory();
   compositor_ = std::make_unique<ui::Compositor>(
-      context_factory_private->AllocateFrameSinkId(),
-      content::GetContextFactory(), context_factory_private,
+      context_factory->AllocateFrameSinkId(), context_factory,
       base::ThreadTaskRunnerHandle::Get(), false /* enable_pixel_canvas */,
       false /* use_external_begin_frame_control */);
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
