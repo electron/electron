@@ -7,10 +7,10 @@ async hooks are hella broken in Electron. This was checking that they weren't,
 but they are, so we just disabled the check. YOLO.
 
 diff --git a/src/api/callback.cc b/src/api/callback.cc
-index e6098d5921a038063bf8255f8af6f000becf76a0..3c518870c9c8d92f3dfcd6c270f5e023e3b69633 100644
+index 355986b981a3811bcc835cf5dabcb720d2d5ee45..4dc268bc59a51e9645b2f69294d28fc11b29b364 100644
 --- a/src/api/callback.cc
 +++ b/src/api/callback.cc
-@@ -104,12 +104,14 @@ void InternalCallbackScope::Close() {
+@@ -111,12 +111,14 @@ void InternalCallbackScope::Close() {
      MicrotasksScope::PerformCheckpoint(env_->isolate());
    }
  

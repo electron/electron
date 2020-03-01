@@ -7,7 +7,7 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index 18acd9d2b64774efdb9261e69923a5ba320a7f0e..0f36697ce5ed0b5bb6df74ceca219574da7eea53 100644
+index bb9a2b177c4304496dab1f1beaedc1ae9d9f55d9..36d06759aac57b1aa813b52c94e2168b8a8f9087 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
 @@ -57,6 +57,10 @@ setupBuffer();
@@ -22,10 +22,10 @@ index 18acd9d2b64774efdb9261e69923a5ba320a7f0e..0f36697ce5ed0b5bb6df74ceca219574
  process.config = JSONParse(internalBinding('native_module').config);
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index fc0f953820fa6222ff8cca2e27d3087e05288ff5..2fddd3766ffb28dc9176ed1b7a4b01361dd72fcd 100644
+index 237b507df13497297ea00b7c2e0060333c3595c0..22912e7c89b4cba78315269c3e009bfca1ccec27 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -42,10 +42,7 @@ const assert = require('internal/assert');
+@@ -54,10 +54,7 @@ const assert = require('internal/assert');
  const fs = require('fs');
  const internalFS = require('internal/fs/utils');
  const path = require('path');
@@ -37,7 +37,7 @@ index fc0f953820fa6222ff8cca2e27d3087e05288ff5..2fddd3766ffb28dc9176ed1b7a4b0136
  const { safeGetenv } = internalBinding('credentials');
  const {
    makeRequireFunction,
-@@ -120,14 +117,12 @@ function enrichCJSError(err) {
+@@ -138,14 +135,12 @@ function enrichCJSError(err) {
  }
  
  function stat(filename) {
@@ -53,7 +53,7 @@ index fc0f953820fa6222ff8cca2e27d3087e05288ff5..2fddd3766ffb28dc9176ed1b7a4b0136
    if (statCache !== null) statCache.set(filename, result);
    return result;
  }
-@@ -233,7 +228,7 @@ function readPackage(requestPath) {
+@@ -251,7 +246,7 @@ function readPackage(requestPath) {
    const existing = packageJsonCache.get(jsonPath);
    if (existing !== undefined) return existing;
  

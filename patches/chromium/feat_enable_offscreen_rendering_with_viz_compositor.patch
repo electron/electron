@@ -442,7 +442,7 @@ index 0000000000000000000000000000000000000000..48fa86caaab3c15764f105eb7ad2aecf
 +
 +#endif  // COMPONENTS_VIZ_SERVICE_DISPLAY_EMBEDDER_SOFTWARE_OUTPUT_DEVICE_PROXY_H_
 diff --git a/components/viz/service/display_embedder/software_output_device_win.cc b/components/viz/service/display_embedder/software_output_device_win.cc
-index bb07c338fac5251d62f52083b0cdf29f913c0426..e0ebb98d9a020dec059b9eae65d0e39c62b8dc57 100644
+index 94ea55487f85ab32d862e913c476bc95f388dce9..d055a18bbc186facd88d496d589be78068c4ca64 100644
 --- a/components/viz/service/display_embedder/software_output_device_win.cc
 +++ b/components/viz/service/display_embedder/software_output_device_win.cc
 @@ -268,7 +268,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
@@ -454,11 +454,31 @@ index bb07c338fac5251d62f52083b0cdf29f913c0426..e0ebb98d9a020dec059b9eae65d0e39c
        &SoftwareOutputDeviceWinProxy::DrawAck, base::Unretained(this)));
    waiting_on_draw_ack_ = true;
  
+diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
+index 8e10af98f2b039d0d96f8be908f751b9117193d5..f9501da88a008131e3d046b452ba9c34455a1da4 100644
+--- a/content/browser/compositor/viz_process_transport_factory.cc
++++ b/content/browser/compositor/viz_process_transport_factory.cc
+@@ -404,8 +404,13 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+   compositor_data.display_private.reset();
+   root_params->display_private =
+       compositor_data.display_private.BindNewEndpointAndPassReceiver();
+-  compositor_data.display_client =
+-      std::make_unique<HostDisplayClient>(compositor);
++  if (compositor->delegate()) {
++    compositor_data.display_client = compositor->delegate()->CreateHostDisplayClient(
++        compositor);
++  } else {
++    compositor_data.display_client =
++        std::make_unique<HostDisplayClient>(compositor);
++  }
+   root_params->display_client =
+       compositor_data.display_client->GetBoundRemote(resize_task_runner_);
+ 
 diff --git a/mojo/public/cpp/bindings/sync_call_restrictions.h b/mojo/public/cpp/bindings/sync_call_restrictions.h
-index ac94eab98fd0f89de12db387c4718f2351ff4a92..b89d52a0c869c22147eb78f623a435920a6d34ec 100644
+index 60e1149205750740ab5bde81029e7e3b370bd1ed..abfb772cd318b4cca3aed167a8808839d947f896 100644
 --- a/mojo/public/cpp/bindings/sync_call_restrictions.h
 +++ b/mojo/public/cpp/bindings/sync_call_restrictions.h
-@@ -29,6 +29,7 @@ class HostContextFactoryPrivate;
+@@ -29,6 +29,7 @@ class Compositor;
  
  namespace viz {
  class HostFrameSinkManager;
@@ -466,20 +486,20 @@ index ac94eab98fd0f89de12db387c4718f2351ff4a92..b89d52a0c869c22147eb78f623a43592
  }
  
  namespace mojo {
-@@ -82,6 +83,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
-   // For preventing frame swaps of wrong size during resize on Windows.
-   // (https://crbug.com/811945)
-   friend class ui::HostContextFactoryPrivate;
+@@ -79,6 +80,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
+   // For destroying the GL context/surface that draw to a platform window before
+   // the platform window is destroyed.
+   friend class viz::HostFrameSinkManager;
 +  // For query of whether to use SoftwareOutputDevice or not
 +  friend class viz::GpuDisplayProvider;
-   // END ALLOWED USAGE.
- 
- #if ENABLE_SYNC_CALL_RESTRICTIONS
+   // For preventing frame swaps of wrong size during resize on Windows.
+   // (https://crbug.com/811945)
+   friend class ui::Compositor;
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index 609ded904478b6701bdb224dc420785e4311e717..2e6a7c8808d321dd2927cd0d5ba03cb7e2310348 100644
+index d36f62e6ee4166f0e27f6534c804430374bfa298..6575d7e6cafdca8cdc172e0f9912648570c1deeb 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -75,12 +75,14 @@ interface DisplayPrivate {
+@@ -74,12 +74,14 @@ interface DisplayPrivate {
  };
  
  interface DisplayClient {
@@ -507,19 +527,19 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 326c7d17f599c863693d81a5201bd99a8447cbb7..e5dfd973d04c8a6d30860747b24188f8ac7f6cb2 100644
+index 3e2d2304faf75d1ec6cc830d756cbf31767dacfd..b4ec5b6e34f901ace7975e5e906e01177f04e8be 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -66,6 +66,7 @@ class GpuMemoryBufferManager;
- 
- namespace viz {
+@@ -70,6 +70,7 @@ class DisplayPrivate;
+ class ExternalBeginFrameController;
+ }  // namespace mojom
  class ContextProvider;
 +class HostDisplayClient;
  class HostFrameSinkManager;
  class LocalSurfaceIdAllocation;
  class RasterContextProvider;
-@@ -166,6 +167,15 @@ class COMPOSITOR_EXPORT ContextFactory {
-   virtual cc::TaskGraphRunner* GetTaskGraphRunner() = 0;
+@@ -122,6 +123,15 @@ class COMPOSITOR_EXPORT ContextFactory {
+   virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
 +class COMPOSITOR_EXPORT CompositorDelegate {
@@ -534,7 +554,7 @@ index 326c7d17f599c863693d81a5201bd99a8447cbb7..e5dfd973d04c8a6d30860747b24188f8
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -205,6 +215,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -155,6 +165,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -544,34 +564,14 @@ index 326c7d17f599c863693d81a5201bd99a8447cbb7..e5dfd973d04c8a6d30860747b24188f8
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -424,6 +437,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
-   ui::ContextFactory* context_factory_;
-   ui::ContextFactoryPrivate* context_factory_private_;
+@@ -390,6 +403,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+ 
+   std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  
 +  CompositorDelegate* delegate_ = nullptr;
 +
    // The root of the Layer tree drawn by this compositor.
    Layer* root_layer_ = nullptr;
- 
-diff --git a/ui/compositor/host/host_context_factory_private.cc b/ui/compositor/host/host_context_factory_private.cc
-index 1db09f76243c67ac28cedafe83f3b7479031a4bc..f07cd7a5098b0f7d3347b1bca3d24d961790bd3a 100644
---- a/ui/compositor/host/host_context_factory_private.cc
-+++ b/ui/compositor/host/host_context_factory_private.cc
-@@ -112,8 +112,13 @@ void HostContextFactoryPrivate::ConfigureCompositor(
-   compositor_data.display_private.reset();
-   root_params->display_private =
-       compositor_data.display_private.BindNewEndpointAndPassReceiver();
--  compositor_data.display_client =
--      std::make_unique<HostDisplayClient>(compositor);
-+  if (compositor->delegate()) {
-+    compositor_data.display_client = compositor->delegate()->CreateHostDisplayClient(
-+        compositor);
-+  } else {
-+    compositor_data.display_client =
-+        std::make_unique<HostDisplayClient>(compositor);
-+  }
-   root_params->display_client =
-       compositor_data.display_client->GetBoundRemote(resize_task_runner_);
  
 diff --git a/ui/gfx/ca_layer_params.h b/ui/gfx/ca_layer_params.h
 index 4014e64a75da88cf66c02e8adb71171c2666cab7..25e57784e1a1ffc546b003daa4cd0059c468432f 100644

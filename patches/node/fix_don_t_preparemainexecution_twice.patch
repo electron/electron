@@ -10,7 +10,7 @@ caused an unfortunate doubling-up effect; Node.js also ran bootstrapping
 (called `prepareMainThreadExecution`) for all other execution paths
 (like the repl, the actual main module, eval, etc).
 
-To fix this, we can just remove bootstrapping code from `CreateEnvironment`. 
+To fix this, we can just remove bootstrapping code from `CreateEnvironment`.
 
 diff --git a/lib/internal/bootstrap/environment.js b/lib/internal/bootstrap/environment.js
 deleted file mode 100644
@@ -32,10 +32,10 @@ index 79a67dae378202ee377f2f138560b74f673af6e4..00000000000000000000000000000000
 -prepareMainThreadExecution();
 -markBootstrapComplete();
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 356131156b4a714eebf4e202cd105f0f184e3852..6c2e0555f2ee554c8ac29465af01e9c47e1d81f9 100644
+index 8d8f820962d540c67d261a65ce5d5def5db40696..46fb07731b160765059f60bc28bd6992d4b9e36d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -284,20 +284,6 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
+@@ -316,20 +316,6 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
    if (env->RunBootstrapping().IsEmpty()) {
      return nullptr;
    }
