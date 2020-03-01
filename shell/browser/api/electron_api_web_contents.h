@@ -28,6 +28,7 @@
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/common_web_contents_delegate.h"
 #include "shell/common/gin_helper/trackable_object.h"
+#include "third_party/blink/public/mojom/favicon/favicon_url.mojom.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
