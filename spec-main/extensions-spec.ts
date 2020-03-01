@@ -160,6 +160,21 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       expect(response).to.equal(3)
     })
 
+    it('connect', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'))
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
+      await w.loadURL(url)
+
+      const portName = require('uuid').v4()
+      const message = { method: 'connectTab', args: [portName] }
+      w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
+
+      const [,, responseString] = await emittedOnce(w.webContents, 'console-message')
+
+      expect(responseString).to.equal(portName)
+    })
+
     it('sendMessage receives the response', async function () {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'))

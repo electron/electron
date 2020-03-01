@@ -139,6 +139,37 @@
         ]
       },
       {
+        "name": "connect",
+        "nocompile": true,
+        "type": "function",
+        "description": "Connects to the content script(s) in the specified tab. The $(ref:runtime.onConnect) event is fired in each content script running in the specified tab for the current extension. For more details, see <a href='messaging'>Content Script Messaging</a>.",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "minimum": 0
+          },
+          {
+            "type": "object",
+            "name": "connectInfo",
+            "properties": {
+              "name": { "type": "string", "optional": true, "description": "Is passed into onConnect for content scripts that are listening for the connection event." },
+              "frameId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": 0,
+                "description": "Open a port to a specific <a href='webNavigation#frame_ids'>frame</a> identified by <code>frameId</code> instead of all frames in the tab."
+              }
+            },
+            "optional": true
+          }
+        ],
+        "returns": {
+          "$ref": "runtime.Port",
+          "description": "A port that can be used to communicate with the content scripts running in the specified tab. The port's $(ref:runtime.Port) event is fired if the tab closes or does not exist. "
+        }
+      },
+      {
         "name": "executeScript",
         "type": "function",
         "parameters": [
