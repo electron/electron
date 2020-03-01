@@ -61,7 +61,7 @@ index 893c45a5c71b4e55ea323ae60e11d12ddb099efd..db9a1ff0fe1a912db83692ab17c620cf
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index e2a5521137c22c5a22fa1b183ce2684e50c364b0..bd71af651ea42e573caf0d60491b66d65242fd21 100644
+index e2a5521137c22c5a22fa1b183ce2684e50c364b0..55bc13a9d2245698c1230c00a40b8a1a98c65016 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -1176,6 +1176,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
@@ -78,9 +78,9 @@ index e2a5521137c22c5a22fa1b183ce2684e50c364b0..bd71af651ea42e573caf0d60491b66d6
  }
  
 +void RenderViewImpl::OnSetSchedulerThrottling(bool allowed) {
-+  if (!webview())
++  if (!GetWebView())
 +    return;
-+  webview()->SetSchedulerThrottling(allowed);
++  GetWebView()->SetSchedulerThrottling(allowed);
 +}
 +
  void RenderViewImpl::ApplyPageVisibilityState(
