@@ -41,3 +41,4 @@ fix_we_need_to_eager-load_cjs_modules.patch
 fix_don_t_preparemainexecution_twice.patch
 avoid_calling_deprecated_method.patch
 remove_deprecated_wasm_module_type_check.patch
+weakrefs_rename_finalizationgroup_to_finalizationregistry_for_js.patch
