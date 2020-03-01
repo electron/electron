@@ -16,6 +16,11 @@
   "extension.getURL": {
     "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
   },
+  "cookies": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "contexts": ["blessed_extension"]
+  },
   "mimeHandlerViewGuestInternal": {
     "internal": true,
     "contexts": "all",

@@ -1,0 +1,214 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+[
+  {
+    "namespace": "cookies",
+    "description": "Use the <code>chrome.cookies</code> API to query and modify cookies, and to be notified when they change.",
+    "types": [
+      {
+        "id": "SameSiteStatus",
+        "type": "string",
+        "enum": ["no_restriction", "lax", "strict", "unspecified"],
+        "description": "A cookie's 'SameSite' state (https://tools.ietf.org/html/draft-west-first-party-cookies). 'no_restriction' corresponds to a cookie set with 'SameSite=None', 'lax' to 'SameSite=Lax', and 'strict' to 'SameSite=Strict'. 'unspecified' corresponds to a cookie set without the SameSite attribute."
+      },
+      {
+        "id": "Cookie",
+        "type": "object",
+        "description": "Represents information about an HTTP cookie.",
+        "properties": {
+          "name": {"type": "string", "description": "The name of the cookie."},
+          "value": {"type": "string", "description": "The value of the cookie."},
+          "domain": {"type": "string", "description": "The domain of the cookie (e.g. \"www.google.com\", \"example.com\")."},
+          "hostOnly": {"type": "boolean", "description": "True if the cookie is a host-only cookie (i.e. a request's host must exactly match the domain of the cookie)."},
+          "path": {"type": "string", "description": "The path of the cookie."},
+          "secure": {"type": "boolean", "description": "True if the cookie is marked as Secure (i.e. its scope is limited to secure channels, typically HTTPS)."},
+          "httpOnly": {"type": "boolean", "description": "True if the cookie is marked as HttpOnly (i.e. the cookie is inaccessible to client-side scripts)."},
+          "sameSite": {"$ref": "SameSiteStatus", "description": "The cookie's same-site status (i.e. whether the cookie is sent with cross-site requests)."},
+          "session": {"type": "boolean", "description": "True if the cookie is a session cookie, as opposed to a persistent cookie with an expiration date."},
+          "expirationDate": {"type": "number", "optional": true, "description": "The expiration date of the cookie as the number of seconds since the UNIX epoch. Not provided for session cookies."},
+          "storeId": {"type": "string", "description": "The ID of the cookie store containing this cookie, as provided in getAllCookieStores()."}
+        }
+      },
+      {
+        "id": "CookieStore",
+        "type": "object",
+        "description": "Represents a cookie store in the browser. An incognito mode window, for instance, uses a separate cookie store from a non-incognito window.",
+        "properties": {
+          "id": {"type": "string", "description": "The unique identifier for the cookie store."},
+          "tabIds": {"type": "array", "items": {"type": "integer"}, "description": "Identifiers of all the browser tabs that share this cookie store."}
+        }
+      },
+      {
+        "id": "OnChangedCause",
+        "type": "string",
+        "enum": ["evicted", "expired", "explicit", "expired_overwrite", "overwrite"],
+        "description": "The underlying reason behind the cookie's change. If a cookie was inserted, or removed via an explicit call to \"chrome.cookies.remove\", \"cause\" will be \"explicit\". If a cookie was automatically removed due to expiry, \"cause\" will be \"expired\". If a cookie was removed due to being overwritten with an already-expired expiration date, \"cause\" will be set to \"expired_overwrite\".  If a cookie was automatically removed due to garbage collection, \"cause\" will be \"evicted\".  If a cookie was automatically removed due to a \"set\" call that overwrote it, \"cause\" will be \"overwrite\". Plan your response accordingly."
+      }
+    ],
+    "functions": [
+      {
+        "name": "get",
+        "type": "function",
+        "description": "Retrieves information about a single cookie. If more than one cookie of the same name exists for the given URL, the one with the longest path will be returned. For cookies with the same path length, the cookie with the earliest creation time will be returned.",
+        "parameters": [
+          {
+            "type": "object",
+            "name": "details",
+            "description": "Details to identify the cookie being retrieved.",
+            "properties": {
+              "url": {"type": "string", "description": "The URL with which the cookie to retrieve is associated. This argument may be a full URL, in which case any data following the URL path (e.g. the query string) is simply ignored. If host permissions for this URL are not specified in the manifest file, the API call will fail."},
+              "name": {"type": "string", "description": "The name of the cookie to retrieve."},
+              "storeId": {"type": "string", "optional": true, "description": "The ID of the cookie store in which to look for the cookie. By default, the current execution context's cookie store will be used."}
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "cookie", "$ref": "Cookie", "optional": true, "description": "Contains details about the cookie. This parameter is null if no such cookie was found."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "getAll",
+        "type": "function",
+        "description": "Retrieves all cookies from a single cookie store that match the given information.  The cookies returned will be sorted, with those with the longest path first.  If multiple cookies have the same path length, those with the earliest creation time will be first.",
+        "parameters": [
+          {
+            "type": "object",
+            "name": "details",
+            "description": "Information to filter the cookies being retrieved.",
+            "properties": {
+              "url": {"type": "string", "optional": true, "description": "Restricts the retrieved cookies to those that would match the given URL."},
+              "name": {"type": "string", "optional": true, "description": "Filters the cookies by name."},
+              "domain": {"type": "string", "optional": true, "description": "Restricts the retrieved cookies to those whose domains match or are subdomains of this one."},
+              "path": {"type": "string", "optional": true, "description": "Restricts the retrieved cookies to those whose path exactly matches this string."},
+              "secure": {"type": "boolean", "optional": true, "description": "Filters the cookies by their Secure property."},
+              "session": {"type": "boolean", "optional": true, "description": "Filters out session vs. persistent cookies."},
+              "storeId": {"type": "string", "optional": true, "description": "The cookie store to retrieve cookies from. If omitted, the current execution context's cookie store will be used."}
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "cookies", "type": "array", "items": {"$ref": "Cookie"}, "description": "All the existing, unexpired cookies that match the given cookie info."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "type": "function",
+        "description": "Sets a cookie with the given cookie data; may overwrite equivalent cookies if they exist.",
+        "parameters": [
+          {
+            "type": "object",
+            "name": "details",
+            "description": "Details about the cookie being set.",
+            "properties": {
+              "url": {"type": "string", "description": "The request-URI to associate with the setting of the cookie. This value can affect the default domain and path values of the created cookie. If host permissions for this URL are not specified in the manifest file, the API call will fail."},
+              "name": {"type": "string", "optional": true, "description": "The name of the cookie. Empty by default if omitted."},
+              "value": {"type": "string", "optional": true, "description": "The value of the cookie. Empty by default if omitted."},
+              "domain": {"type": "string", "optional": true, "description": "The domain of the cookie. If omitted, the cookie becomes a host-only cookie."},
+              "path": {"type": "string", "optional": true, "description": "The path of the cookie. Defaults to the path portion of the url parameter."},
+              "secure": {"type": "boolean", "optional": true, "description": "Whether the cookie should be marked as Secure. Defaults to false."},
+              "httpOnly": {"type": "boolean", "optional": true, "description": "Whether the cookie should be marked as HttpOnly. Defaults to false."},
+              "sameSite": {"$ref": "SameSiteStatus", "optional": true, "description": "The cookie's same-site status. Defaults to \"unspecified\", i.e., if omitted, the cookie is set without specifying a SameSite attribute."},
+              "expirationDate": {"type": "number", "optional": true, "description": "The expiration date of the cookie as the number of seconds since the UNIX epoch. If omitted, the cookie becomes a session cookie."},
+              "storeId": {"type": "string", "optional": true, "description": "The ID of the cookie store in which to set the cookie. By default, the cookie is set in the current execution context's cookie store."}
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "min_version": "11.0.674.0",
+            "parameters": [
+              {
+                "name": "cookie", "$ref": "Cookie", "optional": true, "description": "Contains details about the cookie that's been set.  If setting failed for any reason, this will be \"null\", and \"chrome.runtime.lastError\" will be set."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "remove",
+        "type": "function",
+        "description": "Deletes a cookie by name.",
+        "parameters": [
+          {
+            "type": "object",
+            "name": "details",
+            "description": "Information to identify the cookie to remove.",
+            "properties": {
+              "url": {"type": "string", "description": "The URL associated with the cookie. If host permissions for this URL are not specified in the manifest file, the API call will fail."},
+              "name": {"type": "string", "description": "The name of the cookie to remove."},
+              "storeId": {"type": "string", "optional": true, "description": "The ID of the cookie store to look in for the cookie. If unspecified, the cookie is looked for by default in the current execution context's cookie store."}
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "min_version": "11.0.674.0",
+            "parameters": [
+              {
+                "name": "details",
+                "type": "object",
+                "description": "Contains details about the cookie that's been removed.  If removal failed for any reason, this will be \"null\", and \"chrome.runtime.lastError\" will be set.",
+                "optional": true,
+                "properties": {
+                  "url": {"type": "string", "description": "The URL associated with the cookie that's been removed."},
+                  "name": {"type": "string", "description": "The name of the cookie that's been removed."},
+                  "storeId": {"type": "string", "description": "The ID of the cookie store from which the cookie was removed."}
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "getAllCookieStores",
+        "type": "function",
+        "description": "Lists all existing cookie stores.",
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "cookieStores", "type": "array", "items": {"$ref": "CookieStore"}, "description": "All the existing cookie stores."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "name": "onChanged",
+        "type": "function",
+        "description": "Fired when a cookie is set or removed. As a special case, note that updating a cookie's properties is implemented as a two step process: the cookie to be updated is first removed entirely, generating a notification with \"cause\" of \"overwrite\" .  Afterwards, a new cookie is written with the updated values, generating a second notification with \"cause\" \"explicit\".",
+        "parameters": [
+          {
+            "type": "object",
+            "name": "changeInfo",
+            "properties": {
+              "removed": {"type": "boolean", "description": "True if a cookie was removed."},
+              "cookie": {"$ref": "Cookie", "description": "Information about the cookie that was set or removed."},
+              "cause": {"min_version": "12.0.707.0", "$ref": "OnChangedCause", "description": "The underlying reason behind the cookie's change."}
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
