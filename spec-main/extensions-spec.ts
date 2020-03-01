@@ -103,7 +103,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     await expect(customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))).to.eventually.be.rejectedWith('Extensions cannot be loaded in a temporary session')
   })
 
-  describe.only('chrome.i18n', () => {
+  describe('chrome.i18n', () => {
     let w: BrowserWindow
     let extension: Extension
     const exec = async (name: string) => {
