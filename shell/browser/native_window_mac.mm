@@ -588,7 +588,14 @@ void NativeWindowMac::SetContentView(views::View* view) {
 void NativeWindowMac::Close() {
   // When this is a sheet showing, performClose won't work.
   if (is_modal() && parent() && IsVisible()) {
-    [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];
+    NSWindow* window = parent()->GetNativeWindow().GetNativeNSWindow();
+    if (NSWindow* sheetParent = [window sheetParent]) {
+      base::ThreadTaskRunnerHandle::Get()->PostTask(
+          FROM_HERE, base::BindOnce(base::RetainBlock(^{
+            [sheetParent endSheet:window];
+          })));
+    }
+
     // Manually emit close event (not triggered from close fn)
     NotifyWindowCloseButtonClicked();
     CloseImmediately();
