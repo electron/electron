@@ -38,30 +38,30 @@ struct Converter<URLPattern> {
 };
 
 template <>
-struct Converter<content::ResourceType> {
+struct Converter<blink::mojom::ResourceType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   content::ResourceType type) {
+                                   blink::mojom::ResourceType type) {
     const char* result;
     switch (type) {
-      case content::ResourceType::kMainFrame:
+      case blink::mojom::ResourceType::kMainFrame:
         result = "mainFrame";
         break;
-      case content::ResourceType::kSubFrame:
+      case blink::mojom::ResourceType::kSubFrame:
         result = "subFrame";
         break;
-      case content::ResourceType::kStylesheet:
+      case blink::mojom::ResourceType::kStylesheet:
         result = "stylesheet";
         break;
-      case content::ResourceType::kScript:
+      case blink::mojom::ResourceType::kScript:
         result = "script";
         break;
-      case content::ResourceType::kImage:
+      case blink::mojom::ResourceType::kImage:
         result = "image";
         break;
-      case content::ResourceType::kObject:
+      case blink::mojom::ResourceType::kObject:
         result = "object";
         break;
-      case content::ResourceType::kXhr:
+      case blink::mojom::ResourceType::kXhr:
         result = "xhr";
         break;
       default:

@@ -17,7 +17,7 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
-index 1bb7007c16029db901514e79171952d07b47058e..5f5e887f85abc5c4f948de034feb4482571144fc 100644
+index deb02fbfd0732978ef82cd389559d29be1d562b1..37207b205dbc8308b0d92cbcf0e3861dc397ed93 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
 +++ b/content/browser/frame_host/navigation_controller_impl.cc
 @@ -1250,8 +1250,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
@@ -46,20 +46,20 @@ index 1bb7007c16029db901514e79171952d07b47058e..5f5e887f85abc5c4f948de034feb4482
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 1308bcb042b38d502b1b65b04affabf7e09d6fcd..52c9da3ea565d131ea8704f34f743f6661d42e84 100644
+index 23681d4192ac329a68822dbcdb06369f34e5e28a..ecb4cd19c364285044da60830fb1b4d4f52204f3 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -768,10 +768,10 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
- }
+@@ -767,10 +767,10 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
  
- void ClipboardWin::WriteToClipboard(unsigned int format, HANDLE handle) {
+ void ClipboardWin::WriteToClipboard(ClipboardFormatType format, HANDLE handle) {
+   UINT cf_format = format.ToFormatEtc().cfFormat;
 -  DCHECK_NE(clipboard_owner_->hwnd(), nullptr);
 +  //DCHECK_NE(clipboard_owner_->hwnd(), nullptr);
-   if (handle && !::SetClipboardData(format, handle)) {
+   if (handle && !::SetClipboardData(cf_format, handle)) {
 -    DCHECK_NE(GetLastError(),
 -              static_cast<unsigned long>(ERROR_CLIPBOARD_NOT_OPEN));
 +    //DCHECK_NE(GetLastError(),
 +    //          static_cast<unsigned long>(ERROR_CLIPBOARD_NOT_OPEN));
-     FreeData(format, handle);
+     FreeData(cf_format, handle);
    }
  }

@@ -10,10 +10,10 @@ Should be removed once grit is fixed.
 Tracking bug: https://crbug.com/1040605
 
 diff --git a/tools/gritsettings/resource_ids.spec b/tools/gritsettings/resource_ids.spec
-index 9def0bb9dda87c476fdf3b52ce4d4125f37c7f49..90c81d2a9711d88284d960149e25db55ae8dc1c2 100644
+index 9043b1e7a60282701ced0b9f36726a9b2b1adcd9..14c15ca63ec3d0d76f51dba18c149134ee5dde9a 100644
 --- a/tools/gritsettings/resource_ids.spec
 +++ b/tools/gritsettings/resource_ids.spec
-@@ -573,15 +573,16 @@
+@@ -578,15 +578,16 @@
      "includes": [3840],
    },
  

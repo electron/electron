@@ -306,7 +306,8 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   // views::WidgetDelegate:
-  const views::Widget* GetWidgetImpl() const override;
+  views::Widget* GetWidget() override;
+  const views::Widget* GetWidget() const override;
   base::string16 GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }

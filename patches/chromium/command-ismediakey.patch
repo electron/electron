@@ -41,10 +41,10 @@ index c5125495b4d178ffb18be4d2d9670f7556412cbd..cddb321abb938c667a4a2089f87eab99
    // Create an observer that registers a hot key for |accelerator|.
    std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/chrome/browser/extensions/global_shortcut_listener_x11.cc b/chrome/browser/extensions/global_shortcut_listener_x11.cc
-index 392cf3d58c64c088596e8d321a2ce37b0ec60b6e..43e30f47240dc10a3a9b950255d4e48792cc4159 100644
+index 9b6bba3ed87cae8ecc4288d01e5e7a3f74f71510..a4e4a5d6f1096754bf20c3438f47ebe60147f184 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_x11.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_x11.cc
-@@ -38,6 +38,7 @@ int GetNativeModifiers(const ui::Accelerator& accelerator) {
+@@ -39,6 +39,7 @@ int GetNativeModifiers(const ui::Accelerator& accelerator) {
    modifiers |= accelerator.IsShiftDown() ? ShiftMask : 0;
    modifiers |= accelerator.IsCtrlDown() ? ControlMask : 0;
    modifiers |= accelerator.IsAltDown() ? Mod1Mask : 0;
@@ -52,15 +52,6 @@ index 392cf3d58c64c088596e8d321a2ce37b0ec60b6e..43e30f47240dc10a3a9b950255d4e487
  
    return modifiers;
  }
-@@ -151,6 +152,8 @@ void GlobalShortcutListenerX11::OnXKeyPressEvent(::XEvent* x_event) {
-   modifiers |= (x_event->xkey.state & ShiftMask) ? ui::EF_SHIFT_DOWN : 0;
-   modifiers |= (x_event->xkey.state & ControlMask) ? ui::EF_CONTROL_DOWN : 0;
-   modifiers |= (x_event->xkey.state & Mod1Mask) ? ui::EF_ALT_DOWN : 0;
-+  // For Windows key
-+  modifiers |= (x_event->xkey.state & Mod4Mask) ? ui::EF_COMMAND_DOWN: 0;
- 
-   ui::Accelerator accelerator(
-       ui::KeyboardCodeFromXKeyEvent(x_event), modifiers);
 diff --git a/ui/base/accelerators/media_keys_listener.cc b/ui/base/accelerators/media_keys_listener.cc
 index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc7951d372 100644
 --- a/ui/base/accelerators/media_keys_listener.cc

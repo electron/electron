@@ -23,7 +23,6 @@
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
-#include "net/proxy_resolution/proxy_resolution_service.h"
 #include "services/network/public/cpp/network_switches.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -36,6 +35,11 @@ BrowserProcessImpl::BrowserProcessImpl() {
 
 BrowserProcessImpl::~BrowserProcessImpl() {
   g_browser_process = nullptr;
+}
+
+BuildState* BrowserProcessImpl::GetBuildState() {
+  NOTIMPLEMENTED();
+  return nullptr;
 }
 
 // static

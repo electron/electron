@@ -838,15 +838,17 @@ v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
 }
 
 bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
-#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
-  if (spellcheck::UseBrowserSpellChecker()) {
-    spellcheck_platform::AddWord(base::UTF8ToUTF16(word));
-  }
-#endif
   SpellcheckService* spellcheck =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
   if (!spellcheck)
     return false;
+
+#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+  if (spellcheck::UseBrowserSpellChecker()) {
+    spellcheck_platform::AddWord(spellcheck->platform_spell_checker(),
+                                 base::UTF8ToUTF16(word));
+  }
+#endif
 
   return spellcheck->GetCustomDictionary()->AddWord(word);
 }

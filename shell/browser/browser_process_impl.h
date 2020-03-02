@@ -101,6 +101,7 @@ class BrowserProcessImpl : public BrowserProcess {
   const std::string& GetApplicationLocale() override;
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
+  BuildState* GetBuildState() override;
 
  private:
 #if BUILDFLAG(ENABLE_PRINTING)

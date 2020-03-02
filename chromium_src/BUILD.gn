@@ -68,7 +68,6 @@ static_library("chrome") {
   ]
   deps = [
     "//chrome/browser:resource_prefetch_predictor_proto",
-    "//chrome/browser/ssl:proto",
     "//components/feature_engagement:buildflags",
   ]
 

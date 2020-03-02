@@ -87,6 +87,7 @@
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
+#include "third_party/blink/public/mojom/favicon/favicon_url.mojom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/platform/web_cursor_info.h"
@@ -1235,7 +1236,7 @@ void WebContents::DidUpdateFaviconURL(
     const std::vector<content::FaviconURL>& urls) {
   std::set<GURL> unique_urls;
   for (const auto& iter : urls) {
-    if (iter.icon_type != content::FaviconURL::IconType::kFavicon)
+    if (iter.icon_type != blink::mojom::FaviconIconType::kFavicon)
       continue;
     const GURL& url = iter.icon_url;
     if (url.is_valid())

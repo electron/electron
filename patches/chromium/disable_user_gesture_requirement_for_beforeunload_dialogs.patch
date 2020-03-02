@@ -6,10 +6,10 @@ Subject: disable_user_gesture_requirement_for_beforeunload_dialogs.patch
 See https://github.com/electron/electron/issues/10754
 
 diff --git a/third_party/blink/renderer/core/dom/document.cc b/third_party/blink/renderer/core/dom/document.cc
-index f7a30a0bd0d37b0a23ae441794f5a968e45dc3d9..74e1143f30411106b598fb7bd12f618fd439b041 100644
+index 2dfa801e802a12b23dd0e37aab037a5c4e2ac819..2091d773d2122a8282c779624a87d600fd079fd1 100644
 --- a/third_party/blink/renderer/core/dom/document.cc
 +++ b/third_party/blink/renderer/core/dom/document.cc
-@@ -3896,7 +3896,9 @@ bool Document::DispatchBeforeUnloadEvent(ChromeClient* chrome_client,
+@@ -4027,7 +4027,9 @@ bool Document::DispatchBeforeUnloadEvent(ChromeClient* chrome_client,
          "frame that never had a user gesture since its load. "
          "https://www.chromestatus.com/feature/5082396709879808";
      Intervention::GenerateReport(frame_, "BeforeUnloadNoGesture", message);
