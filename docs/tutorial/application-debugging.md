@@ -36,3 +36,27 @@ For more information, see the [Debugging the Main Process documentation][main-de
 [node-inspect]: https://nodejs.org/en/docs/inspector/
 [devtools]: https://developer.chrome.com/devtools
 [main-debug]: ./debugging-main-process.md
+
+## V8 Crashes
+
+If the V8 context crashes, the DevTools will display this message.
+
+`DevTools was disconnected from the page. Once page is reloaded, DevTools will automatically reconnect.`
+
+Chromium logs can be enabled via an environment variable.
+
+POSIX shell example:
+
+```sh
+$ export ELECTRON_ENABLE_LOGGING=true
+$ electron
+```
+
+Windows console example:
+
+```powershell
+> set ELECTRON_ENABLE_LOGGING=true
+> electron
+```
+
+Alternatively, the command line argument `--enable-logging` can be passed. More information is available in the [command line switches documentation](https://www.electronjs.org/docs/api/command-line-switches#--enable-logging).
