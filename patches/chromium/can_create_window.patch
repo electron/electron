@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 23b76483557a2f737455b4ef9e2903653c07e4d9..46d760bd804733803e2ef034e3c86a33c950eff2 100644
+index 8b8fb60d2ea5fe7c02e151d6a1455849bbca65ee..51ab38a13bcc2717970d786afd1c67949ea32d94 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -4558,6 +4558,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -70,7 +70,7 @@ index a996e9da772a4368c5845d3a8166d605f256108e..ee1034ee1bcd3f47964fec8fe1157359
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index d1b88ee50c9229569029316ad85480e1c022535b..e2a5521137c22c5a22fa1b183ce2684e50c364b0 100644
+index 5d0b7267247ad16b0521e12e075baee347621efb..fa5d9e788c5a3bda72300d701113579d0a876ea8 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -68,6 +68,7 @@
@@ -81,7 +81,7 @@ index d1b88ee50c9229569029316ad85480e1c022535b..e2a5521137c22c5a22fa1b183ce2684e
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
-@@ -1255,6 +1256,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1248,6 +1249,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  

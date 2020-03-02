@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 3b19dd5aebd0aa98e114f0f7149a4e14ee2d2b40..dc2645b0d27074851f43dfedd32d33e5089c4011 100644
+index 113700fbfbbb61b27c6f7bdee7f143e59807e411..f57678422f261b08f682c8290bcf4a47dc4dafd3 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1252,6 +1252,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1253,6 +1253,24 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  

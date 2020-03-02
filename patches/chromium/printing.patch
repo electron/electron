@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index ebffdb08d080eceb0ea9e96ee3ca7db627cfaf5e..bc00a7a00626cee17e5f5ea976f8248f71e06505 100644
+index 33e17f0df3563726767d912fb828ab959c8ec252..780967949746cbe957cd7b3487507892b3df607c 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,7 +21,6 @@
@@ -30,7 +30,7 @@ index ebffdb08d080eceb0ea9e96ee3ca7db627cfaf5e..bc00a7a00626cee17e5f5ea976f8248f
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
-@@ -221,9 +221,14 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
+@@ -222,9 +222,14 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
          print_backend->GetPrinterDriverInfo(printer_name));
    }
  
@@ -48,7 +48,7 @@ index ebffdb08d080eceb0ea9e96ee3ca7db627cfaf5e..bc00a7a00626cee17e5f5ea976f8248f
  }
  
  #if defined(OS_CHROMEOS)
-@@ -239,6 +244,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -240,6 +245,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {
@@ -63,7 +63,7 @@ index ebffdb08d080eceb0ea9e96ee3ca7db627cfaf5e..bc00a7a00626cee17e5f5ea976f8248f
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac921170345f86b8d0 100644
+index f008ef9a25feda763d7a5a169aae0f47bf2dc347..b3dd9836e452947c21aa404d1c24ac10a66474ab 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -85,7 +85,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
  #include "mojo/public/cpp/system/buffer.h"
  #include "printing/buildflags/buildflags.h"
  #include "printing/metafile_skia.h"
-@@ -64,6 +62,8 @@ using PrintSettingsCallback =
+@@ -68,6 +66,8 @@ using PrintSettingsCallback =
      base::OnceCallback<void(std::unique_ptr<PrinterQuery>)>;
  
  void ShowWarningMessageBox(const base::string16& message) {
@@ -94,7 +94,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
    // Runs always on the UI thread.
    static bool is_dialog_shown = false;
    if (is_dialog_shown)
-@@ -72,6 +72,7 @@ void ShowWarningMessageBox(const base::string16& message) {
+@@ -76,6 +76,7 @@ void ShowWarningMessageBox(const base::string16& message) {
    base::AutoReset<bool> auto_reset(&is_dialog_shown, true);
  
    chrome::ShowWarningMessageBox(nullptr, base::string16(), message);
@@ -102,7 +102,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
  }
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-@@ -110,12 +111,14 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
+@@ -114,12 +115,14 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
        printing_succeeded_(false),
        queue_(g_browser_process->print_job_manager()->queue()) {
    DCHECK(queue_);
@@ -117,7 +117,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
  }
  
  PrintViewManagerBase::~PrintViewManagerBase() {
-@@ -123,7 +126,10 @@ PrintViewManagerBase::~PrintViewManagerBase() {
+@@ -127,7 +130,10 @@ PrintViewManagerBase::~PrintViewManagerBase() {
    DisconnectFromCurrentPrintJob();
  }
  
@@ -129,7 +129,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
    DisconnectFromCurrentPrintJob();
  
    // Don't print / print preview interstitials or crashed tabs.
-@@ -131,7 +137,14 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
+@@ -135,7 +141,14 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
      return false;
  
    SetPrintingRFH(rfh);
@@ -145,7 +145,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
    return true;
  }
  
-@@ -250,9 +263,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
+@@ -256,9 +269,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
  void PrintViewManagerBase::UpdatePrintingEnabled() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    // The Unretained() is safe because ForEachFrame() is synchronous.
@@ -158,7 +158,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
  }
  
  void PrintViewManagerBase::NavigationStopped() {
-@@ -355,7 +368,7 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
+@@ -361,7 +374,7 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
    PrintManager::OnPrintingFailed(cookie);
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -167,7 +167,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
  #endif
  
    ReleasePrinterQuery();
-@@ -455,9 +468,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -461,9 +474,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
            content::NotificationService::NoDetails());
        break;
      }
@@ -183,7 +183,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
        NOTREACHED();
        break;
      }
-@@ -552,8 +569,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -558,8 +575,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -196,7 +196,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetRenderViewHost() ||
-@@ -568,8 +587,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -574,8 +593,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    print_job_->SetSource(PrintJob::Source::PRINT_PREVIEW, /*source_id=*/"");
  #endif  // defined(OS_CHROMEOS)
  
@@ -205,7 +205,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
    printing_succeeded_ = false;
    return true;
  }
-@@ -618,14 +635,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -624,14 +641,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -230,7 +230,7 @@ index 155d86fe79b99989c3f604aeaab13782f8e6631c..f801bb8010240bc9ddb35cac92117034
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -661,7 +686,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -667,7 +692,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
