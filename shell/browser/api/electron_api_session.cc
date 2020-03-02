@@ -852,6 +852,21 @@ bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
 
   return spellcheck->GetCustomDictionary()->AddWord(word);
 }
+
+bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
+  SpellcheckService* service =
+      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+  if (!service)
+    return false;
+
+#if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+  if (spellcheck::UseBrowserSpellChecker()) {
+    spellcheck_platform::RemoveWord(service->platform_spell_checker(),
+                                    base::UTF8ToUTF16(word));
+  }
+#endif
+  return service->GetCustomDictionary()->RemoveWord(word);
+}
 #endif
 
 // static
@@ -942,6 +957,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                  &Session::ListWordsInSpellCheckerDictionary)
       .SetMethod("addWordToSpellCheckerDictionary",
                  &Session::AddWordToSpellCheckerDictionary)
+      .SetMethod("removeWordFromSpellCheckerDictionary",
+                 &Session::RemoveWordFromSpellCheckerDictionary)
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
       .SetProperty("cookies", &Session::Cookies)
