@@ -3835,6 +3835,22 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('window.webContents.focus()', () => {
+    afterEach(closeAllWindows)
+    it('focuses window', (done) => {
+      const w1 = new BrowserWindow({ x: 100, y: 300, width: 300, height: 200 })
+      w1.loadURL('about:blank')
+      const w2 = new BrowserWindow({ x: 300, y: 300, width: 300, height: 200 })
+      w2.loadURL('about:blank')
+      w1.webContents.focus()
+      // Give focus some time to switch to w1
+      setTimeout(() => {
+        expect(w1.webContents.isFocused()).to.be.true('focuses window')
+        done()
+      })
+    })
+  })
+
   const features = process.electronBinding('features')
   ifdescribe(features.isOffscreenRenderingEnabled())('offscreen rendering', () => {
     let w: BrowserWindow
