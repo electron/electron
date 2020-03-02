@@ -3836,6 +3836,7 @@ describe('BrowserWindow module', () => {
   })
 
   describe('window.webContents.focus()', () => {
+    afterEach(closeAllWindows)
     it('focuses window', (done) => {
       const w1 = new BrowserWindow({ x: 100, y: 300, width: 300, height: 200 })
       w1.loadURL('about:blank')
