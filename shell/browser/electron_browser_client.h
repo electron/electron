@@ -309,7 +309,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   std::string user_agent_override_ = "";
 
-  bool disable_process_restart_tricks_ = false;
+  bool disable_process_restart_tricks_ = true;
 
   // Simple shared ID generator, used by ProxyingURLLoaderFactory and
   // ProxyingWebSocket classes.

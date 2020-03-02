@@ -880,6 +880,9 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
     if (key == DIR_USER_DATA) {
       succeed |= base::PathService::OverrideAndCreateIfNeeded(
           chrome::DIR_USER_DATA, path, true, false);
+      succeed |= base::PathService::Override(
+          chrome::DIR_APP_DICTIONARIES,
+          path.Append(base::FilePath::FromUTF8Unsafe("Dictionaries")));
     }
   }
   if (!succeed)
