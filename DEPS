@@ -16,7 +16,7 @@ vars = {
   'node_version':
     'v12.16.1',
   'nan_version':
-    '2ee313aaca52e2b478965ac50eb5082520380d1b',
+    '39a98e44e0fd04dcda39938450d84b2554fe93ae',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
