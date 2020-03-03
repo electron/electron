@@ -69,6 +69,11 @@ For instance, to use the China mirror:
 ELECTRON_MIRROR="https://cdn.npm.taobao.org/dist/electron/"
 ```
 
+By default, `ELECTRON_CUSTOM_DIR` is set to `v$VERSION`. To change the format,
+use the `{{ version }}` placeholder. For example, `version-{{ version }}`
+resolves to `version-5.0.0`, `{{ version }}` resolves to `5.0.0`, and
+`v{{ version }}` is equivalent to the default.
+
 #### Cache
 Alternatively, you can override the local cache. `@electron/get` will cache
 downloaded binaries in a local directory to not stress your network. You can use
