@@ -1097,7 +1097,8 @@ void WebContents::Invoke(bool internal,
 
 void WebContents::ReceivePostMessage(const std::string& channel,
                                      blink::TransferableMessage message) {
-  auto wrapped_ports = MessagePort::EntanglePorts(isolate(), message.ports);
+  auto wrapped_ports =
+      MessagePort::EntanglePorts(isolate(), std::move(message.ports));
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate(), message);
   EmitWithSender("-ipc-ports", bindings_.dispatch_context(), InvokeCallback(),
