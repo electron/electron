@@ -54,6 +54,17 @@ void MessagePort::PostMessage(gin::Arguments* args) {
       return;
     }
   }
+
+  // Make sure we aren't connected to any of the passed-in ports.
+  for (unsigned i = 0; i < wrapped_ports.size(); ++i) {
+    if (wrapped_ports[i].get() == this) {
+      gin_helper::ErrorThrower(args->isolate())
+          .ThrowError("Port at index " + base::NumberToString(i) +
+                      " contains the source port.");
+      return;
+    }
+  }
+
   bool threw_exception = false;
   transferable_message.ports = MessagePort::DisentanglePorts(
       args->isolate(), wrapped_ports, &threw_exception);

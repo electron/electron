@@ -343,6 +343,13 @@ describe('ipc module', () => {
           port1.postMessage(null, [port3])
         }).to.throw(/already neutered/)
       })
+
+      it('throws when passing itself', () => {
+        const { port1 } = new MessageChannelMain()
+        expect(() => {
+          port1.postMessage(null, [port1])
+        }).to.throw(/contains the source port/)
+      })
     })
 
     describe('WebContents.postMessage', () => {
