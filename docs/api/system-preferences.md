@@ -369,14 +369,6 @@ Returns `String` - Can be `dark`, `light` or `unknown`.
 Gets the macOS appearance setting that is currently applied to your application,
 maps to [NSApplication.effectiveAppearance](https://developer.apple.com/documentation/appkit/nsapplication/2967171-effectiveappearance?language=objc)
 
-Please note that until Electron is built targeting the 10.14 SDK, your application's
-`effectiveAppearance` will default to 'light' and won't inherit the OS preference. In
-the interim, in order for your application to inherit the OS preference, you must set the
-`NSRequiresAquaSystemAppearance` key in your app's `Info.plist` to `false`.  If you are
-using [Electron Packager][electron-packager] or [Electron Forge][electron-forge], set the
-`darwinDarkModeSupport` packager option to `true`.  See the [Electron Packager
-API][packager-darwindarkmode-api] for more details.
-
 **[Deprecated](modernization/property-updates.md)**
 
 ### `systemPreferences.getAppLevelAppearance()` _macOS_ _Deprecated_
@@ -478,15 +470,3 @@ A `String` property that can be `dark`, `light` or `unknown`.
 
 Returns the macOS appearance setting that is currently applied to your application,
 maps to [NSApplication.effectiveAppearance](https://developer.apple.com/documentation/appkit/nsapplication/2967171-effectiveappearance?language=objc)
-
-Please note that until Electron is built targeting the 10.14 SDK, your application's
-`effectiveAppearance` will default to 'light' and won't inherit the OS preference. In
-the interim, in order for your application to inherit the OS preference, you must set the
-`NSRequiresAquaSystemAppearance` key in your app's `Info.plist` to `false`.  If you are
-using [Electron Packager][electron-packager] or [Electron Forge][electron-forge], set the
-`darwinDarkModeSupport` packager option to `true`.  See the [Electron Packager
-API][packager-darwindarkmode-api] for more details.
-
-[electron-forge]: https://www.electronforge.io/
-[electron-packager]: https://github.com/electron/electron-packager
-[packager-darwindarkmode-api]: https://electron.github.io/electron-packager/master/interfaces/electronpackager.options.html#darwindarkmodesupport
