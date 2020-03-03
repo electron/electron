@@ -320,6 +320,22 @@ describe('ipc module', () => {
         expect(message).to.equal('hello')
       })
 
+      it('can send messages to a closed port', () => {
+        const { port1, port2 } = new MessageChannelMain()
+        port2.start()
+        port2.on('message', () => { throw new Error('unexpected message received') })
+        port1.close()
+        port1.postMessage('hello')
+      })
+
+      it('can send messages to a port whose remote end is closed', () => {
+        const { port1, port2 } = new MessageChannelMain()
+        port2.start()
+        port2.on('message', () => { throw new Error('unexpected message received') })
+        port2.close()
+        port1.postMessage('hello')
+      })
+
       it('throws when passing null ports', () => {
         const { port1 } = new MessageChannelMain()
         expect(() => {
