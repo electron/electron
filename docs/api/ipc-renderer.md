@@ -152,8 +152,9 @@ the host page instead of the main process.
 Send a message to the main process, optionally transferring ownership of zero
 or more [`MessagePort`][] objects.
 
-The transferred `MessagePort` objects will be available in the main process by
-accessing the `ports` property of the emitted event.
+The transferred `MessagePort` objects will be available in the main process as
+[`MessagePortMain`](message-port-main.md) objects by accessing the `ports`
+property of the emitted event.
 
 For example:
 ```js
