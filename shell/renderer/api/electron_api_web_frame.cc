@@ -15,6 +15,7 @@
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -110,32 +111,58 @@ class RenderFrameStatus final : public content::RenderFrameObserver {
 
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
+  // for compatibility with the older version of this, error is after result
+  using CompletionCallback =
+      base::OnceCallback<void(const v8::Local<v8::Value>& result,
+                              const v8::Local<v8::Value>& error)>;
+
   explicit ScriptExecutionCallback(
-      gin_helper::Promise<v8::Local<v8::Value>> promise)
-      : promise_(std::move(promise)) {}
+      gin_helper::Promise<v8::Local<v8::Value>> promise,
+      CompletionCallback callback)
+      : promise_(std::move(promise)), callback_(std::move(callback)) {}
+
   ~ScriptExecutionCallback() override = default;
 
   void Completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
         // Right now only single results per frame is supported.
+        if (!callback_.is_null())
+          std::move(callback_).Run(result[0], v8::Undefined(isolate));
         promise_.Resolve(result[0]);
       } else {
-        promise_.RejectWithErrorMessage(
+        const char* error_message =
             "Script failed to execute, this normally means an error "
-            "was thrown. Check the renderer console for the error.");
+            "was thrown. Check the renderer console for the error.";
+        if (!callback_.is_null()) {
+          std::move(callback_).Run(
+              v8::Undefined(isolate),
+              v8::Exception::Error(
+                  v8::String::NewFromUtf8(isolate, error_message)
+                      .ToLocalChecked()));
+        }
+        promise_.RejectWithErrorMessage(error_message);
       }
     } else {
-      promise_.RejectWithErrorMessage(
+      const char* error_message =
           "WebFrame was removed before script could run. This normally means "
-          "the underlying frame was destroyed");
+          "the underlying frame was destroyed";
+      if (!callback_.is_null()) {
+        std::move(callback_).Run(
+            v8::Undefined(isolate),
+            v8::Exception::Error(v8::String::NewFromUtf8(isolate, error_message)
+                                     .ToLocalChecked()));
+      }
+      promise_.RejectWithErrorMessage(error_message);
     }
     delete this;
   }
 
  private:
   gin_helper::Promise<v8::Local<v8::Value>> promise_;
+  CompletionCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
@@ -373,9 +400,14 @@ v8::Local<v8::Promise> ExecuteJavaScript(gin_helper::Arguments* args,
   bool has_user_gesture = false;
   args->GetNext(&has_user_gesture);
 
+  ScriptExecutionCallback::CompletionCallback completion_callback;
+  args->GetNext(&completion_callback);
+
   GetRenderFrame(window)->GetWebFrame()->RequestExecuteScriptAndReturnValue(
       blink::WebScriptSource(blink::WebString::FromUTF16(code)),
-      has_user_gesture, new ScriptExecutionCallback(std::move(promise)));
+      has_user_gesture,
+      new ScriptExecutionCallback(std::move(promise),
+                                  std::move(completion_callback)));
 
   return handle;
 }
@@ -389,6 +421,16 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  bool has_user_gesture = false;
+  args->GetNext(&has_user_gesture);
+
+  blink::WebLocalFrame::ScriptExecutionType scriptExecutionType =
+      blink::WebLocalFrame::kSynchronous;
+  args->GetNext(&scriptExecutionType);
+
+  ScriptExecutionCallback::CompletionCallback completion_callback;
+  args->GetNext(&completion_callback);
+
   std::vector<blink::WebScriptSource> sources;
 
   for (const auto& script : scripts) {
@@ -399,7 +441,15 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
     script.Get("startLine", &start_line);
 
     if (!script.Get("code", &code)) {
-      promise.RejectWithErrorMessage("Invalid 'code'");
+      const char* error_message = "Invalid 'code'";
+      if (!completion_callback.is_null()) {
+        std::move(completion_callback)
+            .Run(v8::Undefined(isolate),
+                 v8::Exception::Error(
+                     v8::String::NewFromUtf8(isolate, error_message)
+                         .ToLocalChecked()));
+      }
+      promise.RejectWithErrorMessage(error_message);
       return handle;
     }
 
@@ -408,19 +458,14 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
                                blink::WebURL(GURL(url)), start_line));
   }
 
-  bool has_user_gesture = false;
-  args->GetNext(&has_user_gesture);
-
-  blink::WebLocalFrame::ScriptExecutionType scriptExecutionType =
-      blink::WebLocalFrame::kSynchronous;
-  args->GetNext(&scriptExecutionType);
-
   // Debugging tip: if you see a crash stack trace beginning from this call,
   // then it is very likely that some exception happened when executing the
   // "content_script/init.js" script.
   GetRenderFrame(window)->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
       world_id, &sources.front(), sources.size(), has_user_gesture,
-      scriptExecutionType, new ScriptExecutionCallback(std::move(promise)));
+      scriptExecutionType,
+      new ScriptExecutionCallback(std::move(promise),
+                                  std::move(completion_callback)));
 
   return handle;
 }
