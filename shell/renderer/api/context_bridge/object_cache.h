@@ -6,8 +6,9 @@
 #define SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 
 #include <map>
-#include <tuple>
+#include <utility>
 
+#include "base/containers/linked_list.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "shell/renderer/electron_render_frame_observer.h"
@@ -19,15 +20,13 @@ namespace api {
 
 namespace context_bridge {
 
-using ObjectCachePair = std::tuple<v8::Local<v8::Value>, v8::Local<v8::Value>>;
+using ObjectCachePair = std::pair<v8::Local<v8::Value>, v8::Local<v8::Value>>;
 
-struct ObjectCachePairNode {
-  explicit ObjectCachePairNode(ObjectCachePair pair_);
+struct ObjectCachePairNode : public base::LinkNode<ObjectCachePairNode> {
+  explicit ObjectCachePairNode(ObjectCachePair&& pair);
   ~ObjectCachePairNode();
+
   ObjectCachePair pair;
-  bool detached = false;
-  struct ObjectCachePairNode* prev = nullptr;
-  struct ObjectCachePairNode* next = nullptr;
 };
 
 class ObjectCache final {
@@ -42,7 +41,7 @@ class ObjectCache final {
 
  private:
   // object_identity ==> [from_value, proxy_value]
-  std::map<int, ObjectCachePairNode*> proxy_map_;
+  std::map<int, base::LinkedList<ObjectCachePairNode>> proxy_map_;
 };
 
 }  // namespace context_bridge

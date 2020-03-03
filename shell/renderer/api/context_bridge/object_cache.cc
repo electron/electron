@@ -14,11 +14,11 @@ namespace api {
 
 namespace context_bridge {
 
-ObjectCachePairNode::ObjectCachePairNode(ObjectCachePair pair) {
+ObjectCachePairNode::ObjectCachePairNode(ObjectCachePair&& pair) {
   this->pair = std::move(pair);
 }
 
-ObjectCachePairNode::~ObjectCachePairNode() {}
+ObjectCachePairNode::~ObjectCachePairNode() = default;
 
 ObjectCache::ObjectCache() {}
 ObjectCache::~ObjectCache() = default;
@@ -29,18 +29,8 @@ void ObjectCache::CacheProxiedObject(v8::Local<v8::Value> from,
     auto obj = v8::Local<v8::Object>::Cast(from);
     int hash = obj->GetIdentityHash();
 
-    auto iter = proxy_map_.find(hash);
-    auto* node = new ObjectCachePairNode(std::make_tuple(from, proxy_value));
-    if (iter == proxy_map_.end()) {
-      proxy_map_.emplace(hash, node);
-    } else {
-      ObjectCachePairNode* target = iter->second;
-      while (target->next) {
-        target = target->next;
-      }
-      target->next = node;
-      node->prev = target;
-    }
+    auto* node = new ObjectCachePairNode(std::make_pair(from, proxy_value));
+    proxy_map_[hash].Append(node);
   }
 }
 
@@ -54,15 +44,16 @@ v8::MaybeLocal<v8::Value> ObjectCache::GetCachedProxiedObject(
   auto iter = proxy_map_.find(hash);
   if (iter == proxy_map_.end())
     return v8::MaybeLocal<v8::Value>();
-  ObjectCachePairNode* target = iter->second;
-  while (target) {
-    auto from_cmp = std::get<0>(target->pair);
+
+  auto& list = iter->second;
+  for (auto* node = list.head(); node != list.end(); node = node->next()) {
+    auto& pair = node->value()->pair;
+    auto from_cmp = pair.first;
     if (from_cmp == from) {
-      if (std::get<1>(target->pair).IsEmpty())
+      if (pair.second.IsEmpty())
         return v8::MaybeLocal<v8::Value>();
-      return std::get<1>(target->pair);
+      return pair.second;
     }
-    target = target->next;
   }
   return v8::MaybeLocal<v8::Value>();
 }
