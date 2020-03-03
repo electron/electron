@@ -4,11 +4,13 @@
 
 #include "shell/browser/api/message_port.h"
 
+#include "base/strings/string_number_conversions.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_value_serializer.h"
@@ -52,9 +54,11 @@ void MessagePort::PostMessage(gin::Arguments* args) {
       return;
     }
   }
-  transferable_message.ports =
-      MessagePort::DisentanglePorts(args->isolate(), wrapped_ports);
-  // TODO: check for exception
+  bool threw_exception = false;
+  transferable_message.ports = MessagePort::DisentanglePorts(
+      args->isolate(), wrapped_ports, &threw_exception);
+  if (threw_exception)
+    return;
 
   mojo::Message mojo_message = blink::mojom::TransferableMessage::WrapAsMessage(
       std::move(transferable_message));
@@ -121,7 +125,8 @@ std::vector<gin::Handle<MessagePort>> MessagePort::EntanglePorts(
 // static
 std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
     v8::Isolate* isolate,
-    const std::vector<gin::Handle<MessagePort>>& ports) {
+    const std::vector<gin::Handle<MessagePort>>& ports,
+    bool* threw_exception) {
   if (!ports.size())
     return std::vector<blink::MessagePortChannel>();
 
@@ -139,11 +144,9 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
         type = "already neutered";
       else
         type = "a duplicate";
-      /*
-      exception_state.ThrowDOMException(
-          DOMExceptionCode::kDataCloneError,
-          "Port at index " + String::Number(i) + " is " + type + ".");
-          */
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          "Port at index " + base::NumberToString(i) + " is " + type + ".");
+      *threw_exception = true;
       return std::vector<blink::MessagePortChannel>();
     }
     visited.insert(port);
@@ -175,7 +178,6 @@ bool MessagePort::Accept(mojo::Message* mojo_message) {
   if (!GetWrapper(isolate).ToLocal(&self))
     return false;
 
-  // TODO: inherit from the "Event" object..?
   auto event = gin::DataObjectBuilder(isolate)
                    .Set("data", message_value)
                    .Set("ports", ports)

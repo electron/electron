@@ -45,7 +45,8 @@ class MessagePort : public gin::Wrappable<MessagePort>, mojo::MessageReceiver {
 
   static std::vector<blink::MessagePortChannel> DisentanglePorts(
       v8::Isolate* isolate,
-      const std::vector<gin::Handle<MessagePort>>& ports);
+      const std::vector<gin::Handle<MessagePort>>& ports,
+      bool* threw_exception);
 
   // gin::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(

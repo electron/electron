@@ -1133,9 +1133,11 @@ void WebContents::PostMessage(gin::Arguments* args) {
     return;
   }
 
+  bool threw_exception = false;
   transferable_message.ports =
-      MessagePort::DisentanglePorts(isolate(), wrapped_ports);
-  // TODO: check for exception
+      MessagePort::DisentanglePorts(isolate(), wrapped_ports, &threw_exception);
+  if (threw_exception)
+    return;
 
   content::RenderFrameHost* frame_host = web_contents()->GetMainFrame();
   mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;

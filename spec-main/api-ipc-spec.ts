@@ -319,6 +319,30 @@ describe('ipc module', () => {
         const [, message] = await emittedOnce(ipcMain, 'done')
         expect(message).to.equal('hello')
       })
+
+      it('throws when passing null ports', () => {
+        const { port1 } = new MessageChannelMain()
+        expect(() => {
+          port1.postMessage(null, [null])
+        }).to.throw(/conversion failure/)
+      })
+
+      it('throws when passing duplicate ports', () => {
+        const { port1 } = new MessageChannelMain()
+        const { port1: port3 } = new MessageChannelMain()
+        expect(() => {
+          port1.postMessage(null, [port3, port3])
+        }).to.throw(/duplicate/)
+      })
+
+      it('throws when passing ports that have already been neutered', () => {
+        const { port1 } = new MessageChannelMain()
+        const { port1: port3 } = new MessageChannelMain()
+        port1.postMessage(null, [port3])
+        expect(() => {
+          port1.postMessage(null, [port3])
+        }).to.throw(/already neutered/)
+      })
     })
 
     describe('WebContents.postMessage', () => {
@@ -375,6 +399,33 @@ describe('ipc module', () => {
           expect(() => {
             (w.webContents.postMessage as any)('channel', '', [123])
           }).to.throw(/Error processing argument at index 2/)
+        })
+
+        it('throws when passing null ports', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            w.webContents.postMessage('foo', null, [null] as any)
+          }).to.throw(/conversion failure/)
+        })
+
+        it('throws when passing duplicate ports', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          const { port1 } = new MessageChannelMain()
+          expect(() => {
+            w.webContents.postMessage('foo', null, [port1, port1])
+          }).to.throw(/duplicate/)
+        })
+
+        it('throws when passing ports that have already been neutered', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          const { port1 } = new MessageChannelMain()
+          w.webContents.postMessage('foo', null, [port1])
+          expect(() => {
+            w.webContents.postMessage('foo', null, [port1])
+          }).to.throw(/already neutered/)
         })
       })
     })
