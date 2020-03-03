@@ -86,8 +86,8 @@ error.
 
 ### `shell.openItem` --> `shell.openPath`
 
-The `shell.openItem` API has been replaced with an asyncronous `shell.openPath` API.
-You can see the original API proposal and reasoning [here](https://github.com/electron/governance/blob/master/wg-api/spec-documents/shell-openitem.md)
+The `shell.openItem` API has been replaced with an asynchronous `shell.openPath` API.
+You can see the original API proposal and reasoning [here](https://github.com/electron/governance/blob/master/wg-api/spec-documents/shell-openitem.md).
 
 ## Planned Breaking API Changes (8.0)
 
