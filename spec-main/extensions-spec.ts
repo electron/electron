@@ -171,8 +171,9 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
 
       const [,, responseString] = await emittedOnce(w.webContents, 'console-message')
-
-      expect(responseString).to.equal(portName)
+      const response = responseString.split(',')
+      expect(response[0]).to.equal(portName)
+      expect(response[1]).to.equal('howdy')
     })
 
     it('sendMessage receives the response', async function () {

@@ -19,7 +19,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'connectTab': {
       const [name] = args
-      chrome.tabs.connect(tabId, { name })
+      const port = chrome.tabs.connect(tabId, { name })
+      port.postMessage('howdy')
       break
     }
   }
