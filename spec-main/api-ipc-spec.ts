@@ -323,7 +323,7 @@ describe('ipc module', () => {
       it('throws when passing null ports', () => {
         const { port1 } = new MessageChannelMain()
         expect(() => {
-          port1.postMessage(null, [null])
+          port1.postMessage(null, [null] as any)
         }).to.throw(/conversion failure/)
       })
 
@@ -390,6 +390,14 @@ describe('ipc module', () => {
           expect(() => {
             (w.webContents.postMessage as any)('channel')
           }).to.throw(/Insufficient number of arguments/)
+        })
+
+        it('throws on non-serializable message', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            w.webContents.postMessage('channel', w)
+          }).to.throw(/Error processing argument at index 1/)
         })
 
         it('throws on invalid transferable list', async () => {

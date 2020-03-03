@@ -1117,6 +1117,13 @@ void WebContents::PostMessage(gin::Arguments* args) {
     return;
   }
 
+  blink::TransferableMessage transferable_message;
+  if (!electron::SerializeV8Value(args->isolate(), message_value,
+                                  &transferable_message)) {
+    args->ThrowError();
+    return;
+  }
+
   v8::Local<v8::Value> transferables;
   std::vector<gin::Handle<MessagePort>> wrapped_ports;
   if (args->GetNext(&transferables)) {
@@ -1124,13 +1131,6 @@ void WebContents::PostMessage(gin::Arguments* args) {
       args->ThrowError();
       return;
     }
-  }
-
-  blink::TransferableMessage transferable_message;
-  if (!electron::SerializeV8Value(args->isolate(), message_value,
-                                  &transferable_message)) {
-    args->ThrowError();
-    return;
   }
 
   bool threw_exception = false;
