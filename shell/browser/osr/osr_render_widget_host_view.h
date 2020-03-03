@@ -17,6 +17,8 @@
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
 #include "base/time/time.h"
+#include "components/viz/common/frame_sinks/begin_frame_args.h"
+#include "components/viz/common/frame_sinks/begin_frame_source.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
@@ -96,6 +98,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   bool LockMouse(bool request_unadjusted_movement) override;
   void UnlockMouse(void) override;
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
+  void SetNeedsBeginFrames(bool needs_begin_frames) override;
+  void SetWantsAnimateOnlyBeginFrames() override;
 #if defined(OS_MACOSX)
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
@@ -104,6 +108,13 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 #endif  // defined(OS_MACOSX)
 
   // content::RenderWidgetHostViewBase:
+  void DidCreateNewRendererCompositorFrameSink(
+      viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink)
+      override;
+  void SubmitCompositorFrame(
+      const viz::LocalSurfaceId& local_surface_id,
+      viz::CompositorFrame frame,
+      base::Optional<viz::HitTestRegionList> hit_test_region_list) override;
 
   void ResetFallbackToFirstNavigationSurface() override;
   void InitAsPopup(content::RenderWidgetHostView* rwhv,
@@ -153,6 +164,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   bool InstallTransparency();
 
+  void OnBeginFrameTimerTick();
+  void SendBeginFrame(base::TimeTicks frame_time, base::TimeDelta vsync_period);
   void CancelWidget();
   void AddGuestHostView(OffScreenRenderWidgetHostView* guest_host);
   void RemoveGuestHostView(OffScreenRenderWidgetHostView* guest_host);
@@ -262,13 +275,19 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   std::unique_ptr<content::CursorManager> cursor_manager_;
 
+  std::unique_ptr<ElectronBeginFrameTimer> begin_frame_timer_;
   OffScreenHostDisplayClient* host_display_client_;
   std::unique_ptr<OffScreenVideoConsumer> video_consumer_;
 
+  // Provides |source_id| for BeginFrameArgs that we create.
+  viz::StubBeginFrameSource begin_frame_source_;
+  uint64_t begin_frame_number_ = viz::BeginFrameArgs::kStartingFrameNumber;
   std::unique_ptr<ElectronDelegatedFrameHostClient>
       delegated_frame_host_client_;
 
   content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
+  viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_ =
+      nullptr;
 
   // Latest capture sequence number which is incremented when the caller
   // requests surfaces be synchronized via

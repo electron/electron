@@ -2378,7 +2378,8 @@ bool WebContents::IsOffScreen() const {
 
 #if BUILDFLAG(ENABLE_OSR)
 void WebContents::OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap) {
-  Emit("paint", dirty_rect, gfx::Image::CreateFrom1xBitmap(bitmap));
+  Emit("paint", gin::ConvertToV8(isolate(), dirty_rect),
+       gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 void WebContents::StartPainting() {

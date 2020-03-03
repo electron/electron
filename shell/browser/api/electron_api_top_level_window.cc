@@ -84,11 +84,11 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
 
 #if BUILDFLAG(ENABLE_OSR)
   // Offscreen windows are always created frameless.
-  gin_helper::Dictionary web_preferences;
+  mate::Dictionary web_preferences;
   bool offscreen;
   if (options.Get(options::kWebPreferences, &web_preferences) &&
       web_preferences.Get(options::kOffscreen, &offscreen) && offscreen) {
-    const_cast<gin_helper::Dictionary&>(options).Set(options::kFrame, false);
+    const_cast<mate::Dictionary&>(options).Set(options::kFrame, false);
   }
 #endif
 
