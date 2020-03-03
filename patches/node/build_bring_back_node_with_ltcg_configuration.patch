@@ -10,7 +10,7 @@ THe fix for this should land in node-gyp as discussed in above issue,
 landing this as temporary patch.
 
 diff --git a/common.gypi b/common.gypi
-index f07e65f719a1a5939997dfcae7bc787ee6391f4d..f4d03a2fdfd47a4e6a71c7146d92ce7cbc44993d 100644
+index 0000f6eaea5cbfb793750c0592c1bb912cbe0a14..6ed509d81d14211f608495263f11a1d2cbc5013c 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -19,7 +19,7 @@

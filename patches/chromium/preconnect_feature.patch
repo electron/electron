@@ -8,7 +8,7 @@ this patch removes that dependency so we can reuse it.
 Ideally we would change this class in upstream to not depend on Profile.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index 6f6539689a2d57d6dcedb04e23c00fb1fce482c5..03790f759a472bade4e201177d0f393ba645bfac 100644
+index 50adee35887f799fea11a35eca1240851a0d1126..9935e068983de3342382f73889be41acc3fe8f4e 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
 @@ -69,7 +69,7 @@ PreresolveJob::PreresolveJob(PreresolveJob&& other) = default;
@@ -20,7 +20,7 @@ index 6f6539689a2d57d6dcedb04e23c00fb1fce482c5..03790f759a472bade4e201177d0f393b
      : delegate_(std::move(delegate)),
        profile_(profile),
        inflight_preresolves_count_(0) {
-@@ -327,11 +327,13 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
+@@ -328,11 +328,13 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
    if (network_context_)
      return network_context_;
  
@@ -35,7 +35,7 @@ index 6f6539689a2d57d6dcedb04e23c00fb1fce482c5..03790f759a472bade4e201177d0f393b
    return content::BrowserContext::GetDefaultStoragePartition(profile_)
        ->GetNetworkContext();
 diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
-index 9c0efc9d04b9825786d22a56ab39fb80f65f59cb..d587722d4a2ff6416bab060bdc716b3051a4753b 100644
+index 7c99f4543095f600a5a7705846bc01f5656a9c8d..bbd62bccef6a3c5013c5f3ee4f24443835728d44 100644
 --- a/chrome/browser/predictors/preconnect_manager.h
 +++ b/chrome/browser/predictors/preconnect_manager.h
 @@ -22,6 +22,10 @@
@@ -66,4 +66,4 @@ index 9c0efc9d04b9825786d22a56ab39fb80f65f59cb..d587722d4a2ff6416bab060bdc716b30
 +  content::BrowserContext* const profile_;
    std::list<PreresolveJobId> queued_jobs_;
    PreresolveJobMap preresolve_jobs_;
-   std::map<std::string, std::unique_ptr<PreresolveInfo>> preresolve_info_;
+   std::map<GURL, std::unique_ptr<PreresolveInfo>> preresolve_info_;

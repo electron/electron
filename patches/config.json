@@ -5,7 +5,5 @@
 
   "src/electron/patches/v8":  "src/v8",
 
-  "src/electron/patches/node": "src/third_party/electron_node",
-
-  "src/electron/patches/devtools-frontend": "src/third_party/devtools-frontend/src"
+  "src/electron/patches/node": "src/third_party/electron_node"
 }

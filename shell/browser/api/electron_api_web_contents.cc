@@ -90,6 +90,7 @@
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/platform/web_cursor_info.h"
+#include "ui/base/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
@@ -1236,12 +1237,12 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
 }
 
 void WebContents::DidUpdateFaviconURL(
-    const std::vector<content::FaviconURL>& urls) {
+    const std::vector<blink::mojom::FaviconURLPtr>& urls) {
   std::set<GURL> unique_urls;
   for (const auto& iter : urls) {
-    if (iter.icon_type != content::FaviconURL::IconType::kFavicon)
+    if (iter->icon_type != blink::mojom::FaviconIconType::kFavicon)
       continue;
-    const GURL& url = iter.icon_url;
+    const GURL& url = iter->icon_url;
     if (url.is_valid())
       unique_urls.insert(url);
   }
@@ -2331,7 +2332,7 @@ bool WebContents::IsBeingCaptured() {
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   const content::CursorInfo& info = cursor.info();
 
-  if (info.type == ui::CursorType::kCustom) {
+  if (info.type == ui::mojom::CursorType::kCustom) {
     Emit("cursor-changed", CursorTypeToString(info),
          gfx::Image::CreateFrom1xBitmap(info.custom_image),
          info.image_scale_factor,

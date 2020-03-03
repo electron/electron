@@ -405,6 +405,9 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
 
+  // url::Add*Scheme are not threadsafe, this helps prevent data races.
+  url::LockSchemeRegistries();
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_client_ = std::make_unique<ElectronExtensionsClient>();
   extensions::ExtensionsClient::Set(extensions_client_.get());

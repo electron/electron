@@ -12,11 +12,11 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    'ddac4c3cc1528254008f9e7a2aea5d4426906bfd',
+    '7178455852d5b340c815ce15ab2efcf277ed19e9',
   'node_version':
     'v12.16.1',
   'nan_version':
-    '2ee313aaca52e2b478965ac50eb5082520380d1b',
+    '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',

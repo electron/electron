@@ -8,39 +8,41 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/chrome/browser/ui/gtk/native_theme_gtk.cc b/chrome/browser/ui/gtk/native_theme_gtk.cc
-index 26f1842494bdbcf5ffefb07e8fc74ba816a2a2d8..8ef9c27728a5b3166732d753d582e30a015cc0a6 100644
+index 0b035ec92d0df57e36be7ef5dd18baf9395b0dca..78f6bfad629640baab5f1eee88d4b900600cacf8 100644
 --- a/chrome/browser/ui/gtk/native_theme_gtk.cc
 +++ b/chrome/browser/ui/gtk/native_theme_gtk.cc
-@@ -301,6 +301,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
+@@ -341,6 +341,29 @@ base::Optional<SkColor> SkColorFromColorId(
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
 +    // Results Table
 +    case ui::NativeTheme::kColorId_ResultsTableNormalBackground:
 +      return SkColorFromColorId(
-+          ui::NativeTheme::kColorId_TextfieldDefaultBackground);
-+    case ui::NativeTheme::kColorId_ResultsTableHoveredBackground:
-+      return color_utils::AlphaBlend(
-+          SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground),
-+          SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldSelectionBackgroundFocused),
-+          0.5f);
++          ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
++    case ui::NativeTheme::kColorId_ResultsTableHoveredBackground: {
++      auto default_background = SkColorFromColorId(
++              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
++      auto selection_background = SkColorFromColorId(
++              ui::NativeTheme::kColorId_TextfieldSelectionBackgroundFocused, base_theme, color_scheme);
++      if (!default_background || !selection_background) return base::nullopt;
++      return color_utils::AlphaBlend(default_background.value(), selection_background.value(), 0.5f);
++    }
 +    case ui::NativeTheme::kColorId_ResultsTableNormalText:
 +      return SkColorFromColorId(
-+          ui::NativeTheme::kColorId_TextfieldDefaultColor);
-+    case ui::NativeTheme::kColorId_ResultsTableDimmedText:
-+      return color_utils::AlphaBlend(
-+          SkColorFromColorId(ui::NativeTheme::kColorId_TextfieldDefaultColor),
-+          SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground),
-+          0.5f);
++          ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme);
++    case ui::NativeTheme::kColorId_ResultsTableDimmedText: {
++      auto default_textfield_color = SkColorFromColorId(ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme);
++      auto default_textfield_background = SkColorFromColorId(
++              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
++      if (!default_textfield_color || !default_textfield_background) return base::nullopt;
++      return color_utils::AlphaBlend(default_textfield_color.value(), default_textfield_background.value(), 0.5f);
++    }
 +
      // Throbber
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 90b86727d8ab48d25dcede1f18fd3107eba83e1b..4a4bf7f0f809d5a69f48eb47d631072c1c86ee3a 100644
+index 901ac8794286e84be347d4f85946cc799bacb360..ec3a6195ba8728d4c55ae38f01ed71d0fc58ab28 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -59,6 +59,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
@@ -58,7 +60,7 @@ index 90b86727d8ab48d25dcede1f18fd3107eba83e1b..4a4bf7f0f809d5a69f48eb47d631072c
        // FocusableBorder
        case NativeTheme::kColorId_FocusedBorderColor:
          return SkColorSetA(gfx::kGoogleBlue300, 0x4D);
-@@ -401,6 +409,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -460,6 +468,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return gfx::kGoogleGrey300;
  
@@ -78,10 +80,10 @@ index 90b86727d8ab48d25dcede1f18fd3107eba83e1b..4a4bf7f0f809d5a69f48eb47d631072c
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 0c26cce0cb14bd9e87c3a095116501bf0c1803e4..782dd1d122bfab4990c924a7fb0e7276fb51b18b 100644
+index 832585d9ed6cc232ba2b23ef6b5b90055d561168..c5fd22fba2cd83084311b324a3018039cdf0be4d 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -409,6 +409,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -424,6 +424,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
      kColorId_TableHeaderText,
      kColorId_TableHeaderBackground,
      kColorId_TableHeaderSeparator,
@@ -94,7 +96,7 @@ index 0c26cce0cb14bd9e87c3a095116501bf0c1803e4..782dd1d122bfab4990c924a7fb0e7276
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index a7c06b8a046bba7096bfb41c84d2073980ffa6d3..cff7681a4e0023a67edda37bf9865ab073b32549 100644
+index 53b4980bf65935e5028aa3b15c6be407069b669b..4bdaa3da0540e49f6794fcaf4d89780cd32720b2 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -619,6 +619,18 @@ SkColor NativeThemeWin::GetPlatformHighContrastColor(ColorId color_id) const {

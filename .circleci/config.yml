@@ -299,13 +299,18 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform
       fi
 
+# On macOS delete all .git directories under src/ expect for
+# third_party/angle/ because of build time generation of file
+# gen/angle/commit.h depends on third_party/angle/.git/HEAD
+# https://chromium-review.googlesource.com/c/angle/angle/+/2074924
+# TODO: maybe better to always leave out */.git/HEAD file for all targets ?
 step-delete-git-directories: &step-delete-git-directories
   run:
     name: Delete all .git directories under src on MacOS to free space
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src
-        ( find . -type d -name ".git" ) | xargs rm -rf
+        ( find . -type d -name ".git" -not -path "./third_party/angle/*" ) | xargs rm -rf
       fi
 
 # On macOS the yarn install command during gclient sync was run on a linux

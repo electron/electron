@@ -9,7 +9,7 @@ here to clarify intent for the compiler.
 Upstreamed at https://github.com/nodejs/node/pull/31758.
 
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index b53aab6dc16c7ae42530998c94ddc845035b1256..c6aa5751a1bbaa693b915e418de8eb69ea8139f8 100644
+index b53aab6dc16c7ae42530998c94ddc845035b1256..b3ff343508be3b791e4aac827a18b3bbf64868c3 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
 @@ -923,7 +923,7 @@ bool IsArrayIndex(Environment* env, Local<Value> p) {
