@@ -20,12 +20,15 @@ describe('spellchecker', () => {
     await closeWindow(w)
   })
 
+  // Spellchecker loads slow on ARM CI machines.
+  const waitTime = (process.arch === 'arm' || process.arch === 'arm64') ? 2000 : 500
+
   ifit(process.platform !== 'win32')('should detect correctly spelled words as correct', async () => {
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautiful and lovely"')
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()')
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu')
     // Wait for spellchecker to load
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, waitTime))
     w.webContents.sendInputEvent({
       type: 'mouseDown',
       button: 'right',
@@ -42,7 +45,7 @@ describe('spellchecker', () => {
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()')
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu')
     // Wait for spellchecker to load
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, waitTime))
     w.webContents.sendInputEvent({
       type: 'mouseDown',
       button: 'right',
