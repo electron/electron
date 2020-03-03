@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: make os_metrics_mac work with 10.15 SDK
+
+This patch fixes the memory_instrumentation module returning 0.
+
+Backport https://chromium-review.googlesource.com/c/chromium/src/+/1967436.
+
+diff --git a/services/resource_coordinator/public/cpp/memory_instrumentation/os_metrics_mac.cc b/services/resource_coordinator/public/cpp/memory_instrumentation/os_metrics_mac.cc
+index a20418240d52..487336bbd484 100644
+--- a/services/resource_coordinator/public/cpp/memory_instrumentation/os_metrics_mac.cc
++++ b/services/resource_coordinator/public/cpp/memory_instrumentation/os_metrics_mac.cc
+@@ -50,8 +50,34 @@ struct ChromeTaskVMInfo {
+ #else
+ using ChromeTaskVMInfo = task_vm_info;
+ #endif  // MAC_OS_X_VERSION_10_11
+-mach_msg_type_number_t ChromeTaskVMInfoCount =
+-    sizeof(ChromeTaskVMInfo) / sizeof(natural_t);
++
++// Don't simply use sizeof(task_vm_info) / sizeof(natural_t):
++// In the 10.15 SDK, this structure is 87 32-bit words long, and in
++// mach_types.defs:
++//
++//   type task_info_t    = array[*:87] of integer_t;
++//
++// However in the 10.14 SDK, this structure is 42 32-bit words, and in
++// mach_types.defs:
++//
++//   type task_info_t    = array[*:52] of integer_t;
++//
++// As a result, the 10.15 SDK's task_vm_info won't fit inside the 10.14 SDK's
++// task_info_t, so the *rest of the system* (on 10.14 and earlier) can't handle
++// calls that request the full 10.15 structure. We have to request a prefix of
++// it that 10.14 and earlier can handle by limiting the length we request. The
++// rest of the fields just get ignored, but we don't use them anyway.
++
++constexpr mach_msg_type_number_t ChromeTaskVMInfoCount =
++    TASK_VM_INFO_REV2_COUNT;
++
++// The count field is in units of natural_t, which is the machine's word size
++// (64 bits on all modern machines), but the task_info_t array is in units of
++// integer_t, which is 32 bits.
++constexpr mach_msg_type_number_t MAX_MIG_SIZE_FOR_1014 =
++    52 / (sizeof(natural_t) / sizeof(integer_t));
++static_assert(ChromeTaskVMInfoCount <= MAX_MIG_SIZE_FOR_1014,
++              "task_vm_info must be small enough for 10.14 MIG interfaces");
+ 
+ using VMRegion = mojom::VmRegion;
+ 
