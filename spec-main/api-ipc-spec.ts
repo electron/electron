@@ -4,6 +4,8 @@ import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain } from '
 import { closeAllWindows } from './window-helpers'
 import { emittedOnce } from './events-helpers'
 
+const v8Util = process.electronBinding('v8_util')
+
 describe('ipc module', () => {
   describe('invoke', () => {
     let w = (null as unknown as BrowserWindow)
@@ -365,6 +367,23 @@ describe('ipc module', () => {
         expect(() => {
           port1.postMessage(null, [port1])
         }).to.throw(/contains the source port/)
+      })
+
+      describe('GC behavior', () => {
+        it('is not collected while it could still receive messages', async () => {
+          let trigger: Function
+          const promise = new Promise(resolve => { trigger = resolve })
+          const port1 = (() => {
+            const { port1, port2 } = new MessageChannelMain()
+
+            port2.on('message', (e) => { trigger(e.data) })
+            port2.start()
+            return port1
+          })()
+          v8Util.requestGarbageCollectionForTesting()
+          port1.postMessage('hello')
+          expect(await promise).to.equal('hello')
+        })
       })
     })
 

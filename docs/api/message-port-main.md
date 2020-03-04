@@ -36,7 +36,7 @@ Disconnects the port, so it is no longer active.
 
 Returns:
 
-* `event` Object
+* `messageEvent` Object
   * `data` any
   * `ports` MessagePortMain[]
 

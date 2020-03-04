@@ -84,6 +84,8 @@ void MessagePort::Start() {
     return;
 
   started_ = true;
+  if (HasPendingActivity())
+    Pin();
   connector_->ResumeIncomingMethodCallProcessing();
 }
 
@@ -95,6 +97,8 @@ void MessagePort::Close() {
     Entangle(mojo::MessagePipe().handle0);
   }
   closed_ = true;
+  if (!HasPendingActivity())
+    Unpin();
 }
 
 void MessagePort::Entangle(mojo::ScopedMessagePipeHandle handle) {
@@ -107,6 +111,8 @@ void MessagePort::Entangle(mojo::ScopedMessagePipeHandle handle) {
   connector_->set_incoming_receiver(this);
   connector_->set_connection_error_handler(
       base::Bind(&MessagePort::Close, weak_factory_.GetWeakPtr()));
+  if (HasPendingActivity())
+    Pin();
 }
 
 void MessagePort::Entangle(blink::MessagePortChannel channel) {
@@ -117,7 +123,18 @@ blink::MessagePortChannel MessagePort::Disentangle() {
   DCHECK(!IsNeutered());
   auto result = blink::MessagePortChannel(connector_->PassMessagePipe());
   connector_ = nullptr;
+  if (!HasPendingActivity())
+    Unpin();
   return result;
+}
+
+bool MessagePort::HasPendingActivity() const {
+  // The spec says that entangled message ports should always be treated as if
+  // they have a strong reference.
+  // We'll also stipulate that the queue needs to be open (if the app drops its
+  // reference to the port before start()-ing it, then it's not really entangled
+  // as it's unreachable).
+  return started_ && IsEntangled();
 }
 
 // static
@@ -169,6 +186,20 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
   for (unsigned i = 0; i < ports.size(); ++i)
     channels.push_back(ports[i]->Disentangle());
   return channels;
+}
+
+void MessagePort::Pin() {
+  if (!pinned_.IsEmpty())
+    return;
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Local<v8::Value> self;
+  if (GetWrapper(isolate).ToLocal(&self)) {
+    pinned_.Reset(isolate, self);
+  }
+}
+
+void MessagePort::Unpin() {
+  pinned_.Reset();
 }
 
 bool MessagePort::Accept(mojo::Message* mojo_message) {
