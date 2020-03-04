@@ -115,7 +115,7 @@
       "git add"
     ],
     "*.md": [
-      "remark -qf"
+      "npm run lint:docs"
     ],
     "*.{gn,gni}": [
       "npm run gn-check",
