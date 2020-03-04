@@ -240,6 +240,10 @@ gin::ObjectTemplateBuilder MessagePort::GetObjectTemplateBuilder(
       .SetMethod("close", &MessagePort::Close);
 }
 
+const char* MessagePort::GetTypeName() {
+  return "MessagePort";
+}
+
 }  // namespace electron
 
 namespace {

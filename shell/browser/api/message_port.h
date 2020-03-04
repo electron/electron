@@ -52,6 +52,7 @@ class MessagePort : public gin::Wrappable<MessagePort>, mojo::MessageReceiver {
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   static gin::WrapperInfo kWrapperInfo;
+  const char* GetTypeName() override;
 
  private:
   MessagePort();

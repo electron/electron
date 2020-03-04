@@ -1097,6 +1097,7 @@ void WebContents::Invoke(bool internal,
 
 void WebContents::ReceivePostMessage(const std::string& channel,
                                      blink::TransferableMessage message) {
+  v8::HandleScope handle_scope(isolate());
   auto wrapped_ports =
       MessagePort::EntanglePorts(isolate(), std::move(message.ports));
   v8::Local<v8::Value> message_value =
