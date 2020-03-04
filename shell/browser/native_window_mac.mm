@@ -517,6 +517,8 @@ void NativeWindowMac::RepositionTrafficLights() {
   if (!traffic_light_position_.x() && !traffic_light_position_.y()) {
     return;
   }
+  if (IsFullscreen())
+    return;
 
   NSWindow* window = window_;
   NSButton* close = [window standardWindowButton:NSWindowCloseButton];
