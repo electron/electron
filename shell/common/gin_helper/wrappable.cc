@@ -16,8 +16,7 @@ WrappableBase::~WrappableBase() {
   if (wrapper_.IsEmpty())
     return;
 
-  v8::Isolate* i = isolate();
-  v8::HandleScope scope(i);
+  v8::HandleScope scope(isolate());
   GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
   wrapper_.ClearWeak();
   wrapper_.Reset();

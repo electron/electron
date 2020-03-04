@@ -294,7 +294,6 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
   v8::HandleScope scope(js_env_->isolate());
-  v8::Context::Scope context_scope(js_env_->context());
 
   node_bindings_->Initialize();
   // Create the global environment.
@@ -434,7 +433,6 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 }
 
 void ElectronBrowserMainParts::PreMainMessageLoopRun() {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();

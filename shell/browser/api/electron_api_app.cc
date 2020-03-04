@@ -598,7 +598,6 @@ void App::OnActivate(bool has_visible_windows) {
 }
 
 void App::OnWillFinishLaunching() {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   Emit("will-finish-launching");
 }
 
