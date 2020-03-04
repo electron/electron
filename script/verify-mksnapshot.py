@@ -34,8 +34,8 @@ def main():
         context_snapshot_path = os.path.join(app_path, context_snapshot)
         gen_binary = get_binary_path('v8_context_snapshot_generator', \
                                     app_path)
-        genargs = [ gen_binary, \
-                  '--output_file={0}'.format(context_snapshot_path) ]
+        genargs = [ gen_binary ] +  mkargs[1:] + \
+                  [ '--output_file={0}'.format(context_snapshot_path) ]
         subprocess.check_call(genargs)
         print('ok v8_context_snapshot_generator successfully created ' \
               + context_snapshot)
