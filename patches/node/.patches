@@ -37,3 +37,4 @@ remove_serialization_deserialization_of_wasmmoduleobject.patch
 test_use_tmpdir_refresh_in_test-esm-windows_js.patch
 override_existing_v8_reallocate.patch
 avoid_calling_deprecated_method.patch
+remove_deprecated_wasm_module_type_check.patch
