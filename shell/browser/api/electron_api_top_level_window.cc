@@ -814,6 +814,10 @@ void TopLevelWindow::SetVibrancy(v8::Isolate* isolate,
   window_->SetVibrancy(type);
 }
 
+void TopLevelWindow::SetTrafficLightPosition(const gfx::Point& position) {
+  window_->SetTrafficLightPosition(position);
+}
+
 void TopLevelWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {
   window_->SetTouchBar(std::move(items));
@@ -1184,6 +1188,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &TopLevelWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &TopLevelWindow::SetVibrancy)
+      .SetMethod("setTrafficLightPosition",
+                 &TopLevelWindow::SetTrafficLightPosition)
       .SetMethod("_setTouchBarItems", &TopLevelWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &TopLevelWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem",
