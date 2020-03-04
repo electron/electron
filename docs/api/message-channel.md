@@ -8,7 +8,7 @@ connected [`MessagePortMain`](message-port-main.md) objects.
 
 Example:
 ```js
-const { port1, port2 } = new MessageChannelMain
+const { port1, port2 } = new MessageChannelMain()
 w.webContents.postMessage('port', null, [port2])
 port1.postMessage({ some: 'message' })
 ```

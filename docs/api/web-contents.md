@@ -1609,8 +1609,8 @@ arrive in the renderer, they will be native DOM `MessagePort` objects.
 For example:
 ```js
 // Main process
-const { port1, port2 } = new MessageChannel
-webContents.postMessage('port', {message: 'hello'}, [port1])
+const { port1, port2 } = new MessageChannelMain()
+webContents.postMessage('port', { message: 'hello' }, [port1])
 
 // Renderer process
 ipcRenderer.on('port', (e, msg) => {

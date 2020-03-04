@@ -159,8 +159,8 @@ property of the emitted event.
 For example:
 ```js
 // Renderer process
-const { port1, port2 } = new MessageChannel
-ipcRenderer.postMessage('port', {message: "hello"}, [port1])
+const { port1, port2 } = new MessageChannel()
+ipcRenderer.postMessage('port', { message: 'hello' }, [port1])
 
 // Main process
 ipcMain.on('port', (e, msg) => {
