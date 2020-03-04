@@ -59,8 +59,6 @@ void LoginHandler::EmitEvent(
     return;
   }
 
-  v8::HandleScope scope(isolate);
-
   auto details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("url", url);
 
