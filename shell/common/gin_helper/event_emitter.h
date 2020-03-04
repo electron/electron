@@ -70,7 +70,6 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, new Event(), args...);
   template <typename... Args>
   bool Emit(base::StringPiece name, Args&&... args) {
-    v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
     v8::Local<v8::Object> wrapper = GetWrapper();
     if (wrapper.IsEmpty())
@@ -105,6 +104,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   bool EmitWithEvent(base::StringPiece name,
                      v8::Local<v8::Object> event,
                      Args&&... args) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     // It's possible that |this| will be deleted by EmitEvent, so save anything
     // we need from |this| before calling EmitEvent.
     auto* isolate = this->isolate();

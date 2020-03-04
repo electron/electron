@@ -80,6 +80,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
   Browser* browser() { return browser_.get(); }
   BrowserProcessImpl* browser_process() { return fake_browser_process_.get(); }
+  JavascriptEnvironment* js_env() { return js_env_.get(); }
 
  protected:
   // content::BrowserMainParts:

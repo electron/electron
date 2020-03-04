@@ -41,10 +41,8 @@ class JavascriptEnvironment {
 
   v8::Isolate* isolate_;
   gin::IsolateHolder isolate_holder_;
-  v8::Isolate::Scope isolate_scope_;
   v8::Locker locker_;
   v8::Global<v8::Context> context_;
-  v8::Context::Scope context_scope_;
 
   std::unique_ptr<MicrotasksRunner> microtasks_runner_;
 

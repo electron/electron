@@ -598,6 +598,7 @@ void App::OnActivate(bool has_visible_windows) {
 }
 
 void App::OnWillFinishLaunching() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   Emit("will-finish-launching");
 }
 
@@ -788,8 +789,11 @@ void App::RenderProcessReady(content::RenderProcessHost* host) {
   // `RenderProcessPreferences`, so this is at least more explicit...
   content::WebContents* web_contents =
       ElectronBrowserClient::Get()->GetWebContentsFromProcessID(host->GetID());
-  if (web_contents)
-    WebContents::FromOrCreate(v8::Isolate::GetCurrent(), web_contents);
+  if (web_contents) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
+    WebContents::FromOrCreate(isolate, web_contents);
+  }
 }
 
 void App::RenderProcessDisconnected(base::ProcessId host_pid) {

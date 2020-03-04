@@ -55,6 +55,8 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
  public:
   // Mark the JS object as destroyed.
   void MarkDestroyed() {
+    v8::Isolate* i = gin_helper::Wrappable<T>::isolate();
+    v8::HandleScope scope(i);
     v8::Local<v8::Object> wrapper = gin_helper::Wrappable<T>::GetWrapper();
     if (!wrapper.IsEmpty()) {
       wrapper->SetAlignedPointerInInternalField(0, nullptr);
@@ -62,6 +64,8 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
   }
 
   bool IsDestroyed() {
+    v8::Isolate* i = gin_helper::Wrappable<T>::isolate();
+    v8::HandleScope scope(i);
     v8::Local<v8::Object> wrapper = gin_helper::Wrappable<T>::GetWrapper();
     return wrapper->InternalFieldCount() == 0 ||
            wrapper->GetAlignedPointerFromInternalField(0) == nullptr;
@@ -72,6 +76,7 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
     if (!weak_map_)
       return nullptr;
 
+    v8::HandleScope scope(isolate);
     v8::MaybeLocal<v8::Object> object = weak_map_->Get(isolate, id);
     if (object.IsEmpty())
       return nullptr;
