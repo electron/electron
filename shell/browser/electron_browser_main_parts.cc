@@ -486,9 +486,6 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   ui::SetX11ErrorHandlers(X11EmptyErrorHandler, X11EmptyIOErrorHandler);
 #endif
 
-  node_debugger_->Stop();
-  js_env_->OnMessageLoopDestroying();
-
 #if defined(OS_MACOSX)
   FreeAppDelegate();
 #endif
@@ -504,6 +501,11 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
       std::move(callback).Run();
     ++iter;
   }
+
+  // Destroy node platform after all destructors_ are executed, as they may
+  // invoke Node/V8 APIs inside them.
+  node_debugger_->Stop();
+  js_env_->OnMessageLoopDestroying();
 
   fake_browser_process_->PostMainMessageLoopRun();
 }
