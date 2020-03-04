@@ -66,7 +66,7 @@ index cb69e08c0185f55497089505ed5b226e57140321..362f28accc248248f3bcb54955c23528
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 2158fc935826319a1d297dde70afc302ef2af870..a3317d70d0c1a81ee2fb4d42d8ecdc4b0eb1a1e7 100644
+index d9bc455ac5a4a2405becb678f19bba0fddc8ce00..4d9f8be17da2b3b56a3d673c6f1fa6ed63bf5a0d 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -84,6 +84,9 @@
@@ -216,7 +216,7 @@ index bf63bb9c03852263e9341c671be1ee4e7c1a3dc2..d06e2f99739298a4de13ebbce5606b68
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 54b5fd4f20ab3a37eb29772fcf49838dd22cf2ba..132b0d9856e9b075dd39fa32623514ffb8811303 100644
+index 3902376a42d0462864c6d73f35d5e25c7e11fff5..86d72a53acc7e07eb00b6c12d850bd312268b957 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -230,6 +230,7 @@
@@ -236,7 +236,7 @@ index 54b5fd4f20ab3a37eb29772fcf49838dd22cf2ba..132b0d9856e9b075dd39fa32623514ff
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 4c9ed8ca9a64aa9e4b0d9e01a0551ed5b642ad7e..7c3f0a0d36d0e91bd8a6ab1d648af3c4eb84b7ac 100644
+index 5e9155c729d9bf5ae8a9d72cde0783acdee20f26..e8dd61eb7f68c1993a3df2f963dcccc4df1dfa24 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
 @@ -2722,6 +2722,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(

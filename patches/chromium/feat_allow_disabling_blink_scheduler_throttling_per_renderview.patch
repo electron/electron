@@ -33,10 +33,10 @@ index cb276192e69dd8f352eb0835dbbb4eee2874a0bc..a127fe14860a33a54f1b3632c1162691
    void UpdateWebkitPreferences(const WebPreferences& prefs) override;
    void OnWebkitPreferencesChanged() override;
 diff --git a/content/common/view_messages.h b/content/common/view_messages.h
-index 72594b5bb918935394fed7f092c9728bc65275f2..1afaaf0ad6b6aafecf2a47f8eec2004861581027 100644
+index 7aa8ff0e271bbe1d97ffb58c529a294fb9faadaf..cc9e13ee0b5c82e7c4c3d1090f51257a1fedaf12 100644
 --- a/content/common/view_messages.h
 +++ b/content/common/view_messages.h
-@@ -100,6 +100,9 @@ IPC_STRUCT_TRAITS_END()
+@@ -98,6 +98,9 @@ IPC_STRUCT_TRAITS_END()
  // Make the RenderWidget background transparent or opaque.
  IPC_MESSAGE_ROUTED1(ViewMsg_SetBackgroundOpaque, bool /* opaque */)
  
@@ -61,10 +61,10 @@ index 893c45a5c71b4e55ea323ae60e11d12ddb099efd..db9a1ff0fe1a912db83692ab17c620cf
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index fa5d9e788c5a3bda72300d701113579d0a876ea8..b9d70619472b1ce39224c3d5e02ed32581979bac 100644
+index 0bb5e66c9a47bb4c62c54ab17c14095b4d13c849..5e464b7040b75ffa5998ac3f15717f7683a9a542 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -1169,6 +1169,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -1170,6 +1170,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
  
    bool handled = true;
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
@@ -73,7 +73,7 @@ index fa5d9e788c5a3bda72300d701113579d0a876ea8..b9d70619472b1ce39224c3d5e02ed325
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
-@@ -1702,6 +1704,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
+@@ -1703,6 +1705,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
    return send_content_state_immediately_;
  }
  
@@ -99,7 +99,7 @@ index 7ac12ecb12b0ab46ad8ba6309ecef93c2a55c916..cc43cb8f25b06703489ccbc0f9a3c0cb
    void OnUpdateTargetURLAck();
    void OnUpdateWebPreferences(const WebPreferences& prefs);
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 01d82a1fed2f5595bb9b954009e7ea2a2fb379f9..70153bb520aa4fb32fcd9dd013d253faa5ba7299 100644
+index fb8b8c1e5d38753bd7f0c16077364c05b4d83a21..e50c9d26373223150147c68bcf1014805e33a17e 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
 @@ -408,6 +408,7 @@ class WebView {
@@ -111,10 +111,10 @@ index 01d82a1fed2f5595bb9b954009e7ea2a2fb379f9..70153bb520aa4fb32fcd9dd013d253fa
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index e3bf3f8b544d1543a714270d369c533d4502d02e..66fdfc3babcd27b0663e1d10eb23e1e6e3d6982d 100644
+index 0f8682e5eb02c7e3a399e8aca1eaf297365234aa..4f4f7c56465a7d414138bce2a091322a0e053923 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3309,12 +3309,20 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3307,12 +3307,20 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -138,7 +138,7 @@ index e3bf3f8b544d1543a714270d369c533d4502d02e..66fdfc3babcd27b0663e1d10eb23e1e6
  
  PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index e718e5aaf2f5b86e3ced16afaf2c10a16deb6eaa..82ad4711eec15bce52ad71e0bbad81d19d48ae2f 100644
+index e170d5d3e63b11fe23af321bc08e392dd2ba4459..16ae49038f9bfcbc01aec1abad0aea89c1f8bafe 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -317,6 +317,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
@@ -149,7 +149,7 @@ index e718e5aaf2f5b86e3ced16afaf2c10a16deb6eaa..82ad4711eec15bce52ad71e0bbad81d1
    void SetVisibilityState(PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    PageVisibilityState GetVisibilityState() override;
-@@ -682,6 +683,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -681,6 +682,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // WebViewImpl::Close while handling an input event.
    bool debug_inside_input_handling_ = false;
  

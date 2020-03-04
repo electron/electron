@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 591d4ae7a87f580be9b9c44dcc50ef9fe99ca048..360cb62fac2c54a9202750bb4656692a17d49d81 100644
+index 4f37aaed6abf2e6309b1e3a6667627ec53d7671f..fd0f8d9bb5d49339c43039c39bd6aa5ab300df5c 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -98,6 +98,11 @@
@@ -116,7 +116,7 @@ index 591d4ae7a87f580be9b9c44dcc50ef9fe99ca048..360cb62fac2c54a9202750bb4656692a
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1677,6 +1762,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1682,6 +1767,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
        base::CommandLine::ForCurrentProcess();
  
    std::unique_ptr<net::CertVerifier> cert_verifier;
@@ -124,7 +124,7 @@ index 591d4ae7a87f580be9b9c44dcc50ef9fe99ca048..360cb62fac2c54a9202750bb4656692a
    if (g_cert_verifier_for_testing) {
      cert_verifier = std::make_unique<WrappedTestingCertVerifier>();
    } else {
-@@ -1725,8 +1811,8 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1730,8 +1816,8 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
      }
  #endif
  #if BUILDFLAG(BUILTIN_CERT_VERIFIER_FEATURE_SUPPORTED)
@@ -135,7 +135,7 @@ index 591d4ae7a87f580be9b9c44dcc50ef9fe99ca048..360cb62fac2c54a9202750bb4656692a
            std::make_unique<net::CoalescingCertVerifier>(
                std::make_unique<net::MultiThreadedCertVerifier>(
                    UsingBuiltinCertVerifier(params_->use_builtin_cert_verifier)
-@@ -1736,12 +1822,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1741,12 +1827,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                              cert_net_fetcher_))));
      }
  #endif
