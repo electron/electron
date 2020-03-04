@@ -20,7 +20,6 @@
 #include "components/viz/common/frame_sinks/begin_frame_args.h"
 #include "components/viz/common/frame_sinks/copy_output_request.h"
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
-#include "components/viz/common/gl_helper.h"
 #include "components/viz/common/quads/render_pass.h"
 #include "content/browser/renderer_host/cursor_manager.h"  // nogncheck
 #include "content/browser/renderer_host/input/synthetic_gesture_target.h"  // nogncheck
