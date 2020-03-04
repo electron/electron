@@ -590,7 +590,7 @@ Returns `String` - The current application directory.
     * `~/Library/Application Support` on macOS
   * `userData` The directory for storing your app's configuration files, which by
     default it is the `appData` directory appended with your app's name.
-    * `userCache` The directory for storing your app's Electron cache files, which by
+  * `userCache` The directory for storing your app's Electron cache files, which by
     default it is the `appData` directory appended with your app's name.
   * `cache`
   * `temp` Temporary directory.
