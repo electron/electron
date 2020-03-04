@@ -10,10 +10,10 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index f6672a20f1eb0914b8e103ae38079e9e0e6bfbdc..ee32e6f6361085b51b3ab905d0c5aa2d9ff93ab7 100644
+index b98cb1c863c72f631adad78dcb4c6412b42e8680..2d964693da7f9f2ea351f24c28ba04953988f9b1 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -192,6 +192,25 @@ struct HttpAuthStaticNetworkContextParams {
+@@ -193,6 +193,25 @@ struct HttpAuthStaticNetworkContextParams {
       = DefaultCredentials.ALLOW_DEFAULT_CREDENTIALS;
  };
  
@@ -39,7 +39,7 @@ index f6672a20f1eb0914b8e103ae38079e9e0e6bfbdc..ee32e6f6361085b51b3ab905d0c5aa2d
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -621,6 +640,8 @@ struct URLLoaderFactoryParams {
+@@ -633,6 +652,8 @@ struct URLLoaderFactoryParams {
    // interface. This still respects the per-context block lists.
    CorsOriginAccessPatterns? factory_bound_access_patterns;
  
@@ -49,10 +49,10 @@ index f6672a20f1eb0914b8e103ae38079e9e0e6bfbdc..ee32e6f6361085b51b3ab905d0c5aa2d
    NetworkIsolationKey? network_isolation_key;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 3a288e96c446a69e54a12e2237b75bca9663e811..118d2f126bdcd4a08bd2b9822382edbf1838ad9b 100644
+index f24618aea80e04be35aa50e82c4960ea57bdd3a3..eaa8682203c7eddee8d8845dce52a7c868810789 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -429,6 +429,7 @@ URLLoader::URLLoader(
+@@ -483,6 +483,7 @@ URLLoader::URLLoader(
      base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
      base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
      mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -60,7 +60,7 @@ index 3a288e96c446a69e54a12e2237b75bca9663e811..118d2f126bdcd4a08bd2b9822382edbf
      mojom::OriginPolicyManager* origin_policy_manager)
      : url_request_context_(url_request_context),
        network_service_client_(network_service_client),
-@@ -491,6 +492,11 @@ URLLoader::URLLoader(
+@@ -545,6 +546,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
    }
@@ -72,7 +72,7 @@ index 3a288e96c446a69e54a12e2237b75bca9663e811..118d2f126bdcd4a08bd2b9822382edbf
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -929,7 +935,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
+@@ -982,7 +988,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
  
  void URLLoader::OnAuthRequired(net::URLRequest* url_request,
                                 const net::AuthChallengeInfo& auth_info) {
@@ -81,7 +81,7 @@ index 3a288e96c446a69e54a12e2237b75bca9663e811..118d2f126bdcd4a08bd2b9822382edbf
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -945,11 +951,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -998,11 +1004,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
@@ -108,7 +108,7 @@ index 3a288e96c446a69e54a12e2237b75bca9663e811..118d2f126bdcd4a08bd2b9822382edbf
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index c9bc24da6e0bc26509685d8031ff2ccb2377f96a..8a4730fc49ac186cd98cb9f2c4433e45d6a3290d 100644
+index 8ff1c814e193b9320a93600d5f95bd8bc51c7b9d..4887165ab379c17917606b950f353147adea885b 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -104,6 +104,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
@@ -119,7 +119,7 @@ index c9bc24da6e0bc26509685d8031ff2ccb2377f96a..8a4730fc49ac186cd98cb9f2c4433e45
        mojom::OriginPolicyManager* origin_policy_manager);
    ~URLLoader() override;
  
-@@ -407,6 +408,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -414,6 +415,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    base::Optional<base::UnguessableToken> fetch_window_id_;
  
    mojo::Remote<mojom::TrustedHeaderClient> header_client_;

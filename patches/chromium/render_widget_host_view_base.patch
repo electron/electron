@@ -6,7 +6,7 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index bfe2491d454e5cf7844a6350d38b291002694b1a..e43b31435702f87728caab3d268377802dc52375 100644
+index 1dcef0b840c4b8934881e0e56bf403124850c353..e80c14765bff8cc38c732437b4730b00ffc80211 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -618,6 +618,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
@@ -24,7 +24,7 @@ index bfe2491d454e5cf7844a6350d38b291002694b1a..e43b31435702f87728caab3d26837780
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index f9c6c00902f9313d56d9a26008391837a0bbad43..397acfff6e96b529f5b435afdbaab5268a8100e6 100644
+index fca7a56a4b7f062ed3eee37e92c9e0c893af25fc..b862113765fdeace6b214332bab05a21a4681d91 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -23,9 +23,11 @@
@@ -39,7 +39,7 @@ index f9c6c00902f9313d56d9a26008391837a0bbad43..397acfff6e96b529f5b435afdbaab526
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/input_event_ack_state.h"
  #include "content/public/common/screen_info.h"
-@@ -66,9 +68,11 @@ class CursorManager;
+@@ -65,9 +67,11 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;
@@ -52,8 +52,8 @@ index f9c6c00902f9313d56d9a26008391837a0bbad43..397acfff6e96b529f5b435afdbaab526
  class DelegatedFrameHost;
  struct TextInputState;
 @@ -126,6 +130,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
-       bool show_reason_tab_switching,
-       bool show_reason_unoccluded) final;
+       bool show_reason_unoccluded,
+       bool show_reason_bfcache_restore) final;
  
 +  virtual void InitAsGuest(RenderWidgetHostView* parent_host_view,
 +                           RenderWidgetHostViewGuest* guest_view) {}

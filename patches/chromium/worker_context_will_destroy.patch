@@ -10,7 +10,7 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 39a0c8dd6e16146dd1c760db59786a1a6ef6342c..0a4ec619e96a840b4b4d5b51246de6c91e0f94f2 100644
+index 5ab8f195209718731c7e6af5a61c9e447e1df1b9..93080b2bfea5565899b6ea1908d2ac9b7e97ec87 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -382,6 +382,11 @@ class CONTENT_EXPORT ContentRendererClient {
@@ -26,7 +26,7 @@ index 39a0c8dd6e16146dd1c760db59786a1a6ef6342c..0a4ec619e96a840b4b4d5b51246de6c9
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 58c1b0e78a66229a23cf2c930fa059a94dc70323..d549bdc3d300f8eb11e7fd9127cb06e1a0e9c720 100644
+index c7bfe84ae56838d0beeb10cc978000087437bbcb..e4cfb5d8e3f82e40c6746c97ec242f7ddd6c3513 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
 @@ -879,6 +879,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {

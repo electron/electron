@@ -42,12 +42,12 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 50a2551342ad6a37f7ac7635f795b7e50d325a47..1c894fc4df54af4184074501ea56d422ce6327f6 100644
+index b445e550f95ab2ad75e700fa6c43734908887b0c..c57982fba5c7d2d68f23dcdc9b868dd7710bf2b8 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1223,6 +1223,24 @@ void NavigationRequest::BeginNavigation() {
-     TRACE_EVENT_ASYNC_STEP_INTO0("navigation", "NavigationRequest", this,
-                                  "ResponseStarted");
+@@ -1253,6 +1253,24 @@ void NavigationRequest::BeginNavigation() {
+     // it immediately.
+     EnterChildTraceEvent("ResponseStarted", this);
  
 +    // In Electron, a new process is started for every navigation when node is
 +    // integrated in the renderer. Since GetFrameHostForNavigation is called more
@@ -71,10 +71,10 @@ index 50a2551342ad6a37f7ac7635f795b7e50d325a47..1c894fc4df54af4184074501ea56d422
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index ad629ffc0a855f70598d8f224f55588b3c42d59d..8658faff1c65a48a10e988a709949aba283375cc 100644
+index f8eaa93995b5b2491a67cf16d93d1903c96642e4..4d790cba33e4ecfc6d7da23c991c2b413bf2fa31 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2282,6 +2282,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2327,6 +2327,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -91,7 +91,7 @@ index ad629ffc0a855f70598d8f224f55588b3c42d59d..8658faff1c65a48a10e988a709949aba
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2301,10 +2311,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2346,10 +2356,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -156,7 +156,7 @@ index ad629ffc0a855f70598d8f224f55588b3c42d59d..8658faff1c65a48a10e988a709949aba
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2342,6 +2402,8 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2390,6 +2450,8 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
        request->dest_site_instance() != dest_site_instance) {
      request->ResetStateForSiteInstanceChange();
    }
@@ -193,7 +193,7 @@ index caa100b3889e17a9afdc8127e0e13bb6b86e8042..f08d3a2eb28f0f6fff89b5759eff5369
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index a7000c7ee15c5c988bff448e1d762d91cd6f5141..a4ee01d118a7c4e4375bd42926a150553f3f1f92 100644
+index 2ea6dbb5697268743026d24116bc5c509f950b4b..06b52f68eef476dd7c38003e20ebc868162ff996 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -58,6 +58,21 @@
@@ -219,7 +219,7 @@ index a7000c7ee15c5c988bff448e1d762d91cd6f5141..a4ee01d118a7c4e4375bd42926a15055
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index cfb548239a9bd4582344cc332ca4c253628d7438..8beaad24a22647a6a3f8b92e4343b55ec61e1ada 100644
+index ee1034ee1bcd3f47964fec8fe11573596754e3b8..9351616f0100694f18c760417a7d93a001d3bb72 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -231,8 +231,45 @@ class CONTENT_EXPORT ContentBrowserClient {
