@@ -1264,7 +1264,7 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
     * `vertical` Number (optional) - The vertical dpi.
 * `callback` Function (optional)
   * `success` Boolean - Indicates success of the print call.
-  * `failureReason` String - Called back if the print fails; can be `cancelled` or `failed`.
+  * `failureReason` String - Error description called back if the print fails.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings for printing.
