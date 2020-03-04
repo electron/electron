@@ -103,6 +103,11 @@ void MessagePort::Close() {
   closed_ = true;
   if (!HasPendingActivity())
     Unpin();
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Local<v8::Object> self;
+  if (GetWrapper(isolate).ToLocal(&self))
+    gin_helper::EmitEvent(isolate, self, "close");
 }
 
 void MessagePort::Entangle(mojo::ScopedMessagePipeHandle handle) {
