@@ -4,6 +4,10 @@
 
 #include "shell/browser/api/message_port.h"
 
+#include <string>
+#include <unordered_set>
+#include <utility>
+
 #include "base/strings/string_number_conversions.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
