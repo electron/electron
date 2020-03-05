@@ -143,7 +143,7 @@ Sends a message to a window with `webContentsId` via `channel`.
 Like `ipcRenderer.send` but the event will be sent to the `<webview>` element in
 the host page instead of the main process.
 
-### `ipcRenderer.postMessage(channel, message, [options])`
+### `ipcRenderer.postMessage(channel, message, [transfer])`
 
 * `channel` String
 * `message` any
