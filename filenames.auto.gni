@@ -32,7 +32,7 @@ auto_filenames = {
     "docs/api/locales.md",
     "docs/api/menu-item.md",
     "docs/api/menu.md",
-    "docs/api/message-channel.md",
+    "docs/api/message-channel-main.md",
     "docs/api/message-port-main.md",
     "docs/api/modernization",
     "docs/api/native-image.md",
