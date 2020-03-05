@@ -1194,10 +1194,12 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &TopLevelWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &TopLevelWindow::SetVibrancy)
+#if defined(OS_MACOSX)
       .SetMethod("setTrafficLightPosition",
                  &TopLevelWindow::SetTrafficLightPosition)
       .SetMethod("getTrafficLightPosition",
                  &TopLevelWindow::GetTrafficLightPosition)
+#endif
       .SetMethod("_setTouchBarItems", &TopLevelWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &TopLevelWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem",

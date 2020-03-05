@@ -196,8 +196,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Traffic Light API
 #if defined(OS_MACOSX)
-  virtual void SetTrafficLightPosition(const gfx::Point& position);
-  virtual gfx::Point GetTrafficLightPosition() const;
+  virtual void SetTrafficLightPosition(const gfx::Point& position) = 0;
+  virtual gfx::Point GetTrafficLightPosition() const = 0;
 #endif
 
   // Touchbar API
