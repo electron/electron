@@ -37,7 +37,13 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
   context->Enter();
 }
 
-JavascriptEnvironment::~JavascriptEnvironment() = default;
+JavascriptEnvironment::~JavascriptEnvironment() {
+  {
+    v8::HandleScope scope(isolate_);
+    context_.Get(isolate_)->Exit();
+  }
+  isolate_->Exit();
+}
 
 v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* cmd = base::CommandLine::ForCurrentProcess();

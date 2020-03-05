@@ -126,46 +126,52 @@ int NodeMain(int argc, char* argv[]) {
 
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
+    node::Environment* env = nullptr;
+    node::IsolateData* isolate_data = nullptr;
+    {
+      v8::HandleScope scope(gin_env.isolate());
 
-    node::IsolateData* isolate_data =
-        node::CreateIsolateData(gin_env.isolate(), loop, gin_env.platform());
-    CHECK_NE(nullptr, isolate_data);
+      isolate_data =
+          node::CreateIsolateData(gin_env.isolate(), loop, gin_env.platform());
+      CHECK_NE(nullptr, isolate_data);
 
-    node::Environment* env =
-        node::CreateEnvironment(isolate_data, gin_env.context(), argc, argv,
-                                exec_argc, exec_argv, false);
-    CHECK_NE(nullptr, env);
+      env = node::CreateEnvironment(isolate_data, gin_env.context(), argc, argv,
+                                    exec_argc, exec_argv, false);
+      CHECK_NE(nullptr, env);
+
+      node::BootstrapEnvironment(env);
+
+      gin_helper::Dictionary process(gin_env.isolate(), env->process_object());
+#if defined(OS_WIN)
+      process.SetMethod("log", &ElectronBindings::Log);
+#endif
+      process.SetMethod("crash", &ElectronBindings::Crash);
+
+      // Setup process.crashReporter.start in child node processes
+      gin_helper::Dictionary reporter =
+          gin::Dictionary::CreateEmpty(gin_env.isolate());
+      reporter.SetMethod("start",
+                         &crash_reporter::CrashReporter::StartInstance);
+
+#if !defined(OS_LINUX)
+      reporter.SetMethod("addExtraParameter", &AddExtraParameter);
+      reporter.SetMethod("removeExtraParameter", &RemoveExtraParameter);
+#endif
+
+      process.Set("crashReporter", reporter);
+
+      gin_helper::Dictionary versions;
+      if (process.Get("versions", &versions)) {
+        versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
+      }
+
+      node::LoadEnvironment(env);
+    }
 
     // Enable support for v8 inspector.
     NodeDebugger node_debugger(env);
     node_debugger.Start();
 
-    node::BootstrapEnvironment(env);
-
-    gin_helper::Dictionary process(gin_env.isolate(), env->process_object());
-#if defined(OS_WIN)
-    process.SetMethod("log", &ElectronBindings::Log);
-#endif
-    process.SetMethod("crash", &ElectronBindings::Crash);
-
-    // Setup process.crashReporter.start in child node processes
-    gin_helper::Dictionary reporter =
-        gin::Dictionary::CreateEmpty(gin_env.isolate());
-    reporter.SetMethod("start", &crash_reporter::CrashReporter::StartInstance);
-
-#if !defined(OS_LINUX)
-    reporter.SetMethod("addExtraParameter", &AddExtraParameter);
-    reporter.SetMethod("removeExtraParameter", &RemoveExtraParameter);
-#endif
-
-    process.Set("crashReporter", reporter);
-
-    gin_helper::Dictionary versions;
-    if (process.Get("versions", &versions)) {
-      versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
-    }
-
-    node::LoadEnvironment(env);
     v8::Isolate* isolate = env->isolate();
 
     {
