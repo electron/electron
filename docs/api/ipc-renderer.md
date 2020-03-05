@@ -147,7 +147,7 @@ the host page instead of the main process.
 
 * `channel` String
 * `message` any
-* `options` MessagePort[] (optional)
+* `transfer` MessagePort[] (optional)
 
 Send a message to the main process, optionally transferring ownership of zero
 or more [`MessagePort`][] objects.
