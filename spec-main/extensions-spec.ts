@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { app, session, BrowserWindow, ipcMain, WebContents } from 'electron'
+import { app, session, BrowserWindow, ipcMain, WebContents, Extension } from 'electron'
 import { closeAllWindows, closeWindow } from './window-helpers'
 import * as http from 'http'
 import { AddressInfo } from 'net'
@@ -78,6 +78,32 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     await w.loadURL(url)
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
     expect(bg).to.equal('')
+  })
+
+  describe('chrome.i18n', () => {
+    let w: BrowserWindow
+    let extension: Extension
+    const exec = async (name: string) => {
+      const p = emittedOnce(ipcMain, 'success')
+      await w.webContents.executeJavaScript(`exec('${name}')`)
+      const [, result] = await p
+      return result
+    }
+    beforeEach(async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+      extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n'))
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } })
+      await w.loadURL(url)
+    })
+    it('getAcceptLanguages()', async () => {
+      const result = await exec('getAcceptLanguages')
+      expect(result).to.be.an('array').and.deep.equal(['en-US'])
+    })
+    it('getMessage()', async () => {
+      const result = await exec('getMessage')
+      expect(result.id).to.be.a('string').and.equal(extension.id)
+      expect(result.name).to.be.a('string').and.equal('chrome-i18n')
+    })
   })
 
   describe('chrome.runtime', () => {
