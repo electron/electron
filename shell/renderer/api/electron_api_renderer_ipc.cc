@@ -98,37 +98,34 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     return handle;
   }
 
-  void PostMessage(gin::Arguments* args) {
-    std::string channel;
-    if (!args->GetNext(&channel)) {
-      args->ThrowError();
-      return;
-    }
-
-    v8::Local<v8::Value> message_value;
-    if (!args->GetNext(&message_value)) {
-      args->ThrowError();
-      return;
-    }
-
+  void PostMessage(v8::Isolate* isolate,
+                   const std::string& channel,
+                   v8::Local<v8::Value> message_value,
+                   base::Optional<v8::Local<v8::Value>> transfer) {
     blink::TransferableMessage transferable_message;
-    if (!electron::SerializeV8Value(args->isolate(), message_value,
+    if (!electron::SerializeV8Value(isolate, message_value,
                                     &transferable_message)) {
+      // SerializeV8Value sets an exception.
       return;
     }
 
     std::vector<v8::Local<v8::Object>> transferables;
-    if (!args->GetNext(&transferables)) {
-      return;
+    if (transfer) {
+      if (!gin::ConvertFromV8(isolate, *transfer, &transferables)) {
+        isolate->ThrowException(v8::Exception::Error(
+            gin::StringToV8(isolate, "Invalid value for transfer")));
+        return;
+      }
     }
 
     std::vector<blink::MessagePortChannel> ports;
     for (auto& transferable : transferables) {
-      base::Optional<blink::MessagePortChannel> port = blink::
-          WebMessagePortConverter::DisentangleAndExtractMessagePortChannel(
-              args->isolate(), transferable);
+      base::Optional<blink::MessagePortChannel> port =
+          blink::WebMessagePortConverter::
+              DisentangleAndExtractMessagePortChannel(isolate, transferable);
       if (!port.has_value()) {
-        args->ThrowError();
+        isolate->ThrowException(v8::Exception::Error(
+            gin::StringToV8(isolate, "Invalid value for transfer")));
         return;
       }
       ports.emplace_back(port.value());

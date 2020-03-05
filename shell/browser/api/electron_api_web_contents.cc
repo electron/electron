@@ -1112,8 +1112,7 @@ void WebContents::PostMessage(const std::string& channel,
   blink::TransferableMessage transferable_message;
   if (!electron::SerializeV8Value(isolate(), message_value,
                                   &transferable_message)) {
-    isolate()->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate(), "Failed to serialize message")));
+    // SerializeV8Value sets an exception.
     return;
   }
 
