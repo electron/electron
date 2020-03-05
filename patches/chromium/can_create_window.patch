@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 799ad945f34f64a260c0303d17c8bda6c1953943..e70398b8a8204028e8e198cc88804d34fda51b84 100644
+index dfaaaa19b048a2cb664c2606b33e7cbe807152cf..a9159021009ea53b0b50a092f7eb5e5717ee62af 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4568,6 +4568,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4582,6 +4582,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -70,7 +70,7 @@ index a996e9da772a4368c5845d3a8166d605f256108e..ee1034ee1bcd3f47964fec8fe1157359
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 8d2354937076736f26e01793fe947b27aa2b70c7..0bb5e66c9a47bb4c62c54ab17c14095b4d13c849 100644
+index 8d9e277c713f0000aae8838ac40affc2d8bd7636..a40699b5c66d9ae9bd1e9aef629ed171d9a63ce6 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -68,6 +68,7 @@
@@ -81,7 +81,7 @@ index 8d2354937076736f26e01793fe947b27aa2b70c7..0bb5e66c9a47bb4c62c54ab17c14095b
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
-@@ -1249,6 +1250,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1247,6 +1248,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
@@ -91,10 +91,10 @@ index 8d2354937076736f26e01793fe947b27aa2b70c7..0bb5e66c9a47bb4c62c54ab17c14095b
    // moved on send.
    bool is_background_tab =
 diff --git a/content/shell/browser/web_test/web_test_content_browser_client.cc b/content/shell/browser/web_test/web_test_content_browser_client.cc
-index b899d6126b9ec7f226c0bb5721c281daaa22825d..331de60c4183b675d27cbdef70851e5d834ccad2 100644
+index 662e42bd902df1c62ca472306362f937173e8c0c..5e93f47397728f5f57129a04ed9317f773dd81c7 100644
 --- a/content/shell/browser/web_test/web_test_content_browser_client.cc
 +++ b/content/shell/browser/web_test/web_test_content_browser_client.cc
-@@ -335,6 +335,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -332,6 +332,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,

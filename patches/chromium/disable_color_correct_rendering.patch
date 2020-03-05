@@ -236,10 +236,10 @@ index 3902376a42d0462864c6d73f35d5e25c7e11fff5..86d72a53acc7e07eb00b6c12d850bd31
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 5e9155c729d9bf5ae8a9d72cde0783acdee20f26..e8dd61eb7f68c1993a3df2f963dcccc4df1dfa24 100644
+index 6734b39c3f5c48545c4aea477f500b36015c2b99..7795fa943c18836cfada9a45ec01d4114d9d34e8 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2722,6 +2722,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2671,6 +2671,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -294,7 +294,7 @@ index d88680239152858689121d134559765fb8fae1b7..073ed8a8f84ebf994a2b9d9fa7e78f75
  
    gfx::ColorSpace::TransferID transfer_id =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index bc250cc868030cfc1ebd41f4a55a2e2cc3474ac6..5ff52a19ceabb2c88b979a27e0e166085bc70dde 100644
+index 4c47a1132ea3d53b6c63882e98374196ac7ce069..a7f00f426cc6a75d7b942581696332756f2cb792 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -16,6 +16,7 @@

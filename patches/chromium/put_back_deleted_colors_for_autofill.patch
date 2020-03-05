@@ -42,7 +42,7 @@ index 0b035ec92d0df57e36be7ef5dd18baf9395b0dca..78f6bfad629640baab5f1eee88d4b900
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 901ac8794286e84be347d4f85946cc799bacb360..ec3a6195ba8728d4c55ae38f01ed71d0fc58ab28 100644
+index baa857e8655977fa524621c63e3382fadd3a6d9e..c629cec16ef9db7ebb28c4a15ea4741d8ddc4fd7 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -59,6 +59,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
@@ -80,10 +80,10 @@ index 901ac8794286e84be347d4f85946cc799bacb360..ec3a6195ba8728d4c55ae38f01ed71d0
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 72f1ea68aee84a52ce104c839200398edcedea29..d6dcb7bdfd7afe6f20980984d444727f737f9841 100644
+index 85a7da0060f7e03081ec7e63dc0a367cef53fc7c..2d1a3c0159407b0c98ac6a3099e0e45e99240b64 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
-@@ -112,6 +112,11 @@
+@@ -116,6 +116,11 @@
    OP(kColorId_TableHeaderText),                                                \
    OP(kColorId_TableHeaderBackground),                                          \
    OP(kColorId_TableHeaderSeparator),                                           \
