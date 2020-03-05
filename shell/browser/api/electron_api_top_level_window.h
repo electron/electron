@@ -186,6 +186,12 @@ class TopLevelWindow
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
+
+#if defined(OS_MACOSX)
+  void SetTrafficLightPosition(const gfx::Point& position);
+  gfx::Point GetTrafficLightPosition() const;
+#endif
+
   void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);
   void RefreshTouchBarItem(const std::string& item_id);
   void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);

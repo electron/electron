@@ -819,6 +819,16 @@ void TopLevelWindow::SetVibrancy(v8::Isolate* isolate,
   window_->SetVibrancy(type);
 }
 
+#if defined(OS_MACOSX)
+void TopLevelWindow::SetTrafficLightPosition(const gfx::Point& position) {
+  window_->SetTrafficLightPosition(position);
+}
+
+gfx::Point TopLevelWindow::GetTrafficLightPosition() const {
+  return window_->GetTrafficLightPosition();
+}
+#endif
+
 void TopLevelWindow::SetTouchBar(
     const std::vector<mate::PersistentDictionary>& items) {
   window_->SetTouchBar(items);
@@ -1187,6 +1197,12 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &TopLevelWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &TopLevelWindow::SetVibrancy)
+#if defined(OS_MACOSX)
+      .SetMethod("setTrafficLightPosition",
+                 &TopLevelWindow::SetTrafficLightPosition)
+      .SetMethod("getTrafficLightPosition",
+                 &TopLevelWindow::GetTrafficLightPosition)
+#endif
       .SetMethod("_setTouchBarItems", &TopLevelWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &TopLevelWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem",
