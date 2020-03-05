@@ -3,7 +3,7 @@ const fs = require('fs')
 const path = require('path')
 
 // Fallback to blow away old cache keys
-const HASH_VERSION = 1
+const HASH_VERSION = 2
 
 // Base files to hash
 const filesToHash = [
