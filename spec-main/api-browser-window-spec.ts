@@ -210,7 +210,7 @@ describe('BrowserWindow module', () => {
       }).to.throw('Object has been destroyed')
     })
     it('should not crash when destroying windows with pending events', () => {
-      const focusListener = () => {}
+      const focusListener = () => { }
       app.on('browser-window-focus', focusListener)
       const windowCount = 3
       const windowOptions = {
@@ -281,7 +281,7 @@ describe('BrowserWindow module', () => {
               fs.readFile(filePath, (err, data) => {
                 if (err) return
                 if (parsedData.username === 'test' &&
-                    parsedData.file === data.toString()) {
+                  parsedData.file === data.toString()) {
                   res.end()
                 }
               })
@@ -1347,6 +1347,31 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  ifdescribe(process.platform === 'darwin')('BrowserWindow.getTrafficLightPosition(pos)', () => {
+    afterEach(closeAllWindows)
+
+    it('gets the set traffic light position property', () => {
+      const pos = { x: 10, y: 10 }
+      const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos })
+      const currentPosition = w.getTrafficLightPosition()
+
+      expect(currentPosition).to.deep.equal(pos)
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('BrowserWindow.setTrafficLightPosition(pos)', () => {
+    afterEach(closeAllWindows)
+
+    it('can set the traffic light position property', () => {
+      const pos = { x: 10, y: 10 }
+      const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos })
+      w.setTrafficLightPosition(pos)
+      const currentPosition = w.getTrafficLightPosition()
+
+      expect(currentPosition).to.deep.equal(pos)
+    })
+  })
+
   ifdescribe(process.platform === 'win32')('BrowserWindow.setAppDetails(options)', () => {
     afterEach(closeAllWindows)
 
@@ -1613,7 +1638,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows)
 
     describe('"preload" option', () => {
-      const doesNotLeakSpec = (name: string, webPrefs: {nodeIntegration: boolean, sandbox: boolean, contextIsolation: boolean}) => {
+      const doesNotLeakSpec = (name: string, webPrefs: { nodeIntegration: boolean, sandbox: boolean, contextIsolation: boolean }) => {
         it(name, async () => {
           const w = new BrowserWindow({
             webPreferences: {
@@ -1875,7 +1900,7 @@ describe('BrowserWindow module', () => {
     })
 
     describe('"sandbox" option', () => {
-      function waitForEvents<T> (emitter: {once: Function}, events: string[], callback: () => void) {
+      function waitForEvents<T> (emitter: { once: Function }, events: string[], callback: () => void) {
         let count = events.length
         for (const event of events) {
           emitter.once(event, () => {
@@ -2863,7 +2888,7 @@ describe('BrowserWindow module', () => {
             return
           }
           if (rect.height === contentHeight && rect.width === contentWidth &&
-              !gotInitialFullSizeFrame) {
+            !gotInitialFullSizeFrame) {
             // The initial frame is full-size, but we're looking for a call
             // with just the dirty-rect. The next frame should be a smaller
             // rect.
