@@ -15,7 +15,7 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index a5e45290e69648177440032da3f2f793b9c65600..4e17c9e207a540862138be576f9deb1a4c8d7b3c 100644
+index ecc248f37ecaf3ced049dace1bd8e324d0937585..2377e1af24f0005703fcaee439a99d0ca9a4636b 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -305,6 +305,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
@@ -37,7 +37,7 @@ index a5e45290e69648177440032da3f2f793b9c65600..4e17c9e207a540862138be576f9deb1a
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
-@@ -970,6 +975,10 @@ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
+@@ -969,6 +974,10 @@ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
    return scoped_enable;
  }
  
@@ -49,7 +49,7 @@ index a5e45290e69648177440032da3f2f793b9c65600..4e17c9e207a540862138be576f9deb1a
  // HWNDMessageHandler, gfx::WindowImpl overrides:
  
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index 12f449fd097662a49a7bd4a7fce0cbd4f9cead58..0de89fe8f856143b76682c1d5455d5f990930aab 100644
+index 4a02d86842e6c85e604d5951c6d9caf791aaf272..fa81ac2cb5714ee994caf930fc29dd755f142e8a 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
 @@ -203,6 +203,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
@@ -62,7 +62,7 @@ index 12f449fd097662a49a7bd4a7fce0cbd4f9cead58..0de89fe8f856143b76682c1d5455d5f9
    HICON GetDefaultWindowIcon() const override;
    HICON GetSmallWindowIcon() const override;
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 45c4e5b29d05ea0323596fa2c5034c2e30a68f70..e25aac69b09954fbc267309beba98ec0877fa2ac 100644
+index 649163d22b7ebe5be8e2010cd30eea96587be578..d7d971937362d08f7b508244f58cc1e2d2993e9f 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
 @@ -46,6 +46,8 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {

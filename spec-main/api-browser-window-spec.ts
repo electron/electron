@@ -2406,18 +2406,6 @@ describe('BrowserWindow module', () => {
         const webPreferences = (childWebContents as any).getLastWebPreferences()
         expect(webPreferences.foo).to.equal('bar')
       })
-      it('should have nodeIntegration disabled in child windows', async () => {
-        const w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            nativeWindowOpen: true
-          }
-        })
-        w.loadFile(path.join(fixtures, 'api', 'native-window-open-argv.html'))
-        const [, typeofProcess] = await emittedOnce(ipcMain, 'answer')
-        expect(typeofProcess).to.eql('undefined')
-      })
 
       describe('window.location', () => {
         const protocols = [
@@ -3117,16 +3105,53 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    // The isEnabled API is not reliable on macOS.
-    ifdescribe(process.platform !== 'darwin')('modal option', () => {
-      it('disables parent window', () => {
+    describe('modal option', () => {
+      it('does not freeze or crash', async () => {
+        const parentWindow = new BrowserWindow()
+
+        const createTwo = async () => {
+          const two = new BrowserWindow({
+            width: 300,
+            height: 200,
+            parent: parentWindow,
+            modal: true,
+            show: false
+          })
+
+          const twoShown = emittedOnce(two, 'show')
+          two.show()
+          await twoShown
+          setTimeout(() => two.close(), 500)
+
+          await emittedOnce(two, 'closed')
+        }
+
+        const one = new BrowserWindow({
+          width: 600,
+          height: 400,
+          parent: parentWindow,
+          modal: true,
+          show: false
+        })
+
+        const oneShown = emittedOnce(one, 'show')
+        one.show()
+        await oneShown
+        setTimeout(() => one.destroy(), 500)
+
+        await emittedOnce(one, 'closed')
+        await createTwo()
+      })
+
+      ifit(process.platform !== 'darwin')('disables parent window', () => {
         const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         expect(w.isEnabled()).to.be.true('w.isEnabled')
         c.show()
         expect(w.isEnabled()).to.be.false('w.isEnabled')
       })
-      it('re-enables an enabled parent window when closed', (done) => {
+
+      ifit(process.platform !== 'darwin')('re-enables an enabled parent window when closed', (done) => {
         const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         c.once('closed', () => {
@@ -3136,7 +3161,8 @@ describe('BrowserWindow module', () => {
         c.show()
         c.close()
       })
-      it('does not re-enable a disabled parent window when closed', (done) => {
+
+      ifit(process.platform !== 'darwin')('does not re-enable a disabled parent window when closed', (done) => {
         const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         c.once('closed', () => {
@@ -3147,7 +3173,8 @@ describe('BrowserWindow module', () => {
         c.show()
         c.close()
       })
-      it('disables parent window recursively', () => {
+
+      ifit(process.platform !== 'darwin')('disables parent window recursively', () => {
         const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         const c2 = new BrowserWindow({ show: false, parent: w, modal: true })
@@ -3805,6 +3832,22 @@ describe('BrowserWindow module', () => {
       `)
       const [, data] = await p
       expect(data.pageContext.openedLocation).to.equal('')
+    })
+  })
+
+  describe('window.webContents.focus()', () => {
+    afterEach(closeAllWindows)
+    it('focuses window', (done) => {
+      const w1 = new BrowserWindow({ x: 100, y: 300, width: 300, height: 200 })
+      w1.loadURL('about:blank')
+      const w2 = new BrowserWindow({ x: 300, y: 300, width: 300, height: 200 })
+      w2.loadURL('about:blank')
+      w1.webContents.focus()
+      // Give focus some time to switch to w1
+      setTimeout(() => {
+        expect(w1.webContents.isFocused()).to.be.true('focuses window')
+        done()
+      })
     })
   })
 

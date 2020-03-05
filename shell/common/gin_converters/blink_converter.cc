@@ -264,17 +264,16 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   bool has_precise_scrolling_deltas = false;
   dict.Get("hasPreciseScrollingDeltas", &has_precise_scrolling_deltas);
   if (has_precise_scrolling_deltas) {
-    out->delta_units =
-        ui::input_types::ScrollGranularity::kScrollByPrecisePixel;
+    out->delta_units = ui::ScrollGranularity::kScrollByPrecisePixel;
   } else {
-    out->delta_units = ui::input_types::ScrollGranularity::kScrollByPixel;
+    out->delta_units = ui::ScrollGranularity::kScrollByPixel;
   }
 
 #if defined(USE_AURA)
   // Matches the behavior of ui/events/blink/web_input_event_traits.cc:
   bool can_scroll = true;
   if (dict.Get("canScroll", &can_scroll) && !can_scroll) {
-    out->delta_units = ui::input_types::ScrollGranularity::kScrollByPage;
+    out->delta_units = ui::ScrollGranularity::kScrollByPage;
     out->SetModifiers(out->GetModifiers() & ~blink::WebInputEvent::kControlKey);
   }
 #endif

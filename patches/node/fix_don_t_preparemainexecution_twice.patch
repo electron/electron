@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 21 Feb 2020 17:21:11 -0800
+Subject: fix: don't prepareMainExecution twice
+
+In https://github.com/nodejs/node/pull/26788 (v12.0.0), Node.js added a
+bootstrapper to `CreateEnvironment`, which would prepare the main thread
+for execution any time an embedder created a new environment. However, this
+caused an unfortunate doubling-up effect; Node.js also ran bootstrapping
+(called `prepareMainThreadExecution`) for all other execution paths
+(like the repl, the actual main module, eval, etc).
+
+To fix this, we can just remove bootstrapping code from `CreateEnvironment`.
+
+diff --git a/lib/internal/bootstrap/environment.js b/lib/internal/bootstrap/environment.js
+deleted file mode 100644
+index 79a67dae378202ee377f2f138560b74f673af6e4..0000000000000000000000000000000000000000
+--- a/lib/internal/bootstrap/environment.js
++++ /dev/null
+@@ -1,13 +0,0 @@
+-'use strict';
+-
+-// This runs necessary preparations to prepare a complete Node.js context
+-// that depends on run time states.
+-// It is currently only intended for preparing contexts for embedders.
+-
+-/* global markBootstrapComplete */
+-const {
+-  prepareMainThreadExecution
+-} = require('internal/bootstrap/pre_execution');
+-
+-prepareMainThreadExecution();
+-markBootstrapComplete();
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 8d8f820962d540c67d261a65ce5d5def5db40696..46fb07731b160765059f60bc28bd6992d4b9e36d 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -316,20 +316,6 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
+   if (env->RunBootstrapping().IsEmpty()) {
+     return nullptr;
+   }
+-
+-  std::vector<Local<String>> parameters = {
+-      env->require_string(),
+-      FIXED_ONE_BYTE_STRING(env->isolate(), "markBootstrapComplete")};
+-  std::vector<Local<Value>> arguments = {
+-      env->native_module_require(),
+-      env->NewFunctionTemplate(MarkBootstrapComplete)
+-          ->GetFunction(env->context())
+-          .ToLocalChecked()};
+-  if (ExecuteBootstrapper(
+-          env, "internal/bootstrap/environment", &parameters, &arguments)
+-          .IsEmpty()) {
+-    return nullptr;
+-  }
+   return env;
+ }
+ 

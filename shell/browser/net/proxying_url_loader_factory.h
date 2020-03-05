@@ -43,6 +43,7 @@ class ProxyingURLLoaderFactory
                             public network::mojom::URLLoaderClient,
                             public network::mojom::TrustedHeaderClient {
    public:
+    // For usual requests.
     InProgressRequest(
         ProxyingURLLoaderFactory* factory,
         int64_t web_request_id,
@@ -51,8 +52,12 @@ class ProxyingURLLoaderFactory
         uint32_t options,
         const network::ResourceRequest& request,
         const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-        network::mojom::URLLoaderRequest loader_request,
+        mojo::PendingReceiver<network::mojom::URLLoader> loader_receiver,
         mojo::PendingRemote<network::mojom::URLLoaderClient> client);
+    // For CORS preflights.
+    InProgressRequest(ProxyingURLLoaderFactory* factory,
+                      uint64_t request_id,
+                      const network::ResourceRequest& request);
     ~InProgressRequest() override;
 
     void Restart();
@@ -111,12 +116,12 @@ class ProxyingURLLoaderFactory
     ProxyingURLLoaderFactory* factory_;
     network::ResourceRequest request_;
     const base::Optional<url::Origin> original_initiator_;
-    const uint64_t request_id_;
-    const int32_t routing_id_;
-    const int32_t network_service_request_id_;
-    const uint32_t options_;
+    const uint64_t request_id_ = 0;
+    const int32_t routing_id_ = 0;
+    const int32_t network_service_request_id_ = 0;
+    const uint32_t options_ = 0;
     const net::MutableNetworkTrafficAnnotationTag traffic_annotation_;
-    mojo::Binding<network::mojom::URLLoader> proxied_loader_binding_;
+    mojo::Receiver<network::mojom::URLLoader> proxied_loader_receiver_;
     mojo::Remote<network::mojom::URLLoaderClient> target_client_;
 
     base::Optional<extensions::WebRequestInfo> info_;
@@ -129,7 +134,7 @@ class ProxyingURLLoaderFactory
         this};
     network::mojom::URLLoaderPtr target_loader_;
 
-    bool request_completed_ = false;
+    const bool for_cors_preflight_ = false;
 
     // If |has_any_extra_headers_listeners_| is set to true, the request will be
     // sent with the network::mojom::kURLLoadOptionUseHeaderClient option, and
@@ -201,7 +206,7 @@ class ProxyingURLLoaderFactory
   void OnLoaderForCorsPreflightCreated(
       const network::ResourceRequest& request,
       mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver)
-      override {}
+      override;
 
   WebRequestAPI* web_request_api() { return web_request_api_; }
 

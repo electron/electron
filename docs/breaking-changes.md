@@ -8,6 +8,14 @@ The `FIXME` string is used in code comments to denote things that should be fixe
 
 ## Planned Breaking API Changes (10.0)
 
+### Browser Window Affinity
+
+The `affinity` option when constructing a new `BrowserWindow` will be removed
+as part of our plan to more closely align with Chromiums process model for security,
+performance and maintainability.
+
+For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
+
 ### `enableRemoteModule` defaults to `false`
 
 In Electron 9, using the remote module without explicitly enabling it via the
@@ -27,6 +35,18 @@ We [recommend moving away from the remote
 module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-70d69500f31).
 
 ## Planned Breaking API Changes (9.0)
+
+### Loading non-context-aware native modules in the renderer process
+
+As of Electron 9 we do not allow loading of non-context-aware native modules in
+the renderer process.  This is to improve security, performance and maintainability
+of Electron as a project.
+
+If this impacts you, you can temporarily set `app.allowRendererProcessReuse` to `false`
+to revert to the old behavior.  This flag will only be an option until Electron 11 so
+you should plan to update your native modules to be context aware.
+
+For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
 
 ### `<webview>.getWebContents()`
 
@@ -63,6 +83,11 @@ deprecation warning was printed.
 In Electron 9.0, the old serialization algorithm has been removed, and sending
 such non-serializable objects will now throw an "object could not be cloned"
 error.
+
+### `shell.openItem` --> `shell.openPath`
+
+The `shell.openItem` API has been replaced with an asynchronous `shell.openPath` API.
+You can see the original API proposal and reasoning [here](https://github.com/electron/governance/blob/master/wg-api/spec-documents/shell-openitem.md).
 
 ## Planned Breaking API Changes (8.0)
 
