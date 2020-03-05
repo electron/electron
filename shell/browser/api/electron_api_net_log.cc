@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/command_line.h"
+#include "base/task/thread_pool.h"
 #include "chrome/browser/browser_process.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
@@ -52,8 +53,8 @@ scoped_refptr<base::SequencedTaskRunner> CreateFileTaskRunner() {
   //
   // These operations can be skipped on shutdown since FileNetLogObserver's API
   // doesn't require things to have completed until notified of completion.
-  return base::CreateSequencedTaskRunner(
-      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+  return base::ThreadPool::CreateSequencedTaskRunner(
+      {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
 }
 
