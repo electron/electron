@@ -5,6 +5,7 @@
 #include "shell/renderer/api/electron_api_context_bridge.h"
 
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
