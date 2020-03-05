@@ -1593,11 +1593,11 @@ ipcMain.on('ping', (event) => {
 })
 ```
 
-#### `contents.postMessage(channel, message, [options])`
+#### `contents.postMessage(channel, message, [transfer])`
 
 * `channel` String
 * `message` any
-* `options` MessagePortMain[] (optional)
+* `transfer` MessagePortMain[] (optional)
 
 Send a message to the renderer process, optionally transferring ownership of
 zero or more [`MessagePortMain`][] objects.
