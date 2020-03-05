@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/values.h"
+#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
@@ -37,7 +38,8 @@ class ElectronBrowserContext;
 namespace api {
 
 class Session : public gin_helper::TrackableObject<Session>,
-                public content::DownloadManager::Observer {
+                public content::DownloadManager::Observer,
+                public SpellcheckHunspellDictionary::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
   static gin::Handle<Session> CreateFrom(
@@ -115,6 +117,14 @@ class Session : public gin_helper::TrackableObject<Session>,
   // content::DownloadManager::Observer:
   void OnDownloadCreated(content::DownloadManager* manager,
                          download::DownloadItem* item) override;
+
+  // SpellcheckHunspellDictionary::Observer
+  void OnHunspellDictionaryInitialized(const std::string& language) override;
+  void OnHunspellDictionaryDownloadBegin(const std::string& language) override;
+  void OnHunspellDictionaryDownloadSuccess(
+      const std::string& language) override;
+  void OnHunspellDictionaryDownloadFailure(
+      const std::string& language) override;
 
  private:
   // Cached gin_helper::Wrappable objects.
