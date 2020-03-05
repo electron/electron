@@ -443,8 +443,7 @@ v8::Local<v8::Value> Converter<network::mojom::ReferrerPolicy>::ToV8(
       return StringToV8(isolate, "no-referrer");
     case network::mojom::ReferrerPolicy::kOrigin:
       return StringToV8(isolate, "origin");
-    case network::mojom::ReferrerPolicy::
-        kNoReferrerWhenDowngradeOriginWhenCrossOrigin:
+    case network::mojom::ReferrerPolicy::kStrictOriginWhenCrossOrigin:
       return StringToV8(isolate, "strict-origin-when-cross-origin");
     case network::mojom::ReferrerPolicy::kSameOrigin:
       return StringToV8(isolate, "same-origin");
@@ -472,8 +471,7 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
   else if (policy == "origin")
     *out = network::mojom::ReferrerPolicy::kOrigin;
   else if (policy == "strict-origin-when-cross-origin")
-    *out = network::mojom::ReferrerPolicy::
-        kNoReferrerWhenDowngradeOriginWhenCrossOrigin;
+    *out = network::mojom::ReferrerPolicy::kStrictOriginWhenCrossOrigin;
   else if (policy == "same-origin")
     *out = network::mojom::ReferrerPolicy::kSameOrigin;
   else if (policy == "strict-origin")
