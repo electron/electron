@@ -16,8 +16,11 @@
 #include "base/mac/scoped_cftyperef.h"
 #include "base/numerics/ranges.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/post_task.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "native_mate/dictionary.h"
 #include "shell/browser/native_browser_view_mac.h"
@@ -324,6 +327,8 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
 NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
+  ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
+
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -513,6 +518,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
 }
 
 NativeWindowMac::~NativeWindowMac() {
+  ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   if (wheel_event_monitor_)
     [NSEvent removeMonitor:wheel_event_monitor_];
 }
@@ -702,6 +708,12 @@ bool NativeWindowMac::IsVisible() {
 
 void NativeWindowMac::SetExitingFullScreen(bool flag) {
   exiting_fullscreen_ = flag;
+}
+
+void NativeWindowMac::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {
+  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                 base::BindOnce(&NativeWindowMac::RepositionTrafficLights,
+                                base::Unretained(this)));
 }
 
 bool NativeWindowMac::IsEnabled() {
