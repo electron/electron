@@ -115,6 +115,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/script_executor.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 

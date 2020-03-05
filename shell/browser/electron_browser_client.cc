@@ -146,6 +146,7 @@
 #include "extensions/browser/process_map.h"
 #include "extensions/common/api/mime_handler.mojom.h"
 #include "extensions/common/extension.h"
+#include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
@@ -462,6 +463,8 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
       new extensions::ExtensionMessageFilter(process_id, browser_context));
   host->AddFilter(new extensions::ExtensionsGuestViewMessageFilter(
       process_id, browser_context));
+  host->AddFilter(
+      new ElectronExtensionMessageFilter(process_id, browser_context));
 #endif
 
   ProcessPreferences prefs;

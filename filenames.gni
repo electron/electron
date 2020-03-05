@@ -601,6 +601,8 @@ filenames = {
   ]
 
   lib_sources_extensions = [
+    "shell/browser/extensions/api/i18n/i18n_api.cc",
+    "shell/browser/extensions/api/i18n/i18n_api.h",
     "shell/browser/extensions/api/resources_private/resources_private_api.cc",
     "shell/browser/extensions/api/resources_private/resources_private_api.h",
     "shell/browser/extensions/api/runtime/electron_runtime_api_delegate.cc",
@@ -619,6 +621,8 @@ filenames = {
     "shell/browser/extensions/electron_extension_host_delegate.h",
     "shell/browser/extensions/electron_extension_loader.cc",
     "shell/browser/extensions/electron_extension_loader.h",
+    "shell/browser/extensions/electron_extension_message_filter.cc",
+    "shell/browser/extensions/electron_extension_message_filter.h",
     "shell/browser/extensions/electron_extension_system.cc",
     "shell/browser/extensions/electron_extension_system.h",
     "shell/browser/extensions/electron_extension_system_factory.cc",
