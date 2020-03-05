@@ -255,7 +255,9 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                              const std::string& channel,
                              v8::Local<v8::Value> args);
 
-  void PostMessage(gin::Arguments* args);
+  void PostMessage(const std::string& channel,
+                   v8::Local<v8::Value> message,
+                   base::Optional<v8::Local<v8::Value>> transfer);
 
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);

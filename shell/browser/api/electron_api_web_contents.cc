@@ -1106,31 +1106,22 @@ void WebContents::ReceivePostMessage(const std::string& channel,
                  false, channel, message_value, std::move(wrapped_ports));
 }
 
-void WebContents::PostMessage(gin::Arguments* args) {
-  std::string channel;
-  if (!args->GetNext(&channel)) {
-    args->ThrowError();
-    return;
-  }
-
-  v8::Local<v8::Value> message_value;
-  if (!args->GetNext(&message_value)) {
-    args->ThrowError();
-    return;
-  }
-
+void WebContents::PostMessage(const std::string& channel,
+                              v8::Local<v8::Value> message_value,
+                              base::Optional<v8::Local<v8::Value>> transfer) {
   blink::TransferableMessage transferable_message;
-  if (!electron::SerializeV8Value(args->isolate(), message_value,
+  if (!electron::SerializeV8Value(isolate(), message_value,
                                   &transferable_message)) {
-    args->ThrowError();
+    isolate()->ThrowException(v8::Exception::Error(
+        gin::StringToV8(isolate(), "Failed to serialize message")));
     return;
   }
 
-  v8::Local<v8::Value> transferables;
   std::vector<gin::Handle<MessagePort>> wrapped_ports;
-  if (args->GetNext(&transferables)) {
-    if (!gin::ConvertFromV8(isolate(), transferables, &wrapped_ports)) {
-      args->ThrowError();
+  if (transfer) {
+    if (!gin::ConvertFromV8(isolate(), *transfer, &wrapped_ports)) {
+      isolate()->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate(), "Invalid value for transfer")));
       return;
     }
   }
