@@ -195,7 +195,10 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVibrancy(const std::string& type);
 
   // Traffic Light API
+#if defined(OS_MACOSX)
   virtual void SetTrafficLightPosition(const gfx::Point& position);
+  virtual gfx::Point GetTrafficLightPosition() const;
+#endif
 
   // Touchbar API
   virtual void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);

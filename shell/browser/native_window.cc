@@ -346,7 +346,14 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
 
 void NativeWindow::SetVibrancy(const std::string& filename) {}
 
+#if defined(OS_MACOSX)
 void NativeWindow::SetTrafficLightPosition(const gfx::Point& position) {}
+
+gfx::Point NativeWindow::GetTrafficLightPosition() const {
+  gfx::Point pos(0, 0);
+  return pos;
+}
+#endif
 
 void NativeWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {}
