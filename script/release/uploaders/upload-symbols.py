@@ -30,7 +30,7 @@ def main():
       run_symstore(pdb, SYMBOLS_DIR, PRODUCT_NAME)
     files = glob.glob(SYMBOLS_DIR + '/*.pdb/*/*.pdb')
   else:
-    files = glob.glob(SYMBOLS_DIR + '/*/*/*.sym')
+    files = glob.glob(SYMBOLS_DIR + '/*/*/*.sym') + glob.glob(SYMBOLS_DIR + '/*/*/*.src.zip')
 
   # The file upload needs to be atom-shell/symbols/:symbol_name/:hash/:symbol
   os.chdir(SYMBOLS_DIR)
