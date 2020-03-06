@@ -44,7 +44,6 @@ async function deleteDraft (releaseId, targetRepo) {
       repo: targetRepo,
       release_id: parseInt(releaseId, 10)
     })
-    console.log(result)
     if (!result.data.draft) {
       console.log(`${fail} published releases cannot be deleted.`)
       return false
@@ -85,15 +84,11 @@ async function cleanReleaseArtifacts () {
 
   if (releaseId) {
     if (isNightly) {
-      const deletedNightlyDraft = await deleteDraft(releaseId, 'nightlies')
+      await deleteDraft(releaseId, 'nightlies')
 
-      // don't delete tag unless draft deleted successfully
-      if (deletedNightlyDraft) {
-        await Promise.all([
-          deleteTag(args.tag, 'electron'),
-          deleteTag(args.tag, 'nightlies')
-        ])
-      }
+      // We only need to delete the Electron tag since the
+      // nightly tag is only created at publish-time.
+      await deleteTag(args.tag, 'electron')
     } else {
       const deletedElectronDraft = await deleteDraft(releaseId, 'electron')
       // don't delete tag unless draft deleted successfully
