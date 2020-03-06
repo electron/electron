@@ -279,11 +279,23 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
   Init(isolate);
   AttachAsUserData(browser_context);
+
+  SpellcheckService* service =
+      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+  if (service) {
+    service->SetHunspellObserver(this);
+  }
 }
 
 Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())
       ->RemoveObserver(this);
+
+  SpellcheckService* service =
+      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+  if (service) {
+    service->SetHunspellObserver(nullptr);
+  }
   // TODO(zcbenz): Now since URLRequestContextGetter is gone, is this still
   // needed?
   // Refs https://github.com/electron/electron/pull/12305.
@@ -310,6 +322,19 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     item->Cancel(true);
     item->Remove();
   }
+}
+
+void Session::OnHunspellDictionaryInitialized(const std::string& language) {
+  Emit("spellcheck-dictionary-initialized", language);
+}
+void Session::OnHunspellDictionaryDownloadBegin(const std::string& language) {
+  Emit("spellcheck-dictionary-download-begin", language);
+}
+void Session::OnHunspellDictionaryDownloadSuccess(const std::string& language) {
+  Emit("spellcheck-dictionary-download-success", language);
+}
+void Session::OnHunspellDictionaryDownloadFailure(const std::string& language) {
+  Emit("spellcheck-dictionary-download-failure", language);
 }
 
 v8::Local<v8::Promise> Session::ResolveProxy(gin_helper::Arguments* args) {
