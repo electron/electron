@@ -20,15 +20,18 @@ describe('spellchecker', () => {
     await closeWindow(w)
   })
 
-  // Spellchecker loads slow on ARM CI machines.
-  const waitTime = (process.arch === 'arm' || process.arch === 'arm64') ? 2000 : 500
+  // Context menu test can not run on Windows, and it is not reliable on ARM
+  // CI machines.
+  const shouldRun = process.platform !== 'win32' &&
+                    process.arch !== 'arm' &&
+                    process.arch !== 'arm64'
 
-  ifit(process.platform !== 'win32')('should detect correctly spelled words as correct', async () => {
+  ifit(shouldRun)('should detect correctly spelled words as correct', async () => {
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautiful and lovely"')
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()')
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu')
     // Wait for spellchecker to load
-    await new Promise(resolve => setTimeout(resolve, waitTime))
+    await new Promise(resolve => setTimeout(resolve, 500))
     w.webContents.sendInputEvent({
       type: 'mouseDown',
       button: 'right',
@@ -40,12 +43,12 @@ describe('spellchecker', () => {
     expect(contextMenuParams.dictionarySuggestions).to.have.lengthOf(0)
   })
 
-  ifit(process.platform !== 'win32')('should detect incorrectly spelled words as incorrect', async () => {
+  ifit(shouldRun)('should detect incorrectly spelled words as incorrect', async () => {
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautifulllll asd asd"')
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()')
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu')
     // Wait for spellchecker to load
-    await new Promise(resolve => setTimeout(resolve, waitTime))
+    await new Promise(resolve => setTimeout(resolve, 500))
     w.webContents.sendInputEvent({
       type: 'mouseDown',
       button: 'right',
