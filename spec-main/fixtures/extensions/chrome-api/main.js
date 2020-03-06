@@ -29,6 +29,14 @@ const testMap = {
     chrome.runtime.sendMessage({ method: 'executeScript', args: [code] }, response => {
       console.log(JSON.stringify(response))
     })
+  },
+  connectTab (name) {
+    chrome.runtime.onConnect.addListener(port => {
+      port.onMessage.addListener(message => {
+        console.log([port.name, message].join())
+      })
+    })
+    chrome.runtime.sendMessage({ method: 'connectTab', args: [name] })
   }
 }
 
