@@ -13,6 +13,7 @@
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace electron {
 
@@ -31,6 +32,12 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
   };
 
   static gin::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
+
+  static std::string GetMediaSourceIdForWebContents(
+      v8::Isolate* isolate,
+      gin_helper::ErrorThrower thrower,
+      int32_t request_web_contents_id,
+      int32_t web_contents_id);
 
   void StartHandling(bool capture_window,
                      bool capture_screen,

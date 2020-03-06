@@ -1,4 +1,4 @@
-const { createDesktopCapturer } = process.electronBinding('desktop_capturer');
+const { createDesktopCapturer, getMediaSourceIdForWebContents: getMediaSourceIdForWebContentsBinding } = process.electronBinding('desktop_capturer');
 
 const deepEqual = (a: ElectronInternal.GetSourcesOptions, b: ElectronInternal.GetSourcesOptions) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -53,4 +53,8 @@ export const getSources = (event: Electron.IpcMainEvent, options: ElectronIntern
   });
 
   return getSources;
+};
+
+export const getMediaSourceIdForWebContents = (event: Electron.IpcMainEvent, webContentsId: number) => {
+  return getMediaSourceIdForWebContentsBinding(event.sender.id, webContentsId);
 };

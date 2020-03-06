@@ -37,3 +37,7 @@ export async function getSources (options: Electron.SourcesOptions) {
 
   return deserialize(sources);
 }
+
+export function getMediaSourceIdForWebContents (webContentsId: number) {
+  return ipcRendererInternal.invoke<Electron.WebContentsStreamResult>('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_MEDIA_SOURCE_ID_FOR_WEB_CONTENTS', webContentsId, getCurrentStack());
+}

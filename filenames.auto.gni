@@ -131,6 +131,7 @@ auto_filenames = {
     "docs/api/structures/upload-data.md",
     "docs/api/structures/upload-file.md",
     "docs/api/structures/upload-raw-data.md",
+    "docs/api/structures/web-contents-stream-result.md",
     "docs/api/structures/web-source.md",
   ]
 
