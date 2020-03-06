@@ -80,7 +80,7 @@ class FileChooserDialog {
     if (found && dl_gtk_file_chooser_native_new != NULL) {
       dialog_ = GTK_FILE_CHOOSER(
           dl_gtk_file_chooser_native_new(settings.title.c_str(), NULL, action,
-                                         gtk_util::kCancelLabel, confirm_text));
+                                         confirm_text, gtk_util::kCancelLabel));
     } else {
       dialog_ = GTK_FILE_CHOOSER(gtk_file_chooser_dialog_new(
           settings.title.c_str(), NULL, action, gtk_util::kCancelLabel,
@@ -128,10 +128,13 @@ class FileChooserDialog {
     if (!settings.filters.empty())
       AddFilters(settings.filters);
 
-    preview_ = gtk_image_new();
-    g_signal_connect(dialog_, "update-preview",
-                     G_CALLBACK(OnUpdatePreviewThunk), this);
-    gtk_file_chooser_set_preview_widget(dialog_, preview_);
+    // GtkNativeDialog does not support preview widgets
+    if (GTK_IS_DIALOG(dialog_)) {
+      preview_ = gtk_image_new();
+      g_signal_connect(dialog_, "update-preview",
+                      G_CALLBACK(OnUpdatePreviewThunk), this);
+      gtk_file_chooser_set_preview_widget(dialog_, preview_);
+    }
   }
 
   ~FileChooserDialog() {
