@@ -153,6 +153,8 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   // Custom traffic light positioning
   void RepositionTrafficLights();
   void SetExitingFullScreen(bool flag);
+  void SetTrafficLightPosition(const gfx::Point& position) override;
+  gfx::Point GetTrafficLightPosition() const override;
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
   enum class TitleBarStyle {

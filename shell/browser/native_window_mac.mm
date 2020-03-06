@@ -1534,6 +1534,15 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     [effect_view setMaterial:vibrancyType];
 }
 
+void NativeWindowMac::SetTrafficLightPosition(const gfx::Point& position) {
+  traffic_light_position_ = position;
+  RepositionTrafficLights();
+}
+
+gfx::Point NativeWindowMac::GetTrafficLightPosition() const {
+  return traffic_light_position_;
+}
+
 void NativeWindowMac::SetTouchBar(
     const std::vector<mate::PersistentDictionary>& items) {
   if (@available(macOS 10.12.2, *)) {
