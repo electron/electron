@@ -12,3 +12,6 @@ symbol_level = 1
 # The initialization of the decoder depends on whether ffmpeg has
 # been built with H.264 support.
 rtc_use_h264 = proprietary_codecs
+
+# XXX temporary
+is_asan = true
