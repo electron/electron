@@ -14,10 +14,7 @@
 #include <string>
 #include <vector>
 
-#include "shell/common/extensions/api/cookies.h"
-
 class Browser;
-class Profile;
 
 namespace base {
 class ListValue;

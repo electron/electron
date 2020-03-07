@@ -10,6 +10,25 @@
 #include <utility>
 #include <vector>
 
+#include "base/bind.h"
+#include "base/json/json_writer.h"
+#include "base/lazy_instance.h"
+#include "base/time/time.h"
+#include "base/values.h"
+#include "content/public/browser/browser_context.h"
+#include "content/public/browser/browser_thread.h"
+#include "content/public/browser/storage_partition.h"
+#include "extensions/browser/event_router.h"
+#include "extensions/common/error_utils.h"
+#include "extensions/common/extension.h"
+#include "extensions/common/permissions/permissions_data.h"
+#include "net/cookies/canonical_cookie.h"
+#include "net/cookies/cookie_constants.h"
+#include "services/network/public/mojom/network_service.mojom.h"
+#include "shell/browser/extensions/api/cookies/cookies_api_constants.h"
+#include "shell/browser/extensions/api/cookies/cookies_helpers.h"
+#include "shell/browser/extensions/electron_extension_function_details.h"
+
 using content::BrowserThread;
 
 namespace extensions {
@@ -42,22 +61,7 @@ network::mojom::CookieManager* ParseStoreCookieManager(
     bool include_incognito,
     std::string* store_id,
     std::string* error) {
-  Profile* function_profile = Profile::FromBrowserContext(function_context);
-  Profile* store_profile = nullptr;
-  if (!store_id->empty()) {
-    store_profile = cookies_helpers::ChooseProfileFromStoreId(
-        *store_id, function_profile, include_incognito);
-    if (!store_profile) {
-      *error = ErrorUtils::FormatErrorMessage(
-          cookies_api_constants::kInvalidStoreIdError, *store_id);
-      return nullptr;
-    }
-  } else {
-    store_profile = function_profile;
-    *store_id = cookies_helpers::GetStoreIdFromProfile(store_profile);
-  }
-
-  return content::BrowserContext::GetDefaultStoragePartition(store_profile)
+  return content::BrowserContext::GetDefaultStoragePartition(function_context)
       ->GetCookieManagerForBrowserProcess();
 }
 
@@ -75,7 +79,7 @@ void CookiesEventRouter::CookieChangeListener::OnCookieChange(
 }
 
 CookiesEventRouter::CookiesEventRouter(content::BrowserContext* context)
-    : profile_(Profile::FromBrowserContext(context)) {
+    : profile_(context) {
   MaybeStartListening();
   BrowserList::AddObserver(this);
 }
@@ -93,10 +97,8 @@ void CookiesEventRouter::OnCookieChange(bool otr,
   dict->SetBoolean(cookies_api_constants::kRemovedKey,
                    change.cause != net::CookieChangeCause::INSERTED);
 
-  Profile* profile =
-      otr ? profile_->GetOffTheRecordProfile() : profile_->GetOriginalProfile();
-  api::cookies::Cookie cookie = cookies_helpers::CreateCookie(
-      change.cookie, cookies_helpers::GetStoreIdFromProfile(profile));
+  api::cookies::Cookie cookie =
+      cookies_helpers::CreateCookie(change.cookie, cookies_helpers::k);
   dict->Set(cookies_api_constants::kCookieKey, cookie.ToValue());
 
   // Map the internal cause to an external string.
