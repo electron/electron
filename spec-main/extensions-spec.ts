@@ -39,6 +39,19 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     expect(bg).to.equal('red')
   })
 
+  it('serializes a loaded extension', async () => {
+    const extensionPath = path.join(fixtures, 'extensions', 'red-bg')
+    const manifest = JSON.parse(fs.readFileSync(path.join(extensionPath, 'manifest.json'), 'utf-8'))
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+    const extension = await customSession.loadExtension(extensionPath)
+    expect(extension.id).to.be.a('string')
+    expect(extension.name).to.be.a('string')
+    expect(extension.path).to.be.a('string')
+    expect(extension.version).to.be.a('string')
+    expect(extension.url).to.be.a('string')
+    expect(extension.manifest).to.deep.equal(manifest)
+  })
+
   it('removes an extension', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
     const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
