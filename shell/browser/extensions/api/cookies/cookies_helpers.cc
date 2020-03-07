@@ -4,32 +4,18 @@
 
 // Implements common functionality for the Chrome Extensions Cookies API.
 
-#include "chrome/browser/extensions/api/cookies/cookies_helpers.h"
+#include "shell/browser/extensions/api/cookies/cookies_helpers.h"
 
 #include <stddef.h>
+
+#include "shell/browser/extensions/api/cookies/cookies_api_constants.h"
+#include "shell/browser/extensions/extension_tab_util.h"
+#include "shell/common/extensions/api/cookies.h"
+#include "shell/common/url_constants.h"
 
 #include <limits>
 #include <utility>
 #include <vector>
-
-#include "base/logging.h"
-#include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
-#include "base/values.h"
-#include "chrome/browser/extensions/api/cookies/cookies_api_constants.h"
-#include "chrome/browser/extensions/extension_tab_util.h"
-#include "chrome/browser/profiles/profile.h"
-#include "chrome/browser/ui/browser.h"
-#include "chrome/browser/ui/tabs/tab_strip_model.h"
-#include "chrome/common/extensions/api/cookies.h"
-#include "chrome/common/url_constants.h"
-#include "content/public/browser/web_contents.h"
-#include "extensions/common/extension.h"
-#include "extensions/common/permissions/permissions_data.h"
-#include "net/cookies/canonical_cookie.h"
-#include "net/cookies/cookie_store.h"
-#include "net/cookies/cookie_util.h"
-#include "url/gurl.h"
 
 using extensions::api::cookies::Cookie;
 using extensions::api::cookies::CookieStore;

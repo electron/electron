@@ -14,11 +14,7 @@
 #include <string>
 #include <vector>
 
-#include "chrome/common/extensions/api/cookies.h"
-#include "net/cookies/canonical_cookie.h"
-#include "net/cookies/cookie_monster.h"
-#include "net/cookies/cookie_options.h"
-#include "services/network/public/mojom/cookie_manager.mojom.h"
+#include "shell/common/extensions/api/cookies.h"
 
 class Browser;
 class Profile;
