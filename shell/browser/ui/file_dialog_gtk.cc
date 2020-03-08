@@ -70,14 +70,14 @@ class FileChooserDialog {
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
       confirm_text = gtk_util::kOpenLabel;
 
-    gtk_module_ = g_module_open("libgtk-3.so", G_MODULE_BIND_LAZY);
+    gtk_module_ = g_module_open("libgtk-3.so.0", G_MODULE_BIND_LAZY);
     void* (*dl_gtk_file_chooser_native_new)(const char*, GtkWindow*,
                                             GtkFileChooserAction, const char*,
                                             const char*) = NULL;
     bool found = g_module_symbol(
         gtk_module_, "gtk_file_chooser_native_new",
         reinterpret_cast<void**>(&dl_gtk_file_chooser_native_new));
-    if (found && dl_gtk_file_chooser_native_new != NULL) {
+    if (found) {
       dialog_ = GTK_FILE_CHOOSER(
           dl_gtk_file_chooser_native_new(settings.title.c_str(), NULL, action,
                                          confirm_text, gtk_util::kCancelLabel));
@@ -89,14 +89,12 @@ class FileChooserDialog {
 
     if (parent_) {
       parent_->SetEnabled(false);
-      if (GTK_IS_DIALOG(dialog_))
+      if (GTK_IS_DIALOG(dialog_)) {
         gtk::SetGtkTransientForAura(GTK_WIDGET(dialog_),
                                     parent_->GetNativeWindow());
-      else
-        SetGtkTransientForAura(parent_->GetNativeWindow());
-      if (GTK_IS_DIALOG(dialog_)) {
         gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
       } else {
+        SetGtkTransientForAura(parent_->GetNativeWindow());
         void (*dl_gtk_native_dialog_set_modal)(void*, bool) = NULL;
         g_module_symbol(
             gtk_module_, "gtk_native_dialog_set_modal",
@@ -176,10 +174,6 @@ class FileChooserDialog {
   }
 
   void RunAsynchronous() {
-    if (GTK_IS_DIALOG(dialog_)) {
-      g_signal_connect(dialog_, "delete-event",
-                       G_CALLBACK(gtk_widget_hide_on_delete), NULL);
-    }
     g_signal_connect(dialog_, "response", G_CALLBACK(OnFileDialogResponseThunk),
                      this);
     if (GTK_IS_DIALOG(dialog_)) {
