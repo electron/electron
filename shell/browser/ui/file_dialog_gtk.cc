@@ -5,7 +5,6 @@
 #include <glib/gi18n.h>  // _() macro
 #include <gmodule.h>
 
-#include <functional>
 #include <memory>
 
 #include "base/callback.h"
@@ -126,7 +125,7 @@ class FileChooserDialog {
     if (!settings.filters.empty())
       AddFilters(settings.filters);
 
-    // GtkNativeDialog does not support preview widgets
+    // GtkFileChooserNative does not support preview widgets
     if (GTK_IS_DIALOG(dialog_)) {
       preview_ = gtk_image_new();
       g_signal_connect(dialog_, "update-preview",
