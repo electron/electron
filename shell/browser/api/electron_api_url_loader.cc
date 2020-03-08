@@ -12,11 +12,13 @@
 #include <vector>
 
 #include "base/containers/id_map.h"
+#include "base/strings/string_util.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
+#include "net/base/load_flags.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
@@ -353,6 +355,12 @@ gin_helper::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
           !net::HttpUtil::IsValidHeaderValue(it.second)) {
         args->ThrowTypeError("Invalid header name or value");
         return nullptr;
+      }
+      // If we explicitly set a cookie header, do not clobber it with cookies
+      // from the session
+      // TODO(nilset): find other late added headers to allow overriding
+      if (base::LowerCaseEqualsASCII(it.first, "cookie")) {
+        request->load_flags |= net::LOAD_DO_NOT_SEND_COOKIES;
       }
       request->headers.SetHeader(it.first, it.second);
     }
