@@ -318,7 +318,7 @@ std::string OpenPathOnThread(const base::FilePath& full_path) {
 namespace platform_util {
 
 void ShowItemInFolder(const base::FilePath& full_path) {
-  base::ThreadPool::CreateSingleThreadTaskRunner(
+  base::ThreadPool::CreateCOMSTATaskRunner(
       {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
       ->PostTask(FROM_HERE,
                  base::BindOnce(&ShowItemInFolderOnWorkerThread, full_path));
