@@ -32,8 +32,10 @@ void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
 }
 
-void Browser::Focus() {
-  [[AtomApplication sharedApplication] activateIgnoringOtherApps:NO];
+void Browser::Focus(gin_helper::Arguments* args) {
+  bool force_focus = false;
+  args->GetNext(&force_focus);
+  [[AtomApplication sharedApplication] activateIgnoringOtherApps:force_focus];
 }
 
 void Browser::Hide() {
