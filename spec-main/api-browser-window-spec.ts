@@ -1081,6 +1081,22 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    describe('new BrowserWindow() default sizing', () => {
+      it('throws an error for non-integer height values', () => {
+        expect(() => {
+          /* eslint-disable no-new */
+          new BrowserWindow({ height: 10.5 })
+        }).to.throw(`'height' parameter must be an integer`)
+      })
+
+      it('throws an error for non-integer width values', () => {
+        expect(() => {
+          /* eslint-disable no-new */
+          new BrowserWindow({ width: 10.5 })
+        }).to.throw(`'width' parameter must be an integer`)
+      })
+    })
+
     describe('BrowserWindow.addTabbedWindow()', () => {
       it('does not throw', async () => {
         const tabbedWindow = new BrowserWindow({})

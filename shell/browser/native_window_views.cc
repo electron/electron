@@ -159,8 +159,18 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
         gfx::Size(), gfx::Size(INT_MAX / 10, INT_MAX / 10)));
 
   int width = 800, height = 600;
-  options.Get(options::kWidth, &width);
-  options.Get(options::kHeight, &height);
+  gin_helper::ErrorThrower thrower(options.isolate());
+  if (options.Has(options::kWidth) && !options.Get(options::kWidth, &width)) {
+    thrower.ThrowTypeError("'width' parameter must be an integer.");
+    return;
+  }
+
+  if (options.Has(options::kHeight) &&
+      !options.Get(options::kHeight, &height)) {
+    thrower.ThrowTypeError("'height' parameter must be an integer.");
+    return;
+  }
+
   gfx::Rect bounds(0, 0, width, height);
   widget_size_ = bounds.size();
 

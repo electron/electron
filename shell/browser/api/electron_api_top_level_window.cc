@@ -92,15 +92,22 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
   }
 #endif
 
+#if defined(TOOLKIT_VIEWS)
+  // Sets the window icon.
+  gin::Handle<NativeImage> icon;
+  options.Get(options::kIcon, &icon);
+#endif
+
   // Creates NativeWindow.
   window_.reset(NativeWindow::Create(
       options, parent.IsEmpty() ? nullptr : parent->window_.get()));
   window_->AddObserver(this);
 
 #if defined(TOOLKIT_VIEWS)
-  // Sets the window icon.
-  gin::Handle<NativeImage> icon;
-  if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
+  // We do this separate from conversion to ensure that no JS is run
+  // when there are pending exceptions thrown during native window creation.
+  // TODO(codebytere): make "options" a typed struct with a converter?
+  if (!icon.IsEmpty())
     SetIcon(icon);
 #endif
 }

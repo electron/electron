@@ -330,8 +330,17 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
 
   int width = 800, height = 600;
-  options.Get(options::kWidth, &width);
-  options.Get(options::kHeight, &height);
+  gin_helper::ErrorThrower thrower(options.isolate());
+  if (options.Has(options::kWidth) && !options.Get(options::kWidth, &width)) {
+    thrower.ThrowTypeError("'width' parameter must be an integer");
+    return;
+  }
+
+  if (options.Has(options::kHeight) &&
+      !options.Get(options::kHeight, &height)) {
+    thrower.ThrowTypeError("'height' parameter must be an integer");
+    return;
+  }
 
   NSRect main_screen_rect = [[[NSScreen screens] firstObject] frame];
   gfx::Rect bounds(round((NSWidth(main_screen_rect) - width) / 2),
