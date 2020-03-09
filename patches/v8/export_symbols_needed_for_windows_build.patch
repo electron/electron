@@ -19,7 +19,7 @@ index ef437446fd6378e9749ce1b0d3c428f6aaac559c..3f2063d15bbdc587ea29bec4c889d1e0
    explicit inline Relocatable(Isolate* isolate);
    inline virtual ~Relocatable();
 diff --git a/src/objects/ordered-hash-table.h b/src/objects/ordered-hash-table.h
-index ce5c0c5874c067f01b0bd51579887ec6e6ec5536..e53bd7302b3edfbbd565c1d811d31245884981c8 100644
+index b587960432caf56601920678686480f2f1dd5abc..3c08eb044115db534eb880b867e0d03802dc9615 100644
 --- a/src/objects/ordered-hash-table.h
 +++ b/src/objects/ordered-hash-table.h
 @@ -60,7 +60,7 @@ namespace internal {
