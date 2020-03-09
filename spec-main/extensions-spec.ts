@@ -24,8 +24,13 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   after(() => {
     server.close()
   })
-
   afterEach(closeAllWindows)
+  afterEach(() => {
+    session.defaultSession.getAllExtensions().forEach((e: any) => {
+      session.defaultSession.removeExtension(e.id)
+    })
+  })
+
   it('loads an extension', async () => {
     // NB. we have to use a persist: session (i.e. non-OTR) because the
     // extension registry is redirected to the main session. so installing an
@@ -73,11 +78,16 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
 
   it('confines an extension to the session it was loaded in', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
-    customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
+    await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
     const w = new BrowserWindow({ show: false }) // not in the session
     await w.loadURL(url)
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
     expect(bg).to.equal('')
+  })
+
+  it('loading an extension in a temporary session throws an error', async () => {
+    const customSession = session.fromPartition(require('uuid').v4())
+    await expect(customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))).to.eventually.be.rejectedWith('Extensions cannot be loaded in a temporary session')
   })
 
   describe('chrome.i18n', () => {
@@ -281,12 +291,6 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   })
 
   describe('deprecation shims', () => {
-    afterEach(() => {
-      session.defaultSession.getAllExtensions().forEach((e: any) => {
-        session.defaultSession.removeExtension(e.id)
-      })
-    })
-
     it('loads an extension through BrowserWindow.addExtension', async () => {
       BrowserWindow.addExtension(path.join(fixtures, 'extensions', 'red-bg'))
       const w = new BrowserWindow({ show: false })
