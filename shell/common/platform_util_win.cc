@@ -328,8 +328,8 @@ void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   base::PostTaskAndReplyWithResult(
-      base::ThreadPool::CreateSingleThreadTaskRunner(({base::MayBlock(),
-                                    base::TaskPriority::USER_BLOCKING})
+      base::ThreadPool::CreateCOMSTATaskRunner(
+          {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
           .get(),
       FROM_HERE, base::BindOnce(&OpenPathOnThread, full_path),
       std::move(callback));
