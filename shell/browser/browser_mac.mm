@@ -21,6 +21,8 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/arguments.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/platform_util.h"
 #include "ui/gfx/image/image.h"
@@ -33,9 +35,19 @@ void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
 }
 
 void Browser::Focus(gin_helper::Arguments* args) {
-  bool force_focus = false;
-  args->GetNext(&force_focus);
-  [[AtomApplication sharedApplication] activateIgnoringOtherApps:force_focus];
+  gin_helper::Dictionary opts;
+  bool steal_focus = false;
+
+  if (args->GetNext(&opts)) {
+    gin_helper::ErrorThrower thrower(args->isolate());
+    if (!opts.Get("steal", &steal_focus)) {
+      thrower.ThrowError(
+          "Expected options object to contain a 'steal' boolean property");
+      return;
+    }
+  }
+
+  [[AtomApplication sharedApplication] activateIgnoringOtherApps:steal_focus];
 }
 
 void Browser::Hide() {
