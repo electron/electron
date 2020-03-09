@@ -131,10 +131,8 @@ int ViewsDelegate::GetAppbarAutohideEdges(HMONITOR monitor,
   if (monitor && !in_autohide_edges_callback_) {
     // TODO(robliao): Annotate this task with .WithCOM() once supported.
     // https://crbug.com/662122
-    base::PostTaskAndReplyWithResult(
-        FROM_HERE,
-        {base::ThreadPool(), base::MayBlock(),
-         base::TaskPriority::USER_BLOCKING},
+    base::ThreadPool::PostTaskAndReplyWithResult(
+        FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_BLOCKING},
         base::BindOnce(&GetAppbarAutohideEdgesOnWorkerThread, monitor),
         base::BindOnce(&ViewsDelegate::OnGotAppbarAutohideEdges,
                        weak_factory_.GetWeakPtr(), std::move(callback), monitor,
