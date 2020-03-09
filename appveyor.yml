@@ -119,7 +119,7 @@ build_script:
         # build time generation of file gen/angle/commit.h depends on
         # third_party/angle/.git/HEAD.
         # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
-        if ($(7z a $zipfile third_party\angle\.git\HEAD;$LASTEXITCODE -ne 0)) {
+        if ($(7z a $zipfile src\third_party\angle\.git\HEAD;$LASTEXITCODE -ne 0)) {
           Write-warning "Failed to add third_party\angle\.git\HEAD; continuing anyway"
         }
       }
