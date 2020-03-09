@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 4f37aaed6abf2e6309b1e3a6667627ec53d7671f..fd0f8d9bb5d49339c43039c39bd6aa5ab300df5c 100644
+index 7ce55da4749eeb3e774a5f0e069e73400ef392c7..9d340a9207d2e0b71e0726a0904282e160e036ae 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -98,6 +98,11 @@
+@@ -99,6 +99,11 @@
  #include "services/network/url_loader.h"
  #include "services/network/url_request_context_builder_mojo.h"
  
@@ -22,7 +22,7 @@ index 4f37aaed6abf2e6309b1e3a6667627ec53d7671f..fd0f8d9bb5d49339c43039c39bd6aa5a
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -351,6 +356,79 @@ bool UsingBuiltinCertVerifier(
+@@ -352,6 +357,79 @@ bool UsingBuiltinCertVerifier(
  
  }  // namespace
  
@@ -102,7 +102,7 @@ index 4f37aaed6abf2e6309b1e3a6667627ec53d7671f..fd0f8d9bb5d49339c43039c39bd6aa5a
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -519,6 +597,13 @@ void NetworkContext::SetClient(
+@@ -520,6 +598,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -116,7 +116,7 @@ index 4f37aaed6abf2e6309b1e3a6667627ec53d7671f..fd0f8d9bb5d49339c43039c39bd6aa5a
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1682,6 +1767,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1683,6 +1768,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
        base::CommandLine::ForCurrentProcess();
  
    std::unique_ptr<net::CertVerifier> cert_verifier;
@@ -124,7 +124,7 @@ index 4f37aaed6abf2e6309b1e3a6667627ec53d7671f..fd0f8d9bb5d49339c43039c39bd6aa5a
    if (g_cert_verifier_for_testing) {
      cert_verifier = std::make_unique<WrappedTestingCertVerifier>();
    } else {
-@@ -1730,8 +1816,8 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1731,8 +1817,8 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
      }
  #endif
  #if BUILDFLAG(BUILTIN_CERT_VERIFIER_FEATURE_SUPPORTED)
@@ -135,7 +135,7 @@ index 4f37aaed6abf2e6309b1e3a6667627ec53d7671f..fd0f8d9bb5d49339c43039c39bd6aa5a
            std::make_unique<net::CoalescingCertVerifier>(
                std::make_unique<net::MultiThreadedCertVerifier>(
                    UsingBuiltinCertVerifier(params_->use_builtin_cert_verifier)
-@@ -1741,12 +1827,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1742,12 +1828,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                              cert_net_fetcher_))));
      }
  #endif

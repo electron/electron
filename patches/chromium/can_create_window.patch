@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index dfaaaa19b048a2cb664c2606b33e7cbe807152cf..a9159021009ea53b0b50a092f7eb5e5717ee62af 100644
+index 577ab7436be5f156c11237d992c43fe7da14d9a9..3075f7179093e082b1940b6990aab9cf9ef487d7 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4582,6 +4582,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4596,6 +4596,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -36,7 +36,7 @@ index 443ab9086c1d39efd976d59ab2441d32b20596b4..8f84b4fe97f299440b07814f886d667f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 53db803d62dc26ef69e886c89407fac9633d958b..2ea6dbb5697268743026d24116bc5c509f950b4b 100644
+index 95ce11ee6dc7040fac369e57923d993e8eeb6197..4ebd47182f8e237b49ad202b5ab3d9d39beb52bf 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -515,6 +515,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -49,7 +49,7 @@ index 53db803d62dc26ef69e886c89407fac9633d958b..2ea6dbb5697268743026d24116bc5c50
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a996e9da772a4368c5845d3a8166d605f256108e..ee1034ee1bcd3f47964fec8fe11573596754e3b8 100644
+index 5e2f30e55860d6807404077c01095f2d47552fdc..050ece82da9dbcd7ad1a41deb3f9f731e9ed7b49 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -142,6 +142,7 @@ class NetworkService;
