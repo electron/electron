@@ -4,9 +4,11 @@ import { expect } from 'chai'
 import * as path from 'path'
 import { closeWindow } from './window-helpers'
 import { emittedOnce } from './events-helpers'
-import { ifit } from './spec-helpers'
+import { ifit, ifdescribe } from './spec-helpers'
 
-describe('spellchecker', () => {
+const features = process.electronBinding('features')
+
+ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
   let w: BrowserWindow
 
   beforeEach(async () => {
