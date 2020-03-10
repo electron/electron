@@ -48,7 +48,7 @@ ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
       tab->SetWithoutPathExpansion(
           "id", std::make_unique<base::Value>(api_contents->ID()));
       tab->SetWithoutPathExpansion(
-          "url", std::make_unique<base::Value>(api_contents->GetURL()));
+          "url", std::make_unique<base::Value>(api_contents->GetURL().spec()));
       tab->SetWithoutPathExpansion(
           "title", std::make_unique<base::Value>(api_contents->GetTitle()));
       tab->SetWithoutPathExpansion(
