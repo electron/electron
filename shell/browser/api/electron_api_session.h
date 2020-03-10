@@ -16,6 +16,10 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
+#endif
+
 class GURL;
 
 namespace base {
@@ -37,6 +41,9 @@ class ElectronBrowserContext;
 namespace api {
 
 class Session : public gin_helper::TrackableObject<Session>,
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+                public SpellcheckHunspellDictionary::Observer,
+#endif
                 public content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
@@ -115,6 +122,16 @@ class Session : public gin_helper::TrackableObject<Session>,
   // content::DownloadManager::Observer:
   void OnDownloadCreated(content::DownloadManager* manager,
                          download::DownloadItem* item) override;
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  // SpellcheckHunspellDictionary::Observer
+  void OnHunspellDictionaryInitialized(const std::string& language) override;
+  void OnHunspellDictionaryDownloadBegin(const std::string& language) override;
+  void OnHunspellDictionaryDownloadSuccess(
+      const std::string& language) override;
+  void OnHunspellDictionaryDownloadFailure(
+      const std::string& language) override;
+#endif
 
  private:
   // Cached gin_helper::Wrappable objects.

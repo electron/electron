@@ -42,7 +42,9 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "extensions/browser/script_executor.h"
+namespace extensions {
+class ScriptExecutor;
+}
 #endif
 
 namespace blink {

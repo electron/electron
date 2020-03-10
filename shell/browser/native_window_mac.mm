@@ -16,8 +16,11 @@
 #include "base/mac/scoped_cftyperef.h"
 #include "base/numerics/ranges.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/post_task.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
@@ -324,6 +327,8 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
 NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
+  ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
+
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -509,6 +514,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 }
 
 NativeWindowMac::~NativeWindowMac() {
+  ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   if (wheel_event_monitor_)
     [NSEvent removeMonitor:wheel_event_monitor_];
 }
@@ -698,6 +704,12 @@ bool NativeWindowMac::IsVisible() {
 
 void NativeWindowMac::SetExitingFullScreen(bool flag) {
   exiting_fullscreen_ = flag;
+}
+
+void NativeWindowMac::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {
+  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                 base::BindOnce(&NativeWindowMac::RepositionTrafficLights,
+                                base::Unretained(this)));
 }
 
 bool NativeWindowMac::IsEnabled() {
@@ -1538,6 +1550,15 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
   if (vibrancyType)
     [effect_view setMaterial:vibrancyType];
+}
+
+void NativeWindowMac::SetTrafficLightPosition(const gfx::Point& position) {
+  traffic_light_position_ = position;
+  RepositionTrafficLights();
+}
+
+gfx::Point NativeWindowMac::GetTrafficLightPosition() const {
+  return traffic_light_position_;
 }
 
 void NativeWindowMac::SetTouchBar(

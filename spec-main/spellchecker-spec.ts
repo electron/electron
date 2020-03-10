@@ -4,9 +4,11 @@ import { expect } from 'chai'
 import * as path from 'path'
 import { closeWindow } from './window-helpers'
 import { emittedOnce } from './events-helpers'
-import { ifit } from './spec-helpers'
+import { ifit, ifdescribe } from './spec-helpers'
 
-describe('spellchecker', () => {
+const features = process.electronBinding('features')
+
+ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
   let w: BrowserWindow
 
   beforeEach(async () => {
@@ -20,15 +22,18 @@ describe('spellchecker', () => {
     await closeWindow(w)
   })
 
-  // Spellchecker loads slow on ARM CI machines.
-  const waitTime = (process.arch === 'arm' || process.arch === 'arm64') ? 2000 : 500
+  // Context menu test can not run on Windows, and it is not reliable on ARM
+  // CI machines.
+  const shouldRun = process.platform !== 'win32' &&
+                    process.arch !== 'arm' &&
+                    process.arch !== 'arm64'
 
-  ifit(process.platform !== 'win32')('should detect correctly spelled words as correct', async () => {
+  ifit(shouldRun)('should detect correctly spelled words as correct', async () => {
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautiful and lovely"')
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()')
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu')
     // Wait for spellchecker to load
-    await new Promise(resolve => setTimeout(resolve, waitTime))
+    await new Promise(resolve => setTimeout(resolve, 500))
     w.webContents.sendInputEvent({
       type: 'mouseDown',
       button: 'right',
@@ -40,12 +45,12 @@ describe('spellchecker', () => {
     expect(contextMenuParams.dictionarySuggestions).to.have.lengthOf(0)
   })
 
-  ifit(process.platform !== 'win32')('should detect incorrectly spelled words as incorrect', async () => {
+  ifit(shouldRun)('should detect incorrectly spelled words as incorrect', async () => {
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautifulllll asd asd"')
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()')
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu')
     // Wait for spellchecker to load
-    await new Promise(resolve => setTimeout(resolve, waitTime))
+    await new Promise(resolve => setTimeout(resolve, 500))
     w.webContents.sendInputEvent({
       type: 'mouseDown',
       button: 'right',
@@ -101,6 +106,13 @@ describe('spellchecker', () => {
         expect(result).to.equal(false)
         const wordList = await ses.listWordsInSpellCheckerDictionary
         expect(wordList).to.have.length(0)
+      })
+
+      // remove API will always return false because we can't add words
+      it('should fail for non-persistent sessions', async () => {
+        const tempSes = session.fromPartition('temporary')
+        const result = tempSes.addWordToSpellCheckerDictionary('foobar')
+        expect(result).to.equal(false)
       })
     })
 

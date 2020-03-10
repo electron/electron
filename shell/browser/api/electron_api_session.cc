@@ -76,7 +76,6 @@
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_factory.h"  // nogncheck
-#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
 #include "chrome/browser/spellchecker/spellcheck_service.h"  // nogncheck
 #include "components/spellcheck/browser/pref_names.h"
 #include "components/spellcheck/common/spellcheck_common.h"
@@ -228,6 +227,7 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
   }
 }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
  private:
   std::unique_ptr<gin_helper::Promise<std::set<std::string>>> promise_;
@@ -263,6 +263,7 @@ class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
     // noop
   }
 };
+#endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 }  // namespace
 
@@ -279,11 +280,28 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
   Init(isolate);
   AttachAsUserData(browser_context);
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SpellcheckService* service =
+      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+  if (service) {
+    service->SetHunspellObserver(this);
+  }
+#endif
 }
 
 Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())
       ->RemoveObserver(this);
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SpellcheckService* service =
+      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+  if (service) {
+    service->SetHunspellObserver(nullptr);
+  }
+#endif
+
   // TODO(zcbenz): Now since URLRequestContextGetter is gone, is this still
   // needed?
   // Refs https://github.com/electron/electron/pull/12305.
@@ -311,6 +329,21 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     item->Remove();
   }
 }
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+void Session::OnHunspellDictionaryInitialized(const std::string& language) {
+  Emit("spellcheck-dictionary-initialized", language);
+}
+void Session::OnHunspellDictionaryDownloadBegin(const std::string& language) {
+  Emit("spellcheck-dictionary-download-begin", language);
+}
+void Session::OnHunspellDictionaryDownloadSuccess(const std::string& language) {
+  Emit("spellcheck-dictionary-download-success", language);
+}
+void Session::OnHunspellDictionaryDownloadFailure(const std::string& language) {
+  Emit("spellcheck-dictionary-download-failure", language);
+}
+#endif
 
 v8::Local<v8::Promise> Session::ResolveProxy(gin_helper::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
@@ -843,6 +876,12 @@ v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
 }
 
 bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
+  // don't let in-memory sessions add spellchecker words
+  // because files will persist unintentionally
+  bool is_in_memory = browser_context_->IsOffTheRecord();
+  if (is_in_memory)
+    return false;
+
   SpellcheckService* service =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
   if (!service)
@@ -858,6 +897,12 @@ bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
 }
 
 bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
+  // don't let in-memory sessions remove spellchecker words
+  // because files will persist unintentionally
+  bool is_in_memory = browser_context_->IsOffTheRecord();
+  if (is_in_memory)
+    return false;
+
   SpellcheckService* service =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
   if (!service)
@@ -871,7 +916,7 @@ bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
 #endif
   return service->GetCustomDictionary()->RemoveWord(word);
 }
-#endif
+#endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 // static
 gin::Handle<Session> Session::CreateFrom(
