@@ -53,6 +53,7 @@ class WrappableBase {
   void InitWithArgs(gin::Arguments* args);
 
   v8::Global<v8::Object> wrapper_;  // Weak
+
  private:
   static void FirstWeakCallback(
       const v8::WeakCallbackInfo<WrappableBase>& data);
