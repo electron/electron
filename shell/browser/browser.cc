@@ -15,6 +15,7 @@
 #include "base/run_loop.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "chrome/common/chrome_paths.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_paths.h"
