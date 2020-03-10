@@ -707,6 +707,14 @@ describe('app module', () => {
   })
 
   describe('setPath(name, path)', () => {
+    it('throws when a relative path is passed', () => {
+      const badPath = 'hey/hi/hello'
+
+      expect(() => {
+        app.setPath('music', badPath)
+      }).to.throw(/Path must be absolute/)
+    })
+
     it('does not create a new directory by default', () => {
       const badPath = path.join(__dirname, 'music')
 
@@ -715,6 +723,16 @@ describe('app module', () => {
       expect(fs.existsSync(badPath)).to.be.false()
 
       expect(() => { app.getPath(badPath as any) }).to.throw()
+    })
+  })
+
+  describe('setAppLogsPath(path)', () => {
+    it('throws when a relative path is passed', () => {
+      const badPath = 'hey/hi/hello'
+
+      expect(() => {
+        app.setAppLogsPath(badPath)
+      }).to.throw(/Path must be absolute/)
     })
   })
 
