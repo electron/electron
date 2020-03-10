@@ -90,6 +90,7 @@
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/platform/web_cursor_info.h"
+#include "ui/base/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
@@ -114,6 +115,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/script_executor.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
@@ -1236,12 +1238,12 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
 }
 
 void WebContents::DidUpdateFaviconURL(
-    const std::vector<content::FaviconURL>& urls) {
+    const std::vector<blink::mojom::FaviconURLPtr>& urls) {
   std::set<GURL> unique_urls;
   for (const auto& iter : urls) {
-    if (iter.icon_type != content::FaviconURL::IconType::kFavicon)
+    if (iter->icon_type != blink::mojom::FaviconIconType::kFavicon)
       continue;
-    const GURL& url = iter.icon_url;
+    const GURL& url = iter->icon_url;
     if (url.is_valid())
       unique_urls.insert(url);
   }
@@ -1765,6 +1767,14 @@ void WebContents::OnGetDefaultPrinter(
 
   base::string16 printer_name =
       device_name.empty() ? default_printer : device_name;
+
+  // If there are no valid printers available on the network, we bail.
+  if (printer_name.empty() || !IsDeviceNameValid(printer_name)) {
+    if (print_callback)
+      std::move(print_callback).Run(false, "no valid printers available");
+    return;
+  }
+
   print_settings.SetStringKey(printing::kSettingDeviceName, printer_name);
 
   auto* print_view_manager =
@@ -1939,9 +1949,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
     settings.SetIntKey(printing::kSettingDpiVertical, dpi);
   }
 
-  base::PostTaskAndReplyWithResult(
-      FROM_HERE,
-      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_BLOCKING},
+  base::ThreadPool::PostTaskAndReplyWithResult(
+      FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_BLOCKING},
       base::BindOnce(&GetDefaultPrinterAsync),
       base::BindOnce(&WebContents::OnGetDefaultPrinter,
                      weak_factory_.GetWeakPtr(), std::move(settings),
@@ -2071,6 +2080,12 @@ void WebContents::CopyImageAt(int x, int y) {
 }
 
 void WebContents::Focus() {
+  // Focusing on WebContents does not automatically focus the window on macOS
+  // and Linux, do it manually to match the behavior on Windows.
+#if defined(OS_MACOSX) || defined(OS_LINUX)
+  if (owner_window())
+    owner_window()->Focus(true);
+#endif
   web_contents()->Focus();
 }
 
@@ -2325,7 +2340,7 @@ bool WebContents::IsBeingCaptured() {
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   const content::CursorInfo& info = cursor.info();
 
-  if (info.type == ui::CursorType::kCustom) {
+  if (info.type == ui::mojom::CursorType::kCustom) {
     Emit("cursor-changed", CursorTypeToString(info),
          gfx::Image::CreateFrom1xBitmap(info.custom_image),
          info.image_scale_factor,

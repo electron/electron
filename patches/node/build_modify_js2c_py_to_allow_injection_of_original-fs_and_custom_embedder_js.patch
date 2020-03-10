@@ -14,7 +14,7 @@ renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
 diff --git a/src/node_native_module.cc b/src/node_native_module.cc
-index 814adb620dcf8a459bbede11714e9ccd7f4e0b3e..04a706d15f2ab682f8d4ae972abee8986494f7a7 100644
+index 43c13ea30a0dc56151cba3d4597ae81b27c41300..e9a43592d558409d5fd43e2f51b22efb4e41551d 100644
 --- a/src/node_native_module.cc
 +++ b/src/node_native_module.cc
 @@ -23,6 +23,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
@@ -38,10 +38,10 @@ index fabaea75686161f488a03349e07049a513b98fad..5a6b01dc12fb77d5f8c26a1153ead2a1
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c48e52b67c 100755
+index 9e9883129bed62c591d23f71d139514c5034ac8d..dd7a49c2a13e58be8af343bdded6d885c5598e03 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
-@@ -187,13 +187,15 @@ namespace native_module {{
+@@ -56,13 +56,15 @@ namespace native_module {{
  
  {0}
  
@@ -59,16 +59,7 @@ index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c4
  
  }}  // namespace native_module
  
-@@ -256,7 +258,7 @@ def AddModule(filename, definitions, initializers):
-   initializers.append(initializer)
- 
- def NormalizeFileName(filename):
--  split = filename.split(os.path.sep)
-+  split = os.path.normpath(filename).split(os.path.sep)
-   if split[0] == 'deps':
-     split = ['internal'] + split
-   else:  # `lib/**/*.js` so drop the 'lib' part
-@@ -114,8 +114,8 @@ def GetDefinition(var, source, step=30):
+@@ -112,8 +114,8 @@ def GetDefinition(var, source, step=30):
    return definition, len(code_points)
  
  
@@ -79,7 +70,16 @@ index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c4
    name = NormalizeFileName(filename)
    slug = SLUGGER_RE.sub('_', name)
    var = slug + '_raw'
-@@ -141,7 +141,7 @@ def NormalizeFileName(filename):
+@@ -123,7 +125,7 @@ def AddModule(filename, definitions, initializers):
+   initializers.append(initializer)
+ 
+ def NormalizeFileName(filename):
+-  split = filename.split(os.path.sep)
++  split = os.path.normpath(filename).split(os.path.sep)
+   if split[0] == 'deps':
+     split = ['internal'] + split
+   else:  # `lib/**/*.js` so drop the 'lib' part
+@@ -141,7 +143,7 @@ def NormalizeFileName(filename):
    return os.path.splitext(filename)[0]
  
  
@@ -88,7 +88,7 @@ index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c4
    # Build source code lines
    definitions = []
    initializers = []
-@@ -149,13 +149,26 @@ def JS2C(source_files, target):
+@@ -149,13 +151,26 @@ def JS2C(source_files, target):
    for filename in source_files['.js']:
      AddModule(filename, definitions, initializers)
  
@@ -118,7 +118,7 @@ index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c4
    write_if_chaged(out, target)
  
  
-@@ -344,17 +358,21 @@ def main():
+@@ -208,17 +223,21 @@ def main():
    )
    parser.add_argument('--target', help='output file')
    parser.add_argument('--verbose', action='store_true', help='output file')

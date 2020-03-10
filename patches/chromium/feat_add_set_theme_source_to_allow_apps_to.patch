@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index c20f1455d9d81e6780deecdebfb1f1b4e125db66..8a933b20b4d5ca8c2c55c881e95695d8416a0163 100644
+index 8fb4f2417d948a0f51f51179bc30f6b8420ad598..e37fa52934c8582856ef7b067775cb640543101c 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -47,6 +47,8 @@ NativeTheme::NativeTheme()
+@@ -53,6 +53,8 @@ NativeTheme::NativeTheme()
  NativeTheme::~NativeTheme() = default;
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,10 +26,10 @@ index c20f1455d9d81e6780deecdebfb1f1b4e125db66..8a933b20b4d5ca8c2c55c881e95695d8
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 782dd1d122bfab4990c924a7fb0e7276fb51b18b..8ff66638296fefd66443ea83436258b07235aded 100644
+index c5fd22fba2cd83084311b324a3018039cdf0be4d..0721ff1d9f31dfacf50fbd61fbc95d75f4f3451e 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -449,6 +449,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -464,6 +464,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
        ColorId color_id,
        ColorScheme color_scheme = ColorScheme::kDefault) const = 0;
  
@@ -52,7 +52,7 @@ index 782dd1d122bfab4990c924a7fb0e7276fb51b18b..8ff66638296fefd66443ea83436258b0
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -573,6 +589,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -588,6 +604,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredColorScheme preferred_color_scheme_ =
        PreferredColorScheme::kNoPreference;
  
@@ -75,7 +75,7 @@ index a8fbfee3b13672902aac05fd5a65fa8ee81f9f7e..1be6369acf0b7c02a6f862636c2b2de1
  }
  
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index cff7681a4e0023a67edda37bf9865ab073b32549..83507081e0734b53fd37133014256243dda6864d 100644
+index 4bdaa3da0540e49f6794fcaf4d89780cd32720b2..281be00dc5b175c9a85e6aad318762bcddca0784 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -706,6 +706,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {

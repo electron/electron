@@ -105,6 +105,45 @@ Returns:
 Emitted when a render process requests preconnection to a URL, generally due to
 a [resource hint](https://w3c.github.io/resource-hints/).
 
+#### Event: 'spellcheck-dictionary-initialized'
+
+Returns:
+
+* `event` Event
+* `languageCode` String - The language code of the dictionary file
+
+Emitted when a hunspell dictionary file has been successfully initialized. This
+occurs after the file has been downloaded.
+
+#### Event: 'spellcheck-dictionary-download-begin'
+
+Returns:
+
+* `event` Event
+* `languageCode` String - The language code of the dictionary file
+
+Emitted when a hunspell dictionary file starts downloading
+
+#### Event: 'spellcheck-dictionary-download-success'
+
+Returns:
+
+* `event` Event
+* `languageCode` String - The language code of the dictionary file
+
+Emitted when a hunspell dictionary file has been successfully downloaded
+
+#### Event: 'spellcheck-dictionary-download-failure'
+
+Returns:
+
+* `event` Event
+* `languageCode` String - The language code of the dictionary file
+
+Emitted when a hunspell dictionary file download fails.  For details
+on the failure you should collect a netlog and inspect the download
+request.
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
@@ -481,7 +520,8 @@ setting with the current OS locale.  This setting is persisted across restarts.
 By default Electron will download hunspell dictionaries from the Chromium CDN.  If you want to override this
 behavior you can use this API to point the dictionary downloader at your own hosted version of the hunspell
 dictionaries.  We publish a `hunspell_dictionaries.zip` file with each release which contains the files you need
-to host here.
+to host here, the file server must be **case insensitive** you must upload each file twice, once with the case it
+has in the ZIP file and once with the filename as all lower case.
 
 If the files present in `hunspell_dictionaries.zip` are available at `https://example.com/dictionaries/language-code.bdic`
 then you should call this api with `ses.setSpellCheckerDictionaryDownloadURL('https://example.com/dictionaries/')`.  Please
@@ -498,7 +538,8 @@ Resolves when the full dictionary is loaded from disk.
 
 * `word` String - The word you want to add to the dictionary
 
-Returns `Boolean` - Whether the word was successfully written to the custom dictionary.
+Returns `Boolean` - Whether the word was successfully written to the custom dictionary. This API
+will not work on non-persistent (in-memory) sessions.
 
 **Note:** On macOS and Windows 10 this word will be written to the OS custom dictionary as well
 
@@ -506,7 +547,8 @@ Returns `Boolean` - Whether the word was successfully written to the custom dict
 
 * `word` String - The word you want to remove from the dictionary
 
-Returns `Boolean` - Whether the word was successfully removed from the custom dictionary.
+Returns `Boolean` - Whether the word was successfully removed from the custom dictionary. This API
+will not work on non-persistent (in-memory) sessions.
 
 **Note:** On macOS and Windows 10 this word will be removed from the OS custom dictionary as well
 

@@ -121,7 +121,18 @@ bool ScopedDisableResize::disable_resize_ = false;
                           [NSButtonCell class], @"RenderWidgetHostViewCocoa"];
 
   NSArray* children = [super accessibilityAttributeValue:attribute];
-  return [children filteredArrayUsingPredicate:predicate];
+  NSMutableArray* mutableChildren = [[children mutableCopy] autorelease];
+  [mutableChildren filterUsingPredicate:predicate];
+
+  // We need to add the web contents: Without us doing so, VoiceOver
+  // users will be able to navigate up the a11y tree, but not back down.
+  // The content view contains the "web contents", which VoiceOver
+  // immediately understands.
+  NSView* contentView =
+      [shell_->GetNativeWindow().GetNativeNSWindow() contentView];
+  [mutableChildren addObject:contentView];
+
+  return mutableChildren;
 }
 
 - (NSString*)accessibilityTitle {

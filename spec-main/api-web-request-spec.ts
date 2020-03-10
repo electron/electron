@@ -3,7 +3,7 @@ import * as http from 'http'
 import * as qs from 'querystring'
 import * as path from 'path'
 import * as WebSocket from 'ws'
-import { ipcMain, session, WebContents, webContents } from 'electron'
+import { ipcMain, protocol, session, WebContents, webContents } from 'electron'
 import { AddressInfo } from 'net'
 import { emittedOnce } from './events-helpers'
 
@@ -31,6 +31,7 @@ describe('webRequest module', () => {
   let defaultURL: string
 
   before((done) => {
+    protocol.registerStringProtocol('neworigin', (req, cb) => cb(''))
     server.listen(0, '127.0.0.1', () => {
       const port = (server.address() as AddressInfo).port
       defaultURL = `http://127.0.0.1:${port}/`
@@ -40,6 +41,7 @@ describe('webRequest module', () => {
 
   after(() => {
     server.close()
+    protocol.unregisterProtocol('neworigin')
   })
 
   let contents: WebContents = null as unknown as WebContents
@@ -158,7 +160,7 @@ describe('webRequest module', () => {
       expect(data).to.equal('/header/received')
     })
 
-    it('can change CORS headers', async () => {
+    it('can change request origin', async () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders
         requestHeaders.Origin = 'http://new-origin'
@@ -166,6 +168,16 @@ describe('webRequest module', () => {
       })
       const { data } = await ajax(defaultURL)
       expect(data).to.equal('/new/origin')
+    })
+
+    it('can capture CORS requests', async () => {
+      let called = false
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        called = true
+        callback({ requestHeaders: details.requestHeaders })
+      })
+      await ajax('neworigin://host')
+      expect(called).to.be.true()
     })
 
     it('resets the whole headers', async () => {
@@ -222,7 +234,7 @@ describe('webRequest module', () => {
       expect(headers).to.match(/^custom: Changed$/m)
     })
 
-    it('can change CORS headers', async () => {
+    it('can change response origin', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!
         responseHeaders['access-control-allow-origin'] = ['http://new-origin'] as any
@@ -230,6 +242,16 @@ describe('webRequest module', () => {
       })
       const { headers } = await ajax(defaultURL)
       expect(headers).to.match(/^access-control-allow-origin: http:\/\/new-origin$/m)
+    })
+
+    it('can change headers of CORS responses', async () => {
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        const responseHeaders = details.responseHeaders!
+        responseHeaders['Custom'] = ['Changed'] as any
+        callback({ responseHeaders: responseHeaders })
+      })
+      const { headers } = await ajax('neworigin://host')
+      expect(headers).to.match(/^custom: Changed$/m)
     })
 
     it('does not change header by default', async () => {

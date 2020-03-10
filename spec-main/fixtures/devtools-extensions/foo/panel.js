@@ -57,7 +57,7 @@ testStorage(function (
   const message = JSON.stringify({
     runtimeId: chrome.runtime.id,
     tabId: chrome.devtools.inspectedWindow.tabId,
-    i18nString: null, // chrome.i18n.getMessage('foo', ['bar', 'baz']),
+    i18nString: chrome.i18n.getMessage('foo', ['bar', 'baz']),
     storageItems: {
       local: {
         set: localForSet,

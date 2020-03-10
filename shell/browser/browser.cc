@@ -190,6 +190,10 @@ void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
   base::PathService::Get(DIR_USER_CACHE, &user_cache);
   base::PathService::Override(DIR_USER_CACHE, user_cache);
 
+  base::PathService::Override(
+      chrome::DIR_APP_DICTIONARIES,
+      user_data.Append(base::FilePath::FromUTF8Unsafe("Dictionaries")));
+
   is_ready_ = true;
   if (ready_promise_) {
     ready_promise_->Resolve();

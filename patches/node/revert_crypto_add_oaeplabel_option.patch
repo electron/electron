@@ -8,7 +8,7 @@ The BoringSSL incompatibilities (OPENSSL_memdup) will be shimmed in and this sho
 be removed when the associated update is rolled into Chromium.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 114b4d503f3c1c01aa9999cf60a044d80a39acc1..de6828fc44752789bef02d29d3320dbb6f41448a 100644
+index 7950c68f52050b7c9a6798b653a9c831256b21b5..41b72d010824234c567586524d22cae6ac849edb 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -5514,18 +5514,6 @@ bool PublicKeyCipher::Cipher(Environment* env,
