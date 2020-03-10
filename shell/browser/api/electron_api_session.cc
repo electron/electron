@@ -71,9 +71,8 @@
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-#include "chrome/browser/spellchecker/spellcheck_factory.h"
-#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
-#include "chrome/browser/spellchecker/spellcheck_service.h"
+#include "chrome/browser/spellchecker/spellcheck_factory.h"  // nogncheck
+#include "chrome/browser/spellchecker/spellcheck_service.h"  // nogncheck
 #include "components/spellcheck/browser/pref_names.h"
 #include "components/spellcheck/common/spellcheck_common.h"
 
@@ -238,22 +237,27 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
   Init(isolate);
   AttachAsUserData(browser_context);
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckService* service =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
   if (service) {
     service->SetHunspellObserver(this);
   }
+#endif
 }
 
 Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())
       ->RemoveObserver(this);
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckService* service =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
   if (service) {
     service->SetHunspellObserver(nullptr);
   }
+#endif
+
   // TODO(zcbenz): Now since URLRequestContextGetter is gone, is this still
   // needed?
   // Refs https://github.com/electron/electron/pull/12305.
@@ -282,6 +286,7 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   }
 }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 void Session::OnHunspellDictionaryInitialized(const std::string& language) {
   Emit("spellcheck-dictionary-initialized", language);
 }
@@ -294,6 +299,7 @@ void Session::OnHunspellDictionaryDownloadSuccess(const std::string& language) {
 void Session::OnHunspellDictionaryDownloadFailure(const std::string& language) {
   Emit("spellcheck-dictionary-download-failure", language);
 }
+#endif
 
 v8::Local<v8::Promise> Session::ResolveProxy(mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
@@ -754,7 +760,7 @@ bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
 
   return spellcheck->GetCustomDictionary()->AddWord(word);
 }
-#endif
+#endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 // static
 mate::Handle<Session> Session::CreateFrom(

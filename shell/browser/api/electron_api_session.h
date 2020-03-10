@@ -9,13 +9,16 @@
 #include <vector>
 
 #include "base/values.h"
-#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/promise_util.h"
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
+#endif
 
 class GURL;
 
@@ -39,8 +42,10 @@ class ElectronBrowserContext;
 namespace api {
 
 class Session : public mate::TrackableObject<Session>,
-                public content::DownloadManager::Observer,
-                public SpellcheckHunspellDictionary::Observer {
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+                public SpellcheckHunspellDictionary::Observer,
+#endif
+                public content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
   static mate::Handle<Session> CreateFrom(
@@ -111,6 +116,7 @@ class Session : public mate::TrackableObject<Session>,
   void OnDownloadCreated(content::DownloadManager* manager,
                          download::DownloadItem* item) override;
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   // SpellcheckHunspellDictionary::Observer
   void OnHunspellDictionaryInitialized(const std::string& language) override;
   void OnHunspellDictionaryDownloadBegin(const std::string& language) override;
@@ -118,6 +124,7 @@ class Session : public mate::TrackableObject<Session>,
       const std::string& language) override;
   void OnHunspellDictionaryDownloadFailure(
       const std::string& language) override;
+#endif
 
  private:
   // Cached mate::Wrappable objects.
