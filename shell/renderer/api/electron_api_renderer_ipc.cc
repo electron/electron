@@ -15,7 +15,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
-#include "shell/common/gin_helper/function_template.h"
+#include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
