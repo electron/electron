@@ -389,7 +389,11 @@ bool RendererClientBase::IsPluginHandledExternally(
 
 bool RendererClientBase::IsOriginIsolatedPepperPlugin(
     const base::FilePath& plugin_path) {
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   return plugin_path.value() == kPdfPluginPath;
+#else
+  return false;
+#endif
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>

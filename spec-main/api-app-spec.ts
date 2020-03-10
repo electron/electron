@@ -712,6 +712,14 @@ describe('app module', () => {
   })
 
   describe('setPath(name, path)', () => {
+    it('throws when a relative path is passed', () => {
+      const badPath = 'hey/hi/hello'
+
+      expect(() => {
+        app.setPath('music', badPath)
+      }).to.throw(/Path must be absolute/)
+    })
+
     it('does not create a new directory by default', () => {
       const badPath = path.join(__dirname, 'music')
 
@@ -720,6 +728,16 @@ describe('app module', () => {
       expect(fs.existsSync(badPath)).to.be.false()
 
       expect(() => { app.getPath(badPath as any) }).to.throw()
+    })
+  })
+
+  describe('setAppLogsPath(path)', () => {
+    it('throws when a relative path is passed', () => {
+      const badPath = 'hey/hi/hello'
+
+      expect(() => {
+        app.setAppLogsPath(badPath)
+      }).to.throw(/Path must be absolute/)
     })
   })
 
@@ -1096,9 +1114,11 @@ describe('app module', () => {
         // Gl version is present in the complete info.
         expect(completeInfo).to.have.ownProperty('auxAttributes')
           .that.is.an('object')
-        expect(completeInfo.auxAttributes).to.have.ownProperty('glVersion')
-          .that.is.a('string')
-          .and.does.not.equal([])
+        if (completeInfo.gpuDevice.active) {
+          expect(completeInfo.auxAttributes).to.have.ownProperty('glVersion')
+            .that.is.a('string')
+            .and.does.not.equal([])
+        }
       }
     })
 
@@ -1423,8 +1443,8 @@ describe('default behavior', () => {
   })
 
   describe('app.allowRendererProcessReuse', () => {
-    it('should default to false', () => {
-      expect(app.allowRendererProcessReuse).to.equal(false)
+    it('should default to true', () => {
+      expect(app.allowRendererProcessReuse).to.equal(true)
     })
 
     it('should cause renderer processes to get new PIDs when false', async () => {

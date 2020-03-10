@@ -30,21 +30,6 @@
       "name": "sccache-win32-x64.zip",
       "platform": "win32",
       "sha": "b6a20fd1c2026f3792e7286bc768a7ebc261847b76449b49f55455e1f841fecd"
-    },
-    {
-      "name": "goma-win.zip",
-      "platform": "win32",
-      "sha": "f97c88aa5d49395ae20387b6329ad406fd019f5fb4aac4ba639ca928b7151f6b"
-    },
-    {
-      "name": "goma-linux.tgz",
-      "platform": "linux",
-      "sha": "1cb3099a40f6200ae57216efa26af795c587b6ac7ae97955d1078d0b1e3011a6"
-    },
-    {
-      "name": "goma-mac.tgz",
-      "platform": "darwin",
-      "sha": "da1e7de82fbf3b99f1a9d0f9bf51b25e75e8778fec180deb72cff873813d717c"
     }
   ]
 }

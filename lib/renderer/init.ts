@@ -77,6 +77,7 @@ const nodeIntegration = hasSwitch('node-integration')
 const webviewTag = hasSwitch('webview-tag')
 const isHiddenPage = hasSwitch('hidden-page')
 const usesNativeWindowOpen = hasSwitch('native-window-open')
+const rendererProcessReuseEnabled = hasSwitch('disable-electron-site-instance-overrides')
 
 const preloadScript = parseOption('preload', null)
 const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter)) as string[]
@@ -85,7 +86,7 @@ const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt
 const openerId = parseOption('opener-id', null, value => parseInt(value))
 
 // The arguments to be passed to isolated world.
-const isolatedWorldArgs = { ipcRendererInternal, guestInstanceId, isHiddenPage, openerId, usesNativeWindowOpen }
+const isolatedWorldArgs = { ipcRendererInternal, guestInstanceId, isHiddenPage, openerId, usesNativeWindowOpen, rendererProcessReuseEnabled }
 
 // The webContents preload script is loaded after the session preload scripts.
 if (preloadScript) {
@@ -110,7 +111,7 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup')
-    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
+    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen, rendererProcessReuseEnabled)
 
     // Inject content scripts.
     if (!process.electronBinding('features').isExtensionsEnabled()) {

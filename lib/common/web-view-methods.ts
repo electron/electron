@@ -50,6 +50,14 @@ export const syncMethods = new Set([
   'setZoomLevel'
 ])
 
+export const properties = new Set([
+  'audioMuted',
+  'userAgent',
+  'zoomLevel',
+  'zoomFactor',
+  'frameRate'
+])
+
 export const asyncMethods = new Set([
   'loadURL',
   'executeJavaScript',

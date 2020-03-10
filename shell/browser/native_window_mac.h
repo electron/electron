@@ -14,6 +14,7 @@
 
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_window.h"
+#include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/controls/native/native_view_host.h"
 
 @class ElectronNSWindow;
@@ -26,7 +27,7 @@ namespace electron {
 
 class RootViewMac;
 
-class NativeWindowMac : public NativeWindow {
+class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
  public:
   NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
@@ -152,6 +153,9 @@ class NativeWindowMac : public NativeWindow {
   // Custom traffic light positioning
   void RepositionTrafficLights();
   void SetExitingFullScreen(bool flag);
+  void SetTrafficLightPosition(const gfx::Point& position) override;
+  gfx::Point GetTrafficLightPosition() const override;
+  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
   enum class TitleBarStyle {
     NORMAL,

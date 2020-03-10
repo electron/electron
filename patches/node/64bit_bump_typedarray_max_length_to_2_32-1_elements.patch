@@ -7,7 +7,7 @@ TypedArray max length for 64 bit has been changed to 2**32-1 elements
 See: https://source.chromium.org/chromium/_/chromium/v8/v8.git/+/3bff8fa5ea29c0623c0a5601b6fa67c64cbcc319
 
 diff --git a/test/parallel/test-buffer-alloc.js b/test/parallel/test-buffer-alloc.js
-index de3e7fa52390f0631b93fb4adf2e8a4e31bdc572..eae7533250599cfc649a17c19c8b0fa268155b69 100644
+index 75bcb03d1913c4d0c5825fbc2931aa6e84f922ed..9b7a64607edfc227e0473ae11075ca9b83419739 100644
 --- a/test/parallel/test-buffer-alloc.js
 +++ b/test/parallel/test-buffer-alloc.js
 @@ -8,8 +8,8 @@ const SlowBuffer = require('buffer').SlowBuffer;

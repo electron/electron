@@ -27,6 +27,7 @@ function getElectronExec () {
 
 function getOutDir (options = {}) {
   const shouldLog = options.shouldLog || false
+  const presetDirs = ['Testing', 'Release', 'Default', 'Debug']
 
   if (options.outDir || process.env.ELECTRON_OUT_DIR) {
     const outDir = options.outDir || process.env.ELECTRON_OUT_DIR
@@ -41,7 +42,7 @@ function getOutDir (options = {}) {
     // Throw error if user passed/set nonexistent directory.
     throw new Error(`${outDir} directory not configured on your machine.`)
   } else {
-    for (const buildType of ['Testing', 'Release', 'Default', 'Debug']) {
+    for (const buildType of presetDirs) {
       const outPath = path.resolve(SRC_DIR, 'out', buildType)
       if (fs.existsSync(outPath)) {
         if (shouldLog) console.log(`OUT_DIR is: ${buildType}`)
@@ -49,6 +50,10 @@ function getOutDir (options = {}) {
       }
     }
   }
+
+  // If we got here, it means process.env.ELECTRON_OUT_DIR was not
+  // set and none of the preset options could be found in /out, so throw
+  throw new Error(`No valid out directory found; use one of ${presetDirs.join(',')} or set process.env.ELECTRON_OUT_DIR`)
 }
 
 function getAbsoluteElectronExec () {

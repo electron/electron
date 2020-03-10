@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 14 Feb 2020 18:54:44 -0800
+Subject: fix: remove implicit type conversions
+
+This PR removes some implicit type conversions from uvwasi. It will be upstreamed.
+
+diff --git a/deps/uvwasi/src/fd_table.c b/deps/uvwasi/src/fd_table.c
+index f3855d4da54dbe5cbcaf0b2e5d56aa8c4f06902b..7ec19bfb38f6772e88a08a370372cd41f2b16108 100644
+--- a/deps/uvwasi/src/fd_table.c
++++ b/deps/uvwasi/src/fd_table.c
+@@ -190,7 +190,7 @@ static uvwasi_errno_t uvwasi__fd_table_insert(uvwasi_t* uvwasi,
+   struct uvwasi_fd_wrap_t** new_fds;
+   uvwasi_errno_t err;
+   uint32_t new_size;
+-  int index;
++  uint32_t index;
+   uint32_t i;
+   int r;
+   size_t mp_len;
+@@ -231,16 +231,17 @@ static uvwasi_errno_t uvwasi__fd_table_insert(uvwasi_t* uvwasi,
+     table->size = new_size;
+   } else {
+     /* The table is big enough, so find an empty slot for the new data. */
+-    index = -1;
++    int valid_slot = 0;
+     for (i = 0; i < table->size; ++i) {
+       if (table->fds[i] == NULL) {
++        valid_slot = 1;
+         index = i;
+         break;
+       }
+     }
+ 
+     /* index should never be -1. */
+-    if (index == -1) {
++    if (!valid_slot) {
+       uvwasi__free(uvwasi, entry);
+       err = UVWASI_ENOSPC;
+       goto exit;
+@@ -283,7 +284,7 @@ uvwasi_errno_t uvwasi_fd_table_init(uvwasi_t* uvwasi,
+   uvwasi_rights_t base;
+   uvwasi_rights_t inheriting;
+   uvwasi_errno_t err;
+-  uvwasi_fd_t i;
++  int i;
+   int r;
+ 
+   /* Require an initial size of at least three to store the stdio FDs. */
+@@ -335,7 +336,7 @@ uvwasi_errno_t uvwasi_fd_table_init(uvwasi_t* uvwasi,
+     if (err != UVWASI_ESUCCESS)
+       goto error_exit;
+ 
+-    if (wrap->id != i || wrap->id != (uvwasi_fd_t) wrap->fd) {
++    if ((int) wrap->id != i || wrap->id != (uvwasi_fd_t) wrap->fd) {
+       err = UVWASI_EBADF;
+       goto error_exit;
+     }

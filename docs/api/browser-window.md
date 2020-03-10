@@ -289,7 +289,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       between the web pages even when you specified different values for them,
       including but not limited to `preload`, `sandbox` and `nodeIntegration`.
       So it is suggested to use exact same `webPreferences` for web pages with
-      the same `affinity`. _This property is experimental_
+      the same `affinity`. _Deprecated_
     * `zoomFactor` Number (optional) - The default zoom factor of the page, `3.0` represents
       `300%`. Default is `1.0`.
     * `javascript` Boolean (optional) - Enables JavaScript support. Default is `true`.
@@ -369,6 +369,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       consecutive dialog protection is triggered. If not defined the default
       message would be used, note that currently the default message is in
       English and not localized.
+    * `disableDialogs` Boolean (optional) - Whether to disable dialogs
+      completely. Overrides `safeDialogs`. Default is `false`.
     * `navigateOnDragDrop` Boolean (optional) - Whether dragging and dropping a
       file or link onto the page causes a navigation. Default is `false`.
     * `autoplayPolicy` String (optional) - Autoplay policy to apply to
@@ -1747,6 +1749,17 @@ will remove the vibrancy effect on the window.
 
 Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
 deprecated and will be removed in an upcoming version of macOS.
+
+#### `win.setTrafficLightPosition(position)` _macOS_
+
+* `position` [Point](structures/point.md)
+
+Set a custom position for the traffic light buttons. Can only be used with `titleBarStyle` set to `hidden`.
+
+#### `win.getTrafficLightPosition()` _macOS_
+
+Returns `Point` - The current position for the traffic light buttons. Can only be used with `titleBarStyle`
+set to `hidden`.
 
 #### `win.setTouchBar(touchBar)` _macOS_ _Experimental_
 

@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..ec06e14dd327cdf89dc6fd584b6972ae64311ea0
+index 0000000000000000000000000000000000000000..e4aab62b85e6ea1eac68cc21056081b4ff4bd1d6
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,370 @@
+@@ -0,0 +1,358 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -88,28 +88,15 @@ index 0000000000000000000000000000000000000000..ec06e14dd327cdf89dc6fd584b6972ae
 +    ":generate_config_gypi",
 +    ":node_js2c_inputs",
 +  ]
-+
-+  macro_inputs = []
-+  if (!node_use_dtrace && !node_use_etw) {
-+    macro_inputs += [ "tools/js2c_macros/notrace_macros.py" ]
-+  }
-+  if (node_debug_lib) {
-+    macro_inputs += [ "tools/js2c_macros/nodcheck_macros.py" ]
-+  } else {
-+    macro_inputs += [ "tools/js2c_macros/dcheck_macros.py" ]
-+  }
-+  macro_inputs += [ "tools/js2c_macros/check_macros.py" ]
-+
 +  config_gypi = [ "$target_gen_dir/config.gypi" ]
-+
-+  inputs = library_files + macro_inputs + config_gypi
++  inputs = library_files + config_gypi
 +  outputs = [
 +    "$target_gen_dir/node_javascript.cc",
 +  ]
 +
 +  cwd = "$target_gen_dir/js2c_inputs"
 +  script = "tools/js2c.py"
-+  args = library_files + rebase_path(macro_inputs + config_gypi) + ["--target"] + rebase_path(outputs)
++  args = library_files + rebase_path(config_gypi) + ["--target"] + rebase_path(outputs)
 +}
 +
 +config("node_features") {
@@ -221,6 +208,7 @@ index 0000000000000000000000000000000000000000..ec06e14dd327cdf89dc6fd584b6972ae
 +    "deps/http_parser",
 +    "deps/llhttp",
 +    "deps/nghttp2",
++    "deps/uvwasi",
 +    "deps/zlib",
 +    "//third_party/brotli:dec",
 +    "//third_party/brotli:enc",
@@ -628,10 +616,10 @@ index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d1cf42562
+index 0000000000000000000000000000000000000000..510d86194ed71d78b2c89c7a77422afc0ef614ad
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,185 @@
+@@ -0,0 +1,190 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -691,6 +679,7 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +    "src/idna.c",
 +    "src/idna.h",
 +    "src/inet.c",
++    "src/random.c",
 +    "src/queue.h",
 +    "src/strscpy.c",
 +    "src/strscpy.h",
@@ -769,6 +758,7 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +      "src/unix/pipe.c",
 +      "src/unix/poll.c",
 +      "src/unix/process.c",
++      "src/unix/random-devurandom.c",
 +      "src/unix/pthread-fixes.c",
 +      "src/unix/signal.c",
 +      "src/unix/spinlock.h",
@@ -787,6 +777,7 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +  if (is_mac) {
 +    sources += [
 +      "src/unix/darwin-proctitle.c",
++      "src/unix/random-getentropy.c",
 +      "src/unix/darwin.c",
 +      "src/unix/fsevents.c",
 +    ]
@@ -803,6 +794,8 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +      "src/unix/linux-syscalls.c",
 +      "src/unix/linux-syscalls.h",
 +      "src/unix/procfs-exepath.c",
++      "src/unix/random-getrandom.c",
++      "src/unix/random-sysctl-linux.c",
 +      "src/unix/sysinfo-loadavg.c",
 +    ]
 +    libs += [
@@ -816,6 +809,46 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +      "src/unix/kqueue.c",
 +    ]
 +  }
++}
+diff --git a/deps/uvwasi/BUILD.gn b/deps/uvwasi/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..e9beace20f25e270dd80509bd6d5871b140d5b79
+--- /dev/null
++++ b/deps/uvwasi/BUILD.gn
+@@ -0,0 +1,34 @@
++config("uvwasi_config") {
++  include_dirs = [ "include" ]
++}
++
++static_library("uvwasi") {
++  include_dirs = [
++    "include",
++    "src",
++  ]
++
++  defines = []
++  if (is_linux) {
++    defines += [
++      "_GNU_SOURCE",
++      "_POSIX_C_SOURCE=200112"
++    ]
++  }
++
++  deps = [ "../../deps/uv" ]
++
++  public_configs = [ ":uvwasi_config" ]
++ 
++  cflags_c = []
++  if (!is_win) {
++    cflags_c += [ "-fvisibility=hidden" ]
++  }
++
++  sources = [
++    "src/clocks.c",
++    "src/fd_table.c",
++    "src/uv_mapping.c",
++    "src/uvwasi.c",
++  ]
 +}
 diff --git a/deps/zlib/BUILD.gn b/deps/zlib/BUILD.gn
 new file mode 100644
@@ -883,10 +916,10 @@ index 0000000000000000000000000000000000000000..f13b471d17128468bed06e66bd03a2ea
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..db73a7699cdb1925c723fd1708d6ce1fad1cc946
+index 0000000000000000000000000000000000000000..d325cdc5ca7a323834c6962fa43d2c9ff38a5728
 --- /dev/null
 +++ b/filenames.json
-@@ -0,0 +1,448 @@
+@@ -0,0 +1,460 @@
 +// This file is automatically generated by generate_gn_filenames_json.py
 +// DO NOT EDIT
 +{
@@ -955,10 +988,13 @@ index 0000000000000000000000000000000000000000..db73a7699cdb1925c723fd1708d6ce1f
 +    }
 +  ],
 +  "library_files": [
-+    "lib/internal/bootstrap/environment.js",
 +    "lib/internal/bootstrap/loaders.js",
 +    "lib/internal/bootstrap/node.js",
 +    "lib/internal/bootstrap/pre_execution.js",
++    "lib/internal/bootstrap/switches/does_own_process_state.js",
++    "lib/internal/bootstrap/switches/does_not_own_process_state.js",
++    "lib/internal/bootstrap/switches/is_main_thread.js",
++    "lib/internal/bootstrap/switches/is_not_main_thread.js",
 +    "lib/internal/per_context/primordials.js",
 +    "lib/internal/per_context/domexception.js",
 +    "lib/async_hooks.js",
@@ -1013,6 +1049,7 @@ index 0000000000000000000000000000000000000000..db73a7699cdb1925c723fd1708d6ce1f
 +    "lib/util.js",
 +    "lib/v8.js",
 +    "lib/vm.js",
++    "lib/wasi.js",
 +    "lib/worker_threads.js",
 +    "lib/zlib.js",
 +    "lib/internal/assert.js",
@@ -1021,6 +1058,7 @@ index 0000000000000000000000000000000000000000..db73a7699cdb1925c723fd1708d6ce1f
 +    "lib/internal/buffer.js",
 +    "lib/internal/cli_table.js",
 +    "lib/internal/child_process.js",
++    "lib/internal/child_process/serialization.js",
 +    "lib/internal/cluster/child.js",
 +    "lib/internal/cluster/master.js",
 +    "lib/internal/cluster/round_robin_handle.js",
@@ -1068,20 +1106,23 @@ index 0000000000000000000000000000000000000000..db73a7699cdb1925c723fd1708d6ce1f
 +    "lib/internal/main/eval_string.js",
 +    "lib/internal/main/eval_stdin.js",
 +    "lib/internal/main/inspect.js",
-+    "lib/internal/main/print_bash_completion.js",
 +    "lib/internal/main/print_help.js",
 +    "lib/internal/main/prof_process.js",
 +    "lib/internal/main/repl.js",
 +    "lib/internal/main/run_main_module.js",
 +    "lib/internal/main/run_third_party_main.js",
 +    "lib/internal/main/worker_thread.js",
++    "lib/internal/modules/run_main.js",
 +    "lib/internal/modules/cjs/helpers.js",
 +    "lib/internal/modules/cjs/loader.js",
 +    "lib/internal/modules/esm/loader.js",
 +    "lib/internal/modules/esm/create_dynamic_module.js",
-+    "lib/internal/modules/esm/default_resolve.js",
++    "lib/internal/modules/esm/get_format.js",
++    "lib/internal/modules/esm/get_source.js",
 +    "lib/internal/modules/esm/module_job.js",
 +    "lib/internal/modules/esm/module_map.js",
++    "lib/internal/modules/esm/resolve.js",
++    "lib/internal/modules/esm/transform_source.js",
 +    "lib/internal/modules/esm/translators.js",
 +    "lib/internal/net.js",
 +    "lib/internal/options.js",
@@ -1090,14 +1131,13 @@ index 0000000000000000000000000000000000000000..db73a7699cdb1925c723fd1708d6ce1f
 +    "lib/internal/priority_queue.js",
 +    "lib/internal/process/esm_loader.js",
 +    "lib/internal/process/execution.js",
-+    "lib/internal/process/main_thread_only.js",
 +    "lib/internal/process/per_thread.js",
 +    "lib/internal/process/policy.js",
 +    "lib/internal/process/promises.js",
-+    "lib/internal/process/stdio.js",
 +    "lib/internal/process/warning.js",
 +    "lib/internal/process/worker_thread_only.js",
 +    "lib/internal/process/report.js",
++    "lib/internal/process/signal.js",
 +    "lib/internal/process/task_queues.js",
 +    "lib/internal/querystring.js",
 +    "lib/internal/readline/utils.js",
@@ -1128,19 +1168,19 @@ index 0000000000000000000000000000000000000000..db73a7699cdb1925c723fd1708d6ce1f
 +    "lib/internal/v8_prof_processor.js",
 +    "lib/internal/validators.js",
 +    "lib/internal/stream_base_commons.js",
-+    "lib/internal/vm/source_text_module.js",
++    "lib/internal/vm/module.js",
 +    "lib/internal/worker.js",
 +    "lib/internal/worker/io.js",
 +    "lib/internal/streams/lazy_transform.js",
 +    "lib/internal/streams/async_iterator.js",
 +    "lib/internal/streams/buffer_list.js",
 +    "lib/internal/streams/duplexpair.js",
++    "lib/internal/streams/from.js",
 +    "lib/internal/streams/legacy.js",
 +    "lib/internal/streams/destroy.js",
 +    "lib/internal/streams/state.js",
 +    "lib/internal/streams/pipeline.js",
 +    "lib/internal/streams/end-of-stream.js",
-+    "lib/internal/streams/from.js",
 +    "deps/v8/tools/splaytree.js",
 +    "deps/v8/tools/codemap.js",
 +    "deps/v8/tools/consarray.js",
@@ -1226,6 +1266,7 @@ index 0000000000000000000000000000000000000000..db73a7699cdb1925c723fd1708d6ce1f
 +    "src/node_url.cc",
 +    "src/node_util.cc",
 +    "src/node_v8.cc",
++    "src/node_wasi.cc",
 +    "src/node_watchdog.cc",
 +    "src/node_worker.cc",
 +    "src/node_zlib.cc",
@@ -1280,12 +1321,15 @@ index 0000000000000000000000000000000000000000..db73a7699cdb1925c723fd1708d6ce1f
 +    "src/node_dir.h",
 +    "src/node_errors.h",
 +    "src/node_file.h",
++    "src/node_file-inl.h",
 +    "src/node_http_parser_impl.h",
 +    "src/node_http2.h",
 +    "src/node_http2_state.h",
 +    "src/node_i18n.h",
 +    "src/node_internals.h",
 +    "src/node_main_instance.h",
++    "src/node_mem.h",
++    "src/node_mem-inl.h",
 +    "src/node_messaging.h",
 +    "src/node_metadata.h",
 +    "src/node_mutex.h",
@@ -1305,6 +1349,7 @@ index 0000000000000000000000000000000000000000..db73a7699cdb1925c723fd1708d6ce1f
 +    "src/node_url.h",
 +    "src/node_version.h",
 +    "src/node_v8_platform-inl.h",
++    "src/node_wasi.h",
 +    "src/node_watchdog.h",
 +    "src/node_worker.h",
 +    "src/pipe_wrap.h",
@@ -1541,7 +1586,7 @@ index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 8a6fb55a5a3824b40d2c744a0ed1e8d84e6bbc4a..c68a60d7b0a818b25ce3bd44037d52abe57769f2 100644
+index 88831ab19d72014f3e92c80516dc6c9d76e16158..01377c95b74879e74ca476eda6899e69597b9d89 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1697,18 +1742,14 @@ index 655802980a6ea94d1d4ca1dc63c8c8e905fbb83a..ab1a18a215cb7393310324c6dbcacc66
    if 'false' == variables.get('node_shared_libuv'):
      subdir_files('deps/uv/include', 'include/node/', action)
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 1346b2a87046d3472577875c887b3b44a63280ed..752344d68c3f63b4c5e491b33d4576ed48f8b74f 100755
+index 4594694a2cab0d878d86127a72714ed60c251b6e..9e9883129bed62c591d23f71d139514c5034ac8d 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
-@@ -261,10 +261,18 @@ def NormalizeFileName(filename):
-     split = ['internal'] + split
-   else:  # `lib/**/*.js` so drop the 'lib' part
+@@ -130,6 +130,14 @@ def NormalizeFileName(filename):
      split = split[1:]
-+
    if len(split):
      filename = '/'.join(split)
--  return os.path.splitext(filename)[0]
- 
++
 +  # Electron-specific: when driving the node build from Electron, we generate
 +  # config.gypi in a separate directory and pass the absolute path to js2c.
 +  # This overrides the absolute path so that the variable names in the
@@ -1716,10 +1757,9 @@ index 1346b2a87046d3472577875c887b3b44a63280ed..752344d68c3f63b4c5e491b33d4576ed
 +  if filename.endswith("/config.gypi"):
 +    filename = "config.gypi"
 +
-+  return os.path.splitext(filename)[0]
+   return os.path.splitext(filename)[0]
  
- def JS2C(source_files, target):
-   # Process input from all *macro.py files
+ 
 diff --git a/tools/tar.py b/tools/tar.py
 new file mode 100644
 index 0000000000000000000000000000000000000000..eb697be25779db62c829aac45a509804e9fff331
