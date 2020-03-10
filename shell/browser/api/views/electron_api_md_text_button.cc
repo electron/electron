@@ -14,7 +14,8 @@ namespace electron {
 namespace api {
 
 MdTextButton::MdTextButton(const std::string& text)
-    : LabelButton(views::MdTextButton::Create(this, base::UTF8ToUTF16(text))) {}
+    : LabelButton(
+          views::MdTextButton::Create(this, base::UTF8ToUTF16(text)).get()) {}
 
 MdTextButton::~MdTextButton() {}
 
@@ -23,14 +24,14 @@ gin_helper::WrappableBase* MdTextButton::New(gin_helper::Arguments* args,
                                              const std::string& text) {
   // Constructor call.
   auto* view = new MdTextButton(text);
-  view->InitWith(args->isolate(), args->GetThis());
+  view->InitWithArgs(args);
   return view;
 }
 
 // static
 void MdTextButton::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin_helper::StringTov8(isolate, "MdTextButton"));
+  prototype->SetClassName(gin::StringToV8(isolate, "MdTextButton"));
 }
 
 }  // namespace api
