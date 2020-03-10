@@ -105,6 +105,13 @@ describe('spellchecker', () => {
         const wordList = await ses.listWordsInSpellCheckerDictionary
         expect(wordList).to.have.length(0)
       })
+
+      // remove API will always return false because we can't add words
+      it('should fail for non-persistent sessions', async () => {
+        const tempSes = session.fromPartition('temporary')
+        const result = tempSes.addWordToSpellCheckerDictionary('foobar')
+        expect(result).to.equal(false)
+      })
     })
 
     describe('ses.removeWordFromSpellCheckerDictionary', () => {
