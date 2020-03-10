@@ -540,7 +540,8 @@ Resolves when the full dictionary is loaded from disk.
 
 * `word` String - The word you want to add to the dictionary
 
-Returns `Boolean` - Whether the word was successfully written to the custom dictionary.
+Returns `Boolean` - Whether the word was successfully written to the custom dictionary. This API
+will not work on non-persistent (in-memory) sessions.
 
 **Note:** On macOS and Windows 10 this word will be written to the OS custom dictionary as well
 
@@ -548,7 +549,8 @@ Returns `Boolean` - Whether the word was successfully written to the custom dict
 
 * `word` String - The word you want to remove from the dictionary
 
-Returns `Boolean` - Whether the word was successfully removed from the custom dictionary.
+Returns `Boolean` - Whether the word was successfully removed from the custom dictionary. This API
+will not work on non-persistent (in-memory) sessions.
 
 **Note:** On macOS and Windows 10 this word will be removed from the OS custom dictionary as well
 
