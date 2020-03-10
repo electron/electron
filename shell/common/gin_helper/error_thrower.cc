@@ -5,6 +5,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 
 #include "gin/converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace gin_helper {
 
@@ -35,6 +36,17 @@ void ErrorThrower::ThrowReferenceError(base::StringPiece err_msg) {
 
 void ErrorThrower::ThrowSyntaxError(base::StringPiece err_msg) {
   Throw(v8::Exception::SyntaxError, err_msg);
+}
+
+void ErrorThrower::ThrowConverterError(base::StringPiece err_msg,
+                                       v8::Local<v8::Value> subject) {
+  v8::Local<v8::Value> exception =
+      v8::Exception::Error(gin::StringToV8(isolate_, err_msg));
+  DCHECK(exception->IsObject());
+  gin::Dictionary(isolate_, v8::Local<v8::Object>::Cast(exception))
+      .Set("subject", subject);
+  if (!isolate_->IsExecutionTerminating())
+    isolate_->ThrowException(exception);
 }
 
 void ErrorThrower::Throw(ErrorGenerator gen, base::StringPiece err_msg) {

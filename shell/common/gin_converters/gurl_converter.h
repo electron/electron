@@ -8,6 +8,7 @@
 #include <string>
 
 #include "gin/converter.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "url/gurl.h"
 
 namespace gin {
@@ -25,6 +26,8 @@ struct Converter<GURL> {
       *out = GURL(url);
       return true;
     } else {
+      gin_helper::ErrorThrower(isolate).ThrowConverterError(
+          "Attempted to convert a non-string value to a URL", val);
       return false;
     }
   }

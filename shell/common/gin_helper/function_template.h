@@ -178,12 +178,19 @@ struct ArgumentHolder {
       args->ThrowTypeError("Object has been destroyed");
       return;
     }
-    ok = GetNextArgument(args, create_flags, index == 0, &value);
-    if (!ok) {
-      // Ideally we would include the expected c++ type in the error
-      // message which we can access via typeid(ArgType).name()
-      // however we compile with no-rtti, which disables typeid.
-      args->ThrowError();
+    {
+      v8::TryCatch try_catch(args->isolate());
+      ok = GetNextArgument(args, create_flags, index == 0, &value);
+      if (!ok) {
+        if (try_catch.HasCaught()) {
+          try_catch.ReThrow();
+        } else {
+          // Ideally we would include the expected c++ type in the error
+          // message which we can access via typeid(ArgType).name()
+          // however we compile with no-rtti, which disables typeid.
+          args->ThrowError();
+        }
+      }
     }
   }
 };

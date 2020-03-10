@@ -22,6 +22,8 @@ class ErrorThrower {
   void ThrowRangeError(base::StringPiece err_msg);
   void ThrowReferenceError(base::StringPiece err_msg);
   void ThrowSyntaxError(base::StringPiece err_msg);
+  void ThrowConverterError(base::StringPiece err_msg,
+                           v8::Local<v8::Value> subject);
 
   v8::Isolate* isolate() const { return isolate_; }
 
