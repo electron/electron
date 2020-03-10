@@ -100,6 +100,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
   }
 
   void PostMessage(v8::Isolate* isolate,
+                   gin_helper::ErrorThrower thrower,
                    const std::string& channel,
                    v8::Local<v8::Value> message_value,
                    base::Optional<v8::Local<v8::Value>> transfer) {
@@ -113,8 +114,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     std::vector<v8::Local<v8::Object>> transferables;
     if (transfer) {
       if (!gin::ConvertFromV8(isolate, *transfer, &transferables)) {
-        isolate->ThrowException(v8::Exception::Error(
-            gin::StringToV8(isolate, "Invalid value for transfer")));
+        thrower.ThrowTypeError("Invalid value for transfer");
         return;
       }
     }
@@ -125,8 +125,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
           blink::WebMessagePortConverter::
               DisentangleAndExtractMessagePortChannel(isolate, transferable);
       if (!port.has_value()) {
-        isolate->ThrowException(v8::Exception::Error(
-            gin::StringToV8(isolate, "Invalid value for transfer")));
+        thrower.ThrowTypeError("Invalid value for transfer");
         return;
       }
       ports.emplace_back(port.value());
