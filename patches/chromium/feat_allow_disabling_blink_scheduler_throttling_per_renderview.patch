@@ -78,9 +78,9 @@ index a40699b5c66d9ae9bd1e9aef629ed171d9a63ce6..fe32946a51003d3650b41f7833c6f785
  }
  
 +void RenderViewImpl::OnSetSchedulerThrottling(bool allowed) {
-+  if (!webview())
++  if (!GetWebView())
 +    return;
-+  webview()->SetSchedulerThrottling(allowed);
++  GetWebView()->SetSchedulerThrottling(allowed);
 +}
 +
  void RenderViewImpl::ApplyPageVisibilityState(
