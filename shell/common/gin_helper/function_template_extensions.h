@@ -5,6 +5,8 @@
 #ifndef SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
 #define SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
 
+#include <utility>
+
 #include "gin/function_template.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
