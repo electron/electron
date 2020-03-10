@@ -432,7 +432,7 @@ describe('ipc module', () => {
           await w.loadURL('about:blank')
           expect(() => {
             w.webContents.postMessage('channel', w)
-          }).to.throw(/Error processing argument at index 1/)
+          }).to.throw(/An object could not be cloned/)
         })
 
         it('throws on invalid transferable list', async () => {
@@ -440,7 +440,7 @@ describe('ipc module', () => {
           await w.loadURL('about:blank')
           expect(() => {
             w.webContents.postMessage('', '', null as any)
-          }).to.throw(/Error processing argument at index 2/)
+          }).to.throw(/Invalid value for transfer/)
         })
 
         it('throws on transferring non-transferable', async () => {
@@ -448,7 +448,7 @@ describe('ipc module', () => {
           await w.loadURL('about:blank')
           expect(() => {
             (w.webContents.postMessage as any)('channel', '', [123])
-          }).to.throw(/Error processing argument at index 2/)
+          }).to.throw(/Invalid value for transfer/)
         })
 
         it('throws when passing null ports', async () => {
@@ -456,7 +456,7 @@ describe('ipc module', () => {
           await w.loadURL('about:blank')
           expect(() => {
             w.webContents.postMessage('foo', null, [null] as any)
-          }).to.throw(/conversion failure/)
+          }).to.throw(/Invalid value for transfer/)
         })
 
         it('throws when passing duplicate ports', async () => {
