@@ -1471,6 +1471,21 @@ void BindMimeHandlerService(
   extensions::MimeHandlerServiceImpl::Create(guest_view->GetStreamWeakPtr(),
                                              std::move(receiver));
 }
+
+void BindBeforeUnloadControl(
+    content::RenderFrameHost* frame_host,
+    mojo::PendingReceiver<extensions::mime_handler::BeforeUnloadControl>
+        receiver) {
+  auto* web_contents = content::WebContents::FromRenderFrameHost(frame_host);
+  if (!web_contents)
+    return;
+
+  auto* guest_view =
+      extensions::MimeHandlerViewGuest::FromWebContents(web_contents);
+  if (!guest_view)
+    return;
+  guest_view->FuseBeforeUnloadControl(std::move(receiver));
+}
 #endif
 
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
@@ -1481,6 +1496,28 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   map->Add<extensions::mime_handler::MimeHandlerService>(
       base::BindRepeating(&BindMimeHandlerService));
+  map->Add<extensions::mime_handler::BeforeUnloadControl>(
+      base::BindRepeating(&BindBeforeUnloadControl));
+
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  if (!web_contents)
+    return;
+
+  const GURL& site = render_frame_host->GetSiteInstance()->GetSiteURL();
+  if (!site.SchemeIs(extensions::kExtensionScheme))
+    return;
+
+  content::BrowserContext* browser_context =
+      render_frame_host->GetProcess()->GetBrowserContext();
+  auto* extension = extensions::ExtensionRegistry::Get(browser_context)
+                        ->enabled_extensions()
+                        .GetByID(site.host());
+  if (!extension)
+    return;
+  extensions::ExtensionsBrowserClient::Get()
+      ->RegisterBrowserInterfaceBindersForFrame(map, render_frame_host,
+                                                extension);
 #endif
 }
 
