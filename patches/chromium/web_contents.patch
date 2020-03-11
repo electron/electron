@@ -9,7 +9,7 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 84587a78262128fb03bad83e8b51cba2755eab6c..611ba2b46eaf4f3d9b69c3c1eeb7824a3a9ece48 100644
+index 7a6b4e8a075087c8696e884f58dea450a40a236e..0b9ddc9f023fc43b0b09e752249cc1cd9e3131fc 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2100,6 +2100,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
@@ -34,10 +34,10 @@ index 84587a78262128fb03bad83e8b51cba2755eab6c..611ba2b46eaf4f3d9b69c3c1eeb7824a
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 65d6373115587dea79ef33b28ec898e9142f08ea..b28d70d9288fa94a55c4d460c68df1a38a2dfbff 100644
+index f808d016ad702720b6481e3b7d3b99d0891f480a..fac41cbd4e7252624a46dff5fec53eed44fcb369 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -78,9 +78,12 @@ class BrowserPluginGuestDelegate;
+@@ -81,9 +81,12 @@ class BrowserPluginGuestDelegate;
  class InterstitialPage;
  class RenderFrameHost;
  class RenderViewHost;
@@ -50,7 +50,7 @@ index 65d6373115587dea79ef33b28ec898e9142f08ea..b28d70d9288fa94a55c4d460c68df1a3
  class WebUI;
  struct CustomContextMenuContext;
  struct DropData;
-@@ -213,6 +216,10 @@ class WebContents : public PageNavigator,
+@@ -216,6 +219,10 @@ class WebContents : public PageNavigator,
        kInitializeAndWarmupRendererProcess,
      } desired_renderer_state;
  

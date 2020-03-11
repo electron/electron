@@ -92,10 +92,10 @@ index ee2079537feb23869fe4f812bcef33e1d7de29a7..93287ae0928b52f9df34834ad1a8ef0e
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |attach_same_site_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index d38174d3f6035d81a3e31304bf57ec08f233c1b8..f3813a61c4834d3419d1ac805068ad033e59b9ae 100644
+index c5dca5c76f9c9c96ea6311fbcfa7da14208aebd3..799fca2db81084e2496d84c2444c74bf2bbae8ee 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5675,6 +5675,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5697,6 +5697,23 @@ void RenderFrameImpl::BeginNavigation(
      int cumulative_bindings = RenderProcess::current()->GetEnabledBindings();
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (cumulative_bindings & kWebUIBindingsPolicyMask);
