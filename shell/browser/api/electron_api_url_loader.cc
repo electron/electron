@@ -433,6 +433,7 @@ void SimpleURLLoaderWrapper::OnRetry(base::OnceClosure start_retry) {}
 void SimpleURLLoaderWrapper::OnResponseStarted(
     const GURL& final_url,
     const network::mojom::URLResponseHead& response_head) {
+  v8::HandleScope scope(isolate());
   gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate());
   dict.Set("statusCode", response_head.headers->response_code());
   dict.Set("statusMessage", response_head.headers->GetStatusText());

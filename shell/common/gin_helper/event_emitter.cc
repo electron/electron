@@ -38,6 +38,7 @@ v8::Local<v8::Object> CreateEvent(v8::Isolate* isolate,
   }
 
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  CHECK(!context.IsEmpty());
   v8::Local<v8::Object> event =
       v8::Local<v8::ObjectTemplate>::New(isolate, event_template)
           ->NewInstance(context)

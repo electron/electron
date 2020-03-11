@@ -302,6 +302,7 @@ void OpenDialogCompletion(int chosen,
                           NSOpenPanel* dialog,
                           bool security_scoped_bookmarks,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
+  v8::HandleScope scope(promise.isolate());
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSFileHandlingPanelCancelButton) {
     dict.Set("canceled", true);
@@ -379,6 +380,7 @@ void SaveDialogCompletion(int chosen,
                           NSSavePanel* dialog,
                           bool security_scoped_bookmarks,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
+  v8::HandleScope scope(promise.isolate());
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSFileHandlingPanelCancelButton) {
     dict.Set("canceled", true);
