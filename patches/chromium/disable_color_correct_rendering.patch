@@ -66,7 +66,7 @@ index cb69e08c0185f55497089505ed5b226e57140321..362f28accc248248f3bcb54955c23528
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 2158fc935826319a1d297dde70afc302ef2af870..a3317d70d0c1a81ee2fb4d42d8ecdc4b0eb1a1e7 100644
+index d9bc455ac5a4a2405becb678f19bba0fddc8ce00..4d9f8be17da2b3b56a3d673c6f1fa6ed63bf5a0d 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -84,6 +84,9 @@
@@ -216,7 +216,7 @@ index bf63bb9c03852263e9341c671be1ee4e7c1a3dc2..d06e2f99739298a4de13ebbce5606b68
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 54b5fd4f20ab3a37eb29772fcf49838dd22cf2ba..132b0d9856e9b075dd39fa32623514ffb8811303 100644
+index c4c55c26bf00373502d319536433485b851af5b0..356fb599f1ef49be6b7a962e471bbd045556979c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -230,6 +230,7 @@
@@ -236,10 +236,10 @@ index 54b5fd4f20ab3a37eb29772fcf49838dd22cf2ba..132b0d9856e9b075dd39fa32623514ff
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 4c9ed8ca9a64aa9e4b0d9e01a0551ed5b642ad7e..7c3f0a0d36d0e91bd8a6ab1d648af3c4eb84b7ac 100644
+index 6734b39c3f5c48545c4aea477f500b36015c2b99..7795fa943c18836cfada9a45ec01d4114d9d34e8 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2722,6 +2722,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2671,6 +2671,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -294,7 +294,7 @@ index d88680239152858689121d134559765fb8fae1b7..073ed8a8f84ebf994a2b9d9fa7e78f75
  
    gfx::ColorSpace::TransferID transfer_id =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index bc250cc868030cfc1ebd41f4a55a2e2cc3474ac6..5ff52a19ceabb2c88b979a27e0e166085bc70dde 100644
+index 4c47a1132ea3d53b6c63882e98374196ac7ce069..a7f00f426cc6a75d7b942581696332756f2cb792 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -16,6 +16,7 @@
