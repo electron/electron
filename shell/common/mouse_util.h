@@ -27,7 +27,7 @@
 namespace electron {
 
 // Returns the cursor's type as a string.
-std::string CursorTypeToString(const content::CursorInfo& info);
+std::string CursorTypeToString(const ui::Cursor& cursor);
 
 }  // namespace electron
 
