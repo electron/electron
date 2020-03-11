@@ -44,6 +44,8 @@
 #include "content/public/common/web_preferences.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
+#include "extensions/browser/api/web_request/web_request_api.h"
+#include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/common/constants.h"
@@ -1300,12 +1302,25 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  const auto* web_request_api =
+      extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
+          frame->GetProcess()->GetBrowserContext());
+
+  // NOTE: Some unit test environments do not initialize
+  // BrowserContextKeyedAPI factories for e.g. WebRequest.
+  if (!web_request_api && !web_request.get())
+    return false;
+
+  return web_request->HasListener() || web_request_api->MayHaveProxies();
+#else
   // NOTE: Some unit test environments do not initialize
   // BrowserContextKeyedAPI factories for e.g. WebRequest.
   if (!web_request.get())
     return false;
 
   return web_request->HasListener();
+#endif
 }
 
 void ElectronBrowserClient::CreateWebSocket(
@@ -1316,8 +1331,20 @@ void ElectronBrowserClient::CreateWebSocket(
     const base::Optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
         handshake_client) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  auto* web_request_api =
+      extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
+          browser_context);
+
+  DCHECK(web_request_api);
+  web_request_api->ProxyWebSocket(frame, std::move(factory), url,
+                                  site_for_cookies.RepresentativeUrl(),
+                                  user_agent, std::move(handshake_client));
+#endif
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
   DCHECK(web_request.get());
   ProxyingWebSocket::StartProxying(
@@ -1341,6 +1368,25 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     bool* bypass_redirect_checks,
     bool* disable_secure_dns,
     network::mojom::URLLoaderFactoryOverridePtr* factory_override) {
+  bool use_proxy = false;
+
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  auto* web_request_api =
+      extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
+          browser_context);
+
+  // NOTE: Some unit test environments do not initialize
+  // BrowserContextKeyedAPI factories for e.g. WebRequest.
+  if (web_request_api) {
+    bool use_proxy_for_web_request =
+        web_request_api->MaybeProxyURLLoaderFactory(
+            browser_context, frame, render_process_id, type,
+            std::move(navigation_id), factory_receiver, header_client);
+    if (bypass_redirect_checks)
+      *bypass_redirect_checks = use_proxy_for_web_request;
+    use_proxy |= use_proxy_for_web_request;
+  }
+#endif
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   api::Protocol* protocol =
       api::Protocol::FromWrappedClass(isolate, browser_context);
@@ -1377,7 +1423,8 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
-  return true;
+
+  return use_proxy;
 }
 
 void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
