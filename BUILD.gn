@@ -738,7 +738,10 @@ if (is_mac) {
         "$root_out_dir/egl_intermediates/libswiftshader_libGLESv2.dylib",
       ]
       outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
-      public_deps = [ "//ui/gl:swiftshader_library_copy" ]
+      public_deps = [
+        "//ui/gl:swiftshader_egl_library_copy",
+        "//ui/gl:swiftshader_vk_library_copy",
+      ]
     }
   }
   group("electron_angle_library") {
