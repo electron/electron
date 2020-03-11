@@ -615,6 +615,10 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
+bool Session::IsPersistent() {
+  return !browser_context_->IsOffTheRecord();
+}
+
 v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
                                             const std::string& uuid) {
   gin::Handle<DataPipeHolder> holder = DataPipeHolder::From(isolate, uuid);
@@ -981,6 +985,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",
                  &Session::AllowNTLMCredentialsForDomains)
+      .SetMethod("isPersistent", &Session::IsPersistent)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
       .SetMethod("getBlobData", &Session::GetBlobData)
