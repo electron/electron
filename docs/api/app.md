@@ -554,10 +554,16 @@ Returns `Promise<void>` - fulfilled when Electron is initialized.
 May be used as a convenient alternative to checking `app.isReady()`
 and subscribing to the `ready` event if the app is not ready yet.
 
-### `app.focus()`
+### `app.focus([options])`
+
+* `options` Object (optional)
+  * `steal` Boolean _macOS_ - Make the receiver the active app even if another app is
+  currently active.
 
 On Linux, focuses on the first visible window. On macOS, makes the application
 the active app. On Windows, focuses on the application's first window.
+
+You should seek to use the `steal` option as sparingly as possible.
 
 ### `app.hide()` _macOS_
 

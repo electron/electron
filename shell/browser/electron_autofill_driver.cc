@@ -28,10 +28,11 @@ void AutofillDriver::ShowAutofillPopup(
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
   auto* web_contents =
-      api::WebContents::From(
-          v8::Isolate::GetCurrent(),
-          content::WebContents::FromRenderFrameHost(render_frame_host_))
+      api::WebContents::From(isolate, content::WebContents::FromRenderFrameHost(
+                                          render_frame_host_))
           .get();
   if (!web_contents || !web_contents->owner_window())
     return;

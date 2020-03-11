@@ -32,10 +32,10 @@ index 3fd108c89c3b070a08790850db4dfd6cc8a3ce44..c393f51709efd8b28b07edfe452d2b84
  
  }  // namespace storage
 diff --git a/third_party/blink/public/mojom/dom_storage/storage_area.mojom b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
-index 1f1b2c6fa109aa52c4e7c7f5fcaac91beb538449..d8f15eed9be83340ffd1f2400df08558e9554710 100644
+index c9f9124eb6f4900988ad63fa38a03b7b6c5d1abb..9cba4e5af9a624d358697d806f151ee3998f0b58 100644
 --- a/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 +++ b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
-@@ -40,7 +40,8 @@ interface StorageAreaGetAllCallback {
+@@ -50,7 +50,8 @@ struct KeyValue {
  interface StorageArea {
    // The quota for each storage area.
    // This value is enforced in renderer processes and the browser process.

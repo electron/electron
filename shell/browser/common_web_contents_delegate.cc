@@ -13,6 +13,7 @@
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/task/post_task.h"
+#include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
@@ -183,8 +184,8 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 
 CommonWebContentsDelegate::CommonWebContentsDelegate()
     : devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
-      file_task_runner_(base::CreateSequencedTaskRunner(
-          {base::ThreadPool(), base::MayBlock()})),
+      file_task_runner_(
+          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})),
       weak_factory_(this) {}
 
 CommonWebContentsDelegate::~CommonWebContentsDelegate() = default;

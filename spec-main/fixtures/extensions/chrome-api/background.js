@@ -16,6 +16,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       chrome.tabs.executeScript(tabId, { code }, ([result]) => sendResponse(result))
       break
     }
+
+    case 'connectTab': {
+      const [name] = args
+      const port = chrome.tabs.connect(tabId, { name })
+      port.postMessage('howdy')
+      break
+    }
   }
   // Respond asynchronously
   return true

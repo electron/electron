@@ -2,10 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/mouse_util.h"
 #include <string>
 
-using Cursor = ui::CursorType;
+#include "shell/common/mouse_util.h"
+#include "ui/base/mojom/cursor_type.mojom-shared.h"
+
+using Cursor = ui::mojom::CursorType;
 
 namespace electron {
 

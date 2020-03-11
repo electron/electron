@@ -314,6 +314,7 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
 }
 
 void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
+  v8::HandleScope scope(isolate());
   Emit("changed", gin::ConvertToV8(isolate(), change.cookie),
        gin::ConvertToV8(isolate(), change.cause),
        gin::ConvertToV8(isolate(),

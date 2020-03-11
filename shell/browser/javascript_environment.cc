@@ -29,13 +29,21 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
                       gin::IsolateHolder::IsolateType::kUtility,
                       gin::IsolateHolder::IsolateCreationMode::kNormal,
                       isolate_),
-      isolate_scope_(isolate_),
-      locker_(isolate_),
-      handle_scope_(isolate_),
-      context_(isolate_, node::NewContext(isolate_)),
-      context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {}
+      locker_(isolate_) {
+  isolate_->Enter();
+  v8::HandleScope scope(isolate_);
+  auto context = node::NewContext(isolate_);
+  context_ = v8::Global<v8::Context>(isolate_, context);
+  context->Enter();
+}
 
-JavascriptEnvironment::~JavascriptEnvironment() = default;
+JavascriptEnvironment::~JavascriptEnvironment() {
+  {
+    v8::HandleScope scope(isolate_);
+    context_.Get(isolate_)->Exit();
+  }
+  isolate_->Exit();
+}
 
 v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* cmd = base::CommandLine::ForCurrentProcess();

@@ -36,8 +36,4 @@ ui::ContextFactory* ViewsDelegateMac::GetContextFactory() {
   return content::GetContextFactory();
 }
 
-ui::ContextFactoryPrivate* ViewsDelegateMac::GetContextFactoryPrivate() {
-  return content::GetContextFactoryPrivate();
-}
-
 }  // namespace electron
