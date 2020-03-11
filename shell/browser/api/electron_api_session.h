@@ -9,13 +9,16 @@
 #include <vector>
 
 #include "base/values.h"
-#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/trackable_object.h"
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
+#endif
 
 class GURL;
 
@@ -38,8 +41,10 @@ class ElectronBrowserContext;
 namespace api {
 
 class Session : public gin_helper::TrackableObject<Session>,
-                public content::DownloadManager::Observer,
-                public SpellcheckHunspellDictionary::Observer {
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+                public SpellcheckHunspellDictionary::Observer,
+#endif
+                public content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
   static gin::Handle<Session> CreateFrom(
@@ -81,6 +86,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, gin_helper::Arguments* args);
   std::string GetUserAgent();
+  bool IsPersistent();
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
                                      const std::string& uuid);
   void DownloadURL(const GURL& url);
@@ -118,6 +124,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   void OnDownloadCreated(content::DownloadManager* manager,
                          download::DownloadItem* item) override;
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   // SpellcheckHunspellDictionary::Observer
   void OnHunspellDictionaryInitialized(const std::string& language) override;
   void OnHunspellDictionaryDownloadBegin(const std::string& language) override;
@@ -125,6 +132,7 @@ class Session : public gin_helper::TrackableObject<Session>,
       const std::string& language) override;
   void OnHunspellDictionaryDownloadFailure(
       const std::string& language) override;
+#endif
 
  private:
   // Cached gin_helper::Wrappable objects.

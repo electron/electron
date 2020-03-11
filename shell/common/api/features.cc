@@ -9,6 +9,10 @@
 
 namespace {
 
+bool IsBuiltinSpellCheckerEnabled() {
+  return BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER);
+}
+
 bool IsDesktopCapturerEnabled() {
   return BUILDFLAG(ENABLE_DESKTOP_CAPTURER);
 }
@@ -66,6 +70,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  dict.SetMethod("isBuiltinSpellCheckerEnabled", &IsBuiltinSpellCheckerEnabled);
   dict.SetMethod("isDesktopCapturerEnabled", &IsDesktopCapturerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
   dict.SetMethod("isRemoteModuleEnabled", &IsRemoteModuleEnabled);

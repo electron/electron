@@ -92,6 +92,7 @@ void NodeStreamLoader::ReadMore() {
   }
   is_reading_ = true;
   auto weak = weak_factory_.GetWeakPtr();
+  v8::HandleScope scope(isolate_);
   // buffer = emitter.read()
   v8::MaybeLocal<v8::Value> ret = node::MakeCallback(
       isolate_, emitter_.Get(isolate_), "read", 0, nullptr, {0, 0});

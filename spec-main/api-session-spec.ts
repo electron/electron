@@ -898,6 +898,30 @@ describe('session module', () => {
     })
   })
 
+  describe('ses.isPersistent()', () => {
+    afterEach(closeAllWindows)
+
+    it('returns default session as persistent', () => {
+      const w = new BrowserWindow({
+        show: false
+      })
+
+      const ses = w.webContents.session
+
+      expect(ses.isPersistent()).to.be.true()
+    })
+
+    it('returns persist: session as persistent', () => {
+      const ses = session.fromPartition(`persist:${Math.random()}`)
+      expect(ses.isPersistent()).to.be.true()
+    })
+
+    it('returns temporary session as not persistent', () => {
+      const ses = session.fromPartition(`${Math.random()}`)
+      expect(ses.isPersistent()).to.be.false()
+    })
+  })
+
   describe('ses.setUserAgent()', () => {
     afterEach(closeAllWindows)
 
