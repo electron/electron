@@ -1306,23 +1306,21 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  const auto* web_request_api =
-      extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
-          frame->GetProcess()->GetBrowserContext());
-
-  // NOTE: Some unit test environments do not initialize
-  // BrowserContextKeyedAPI factories for e.g. WebRequest.
-  if (!web_request_api || !web_request.get())
-    return false;
-
-  return web_request->HasListener() || web_request_api->MayHaveProxies();
-#else
   // NOTE: Some unit test environments do not initialize
   // BrowserContextKeyedAPI factories for e.g. WebRequest.
   if (!web_request.get())
     return false;
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  const auto* web_request_api =
+      extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
+          browser_context);
+
+  if (!web_request_api)
+    return false;
+
+  return web_request->HasListener() || web_request_api->MayHaveProxies();
+#else
   return web_request->HasListener();
 #endif
 }
@@ -1373,8 +1371,6 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     bool* bypass_redirect_checks,
     bool* disable_secure_dns,
     network::mojom::URLLoaderFactoryOverridePtr* factory_override) {
-  bool use_proxy = false;
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* web_request_api =
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
@@ -1383,13 +1379,9 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
   // NOTE: Some unit test environments do not initialize
   // BrowserContextKeyedAPI factories for e.g. WebRequest.
   if (web_request_api) {
-    bool use_proxy_for_web_request =
-        web_request_api->MaybeProxyURLLoaderFactory(
-            browser_context, frame_host, render_process_id, type,
-            std::move(navigation_id), factory_receiver, header_client);
-    if (bypass_redirect_checks)
-      *bypass_redirect_checks = use_proxy_for_web_request;
-    use_proxy |= use_proxy_for_web_request;
+    web_request_api->MaybeProxyURLLoaderFactory(
+        browser_context, frame_host, render_process_id, type,
+        std::move(navigation_id), factory_receiver, header_client);
   }
 #endif
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
@@ -1430,7 +1422,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
 
-  return use_proxy;
+  return true;
 }
 
 void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
