@@ -86,6 +86,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, gin_helper::Arguments* args);
   std::string GetUserAgent();
+  bool IsPersistent();
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
                                      const std::string& uuid);
   void DownloadURL(const GURL& url);

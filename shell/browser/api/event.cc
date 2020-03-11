@@ -6,8 +6,10 @@
 
 #include <utility>
 
+#include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
 #include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/std_converter.h"
 
 namespace gin_helper {
 
@@ -15,7 +17,16 @@ gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Event::Event() {}
 
-Event::~Event() = default;
+Event::~Event() {
+  if (callback_) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
+    auto message = gin::DataObjectBuilder(isolate)
+                       .Set("error", "reply was never sent")
+                       .Build();
+    SendReply(isolate, message);
+  }
+}
 
 void Event::SetCallback(InvokeCallback callback) {
   DCHECK(!callback_);

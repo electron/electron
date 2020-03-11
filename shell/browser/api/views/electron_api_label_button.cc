@@ -7,6 +7,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -29,7 +30,7 @@ void LabelButton::SetText(const base::string16& text) {
 }
 
 bool LabelButton::IsDefault() const {
-  return label_button()->is_default();
+  return label_button()->GetIsDefault();
 }
 
 void LabelButton::SetIsDefault(bool is_default) {
@@ -41,14 +42,14 @@ gin_helper::WrappableBase* LabelButton::New(gin_helper::Arguments* args,
                                             const std::string& text) {
   // Constructor call.
   auto* view = new LabelButton(text);
-  view->InitWith(args->isolate(), args->GetThis());
+  view->InitWithArgs(args);
   return view;
 }
 
 // static
 void LabelButton::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin_helper::StringTov8(isolate, "LabelButton"));
+  prototype->SetClassName(gin::StringToV8(isolate, "LabelButton"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("getText", &LabelButton::GetText)
       .SetMethod("setText", &LabelButton::SetText)

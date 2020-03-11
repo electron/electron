@@ -439,6 +439,13 @@ example `"en-US,fr,de,ko,zh-CN,ja"`.
 This doesn't affect existing `WebContents`, and each `WebContents` can use
 `webContents.setUserAgent` to override the session-wide user agent.
 
+#### `ses.isPersistent()`
+
+Returns `Boolean` - Whether or not this session is a persistent one. The default
+`webContents` session of a `BrowserWindow` is persistent. When creating a session
+from a partition, session prefixed with `persist:` will be persistent, while others
+will be temporary.
+
 #### `ses.getUserAgent()`
 
 Returns `String` - The user agent for this session.

@@ -108,6 +108,17 @@ describe('ipc module', () => {
         ipcMain.removeHandler('test')
       }
     })
+
+    it('throws an error in the renderer if the reply callback is dropped', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      ipcMain.handleOnce('test', () => new Promise(resolve => {
+        setTimeout(() => v8Util.requestGarbageCollectionForTesting())
+        /* never resolve */
+      }))
+      w.webContents.executeJavaScript(`(${rendererInvoke})()`)
+      const [, { error }] = await emittedOnce(ipcMain, 'result')
+      expect(error).to.match(/reply was never sent/)
+    })
   })
 
   describe('ordering', () => {

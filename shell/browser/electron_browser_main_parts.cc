@@ -293,6 +293,8 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // avoid conflicts we only initialize our V8 environment after that.
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
+  v8::HandleScope scope(js_env_->isolate());
+
   node_bindings_->Initialize();
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(

@@ -42,7 +42,7 @@ index 0b035ec92d0df57e36be7ef5dd18baf9395b0dca..78f6bfad629640baab5f1eee88d4b900
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 901ac8794286e84be347d4f85946cc799bacb360..ec3a6195ba8728d4c55ae38f01ed71d0fc58ab28 100644
+index baa857e8655977fa524621c63e3382fadd3a6d9e..c629cec16ef9db7ebb28c4a15ea4741d8ddc4fd7 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -59,6 +59,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
@@ -79,27 +79,27 @@ index 901ac8794286e84be347d4f85946cc799bacb360..ec3a6195ba8728d4c55ae38f01ed71d0
      // Material spinner/throbber
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
-diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 832585d9ed6cc232ba2b23ef6b5b90055d561168..c5fd22fba2cd83084311b324a3018039cdf0be4d 100644
---- a/ui/native_theme/native_theme.h
-+++ b/ui/native_theme/native_theme.h
-@@ -424,6 +424,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
-     kColorId_TableHeaderText,
-     kColorId_TableHeaderBackground,
-     kColorId_TableHeaderSeparator,
-+    // Results Tables, such as the omnibox
-+    kColorId_ResultsTableNormalBackground,
-+    kColorId_ResultsTableHoveredBackground,
-+    kColorId_ResultsTableNormalText,
-+    kColorId_ResultsTableDimmedText,
-     // Colors for the material spinner (aka throbber).
-     kColorId_ThrobberSpinningColor,
-     kColorId_ThrobberWaitingColor,
+diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
+index 85a7da0060f7e03081ec7e63dc0a367cef53fc7c..2d1a3c0159407b0c98ac6a3099e0e45e99240b64 100644
+--- a/ui/native_theme/native_theme_color_id.h
++++ b/ui/native_theme/native_theme_color_id.h
+@@ -116,6 +116,11 @@
+   OP(kColorId_TableHeaderText),                                                \
+   OP(kColorId_TableHeaderBackground),                                          \
+   OP(kColorId_TableHeaderSeparator),                                           \
++  /* Results Tables, such as the omnibox */                                    \
++  OP(kColorId_ResultsTableNormalBackground),                                   \
++  OP(kColorId_ResultsTableHoveredBackground),                                  \
++  OP(kColorId_ResultsTableNormalText),                                         \
++  OP(kColorId_ResultsTableDimmedText),                                         \
+   /* Colors for the material spinner (aka throbber). */                        \
+   OP(kColorId_ThrobberSpinningColor),                                          \
+   OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 53b4980bf65935e5028aa3b15c6be407069b669b..4bdaa3da0540e49f6794fcaf4d89780cd32720b2 100644
+index 07db545df305a0c22375e9be3fad05621f69867a..dedaaaeaa93e55ec784f94864d670e0659d839bf 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -619,6 +619,18 @@ SkColor NativeThemeWin::GetPlatformHighContrastColor(ColorId color_id) const {
+@@ -639,6 +639,18 @@ SkColor NativeThemeWin::GetPlatformHighContrastColor(ColorId color_id) const {
      case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  

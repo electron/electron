@@ -51,14 +51,13 @@ void LoginHandler::EmitEvent(
     scoped_refptr<net::HttpResponseHeaders> response_headers,
     bool first_auth_attempt) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
 
   auto api_web_contents = api::WebContents::From(isolate, web_contents());
   if (api_web_contents.IsEmpty()) {
     std::move(auth_required_callback_).Run(base::nullopt);
     return;
   }
-
-  v8::HandleScope scope(isolate);
 
   auto details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("url", url);
