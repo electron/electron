@@ -1313,7 +1313,7 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
 
   // NOTE: Some unit test environments do not initialize
   // BrowserContextKeyedAPI factories for e.g. WebRequest.
-  if (!web_request_api && !web_request.get())
+  if (!web_request_api || !web_request.get())
     return false;
 
   return web_request->HasListener() || web_request_api->MayHaveProxies();
