@@ -293,6 +293,8 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // avoid conflicts we only initialize our V8 environment after that.
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
+  v8::HandleScope scope(js_env_->isolate());
+
   node_bindings_->Initialize();
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
@@ -405,6 +407,9 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
 
+  // url::Add*Scheme are not threadsafe, this helps prevent data races.
+  url::LockSchemeRegistries();
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_client_ = std::make_unique<ElectronExtensionsClient>();
   extensions::ExtensionsClient::Set(extensions_client_.get());
@@ -483,9 +488,6 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   ui::SetX11ErrorHandlers(X11EmptyErrorHandler, X11EmptyIOErrorHandler);
 #endif
 
-  node_debugger_->Stop();
-  js_env_->OnMessageLoopDestroying();
-
 #if defined(OS_MACOSX)
   FreeAppDelegate();
 #endif
@@ -501,6 +503,11 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
       std::move(callback).Run();
     ++iter;
   }
+
+  // Destroy node platform after all destructors_ are executed, as they may
+  // invoke Node/V8 APIs inside them.
+  node_debugger_->Stop();
+  js_env_->OnMessageLoopDestroying();
 
   fake_browser_process_->PostMainMessageLoopRun();
 }

@@ -264,17 +264,16 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   bool has_precise_scrolling_deltas = false;
   dict.Get("hasPreciseScrollingDeltas", &has_precise_scrolling_deltas);
   if (has_precise_scrolling_deltas) {
-    out->delta_units =
-        ui::input_types::ScrollGranularity::kScrollByPrecisePixel;
+    out->delta_units = ui::ScrollGranularity::kScrollByPrecisePixel;
   } else {
-    out->delta_units = ui::input_types::ScrollGranularity::kScrollByPixel;
+    out->delta_units = ui::ScrollGranularity::kScrollByPixel;
   }
 
 #if defined(USE_AURA)
   // Matches the behavior of ui/events/blink/web_input_event_traits.cc:
   bool can_scroll = true;
   if (dict.Get("canScroll", &can_scroll) && !can_scroll) {
-    out->delta_units = ui::input_types::ScrollGranularity::kScrollByPage;
+    out->delta_units = ui::ScrollGranularity::kScrollByPage;
     out->SetModifiers(out->GetModifiers() & ~blink::WebInputEvent::kControlKey);
   }
 #endif
@@ -444,8 +443,7 @@ v8::Local<v8::Value> Converter<network::mojom::ReferrerPolicy>::ToV8(
       return StringToV8(isolate, "no-referrer");
     case network::mojom::ReferrerPolicy::kOrigin:
       return StringToV8(isolate, "origin");
-    case network::mojom::ReferrerPolicy::
-        kNoReferrerWhenDowngradeOriginWhenCrossOrigin:
+    case network::mojom::ReferrerPolicy::kStrictOriginWhenCrossOrigin:
       return StringToV8(isolate, "strict-origin-when-cross-origin");
     case network::mojom::ReferrerPolicy::kSameOrigin:
       return StringToV8(isolate, "same-origin");
@@ -473,8 +471,7 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
   else if (policy == "origin")
     *out = network::mojom::ReferrerPolicy::kOrigin;
   else if (policy == "strict-origin-when-cross-origin")
-    *out = network::mojom::ReferrerPolicy::
-        kNoReferrerWhenDowngradeOriginWhenCrossOrigin;
+    *out = network::mojom::ReferrerPolicy::kStrictOriginWhenCrossOrigin;
   else if (policy == "same-origin")
     *out = network::mojom::ReferrerPolicy::kSameOrigin;
   else if (policy == "strict-origin")

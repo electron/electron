@@ -8,7 +8,7 @@ Node.js will pick this up when they roll next.
 CL: https://chromium-review.googlesource.com/c/v8/v8/+/1868620
 
 diff --git a/src/node_platform.h b/src/node_platform.h
-index 24f7b337bb8fd7825cda4a4bfc9bafeb0f7aece2..599de93f69d2ef73b833c9138c9640202ef167a7 100644
+index bebd61b0c22644881455105eeb795e4fdbcd5ae9..df7b764237ccad425d8833c9ca746170e2c838a9 100644
 --- a/src/node_platform.h
 +++ b/src/node_platform.h
 @@ -147,14 +147,6 @@ class NodePlatform : public MultiIsolatePlatform {

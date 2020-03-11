@@ -4,7 +4,7 @@ Date: Mon, 6 Mar 2017 10:42:34 -0300
 Subject: Expose `get_linked_module` function
 
 This is a requirement for electron/electron#8815, which exposes some linked
-modules to sandboxed renderers. 
+modules to sandboxed renderers.
 
 TODO(codebytere): remove and replace with a public facing API.
 

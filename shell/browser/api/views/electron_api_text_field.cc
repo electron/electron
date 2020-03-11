@@ -6,6 +6,7 @@
 
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -23,21 +24,21 @@ void TextField::SetText(const base::string16& new_text) {
 }
 
 base::string16 TextField::GetText() const {
-  return text_field()->text();
+  return text_field()->GetText();
 }
 
 // static
 gin_helper::WrappableBase* TextField::New(gin_helper::Arguments* args) {
   // Constructor call.
   auto* view = new TextField();
-  view->InitWith(args->isolate(), args->GetThis());
+  view->InitWithArgs(args);
   return view;
 }
 
 // static
 void TextField::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin_helper::StringTov8(isolate, "TextField"));
+  prototype->SetClassName(gin::StringToV8(isolate, "TextField"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setText", &TextField::SetText)
       .SetMethod("getText", &TextField::GetText);

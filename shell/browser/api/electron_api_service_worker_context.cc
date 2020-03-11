@@ -85,8 +85,10 @@ ServiceWorkerContext::~ServiceWorkerContext() {
 void ServiceWorkerContext::OnReportConsoleMessage(
     int64_t version_id,
     const content::ConsoleMessage& message) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
   Emit("console-message",
-       gin::DataObjectBuilder(v8::Isolate::GetCurrent())
+       gin::DataObjectBuilder(isolate)
            .Set("versionId", version_id)
            .Set("source", MessageSourceToString(message.source))
            .Set("level", static_cast<int32_t>(message.message_level))

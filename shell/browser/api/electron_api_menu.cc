@@ -214,6 +214,7 @@ void Menu::OnMenuWillClose() {
 }
 
 void Menu::OnMenuWillShow() {
+  v8::HandleScope scope(isolate());
   g_menus[weak_map_id()] = v8::Global<v8::Object>(isolate(), GetWrapper());
   Emit("menu-will-show");
 }

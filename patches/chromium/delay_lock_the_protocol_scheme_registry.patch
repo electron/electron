@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <andy@slack-corp.com>
+Date: Tue, 18 Feb 2020 14:35:04 -0800
+Subject: content: allow embedder to prevent locking scheme registry
+
+The //content layer requires all schemes to be registered during startup,
+because Add*Scheme aren't threadsafe. However, Electron exposes the option to
+register additional schemes via JavaScript in the main process before the app
+is ready, but after the //content layer has already locked the registry.
+
+This allows embedders to optionally keep the scheme registry unlocked, and it
+is their responsibility to ensure that it is not accessed in a way that would
+cause potential thread-safety issues.
+
+Previously upstreamed patch: https://chromium-review.googlesource.com/c/chromium/src/+/1637040
+
+This change was lost during upstream refactor in
+https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
+re-submitting the patch.
+
+diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
+index d769b656dbe9e88a3e2533f82cb8daebe871d88b..0955e03a1ff9347b1d7d692e16ff62f350453f7d 100644
+--- a/content/app/content_main_runner_impl.cc
++++ b/content/app/content_main_runner_impl.cc
+@@ -670,7 +670,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+   }
+ #endif
+ 
+-  RegisterContentSchemes();
++  RegisterContentSchemes(delegate_->ShouldLockSchemeRegistry());
+   ContentClientInitializer::Set(process_type, delegate_);
+ 
+ #if !defined(OS_ANDROID)
+diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
+index d0a31f2406ee5c0dcc1f49e09177c914e8602132..a46deedb27c6509afaad40563bb2cbf49777fe68 100644
+--- a/content/common/url_schemes.cc
++++ b/content/common/url_schemes.cc
+@@ -49,7 +49,7 @@ std::vector<std::string>& GetMutableServiceWorkerSchemes() {
+ 
+ }  // namespace
+ 
+-void RegisterContentSchemes() {
++void RegisterContentSchemes(bool should_lock_registry) {
+   // On Android and in tests, schemes may have been registered already.
+   if (g_registered_url_schemes)
+     return;
+@@ -104,7 +104,8 @@ void RegisterContentSchemes() {
+   // threadsafe so must be called when GURL isn't used on any other thread. This
+   // is really easy to mess up, so we say that all calls to Add*Scheme in Chrome
+   // must be inside this function.
+-  url::LockSchemeRegistries();
++  if (should_lock_registry)
++    url::LockSchemeRegistries();
+ 
+   // Combine the default savable schemes with the additional ones given.
+   GetMutableSavableSchemes().assign(std::begin(kDefaultSavableSchemes),
+diff --git a/content/common/url_schemes.h b/content/common/url_schemes.h
+index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f889977bee 100644
+--- a/content/common/url_schemes.h
++++ b/content/common/url_schemes.h
+@@ -16,7 +16,7 @@ namespace content {
+ // parsed as "standard" or "referrer" with the src/url/ library, then locks the
+ // sets of schemes down. The embedder can add additional schemes by
+ // overriding the ContentClient::AddAdditionalSchemes method.
+-CONTENT_EXPORT void RegisterContentSchemes();
++CONTENT_EXPORT void RegisterContentSchemes(bool should_lock_registry = true);
+ 
+ // Re-initializes schemes for tests.
+ CONTENT_EXPORT void ReRegisterContentSchemesForTests();
+diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
+index af1200a0f2e04c1582e527b609a2e89a97bb0f4c..7ab4cd4a1d8aefcb4bd90d68870f02f3edcff5a7 100644
+--- a/content/public/app/content_main_delegate.cc
++++ b/content/public/app/content_main_delegate.cc
+@@ -40,6 +40,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
+   return 0;
+ }
+ 
++bool ContentMainDelegate::ShouldLockSchemeRegistry() {
++  return true;
++}
++
+ service_manager::ProcessType ContentMainDelegate::OverrideProcessType() {
+   return service_manager::ProcessType::kDefault;
+ }
+diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
+index f8590642a8d6807a15746e9e7673b5e76cbe0e14..7d8df731b6dd18a42ec4fc2b1bb08a6198da8ff8 100644
+--- a/content/public/app/content_main_delegate.h
++++ b/content/public/app/content_main_delegate.h
+@@ -77,6 +77,20 @@ class CONTENT_EXPORT ContentMainDelegate {
+   // returning initialization error code. Default behavior is CHECK(false).
+   virtual int TerminateForFatalInitializationError();
+ 
++  // Allows the embedder to prevent locking the scheme registry. The scheme
++  // registry is the list of URL schemes we recognize, with some additional
++  // information about each scheme such as whether it expects a host. The
++  // scheme registry is not thread-safe, so by default it is locked before any
++  // threads are created to ensure single-threaded access. An embedder can
++  // override this to prevent the scheme registry from being locked during
++  // startup, but if they do so then they are responsible for making sure that
++  // the registry is only accessed in a thread-safe way, and for calling
++  // url::LockSchemeRegistries() when initialization is complete. If possible,
++  // prefer registering additional schemes through
++  // ContentClient::AddAdditionalSchemes over preventing the scheme registry
++  // from being locked.
++  virtual bool ShouldLockSchemeRegistry();
++
+   // Overrides the Service Manager process type to use for the currently running
+   // process.
+   virtual service_manager::ProcessType OverrideProcessType();

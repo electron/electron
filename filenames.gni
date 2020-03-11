@@ -559,8 +559,10 @@ filenames = {
     "shell/common/v8_value_converter.cc",
     "shell/common/v8_value_converter.h",
     "shell/common/world_ids.h",
-    "shell/renderer/api/context_bridge/render_frame_context_bridge_store.cc",
-    "shell/renderer/api/context_bridge/render_frame_context_bridge_store.h",
+    "shell/renderer/api/context_bridge/object_cache.cc",
+    "shell/renderer/api/context_bridge/object_cache.h",
+    "shell/renderer/api/context_bridge/render_frame_function_store.cc",
+    "shell/renderer/api/context_bridge/render_frame_function_store.h",
     "shell/renderer/api/electron_api_context_bridge.cc",
     "shell/renderer/api/electron_api_context_bridge.h",
     "shell/renderer/api/electron_api_renderer_ipc.cc",
@@ -599,6 +601,8 @@ filenames = {
   ]
 
   lib_sources_extensions = [
+    "shell/browser/extensions/api/i18n/i18n_api.cc",
+    "shell/browser/extensions/api/i18n/i18n_api.h",
     "shell/browser/extensions/api/resources_private/resources_private_api.cc",
     "shell/browser/extensions/api/resources_private/resources_private_api.h",
     "shell/browser/extensions/api/runtime/electron_runtime_api_delegate.cc",
@@ -617,6 +621,8 @@ filenames = {
     "shell/browser/extensions/electron_extension_host_delegate.h",
     "shell/browser/extensions/electron_extension_loader.cc",
     "shell/browser/extensions/electron_extension_loader.h",
+    "shell/browser/extensions/electron_extension_message_filter.cc",
+    "shell/browser/extensions/electron_extension_message_filter.h",
     "shell/browser/extensions/electron_extension_system.cc",
     "shell/browser/extensions/electron_extension_system.h",
     "shell/browser/extensions/electron_extension_system_factory.cc",

@@ -61,6 +61,12 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
     return;
   }
 
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
+
+  if (web_preferences && web_preferences->IsEnabled("disableDialogs")) {
+    return std::move(callback).Run(false, base::string16());
+  }
+
   // No default button
   int default_id = -1;
   int cancel_id = 0;
@@ -75,7 +81,6 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
 
   origin_counts_[origin]++;
 
-  auto* web_preferences = WebContentsPreferences::From(web_contents);
   std::string checkbox;
   if (origin_counts_[origin] > 1 && web_preferences &&
       web_preferences->IsEnabled("safeDialogs") &&

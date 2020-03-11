@@ -148,6 +148,7 @@
 #include "extensions/browser/process_map.h"
 #include "extensions/common/api/mime_handler.mojom.h"
 #include "extensions/common/extension.h"
+#include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
@@ -464,6 +465,8 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
       new extensions::ExtensionMessageFilter(process_id, browser_context));
   host->AddFilter(new extensions::ExtensionsGuestViewMessageFilter(
       process_id, browser_context));
+  host->AddFilter(
+      new ElectronExtensionMessageFilter(process_id, browser_context));
 #endif
 
   ProcessPreferences prefs;
@@ -1299,6 +1302,7 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
     return false;
 
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
 
@@ -1331,6 +1335,8 @@ void ElectronBrowserClient::CreateWebSocket(
     const base::Optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
         handshake_client) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1344,7 +1350,6 @@ void ElectronBrowserClient::CreateWebSocket(
                                   user_agent, std::move(handshake_client));
 #endif
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
   DCHECK(web_request.get());
   ProxyingWebSocket::StartProxying(
@@ -1388,6 +1393,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
   }
 #endif
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
   api::Protocol* protocol =
       api::Protocol::FromWrappedClass(isolate, browser_context);
   DCHECK(protocol);
@@ -1515,6 +1521,21 @@ void BindMimeHandlerService(
   extensions::MimeHandlerServiceImpl::Create(guest_view->GetStreamWeakPtr(),
                                              std::move(receiver));
 }
+
+void BindBeforeUnloadControl(
+    content::RenderFrameHost* frame_host,
+    mojo::PendingReceiver<extensions::mime_handler::BeforeUnloadControl>
+        receiver) {
+  auto* web_contents = content::WebContents::FromRenderFrameHost(frame_host);
+  if (!web_contents)
+    return;
+
+  auto* guest_view =
+      extensions::MimeHandlerViewGuest::FromWebContents(web_contents);
+  if (!guest_view)
+    return;
+  guest_view->FuseBeforeUnloadControl(std::move(receiver));
+}
 #endif
 
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
@@ -1525,6 +1546,28 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   map->Add<extensions::mime_handler::MimeHandlerService>(
       base::BindRepeating(&BindMimeHandlerService));
+  map->Add<extensions::mime_handler::BeforeUnloadControl>(
+      base::BindRepeating(&BindBeforeUnloadControl));
+
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  if (!web_contents)
+    return;
+
+  const GURL& site = render_frame_host->GetSiteInstance()->GetSiteURL();
+  if (!site.SchemeIs(extensions::kExtensionScheme))
+    return;
+
+  content::BrowserContext* browser_context =
+      render_frame_host->GetProcess()->GetBrowserContext();
+  auto* extension = extensions::ExtensionRegistry::Get(browser_context)
+                        ->enabled_extensions()
+                        .GetByID(site.host());
+  if (!extension)
+    return;
+  extensions::ExtensionsBrowserClient::Get()
+      ->RegisterBrowserInterfaceBindersForFrame(map, render_frame_host,
+                                                extension);
 #endif
 }
 

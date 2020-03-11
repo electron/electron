@@ -9,10 +9,10 @@ production use cases.  This is unlikely to be upstreamed as the change
 is entirely in //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-index 0fb84989f9b2f84ec2a2589dda3d91cf59c0adda..9ff5b33d2885c5532e1496711c27a01c8502725c 100644
+index 47179fbe844505c1401b0ff56ba9695c9390272e..c9c9f18b5cb176d74729cea8e5fee12f7fcf74f2 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-@@ -48,6 +48,9 @@ namespace {
+@@ -49,6 +49,9 @@ namespace {
  base::LazyInstance<GURL>::Leaky g_download_url_for_testing =
      LAZY_INSTANCE_INITIALIZER;
  

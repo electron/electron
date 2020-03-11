@@ -56,18 +56,32 @@ can do so by either providing a mirror or an existing cache directory.
 
 #### Mirror
 You can use environment variables to override the base URL, the path at which to
-look for Electron binaries, and the binary filename. The url used by `@electron/get`
+look for Electron binaries, and the binary filename. The URL used by `@electron/get`
 is composed as follows:
 
-```plaintext
+```javascript
 url = ELECTRON_MIRROR + ELECTRON_CUSTOM_DIR + '/' + ELECTRON_CUSTOM_FILENAME
 ```
 
-For instance, to use the China mirror:
+For instance, to use the China CDN mirror:
 
-```plaintext
+```shell
 ELECTRON_MIRROR="https://cdn.npm.taobao.org/dist/electron/"
 ```
+
+By default, `ELECTRON_CUSTOM_DIR` is set to `v$VERSION`. To change the format,
+use the `{{ version }}` placeholder. For example, `version-{{ version }}`
+resolves to `version-5.0.0`, `{{ version }}` resolves to `5.0.0`, and
+`v{{ version }}` is equivalent to the default. As a more concrete example, to
+use the China non-CDN mirror:
+
+```shell
+ELECTRON_MIRROR="https://npm.taobao.org/mirrors/electron/"
+ELECTRON_CUSTOM_DIR="{{ version }}"
+```
+
+The above configuration will download from URLs such as
+`https://npm.taobao.org/mirrors/electron/8.0.0/electron-v8.0.0-linux-x64.zip`.
 
 #### Cache
 Alternatively, you can override the local cache. `@electron/get` will cache
