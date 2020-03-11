@@ -1385,7 +1385,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
   if (web_request_api) {
     bool use_proxy_for_web_request =
         web_request_api->MaybeProxyURLLoaderFactory(
-            browser_context, frame, render_process_id, type,
+            browser_context, frame_host, render_process_id, type,
             std::move(navigation_id), factory_receiver, header_client);
     if (bypass_redirect_checks)
       *bypass_redirect_checks = use_proxy_for_web_request;
