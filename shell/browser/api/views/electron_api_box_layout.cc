@@ -9,9 +9,10 @@
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<views::BoxLayout::Orientation> {
@@ -31,7 +32,7 @@ struct Converter<views::BoxLayout::Orientation> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 
@@ -52,14 +53,14 @@ gin_helper::WrappableBase* BoxLayout::New(
     gin_helper::Arguments* args,
     views::BoxLayout::Orientation orientation) {
   auto* layout = new BoxLayout(orientation);
-  layout->InitWith(args->isolate(), args->GetThis());
+  layout->InitWithArgs(args);
   return layout;
 }
 
 // static
 void BoxLayout::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin_helper::StringTov8(isolate, "BoxLayout"));
+  prototype->SetClassName(gin::StringToV8(isolate, "BoxLayout"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setFlexForView", &BoxLayout::SetFlexForView);
 }
