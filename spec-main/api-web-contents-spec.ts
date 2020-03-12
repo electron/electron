@@ -892,12 +892,13 @@ describe('webContents module', () => {
       try {
         await w.loadURL('about:blank')
         const zoomFactor = w.webContents.getZoomFactor()
-        expect(zoomFactor).to.eql(0.0)
+        expect(zoomFactor).to.eql(1.0)
+
         w.webContents.setZoomFactor(0.5)
         const newZoomFactor = w.webContents.getZoomFactor()
         expect(newZoomFactor).to.eql(0.5)
       } finally {
-        w.webContents.setZoomFactor(0)
+        w.webContents.setZoomFactor(1.0)
       }
     })
 
@@ -907,11 +908,12 @@ describe('webContents module', () => {
         await w.loadURL('about:blank')
         const zoomFactor = w.webContents.zoomFactor
         expect(zoomFactor).to.eql(1.0)
+
         w.webContents.zoomFactor = 0.5
         const newZoomFactor = w.webContents.zoomFactor
         expect(newZoomFactor).to.eql(0.5)
       } finally {
-        w.webContents.zoomFactor = 0
+        w.webContents.zoomFactor = 1.0
       }
     })
 
