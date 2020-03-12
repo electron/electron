@@ -62,6 +62,8 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, new Event(flags), args...);
   template <typename... Args>
   bool EmitWithFlags(base::StringPiece name, int flags, Args&&... args) {
+    v8::Locker locker(isolate());
+    v8::HandleScope handle_scope(isolate());
     return EmitCustomEvent(name,
                            internal::CreateEventFromFlags(isolate(), flags),
                            std::forward<Args>(args)...);
@@ -108,8 +110,6 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     // It's possible that |this| will be deleted by EmitEvent, so save anything
     // we need from |this| before calling EmitEvent.
     auto* isolate = this->isolate();
-    v8::Locker locker(isolate);
-    v8::HandleScope handle_scope(isolate);
     auto context = isolate->GetCurrentContext();
     gin_helper::EmitEvent(isolate, GetWrapper(), name, event,
                           std::forward<Args>(args)...);
