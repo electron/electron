@@ -215,18 +215,18 @@ index bf63bb9c03852263e9341c671be1ee4e7c1a3dc2..d06e2f99739298a4de13ebbce5606b68
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index f7b97f3bf5208d141e9061625ee4a393a95fcea2..5cdb6e16a7cbe28a0428b4ae59ae4928d2142377 100644
+index 64827d7d60ba1209af955d5d5fc9bfc6e7df682b..405d44860c2c9a50aebbe5c91a01d3f943880f16 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -230,6 +230,7 @@
+@@ -229,6 +229,7 @@
+ #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
- #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
 +#include "ui/gfx/switches.h"
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3172,6 +3173,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3171,6 +3172,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -235,10 +235,10 @@ index f7b97f3bf5208d141e9061625ee4a393a95fcea2..5cdb6e16a7cbe28a0428b4ae59ae4928
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index b46b9d494e2d057c37057b97ce4bf18e0036f11e..bd7373d9c28e4160c24515bdd68301b550a40a18 100644
+index 48965b64fd7ec59b2132dc2c2fb47d4276fc945c..6d95719f7af3df9e1225e2547723d2231c25c612 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2669,6 +2669,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2735,6 +2735,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -332,28 +332,27 @@ index 4c47a1132ea3d53b6c63882e98374196ac7ce069..a7f00f426cc6a75d7b94258169633275
      DLOG(ERROR) << "Failed to set color space for IOSurface: "
                  << color_space.ToString();
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index ba3dbf23d1df7a3b0cc199054f36a88014daa0e7..f8a563a78cee2856da0f2ad556beba19b01a2e59 100644
+index 0f746ead72a2c195321384c9c4ced96d0608fb7b..a9cc7b6d93cdb42c5a9a177e8a09edeb36db8122 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
-@@ -7,6 +7,8 @@
- 
- namespace switches {
- 
+@@ -10,6 +10,7 @@ namespace switches {
+ // Scale factor to apply to every animation duration. Must be >= 0.0. This will
+ // only apply to LinearAnimation and its subclasses.
+ const char kAnimationDurationScale[] = "animation-duration-scale";
 +const char kDisableColorCorrectRendering[] = "disable-color-correct-rendering";
-+
+ 
  // Force disables font subpixel positioning. This affects the character glyph
  // sharpness, kerning, hinting and layout.
- const char kDisableFontSubpixelPositioning[] =
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index 1f0e63383213ac5ebc67691e5e89b501d7480e1b..14e3d1928f7485684b646629f853ea39a616995e 100644
+index abe0a58a9ccbcd1610f728baa5d9a1155402af0c..e48d800b432f77d364541c432a1ce8865e888766 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
-@@ -10,6 +10,8 @@
- 
+@@ -11,6 +11,8 @@
  namespace switches {
  
+ GFX_SWITCHES_EXPORT extern const char kAnimationDurationScale[];
 +GFX_SWITCHES_EXPORT extern const char kDisableColorCorrectRendering[];
 +
  GFX_SWITCHES_EXPORT extern const char kDisableFontSubpixelPositioning[];
- 
+ GFX_SWITCHES_EXPORT extern const char kEnableNativeGpuMemoryBuffers[];
  GFX_SWITCHES_EXPORT extern const char kForcePrefersReducedMotion[];
