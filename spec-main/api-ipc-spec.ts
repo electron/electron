@@ -1,5 +1,7 @@
+import { EventEmitter } from 'events'
 import { expect } from 'chai'
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain } from 'electron'
+import { closeAllWindows } from './window-helpers'
 import { emittedOnce } from './events-helpers'
 
 const v8Util = process.electronBinding('v8_util')
@@ -193,6 +195,300 @@ describe('ipc module', () => {
       }
       expect(received).to.have.lengthOf(1000)
       expect(received).to.deep.equal([...received].sort((a, b) => a - b))
+    })
+  })
+
+  describe('MessagePort', () => {
+    afterEach(closeAllWindows)
+
+    it('can send a port to the main process', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      w.loadURL('about:blank')
+      const p = emittedOnce(ipcMain, 'port')
+      await w.webContents.executeJavaScript(`(${function () {
+        const channel = new MessageChannel()
+        require('electron').ipcRenderer.postMessage('port', 'hi', [channel.port1])
+      }})()`)
+      const [ev, msg] = await p
+      expect(msg).to.equal('hi')
+      expect(ev.ports).to.have.length(1)
+      const [port] = ev.ports
+      expect(port).to.be.an.instanceOf(EventEmitter)
+    })
+
+    it('can communicate between main and renderer', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      w.loadURL('about:blank')
+      const p = emittedOnce(ipcMain, 'port')
+      await w.webContents.executeJavaScript(`(${function () {
+        const channel = new MessageChannel();
+        (channel.port2 as any).onmessage = (ev: any) => {
+          channel.port2.postMessage(ev.data * 2)
+        }
+        require('electron').ipcRenderer.postMessage('port', '', [channel.port1])
+      }})()`)
+      const [ev] = await p
+      expect(ev.ports).to.have.length(1)
+      const [port] = ev.ports
+      port.start()
+      port.postMessage(42)
+      const [ev2] = await emittedOnce(port, 'message')
+      expect(ev2.data).to.equal(84)
+    })
+
+    it('can receive a port from a renderer over a MessagePort connection', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      w.loadURL('about:blank')
+      function fn () {
+        const channel1 = new MessageChannel()
+        const channel2 = new MessageChannel()
+        channel1.port2.postMessage('', [channel2.port1])
+        channel2.port2.postMessage('matryoshka')
+        require('electron').ipcRenderer.postMessage('port', '', [channel1.port1])
+      }
+      w.webContents.executeJavaScript(`(${fn})()`)
+      const [{ ports: [port1] }] = await emittedOnce(ipcMain, 'port')
+      port1.start()
+      const [{ ports: [port2] }] = await emittedOnce(port1, 'message')
+      port2.start()
+      const [{ data }] = await emittedOnce(port2, 'message')
+      expect(data).to.equal('matryoshka')
+    })
+
+    it('can forward a port from one renderer to another renderer', async () => {
+      const w1 = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      const w2 = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      w1.loadURL('about:blank')
+      w2.loadURL('about:blank')
+      w1.webContents.executeJavaScript(`(${function () {
+        const channel = new MessageChannel();
+        (channel.port2 as any).onmessage = (ev: any) => {
+          require('electron').ipcRenderer.send('message received', ev.data)
+        }
+        require('electron').ipcRenderer.postMessage('port', '', [channel.port1])
+      }})()`)
+      const [{ ports: [port] }] = await emittedOnce(ipcMain, 'port')
+      await w2.webContents.executeJavaScript(`(${function () {
+        require('electron').ipcRenderer.on('port', ({ ports: [port] }: any) => {
+          port.postMessage('a message')
+        })
+      }})()`)
+      w2.webContents.postMessage('port', '', [port])
+      const [, data] = await emittedOnce(ipcMain, 'message received')
+      expect(data).to.equal('a message')
+    })
+
+    describe('MessageChannelMain', () => {
+      it('can be created', () => {
+        const { port1, port2 } = new MessageChannelMain()
+        expect(port1).not.to.be.null()
+        expect(port2).not.to.be.null()
+      })
+
+      it('can send messages within the process', async () => {
+        const { port1, port2 } = new MessageChannelMain()
+        port2.postMessage('hello')
+        port1.start()
+        const [ev] = await emittedOnce(port1, 'message')
+        expect(ev.data).to.equal('hello')
+      })
+
+      it('can pass one end to a WebContents', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+        w.loadURL('about:blank')
+        await w.webContents.executeJavaScript(`(${function () {
+          const { ipcRenderer } = require('electron')
+          ipcRenderer.on('port', (ev) => {
+            const [port] = ev.ports
+            port.onmessage = () => {
+              ipcRenderer.send('done')
+            }
+          })
+        }})()`)
+        const { port1, port2 } = new MessageChannelMain()
+        port1.postMessage('hello')
+        w.webContents.postMessage('port', null, [port2])
+        await emittedOnce(ipcMain, 'done')
+      })
+
+      it('can be passed over another channel', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+        w.loadURL('about:blank')
+        await w.webContents.executeJavaScript(`(${function () {
+          const { ipcRenderer } = require('electron')
+          ipcRenderer.on('port', (e1) => {
+            e1.ports[0].onmessage = (e2) => {
+              e2.ports[0].onmessage = (e3) => {
+                ipcRenderer.send('done', e3.data)
+              }
+            }
+          })
+        }})()`)
+        const { port1, port2 } = new MessageChannelMain()
+        const { port1: port3, port2: port4 } = new MessageChannelMain()
+        port1.postMessage(null, [port4])
+        port3.postMessage('hello')
+        w.webContents.postMessage('port', null, [port2])
+        const [, message] = await emittedOnce(ipcMain, 'done')
+        expect(message).to.equal('hello')
+      })
+
+      it('can send messages to a closed port', () => {
+        const { port1, port2 } = new MessageChannelMain()
+        port2.start()
+        port2.on('message', () => { throw new Error('unexpected message received') })
+        port1.close()
+        port1.postMessage('hello')
+      })
+
+      it('can send messages to a port whose remote end is closed', () => {
+        const { port1, port2 } = new MessageChannelMain()
+        port2.start()
+        port2.on('message', () => { throw new Error('unexpected message received') })
+        port2.close()
+        port1.postMessage('hello')
+      })
+
+      it('throws when passing null ports', () => {
+        const { port1 } = new MessageChannelMain()
+        expect(() => {
+          port1.postMessage(null, [null] as any)
+        }).to.throw(/conversion failure/)
+      })
+
+      it('throws when passing duplicate ports', () => {
+        const { port1 } = new MessageChannelMain()
+        const { port1: port3 } = new MessageChannelMain()
+        expect(() => {
+          port1.postMessage(null, [port3, port3])
+        }).to.throw(/duplicate/)
+      })
+
+      it('throws when passing ports that have already been neutered', () => {
+        const { port1 } = new MessageChannelMain()
+        const { port1: port3 } = new MessageChannelMain()
+        port1.postMessage(null, [port3])
+        expect(() => {
+          port1.postMessage(null, [port3])
+        }).to.throw(/already neutered/)
+      })
+
+      it('throws when passing itself', () => {
+        const { port1 } = new MessageChannelMain()
+        expect(() => {
+          port1.postMessage(null, [port1])
+        }).to.throw(/contains the source port/)
+      })
+
+      describe('GC behavior', () => {
+        it('is not collected while it could still receive messages', async () => {
+          let trigger: Function
+          const promise = new Promise(resolve => { trigger = resolve })
+          const port1 = (() => {
+            const { port1, port2 } = new MessageChannelMain()
+
+            port2.on('message', (e) => { trigger(e.data) })
+            port2.start()
+            return port1
+          })()
+          v8Util.requestGarbageCollectionForTesting()
+          port1.postMessage('hello')
+          expect(await promise).to.equal('hello')
+        })
+      })
+    })
+
+    describe('WebContents.postMessage', () => {
+      it('sends a message', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+        w.loadURL('about:blank')
+        await w.webContents.executeJavaScript(`(${function () {
+          const { ipcRenderer } = require('electron')
+          ipcRenderer.on('foo', (e, msg) => {
+            ipcRenderer.send('bar', msg)
+          })
+        }})()`)
+        w.webContents.postMessage('foo', { some: 'message' })
+        const [, msg] = await emittedOnce(ipcMain, 'bar')
+        expect(msg).to.deep.equal({ some: 'message' })
+      })
+
+      describe('error handling', () => {
+        it('throws on missing channel', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            (w.webContents.postMessage as any)()
+          }).to.throw(/Insufficient number of arguments/)
+        })
+
+        it('throws on invalid channel', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            w.webContents.postMessage(null as any, '', [])
+          }).to.throw(/Error processing argument at index 0/)
+        })
+
+        it('throws on missing message', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            (w.webContents.postMessage as any)('channel')
+          }).to.throw(/Insufficient number of arguments/)
+        })
+
+        it('throws on non-serializable message', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            w.webContents.postMessage('channel', w)
+          }).to.throw(/An object could not be cloned/)
+        })
+
+        it('throws on invalid transferable list', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            w.webContents.postMessage('', '', null as any)
+          }).to.throw(/Invalid value for transfer/)
+        })
+
+        it('throws on transferring non-transferable', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            (w.webContents.postMessage as any)('channel', '', [123])
+          }).to.throw(/Invalid value for transfer/)
+        })
+
+        it('throws when passing null ports', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          expect(() => {
+            w.webContents.postMessage('foo', null, [null] as any)
+          }).to.throw(/Invalid value for transfer/)
+        })
+
+        it('throws when passing duplicate ports', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          const { port1 } = new MessageChannelMain()
+          expect(() => {
+            w.webContents.postMessage('foo', null, [port1, port1])
+          }).to.throw(/duplicate/)
+        })
+
+        it('throws when passing ports that have already been neutered', async () => {
+          const w = new BrowserWindow({ show: false })
+          await w.loadURL('about:blank')
+          const { port1 } = new MessageChannelMain()
+          w.webContents.postMessage('foo', null, [port1])
+          expect(() => {
+            w.webContents.postMessage('foo', null, [port1])
+          }).to.throw(/already neutered/)
+        })
+      })
     })
   })
 })
