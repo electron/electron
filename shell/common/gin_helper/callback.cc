@@ -36,7 +36,7 @@ v8::Persistent<v8::FunctionTemplate> g_call_translater;
 
 void CallTranslater(v8::Local<v8::External> external,
                     v8::Local<v8::Object> state,
-                    gin::Arguments* args) {
+                    gin_helper::Arguments* args) {
   // Whether the callback should only be called once.
   v8::Isolate* isolate = args->isolate();
   auto context = isolate->GetCurrentContext();

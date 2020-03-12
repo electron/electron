@@ -23,7 +23,7 @@ class Arguments : public gin::Arguments {
       return false;
     if (!gin::ConvertFromV8(isolate(), val, out))
       return false;
-    Skip();
+    ++next_;
     return true;
   }
 
@@ -34,7 +34,7 @@ class Arguments : public gin::Arguments {
     if (val.IsEmpty() || !val->IsBoolean())
       return false;
     *out = val->BooleanValue(isolate());
-    Skip();
+    ++next_;
     return true;
   }
 

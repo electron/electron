@@ -4,14 +4,46 @@
 
 #include "shell/common/gin_helper/arguments.h"
 
+#include "base/strings/stringprintf.h"
+
 namespace gin_helper {
 
+namespace {
+
+// Try to get a readable type of |value|.
+std::string V8TypeAsString(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+  if (value.IsEmpty())
+    return "<empty handle>";
+  if (value->IsUndefined())
+    return "undefined";
+  if (value->IsNull())
+    return "null";
+  std::string result;
+  if (value->IsObject()) {
+    if (gin::ConvertFromV8(
+            isolate, value.As<v8::Object>()->GetConstructorName(), &result))
+      return result;
+  }
+  if (gin::ConvertFromV8(isolate, value, &result))
+    return '"' + result + '"';
+  if (gin::ConvertFromV8(isolate, value->TypeOf(isolate), &result))
+    return result;
+  return "<unkown>";
+}
+
+}  // namespace
+
 void Arguments::ThrowError() const {
-  // Gin advances |next_| counter when conversion fails while we do not, so we
-  // have to manually advance the counter here to make gin report error with the
-  // correct index.
-  const_cast<Arguments*>(this)->Skip();
-  gin::Arguments::ThrowError();
+  if (is_for_property_ || insufficient_arguments_) {
+    gin::Arguments::ThrowError();
+    return;
+  }
+  // The |gin::Arguments| class advances |next_| counter when conversion fails
+  // while |gin_helper::Arguments| does not, so we use |next_| instead of
+  // |next_ - 1| as current argument index.
+  return ThrowTypeError(base::StringPrintf(
+      "Error processing argument at index %d, conversion failure from %s",
+      next_, V8TypeAsString(isolate_, (*info_for_function_)[next_]).c_str()));
 }
 
 void Arguments::ThrowError(base::StringPiece message) const {

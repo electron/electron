@@ -82,7 +82,7 @@ class CallbackHolder : public CallbackHolderBase {
 };
 
 template <typename T>
-bool GetNextArgument(gin::Arguments* args,
+bool GetNextArgument(gin_helper::Arguments* args,
                      int create_flags,
                      bool is_first,
                      T* result) {
@@ -96,12 +96,11 @@ bool GetNextArgument(gin::Arguments* args,
 // Support base::Optional as output, which would be empty and do not throw error
 // when convertion to T fails.
 template <typename T>
-bool GetNextArgument(gin::Arguments* args,
+bool GetNextArgument(gin_helper::Arguments* args,
                      int create_flags,
                      bool is_first,
                      base::Optional<T>* result) {
   T converted;
-  // Use gin::Arguments::GetNext which always advances |next| counter.
   if (args->GetNext(&converted))
     result->emplace(std::move(converted));
   return true;
@@ -109,7 +108,7 @@ bool GetNextArgument(gin::Arguments* args,
 
 // For advanced use cases, we allow callers to request the unparsed Arguments
 // object and poke around in it directly.
-inline bool GetNextArgument(gin::Arguments* args,
+inline bool GetNextArgument(gin_helper::Arguments* args,
                             int create_flags,
                             bool is_first,
                             gin::Arguments** result) {
@@ -118,7 +117,7 @@ inline bool GetNextArgument(gin::Arguments* args,
 }
 
 // It's common for clients to just need the isolate, so we make that easy.
-inline bool GetNextArgument(gin::Arguments* args,
+inline bool GetNextArgument(gin_helper::Arguments* args,
                             int create_flags,
                             bool is_first,
                             v8::Isolate** result) {
@@ -128,7 +127,7 @@ inline bool GetNextArgument(gin::Arguments* args,
 
 // Allow clients to pass a util::Error to throw errors if they
 // don't need the full gin::Arguments
-inline bool GetNextArgument(gin::Arguments* args,
+inline bool GetNextArgument(gin_helper::Arguments* args,
                             int create_flags,
                             bool is_first,
                             ErrorThrower* result) {
@@ -137,7 +136,7 @@ inline bool GetNextArgument(gin::Arguments* args,
 }
 
 // Supports the gin_helper::Arguments.
-inline bool GetNextArgument(gin::Arguments* args,
+inline bool GetNextArgument(gin_helper::Arguments* args,
                             int create_flags,
                             bool is_first,
                             gin_helper::Arguments** result) {
@@ -170,7 +169,7 @@ struct ArgumentHolder {
   ArgLocalType value;
   bool ok = false;
 
-  ArgumentHolder(gin::Arguments* args, int create_flags) {
+  ArgumentHolder(gin_helper::Arguments* args, int create_flags) {
     v8::Local<v8::Object> holder;
     if (index == 0 && (create_flags & HolderIsFirstArgument) &&
         args->GetHolder(&holder) &&
@@ -180,9 +179,6 @@ struct ArgumentHolder {
     }
     ok = GetNextArgument(args, create_flags, index == 0, &value);
     if (!ok) {
-      // Ideally we would include the expected c++ type in the error
-      // message which we can access via typeid(ArgType).name()
-      // however we compile with no-rtti, which disables typeid.
       args->ThrowError();
     }
   }
@@ -201,7 +197,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   // C++ has always been strict about the class initialization order,
   // so it is guaranteed ArgumentHolders will be initialized (and thus, will
   // extract arguments from Arguments) in the right order.
-  Invoker(gin::Arguments* args, int create_flags)
+  Invoker(gin_helper::Arguments* args, int create_flags)
       : ArgumentHolder<indices, ArgTypes>(args, create_flags)..., args_(args) {
     // GCC thinks that create_flags is going unused, even though the
     // expansion above clearly makes use of it. Per jyasskin@, casting
@@ -236,7 +232,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
     return arg1 && And(args...);
   }
 
-  gin::Arguments* args_;
+  gin_helper::Arguments* args_;
 };
 
 // DispatchToCallback converts all the JavaScript arguments to C++ types and
@@ -258,7 +254,8 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
     HolderT* holder = static_cast<HolderT*>(holder_base);
 
     using Indices = typename IndicesGenerator<sizeof...(ArgTypes)>::type;
-    Invoker<Indices, ArgTypes...> invoker(&args, holder->flags);
+    Invoker<Indices, ArgTypes...> invoker(
+        static_cast<gin_helper::Arguments*>(&args), holder->flags);
     if (invoker.IsOK())
       invoker.DispatchToCallback(holder->callback);
   }

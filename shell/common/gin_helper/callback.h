@@ -113,7 +113,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
 };
 
 // Helper to pass a C++ funtion to JavaScript.
-using Translater = base::Callback<void(gin::Arguments* args)>;
+using Translater = base::Callback<void(gin_helper::Arguments* args)>;
 v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
                                                   const Translater& translater,
                                                   bool one_time);
@@ -130,7 +130,7 @@ struct NativeFunctionInvoker {};
 template <typename ReturnType, typename... ArgTypes>
 struct NativeFunctionInvoker<ReturnType(ArgTypes...)> {
   static void Go(base::Callback<ReturnType(ArgTypes...)> val,
-                 gin::Arguments* args) {
+                 gin_helper::Arguments* args) {
     using Indices = typename IndicesGenerator<sizeof...(ArgTypes)>::type;
     Invoker<Indices, ArgTypes...> invoker(args, 0);
     if (invoker.IsOK())
