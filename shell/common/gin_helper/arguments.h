@@ -19,9 +19,11 @@ class Arguments : public gin::Arguments {
   // |next_| counter no matter whether the conversion succeeds.
   template <typename T>
   bool GetNext(T* out) {
-    v8::Local<v8::Value> val = PeekNext();
-    if (val.IsEmpty())
+    if (is_for_property_ || next_ >= info_for_function_->Length()) {
+      insufficient_arguments_ = true;
       return false;
+    }
+    v8::Local<v8::Value> val = (*info_for_function_)[next_];
     if (!gin::ConvertFromV8(isolate(), val, out))
       return false;
     ++next_;
@@ -31,7 +33,11 @@ class Arguments : public gin::Arguments {
   // Gin always returns true when converting V8 value to boolean, we do not want
   // this behavior when parsing parameters.
   bool GetNext(bool* out) {
-    v8::Local<v8::Value> val = PeekNext();
+    if (is_for_property_ || next_ >= info_for_function_->Length()) {
+      insufficient_arguments_ = true;
+      return false;
+    }
+    v8::Local<v8::Value> val = (*info_for_function_)[next_];
     if (val.IsEmpty() || !val->IsBoolean())
       return false;
     *out = val->BooleanValue(isolate());
