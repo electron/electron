@@ -315,12 +315,14 @@ describe('ipc module', () => {
         it('is emitted when the other end of a port is sent to nowhere', async () => {
           const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
           w.loadURL('about:blank')
+          ipcMain.once('do-a-gc', () => v8Util.requestGarbageCollectionForTesting())
           await w.webContents.executeJavaScript(`(${async function () {
             const { port1, port2 } = new MessageChannel()
             await new Promise(resolve => {
               port2.start();
               (port2 as any).onclose = resolve
               require('electron').ipcRenderer.postMessage('nobody-listening', null, [port1])
+              require('electron').ipcRenderer.send('do-a-gc')
             })
           }})()`)
         })
