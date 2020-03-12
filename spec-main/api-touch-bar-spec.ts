@@ -32,6 +32,14 @@ describe('TouchBar module', () => {
     }).to.throw('Escape item must be an instance of TouchBarItem')
   })
 
+  it('throws an error if the same TouchBarItem is added multiple times', () => {
+    expect(() => {
+      const item = new TouchBarLabel({ label: 'Label' })
+      const touchBar = new TouchBar({ items: [item, item] })
+      touchBar.toString()
+    }).to.throw('Cannot add a single instance of TouchBarItem multiple times in a TouchBar')
+  })
+
   describe('BrowserWindow behavior', () => {
     let window: BrowserWindow
 
