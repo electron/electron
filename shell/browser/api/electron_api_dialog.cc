@@ -29,6 +29,7 @@ void ResolvePromiseObject(gin_helper::Promise<gin_helper::Dictionary> promise,
                           int result,
                           bool checkbox_checked) {
   v8::Isolate* isolate = promise.isolate();
+  v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
 
   dict.Set("response", result);
