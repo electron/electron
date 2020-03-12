@@ -592,8 +592,9 @@ describe('net module', () => {
           url: `${serverUrl}`,
           name: 'test',
           value: '11111',
-          expirationDate: 0
-        }).then(() => { // resolved
+          expirationDate: new Date().getTime() + 30000
+        }).then(() => customSession.cookies.flushStore()
+        ).then(() => { // resolved
           const urlRequest = net.request({
             method: 'GET',
             url: serverUrl,
