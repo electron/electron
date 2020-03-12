@@ -11,6 +11,7 @@
 #include "base/environment.h"
 #include "base/macros.h"
 #include "base/threading/thread_restrictions.h"
+#include "gin/data_object_builder.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/blink_converter.h"
@@ -18,10 +19,12 @@
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/v8_value_serializer.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/public/web/web_message_port_converter.h"
 
 namespace electron {
 
@@ -74,6 +77,7 @@ void InvokeIpcCallback(v8::Local<v8::Context> context,
 void EmitIPCEvent(v8::Local<v8::Context> context,
                   bool internal,
                   const std::string& channel,
+                  std::vector<v8::Local<v8::Value>> ports,
                   v8::Local<v8::Value> args,
                   int32_t sender_id) {
   auto* isolate = context->GetIsolate();
@@ -85,7 +89,8 @@ void EmitIPCEvent(v8::Local<v8::Context> context,
 
   std::vector<v8::Local<v8::Value>> argv = {
       gin::ConvertToV8(isolate, internal), gin::ConvertToV8(isolate, channel),
-      args, gin::ConvertToV8(isolate, sender_id)};
+      gin::ConvertToV8(isolate, ports), args,
+      gin::ConvertToV8(isolate, sender_id)};
 
   InvokeIpcCallback(context, "onMessage", argv);
 }
@@ -161,7 +166,7 @@ void ElectronApiServiceImpl::Message(bool internal,
 
   v8::Local<v8::Value> args = gin::ConvertToV8(isolate, arguments);
 
-  EmitIPCEvent(context, internal, channel, args, sender_id);
+  EmitIPCEvent(context, internal, channel, {}, args, sender_id);
 
   // Also send the message to all sub-frames.
   // TODO(MarshallOfSound): Completely move this logic to the main process
@@ -171,9 +176,37 @@ void ElectronApiServiceImpl::Message(bool internal,
       if (child->IsWebLocalFrame()) {
         v8::Local<v8::Context> child_context =
             renderer_client_->GetContext(child->ToWebLocalFrame(), isolate);
-        EmitIPCEvent(child_context, internal, channel, args, sender_id);
+        EmitIPCEvent(child_context, internal, channel, {}, args, sender_id);
       }
   }
+}
+
+void ElectronApiServiceImpl::ReceivePostMessage(
+    const std::string& channel,
+    blink::TransferableMessage message) {
+  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
+  if (!frame)
+    return;
+
+  v8::Isolate* isolate = blink::MainThreadIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
+  v8::Context::Scope context_scope(context);
+
+  v8::Local<v8::Value> message_value = DeserializeV8Value(isolate, message);
+
+  std::vector<v8::Local<v8::Value>> ports;
+  for (auto& port : message.ports) {
+    ports.emplace_back(
+        blink::WebMessagePortConverter::EntangleAndInjectMessagePortChannel(
+            context, std::move(port)));
+  }
+
+  std::vector<v8::Local<v8::Value>> args = {message_value};
+
+  EmitIPCEvent(context, false, channel, ports, gin::ConvertToV8(isolate, args),
+               0);
 }
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
@@ -198,7 +231,7 @@ void ElectronApiServiceImpl::DereferenceRemoteJSCallback(
   args.AppendInteger(object_id);
 
   v8::Local<v8::Value> v8_args = gin::ConvertToV8(isolate, args);
-  EmitIPCEvent(context, true /* internal */, channel, v8_args,
+  EmitIPCEvent(context, true /* internal */, channel, {}, v8_args,
                0 /* sender_id */);
 }
 #endif

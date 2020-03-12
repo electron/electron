@@ -29,4 +29,8 @@ ipcRenderer.invoke = async function (channel, ...args) {
   return result
 }
 
+ipcRenderer.postMessage = function (channel: string, message: any, transferables: any) {
+  return ipc.postMessage(channel, message, transferables)
+}
+
 export default ipcRenderer

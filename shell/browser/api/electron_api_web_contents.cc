@@ -7,6 +7,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -44,12 +45,17 @@
 #include "content/public/common/context_menu_params.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "gin/data_object_builder.h"
+#include "gin/handle.h"
+#include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
@@ -84,11 +90,14 @@
 #include "shell/common/mouse_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/v8_value_serializer.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
+#include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
+#include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
@@ -1086,6 +1095,49 @@ void WebContents::Invoke(bool internal,
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
   EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
                  std::move(callback), internal, channel, std::move(arguments));
+}
+
+void WebContents::ReceivePostMessage(const std::string& channel,
+                                     blink::TransferableMessage message) {
+  v8::HandleScope handle_scope(isolate());
+  auto wrapped_ports =
+      MessagePort::EntanglePorts(isolate(), std::move(message.ports));
+  v8::Local<v8::Value> message_value =
+      electron::DeserializeV8Value(isolate(), message);
+  EmitWithSender("-ipc-ports", bindings_.dispatch_context(), InvokeCallback(),
+                 false, channel, message_value, std::move(wrapped_ports));
+}
+
+void WebContents::PostMessage(const std::string& channel,
+                              v8::Local<v8::Value> message_value,
+                              base::Optional<v8::Local<v8::Value>> transfer) {
+  blink::TransferableMessage transferable_message;
+  if (!electron::SerializeV8Value(isolate(), message_value,
+                                  &transferable_message)) {
+    // SerializeV8Value sets an exception.
+    return;
+  }
+
+  std::vector<gin::Handle<MessagePort>> wrapped_ports;
+  if (transfer) {
+    if (!gin::ConvertFromV8(isolate(), *transfer, &wrapped_ports)) {
+      isolate()->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate(), "Invalid value for transfer")));
+      return;
+    }
+  }
+
+  bool threw_exception = false;
+  transferable_message.ports =
+      MessagePort::DisentanglePorts(isolate(), wrapped_ports, &threw_exception);
+  if (threw_exception)
+    return;
+
+  content::RenderFrameHost* frame_host = web_contents()->GetMainFrame();
+  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
+  frame_host->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
+  electron_renderer->ReceivePostMessage(channel,
+                                        std::move(transferable_message));
 }
 
 void WebContents::MessageSync(bool internal,
@@ -2663,6 +2715,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isFocused", &WebContents::IsFocused)
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)
+      .SetMethod("_postMessage", &WebContents::PostMessage)
       .SetMethod("_sendToFrame", &WebContents::SendIPCMessageToFrame)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
       .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
