@@ -6,6 +6,7 @@
 #define SHELL_COMMON_GIN_HELPER_ARGUMENTS_H_
 
 #include "gin/arguments.h"
+#include "shell/common/gin_helper/v8_type_traits.h"
 
 namespace gin_helper {
 
@@ -38,11 +39,26 @@ class Arguments : public gin::Arguments {
     return true;
   }
 
-  // Throw error with custom error message.
+  // Throw arguments error.
   void ThrowError() const;
+
+  // Throw arguments error with expected type information.
+  template <typename T>
+  void ThrowErrorWithExpectedType() const {
+    if (is_for_property_ || insufficient_arguments_ ||
+        !V8TypeTraits<T>::has_type_name) {
+      ThrowError();
+      return;
+    }
+    ThrowErrorWithExpectedTypeName(V8TypeTraits<T>::type_name);
+  }
+
+  // Throw error with custom error message.
   void ThrowError(base::StringPiece message) const;
 
  private:
+  void ThrowErrorWithExpectedTypeName(const char* type_name) const;
+
   // MUST NOT ADD ANY DATA MEMBER.
 };
 

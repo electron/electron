@@ -14,6 +14,7 @@ namespace gin {
 
 template <>
 struct Converter<GURL> {
+  static constexpr const char* type_name = "URL";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const GURL& val) {
     return ConvertToV8(isolate, val.spec());
   }

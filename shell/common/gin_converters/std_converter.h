@@ -23,6 +23,7 @@ v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
 #if !defined(OS_LINUX) && !defined(OS_FREEBSD)
 template <>
 struct Converter<unsigned long> {  // NOLINT(runtime/int)
+  static constexpr const char* type_name = "Integer";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    unsigned long val) {  // NOLINT(runtime/int)
     return v8::Integer::New(isolate, val);
@@ -41,6 +42,7 @@ struct Converter<unsigned long> {  // NOLINT(runtime/int)
 
 template <>
 struct Converter<std::nullptr_t> {
+  static constexpr const char* type_name = "null";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, std::nullptr_t val) {
     return v8::Null(isolate);
   }
@@ -48,6 +50,7 @@ struct Converter<std::nullptr_t> {
 
 template <>
 struct Converter<const char*> {
+  static constexpr const char* type_name = "String";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val) {
     return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal)
         .ToLocalChecked();
@@ -56,6 +59,7 @@ struct Converter<const char*> {
 
 template <>
 struct Converter<char[]> {
+  static constexpr const char* type_name = "String";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val) {
     return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal)
         .ToLocalChecked();
@@ -64,6 +68,7 @@ struct Converter<char[]> {
 
 template <size_t n>
 struct Converter<char[n]> {
+  static constexpr const char* type_name = "String";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val) {
     return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal,
                                    n - 1)
@@ -73,6 +78,7 @@ struct Converter<char[n]> {
 
 template <>
 struct Converter<v8::Local<v8::Array>> {
+  static constexpr const char* type_name = "Array";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    v8::Local<v8::Array> val) {
     return val;
@@ -89,6 +95,7 @@ struct Converter<v8::Local<v8::Array>> {
 
 template <>
 struct Converter<v8::Local<v8::String>> {
+  static constexpr const char* type_name = "String";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    v8::Local<v8::String> val) {
     return val;
@@ -105,6 +112,7 @@ struct Converter<v8::Local<v8::String>> {
 
 template <typename T>
 struct Converter<std::set<T>> {
+  static constexpr const char* type_name = "Array";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const std::set<T>& val) {
     v8::Local<v8::Array> result(
@@ -141,6 +149,7 @@ struct Converter<std::set<T>> {
 
 template <typename K, typename V>
 struct Converter<std::map<K, V>> {
+  static constexpr const char* type_name = "Object";
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> value,
                      std::map<K, V>* out) {

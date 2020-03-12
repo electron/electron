@@ -14,6 +14,7 @@ namespace gin {
 
 template <typename Sig>
 struct Converter<base::RepeatingCallback<Sig>> {
+  static constexpr const char* type_name = "Function";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const base::RepeatingCallback<Sig>& val) {
     // We don't use CreateFunctionTemplate here because it creates a new
@@ -38,6 +39,7 @@ struct Converter<base::RepeatingCallback<Sig>> {
 
 template <typename Sig>
 struct Converter<base::OnceCallback<Sig>> {
+  static constexpr const char* type_name = "Function";
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    base::OnceCallback<Sig> in) {
     return gin::ConvertToV8(isolate,

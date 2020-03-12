@@ -4,6 +4,9 @@
 
 #include "shell/common/gin_helper/arguments.h"
 
+#include <string>
+
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 
 namespace gin_helper {
@@ -26,8 +29,11 @@ std::string V8TypeAsString(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   }
   if (gin::ConvertFromV8(isolate, value, &result))
     return '"' + result + '"';
-  if (gin::ConvertFromV8(isolate, value->TypeOf(isolate), &result))
+  if (gin::ConvertFromV8(isolate, value->TypeOf(isolate), &result)) {
+    if (result.size() > 0)
+      result[0] = base::ToUpperASCII(result[0]);
     return result;
+  }
   return "<unkown>";
 }
 
@@ -38,12 +44,16 @@ void Arguments::ThrowError() const {
     gin::Arguments::ThrowError();
     return;
   }
-  // The |gin::Arguments| class advances |next_| counter when conversion fails
-  // while |gin_helper::Arguments| does not, so we use |next_| instead of
-  // |next_ - 1| as current argument index.
-  return ThrowTypeError(base::StringPrintf(
+  ThrowTypeError(base::StringPrintf(
       "Error processing argument at index %d, conversion failure from %s",
       next_, V8TypeAsString(isolate_, (*info_for_function_)[next_]).c_str()));
+}
+
+void Arguments::ThrowErrorWithExpectedTypeName(const char* type_name) const {
+  ThrowTypeError(base::StringPrintf(
+      "Error processing argument at index %d, conversion failure from %s to %s",
+      next_, V8TypeAsString(isolate_, (*info_for_function_)[next_]).c_str(),
+      type_name));
 }
 
 void Arguments::ThrowError(base::StringPiece message) const {

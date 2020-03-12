@@ -179,7 +179,7 @@ struct ArgumentHolder {
     }
     ok = GetNextArgument(args, create_flags, index == 0, &value);
     if (!ok) {
-      args->ThrowError();
+      args->ThrowErrorWithExpectedType<ArgLocalType>();
     }
   }
 };
