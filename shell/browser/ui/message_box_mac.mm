@@ -98,7 +98,7 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
-  if (!settings.parent_window)
+  if (!settings.parent_window || !settings.parent_window->IsVisible())
     return [[alert autorelease] runModal];
 
   __block int ret_code = -1;
