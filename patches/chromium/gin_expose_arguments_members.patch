@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:47:44 -0700
+Subject: chore: expose members of gin::Arguments to subclass
+
+Make Electron's gin_helper::Arguments class have access to |next_| pointer.
+
+diff --git a/gin/arguments.h b/gin/arguments.h
+index eaded13e2991..7a94fceacaf8 100644
+--- a/gin/arguments.h
++++ b/gin/arguments.h
+@@ -108,7 +108,7 @@ class GIN_EXPORT Arguments {
+   // and object construction.
+   bool IsConstructCall() const;
+ 
+- private:
++ protected:
+   v8::Isolate* isolate_;
+   union {
+     const v8::FunctionCallbackInfo<v8::Value>* info_for_function_;
