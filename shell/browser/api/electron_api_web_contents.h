@@ -284,7 +284,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Methods for zoom handling.
   void SetZoomLevel(double level);
   double GetZoomLevel() const;
-  void SetZoomFactor(double factor);
+  void SetZoomFactor(gin_helper::ErrorThrower thrower, double factor);
   double GetZoomFactor() const;
 
   // Callback triggered on permission response.
