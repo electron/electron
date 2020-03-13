@@ -375,6 +375,11 @@ blink::mojom::PointerLockResult OffScreenRenderWidgetHostView::LockMouse(
   return blink::mojom::PointerLockResult::kUnsupportedOptions;
 }
 
+blink::mojom::PointerLockResult OffScreenRenderWidgetHostView::ChangeMouseLock(
+    bool request_unadjusted_movement) {
+  return blink::mojom::PointerLockResult::kUnsupportedOptions;
+}
+
 void OffScreenRenderWidgetHostView::UnlockMouse() {}
 
 void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
