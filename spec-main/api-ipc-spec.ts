@@ -278,6 +278,57 @@ describe('ipc module', () => {
       expect(data).to.equal('a message')
     })
 
+    describe('close event', () => {
+      describe('in renderer', () => {
+        it('is emitted when the main process closes its end of the port', async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+          w.loadURL('about:blank')
+          await w.webContents.executeJavaScript(`(${function () {
+            const { ipcRenderer } = require('electron')
+            ipcRenderer.on('port', (e) => {
+              const [port] = e.ports
+              port.start();
+              (port as any).onclose = () => {
+                ipcRenderer.send('closed')
+              }
+            })
+          }})()`)
+          const { port1, port2 } = new MessageChannelMain()
+          w.webContents.postMessage('port', null, [port2])
+          port1.close()
+          await emittedOnce(ipcMain, 'closed')
+        })
+
+        it('is emitted when the other end of a port is garbage-collected', async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+          w.loadURL('about:blank')
+          await w.webContents.executeJavaScript(`(${async function () {
+            const { port2 } = new MessageChannel()
+            await new Promise(resolve => {
+              port2.start();
+              (port2 as any).onclose = resolve
+              process.electronBinding('v8_util').requestGarbageCollectionForTesting()
+            })
+          }})()`)
+        })
+
+        it('is emitted when the other end of a port is sent to nowhere', async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+          w.loadURL('about:blank')
+          ipcMain.once('do-a-gc', () => v8Util.requestGarbageCollectionForTesting())
+          await w.webContents.executeJavaScript(`(${async function () {
+            const { port1, port2 } = new MessageChannel()
+            await new Promise(resolve => {
+              port2.start();
+              (port2 as any).onclose = resolve
+              require('electron').ipcRenderer.postMessage('nobody-listening', null, [port1])
+              require('electron').ipcRenderer.send('do-a-gc')
+            })
+          }})()`)
+        })
+      })
+    })
+
     describe('MessageChannelMain', () => {
       it('can be created', () => {
         const { port1, port2 } = new MessageChannelMain()
