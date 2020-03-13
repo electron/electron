@@ -151,7 +151,7 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void SetWindowLevel(int level);
 
   // Custom traffic light positioning
-  void RepositionTrafficLights();
+  void RedrawTrafficLights();
   void SetExitingFullScreen(bool flag);
   void SetTrafficLightPosition(const gfx::Point& position) override;
   gfx::Point GetTrafficLightPosition() const override;
@@ -221,6 +221,9 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   // The visibility mode of window button controls when explicitly set through
   // setWindowButtonVisibility().
   base::Optional<bool> window_button_visibility_;
+
+  // Maximizable window state; necessary for persistence through redraws.
+  bool maximizable_ = true;
 
   // Simple (pre-Lion) Fullscreen Settings
   bool always_simple_fullscreen_ = false;
