@@ -83,35 +83,33 @@ describe('app module', () => {
     })
   })
 
-  describe('app.name', () => {
-    it('returns the name field of package.json', () => {
-      expect(app.name).to.equal('Electron Test Main')
+  describe('app name APIs', () => {
+    it('with properties', () => {
+      it('returns the name field of package.json', () => {
+        expect(app.name).to.equal('Electron Test Main')
+      })
+
+      it('overrides the name', () => {
+        expect(app.name).to.equal('Electron Test Main')
+        app.name = 'test-name'
+
+        expect(app.name).to.equal('test-name')
+        app.name = 'Electron Test Main'
+      })
     })
 
-    it('overrides the name', () => {
-      expect(app.name).to.equal('Electron Test Main')
-      app.name = 'test-name'
+    it('with functions', () => {
+      it('returns the name field of package.json', () => {
+        expect(app.getName()).to.equal('Electron Test Main')
+      })
 
-      expect(app.name).to.equal('test-name')
-      app.name = 'Electron Test Main'
-    })
-  })
+      it('overrides the name', () => {
+        expect(app.getName()).to.equal('Electron Test Main')
+        app.setName('test-name')
 
-  // TODO(codebytere): remove when propertyification is complete
-  describe('app.getName()', () => {
-    it('returns the name field of package.json', () => {
-      expect(app.getName()).to.equal('Electron Test Main')
-    })
-  })
-
-  // TODO(codebytere): remove when propertyification is complete
-  describe('app.setName(name)', () => {
-    it('overrides the name', () => {
-      expect(app.getName()).to.equal('Electron Test Main')
-      app.setName('test-name')
-
-      expect(app.getName()).to.equal('test-name')
-      app.setName('Electron Test Main')
+        expect(app.getName()).to.equal('test-name')
+        app.setName('Electron Test Main')
+      })
     })
   })
 
@@ -554,20 +552,42 @@ describe('app module', () => {
     after(() => { app.badgeCount = 0 })
 
     describe('on supported platform', () => {
-      it('sets a badge count', function () {
-        if (platformIsNotSupported) return this.skip()
+      it('with properties', () => {
+        it('sets a badge count', function () {
+          if (platformIsNotSupported) return this.skip()
 
-        app.badgeCount = expectedBadgeCount
-        expect(app.badgeCount).to.equal(expectedBadgeCount)
+          app.badgeCount = expectedBadgeCount
+          expect(app.badgeCount).to.equal(expectedBadgeCount)
+        })
+      })
+
+      it('with functions', () => {
+        it('sets a badge count', function () {
+          if (platformIsNotSupported) return this.skip()
+
+          app.setBadgeCount(expectedBadgeCount)
+          expect(app.getBadgeCount()).to.equal(expectedBadgeCount)
+        })
       })
     })
 
     describe('on unsupported platform', () => {
-      it('does not set a badge count', function () {
-        if (platformIsSupported) return this.skip()
+      it('with properties', () => {
+        it('does not set a badge count', function () {
+          if (platformIsSupported) return this.skip()
 
-        app.badgeCount = 9999
-        expect(app.badgeCount).to.equal(0)
+          app.badgeCount = 9999
+          expect(app.badgeCount).to.equal(0)
+        })
+      })
+
+      it('with functions', () => {
+        it('does not set a badge count)', function () {
+          if (platformIsSupported) return this.skip()
+
+          app.setBadgeCount(9999)
+          expect(app.getBadgeCount()).to.equal(0)
+        })
       })
     })
   })
@@ -655,15 +675,23 @@ describe('app module', () => {
     })
   })
 
-  describe('accessibilitySupportEnabled property', () => {
-    if (process.platform === 'linux') return
+  ifdescribe(process.platform !== 'linux')('accessibilitySupportEnabled property', () => {
+    it('with properties', () => {
+      it('can set accessibility support enabled', () => {
+        expect(app.accessibilitySupportEnabled).to.eql(false)
 
-    it('returns whether the Chrome has accessibility APIs enabled', () => {
-      expect(app.accessibilitySupportEnabled).to.be.a('boolean')
+        app.accessibilitySupportEnabled = true
+        expect(app.accessibilitySupportEnabled).to.eql(true)
+      })
+    })
 
-      // TODO(codebytere): remove when propertyification is complete
-      expect(app.isAccessibilitySupportEnabled).to.be.a('function')
-      expect(app.setAccessibilitySupportEnabled).to.be.a('function')
+    it('with functions', () => {
+      it('can set accessibility support enabled', () => {
+        expect(app.isAccessibilitySupportEnabled()).to.eql(false)
+
+        app.setAccessibilitySupportEnabled(true)
+        expect(app.isAccessibilitySupportEnabled()).to.eql(true)
+      })
     })
   })
 

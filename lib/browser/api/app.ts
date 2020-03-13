@@ -17,6 +17,29 @@ let dockMenu: Electron.Menu | null = null
 Object.setPrototypeOf(App.prototype, EventEmitter.prototype)
 EventEmitter.call(app as any)
 
+// Properties.
+
+const nativeASGetter = app.isAccessibilitySupportEnabled
+const nativeASSetter = app.setAccessibilitySupportEnabled
+Object.defineProperty(App.prototype, 'accessibilitySupportEnabled', {
+  get: () => nativeASGetter.call(app),
+  set: (enabled) => nativeASSetter.call(app, enabled)
+})
+
+const nativeBCGetter = app.getBadgeCount
+const nativeBCSetter = app.setBadgeCount
+Object.defineProperty(App.prototype, 'badgeCount', {
+  get: () => nativeBCGetter.call(app),
+  set: (count) => nativeBCSetter.call(app, count)
+})
+
+const nativeNGetter = app.getName
+const nativeNSetter = app.setName
+Object.defineProperty(App.prototype, 'name', {
+  get: () => nativeNGetter.call(app),
+  set: (name) => nativeNSetter.call(app, name)
+})
+
 Object.assign(app, {
   commandLine: {
     hasSwitch: (theSwitch: string) => commandLine.hasSwitch(String(theSwitch)),
@@ -111,11 +134,6 @@ for (const name of events) {
     webContents.emit(name, event, ...args)
   })
 }
-
-// Property Deprecations
-deprecate.fnToProperty(App.prototype, 'accessibilitySupportEnabled', '_isAccessibilitySupportEnabled', '_setAccessibilitySupportEnabled')
-deprecate.fnToProperty(App.prototype, 'badgeCount', '_getBadgeCount', '_setBadgeCount')
-deprecate.fnToProperty(App.prototype, 'name', '_getName', '_setName')
 
 // Deprecate allowRendererProcessReuse but only if they set it to false, no need to log if
 // they are setting it to true
