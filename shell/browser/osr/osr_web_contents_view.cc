@@ -36,7 +36,6 @@ void OffScreenWebContentsView::SetWebContents(
   if (GetView())
     GetView()->InstallTransparency();
 }
-}  // namespace electron
 
 void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
   if (native_window_)
