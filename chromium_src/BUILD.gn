@@ -298,14 +298,18 @@ source_set("plugins") {
     sources += [
       "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.cc",
       "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.h",
-      "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
       "//chrome/renderer/pepper/pepper_flash_fullscreen_host.cc",
       "//chrome/renderer/pepper/pepper_flash_fullscreen_host.h",
       "//chrome/renderer/pepper/pepper_flash_menu_host.cc",
       "//chrome/renderer/pepper/pepper_flash_menu_host.h",
       "//chrome/renderer/pepper/pepper_flash_renderer_host.cc",
       "//chrome/renderer/pepper/pepper_flash_renderer_host.h",
+    ]
+  }
+  if (enable_pepper_flash || enable_pdf_viewer) {
+    sources += [
+      "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
+      "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
     ]
   }
   deps += [
