@@ -27,6 +27,7 @@
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/common/widget_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -43,7 +44,6 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/common/context_menu_params.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/data_object_builder.h"
@@ -2390,17 +2390,18 @@ bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChange(const content::WebCursor& cursor) {
-  const content::CursorInfo& info = cursor.info();
+void WebContents::OnCursorChange(const content::WebCursor& webcursor) {
+  const ui::Cursor& cursor = webcursor.cursor();
 
-  if (info.type == ui::mojom::CursorType::kCustom) {
-    Emit("cursor-changed", CursorTypeToString(info),
-         gfx::Image::CreateFrom1xBitmap(info.custom_image),
-         info.image_scale_factor,
-         gfx::Size(info.custom_image.width(), info.custom_image.height()),
-         info.hotspot);
+  if (cursor.type() == ui::mojom::CursorType::kCustom) {
+    Emit("cursor-changed", CursorTypeToString(cursor),
+         gfx::Image::CreateFrom1xBitmap(cursor.custom_bitmap()),
+         cursor.image_scale_factor(),
+         gfx::Size(cursor.custom_bitmap().width(),
+                   cursor.custom_bitmap().height()),
+         cursor.custom_hotspot());
   } else {
-    Emit("cursor-changed", CursorTypeToString(info));
+    Emit("cursor-changed", CursorTypeToString(cursor));
   }
 }
 

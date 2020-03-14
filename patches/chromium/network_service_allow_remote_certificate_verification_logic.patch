@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 7ce55da4749eeb3e774a5f0e069e73400ef392c7..9d340a9207d2e0b71e0726a0904282e160e036ae 100644
+index 059dea47ee06748f2d55ac9c214c9e8cb87de14f..80ecc470ab4ed4ce1cb797f7f11fe971c953145d 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -99,6 +99,11 @@
+@@ -102,6 +102,11 @@
  #include "services/network/url_loader.h"
  #include "services/network/url_request_context_builder_mojo.h"
  
@@ -160,7 +160,7 @@ index 7ce55da4749eeb3e774a5f0e069e73400ef392c7..9d340a9207d2e0b71e0726a0904282e1
    std::unique_ptr<NetworkServiceNetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index e9ab2a090f3eb19533376ed44cd5f344e738593e..abc82d01185e1d3320bfd82bcd1705423e325ff2 100644
+index d2480f9cd2ce613221e77686986851a5281ad7bd..8ccb5c4d0c37a5dc0c7fa713683941eaddc1c609 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -84,6 +84,7 @@ class DomainReliabilityMonitor;
@@ -171,7 +171,7 @@ index e9ab2a090f3eb19533376ed44cd5f344e738593e..abc82d01185e1d3320bfd82bcd170542
  class CookieManager;
  class ExpectCTReporter;
  class HostResolver;
-@@ -185,6 +186,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -183,6 +184,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -180,7 +180,7 @@ index e9ab2a090f3eb19533376ed44cd5f344e738593e..abc82d01185e1d3320bfd82bcd170542
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -650,6 +653,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -644,6 +647,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::unique_ptr<network::NSSTempCertsCacheChromeOS> nss_temp_certs_cache_;
  #endif
  

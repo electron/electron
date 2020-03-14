@@ -11,8 +11,8 @@ using Cursor = ui::mojom::CursorType;
 
 namespace electron {
 
-std::string CursorTypeToString(const content::CursorInfo& info) {
-  switch (info.type) {
+std::string CursorTypeToString(const ui::Cursor& cursor) {
+  switch (cursor.type()) {
     case Cursor::kPointer:
       return "default";
     case Cursor::kCross:
