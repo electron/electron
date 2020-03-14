@@ -187,12 +187,47 @@ describe('systemPreferences module', () => {
   })
 
   ifdescribe(process.platform === 'darwin')('systemPreferences.appLevelAppearance', () => {
-    it('has an appLevelAppearance property', () => {
-      expect(systemPreferences).to.have.property('appLevelAppearance')
+    const options = ['dark', 'light', 'unknown', null]
+    describe('with properties', () => {
+      it('returns a valid appearance', () => {
+        const appearance = systemPreferences.appLevelAppearance
+        expect(options).to.include(appearance)
+      })
 
-      // TODO(codebytere): remove when propertyification is complete
-      expect(systemPreferences.setAppLevelAppearance).to.be.a('function')
-      expect(() => { systemPreferences.getAppLevelAppearance() }).to.not.throw()
+      it('can be changed', () => {
+        systemPreferences.appLevelAppearance = 'dark'
+        expect(systemPreferences.appLevelAppearance).to.eql('dark')
+      })
+    })
+
+    describe('with functions', () => {
+      it('returns a valid appearance', () => {
+        const appearance = systemPreferences.getAppLevelAppearance()
+        expect(options).to.include(appearance)
+      })
+
+      it('can be changed', () => {
+        systemPreferences.setAppLevelAppearance('dark')
+        const appearance = systemPreferences.getAppLevelAppearance()
+        expect(appearance).to.eql('dark')
+      })
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('systemPreferences.effectiveAppearance', () => {
+    const options = ['dark', 'light', 'unknown']
+    describe('with properties', () => {
+      it('returns a valid appearance', () => {
+        const appearance = systemPreferences.effectiveAppearance
+        expect(options).to.include(appearance)
+      })
+    })
+
+    describe('with functions', () => {
+      it('returns a valid appearance', () => {
+        const appearance = systemPreferences.getEffectiveAppearance()
+        expect(options).to.include(appearance)
+      })
     })
   })
 

@@ -360,7 +360,7 @@ Returns `Boolean` - `true` if an inverted color scheme (a high contrast color sc
 
 Returns `Boolean` - `true` if a high contrast theme is active, `false` otherwise.
 
-**Depreacted:** Should use the new [`nativeTheme.shouldUseHighContrastColors`](native-theme.md#nativethemeshouldusehighcontrastcolors-macos-windows-readonly) API.
+**Deprecated:** Should use the new [`nativeTheme.shouldUseHighContrastColors`](native-theme.md#nativethemeshouldusehighcontrastcolors-macos-windows-readonly) API.
 
 ### `systemPreferences.getEffectiveAppearance()` _macOS_
 
@@ -368,8 +368,6 @@ Returns `String` - Can be `dark`, `light` or `unknown`.
 
 Gets the macOS appearance setting that is currently applied to your application,
 maps to [NSApplication.effectiveAppearance](https://developer.apple.com/documentation/appkit/nsapplication/2967171-effectiveappearance?language=objc)
-
-**[Deprecated](modernization/property-updates.md)**
 
 ### `systemPreferences.getAppLevelAppearance()` _macOS_ _Deprecated_
 
@@ -379,16 +377,12 @@ Gets the macOS appearance setting that you have declared you want for
 your application, maps to [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc).
 You can use the `setAppLevelAppearance` API to set this value.
 
-**[Deprecated](modernization/property-updates.md)**
-
 ### `systemPreferences.setAppLevelAppearance(appearance)` _macOS_ _Deprecated_
 
 * `appearance` String | null - Can be `dark` or `light`
 
 Sets the appearance setting for your application, this should override the
 system default and override the value of `getEffectiveAppearance`.
-
-**[Deprecated](modernization/property-updates.md)**
 
 ### `systemPreferences.canPromptTouchID()` _macOS_
 
