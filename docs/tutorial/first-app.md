@@ -54,7 +54,7 @@ to execute the current package:
   "version": "0.1.0",
   "main": "main.js",
   "scripts": {
-    "start": "node ."
+    "start": "electron ."
   }
 }
 ```
