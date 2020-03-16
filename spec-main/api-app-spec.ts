@@ -678,13 +678,6 @@ describe('app module', () => {
     })
   })
 
-  describe('setAppLogsPath(path)', () => {
-    it('throws when a relative path is passed', () => {
-      const badPath = 'hey/hi/hello'
-
-      expect(() => {
-        app.setAppLogsPath(badPath)
-      }).to.throw(/Path must be absolute/)
   describe('select-client-certificate event', () => {
     let w: BrowserWindow
 
