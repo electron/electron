@@ -22,6 +22,9 @@ which the request is associated.
   with which the request is associated. Defaults to the empty string. The
 `session` option prevails on `partition`. Thus if a `session` is explicitly
 specified, `partition` is ignored.
+  * `useSessionCookies` Boolean (optional) - Whether to send cookies with this
+    request from the provided session.  This will make the `net` request's
+    cookie behavior match a `fetch` request. Default is `false`.
   * `protocol` String (optional) - The protocol scheme in the form 'scheme:'.
 Currently supported values are 'http:' or 'https:'. Defaults to 'http:'.
   * `host` String (optional) - The server host provided as a concatenation of
