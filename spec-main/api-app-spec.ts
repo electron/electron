@@ -667,17 +667,6 @@ describe('app module', () => {
     })
   })
 
-    it('throws when a relative path is passed', () => {
-      const badPath = 'hey/hi/hello'
-
-      expect(() => {
-        app.setPath('music', badPath)
-      }).to.throw(/Path must be absolute/)
-    })
-
-    })
-  })
-
   describe('select-client-certificate event', () => {
     let w: BrowserWindow
 
