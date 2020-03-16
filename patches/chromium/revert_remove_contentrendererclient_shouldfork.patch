@@ -92,7 +92,7 @@ index ee2079537feb23869fe4f812bcef33e1d7de29a7..93287ae0928b52f9df34834ad1a8ef0e
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |attach_same_site_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index c253cd21eaae290e71b10bc02d3137d2350691da..6020ed9cb845f5ba297a5c9d9d304f66f94a83cd 100644
+index 8dd80a3d7880eec9a4adb2288b883514b86e8880..fce52a0bf34c7ff66196951c2f72333e1cb45397 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -5705,6 +5705,23 @@ void RenderFrameImpl::BeginNavigation(
