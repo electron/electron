@@ -1102,15 +1102,39 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('autoHideMenuBar property', () => {
+  describe('autoHideMenuBar state', () => {
     afterEach(closeAllWindows)
-    it('exists', () => {
-      const w = new BrowserWindow({ show: false })
-      expect(w).to.have.property('autoHideMenuBar')
 
-      // TODO(codebytere): remove when propertyification is complete
-      expect(w.setAutoHideMenuBar).to.be.a('function')
-      expect(w.isMenuBarAutoHide).to.be.a('function')
+    it('for properties', () => {
+      it('can be set with autoHideMenuBar constructor option', () => {
+        const w = new BrowserWindow({ show: false, autoHideMenuBar: true })
+        expect(w.autoHideMenuBar).to.be.true('autoHideMenuBar')
+      })
+
+      it('can be changed', () => {
+        const w = new BrowserWindow({ show: false })
+        expect(w.autoHideMenuBar).to.be.false('autoHideMenuBar')
+        w.autoHideMenuBar = true
+        expect(w.autoHideMenuBar).to.be.true('autoHideMenuBar')
+        w.autoHideMenuBar = false
+        expect(w.autoHideMenuBar).to.be.false('autoHideMenuBar')
+      })
+    })
+
+    it('for functions', () => {
+      it('can be set with autoHideMenuBar constructor option', () => {
+        const w = new BrowserWindow({ show: false, autoHideMenuBar: true })
+        expect(w.isMenuBarAutoHide()).to.be.true('autoHideMenuBar')
+      })
+
+      it('can be changed', () => {
+        const w = new BrowserWindow({ show: false })
+        expect(w.isMenuBarAutoHide()).to.be.false('autoHideMenuBar')
+        w.setAutoHideMenuBar(true)
+        expect(w.isMenuBarAutoHide()).to.be.true('autoHideMenuBar')
+        w.setAutoHideMenuBar(false)
+        expect(w.isMenuBarAutoHide()).to.be.false('autoHideMenuBar')
+      })
     })
   })
 
@@ -3247,32 +3271,44 @@ describe('BrowserWindow module', () => {
     })
 
     describe('resizable state', () => {
-      it('can be changed with resizable option', () => {
-        const w = new BrowserWindow({ show: false, resizable: false })
-        expect(w.resizable).to.be.false('resizable')
+      it('with properties', () => {
+        it('can be set with resizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, resizable: false })
+          expect(w.resizable).to.be.false('resizable')
 
-        if (process.platform === 'darwin') {
-          expect(w.maximizable).to.to.true('maximizable')
-        }
+          if (process.platform === 'darwin') {
+            expect(w.maximizable).to.to.true('maximizable')
+          }
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.resizable).to.be.true('resizable')
+          w.resizable = false
+          expect(w.resizable).to.be.false('resizable')
+          w.resizable = true
+          expect(w.resizable).to.be.true('resizable')
+        })
       })
 
-      // TODO(codebytere): remove when propertyification is complete
-      it('can be changed with setResizable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isResizable()).to.be.true('resizable')
-        w.setResizable(false)
-        expect(w.isResizable()).to.be.false('resizable')
-        w.setResizable(true)
-        expect(w.isResizable()).to.be.true('resizable')
-      })
+      it('with functions', () => {
+        it('can be set with resizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, resizable: false })
+          expect(w.isResizable()).to.be.false('resizable')
 
-      it('can be changed with resizable property', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.resizable).to.be.true('resizable')
-        w.resizable = false
-        expect(w.resizable).to.be.false('resizable')
-        w.resizable = true
-        expect(w.resizable).to.be.true('resizable')
+          if (process.platform === 'darwin') {
+            expect(w.isMaximizable()).to.to.true('maximizable')
+          }
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isResizable()).to.be.true('resizable')
+          w.setResizable(false)
+          expect(w.isResizable()).to.be.false('resizable')
+          w.setResizable(true)
+          expect(w.isResizable()).to.be.true('resizable')
+        })
       })
 
       it('works for a frameless window', () => {
@@ -3361,200 +3397,203 @@ describe('BrowserWindow module', () => {
     // Not implemented on Linux.
     afterEach(closeAllWindows)
 
-    describe('movable state (property)', () => {
-      it('can be changed with movable option', () => {
-        const w = new BrowserWindow({ show: false, movable: false })
-        expect(w.movable).to.be.false('movable')
+    describe('movable state', () => {
+      it('with properties', () => {
+        it('can be set with movable constructor option', () => {
+          const w = new BrowserWindow({ show: false, movable: false })
+          expect(w.movable).to.be.false('movable')
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.movable).to.be.true('movable')
+          w.movable = false
+          expect(w.movable).to.be.false('movable')
+          w.movable = true
+          expect(w.movable).to.be.true('movable')
+        })
       })
-      it('can be changed with movable property', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.movable).to.be.true('movable')
-        w.movable = false
-        expect(w.movable).to.be.false('movable')
-        w.movable = true
-        expect(w.movable).to.be.true('movable')
+
+      it('with functions', () => {
+        it('can be set with movable constructor option', () => {
+          const w = new BrowserWindow({ show: false, movable: false })
+          expect(w.isMovable()).to.be.false('movable')
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isMovable()).to.be.true('movable')
+          w.setMovable(false)
+          expect(w.isMovable()).to.be.false('movable')
+          w.setMovable(true)
+          expect(w.isMovable()).to.be.true('movable')
+        })
       })
     })
 
-    // TODO(codebytere): remove when propertyification is complete
-    describe('movable state (methods)', () => {
-      it('can be changed with movable option', () => {
-        const w = new BrowserWindow({ show: false, movable: false })
-        expect(w.isMovable()).to.be.false('movable')
-      })
-      it('can be changed with setMovable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isMovable()).to.be.true('movable')
-        w.setMovable(false)
-        expect(w.isMovable()).to.be.false('movable')
-        w.setMovable(true)
-        expect(w.isMovable()).to.be.true('movable')
-      })
-    })
+    describe('minimizable state', () => {
+      it('with properties', () => {
+        it('can be set with minimizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, minimizable: false })
+          expect(w.minimizable).to.be.false('minimizable')
+        })
 
-    describe('minimizable state (property)', () => {
-      it('can be changed with minimizable option', () => {
-        const w = new BrowserWindow({ show: false, minimizable: false })
-        expect(w.minimizable).to.be.false('minimizable')
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.minimizable).to.be.true('minimizable')
+          w.minimizable = false
+          expect(w.minimizable).to.be.false('minimizable')
+          w.minimizable = true
+          expect(w.minimizable).to.be.true('minimizable')
+        })
       })
 
-      it('can be changed with minimizable property', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.minimizable).to.be.true('minimizable')
-        w.minimizable = false
-        expect(w.minimizable).to.be.false('minimizable')
-        w.minimizable = true
-        expect(w.minimizable).to.be.true('minimizable')
-      })
-    })
+      it('with functions', () => {
+        it('can be set with minimizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, minimizable: false })
+          expect(w.isMinimizable()).to.be.false('movable')
+        })
 
-    // TODO(codebytere): remove when propertyification is complete
-    describe('minimizable state (methods)', () => {
-      it('can be changed with minimizable option', () => {
-        const w = new BrowserWindow({ show: false, minimizable: false })
-        expect(w.isMinimizable()).to.be.false('movable')
-      })
-
-      it('can be changed with setMinimizable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isMinimizable()).to.be.true('isMinimizable')
-        w.setMinimizable(false)
-        expect(w.isMinimizable()).to.be.false('isMinimizable')
-        w.setMinimizable(true)
-        expect(w.isMinimizable()).to.be.true('isMinimizable')
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isMinimizable()).to.be.true('isMinimizable')
+          w.setMinimizable(false)
+          expect(w.isMinimizable()).to.be.false('isMinimizable')
+          w.setMinimizable(true)
+          expect(w.isMinimizable()).to.be.true('isMinimizable')
+        })
       })
     })
 
     describe('maximizable state (property)', () => {
-      it('can be changed with maximizable option', () => {
-        const w = new BrowserWindow({ show: false, maximizable: false })
-        expect(w.maximizable).to.be.false('maximizable')
+      it('with properties', () => {
+        it('can be set with maximizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, maximizable: false })
+          expect(w.maximizable).to.be.false('maximizable')
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.maximizable).to.be.true('maximizable')
+          w.maximizable = false
+          expect(w.maximizable).to.be.false('maximizable')
+          w.maximizable = true
+          expect(w.maximizable).to.be.true('maximizable')
+        })
+
+        it('is not affected when changing other states', () => {
+          const w = new BrowserWindow({ show: false })
+          w.maximizable = false
+          expect(w.maximizable).to.be.false('maximizable')
+          w.minimizable = false
+          expect(w.maximizable).to.be.false('maximizable')
+          w.closable = false
+          expect(w.maximizable).to.be.false('maximizable')
+
+          w.maximizable = true
+          expect(w.maximizable).to.be.true('maximizable')
+          w.closable = true
+          expect(w.maximizable).to.be.true('maximizable')
+          w.fullScreenable = false
+          expect(w.maximizable).to.be.true('maximizable')
+        })
       })
 
-      it('can be changed with maximizable property', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.maximizable).to.be.true('maximizable')
-        w.maximizable = false
-        expect(w.maximizable).to.be.false('maximizable')
-        w.maximizable = true
-        expect(w.maximizable).to.be.true('maximizable')
-      })
+      it('with functions', () => {
+        it('can be set with maximizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, maximizable: false })
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
+        })
 
-      it('is not affected when changing other states', () => {
-        const w = new BrowserWindow({ show: false })
-        w.maximizable = false
-        expect(w.maximizable).to.be.false('maximizable')
-        w.minimizable = false
-        expect(w.maximizable).to.be.false('maximizable')
-        w.closable = false
-        expect(w.maximizable).to.be.false('maximizable')
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+          w.setMaximizable(false)
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
+          w.setMaximizable(true)
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+        })
 
-        w.maximizable = true
-        expect(w.maximizable).to.be.true('maximizable')
-        w.closable = true
-        expect(w.maximizable).to.be.true('maximizable')
-        w.fullScreenable = false
-        expect(w.maximizable).to.be.true('maximizable')
-      })
-    })
+        it('is not affected when changing other states', () => {
+          const w = new BrowserWindow({ show: false })
+          w.setMaximizable(false)
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
+          w.setMinimizable(false)
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
+          w.setClosable(false)
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
 
-    // TODO(codebytere): remove when propertyification is complete
-    describe('maximizable state (methods)', () => {
-      it('can be changed with maximizable option', () => {
-        const w = new BrowserWindow({ show: false, maximizable: false })
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-      })
-
-      it('can be changed with setMaximizable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
-        w.setMaximizable(false)
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-        w.setMaximizable(true)
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
-      })
-
-      it('is not affected when changing other states', () => {
-        const w = new BrowserWindow({ show: false })
-        w.setMaximizable(false)
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-        w.setMinimizable(false)
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-        w.setClosable(false)
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-
-        w.setMaximizable(true)
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
-        w.setClosable(true)
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
-        w.setFullScreenable(false)
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
-      })
-    })
-
-    ifdescribe(process.platform === 'win32')('maximizable state (Windows only)', () => {
-      // Only implemented on windows.
-
-      it('is reset to its former state', () => {
-        const w = new BrowserWindow({ show: false })
-        w.maximizable = false
-        w.resizable = false
-        w.resizable = true
-        expect(w.maximizable).to.be.false('maximizable')
-        w.maximizable = true
-        w.resizable = false
-        w.resizable = true
-        expect(w.maximizable).to.be.true('maximizable')
+          w.setMaximizable(true)
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+          w.setClosable(true)
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+          w.setFullScreenable(false)
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+        })
       })
     })
 
-    // TODO(codebytere): remove when propertyification is complete
-    ifdescribe(process.platform === 'win32')('maximizable state (Windows only) (methods)', () => {
-      // Only implemented on windows.
+    ifdescribe(process.platform === 'win32')('maximizable state', () => {
+      it('with properties', () => {
+        it('is reset to its former state', () => {
+          const w = new BrowserWindow({ show: false })
+          w.maximizable = false
+          w.resizable = false
+          w.resizable = true
+          expect(w.maximizable).to.be.false('maximizable')
+          w.maximizable = true
+          w.resizable = false
+          w.resizable = true
+          expect(w.maximizable).to.be.true('maximizable')
+        })
+      })
 
-      it('is reset to its former state', () => {
-        const w = new BrowserWindow({ show: false })
-        w.setMaximizable(false)
-        w.setResizable(false)
-        w.setResizable(true)
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-        w.setMaximizable(true)
-        w.setResizable(false)
-        w.setResizable(true)
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
+      it('with functions', () => {
+        it('is reset to its former state', () => {
+          const w = new BrowserWindow({ show: false })
+          w.setMaximizable(false)
+          w.setResizable(false)
+          w.setResizable(true)
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
+          w.setMaximizable(true)
+          w.setResizable(false)
+          w.setResizable(true)
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+        })
       })
     })
 
-    ifdescribe(process.platform === 'darwin')('fullscreenable state (property)', () => {
-      it('can be changed with fullscreenable option', () => {
-        const w = new BrowserWindow({ show: false, fullscreenable: false })
-        expect(w.fullScreenable).to.be.false('fullScreenable')
+    ifdescribe(process.platform === 'darwin')('fullscreenable state', () => {
+      it('with properties', () => {
+        it('can be set with fullscreenable constructor option', () => {
+          const w = new BrowserWindow({ show: false, fullscreenable: false })
+          expect(w.fullScreenable).to.be.false('fullScreenable')
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.fullScreenable).to.be.true('fullScreenable')
+          w.fullScreenable = false
+          expect(w.fullScreenable).to.be.false('fullScreenable')
+          w.fullScreenable = true
+          expect(w.fullScreenable).to.be.true('fullScreenable')
+        })
       })
 
-      it('can be changed with fullScreenable property', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.fullScreenable).to.be.true('fullScreenable')
-        w.fullScreenable = false
-        expect(w.fullScreenable).to.be.false('fullScreenable')
-        w.fullScreenable = true
-        expect(w.fullScreenable).to.be.true('fullScreenable')
-      })
-    })
+      it('with functions', () => {
+        it('can be set with fullscreenable constructor option', () => {
+          const w = new BrowserWindow({ show: false, fullscreenable: false })
+          expect(w.isFullScreenable()).to.be.false('isFullScreenable')
+        })
 
-    // TODO(codebytere): remove when propertyification is complete
-    ifdescribe(process.platform === 'darwin')('fullscreenable state (methods)', () => {
-      it('can be changed with fullscreenable option', () => {
-        const w = new BrowserWindow({ show: false, fullscreenable: false })
-        expect(w.isFullScreenable()).to.be.false('isFullScreenable')
-      })
-
-      it('can be changed with setFullScreenable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isFullScreenable()).to.be.true('isFullScreenable')
-        w.setFullScreenable(false)
-        expect(w.isFullScreenable()).to.be.false('isFullScreenable')
-        w.setFullScreenable(true)
-        expect(w.isFullScreenable()).to.be.true('isFullScreenable')
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isFullScreenable()).to.be.true('isFullScreenable')
+          w.setFullScreenable(false)
+          expect(w.isFullScreenable()).to.be.false('isFullScreenable')
+          w.setFullScreenable(true)
+          expect(w.isFullScreenable()).to.be.true('isFullScreenable')
+        })
       })
     })
 
@@ -3637,36 +3676,37 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('closable state (property)', () => {
-      it('can be changed with closable option', () => {
-        const w = new BrowserWindow({ show: false, closable: false })
-        expect(w.closable).to.be.false('closable')
+    describe('closable state', () => {
+      it('with properties', () => {
+        it('can be set with closable constructor option', () => {
+          const w = new BrowserWindow({ show: false, closable: false })
+          expect(w.closable).to.be.false('closable')
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.closable).to.be.true('closable')
+          w.closable = false
+          expect(w.closable).to.be.false('closable')
+          w.closable = true
+          expect(w.closable).to.be.true('closable')
+        })
       })
 
-      it('can be changed with setClosable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.closable).to.be.true('closable')
-        w.closable = false
-        expect(w.closable).to.be.false('closable')
-        w.closable = true
-        expect(w.closable).to.be.true('closable')
-      })
-    })
+      it('with functions', () => {
+        it('can be set with closable constructor option', () => {
+          const w = new BrowserWindow({ show: false, closable: false })
+          expect(w.isClosable()).to.be.false('isClosable')
+        })
 
-    // TODO(codebytere): remove when propertyification is complete
-    describe('closable state (methods)', () => {
-      it('can be changed with closable option', () => {
-        const w = new BrowserWindow({ show: false, closable: false })
-        expect(w.isClosable()).to.be.false('isClosable')
-      })
-
-      it('can be changed with setClosable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isClosable()).to.be.true('isClosable')
-        w.setClosable(false)
-        expect(w.isClosable()).to.be.false('isClosable')
-        w.setClosable(true)
-        expect(w.isClosable()).to.be.true('isClosable')
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isClosable()).to.be.true('isClosable')
+          w.setClosable(false)
+          expect(w.isClosable()).to.be.false('isClosable')
+          w.setClosable(true)
+          expect(w.isClosable()).to.be.true('isClosable')
+        })
       })
     })
 
