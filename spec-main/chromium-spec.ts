@@ -119,8 +119,14 @@ describe('focus handling', () => {
     w = null as unknown as BrowserWindow
   })
 
+  ipcMain.on('console-log', (event, test) => {
+    console.log('Console-log: ', test)
+  })
+
   const expectFocusChange = async () => {
+    console.log('About to await focus-changed')
     const [, focusedElementId] = await emittedOnce(ipcMain, 'focus-changed')
+    console.log('Got focus-changed event:', focusedElementId)
     return focusedElementId
   }
 
