@@ -12,12 +12,12 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index bf76db245cb4a9de24500c74f415c5ab23c64ce4..2dbd8e485c5138101921972d632a67d934120c16 100644
+index ba01477a3deea383f538adfe519bc53154df3321..b58f0a57e4884d87c8acc42bafc2ba86f0d1f19d 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
-@@ -146,6 +146,11 @@ bool GpuDataManagerImpl::Dx12VulkanRequested() const {
+@@ -151,6 +151,11 @@ void GpuDataManagerImpl::OnBrowserThreadsStarted() {
    base::AutoLock auto_lock(lock_);
-   return private_->Dx12VulkanRequested();
+   private_->OnBrowserThreadsStarted();
  }
 +
 +bool GpuDataManagerImpl::DxdiagDx12VulkanRequested() const {
@@ -28,26 +28,25 @@ index bf76db245cb4a9de24500c74f415c5ab23c64ce4..2dbd8e485c5138101921972d632a67d9
  
  void GpuDataManagerImpl::UpdateGpuFeatureInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index 917b55d4dd0f2a5e8de8267d27f094e13b2935c1..934e52d29ac545e61945504576a421befe70d033 100644
+index c5515870a1dcf017b3477d890510a672e82e00e3..7848ae18cc681a3c061791166051afee49406d23 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
-@@ -87,6 +87,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
-   void UpdateDxDiagNodeRequestStatus(bool request_continues);
-   void UpdateDx12VulkanRequestStatus(bool request_continues);
+@@ -89,6 +89,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
    bool Dx12VulkanRequested() const;
+   // Called from BrowserMainLoop::BrowserThreadsStarted().
+   void OnBrowserThreadsStarted();
 +  bool DxdiagDx12VulkanRequested() const;
  #endif
    // Update the GPU feature info. This updates the blacklist and enabled status
    // of GPU rasterization. In the future this will be used for more features.
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 3dfda3d93904d9eb323dae585404e7c4c46f84c2..5a76ff6f0b792e16a7ba1517ec2f91cb8755113f 100644
+index aae01a85f5d37d4c8e809815540662dee1550dbc..ee05d2fb8524664d2e989779201a670a201dd8bb 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -890,6 +890,11 @@ void GpuDataManagerImplPrivate::UpdateDx12VulkanRequestStatus(
- bool GpuDataManagerImplPrivate::Dx12VulkanRequested() const {
-   return gpu_info_dx12_vulkan_requested_;
+@@ -896,6 +896,10 @@ void GpuDataManagerImplPrivate::OnBrowserThreadsStarted() {
+     display::Screen::GetScreen()->AddObserver(owner_);
  }
-+
+ 
 +bool GpuDataManagerImplPrivate::DxdiagDx12VulkanRequested() const {
 +  return !(gpu_info_dx12_vulkan_request_failed_ ||
 +           gpu_info_dx_diag_request_failed_);
@@ -56,13 +55,13 @@ index 3dfda3d93904d9eb323dae585404e7c4c46f84c2..5a76ff6f0b792e16a7ba1517ec2f91cb
  
  void GpuDataManagerImplPrivate::UpdateGpuFeatureInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index dc1f2a69a5ed25a1067c442528725864a53cd891..f617fef81a34499dcbcee2ac1cc9382fda8e8981 100644
+index 6a082f73e77d9f5e7630cc4dbc18188c7e565c0b..d880de03d168908f2f7d4bc0c65e18e283de0005 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
-@@ -70,6 +70,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
-   void UpdateDx12VulkanRequestStatus(bool request_continues);
+@@ -71,6 +71,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
    void UpdateDxDiagNodeRequestStatus(bool request_continues);
    bool Dx12VulkanRequested() const;
+   void OnBrowserThreadsStarted();
 +  bool DxdiagDx12VulkanRequested() const;
  #endif
    void UpdateGpuFeatureInfo(const gpu::GpuFeatureInfo& gpu_feature_info,

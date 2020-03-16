@@ -40,14 +40,6 @@ If you need to customize your configuration, you can
 or
 [use the update service directly][update.electronjs.org].
 
-## Using `electron-builder`
-
-If your app is packaged with [`electron-builder`][electron-builder-lib] you can use the
-[electron-updater] module, which does not require a server and allows for updates
-from S3, GitHub or any other static file host. This sidesteps Electron's built-in
-update mechanism, meaning that the rest of this documentation will not apply to
-`electron-builder`'s updater.
-
 ## Deploying an Update Server
 
 If you're developing a private Electron application, or if you're not
@@ -140,8 +132,6 @@ autoUpdater.on('error', message => {
 })
 ```
 
-[electron-builder-lib]: https://github.com/electron-userland/electron-builder
-[electron-updater]: https://www.electron.build/auto-update
 [now]: https://zeit.co/now
 [hazel]: https://github.com/zeit/hazel
 [nuts]: https://github.com/GitbookIO/nuts

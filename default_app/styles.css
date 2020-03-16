@@ -8,7 +8,7 @@ body {
 }
 
 .container {
-  margin: 15px 30px 30px 30px;
+  margin: 15px 30px;
   background-color: #2f3241;
   flex: 1;
   display: flex;

@@ -43,8 +43,14 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
 }
 
 void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
-  if (web_contents)
-    web_contents->GotResponseToLockMouseRequest(allowed);
+  if (web_contents) {
+    if (allowed)
+      web_contents->GotResponseToLockMouseRequest(
+          blink::mojom::PointerLockResult::kSuccess);
+    else
+      web_contents->GotResponseToLockMouseRequest(
+          blink::mojom::PointerLockResult::kPermissionDenied);
+  }
 }
 
 void OnPermissionResponse(base::OnceCallback<void(bool)> callback,

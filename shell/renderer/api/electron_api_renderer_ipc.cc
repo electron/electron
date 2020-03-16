@@ -15,10 +15,13 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/v8_value_serializer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/public/web/web_message_port_converter.h"
 
 using blink::WebLocalFrame;
 using content::RenderFrame;
@@ -57,7 +60,8 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
         .SetMethod("sendSync", &IPCRenderer::SendSync)
         .SetMethod("sendTo", &IPCRenderer::SendTo)
         .SetMethod("sendToHost", &IPCRenderer::SendToHost)
-        .SetMethod("invoke", &IPCRenderer::Invoke);
+        .SetMethod("invoke", &IPCRenderer::Invoke)
+        .SetMethod("postMessage", &IPCRenderer::PostMessage);
   }
 
   const char* GetTypeName() override { return "IPCRenderer"; }
@@ -68,7 +72,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
             const std::string& channel,
             v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+    if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
     electron_browser_ptr_->Message(internal, channel, std::move(message));
@@ -79,7 +83,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
                                 const std::string& channel,
                                 v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+    if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return v8::Local<v8::Promise>();
     }
     gin_helper::Promise<blink::CloneableMessage> p(isolate);
@@ -95,6 +99,43 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
     return handle;
   }
 
+  void PostMessage(v8::Isolate* isolate,
+                   gin_helper::ErrorThrower thrower,
+                   const std::string& channel,
+                   v8::Local<v8::Value> message_value,
+                   base::Optional<v8::Local<v8::Value>> transfer) {
+    blink::TransferableMessage transferable_message;
+    if (!electron::SerializeV8Value(isolate, message_value,
+                                    &transferable_message)) {
+      // SerializeV8Value sets an exception.
+      return;
+    }
+
+    std::vector<v8::Local<v8::Object>> transferables;
+    if (transfer) {
+      if (!gin::ConvertFromV8(isolate, *transfer, &transferables)) {
+        thrower.ThrowTypeError("Invalid value for transfer");
+        return;
+      }
+    }
+
+    std::vector<blink::MessagePortChannel> ports;
+    for (auto& transferable : transferables) {
+      base::Optional<blink::MessagePortChannel> port =
+          blink::WebMessagePortConverter::
+              DisentangleAndExtractMessagePortChannel(isolate, transferable);
+      if (!port.has_value()) {
+        thrower.ThrowTypeError("Invalid value for transfer");
+        return;
+      }
+      ports.emplace_back(port.value());
+    }
+
+    transferable_message.ports = std::move(ports);
+    electron_browser_ptr_->ReceivePostMessage(channel,
+                                              std::move(transferable_message));
+  }
+
   void SendTo(v8::Isolate* isolate,
               bool internal,
               bool send_to_all,
@@ -102,7 +143,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
               const std::string& channel,
               v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+    if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
     electron_browser_ptr_->MessageTo(internal, send_to_all, web_contents_id,
@@ -113,25 +154,25 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer> {
                   const std::string& channel,
                   v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
+    if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
     electron_browser_ptr_->MessageHost(channel, std::move(message));
   }
 
-  blink::CloneableMessage SendSync(v8::Isolate* isolate,
-                                   bool internal,
-                                   const std::string& channel,
-                                   v8::Local<v8::Value> arguments) {
+  v8::Local<v8::Value> SendSync(v8::Isolate* isolate,
+                                bool internal,
+                                const std::string& channel,
+                                v8::Local<v8::Value> arguments) {
     blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arguments, &message)) {
-      return blink::CloneableMessage();
+    if (!electron::SerializeV8Value(isolate, arguments, &message)) {
+      return v8::Local<v8::Value>();
     }
 
     blink::CloneableMessage result;
     electron_browser_ptr_->MessageSync(internal, channel, std::move(message),
                                        &result);
-    return result;
+    return electron::DeserializeV8Value(isolate, result);
   }
 
   electron::mojom::ElectronBrowserPtr electron_browser_ptr_;

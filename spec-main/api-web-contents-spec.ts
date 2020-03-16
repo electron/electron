@@ -770,6 +770,52 @@ describe('webContents module', () => {
     })
   })
 
+  describe('userAgent APIs', () => {
+    it('can set the user agent (functions)', () => {
+      const w = new BrowserWindow({ show: false })
+      const userAgent = w.webContents.getUserAgent()
+
+      w.webContents.setUserAgent('my-user-agent')
+      expect(w.webContents.getUserAgent()).to.equal('my-user-agent')
+
+      w.webContents.setUserAgent(userAgent)
+      expect(w.webContents.getUserAgent()).to.equal(userAgent)
+    })
+
+    it('can set the user agent (properties)', () => {
+      const w = new BrowserWindow({ show: false })
+      const userAgent = w.webContents.userAgent
+
+      w.webContents.userAgent = 'my-user-agent'
+      expect(w.webContents.userAgent).to.equal('my-user-agent')
+
+      w.webContents.userAgent = userAgent
+      expect(w.webContents.userAgent).to.equal(userAgent)
+    })
+  })
+
+  describe('audioMuted APIs', () => {
+    it('can set the audio mute level (functions)', () => {
+      const w = new BrowserWindow({ show: false })
+
+      w.webContents.setAudioMuted(true)
+      expect(w.webContents.isAudioMuted()).to.be.true()
+
+      w.webContents.setAudioMuted(false)
+      expect(w.webContents.isAudioMuted()).to.be.false()
+    })
+
+    it('can set the audio mute level (functions)', () => {
+      const w = new BrowserWindow({ show: false })
+
+      w.webContents.audioMuted = true
+      expect(w.webContents.audioMuted).to.be.true()
+
+      w.webContents.audioMuted = false
+      expect(w.webContents.audioMuted).to.be.false()
+    })
+  })
+
   describe('zoom api', () => {
     const scheme = (global as any).standardScheme
     const hostZoomMap: Record<string, number> = {
@@ -800,7 +846,19 @@ describe('webContents module', () => {
 
     afterEach(closeAllWindows)
 
-    // TODO(codebytere): remove in Electron v8.0.0
+    it('throws on an invalid zoomFactor', async () => {
+      const w = new BrowserWindow({ show: false })
+      await w.loadURL('about:blank')
+
+      expect(() => {
+        w.webContents.setZoomFactor(0.0)
+      }).to.throw(/'zoomFactor' must be a double greater than 0.0/)
+
+      expect(() => {
+        w.webContents.setZoomFactor(-2.0)
+      }).to.throw(/'zoomFactor' must be a double greater than 0.0/)
+    })
+
     it('can set the correct zoom level (functions)', async () => {
       const w = new BrowserWindow({ show: false })
       try {
@@ -815,7 +873,7 @@ describe('webContents module', () => {
       }
     })
 
-    it('can set the correct zoom level', async () => {
+    it('can set the correct zoom level (properties)', async () => {
       const w = new BrowserWindow({ show: false })
       try {
         await w.loadURL('about:blank')
@@ -826,6 +884,36 @@ describe('webContents module', () => {
         expect(newZoomLevel).to.eql(0.5)
       } finally {
         w.webContents.zoomLevel = 0
+      }
+    })
+
+    it('can set the correct zoom factor (functions)', async () => {
+      const w = new BrowserWindow({ show: false })
+      try {
+        await w.loadURL('about:blank')
+        const zoomFactor = w.webContents.getZoomFactor()
+        expect(zoomFactor).to.eql(1.0)
+
+        w.webContents.setZoomFactor(0.5)
+        const newZoomFactor = w.webContents.getZoomFactor()
+        expect(newZoomFactor).to.eql(0.5)
+      } finally {
+        w.webContents.setZoomFactor(1.0)
+      }
+    })
+
+    it('can set the correct zoom factor (properties)', async () => {
+      const w = new BrowserWindow({ show: false })
+      try {
+        await w.loadURL('about:blank')
+        const zoomFactor = w.webContents.zoomFactor
+        expect(zoomFactor).to.eql(1.0)
+
+        w.webContents.zoomFactor = 0.5
+        const newZoomFactor = w.webContents.zoomFactor
+        expect(newZoomFactor).to.eql(0.5)
+      } finally {
+        w.webContents.zoomFactor = 1.0
       }
     })
 

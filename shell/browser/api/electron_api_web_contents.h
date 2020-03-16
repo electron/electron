@@ -256,6 +256,10 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                              const std::string& channel,
                              v8::Local<v8::Value> args);
 
+  void PostMessage(const std::string& channel,
+                   v8::Local<v8::Value> message,
+                   base::Optional<v8::Local<v8::Value>> transfer);
+
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
 
@@ -293,7 +297,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // Methods for zoom handling.
   void SetZoomLevel(double level);
   double GetZoomLevel() const;
-  void SetZoomFactor(double factor);
+  void SetZoomFactor(gin_helper::ErrorThrower thrower, double factor);
   double GetZoomFactor() const;
 
   // Callback triggered on permission response.
@@ -525,6 +529,8 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
               const std::string& channel,
               blink::CloneableMessage arguments,
               InvokeCallback callback) override;
+  void ReceivePostMessage(const std::string& channel,
+                          blink::TransferableMessage message) override;
   void MessageSync(bool internal,
                    const std::string& channel,
                    blink::CloneableMessage arguments,

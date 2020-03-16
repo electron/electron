@@ -45,10 +45,10 @@ async function createWindow () {
   await app.whenReady()
 
   const options: Electron.BrowserWindowConstructorOptions = {
-    width: 900,
-    height: 600,
+    width: 960,
+    height: 620,
     autoHideMenuBar: true,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#2f3241',
     webPreferences: {
       preload: path.resolve(__dirname, 'preload.js'),
       contextIsolation: true,
