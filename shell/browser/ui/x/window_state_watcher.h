@@ -22,10 +22,11 @@ class WindowStateWatcher : public ui::XEventObserver {
   void DidProcessXEvent(XEvent* xev) override;
 
  private:
-  bool IsWindowStateEvent(XEvent* xev);
+  bool IsWindowStateEvent(XEvent* xev) const;
 
   NativeWindowViews* window_;
   gfx::AcceleratedWidget widget_;
+  const ::XAtom window_state_atom_;
 
   bool was_minimized_ = false;
   bool was_maximized_ = false;
