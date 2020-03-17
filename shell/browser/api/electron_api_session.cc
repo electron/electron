@@ -876,6 +876,12 @@ v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
 }
 
 bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
+  // don't let in-memory sessions add spellchecker words
+  // because files will persist unintentionally
+  bool is_in_memory = browser_context_->IsOffTheRecord();
+  if (is_in_memory)
+    return false;
+
   SpellcheckService* spellcheck =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
   if (!spellcheck)
@@ -892,6 +898,12 @@ bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
 }
 
 bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
+  // don't let in-memory sessions remove spellchecker words
+  // because files will persist unintentionally
+  bool is_in_memory = browser_context_->IsOffTheRecord();
+  if (is_in_memory)
+    return false;
+
   SpellcheckService* service =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
   if (!service)
