@@ -25,6 +25,7 @@
 #include "extensions/browser/core_extensions_browser_api_provider.h"
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_protocols.h"
+#include "extensions/browser/extensions_browser_interface_binders.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
@@ -364,6 +365,8 @@ std::string ElectronExtensionsBrowserClient::GetUserAgent() const {
 void ElectronExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(
     service_manager::BinderMapWithContext<content::RenderFrameHost*>* map,
     content::RenderFrameHost* render_frame_host,
-    const extensions::Extension* extension) const {}
+    const extensions::Extension* extension) const {
+  PopulateExtensionFrameBinders(map, render_frame_host, extension);
+}
 
 }  // namespace electron

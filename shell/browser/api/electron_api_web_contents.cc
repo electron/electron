@@ -26,6 +26,7 @@
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/common/widget_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -42,7 +43,6 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/common/context_menu_params.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
@@ -91,7 +91,8 @@
 #include "third_party/blink/public/mojom/favicon/favicon_url.mojom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
-#include "third_party/blink/public/platform/web_cursor_info.h"
+#include "ui/base/cursor/cursor.h"
+#include "ui/base/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
@@ -1235,12 +1236,12 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
 }
 
 void WebContents::DidUpdateFaviconURL(
-    const std::vector<content::FaviconURL>& urls) {
+    const std::vector<blink::mojom::FaviconURLPtr>& urls) {
   std::set<GURL> unique_urls;
   for (const auto& iter : urls) {
-    if (iter.icon_type != blink::mojom::FaviconIconType::kFavicon)
+    if (iter->icon_type != blink::mojom::FaviconIconType::kFavicon)
       continue;
-    const GURL& url = iter.icon_url;
+    const GURL& url = iter->icon_url;
     if (url.is_valid())
       unique_urls.insert(url);
   }
@@ -2323,17 +2324,18 @@ bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChange(const content::WebCursor& cursor) {
-  const content::CursorInfo& info = cursor.info();
+void WebContents::OnCursorChange(const content::WebCursor& webcursor) {
+  const ui::Cursor& cursor = webcursor.cursor();
 
-  if (info.type == ui::CursorType::kCustom) {
-    Emit("cursor-changed", CursorTypeToString(info),
-         gfx::Image::CreateFrom1xBitmap(info.custom_image),
-         info.image_scale_factor,
-         gfx::Size(info.custom_image.width(), info.custom_image.height()),
-         info.hotspot);
+  if (cursor.type() == ui::mojom::CursorType::kCustom) {
+    Emit("cursor-changed", CursorTypeToString(cursor),
+         gfx::Image::CreateFrom1xBitmap(cursor.custom_bitmap()),
+         cursor.image_scale_factor(),
+         gfx::Size(cursor.custom_bitmap().width(),
+                   cursor.custom_bitmap().height()),
+         cursor.custom_hotspot());
   } else {
-    Emit("cursor-changed", CursorTypeToString(info));
+    Emit("cursor-changed", CursorTypeToString(cursor));
   }
 }
 

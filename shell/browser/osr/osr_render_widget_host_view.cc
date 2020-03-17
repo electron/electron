@@ -31,6 +31,7 @@
 #include "content/public/browser/context_factory.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_process_host.h"
+#include "gpu/command_buffer/client/gl_helper.h"
 #include "media/base/video_frame.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"
@@ -210,11 +211,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   GetRootLayer()->SetFillsBoundsOpaquely(opaque);
   GetRootLayer()->SetColor(background_color_);
 
-  ui::ContextFactoryPrivate* context_factory_private =
-      content::GetContextFactoryPrivate();
+  ui::ContextFactory* context_factory = content::GetContextFactory();
   compositor_ = std::make_unique<ui::Compositor>(
-      context_factory_private->AllocateFrameSinkId(),
-      content::GetContextFactory(), context_factory_private,
+      context_factory->AllocateFrameSinkId(), context_factory,
       base::ThreadTaskRunnerHandle::Get(), false /* enable_pixel_canvas */,
       false /* use_external_begin_frame_control */);
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
@@ -371,11 +370,15 @@ gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() {
 
 void OffScreenRenderWidgetHostView::SetInsets(const gfx::Insets& insets) {}
 
-bool OffScreenRenderWidgetHostView::LockMouse(
+blink::mojom::PointerLockResult OffScreenRenderWidgetHostView::LockMouse(
     bool request_unadjusted_movement) {
-  return false;
+  return blink::mojom::PointerLockResult::kUnsupportedOptions;
 }
 
+blink::mojom::PointerLockResult OffScreenRenderWidgetHostView::ChangeMouseLock(
+    bool request_unadjusted_movement) {
+  return blink::mojom::PointerLockResult::kUnsupportedOptions;
+}
 void OffScreenRenderWidgetHostView::UnlockMouse() {}
 
 void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
