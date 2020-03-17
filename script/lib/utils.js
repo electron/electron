@@ -82,7 +82,7 @@ async function getCurrentBranch (gitDir) {
       '--remote'
     ], gitDir)).split('\n')
 
-    branch = branches.filter(b => b.trim() === 'master' || RELEASE_BRANCH_PATTERN.test(b.trim()))[0]
+    branch = branches.filter(b => b.trim() === 'master' || b.trim() === 'origin/master' || RELEASE_BRANCH_PATTERN.test(b.trim()))[0]
     if (!branch) {
       console.log(`${fail} no release branch exists for this ref`)
       process.exit(1)
