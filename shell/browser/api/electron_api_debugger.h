@@ -15,7 +15,7 @@
 #include "gin/arguments.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "shell/common/gin_helper/event_emitter_mixin.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/promise.h"
 
 namespace content {

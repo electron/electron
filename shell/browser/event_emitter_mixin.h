@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_MIXIN_H_
-#define SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_MIXIN_H_
+#ifndef SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
+#define SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
 
 #include "gin/object_template_builder.h"
 #include "shell/common/gin_helper/event_emitter.h"
@@ -75,4 +75,4 @@ class EventEmitterMixin {
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_MIXIN_H_
+#endif  // SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
