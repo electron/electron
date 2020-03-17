@@ -725,7 +725,6 @@ if (is_mac) {
       sources = [
         "$root_out_dir/egl_intermediates/libEGL.dylib",
         "$root_out_dir/egl_intermediates/libGLESv2.dylib",
-        "$root_out_dir/egl_intermediates/libvulkan.dylib",
       ]
       outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
       public_deps = [ "//ui/gl:angle_library_copy" ]
