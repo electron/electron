@@ -10,14 +10,7 @@
       if (event.target.tagName && event.target.tagName !== 'WEBVIEW') {
         const elementId = event.target.id ? `-${event.target.id}` : ''
         const elementIdentifier = `${event.target.tagName}${elementId}`
-        ipcRenderer.send('console-log', `sending focus-changed event for ${elementIdentifier}`)
         ipcRenderer.send('focus-changed', elementIdentifier)
-      } else {
-        if (event.target.tagName) {
-          ipcRenderer.send('console-log', `GOT focus event, but tagname "${event.target.tagName}" not expected.`)
-        } else {
-          ipcRenderer.send('console-log', `GOT focus event, but do not have tagname.`)
-        }
       }
     }
 
