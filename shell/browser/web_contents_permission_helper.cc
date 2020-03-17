@@ -49,7 +49,7 @@ void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
           blink::mojom::PointerLockResult::kSuccess);
     else
       web_contents->GotResponseToLockMouseRequest(
-          blink::mojom::PointerLockResult::kRequiresUserGesture);
+          blink::mojom::PointerLockResult::kPermissionDenied);
   }
 }
 
