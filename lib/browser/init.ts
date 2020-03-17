@@ -10,13 +10,13 @@ const Module = require('module')
 // we need to restore it here.
 process.argv.splice(1, 1)
 
-process.electronBinding('event_emitter').setEventEmitterPrototype(EventEmitter.prototype)
-
 // Clear search paths.
 require('../common/reset-search-paths')
 
 // Import common settings.
 require('@electron/internal/common/init')
+
+process.electronBinding('event_emitter').setEventEmitterPrototype(EventEmitter.prototype)
 
 if (process.platform === 'win32') {
   // Redirect node's console to use our own implementations, since node can not
