@@ -95,6 +95,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void UpdateBackgroundColor() override;
   blink::mojom::PointerLockResult LockMouse(
       bool request_unadjusted_movement) override;
+  blink::mojom::PointerLockResult ChangeMouseLock(
+      bool request_unadjusted_movement) override;
   void UnlockMouse(void) override;
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
 #if defined(OS_MACOSX)
