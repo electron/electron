@@ -238,7 +238,7 @@ describe('app path module', () => {
       app.setAppLogsPath()
       expect(app.getPath('logs')).to.equal(defaultAppLogs)
     })
-    
+
     it('throws when a relative path is passed', () => {
       const badPath = 'hey/hi/hello'
 
