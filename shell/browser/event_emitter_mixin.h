@@ -5,6 +5,8 @@
 #ifndef SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
 #define SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
 
+#include <utility>
+
 #include "gin/object_template_builder.h"
 #include "shell/common/gin_helper/event_emitter.h"
 
@@ -36,7 +38,7 @@ class EventEmitterMixin {
 
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
     gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-    auto* wrapper_info = &static_cast<T*>(this)->kWrapperInfo;
+    auto* wrapper_info = &(static_cast<T*>(this)->kWrapperInfo);
     v8::Local<v8::FunctionTemplate> constructor =
         data->GetFunctionTemplate(wrapper_info);
     if (constructor.IsEmpty()) {
