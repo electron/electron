@@ -185,7 +185,7 @@ void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
   base::FilePath user_data;
   base::PathService::Get(DIR_USER_DATA, &user_data);
   base::PathService::Override(DIR_USER_DATA, user_data);
-  base::PathService::Override(chrome::DIR_USER_DATA, path_);
+  base::PathService::Override(chrome::DIR_USER_DATA, user_data);
   base::CreateDirectoryAndGetError(user_data, nullptr);
 
   base::FilePath user_cache;
