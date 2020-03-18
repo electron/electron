@@ -60,8 +60,10 @@ function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
     const server = http.createServer((request, response) => {
       fn(request, response);
       // don't close if a redirect was returned
-      n--;
-      if ((response.statusCode < 300 || response.statusCode >= 399) && n <= 0) { server.close(); }
+      if ((response.statusCode < 300 || response.statusCode >= 399) && n <= 0) {
+        n--;
+        server.close();
+      }
     });
     server.listen(0, '127.0.0.1', () => {
       resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
@@ -193,41 +195,6 @@ describe('net module', () => {
           response.write(chunk);
         });
         request.on('end', (chunk: Buffer) => {
-<<<<<<< HEAD
-          response.end(chunk)
-        })
-      }).then(serverUrl => {
-        const urlRequest = net.request({
-          method: 'POST',
-          url: serverUrl
-        })
-
-        let chunkIndex = 0
-        const chunkCount = 100
-        let sent = Buffer.alloc(0)
-        let received = Buffer.alloc(0)
-        urlRequest.on('response', (response) => {
-          expect(response.statusCode).to.equal(200)
-          response.on('data', (chunk) => {
-            received = Buffer.concat([received, chunk])
-          })
-          response.on('end', () => {
-            expect(sent.equals(received)).to.be.true('sent equals received')
-            expect(chunkIndex).to.be.equal(chunkCount)
-            done()
-          })
-        })
-        urlRequest.chunkedEncoding = true
-        while (chunkIndex < chunkCount) {
-          chunkIndex += 1
-          const chunk = randomBuffer(kOneKiloByte)
-          sent = Buffer.concat([sent, chunk])
-          urlRequest.write(chunk)
-        }
-        urlRequest.end()
-      })
-    })
-=======
           response.end(chunk);
         });
       });
@@ -254,7 +221,6 @@ describe('net module', () => {
       expect(sent.equals(received)).to.be.true();
       expect(chunkIndex).to.be.equal(chunkCount);
     });
->>>>>>> 54e6492e2... chore: refactor all the net specs to be async with better error handling (#22731)
 
     it('should emit the login event when 401', async () => {
       const [user, pass] = ['user', 'pass'];
@@ -320,25 +286,6 @@ describe('net module', () => {
     });
 
     it('should share proxy credentials with WebContents', async () => {
-<<<<<<< HEAD
-      const [user, pass] = ['user', 'pass']
-      const proxyPort = await new Promise<number>((resolve) => {
-        const server = http.createServer((request, response) => {
-          if (!request.headers['proxy-authorization']) {
-            return response.writeHead(407, { 'Proxy-Authenticate': 'Basic realm="Foo"' }).end()
-          }
-          return response.writeHead(200).end('ok')
-        })
-        server.listen(0, '127.0.0.1', () => {
-          resolve((server.address() as AddressInfo).port)
-        })
-        after(() => { server.close() })
-      })
-      const customSession = session.fromPartition(`net-proxy-test-${Math.random()}`)
-      await customSession.setProxy({ proxyRules: `127.0.0.1:${proxyPort}`, proxyBypassRules: '<-loopback>' } as any)
-      const bw = new BrowserWindow({ show: false, webPreferences: { session: customSession } })
-      const loaded = bw.loadURL('http://127.0.0.1:9999')
-=======
       const [user, pass] = ['user', 'pass'];
       const proxyUrl = await respondNTimes((request, response) => {
         if (!request.headers['proxy-authorization']) {
@@ -349,7 +296,6 @@ describe('net module', () => {
       const customSession = session.fromPartition(`net-proxy-test-${Math.random()}`);
       await customSession.setProxy({ proxyRules: proxyUrl.replace('http://', ''), proxyBypassRules: '<-loopback>' });
       const bw = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
->>>>>>> 54e6492e2... chore: refactor all the net specs to be async with better error handling (#22731)
       bw.webContents.on('login', (event, details, authInfo, cb) => {
         event.preventDefault();
         cb(user, pass);
