@@ -13,9 +13,13 @@
 #include "base/optional.h"
 #include "base/values.h"
 #include "gin/handle.h"
+#include "gin/wrappable.h"
 #include "services/network/public/mojom/net_log.mojom.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/gin_helper/trackable_object.h"
+
+namespace gin {
+class Arguments;
+}
 
 namespace electron {
 
@@ -23,18 +27,21 @@ class ElectronBrowserContext;
 
 namespace api {
 
-class NetLog : public gin_helper::TrackableObject<NetLog> {
+class NetLog : public gin::Wrappable<NetLog> {
  public:
   static gin::Handle<NetLog> Create(v8::Isolate* isolate,
                                     ElectronBrowserContext* browser_context);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
-
   v8::Local<v8::Promise> StartLogging(base::FilePath log_path,
-                                      gin_helper::Arguments* args);
-  v8::Local<v8::Promise> StopLogging(gin_helper::Arguments* args);
+                                      gin::Arguments* args);
+  v8::Local<v8::Promise> StopLogging(gin::Arguments* args);
   bool IsCurrentlyLogging() const;
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
   explicit NetLog(v8::Isolate* isolate,
