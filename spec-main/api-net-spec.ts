@@ -60,8 +60,10 @@ function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
     const server = http.createServer((request, response) => {
       fn(request, response);
       // don't close if a redirect was returned
-      n--;
-      if ((response.statusCode < 300 || response.statusCode >= 399) && n <= 0) { server.close(); }
+      if ((response.statusCode < 300 || response.statusCode >= 399) && n <= 0) {
+        n--;
+        server.close();
+      }
     });
     server.listen(0, '127.0.0.1', () => {
       resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
