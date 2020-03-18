@@ -39,6 +39,8 @@ namespace electron {
 
 namespace api {
 
+gin::WrapperInfo PowerMonitor::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 #if defined(OS_LINUX)
   SetShutdownHandler(base::BindRepeating(&PowerMonitor::ShouldShutdown,
@@ -48,7 +50,6 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
   base::PowerMonitor::AddObserver(this);
-  Init(isolate);
 #if defined(OS_MACOSX) || defined(OS_WIN)
   InitPlatformSpecificMonitors();
 #endif
@@ -115,18 +116,20 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   return gin::CreateHandle(isolate, new PowerMonitor(isolate)).ToV8();
 }
 
-// static
-void PowerMonitor::BuildPrototype(v8::Isolate* isolate,
-                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "PowerMonitor"));
-  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::EventEmitterMixin<PowerMonitor>::GetObjectTemplateBuilder(
+             isolate)
 #if defined(OS_LINUX)
       .SetMethod("blockShutdown", &PowerMonitor::BlockShutdown)
       .SetMethod("unblockShutdown", &PowerMonitor::UnblockShutdown)
 #endif
       .SetMethod("getSystemIdleState", &PowerMonitor::GetSystemIdleState)
       .SetMethod("getSystemIdleTime", &PowerMonitor::GetSystemIdleTime);
+}
+
+const char* PowerMonitor::GetTypeName() {
+  return "PowerMonitor";
 }
 
 }  // namespace api
@@ -144,9 +147,6 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   gin::Dictionary dict(isolate, exports);
   dict.Set("createPowerMonitor", base::BindRepeating(&PowerMonitor::Create));
-  dict.Set("PowerMonitor", PowerMonitor::GetConstructor(isolate)
-                               ->GetFunction(context)
-                               .ToLocalChecked());
 }
 
 }  // namespace

@@ -6,21 +6,26 @@
 #define SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
 #include "base/compiler_specific.h"
+#include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/lib/power_observer.h"
-#include "shell/common/gin_helper/trackable_object.h"
 #include "ui/base/idle/idle.h"
 
 namespace electron {
 
 namespace api {
 
-class PowerMonitor : public gin_helper::TrackableObject<PowerMonitor>,
+class PowerMonitor : public gin::Wrappable<PowerMonitor>,
+                     public gin_helper::EventEmitterMixin<PowerMonitor>,
                      public PowerObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
   explicit PowerMonitor(v8::Isolate* isolate);
