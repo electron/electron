@@ -1288,7 +1288,7 @@ void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
 void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
   auto* tree_host = views::DesktopWindowTreeHostLinux::GetHostForWidget(
       GetAcceleratedWidget());
-  tree_host->SetWindowIcons(icon, icon);
+  tree_host->SetWindowIcons(icon, {});
 }
 #endif
 
