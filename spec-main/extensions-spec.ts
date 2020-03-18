@@ -33,12 +33,34 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     // extension in an in-memory session results in it being installed in the
     // default session.
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+<<<<<<< HEAD
     (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'red-bg'))
     const w = new BrowserWindow({show: false, webPreferences: {session: customSession}})
     await w.loadURL(url)
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
     expect(bg).to.equal('red')
   })
+=======
+    await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+    await w.loadURL(url);
+    const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
+    expect(bg).to.equal('red');
+  });
+
+  it('serializes a loaded extension', async () => {
+    const extensionPath = path.join(fixtures, 'extensions', 'red-bg');
+    const manifest = JSON.parse(fs.readFileSync(path.join(extensionPath, 'manifest.json'), 'utf-8'));
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const extension = await customSession.loadExtension(extensionPath);
+    expect(extension.id).to.be.a('string');
+    expect(extension.name).to.be.a('string');
+    expect(extension.path).to.be.a('string');
+    expect(extension.version).to.be.a('string');
+    expect(extension.url).to.be.a('string');
+    expect(extension.manifest).to.deep.equal(manifest);
+  });
+>>>>>>> e766031f3... chore: refactor all the net specs to be async with better error handling (#22731)
 
   it('confines an extension to the session it was loaded in', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
