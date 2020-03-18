@@ -18,7 +18,7 @@ export function createLazyInstance (
 ) {
   let lazyModule: Object
   const module: any = {}
-  for (const method in (holder as any).prototype) {
+  for (const method in (holder as any).prototype) { // eslint-disable-line guard-for-in
     module[method] = (...args: any) => {
       // create new instance of module at runtime if none exists
       if (!lazyModule) {
