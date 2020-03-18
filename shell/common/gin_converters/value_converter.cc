@@ -59,7 +59,7 @@ bool Converter<base::ListValue>::FromV8(v8::Isolate* isolate,
   electron::V8ValueConverter converter;
   std::unique_ptr<base::Value> value(
       converter.FromV8Value(val, isolate->GetCurrentContext()));
-  if (value->is_list()) {
+  if (value && value->is_list()) {
     out->Swap(static_cast<base::ListValue*>(value.get()));
     return true;
   } else {
