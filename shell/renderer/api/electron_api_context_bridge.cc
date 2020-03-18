@@ -146,6 +146,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Value> value,
     context_bridge::RenderFrameFunctionStore* store,
     context_bridge::ObjectCache* object_cache,
+    context_bridge::ProxyMode proxy_mode,
     int recursion_depth) {
   if (recursion_depth >= kMaxRecursion) {
     v8::Context::Scope source_scope(source_context);
@@ -164,141 +165,148 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     return cached_value;
   }
 
-  // Proxy functions and monitor the lifetime in the new context to release
-  // the global handle at the right time.
-  if (value->IsFunction()) {
-    auto func = v8::Local<v8::Function>::Cast(value);
-    v8::Global<v8::Function> global_func(source_context->GetIsolate(), func);
-    v8::Global<v8::Context> global_source(source_context->GetIsolate(),
-                                          source_context);
+  if (proxy_mode == context_bridge::ProxyMode::kSmart) {
+    // Proxy functions and monitor the lifetime in the new context to release
+    // the global handle at the right time.
+    if (value->IsFunction()) {
+      auto func = v8::Local<v8::Function>::Cast(value);
+      v8::Global<v8::Function> global_func(source_context->GetIsolate(), func);
+      v8::Global<v8::Context> global_source(source_context->GetIsolate(),
+                                            source_context);
 
-    size_t func_id = store->take_func_id();
-    store->functions()[func_id] =
-        std::make_tuple(std::move(global_func), std::move(global_source));
-    v8::Context::Scope destination_scope(destination_context);
-    {
-      v8::Local<v8::Value> proxy_func = gin_helper::CallbackToV8Leaked(
-          destination_context->GetIsolate(),
-          base::BindRepeating(&ProxyFunctionWrapper, store, func_id));
-      FunctionLifeMonitor::BindTo(destination_context->GetIsolate(),
-                                  v8::Local<v8::Object>::Cast(proxy_func),
-                                  store->GetWeakPtr(), func_id);
-      object_cache->CacheProxiedObject(value, proxy_func);
-      return v8::MaybeLocal<v8::Value>(proxy_func);
-    }
-  }
-
-  // Proxy promises as they have a safe and guaranteed memory lifecycle
-  if (value->IsPromise()) {
-    v8::Context::Scope destination_scope(destination_context);
-    {
-      auto source_promise = v8::Local<v8::Promise>::Cast(value);
-      auto* proxied_promise = new gin_helper::Promise<v8::Local<v8::Value>>(
-          destination_context->GetIsolate());
-      v8::Local<v8::Promise> proxied_promise_handle =
-          proxied_promise->GetHandle();
-
-      auto then_cb = base::BindOnce(
-          [](gin_helper::Promise<v8::Local<v8::Value>>* proxied_promise,
-             v8::Isolate* isolate,
-             v8::Global<v8::Context> global_source_context,
-             v8::Global<v8::Context> global_destination_context,
-             context_bridge::RenderFrameFunctionStore* store,
-             v8::Local<v8::Value> result) {
-            context_bridge::ObjectCache object_cache;
-            auto val =
-                PassValueToOtherContext(global_source_context.Get(isolate),
-                                        global_destination_context.Get(isolate),
-                                        result, store, &object_cache, 0);
-            if (!val.IsEmpty())
-              proxied_promise->Resolve(val.ToLocalChecked());
-            delete proxied_promise;
-          },
-          proxied_promise, destination_context->GetIsolate(),
-          v8::Global<v8::Context>(source_context->GetIsolate(), source_context),
-          v8::Global<v8::Context>(destination_context->GetIsolate(),
-                                  destination_context),
-          store);
-      auto catch_cb = base::BindOnce(
-          [](gin_helper::Promise<v8::Local<v8::Value>>* proxied_promise,
-             v8::Isolate* isolate,
-             v8::Global<v8::Context> global_source_context,
-             v8::Global<v8::Context> global_destination_context,
-             context_bridge::RenderFrameFunctionStore* store,
-             v8::Local<v8::Value> result) {
-            context_bridge::ObjectCache object_cache;
-            auto val =
-                PassValueToOtherContext(global_source_context.Get(isolate),
-                                        global_destination_context.Get(isolate),
-                                        result, store, &object_cache, 0);
-            if (!val.IsEmpty())
-              proxied_promise->Reject(val.ToLocalChecked());
-            delete proxied_promise;
-          },
-          proxied_promise, destination_context->GetIsolate(),
-          v8::Global<v8::Context>(source_context->GetIsolate(), source_context),
-          v8::Global<v8::Context>(destination_context->GetIsolate(),
-                                  destination_context),
-          store);
-
-      ignore_result(source_promise->Then(
-          source_context,
-          v8::Local<v8::Function>::Cast(
-              gin::ConvertToV8(destination_context->GetIsolate(), then_cb)),
-          v8::Local<v8::Function>::Cast(
-              gin::ConvertToV8(destination_context->GetIsolate(), catch_cb))));
-
-      object_cache->CacheProxiedObject(value, proxied_promise_handle);
-      return v8::MaybeLocal<v8::Value>(proxied_promise_handle);
-    }
-  }
-
-  // Errors aren't serializable currently, we need to pull the message out and
-  // re-construct in the destination context
-  if (value->IsNativeError()) {
-    v8::Context::Scope destination_context_scope(destination_context);
-    return v8::MaybeLocal<v8::Value>(v8::Exception::Error(
-        v8::Exception::CreateMessage(destination_context->GetIsolate(), value)
-            ->Get()));
-  }
-
-  // Manually go through the array and pass each value individually into a new
-  // array so that functions deep inside arrays get proxied or arrays of
-  // promises are proxied correctly.
-  if (IsPlainArray(value)) {
-    v8::Context::Scope destination_context_scope(destination_context);
-    {
-      v8::Local<v8::Array> arr = v8::Local<v8::Array>::Cast(value);
-      size_t length = arr->Length();
-      v8::Local<v8::Array> cloned_arr =
-          v8::Array::New(destination_context->GetIsolate(), length);
-      for (size_t i = 0; i < length; i++) {
-        auto value_for_array = PassValueToOtherContext(
-            source_context, destination_context,
-            arr->Get(source_context, i).ToLocalChecked(), store, object_cache,
-            recursion_depth + 1);
-        if (value_for_array.IsEmpty())
-          return v8::MaybeLocal<v8::Value>();
-
-        if (!IsTrue(cloned_arr->Set(destination_context, static_cast<int>(i),
-                                    value_for_array.ToLocalChecked()))) {
-          return v8::MaybeLocal<v8::Value>();
-        }
+      size_t func_id = store->take_func_id();
+      store->functions()[func_id] =
+          std::make_tuple(std::move(global_func), std::move(global_source));
+      v8::Context::Scope destination_scope(destination_context);
+      {
+        v8::Local<v8::Value> proxy_func = gin_helper::CallbackToV8Leaked(
+            destination_context->GetIsolate(),
+            base::BindRepeating(&ProxyFunctionWrapper, store, func_id,
+                                proxy_mode));
+        FunctionLifeMonitor::BindTo(destination_context->GetIsolate(),
+                                    v8::Local<v8::Object>::Cast(proxy_func),
+                                    store->GetWeakPtr(), func_id);
+        object_cache->CacheProxiedObject(value, proxy_func);
+        return v8::MaybeLocal<v8::Value>(proxy_func);
       }
-      object_cache->CacheProxiedObject(value, cloned_arr);
-      return v8::MaybeLocal<v8::Value>(cloned_arr);
     }
-  }
 
-  // Proxy all objects
-  if (IsPlainObject(value)) {
-    auto object_value = v8::Local<v8::Object>::Cast(value);
-    auto passed_value =
-        CreateProxyForAPI(object_value, source_context, destination_context,
-                          store, object_cache, recursion_depth + 1);
-    if (passed_value.IsEmpty())
-      return v8::MaybeLocal<v8::Value>();
-    return v8::MaybeLocal<v8::Value>(passed_value.ToLocalChecked());
+    // Proxy promises as they have a safe and guaranteed memory lifecycle
+    if (value->IsPromise()) {
+      v8::Context::Scope destination_scope(destination_context);
+      {
+        auto source_promise = v8::Local<v8::Promise>::Cast(value);
+        auto* proxied_promise = new gin_helper::Promise<v8::Local<v8::Value>>(
+            destination_context->GetIsolate());
+        v8::Local<v8::Promise> proxied_promise_handle =
+            proxied_promise->GetHandle();
+
+        auto then_cb = base::BindOnce(
+            [](gin_helper::Promise<v8::Local<v8::Value>>* proxied_promise,
+               v8::Isolate* isolate,
+               v8::Global<v8::Context> global_source_context,
+               v8::Global<v8::Context> global_destination_context,
+               context_bridge::RenderFrameFunctionStore* store,
+               context_bridge::ProxyMode proxy_mode,
+               v8::Local<v8::Value> result) {
+              context_bridge::ObjectCache object_cache;
+              auto val = PassValueToOtherContext(
+                  global_source_context.Get(isolate),
+                  global_destination_context.Get(isolate), result, store,
+                  &object_cache, proxy_mode, 0);
+              if (!val.IsEmpty())
+                proxied_promise->Resolve(val.ToLocalChecked());
+              delete proxied_promise;
+            },
+            proxied_promise, destination_context->GetIsolate(),
+            v8::Global<v8::Context>(source_context->GetIsolate(),
+                                    source_context),
+            v8::Global<v8::Context>(destination_context->GetIsolate(),
+                                    destination_context),
+            store, proxy_mode);
+        auto catch_cb = base::BindOnce(
+            [](gin_helper::Promise<v8::Local<v8::Value>>* proxied_promise,
+               v8::Isolate* isolate,
+               v8::Global<v8::Context> global_source_context,
+               v8::Global<v8::Context> global_destination_context,
+               context_bridge::RenderFrameFunctionStore* store,
+               context_bridge::ProxyMode proxy_mode,
+               v8::Local<v8::Value> result) {
+              context_bridge::ObjectCache object_cache;
+              auto val = PassValueToOtherContext(
+                  global_source_context.Get(isolate),
+                  global_destination_context.Get(isolate), result, store,
+                  &object_cache, proxy_mode, 0);
+              if (!val.IsEmpty())
+                proxied_promise->Reject(val.ToLocalChecked());
+              delete proxied_promise;
+            },
+            proxied_promise, destination_context->GetIsolate(),
+            v8::Global<v8::Context>(source_context->GetIsolate(),
+                                    source_context),
+            v8::Global<v8::Context>(destination_context->GetIsolate(),
+                                    destination_context),
+            store, proxy_mode);
+
+        ignore_result(source_promise->Then(
+            source_context,
+            v8::Local<v8::Function>::Cast(
+                gin::ConvertToV8(destination_context->GetIsolate(), then_cb)),
+            v8::Local<v8::Function>::Cast(gin::ConvertToV8(
+                destination_context->GetIsolate(), catch_cb))));
+
+        object_cache->CacheProxiedObject(value, proxied_promise_handle);
+        return v8::MaybeLocal<v8::Value>(proxied_promise_handle);
+      }
+    }
+
+    // Errors aren't serializable currently, we need to pull the message out and
+    // re-construct in the destination context
+    if (value->IsNativeError()) {
+      v8::Context::Scope destination_context_scope(destination_context);
+      return v8::MaybeLocal<v8::Value>(v8::Exception::Error(
+          v8::Exception::CreateMessage(destination_context->GetIsolate(), value)
+              ->Get()));
+    }
+
+    // Manually go through the array and pass each value individually into a new
+    // array so that functions deep inside arrays get proxied or arrays of
+    // promises are proxied correctly.
+    if (IsPlainArray(value)) {
+      v8::Context::Scope destination_context_scope(destination_context);
+      {
+        v8::Local<v8::Array> arr = v8::Local<v8::Array>::Cast(value);
+        size_t length = arr->Length();
+        v8::Local<v8::Array> cloned_arr =
+            v8::Array::New(destination_context->GetIsolate(), length);
+        for (size_t i = 0; i < length; i++) {
+          auto value_for_array = PassValueToOtherContext(
+              source_context, destination_context,
+              arr->Get(source_context, i).ToLocalChecked(), store, object_cache,
+              proxy_mode, recursion_depth + 1);
+          if (value_for_array.IsEmpty())
+            return v8::MaybeLocal<v8::Value>();
+
+          if (!IsTrue(cloned_arr->Set(destination_context, static_cast<int>(i),
+                                      value_for_array.ToLocalChecked()))) {
+            return v8::MaybeLocal<v8::Value>();
+          }
+        }
+        object_cache->CacheProxiedObject(value, cloned_arr);
+        return v8::MaybeLocal<v8::Value>(cloned_arr);
+      }
+    }
+
+    // Proxy all objects
+    if (IsPlainObject(value)) {
+      auto object_value = v8::Local<v8::Object>::Cast(value);
+      auto passed_value = CreateProxyForAPI(
+          object_value, source_context, destination_context, store,
+          object_cache, proxy_mode, recursion_depth + 1);
+      if (passed_value.IsEmpty())
+        return v8::MaybeLocal<v8::Value>();
+      return v8::MaybeLocal<v8::Value>(passed_value.ToLocalChecked());
+    }
   }
 
   // Serializable objects
@@ -324,6 +332,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 v8::Local<v8::Value> ProxyFunctionWrapper(
     context_bridge::RenderFrameFunctionStore* store,
     size_t func_id,
+    context_bridge::ProxyMode proxy_mode,
     gin_helper::Arguments* args) {
   // Context the proxy function was called from
   v8::Local<v8::Context> calling_context = args->isolate()->GetCurrentContext();
@@ -342,8 +351,9 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
     args->GetRemaining(&original_args);
 
     for (auto value : original_args) {
-      auto arg = PassValueToOtherContext(calling_context, func_owning_context,
-                                         value, store, &object_cache, 0);
+      auto arg =
+          PassValueToOtherContext(calling_context, func_owning_context, value,
+                                  store, &object_cache, proxy_mode, 0);
       if (arg.IsEmpty())
         return v8::Undefined(args->isolate());
       proxied_args.push_back(arg.ToLocalChecked());
@@ -383,7 +393,7 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
 
     auto ret = PassValueToOtherContext(func_owning_context, calling_context,
                                        maybe_return_value.ToLocalChecked(),
-                                       store, &object_cache, 0);
+                                       store, &object_cache, proxy_mode, 0);
     if (ret.IsEmpty())
       return v8::Undefined(args->isolate());
     return ret.ToLocalChecked();
@@ -396,7 +406,18 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Context>& destination_context,
     context_bridge::RenderFrameFunctionStore* store,
     context_bridge::ObjectCache* object_cache,
+    context_bridge::ProxyMode proxy_mode,
     int recursion_depth) {
+  if (proxy_mode == context_bridge::ProxyMode::kSimple) {
+    auto passed_value = PassValueToOtherContext(
+        source_context, destination_context, api_object, store, object_cache,
+        proxy_mode, recursion_depth + 1);
+    if (passed_value.IsEmpty())
+      return v8::MaybeLocal<v8::Object>();
+    return v8::MaybeLocal<v8::Object>(
+        v8::Local<v8::Object>::Cast(passed_value.ToLocalChecked()));
+  }
+
   gin_helper::Dictionary api(source_context->GetIsolate(), api_object);
   gin_helper::Dictionary proxy =
       gin::Dictionary::CreateEmpty(destination_context->GetIsolate());
@@ -424,9 +445,9 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
       if (!api.Get(key_str, &value))
         continue;
 
-      auto passed_value =
-          PassValueToOtherContext(source_context, destination_context, value,
-                                  store, object_cache, recursion_depth + 1);
+      auto passed_value = PassValueToOtherContext(
+          source_context, destination_context, value, store, object_cache,
+          proxy_mode, recursion_depth + 1);
       if (passed_value.IsEmpty())
         return v8::MaybeLocal<v8::Object>();
       proxy.Set(key_str, passed_value.ToLocalChecked());
@@ -472,8 +493,9 @@ void ExposeAPIInMainWorld(const std::string& key,
   context_bridge::ObjectCache object_cache;
   v8::Context::Scope main_context_scope(main_context);
   {
-    v8::MaybeLocal<v8::Object> maybe_proxy = CreateProxyForAPI(
-        api_object, isolated_context, main_context, store, &object_cache, 0);
+    v8::MaybeLocal<v8::Object> maybe_proxy =
+        CreateProxyForAPI(api_object, isolated_context, main_context, store,
+                          &object_cache, context_bridge::ProxyMode::kSmart, 0);
     if (maybe_proxy.IsEmpty())
       return;
     auto proxy = maybe_proxy.ToLocalChecked();
