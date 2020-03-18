@@ -1,5 +1,3 @@
-import { EventEmitter } from 'events'
-
 const { createDesktopCapturer } = process.electronBinding('desktop_capturer')
 
 const deepEqual = (a: ElectronInternal.GetSourcesOptions, b: ElectronInternal.GetSourcesOptions) => JSON.stringify(a) === JSON.stringify(b)
@@ -23,21 +21,20 @@ export const getSources = (event: Electron.IpcMainEvent, options: ElectronIntern
 
     const stopRunning = () => {
       if (capturer) {
-        capturer.emit = null
+        delete capturer._onerror
+        delete capturer._onfinished
         capturer = null
       }
       // Remove from currentlyRunning once we resolve or reject
       currentlyRunning = currentlyRunning.filter(running => running.options !== options)
     }
 
-    const emitter = new EventEmitter()
-
-    emitter.once('error', (event, error: string) => {
+    capturer._onerror = (error: string) => {
       stopRunning()
       reject(error)
-    })
+    }
 
-    emitter.once('finished', (event, sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => {
+    capturer._onfinished = (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => {
       stopRunning()
       resolve(sources.map(source => ({
         id: source.id,
@@ -46,9 +43,8 @@ export const getSources = (event: Electron.IpcMainEvent, options: ElectronIntern
         display_id: source.display_id,
         appIcon: (fetchWindowIcons && source.appIcon) ? source.appIcon.toDataURL() : null
       })))
-    })
+    }
 
-    capturer.emit = emitter.emit.bind(emitter)
     capturer.startHandling(options.captureWindow, options.captureScreen, options.thumbnailSize, options.fetchWindowIcons)
 
     // If the WebContents is destroyed before receiving result, just remove the

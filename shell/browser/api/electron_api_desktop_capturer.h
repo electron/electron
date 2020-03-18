@@ -12,13 +12,13 @@
 #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
 #include "gin/handle.h"
-#include "shell/common/gin_helper/trackable_object.h"
+#include "gin/wrappable.h"
 
 namespace electron {
 
 namespace api {
 
-class DesktopCapturer : public gin_helper::TrackableObject<DesktopCapturer>,
+class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
                         public DesktopMediaListObserver {
  public:
   struct Source {
@@ -32,13 +32,16 @@ class DesktopCapturer : public gin_helper::TrackableObject<DesktopCapturer>,
 
   static gin::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
-
   void StartHandling(bool capture_window,
                      bool capture_screen,
                      const gfx::Size& thumbnail_size,
                      bool fetch_window_icons);
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
   explicit DesktopCapturer(v8::Isolate* isolate);
