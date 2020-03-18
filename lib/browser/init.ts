@@ -1,4 +1,5 @@
 import { Buffer } from 'buffer'
+import { EventEmitter } from 'events'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as util from 'util'
@@ -14,6 +15,8 @@ require('../common/reset-search-paths')
 
 // Import common settings.
 require('@electron/internal/common/init')
+
+process.electronBinding('event_emitter').setEventEmitterPrototype(EventEmitter.prototype)
 
 if (process.platform === 'win32') {
   // Redirect node's console to use our own implementations, since node can not

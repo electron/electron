@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Tue, 17 Mar 2020 12:51:02 -0700
+Subject: gin: allow passing an ObjectTemplate to ObjectTemplateBuilder
+
+This allows us to pass an InstanceTemplate from a FunctionTemplate we
+construct ourselves. In particular, this means we can customize the
+prototype chain of the object.
+
+diff --git a/gin/object_template_builder.cc b/gin/object_template_builder.cc
+index 543cd694e7becec72c2e48b9f235ad02da777df8..dbc753ce357b4c18a3180528dcb3aafb86041428 100644
+--- a/gin/object_template_builder.cc
++++ b/gin/object_template_builder.cc
+@@ -143,11 +143,15 @@ void IndexedPropertyEnumerator(
+ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate)
+     : ObjectTemplateBuilder(isolate, nullptr) {}
+ 
++ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate, const char *type_name)
++    : ObjectTemplateBuilder(isolate, nullptr, v8::ObjectTemplate::New(isolate)) {}
++
+ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
+-                                             const char* type_name)
++                                             const char* type_name,
++                                             v8::Local<v8::ObjectTemplate> tmpl)
+     : isolate_(isolate),
+       type_name_(type_name),
+-      template_(v8::ObjectTemplate::New(isolate)) {
++      template_(tmpl) {
+   template_->SetInternalFieldCount(kNumberOfInternalFields);
+ }
+ 
+diff --git a/gin/object_template_builder.h b/gin/object_template_builder.h
+index 6fb331cbbfe242cb871edc5eec8ab8e620e0a17d..5ac479026eb040414961fb45913c91c74f2488dc 100644
+--- a/gin/object_template_builder.h
++++ b/gin/object_template_builder.h
+@@ -46,6 +46,7 @@ class GIN_EXPORT ObjectTemplateBuilder {
+  public:
+   explicit ObjectTemplateBuilder(v8::Isolate* isolate);
+   ObjectTemplateBuilder(v8::Isolate* isolate, const char* type_name);
++  ObjectTemplateBuilder(v8::Isolate* isolate, const char* type_name, v8::Local<v8::ObjectTemplate> tmpl);
+   ObjectTemplateBuilder(const ObjectTemplateBuilder& other);
+   ~ObjectTemplateBuilder();
+ 
