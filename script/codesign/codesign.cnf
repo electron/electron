@@ -1,4 +1,7 @@
 [req]
+default_bits = 4096
+encrypt_key = no
+default_md = 512
 distinguished_name = req_distinguished_name
 prompt = no
 
@@ -13,4 +16,3 @@ CN = codesign.electronjs.org
 [extended]
 keyUsage         = critical,digitalSignature
 extendedKeyUsage = critical,codeSigning
-
