@@ -1413,8 +1413,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::BindRepeating(&Browser::GetVersion, browser))
       .SetMethod("setVersion",
                  base::BindRepeating(&Browser::SetVersion, browser))
-      .SetMethod("_getName", base::BindRepeating(&Browser::GetName, browser))
-      .SetMethod("_setName", base::BindRepeating(&Browser::SetName, browser))
+      .SetMethod("getName", base::BindRepeating(&Browser::GetName, browser))
+      .SetMethod("setName", base::BindRepeating(&Browser::SetName, browser))
       .SetMethod("isReady", base::BindRepeating(&Browser::is_ready, browser))
       .SetMethod("whenReady", base::BindRepeating(&Browser::WhenReady, browser))
       .SetMethod("addRecentDocument",
@@ -1435,20 +1435,15 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod(
           "getApplicationNameForProtocol",
           base::BindRepeating(&Browser::GetApplicationNameForProtocol, browser))
-      .SetMethod("_setBadgeCount",
+      .SetMethod("setBadgeCount",
                  base::BindRepeating(&Browser::SetBadgeCount, browser))
-      .SetMethod("_getBadgeCount",
+      .SetMethod("getBadgeCount",
                  base::BindRepeating(&Browser::GetBadgeCount, browser))
       .SetMethod("getLoginItemSettings", &App::GetLoginItemSettings)
       .SetMethod("setLoginItemSettings",
                  base::BindRepeating(&Browser::SetLoginItemSettings, browser))
       .SetMethod("isEmojiPanelSupported",
                  base::BindRepeating(&Browser::IsEmojiPanelSupported, browser))
-      .SetProperty("badgeCount",
-                   base::BindRepeating(&Browser::GetBadgeCount, browser),
-                   base::BindRepeating(&Browser::SetBadgeCount, browser))
-      .SetProperty("name", base::BindRepeating(&Browser::GetName, browser),
-                   base::BindRepeating(&Browser::SetName, browser))
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::BindRepeating(&Browser::Hide, browser))
       .SetMethod("show", base::BindRepeating(&Browser::Show, browser))
@@ -1474,9 +1469,6 @@ void App::BuildPrototype(v8::Isolate* isolate,
 #if defined(OS_MACOSX) || defined(OS_WIN)
       .SetMethod("showEmojiPanel",
                  base::BindRepeating(&Browser::ShowEmojiPanel, browser))
-      .SetProperty("accessibilitySupportEnabled",
-                   &App::IsAccessibilitySupportEnabled,
-                   &App::SetAccessibilitySupportEnabled)
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
@@ -1503,9 +1495,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("requestSingleInstanceLock", &App::RequestSingleInstanceLock)
       .SetMethod("releaseSingleInstanceLock", &App::ReleaseSingleInstanceLock)
       .SetMethod("relaunch", &App::Relaunch)
-      .SetMethod("_isAccessibilitySupportEnabled",
+      .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
-      .SetMethod("_setAccessibilitySupportEnabled",
+      .SetMethod("setAccessibilitySupportEnabled",
                  &App::SetAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
