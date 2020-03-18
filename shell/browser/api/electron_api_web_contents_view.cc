@@ -53,7 +53,6 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 #endif
       web_contents_(isolate, web_contents->GetWrapper()),
       api_web_contents_(web_contents.get()) {
-  view()->set_owned_by_client();
 #if !defined(OS_MACOSX)
   // On macOS the View is a newly-created |DelayedNativeViewHost| and it is our
   // responsibility to delete it. On other platforms the View is created and
