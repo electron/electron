@@ -59,8 +59,6 @@ class EventEmitterMixin {
                             base::StringPiece name,
                             v8::Local<v8::Object> event,
                             Args&&... args) {
-    v8::Locker locker(isolate);
-    v8::HandleScope handle_scope(isolate);
     auto context = isolate->GetCurrentContext();
     gin_helper::EmitEvent(isolate, wrapper, name, event,
                           std::forward<Args>(args)...);
