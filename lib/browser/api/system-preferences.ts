@@ -6,21 +6,20 @@ const { systemPreferences, SystemPreferences } = process.electronBinding('system
 Object.setPrototypeOf(SystemPreferences.prototype, EventEmitter.prototype)
 EventEmitter.call(systemPreferences)
 
-if ('appLevelAppearance' in systemPreferences) {
-  deprecate.fnToProperty(
-    SystemPreferences.prototype,
-    'appLevelAppearance',
-    '_getAppLevelAppearance',
-    '_setAppLevelAppearance'
-  )
+if ('getAppLevelAppearance' in systemPreferences) {
+  const nativeALAGetter = systemPreferences.getAppLevelAppearance
+  const nativeALASetter = systemPreferences.setAppLevelAppearance
+  Object.defineProperty(SystemPreferences.prototype, 'appLevelAppearance', {
+    get: () => nativeALAGetter.call(systemPreferences),
+    set: (appearance) => nativeALASetter.call(systemPreferences, appearance)
+  })
 }
 
-if ('effectiveAppearance' in systemPreferences) {
-  deprecate.fnToProperty(
-    SystemPreferences.prototype,
-    'effectiveAppearance',
-    '_getEffectiveAppearance'
-  )
+if ('getEffectiveAppearance' in systemPreferences) {
+  const nativeEAGetter = systemPreferences.getAppLevelAppearance
+  Object.defineProperty(SystemPreferences.prototype, 'effectiveAppearance', {
+    get: () => nativeEAGetter.call(systemPreferences)
+  })
 }
 
 SystemPreferences.prototype.isDarkMode = deprecate.moveAPI(
