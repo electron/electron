@@ -813,6 +813,11 @@ A `Boolean` property that specifies whether the window’s document has been edi
 
 The icon in title bar will become gray when set to `true`.
 
+#### `win.representedFilename` _macOS_
+
+A `String` property that determines the pathname of the file the window represents,
+and the icon of the file will show in window's title bar.
+
 #### `win.title`
 
 A `String` property that determines the title of the native window.

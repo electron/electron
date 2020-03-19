@@ -3477,6 +3477,26 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    ifdescribe(process.platform === 'darwin')('representedFilename', () => {
+      describe('with properties', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.representedFilename).to.eql('')
+          w.representedFilename = 'a name'
+          expect(w.representedFilename).to.eql('a name')
+        })
+      })
+
+      describe('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.getRepresentedFilename()).to.eql('')
+          w.setRepresentedFilename('a name')
+          expect(w.getRepresentedFilename()).to.eql('a name')
+        })
+      })
+    })
+
     describe('native window title', () => {
       describe('with properties', () => {
         it('can be set with title constructor option', () => {
