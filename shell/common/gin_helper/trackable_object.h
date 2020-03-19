@@ -58,6 +58,7 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
     v8::Local<v8::Object> wrapper = gin_helper::Wrappable<T>::GetWrapper();
     if (!wrapper.IsEmpty()) {
       wrapper->SetAlignedPointerInInternalField(0, nullptr);
+      gin_helper::WrappableBase::wrapper_.ClearWeak();
     }
   }
 
