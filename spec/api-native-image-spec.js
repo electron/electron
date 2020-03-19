@@ -3,6 +3,7 @@
 const chai = require('chai');
 const dirtyChai = require('dirty-chai');
 const { nativeImage } = require('electron');
+const { ifdescribe, ifit } = require('./spec-helpers');
 const path = require('path');
 
 const { expect } = chai;
@@ -105,31 +106,41 @@ describe('nativeImage module', () => {
     return matchingImage;
   };
 
-  describe('isMacTemplateImage property', () => {
-    before(function () {
-      if (process.platform !== 'darwin') this.skip();
+  ifdescribe(process.platform === 'darwin')('isMacTemplateImage state', () => {
+    describe('with properties', () => {
+      it('correctly recognizes a template image', () => {
+        const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        expect(image.isMacTemplateImage).to.be.false();
+
+        const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
+        expect(templateImage.isMacTemplateImage).to.be.true();
+      });
+
+      it('sets a template image', function () {
+        const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        expect(image.isMacTemplateImage).to.be.false();
+
+        image.isMacTemplateImage = true;
+        expect(image.isMacTemplateImage).to.be.true();
+      });
     });
 
-    it('returns whether the image is a template image', () => {
-      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+    describe('with functions', () => {
+      it('correctly recognizes a template image', () => {
+        const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        expect(image.isTemplateImage()).to.be.false();
 
-      expect(image.isMacTemplateImage).to.be.a('boolean');
+        const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
+        expect(templateImage.isTemplateImage()).to.be.true();
+      });
 
-      expect(image.isTemplateImage).to.be.a('function');
-      expect(image.setTemplateImage).to.be.a('function');
-    });
+      it('sets a template image', function () {
+        const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        expect(image.isTemplateImage()).to.be.false();
 
-    it('correctly recognizes a template image', () => {
-      const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
-      expect(templateImage.isMacTemplateImage).to.be.true();
-    });
-
-    it('sets a template image', function () {
-      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
-      expect(image.isMacTemplateImage).to.be.false();
-
-      image.isMacTemplateImage = true;
-      expect(image.isMacTemplateImage).to.be.true();
+        image.setTemplateImage(true);
+        expect(image.isTemplateImage()).to.be.true();
+      });
     });
   });
 
