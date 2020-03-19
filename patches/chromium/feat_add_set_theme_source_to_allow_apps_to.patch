@@ -61,19 +61,6 @@ index edd042cfe327810c120c4b446c043761c0d21b9f..59aaf71ea1e7931c421a46a7ca8cadb4
    DISALLOW_COPY_AND_ASSIGN(NativeTheme);
  };
  
-diff --git a/ui/native_theme/native_theme_dark_aura.cc b/ui/native_theme/native_theme_dark_aura.cc
-index 87b0abc9c646ace8cafc2b83eb4da6ffd3370237..75c677def845711ef4f3414f0a7df4f88431bf25 100644
---- a/ui/native_theme/native_theme_dark_aura.cc
-+++ b/ui/native_theme/native_theme_dark_aura.cc
-@@ -20,6 +20,8 @@ SkColor NativeThemeDarkAura::GetSystemColor(ColorId color_id,
- }
- 
- bool NativeThemeDarkAura::ShouldUseDarkColors() const {
-+  if (theme_source() == ThemeSource::kForcedLight) return false;
-+  if (theme_source() == ThemeSource::kForcedDark) return true;
-   return true;
- }
- 
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
 index dedaaaeaa93e55ec784f94864d670e0659d839bf..57009894edb9ad9422e24bf40f4100964fd32d1c 100644
 --- a/ui/native_theme/native_theme_win.cc
