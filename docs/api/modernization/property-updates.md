@@ -6,7 +6,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
 
 * `BrowserWindow`
   * `fullscreen`
-  * `documentEdited`
   * `hasShadow`
   * `menubarVisible`
 * `crashReporter` module

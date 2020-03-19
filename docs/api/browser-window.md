@@ -807,6 +807,10 @@ A `Boolean` property that determines whether the window is visible on all worksp
 
 **Note:** Always returns false on Windows.
 
+#### `win.shadow`
+
+A `Boolean` property that determines whether the window has a shadow.
+
 #### `win.documentEdited` _macOS_
 
 A `Boolean` property that specifies whether the window’s document has been edited.
