@@ -281,11 +281,12 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         }
         return ret
       }
-      case 'function-with-return-value':
+      case 'function-with-return-value': {
         const returnValue = metaToValue(meta.value)
         return function () {
           return returnValue
         }
+      }
       case 'function': {
         // Merge contextId and meta.id, since meta.id can be the same in
         // different webContents.
