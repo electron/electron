@@ -224,7 +224,6 @@ grit("resources") {
   ]
 
   # Mojo manifest overlays are generated.
-  source_is_generated = true
   grit_flags = [
     "-E",
     "target_gen_dir=" + rebase_path(target_gen_dir, root_build_dir),
