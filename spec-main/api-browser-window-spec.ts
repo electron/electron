@@ -3694,6 +3694,30 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform !== 'darwin')('menuBarVisible state', () => {
+      describe('with properties', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.menuBarVisible).to.be.true()
+          w.menuBarVisible = false
+          expect(w.menuBarVisible).to.be.false()
+          w.menuBarVisible = true
+          expect(w.menuBarVisible).to.be.true()
+        })
+      })
+
+      describe('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible')
+          w.setMenuBarVisibility(false)
+          expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible')
+          w.setMenuBarVisibility(true)
+          expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible')
+        })
+      })
+    })
+
     ifdescribe(process.platform === 'darwin')('fullscreenable state', () => {
       it('with properties', () => {
         it('can be set with fullscreenable constructor option', () => {

@@ -815,6 +815,12 @@ A `Boolean` property that determines whether the window is visible on all worksp
 
 A `Boolean` property that determines whether the window has a shadow.
 
+#### `win.menuBarVisible` _Windows_ _Linux_
+
+A `Boolean` property that determines whether the menu bar should be visible.
+
+**Note:** If the menu bar is auto-hide, users can still bring up the menu bar by pressing the single `Alt` key.
+
 ####  `win.kiosk`
 
 A `Boolean` property that determines whether the window is in kiosk mode.
