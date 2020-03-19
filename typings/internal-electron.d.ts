@@ -154,7 +154,7 @@ declare namespace ElectronInternal {
     isMainFrame: boolean;
   }
 
-  abstract class WebViewElement extends HTMLElement {
+  class WebViewElement extends HTMLElement {
     static observedAttributes: Array<string>;
 
     public contentWindow: Window;
