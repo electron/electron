@@ -347,7 +347,7 @@ step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src/electron
-        ./script/codesign/import-testing-cert-ci.sh
+        ./script/codesign/generate-identity.sh
       fi
 
 step-install-gnutar-on-mac: &step-install-gnutar-on-mac
