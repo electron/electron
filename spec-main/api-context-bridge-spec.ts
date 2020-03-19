@@ -510,6 +510,107 @@ describe('contextBridge', () => {
         // Every protomatch should be true
         expect(result.protoMatches).to.deep.equal(result.protoMatches.map(() => true))
       })
+
+      describe('in simple mode', () => {
+        describe('exposeSimpleObjectInMainWorld', () => {
+          it('should throw an error if a non-simple value is anywhere in the structure', async () => {
+            await makeBindingWindow(() => {
+              let err: any = {}
+              contextBridge.exposeInMainWorld('example', {
+                err: () => err.message
+              })
+              try {
+                contextBridge.exposeSimpleObjectInMainWorld('foo', {
+                  p: Promise.resolve()
+                })
+              } catch (e) {
+                err = e
+              }
+            })
+            const result = await callWithBindings((root: any) => {
+              return [root.example.err(), typeof root.foo]
+            })
+            expect(result[0]).to.equal('An object could not be cloned.')
+            expect(result[1]).to.equal('undefined')
+          })
+
+          it('should expose a deep structure', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.exposeSimpleObjectInMainWorld('foo', { a: { b: { c: { d: true } } } })
+            })
+            const result = await callWithBindings((root: any) => {
+              return root.foo
+            })
+            expect(result).to.deep.equal({
+              a: { b: { c: { d: true } } }
+            })
+          })
+        })
+
+        describe('prepareSimpleFunction', () => {
+          it('should return a function that operates identically to the input function', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.exposeInMainWorld('example', {
+                fn: contextBridge.prepareSimpleFunction((a: number, b: number) => 1 + a + b)
+              })
+            })
+            const result = await callWithBindings((root: any) => {
+              return root.example.fn(2, 3)
+            })
+            expect(result).to.equal(6)
+          })
+
+          it('should return a function that can still throw errors', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.exposeInMainWorld('example', {
+                fn: contextBridge.prepareSimpleFunction(() => {
+                  throw new Error('this is bad')
+                })
+              })
+            })
+            const result = await callWithBindings((root: any) => {
+              try {
+                root.example.fn()
+              } catch (e) {
+                return e.message
+              }
+            })
+            expect(result).to.equal('Uncaught Error: this is bad')
+          })
+
+          it('should throw an error if any non-simple argument is provided to the function', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.exposeInMainWorld('example', {
+                fn: contextBridge.prepareSimpleFunction((a: number, b: number) => 1 + a + b)
+              })
+            })
+            const result = await callWithBindings((root: any) => {
+              try {
+                root.example.fn(Promise.resolve(), 1)
+              } catch (e) {
+                return e.message
+              }
+            })
+            expect(result).to.equal('An object could not be cloned.')
+          })
+
+          it('should throw an error if any non-simple return value is provided from the function', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.exposeInMainWorld('example', {
+                fn: contextBridge.prepareSimpleFunction(async (a: number, b: number) => 1 + a + b)
+              })
+            })
+            const result = await callWithBindings((root: any) => {
+              try {
+                root.example.fn(2, 1)
+              } catch (e) {
+                return e.message
+              }
+            })
+            expect(result).to.equal('An object could not be cloned.')
+          })
+        })
+      })
     })
   }
 
