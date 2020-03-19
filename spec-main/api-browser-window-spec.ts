@@ -959,6 +959,7 @@ describe('BrowserWindow module', () => {
           w.setPosition(pos[0], pos[1]);
         });
       });
+
       ifdescribe(process.platform !== 'linux')('Maximized state', () => {
         it('checks normal bounds when maximized', (done) => {
           const bounds = w.getBounds();
@@ -982,6 +983,7 @@ describe('BrowserWindow module', () => {
           w.maximize();
         });
       });
+
       ifdescribe(process.platform !== 'linux')('Minimized state', () => {
         it('checks normal bounds when minimized', (done) => {
           const bounds = w.getBounds();
@@ -998,38 +1000,71 @@ describe('BrowserWindow module', () => {
             w.restore();
           });
           w.once('restore', () => {
-            expectBoundsEqual(w.getNormalBounds(), bounds);
-            done();
-          });
-          w.show();
-          w.minimize();
-        });
-      });
-      ifdescribe(process.platform === 'win32')('Fullscreen state', () => {
-        it('checks normal bounds when fullscreen\'ed', (done) => {
-          const bounds = w.getBounds();
-          w.once('enter-full-screen', () => {
-            expectBoundsEqual(w.getNormalBounds(), bounds);
-            done();
-          });
-          w.show();
-          w.setFullScreen(true);
-        });
-        it('checks normal bounds when unfullscreen\'ed', (done) => {
-          const bounds = w.getBounds();
-          w.once('enter-full-screen', () => {
-            w.setFullScreen(false);
-          });
-          w.once('leave-full-screen', () => {
-            expectBoundsEqual(w.getNormalBounds(), bounds);
-            done();
-          });
-          w.show();
-          w.setFullScreen(true);
-        });
-      });
-    });
-  });
+            expectBoundsEqual(w.getNormalBounds(), bounds)
+            done()
+          })
+          w.show()
+          w.minimize()
+        })
+      })
+
+      ifdescribe(process.platform === 'win32')(`Fullscreen state`, () => {
+        describe('with properties', () => {
+          it(`checks normal bounds when fullscreen'ed`, (done) => {
+            const bounds = w.getBounds()
+            w.once('enter-full-screen', () => {
+              expectBoundsEqual(w.getNormalBounds(), bounds)
+              done()
+            })
+            w.show()
+            w.fullscreen = true
+          })
+
+          it(`checks normal bounds when unfullscreen'ed`, (done) => {
+            const bounds = w.getBounds()
+            w.once('enter-full-screen', () => {
+              expect(w.fullscreen).to.be.true()
+              w.fullscreen = false
+            })
+            w.once('leave-full-screen', () => {
+              expect(w.fullscreen).to.be.false()
+              expectBoundsEqual(w.getNormalBounds(), bounds)
+              done()
+            })
+            w.show()
+            w.fullscreen = true
+          })
+        })
+
+        describe('with functions', () => {
+          it(`checks normal bounds when fullscreen'ed`, (done) => {
+            const bounds = w.getBounds()
+            w.once('enter-full-screen', () => {
+              expectBoundsEqual(w.getNormalBounds(), bounds)
+              done()
+            })
+            w.show()
+            w.setFullScreen(true)
+          })
+
+          it(`checks normal bounds when unfullscreen'ed`, (done) => {
+            const bounds = w.getBounds()
+            w.once('enter-full-screen', () => {
+              expect(w.isFullScreen()).to.be.true()
+              w.setFullScreen(false)
+            })
+            w.once('leave-full-screen', () => {
+              expect(w.isFullScreen()).to.be.false()
+              expectBoundsEqual(w.getNormalBounds(), bounds)
+              done()
+            })
+            w.show()
+            w.setFullScreen(true)
+          })
+        })
+      })
+    })
+  })
 
   ifdescribe(process.platform === 'darwin')('tabbed windows', () => {
     let w = null as unknown as BrowserWindow;

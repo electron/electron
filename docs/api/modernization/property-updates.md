@@ -5,8 +5,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
 ## Candidates
 
 * `BrowserWindow`
-  * `fullscreen`
-  * `hasShadow`
   * `menubarVisible`
 * `crashReporter` module
   * `uploadToServer`
