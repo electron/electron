@@ -89,11 +89,11 @@ bool ScopedDisableResize::disable_resize_ = false;
   if (electron::ScopedDisableResize::IsResizeDisabled())
     return [self frame];
 
+  NSRect result = [super constrainFrameRect:frameRect toScreen:screen];
   // Enable the window to be larger than screen.
   if ([self enableLargerThanScreen])
-    return frameRect;
-  else
-    return [super constrainFrameRect:frameRect toScreen:screen];
+    result.size = frameRect.size;
+  return result;
 }
 
 - (void)setFrame:(NSRect)windowFrame display:(BOOL)displayViews {
