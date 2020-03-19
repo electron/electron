@@ -57,7 +57,7 @@ function isObjCHeader (filename) {
   return /\/(mac|cocoa)\//.test(filename)
 }
 
-const LINTERS = [ {
+const LINTERS = [{
   key: 'c++',
   roots: ['shell'],
   test: filename => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
@@ -104,7 +104,7 @@ const LINTERS = [ {
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: (opts, filenames) => {
     const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint')
-    const args = [ '--cache', '--ext', '.js,.ts', ...filenames ]
+    const args = ['--cache', '--ext', '.js,.ts', ...filenames]
     if (opts.fix) args.unshift('--fix')
     spawnAndCheckExitCode(cmd, args, { cwd: SOURCE_ROOT })
   }
@@ -202,7 +202,7 @@ const LINTERS = [ {
 function parseCommandLine () {
   let help
   const opts = minimist(process.argv.slice(2), {
-    boolean: [ 'c++', 'objc', 'javascript', 'python', 'gn', 'patches', 'help', 'changed', 'fix', 'verbose', 'only' ],
+    boolean: ['c++', 'objc', 'javascript', 'python', 'gn', 'patches', 'help', 'changed', 'fix', 'verbose', 'only'],
     alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h', verbose: 'v' },
     unknown: arg => { help = true }
   })

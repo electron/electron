@@ -18,7 +18,7 @@ const CHECK_INTERVAL = 5000
 
 const CACHE_DIR = path.resolve(__dirname, '.cache')
 const NO_NOTES = 'No notes'
-const FOLLOW_REPOS = [ 'electron/electron', 'electron/node' ]
+const FOLLOW_REPOS = ['electron/electron', 'electron/node']
 
 const breakTypes = new Set(['breaking-change'])
 const docTypes = new Set(['doc', 'docs'])
@@ -222,7 +222,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   // Edge case: manual backport where commit has `owner/repo#pull` notation
   if (commitMessage.toLowerCase().includes('backport') &&
       ((match = commitMessage.match(/\b(\w+)\/(\w+)#(\d+)\b/)))) {
-    const [ , owner, repo, number ] = match
+    const [, owner, repo, number] = match
     if (FOLLOW_REPOS.includes(`${owner}/${repo}`)) {
       setPullRequest(commit, owner, repo, number)
     }
@@ -231,7 +231,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   // Edge case: manual backport where commit has a link to the backport PR
   if (commitMessage.includes('ackport') &&
       ((match = commitMessage.match(/https:\/\/github\.com\/(\w+)\/(\w+)\/pull\/(\d+)/)))) {
-    const [ , owner, repo, number ] = match
+    const [, owner, repo, number] = match
     if (FOLLOW_REPOS.includes(`${owner}/${repo}`)) {
       setPullRequest(commit, owner, repo, number)
     }
@@ -257,8 +257,8 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
 }
 
 const getLocalCommitHashes = async (dir, ref) => {
-  const args = ['log', '-z', `--format=%H`, ref]
-  return (await runGit(dir, args)).split(`\0`).map(hash => hash.trim())
+  const args = ['log', '-z', '--format=%H', ref]
+  return (await runGit(dir, args)).split('\0').map(hash => hash.trim())
 }
 
 /*
@@ -272,13 +272,13 @@ const getLocalCommitDetails = async (module, point1, point2) => {
   const fieldSep = '||'
   const format = ['%H', '%P', '%aE', '%B'].join(fieldSep)
   const args = ['log', '-z', '--cherry-pick', '--right-only', '--first-parent', `--format=${format}`, `${point1}..${point2}`]
-  const commits = (await runGit(dir, args)).split(`\0`).map(field => field.trim())
+  const commits = (await runGit(dir, args)).split('\0').map(field => field.trim())
   const details = []
   for (const commit of commits) {
     if (!commit) {
       continue
     }
-    const [ hash, parentHashes, email, commitMessage ] = commit.split(fieldSep, 4).map(field => field.trim())
+    const [hash, parentHashes, email, commitMessage] = commit.split(fieldSep, 4).map(field => field.trim())
     details.push(parseCommitMessage(commitMessage, owner, repo, {
       email,
       hash,
@@ -616,22 +616,22 @@ const renderCommit = (commit, explicitLinks) => {
     }
 
     const commonVerbs = {
-      'Added': [ 'Add' ],
-      'Backported': [ 'Backport' ],
-      'Cleaned': [ 'Clean' ],
-      'Disabled': [ 'Disable' ],
-      'Ensured': [ 'Ensure' ],
-      'Exported': [ 'Export' ],
-      'Fixed': [ 'Fix', 'Fixes' ],
-      'Handled': [ 'Handle' ],
-      'Improved': [ 'Improve' ],
-      'Made': [ 'Make' ],
-      'Removed': [ 'Remove' ],
-      'Repaired': [ 'Repair' ],
-      'Reverted': [ 'Revert' ],
-      'Stopped': [ 'Stop' ],
-      'Updated': [ 'Update' ],
-      'Upgraded': [ 'Upgrade' ]
+      Added: ['Add'],
+      Backported: ['Backport'],
+      Cleaned: ['Clean'],
+      Disabled: ['Disable'],
+      Ensured: ['Ensure'],
+      Exported: ['Export'],
+      Fixed: ['Fix', 'Fixes'],
+      Handled: ['Handle'],
+      Improved: ['Improve'],
+      Made: ['Make'],
+      Removed: ['Remove'],
+      Repaired: ['Repair'],
+      Reverted: ['Revert'],
+      Stopped: ['Stop'],
+      Updated: ['Update'],
+      Upgraded: ['Upgrade']
     }
     for (const [key, values] of Object.entries(commonVerbs)) {
       for (const value of values) {
@@ -649,7 +649,7 @@ const renderCommit = (commit, explicitLinks) => {
 }
 
 const renderNotes = (notes, explicitLinks) => {
-  const rendered = [ `# Release Notes for ${notes.name}\n\n` ]
+  const rendered = [`# Release Notes for ${notes.name}\n\n`]
 
   const renderSection = (title, commits) => {
     if (commits.length === 0) {

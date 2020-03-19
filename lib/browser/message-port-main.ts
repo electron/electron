@@ -10,12 +10,15 @@ export class MessagePortMain extends EventEmitter {
       this.emit(channel, event)
     }
   }
+
   start () {
     return this._internalPort.start()
   }
+
   close () {
     return this._internalPort.close()
   }
+
   postMessage (...args: any[]) {
     if (Array.isArray(args[1])) {
       args[1] = args[1].map((o: any) => o instanceof MessagePortMain ? o._internalPort : o)

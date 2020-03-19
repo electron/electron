@@ -49,7 +49,7 @@ describe('WebContentsView', () => {
     return arr
   }
 
-  it(`doesn't crash when GCed during allocation`, (done) => {
+  it('doesn\'t crash when GCed during allocation', (done) => {
     const web = (webContents as any).create({})
     // eslint-disable-next-line no-new
     new WebContentsView(web)

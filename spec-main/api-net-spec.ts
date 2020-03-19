@@ -702,7 +702,7 @@ describe('net module', () => {
 
         expect(() => {
           session.defaultSession.webRequest.onBeforeRequest(
-            { urls: [ '*://www.googleapis.com/', '*://blahblah.dev' ] },
+            { urls: ['*://www.googleapis.com/', '*://blahblah.dev'] },
             (details, callback) => { callback({ cancel: false }) }
           )
         }).to.throw('Invalid url pattern *://blahblah.dev: Empty path.')

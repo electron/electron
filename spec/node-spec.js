@@ -50,7 +50,7 @@ describe('node feature', () => {
 
       it('works in forked process when options.env is specifed', (done) => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'fork_ping.js'), [], {
-          path: process.env['PATH']
+          path: process.env.PATH
         })
         child.on('message', (msg) => {
           expect(msg).to.equal('message')

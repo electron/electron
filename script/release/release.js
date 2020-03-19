@@ -9,7 +9,7 @@ const args = require('minimist')(process.argv.slice(2), {
     'automaticRelease',
     'verboseNugget'
   ],
-  default: { 'verboseNugget': false }
+  default: { verboseNugget: false }
 })
 const fs = require('fs')
 const { execSync } = require('child_process')
@@ -54,7 +54,7 @@ async function getDraftRelease (version, skipValidation) {
       check(draft.prerelease, 'draft is a prerelease')
     }
     check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes')
-    check((failureCount === 0), `Draft release looks good to go.`, true)
+    check((failureCount === 0), 'Draft release looks good to go.', true)
   }
   return draft
 }
@@ -68,7 +68,7 @@ async function validateReleaseAssets (release, validatingRelease) {
   requiredAssets.forEach(asset => {
     check(extantAssets.includes(asset), asset)
   })
-  check((failureCount === 0), `All required GitHub assets exist for release`, true)
+  check((failureCount === 0), 'All required GitHub assets exist for release', true)
 
   if (!validatingRelease || !release.draft) {
     if (release.draft) {
@@ -129,9 +129,9 @@ function assetsForVersion (version, validatingRelease) {
     `electron-${version}-win32-arm64-pdb.zip`,
     `electron-${version}-win32-arm64-symbols.zip`,
     `electron-${version}-win32-arm64.zip`,
-    `electron-api.json`,
-    `electron.d.ts`,
-    `hunspell_dictionaries.zip`,
+    'electron-api.json',
+    'electron.d.ts',
+    'hunspell_dictionaries.zip',
     `ffmpeg-${version}-darwin-x64.zip`,
     `ffmpeg-${version}-linux-arm64.zip`,
     `ffmpeg-${version}-linux-armv7l.zip`,
@@ -161,7 +161,7 @@ function assetsForVersion (version, validatingRelease) {
 }
 
 function s3UrlsForVersion (version) {
-  const bucket = `https://gh-contractor-zcbenz.s3.amazonaws.com/`
+  const bucket = 'https://gh-contractor-zcbenz.s3.amazonaws.com/'
   const patterns = [
     `${bucket}atom-shell/dist/${version}/iojs-${version}-headers.tar.gz`,
     `${bucket}atom-shell/dist/${version}/iojs-${version}.tar.gz`,
@@ -302,7 +302,7 @@ async function makeRelease (releaseToValidate) {
     await validateReleaseAssets(draftRelease)
     await publishRelease(draftRelease)
     console.log(`${pass} SUCCESS!!! Release has been published. Please run ` +
-      `"npm run publish-to-npm" to publish release to npm.`)
+      '"npm run publish-to-npm" to publish release to npm.')
   }
 }
 
@@ -321,7 +321,7 @@ async function makeTempDir () {
 async function verifyAssets (release) {
   const downloadDir = await makeTempDir()
 
-  console.log(`Downloading files from GitHub to verify shasums`)
+  console.log('Downloading files from GitHub to verify shasums')
   const shaSumFile = 'SHASUMS256.txt'
 
   let filesToCheck = await Promise.all(release.assets.map(async asset => {

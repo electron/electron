@@ -23,8 +23,8 @@ const pass = '✓'.green
 const fail = '✗'.red
 
 if (!bumpType && !args.notesOnly) {
-  console.log(`Usage: prepare-release [stable | minor | beta | nightly]` +
-     ` (--stable) (--notesOnly) (--automaticRelease) (--branch)`)
+  console.log('Usage: prepare-release [stable | minor | beta | nightly]' +
+     ' (--stable) (--notesOnly) (--automaticRelease) (--branch)')
   process.exit(1)
 }
 
@@ -66,7 +66,7 @@ async function createRelease (branchToTarget, isBeta) {
   const releaseNotes = await getReleaseNotes(branchToTarget, newVersion)
   await tagRelease(newVersion)
 
-  console.log(`Checking for existing draft release.`)
+  console.log('Checking for existing draft release.')
   const releases = await octokit.repos.listReleases({
     owner: 'electron',
     repo: targetRepo
@@ -87,14 +87,14 @@ async function createRelease (branchToTarget, isBeta) {
   let releaseIsPrelease = false
   if (isBeta) {
     if (newVersion.indexOf('nightly') > 0) {
-      releaseBody = `Note: This is a nightly release.  Please file new issues ` +
-        `for any bugs you find in it.\n \n This release is published to npm ` +
-        `under the nightly tag and can be installed via npm install electron@nightly, ` +
+      releaseBody = 'Note: This is a nightly release.  Please file new issues ' +
+        'for any bugs you find in it.\n \n This release is published to npm ' +
+        'under the nightly tag and can be installed via npm install electron@nightly, ' +
         `or npm i electron-nightly@${newVersion.substr(1)}.\n \n ${releaseNotes.text}`
     } else {
-      releaseBody = `Note: This is a beta release.  Please file new issues ` +
-        `for any bugs you find in it.\n \n This release is published to npm ` +
-        `under the beta tag and can be installed via npm install electron@beta, ` +
+      releaseBody = 'Note: This is a beta release.  Please file new issues ' +
+        'for any bugs you find in it.\n \n This release is published to npm ' +
+        'under the beta tag and can be installed via npm install electron@beta, ' +
         `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes.text}`
     }
     releaseIsPrelease = true
@@ -124,7 +124,7 @@ async function pushRelease (branch) {
   const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], ELECTRON_DIR)
   if (pushDetails.exitCode === 0) {
     console.log(`${pass} Successfully pushed the release.  Wait for ` +
-      `release builds to finish before running "npm run release".`)
+      'release builds to finish before running "npm run release".')
   } else {
     console.log(`${fail} Error pushing the release: ${pushDetails.stderr}`)
     process.exit(1)
@@ -140,7 +140,7 @@ async function runReleaseBuilds (branch) {
 
 async function tagRelease (version) {
   console.log(`Tagging release ${version}.`)
-  const checkoutDetails = await GitProcess.exec([ 'tag', '-a', '-m', version, version ], ELECTRON_DIR)
+  const checkoutDetails = await GitProcess.exec(['tag', '-a', '-m', version, version], ELECTRON_DIR)
   if (checkoutDetails.exitCode === 0) {
     console.log(`${pass} Successfully tagged ${version}.`)
   } else {
@@ -181,8 +181,8 @@ async function promptForVersion (version) {
 
 // function to determine if there have been commits to master since the last release
 async function changesToRelease () {
-  const lastCommitWasRelease = new RegExp(`^Bump v[0-9.]*(-beta[0-9.]*)?(-nightly[0-9.]*)?$`, 'g')
-  const lastCommit = await GitProcess.exec(['log', '-n', '1', `--pretty=format:'%s'`], ELECTRON_DIR)
+  const lastCommitWasRelease = new RegExp('^Bump v[0-9.]*(-beta[0-9.]*)?(-nightly[0-9.]*)?$', 'g')
+  const lastCommit = await GitProcess.exec(['log', '-n', '1', '--pretty=format:\'%s\''], ELECTRON_DIR)
   return !lastCommitWasRelease.test(lastCommit.stdout)
 }
 
@@ -204,7 +204,7 @@ async function prepareRelease (isBeta, notesOnly) {
         await pushRelease(currentBranch)
         await runReleaseBuilds(currentBranch)
       } else {
-        console.log(`There are no new changes to this branch since the last release, aborting release.`)
+        console.log('There are no new changes to this branch since the last release, aborting release.')
         process.exit(1)
       }
     }

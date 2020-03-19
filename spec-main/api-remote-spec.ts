@@ -94,7 +94,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         w().webContents.once('remote-get-global', (event) => {
           event.preventDefault()
         })
-        await expect(remotely(() => require('electron').remote.getGlobal('test'))).to.eventually.be.rejected(`Blocked remote.getGlobal('test')`)
+        await expect(remotely(() => require('electron').remote.getGlobal('test'))).to.eventually.be.rejected('Blocked remote.getGlobal(\'test\')')
       })
     })
 
@@ -110,7 +110,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         w().webContents.once('remote-get-builtin', (event) => {
           event.preventDefault()
         })
-        await expect(remotely(() => (require('electron').remote as any).getBuiltin('test'))).to.eventually.be.rejected(`Blocked remote.getGlobal('test')`)
+        await expect(remotely(() => (require('electron').remote as any).getBuiltin('test'))).to.eventually.be.rejected('Blocked remote.getGlobal(\'test\')')
       })
     })
 
@@ -126,7 +126,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         w().webContents.once('remote-require', (event) => {
           event.preventDefault()
         })
-        await expect(remotely(() => require('electron').remote.require('test'))).to.eventually.be.rejected(`Blocked remote.require('test')`)
+        await expect(remotely(() => require('electron').remote.require('test'))).to.eventually.be.rejected('Blocked remote.require(\'test\')')
       })
     })
 
@@ -142,7 +142,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         w().webContents.once('remote-get-current-window', (event) => {
           event.preventDefault()
         })
-        await expect(remotely(() => require('electron').remote.getCurrentWindow())).to.eventually.be.rejected(`Blocked remote.getCurrentWindow()`)
+        await expect(remotely(() => require('electron').remote.getCurrentWindow())).to.eventually.be.rejected('Blocked remote.getCurrentWindow()')
       })
     })
 
@@ -158,7 +158,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         w().webContents.once('remote-get-current-web-contents', (event) => {
           event.preventDefault()
         })
-        await expect(remotely(() => require('electron').remote.getCurrentWebContents())).to.eventually.be.rejected(`Blocked remote.getCurrentWebContents()`)
+        await expect(remotely(() => require('electron').remote.getCurrentWebContents())).to.eventually.be.rejected('Blocked remote.getCurrentWebContents()')
       })
     })
   })

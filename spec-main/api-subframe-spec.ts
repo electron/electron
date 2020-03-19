@@ -114,7 +114,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       if (config.names.length > 0) {
         config.title = `with ${config.names.join(', ')} on`
       } else {
-        config.title = `without anything special turned on`
+        config.title = 'without anything special turned on'
       }
       delete config.names
 

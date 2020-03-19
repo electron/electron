@@ -15,7 +15,7 @@ const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools'
 
 const OUT_DIR = getOutDir({ outDir: args.outDir })
 if (!OUT_DIR) {
-  throw new Error(`No viable out dir: one of Debug, Testing, or Release must exist.`)
+  throw new Error('No viable out dir: one of Debug, Testing, or Release must exist.')
 }
 
 const env = Object.assign({

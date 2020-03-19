@@ -538,7 +538,7 @@ describe('<webview> tag', function () {
 
     it('emits when accessing external protocol', async () => {
       loadWebView(w.webContents, {
-        src: `magnet:test`,
+        src: 'magnet:test',
         partition
       })
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created')

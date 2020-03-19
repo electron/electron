@@ -49,7 +49,7 @@ describe('reporting api', () => {
       res.setHeader('Report-To', JSON.stringify({
         group: 'default',
         max_age: 120,
-        endpoints: [ { url: `https://localhost:${(server.address() as any).port}/report` } ]
+        endpoints: [{ url: `https://localhost:${(server.address() as any).port}/report` }]
       }))
       res.setHeader('Content-Type', 'text/html')
       // using the deprecated `webkitRequestAnimationFrame` will trigger a
@@ -271,7 +271,7 @@ describe('command line switches', () => {
     it('should display the discovery page', (done) => {
       const electronPath = process.execPath
       let output = ''
-      const appProcess = ChildProcess.spawn(electronPath, [`--remote-debugging-port=`])
+      const appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port='])
 
       appProcess.stderr.on('data', (data) => {
         output += data
@@ -318,7 +318,7 @@ describe('chromium features', () => {
       const appLocale = app.getLocale()
       const w = new BrowserWindow({ show: false })
       await w.loadURL('about:blank')
-      const languages = await w.webContents.executeJavaScript(`navigator.languages`)
+      const languages = await w.webContents.executeJavaScript('navigator.languages')
       expect(languages).to.deep.equal([appLocale])
     })
   })
@@ -598,13 +598,13 @@ describe('chromium features', () => {
       w.webContents.executeJavaScript(`{ b = window.open(${JSON.stringify(targetURL)}); null }`)
       const [, window] = await emittedOnce(app, 'browser-window-created')
       await emittedOnce(window.webContents, 'did-finish-load')
-      expect(await w.webContents.executeJavaScript(`b.location.href`)).to.equal(targetURL)
+      expect(await w.webContents.executeJavaScript('b.location.href')).to.equal(targetURL)
     })
 
     it('defines a window.location setter', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`{ b = window.open("about:blank"); null }`)
+      w.webContents.executeJavaScript('{ b = window.open("about:blank"); null }')
       const [, { webContents }] = await emittedOnce(app, 'browser-window-created')
       await emittedOnce(webContents, 'did-finish-load')
       // When it loads, redirect
@@ -615,7 +615,7 @@ describe('chromium features', () => {
     it('defines a window.location.href setter', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`{ b = window.open("about:blank"); null }`)
+      w.webContents.executeJavaScript('{ b = window.open("about:blank"); null }')
       const [, { webContents }] = await emittedOnce(app, 'browser-window-created')
       await emittedOnce(webContents, 'did-finish-load')
       // When it loads, redirect
@@ -626,25 +626,25 @@ describe('chromium features', () => {
     it('open a blank page when no URL is specified', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`{ b = window.open(); null }`)
+      w.webContents.executeJavaScript('{ b = window.open(); null }')
       const [, { webContents }] = await emittedOnce(app, 'browser-window-created')
       await emittedOnce(webContents, 'did-finish-load')
-      expect(await w.webContents.executeJavaScript(`b.location.href`)).to.equal('about:blank')
+      expect(await w.webContents.executeJavaScript('b.location.href')).to.equal('about:blank')
     })
 
     it('open a blank page when an empty URL is specified', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`{ b = window.open(''); null }`)
+      w.webContents.executeJavaScript('{ b = window.open(\'\'); null }')
       const [, { webContents }] = await emittedOnce(app, 'browser-window-created')
       await emittedOnce(webContents, 'did-finish-load')
-      expect(await w.webContents.executeJavaScript(`b.location.href`)).to.equal('about:blank')
+      expect(await w.webContents.executeJavaScript('b.location.href')).to.equal('about:blank')
     })
 
     it('sets the window title to the specified frameName', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`{ b = window.open('', 'hello'); null }`)
+      w.webContents.executeJavaScript('{ b = window.open(\'\', \'hello\'); null }')
       const [, window] = await emittedOnce(app, 'browser-window-created')
       expect(window.getTitle()).to.equal('hello')
     })
@@ -652,7 +652,7 @@ describe('chromium features', () => {
     it('does not throw an exception when the frameName is a built-in object property', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadURL('about:blank')
-      w.webContents.executeJavaScript(`{ b = window.open('', '__proto__'); null }`)
+      w.webContents.executeJavaScript('{ b = window.open(\'\', \'__proto__\'); null }')
       const [, window] = await emittedOnce(app, 'browser-window-created')
       expect(window.getTitle()).to.equal('__proto__')
     })
@@ -682,7 +682,7 @@ describe('chromium features', () => {
     it('can return labels of enumerated devices', async () => {
       const w = new BrowserWindow({ show: false })
       w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'))
-      const labels = await w.webContents.executeJavaScript(`navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))`)
+      const labels = await w.webContents.executeJavaScript('navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))')
       expect(labels.some((l: any) => l)).to.be.true()
     })
 
@@ -690,7 +690,7 @@ describe('chromium features', () => {
       session.defaultSession.setPermissionCheckHandler(() => false)
       const w = new BrowserWindow({ show: false })
       w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'))
-      const labels = await w.webContents.executeJavaScript(`navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))`)
+      const labels = await w.webContents.executeJavaScript('navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))')
       expect(labels.some((l: any) => l)).to.be.false()
     })
 
@@ -886,7 +886,7 @@ describe('chromium features', () => {
 
       it('cannot access localStorage', (done) => {
         ipcMain.once('local-storage-response', (event, error) => {
-          expect(error).to.equal(`Failed to read the 'localStorage' property from 'Window': Access is denied for this document.`)
+          expect(error).to.equal('Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.')
           done()
         })
         contents.loadURL(protocolName + '://host/localStorage')
@@ -894,7 +894,7 @@ describe('chromium features', () => {
 
       it('cannot access sessionStorage', (done) => {
         ipcMain.once('session-storage-response', (event, error) => {
-          expect(error).to.equal(`Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document.`)
+          expect(error).to.equal('Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.')
           done()
         })
         contents.loadURL(`${protocolName}://host/sessionStorage`)
@@ -902,7 +902,7 @@ describe('chromium features', () => {
 
       it('cannot access WebSQL database', (done) => {
         ipcMain.once('web-sql-response', (event, error) => {
-          expect(error).to.equal(`Failed to execute 'openDatabase' on 'Window': Access to the WebDatabase API is denied in this context.`)
+          expect(error).to.equal('Failed to execute \'openDatabase\' on \'Window\': Access to the WebDatabase API is denied in this context.')
           done()
         })
         contents.loadURL(`${protocolName}://host/WebSQL`)
@@ -910,7 +910,7 @@ describe('chromium features', () => {
 
       it('cannot access indexedDB', (done) => {
         ipcMain.once('indexed-db-response', (event, error) => {
-          expect(error).to.equal(`Failed to execute 'open' on 'IDBFactory': access to the Indexed Database API is denied in this context.`)
+          expect(error).to.equal('Failed to execute \'open\' on \'IDBFactory\': access to the Indexed Database API is denied in this context.')
           done()
         })
         contents.loadURL(`${protocolName}://host/indexedDB`)
@@ -918,7 +918,7 @@ describe('chromium features', () => {
 
       it('cannot access cookie', (done) => {
         ipcMain.once('cookie-response', (event, error) => {
-          expect(error).to.equal(`Failed to set the 'cookie' property on 'Document': Access is denied for this document.`)
+          expect(error).to.equal('Failed to set the \'cookie\' property on \'Document\': Access is denied for this document.')
           done()
         })
         contents.loadURL(`${protocolName}://host/cookie`)
@@ -1044,7 +1044,7 @@ describe('font fallback', () => {
   }
 
   it('should use Helvetica for sans-serif on Mac, and Arial on Windows and Linux', async () => {
-    const html = `<body style="font-family: sans-serif">test</body>`
+    const html = '<body style="font-family: sans-serif">test</body>'
     const fonts = await getRenderedFonts(html)
     expect(fonts).to.be.an('array')
     expect(fonts).to.have.length(1)

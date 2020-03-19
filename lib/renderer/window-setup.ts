@@ -126,6 +126,7 @@ class BrowserWindowProxy {
   public get location (): LocationProxy | any {
     return this._location
   }
+
   public set location (url: string | any) {
     url = resolveURL(url, this.location.href)
     this._invokeWebContentsMethod('loadURL', url)

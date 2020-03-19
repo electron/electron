@@ -267,7 +267,7 @@ describe('contextBridge', () => {
           contextBridge.exposeInMainWorld('example', {
             1: 123,
             2: 456,
-            '3': 789
+            3: 789
           })
         })
         const result = await callWithBindings(async (root: any) => {
@@ -390,7 +390,7 @@ describe('contextBridge', () => {
           try {
             let a: any = []
             for (let i = 0; i < 999; i++) {
-              a = [ a ]
+              a = [a]
             }
             root.example.doThing(a)
             return false
@@ -403,7 +403,7 @@ describe('contextBridge', () => {
           try {
             let a: any = []
             for (let i = 0; i < 1000; i++) {
-              a = [ a ]
+              a = [a]
             }
             root.example.doThing(a)
             return false
