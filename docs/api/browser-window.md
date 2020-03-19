@@ -177,7 +177,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `simpleFullscreen` Boolean (optional) - Use pre-Lion fullscreen on macOS. Default is `false`.
   * `skipTaskbar` Boolean (optional) - Whether to show the window in taskbar. Default is
     `false`.
-  * `kiosk` Boolean (optional) - The kiosk mode. Default is `false`.
+  * `kiosk` Boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
   * `title` String (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
   * `icon` ([NativeImage](native-image.md) | String) (optional) - The window icon. On Windows it is
     recommended to use `ICO` icons to get best visual effects, you can also
@@ -815,6 +815,10 @@ A `Boolean` property that determines whether the window is visible on all worksp
 
 A `Boolean` property that determines whether the window has a shadow.
 
+####  `win.kiosk`
+
+A `Boolean` property that determines whether the window is in kiosk mode.
+
 #### `win.documentEdited` _macOS_
 
 A `Boolean` property that specifies whether the window’s document has been edited.
@@ -1311,7 +1315,7 @@ Makes the window not show in the taskbar.
 
 * `flag` Boolean
 
-Enters or leaves the kiosk mode.
+Enters or leaves kiosk mode.
 
 #### `win.isKiosk()`
 
