@@ -3653,15 +3653,25 @@ describe('BrowserWindow module', () => {
         w.setFullScreen(true);
       });
 
-      it('does not crash when exiting simpleFullScreen', (done) => {
-        const w = new BrowserWindow();
-        w.setSimpleFullScreen(true);
+      it('does not crash when exiting simpleFullScreen (properties)', (done) => {
+        const w = new BrowserWindow()
+        w.setSimpleFullScreen(true)
 
         setTimeout(() => {
           w.setFullScreen(!w.isFullScreen());
           done();
         }, 1000);
       });
+
+      it('does not crash when exiting simpleFullScreen (functions)', (done) => {
+        const w = new BrowserWindow()
+        w.simpleFullScreen = true
+
+        setTimeout(() => {
+          w.setFullScreen(!w.isFullScreen())
+          done()
+        }, 1000)
+      })
 
       it('should not be changed by setKiosk method', (done) => {
         const w = new BrowserWindow();

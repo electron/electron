@@ -797,6 +797,10 @@ A `Boolean` property that determines whether the window menu bar should hide its
 If the menu bar is already visible, setting this property to `true` won't
 hide it immediately.
 
+#### `win.simpleFullScreen`
+
+A `Boolean` property that determines whether the window is in simple (pre-Lion) fullscreen mode.
+
 #### `win.minimizable`
 
 A `Boolean` property that determines whether the window can be manually minimized by user.
