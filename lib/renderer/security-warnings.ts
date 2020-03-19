@@ -222,7 +222,7 @@ const warnAboutExperimentalFeatures = function (webPreferences?: Electron.WebPre
  */
 const warnAboutEnableBlinkFeatures = function (webPreferences?: Electron.WebPreferences) {
   if (!webPreferences ||
-    !webPreferences.hasOwnProperty('enableBlinkFeatures') ||
+    !Object.prototype.hasOwnProperty.call(webPreferences, 'enableBlinkFeatures') ||
     (webPreferences.enableBlinkFeatures && webPreferences.enableBlinkFeatures.length === 0)) {
     return
   }

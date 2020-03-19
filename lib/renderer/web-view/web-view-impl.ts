@@ -173,7 +173,7 @@ export class WebViewImpl {
     }
 
     for (const attributeName in this.attributes) {
-      if (this.attributes.hasOwnProperty(attributeName)) {
+      if (Object.prototype.hasOwnProperty.call(this.attributes, attributeName)) {
         params[attributeName] = this.attributes[attributeName].getValue()
       }
     }
