@@ -44,7 +44,30 @@ The `contextBridge` module has the following methods:
 ### `contextBridge.exposeInMainWorld(apiKey, api)` _Experimental_
 
 * `apiKey` String - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
-* `api` Record<String, any> - Your API object, more information on what this API can be and how it works is available below.
+* `api` Record<String, any> - Your API object, more information on what this API can be and how it works is available [below](#parameter--error--return-type-support)).
+
+### `contextBridge.exposeSimpleObjectInMainWorld(objectKey, object)` _Experimental_
+
+* `objectKey` String - The key to inject the object onto `window` with.  The object will be accessible on `window[objectKey]`.
+* `object` Record<String, any> - Your object, the keys and values of this object must be **simple** data types from the [Type Support](#parameter--error--return-type-support)) table below.
+Non-simple data types will result in an error being thrown.
+
+This method can be used instead of `exposeInMainWorld` if you just want to provide a set of data and not expose any methods.  Sending
+large data structures as "simple" can be around three times faster so if you only want to expose a data structure it can make sense to
+use `exposeSimpleObjectInMainWorld`.
+
+### `contextBridge.prepareSimpleFunction<T extends Function>(func)` _Experimental_
+
+* `func` T - A function that you want to expose over the context bridge.
+
+Returns `T`, a function of the same type as the function that was provided.
+
+This method can be used to omptimize certain functions to be faster when called over the context bridge. The function
+returned from this method will **only** support being called with, and returning, **simple** data types from the
+[Type Support](#parameter--error--return-type-support) table.  Non-simple data types will result in an error being thrown.
+
+Sending large data structures as "simple" can be around three times faster so if you plan on calling this function a lot
+or sending a lot of data it can make sense to wrap it with `prepareSimpleFunction`.
 
 ## Usage
 
@@ -100,12 +123,12 @@ has been included below for completeness:
 | `String` | Simple | ✅ | ✅ | N/A |
 | `Number` | Simple | ✅ | ✅ | N/A |
 | `Boolean` | Simple | ✅ | ✅ | N/A |
-| `Object` | Complex | ✅ | ✅ | Keys must be supported using only "Simple" types in this table.  Values must be supported in this table.  Prototype modifications are dropped.  Sending custom classes will copy values but not the prototype. |
-| `Array` | Complex | ✅ | ✅ | Same limitations as the `Object` type |
+| `Object` | Simple | ✅ | ✅ | Keys must be supported using only "Simple" types in this table.  Values must be supported in this table.  Prototype modifications are dropped.  Sending custom classes will copy values but not the prototype. |
+| `Array` | Simple | ✅ | ✅ | Same limitations as the `Object` type |
+| [Cloneable Types](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) | Simple | ✅ | ✅ | See the linked document on cloneable types |
 | `Error` | Complex | ✅ | ✅ | Errors that are thrown are also copied, this can result in the message and stack trace of the error changing slightly due to being thrown in a different context |
 | `Promise` | Complex | ✅ | ✅ | Promises are only proxied if they are the return value or exact parameter.  Promises nested in arrays or objects will be dropped. |
 | `Function` | Complex | ✅ | ✅ | Prototype modifications are dropped.  Sending classes or constructors will not work. |
-| [Cloneable Types](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) | Simple | ✅ | ✅ | See the linked document on cloneable types |
 | `Symbol` | N/A | ❌ | ❌ | Symbols cannot be copied across contexts so they are dropped |
 
 

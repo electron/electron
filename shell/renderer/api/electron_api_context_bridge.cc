@@ -170,6 +170,15 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     // the global handle at the right time.
     if (value->IsFunction()) {
       auto func = v8::Local<v8::Function>::Cast(value);
+
+      v8::Local<v8::Private> privateKey = v8::Private::ForApi(
+          source_context->GetIsolate(),
+          gin::StringToV8(source_context->GetIsolate(), "_cbSimple"));
+      v8::Maybe<bool> result = func->HasPrivate(source_context, privateKey);
+      context_bridge::ProxyMode function_proxy_mode =
+          IsTrue(result) ? context_bridge::ProxyMode::kSimple
+                         : context_bridge::ProxyMode::kSmart;
+
       v8::Global<v8::Function> global_func(source_context->GetIsolate(), func);
       v8::Global<v8::Context> global_source(source_context->GetIsolate(),
                                             source_context);
@@ -182,7 +191,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
         v8::Local<v8::Value> proxy_func = gin_helper::CallbackToV8Leaked(
             destination_context->GetIsolate(),
             base::BindRepeating(&ProxyFunctionWrapper, store, func_id,
-                                proxy_mode));
+                                function_proxy_mode));
         FunctionLifeMonitor::BindTo(destination_context->GetIsolate(),
                                     v8::Local<v8::Object>::Cast(proxy_func),
                                     store->GetWeakPtr(), func_id);
@@ -467,7 +476,8 @@ gin_helper::Dictionary DebugGC(gin_helper::Dictionary empty) {
 }
 #endif
 
-void ExposeAPIInMainWorld(const std::string& key,
+void ExposeAPIInMainWorld(context_bridge::ProxyMode proxy_mode,
+                          const std::string& key,
                           v8::Local<v8::Object> api_object,
                           gin_helper::Arguments* args) {
   auto* render_frame = GetRenderFrame(api_object);
@@ -495,7 +505,7 @@ void ExposeAPIInMainWorld(const std::string& key,
   {
     v8::MaybeLocal<v8::Object> maybe_proxy =
         CreateProxyForAPI(api_object, isolated_context, main_context, store,
-                          &object_cache, context_bridge::ProxyMode::kSmart, 0);
+                          &object_cache, proxy_mode, 0);
     if (maybe_proxy.IsEmpty())
       return;
     auto proxy = maybe_proxy.ToLocalChecked();
@@ -518,7 +528,14 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("exposeAPIInMainWorld", &electron::api::ExposeAPIInMainWorld);
+  dict.SetMethod(
+      "exposeAPIInMainWorld",
+      base::BindRepeating(&electron::api::ExposeAPIInMainWorld,
+                          electron::api::context_bridge::ProxyMode::kSmart));
+  dict.SetMethod(
+      "exposeObjectInMainWorld",
+      base::BindRepeating(&electron::api::ExposeAPIInMainWorld,
+                          electron::api::context_bridge::ProxyMode::kSimple));
 #ifdef DCHECK_IS_ON
   dict.SetMethod("_debugGCMaps", &electron::api::DebugGC);
 #endif
