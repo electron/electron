@@ -45,7 +45,7 @@ describe('BrowserWindow module', () => {
           show: false,
           // apparently void 0 had different behaviour from undefined in the
           // issue that this test is supposed to catch.
-          webContents: void 0
+          webContents: void 0 // eslint-disable-line no-void
         } as any)
         w.destroy()
       }).not.to.throw()

@@ -454,7 +454,7 @@ describe('chromium feature', () => {
       setImmediate(() => {
         let called = false
         Promise.resolve().then(() => {
-          done(called ? void 0 : new Error('wrong sequence'))
+          done(called ? undefined : new Error('wrong sequence'))
         })
         document.createElement('x-element')
         called = true
@@ -467,7 +467,7 @@ describe('chromium feature', () => {
       ipcRenderer.invoke('ping').then(() => {
         let called = false
         Promise.resolve().then(() => {
-          done(called ? void 0 : new Error('wrong sequence'))
+          done(called ? undefined : new Error('wrong sequence'))
         })
         document.createElement('y-element')
         called = true
