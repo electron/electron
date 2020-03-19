@@ -52,6 +52,8 @@ class WrappableBase {
   // Helper to init with arguments.
   void InitWithArgs(gin::Arguments* args);
 
+  v8::Global<v8::Object> wrapper_;  // Weak
+
  private:
   static void FirstWeakCallback(
       const v8::WeakCallbackInfo<WrappableBase>& data);
@@ -59,7 +61,6 @@ class WrappableBase {
       const v8::WeakCallbackInfo<WrappableBase>& data);
 
   v8::Isolate* isolate_ = nullptr;
-  v8::Global<v8::Object> wrapper_;  // Weak
 
   DISALLOW_COPY_AND_ASSIGN(WrappableBase);
 };
