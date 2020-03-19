@@ -3457,6 +3457,26 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    ifdescribe(process.platform === 'darwin')('documentEdited state', () => {
+      describe('with properties', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.documentEdited).to.be.false()
+          w.documentEdited = true
+          expect(w.documentEdited).to.be.true()
+        })
+      })
+
+      describe('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isDocumentEdited()).to.be.false()
+          w.setDocumentEdited(true)
+          expect(w.isDocumentEdited()).to.be.true()
+        })
+      })
+    })
+
     describe('native window title', () => {
       describe('with properties', () => {
         it('can be set with title constructor option', () => {

@@ -807,6 +807,12 @@ A `Boolean` property that determines whether the window is visible on all worksp
 
 **Note:** Always returns false on Windows.
 
+#### `win.documentEdited` _macOS_
+
+A `Boolean` property that specifies whether the window’s document has been edited.
+
+The icon in title bar will become gray when set to `true`.
+
 #### `win.title`
 
 A `String` property that determines the title of the native window.
