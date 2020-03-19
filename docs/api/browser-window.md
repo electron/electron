@@ -801,6 +801,13 @@ hide it immediately.
 
 A `Boolean` property that determines whether the window is in simple (pre-Lion) fullscreen mode.
 
+#### `win.title`
+
+A `String` property that determines the title of the native window.
+
+**Note:** The title of the web page can be different from the title of the native
+window.
+
 #### `win.minimizable`
 
 A `Boolean` property that determines whether the window can be manually minimized by user.

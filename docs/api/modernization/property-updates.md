@@ -6,8 +6,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
 
 * `BrowserWindow`
   * `fullscreen`
-  * `simpleFullscreen`
-  * `alwaysOnTop`
   * `title`
   * `documentEdited`
   * `hasShadow`
