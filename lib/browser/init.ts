@@ -1,6 +1,7 @@
 import { Buffer } from 'buffer'
 import { EventEmitter } from 'events'
 import * as fs from 'fs'
+import { Socket } from 'net'
 import * as path from 'path'
 import * as util from 'util'
 
@@ -26,7 +27,7 @@ if (process.platform === 'win32') {
     // See https://nodejs.org/api/util.html#util_util_format_format_args
     return process.log(util.format(...args) + '\n')
   }
-  const streamWrite: NodeJS.WritableStream['write'] = function (chunk: Buffer | string, encoding?: any, callback?: Function) {
+  const streamWrite: Socket['write'] = function (chunk: Buffer | string, encoding?: any, callback?: Function) {
     if (Buffer.isBuffer(chunk)) {
       chunk = chunk.toString(encoding)
     }

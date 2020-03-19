@@ -83,13 +83,13 @@ describe('BrowserWindow with affinity module', () => {
   testAffinityProcessIds(`BrowserWindow with an affinity '${myAffinityName}' and sandbox enabled`, { sandbox: true })
   testAffinityProcessIds(`BrowserWindow with an affinity '${myAffinityName}' and nativeWindowOpen enabled`, { nativeWindowOpen: true })
 
-  describe(`BrowserWindow with an affinity : nodeIntegration=false`, () => {
+  describe('BrowserWindow with an affinity : nodeIntegration=false', () => {
     const preload = path.join(fixtures, 'module', 'send-later.js')
     const affinityWithNodeTrue = 'affinityWithNodeTrue'
     const affinityWithNodeFalse = 'affinityWithNodeFalse'
 
     function testNodeIntegration (present: boolean) {
-      return new Promise((resolve) => {
+      return new Promise<void>((resolve) => {
         ipcMain.once('answer', (event, typeofProcess, typeofBuffer) => {
           if (present) {
             expect(typeofProcess).to.not.equal('undefined')
