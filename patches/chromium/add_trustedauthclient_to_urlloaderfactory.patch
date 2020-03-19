@@ -57,9 +57,9 @@ index 9452018180979377728162209651ebd914bd95a4..6c9f3192260bcce252c7868e042bd40a
      base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
      mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
 +    mojom::TrustedURLLoaderAuthClient* url_loader_auth_client,
-     mojom::OriginPolicyManager* origin_policy_manager)
+     mojom::OriginPolicyManager* origin_policy_manager,
+     std::unique_ptr<TrustTokenRequestHelper> trust_token_helper)
      : url_request_context_(url_request_context),
-       network_service_client_(network_service_client),
 @@ -544,6 +545,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
@@ -108,17 +108,17 @@ index 9452018180979377728162209651ebd914bd95a4..6c9f3192260bcce252c7868e042bd40a
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 5b8e727e4a8f71d646eb2502d27256dcdae22e78..8b63418451933382b414e47001b9859017b60f7f 100644
+index 9a07d08baf1f52234898951f8680a8b3a5c6e82f..e1da0719718bebb998aa86f67cdf996e00b4a17c 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -106,6 +106,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -111,6 +111,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
        base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
        base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
        mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
 +      mojom::TrustedURLLoaderAuthClient* url_loader_auth_client,
-       mojom::OriginPolicyManager* origin_policy_manager);
+       mojom::OriginPolicyManager* origin_policy_manager,
+       std::unique_ptr<TrustTokenRequestHelper> trust_token_helper);
    ~URLLoader() override;
- 
 @@ -413,6 +414,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    base::Optional<base::UnguessableToken> fetch_window_id_;
  
@@ -139,12 +139,12 @@ index f3a9baefc1a18924503d7a6850bc704310e50015..9b3802dbdf7a1ab3f132529b794665a6
        cors_url_loader_factory_(cors_url_loader_factory) {
    DCHECK(context);
    DCHECK_NE(mojom::kInvalidProcessId, params_->process_id);
-@@ -209,6 +210,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
+@@ -209,6 +209,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
        std::move(keepalive_statistics_recorder),
        std::move(network_usage_accumulator),
        header_client_.is_bound() ? header_client_.get() : nullptr,
 +      auth_client_.is_bound() ? auth_client_.get() : nullptr,
-       context_->origin_policy_manager());
+       context_->origin_policy_manager(), nullptr /* trust_token_helper */);
    cors_url_loader_factory_->OnLoaderCreated(std::move(loader));
  }
 diff --git a/services/network/url_loader_factory.h b/services/network/url_loader_factory.h
