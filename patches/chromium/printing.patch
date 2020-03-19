@@ -463,27 +463,6 @@ index da3e127a34bdf79d3354b0822448ee75115a16e1..404388851849f9e11d7b2c5cb3798b71
    print_preview_context_.OnPrintPreview();
  
    base::UmaHistogramEnumeration(print_preview_context_.IsForArc()
-@@ -1587,13 +1591,13 @@ bool PrintRenderFrameHelper::FinalizePrintReadyDocument() {
-       print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_CAPTURE_FAILED);
-       return false;
-     }
--  } else {
--    if (!CopyMetafileDataToReadOnlySharedMem(*metafile,
--                                             &preview_params.content)) {
--      LOG(ERROR) << "CopyMetafileDataToReadOnlySharedMem failed";
--      print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
--      return false;
--    }
-+  }
-+
-+  if (!CopyMetafileDataToReadOnlySharedMem(*metafile,
-+                                           &preview_params.content)) {
-+    LOG(ERROR) << "CopyMetafileDataToReadOnlySharedMem failed";
-+    print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
-+    return false;
-   }
- 
-   preview_params.document_cookie = print_pages_params_->params.document_cookie;
 @@ -1728,7 +1732,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
      auto self = weak_ptr_factory_.GetWeakPtr();
