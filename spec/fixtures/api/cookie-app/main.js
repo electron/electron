@@ -17,16 +17,11 @@ app.whenReady().then(async function () {
     url
   })
 
-  const maybeRemove = async (pred) => new Promise(async (resolve, reject) => {
-    try {
-      if (pred()) {
-        await persistentSession.cookies.remove(url, name)
-      }
-      resolve()
-    } catch (error) {
-      reject(error)
+  const maybeRemove = async (pred) => {
+    if (pred()) {
+      await persistentSession.cookies.remove(url, name)
     }
-  })
+  }
 
   try {
     await maybeRemove(() => process.env.PHASE === 'one')

@@ -448,7 +448,7 @@ describe('chromium features', () => {
 
     [true, false].forEach((isSandboxEnabled) =>
       describe(`sandbox=${isSandboxEnabled}`, () => {
-        it('posts data in the same window', () => {
+        it('posts data in the same window', async () => {
           const w = new BrowserWindow({
             show: false,
             webPreferences: {
@@ -456,24 +456,23 @@ describe('chromium features', () => {
             }
           })
 
-          return new Promise(async (resolve) => {
-            await w.loadFile(path.join(fixturesPath, 'pages', 'form-with-data.html'))
+          await w.loadFile(path.join(fixturesPath, 'pages', 'form-with-data.html'))
 
-            w.webContents.once('did-finish-load', async () => {
-              const res = await w.webContents.executeJavaScript('document.body.innerText')
-              expect(res).to.equal('body:greeting=hello')
-              resolve()
-            })
+          const loadPromise = emittedOnce(w.webContents, 'did-finish-load')
 
-            w.webContents.executeJavaScript(`
-              const form = document.querySelector('form')
-              form.action = '${serverUrl}';
-              form.submit();
-            `)
-          })
+          w.webContents.executeJavaScript(`
+            const form = document.querySelector('form')
+            form.action = '${serverUrl}';
+            form.submit();
+          `)
+
+          await loadPromise
+
+          const res = await w.webContents.executeJavaScript('document.body.innerText')
+          expect(res).to.equal('body:greeting=hello')
         })
 
-        it('posts data to a new window with target=_blank', () => {
+        it('posts data to a new window with target=_blank', async () => {
           const w = new BrowserWindow({
             show: false,
             webPreferences: {
@@ -481,22 +480,21 @@ describe('chromium features', () => {
             }
           })
 
-          return new Promise(async (resolve) => {
-            await w.loadFile(path.join(fixturesPath, 'pages', 'form-with-data.html'))
+          await w.loadFile(path.join(fixturesPath, 'pages', 'form-with-data.html'))
 
-            app.once('browser-window-created', async (event, newWin) => {
-              const res = await newWin.webContents.executeJavaScript('document.body.innerText')
-              expect(res).to.equal('body:greeting=hello')
-              resolve()
-            })
+          const windowCreatedPromise = emittedOnce(app, 'browser-window-created')
 
-            w.webContents.executeJavaScript(`
-              const form = document.querySelector('form')
-              form.action = '${serverUrl}';
-              form.target = '_blank';
-              form.submit();
-            `)
-          })
+          w.webContents.executeJavaScript(`
+            const form = document.querySelector('form')
+            form.action = '${serverUrl}';
+            form.target = '_blank';
+            form.submit();
+          `)
+
+          const [, newWin] = await windowCreatedPromise
+
+          const res = await newWin.webContents.executeJavaScript('document.body.innerText')
+          expect(res).to.equal('body:greeting=hello')
         })
       })
     )

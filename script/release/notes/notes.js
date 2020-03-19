@@ -496,7 +496,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   if (!shouldIncludeMultibranchChanges(newVersion)) {
     // load all the prDatas
     await Promise.all(
-      pool.commits.map(commit => new Promise(async (resolve) => {
+      pool.commits.map(commit => (async () => {
         const { pr } = commit
         if (typeof pr === 'object') {
           const prData = await getPullRequest(pr.number, pr.owner, pr.repo)
@@ -504,8 +504,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
             commit.prData = prData
           }
         }
-        resolve()
-      }))
+      })())
     )
 
     // remove items that already landed in a previous major/minor series
