@@ -9,8 +9,8 @@ diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/br
 index 200d25b69239fe638c27e2a4dd9935087f7401f8..c69505920aba745dd4748a2fa154f6d7f7e5b8b6 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -447,6 +447,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
-   Send(new ViewMsg_SetBackgroundOpaque(GetRoutingID(), opaque));
+@@ -452,6 +452,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+   GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
 +void RenderViewHostImpl::SetSchedulerThrottling(bool allowed) {
@@ -36,9 +36,9 @@ diff --git a/content/common/view_messages.h b/content/common/view_messages.h
 index ee01a4430f8e3098fbf741010394ad1a8fd6528b..01327559222ebd3e9de954cf9c9137cc105cbee0 100644
 --- a/content/common/view_messages.h
 +++ b/content/common/view_messages.h
-@@ -98,6 +98,9 @@ IPC_STRUCT_TRAITS_END()
- // Make the RenderWidget background transparent or opaque.
- IPC_MESSAGE_ROUTED1(ViewMsg_SetBackgroundOpaque, bool /* opaque */)
+@@ -95,6 +95,9 @@ IPC_STRUCT_TRAITS_END()
+ 
+ // Messages sent from the browser to the renderer.
  
 +// Whether to enable the Renderer scheduler background throttling.
 +IPC_MESSAGE_ROUTED1(ViewMsg_SetSchedulerThrottling, bool /* allowed */)

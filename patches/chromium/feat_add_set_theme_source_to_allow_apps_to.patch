@@ -52,9 +52,9 @@ index edd042cfe327810c120c4b446c043761c0d21b9f..59aaf71ea1e7931c421a46a7ca8cadb4
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -478,6 +494,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
-   PreferredColorScheme preferred_color_scheme_ =
+@@ -482,6 +482,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
        PreferredColorScheme::kNoPreference;
+   mutable ColorProvider* color_provider_ = nullptr;
  
 +  ThemeSource theme_source_ = ThemeSource::kSystem;
 +
