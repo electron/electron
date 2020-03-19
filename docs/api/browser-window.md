@@ -801,12 +801,17 @@ hide it immediately.
 
 A `Boolean` property that determines whether the window is in simple (pre-Lion) fullscreen mode.
 
+#### `win.visibleOnAllWorkspaces`
+
+A `Boolean` property that determines whether the window is visible on all workspaces.
+
+**Note:** Always returns false on Windows.
+
 #### `win.title`
 
 A `String` property that determines the title of the native window.
 
-**Note:** The title of the web page can be different from the title of the native
-window.
+**Note:** The title of the web page can be different from the title of the native window.
 
 #### `win.minimizable`
 

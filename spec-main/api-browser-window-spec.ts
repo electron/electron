@@ -3437,6 +3437,26 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('visibleOnAllWorkspaces state', () => {
+      describe('with properties', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.visibleOnAllWorkspaces).to.be.false()
+          w.visibleOnAllWorkspaces = true
+          expect(w.visibleOnAllWorkspaces).to.be.true()
+        })
+      })
+
+      describe('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isVisibleOnAllWorkspaces()).to.be.false()
+          w.setVisibleOnAllWorkspaces(true)
+          expect(w.isVisibleOnAllWorkspaces()).to.be.true()
+        })
+      })
+    })
+
     describe('native window title', () => {
       describe('with properties', () => {
         it('can be set with title constructor option', () => {
