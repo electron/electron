@@ -15,5 +15,27 @@
   },
   "extension.getURL": {
     "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
-  }
+  },
+  "i18n": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script"],
+    "disallow_for_service_workers": true
+  },
+  "mimeHandlerViewGuestInternal": {
+    "internal": true,
+    "contexts": "all",
+    "channel": "stable",
+    "matches": ["<all_urls>"]
+  },
+  "resourcesPrivate": [{
+    "dependencies": ["permission:resourcesPrivate"],
+    "contexts": ["blessed_extension"]
+  }, {
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://print/*"
+    ]
+  }]
 }

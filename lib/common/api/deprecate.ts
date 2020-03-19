@@ -94,24 +94,31 @@ const deprecate: ElectronInternal.DeprecationUtil = {
   },
 
   // remove a property with no replacement
-  removeProperty: (o, removedName) => {
+  removeProperty: (o, removedName, onlyForValues) => {
     // if the property's already been removed, warn about it
-    if (!(removedName in o)) {
+    const info = Object.getOwnPropertyDescriptor((o as any).__proto__, removedName) // eslint-disable-line
+    if (!info) {
       deprecate.log(`Unable to remove property '${removedName}' from an object that lacks it.`)
+      return o
+    }
+    if (!info.get || !info.set) {
+      deprecate.log(`Unable to remove property '${removedName}' from an object does not have a getter / setter`)
+      return o
     }
 
     // wrap the deprecated property in an accessor to warn
     const warn = warnOnce(removedName)
-    let val = o[removedName]
     return Object.defineProperty(o, removedName, {
       configurable: true,
       get: () => {
         warn()
-        return val
+        return info.get!.call(o)
       },
       set: newVal => {
-        warn()
-        val = newVal
+        if (!onlyForValues || onlyForValues.includes(newVal)) {
+          warn()
+        }
+        return info.set!.call(o, newVal)
       }
     })
   },

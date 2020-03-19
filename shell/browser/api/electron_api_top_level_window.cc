@@ -120,6 +120,9 @@ TopLevelWindow::~TopLevelWindow() {
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
   base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
+
+  // Remove global reference so the JS object can be garbage collected.
+  self_ref_.Reset();
 }
 
 void TopLevelWindow::InitWith(v8::Isolate* isolate,
@@ -135,6 +138,9 @@ void TopLevelWindow::InitWith(v8::Isolate* isolate,
     DCHECK(!parent.IsEmpty());
     parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
   }
+
+  // Reference this object in case it got garbage collected.
+  self_ref_.Reset(isolate, wrapper);
 }
 
 void TopLevelWindow::WillCloseWindow(bool* prevent_default) {
@@ -808,6 +814,16 @@ void TopLevelWindow::SetVibrancy(v8::Isolate* isolate,
   window_->SetVibrancy(type);
 }
 
+#if defined(OS_MACOSX)
+void TopLevelWindow::SetTrafficLightPosition(const gfx::Point& position) {
+  window_->SetTrafficLightPosition(position);
+}
+
+gfx::Point TopLevelWindow::GetTrafficLightPosition() const {
+  return window_->GetTrafficLightPosition();
+}
+#endif
+
 void TopLevelWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {
   window_->SetTouchBar(std::move(items));
@@ -1104,30 +1120,18 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setSheetOffset", &TopLevelWindow::SetSheetOffset)
       .SetMethod("moveAbove", &TopLevelWindow::MoveAbove)
       .SetMethod("moveTop", &TopLevelWindow::MoveTop)
-      .SetMethod("_setResizable", &TopLevelWindow::SetResizable)
-      .SetMethod("_isResizable", &TopLevelWindow::IsResizable)
-      .SetProperty("resizable", &TopLevelWindow::IsResizable,
-                   &TopLevelWindow::SetResizable)
-      .SetMethod("_setMovable", &TopLevelWindow::SetMovable)
-      .SetMethod("_isMovable", &TopLevelWindow::IsMovable)
-      .SetProperty("movable", &TopLevelWindow::IsMovable,
-                   &TopLevelWindow::SetMovable)
-      .SetMethod("_setMinimizable", &TopLevelWindow::SetMinimizable)
-      .SetMethod("_isMinimizable", &TopLevelWindow::IsMinimizable)
-      .SetProperty("minimizable", &TopLevelWindow::IsMinimizable,
-                   &TopLevelWindow::SetMinimizable)
-      .SetMethod("_setMaximizable", &TopLevelWindow::SetMaximizable)
-      .SetMethod("_isMaximizable", &TopLevelWindow::IsMaximizable)
-      .SetProperty("maximizable", &TopLevelWindow::IsMaximizable,
-                   &TopLevelWindow::SetMaximizable)
-      .SetMethod("_setFullScreenable", &TopLevelWindow::SetFullScreenable)
-      .SetMethod("_isFullScreenable", &TopLevelWindow::IsFullScreenable)
-      .SetProperty("fullScreenable", &TopLevelWindow::IsFullScreenable,
-                   &TopLevelWindow::SetFullScreenable)
-      .SetMethod("_setClosable", &TopLevelWindow::SetClosable)
-      .SetMethod("_isClosable", &TopLevelWindow::IsClosable)
-      .SetProperty("closable", &TopLevelWindow::IsClosable,
-                   &TopLevelWindow::SetClosable)
+      .SetMethod("setResizable", &TopLevelWindow::SetResizable)
+      .SetMethod("isResizable", &TopLevelWindow::IsResizable)
+      .SetMethod("setMovable", &TopLevelWindow::SetMovable)
+      .SetMethod("isMovable", &TopLevelWindow::IsMovable)
+      .SetMethod("setMinimizable", &TopLevelWindow::SetMinimizable)
+      .SetMethod("isMinimizable", &TopLevelWindow::IsMinimizable)
+      .SetMethod("setMaximizable", &TopLevelWindow::SetMaximizable)
+      .SetMethod("isMaximizable", &TopLevelWindow::IsMaximizable)
+      .SetMethod("setFullScreenable", &TopLevelWindow::SetFullScreenable)
+      .SetMethod("isFullScreenable", &TopLevelWindow::IsFullScreenable)
+      .SetMethod("setClosable", &TopLevelWindow::SetClosable)
+      .SetMethod("isClosable", &TopLevelWindow::IsClosable)
       .SetMethod("setAlwaysOnTop", &TopLevelWindow::SetAlwaysOnTop)
       .SetMethod("isAlwaysOnTop", &TopLevelWindow::IsAlwaysOnTop)
       .SetMethod("center", &TopLevelWindow::Center)
@@ -1178,6 +1182,12 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &TopLevelWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &TopLevelWindow::SetVibrancy)
+#if defined(OS_MACOSX)
+      .SetMethod("setTrafficLightPosition",
+                 &TopLevelWindow::SetTrafficLightPosition)
+      .SetMethod("getTrafficLightPosition",
+                 &TopLevelWindow::GetTrafficLightPosition)
+#endif
       .SetMethod("_setTouchBarItems", &TopLevelWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &TopLevelWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem",
@@ -1195,10 +1205,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
                    &TopLevelWindow::IsExcludedFromShownWindowsMenu,
                    &TopLevelWindow::SetExcludedFromShownWindowsMenu)
 #endif
-      .SetMethod("_setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
-      .SetMethod("_isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
-      .SetProperty("autoHideMenuBar", &TopLevelWindow::IsMenuBarAutoHide,
-                   &TopLevelWindow::SetAutoHideMenuBar)
+      .SetMethod("setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
+      .SetMethod("isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
       .SetMethod("setMenuBarVisibility", &TopLevelWindow::SetMenuBarVisibility)
       .SetMethod("isMenuBarVisible", &TopLevelWindow::IsMenuBarVisible)
       .SetMethod("setAspectRatio", &TopLevelWindow::SetAspectRatio)
@@ -1257,4 +1265,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_top_level_window, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_top_level_window, Initialize)

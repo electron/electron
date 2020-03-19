@@ -9,7 +9,7 @@ import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDe
 
 import { emittedOnce } from './events-helpers'
 import { ifit, ifdescribe } from './spec-helpers'
-import { closeWindow } from './window-helpers'
+import { closeWindow, closeAllWindows } from './window-helpers'
 
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
@@ -37,12 +37,6 @@ const expectBoundsEqual = (actual: any, expected: any) => {
   }
 }
 
-const closeAllWindows = async () => {
-  for (const w of BrowserWindow.getAllWindows()) {
-    await closeWindow(w, { assertNotWindows: false })
-  }
-}
-
 describe('BrowserWindow module', () => {
   describe('BrowserWindow constructor', () => {
     it('allows passing void 0 as the webContents', async () => {
@@ -55,6 +49,28 @@ describe('BrowserWindow module', () => {
         } as any)
         w.destroy()
       }).not.to.throw()
+    })
+  })
+
+  describe('garbage collection', () => {
+    const v8Util = process.electronBinding('v8_util')
+    afterEach(closeAllWindows)
+
+    it('window does not get garbage collected when opened', (done) => {
+      const w = new BrowserWindow({ show: false })
+      // Keep a weak reference to the window.
+      const map = v8Util.createIDWeakMap<Electron.BrowserWindow>()
+      map.set(0, w)
+      setTimeout(() => {
+        // Do garbage collection, since |w| is not referenced in this closure
+        // it would be gone after next call if there is no other reference.
+        v8Util.requestGarbageCollectionForTesting()
+
+        setTimeout(() => {
+          expect(map.has(0)).to.equal(true)
+          done()
+        })
+      })
     })
   })
 
@@ -194,7 +210,7 @@ describe('BrowserWindow module', () => {
       }).to.throw('Object has been destroyed')
     })
     it('should not crash when destroying windows with pending events', () => {
-      const focusListener = () => {}
+      const focusListener = () => { }
       app.on('browser-window-focus', focusListener)
       const windowCount = 3
       const windowOptions = {
@@ -265,7 +281,7 @@ describe('BrowserWindow module', () => {
               fs.readFile(filePath, (err, data) => {
                 if (err) return
                 if (parsedData.username === 'test' &&
-                    parsedData.file === data.toString()) {
+                  parsedData.file === data.toString()) {
                   res.end()
                 }
               })
@@ -418,110 +434,168 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('navigation events', () => {
-    let w = null as unknown as BrowserWindow
-    beforeEach(() => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+  for (const sandbox of [false, true]) {
+    describe(`navigation events${sandbox ? ' with sandbox' : ''}`, () => {
+      let w = null as unknown as BrowserWindow
+      beforeEach(() => {
+        w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, sandbox } })
+      })
+      afterEach(async () => {
+        await closeWindow(w)
+        w = null as unknown as BrowserWindow
+      })
+
+      describe('will-navigate event', () => {
+        let server = null as unknown as http.Server
+        let url = null as unknown as string
+        before((done) => {
+          server = http.createServer((req, res) => { res.end('') })
+          server.listen(0, '127.0.0.1', () => {
+            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`
+            done()
+          })
+        })
+
+        after(() => {
+          server.close()
+        })
+
+        it('allows the window to be closed from the event listener', (done) => {
+          w.webContents.once('will-navigate', () => {
+            w.close()
+            done()
+          })
+          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'))
+        })
+
+        it('can be prevented', (done) => {
+          let willNavigate = false
+          w.webContents.once('will-navigate', (e) => {
+            willNavigate = true
+            e.preventDefault()
+          })
+          w.webContents.on('did-stop-loading', () => {
+            if (willNavigate) {
+              // i.e. it shouldn't have had '?navigated' appended to it.
+              expect(w.webContents.getURL().endsWith('will-navigate.html')).to.be.true()
+              done()
+            }
+          })
+          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'))
+        })
+
+        it('is triggered when navigating from file: to http:', async () => {
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`)
+          const navigatedTo = await new Promise(resolve => {
+            w.webContents.once('will-navigate', (e, url) => {
+              e.preventDefault()
+              resolve(url)
+            })
+          })
+          expect(navigatedTo).to.equal(url)
+          expect(w.webContents.getURL()).to.match(/^file:/)
+        })
+
+        it('is triggered when navigating from about:blank to http:', async () => {
+          await w.loadURL('about:blank')
+          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`)
+          const navigatedTo = await new Promise(resolve => {
+            w.webContents.once('will-navigate', (e, url) => {
+              e.preventDefault()
+              resolve(url)
+            })
+          })
+          expect(navigatedTo).to.equal(url)
+          expect(w.webContents.getURL()).to.equal('about:blank')
+        })
+      })
+
+      describe('will-redirect event', () => {
+        let server = null as unknown as http.Server
+        let url = null as unknown as string
+        before((done) => {
+          server = http.createServer((req, res) => {
+            if (req.url === '/302') {
+              res.setHeader('Location', '/200')
+              res.statusCode = 302
+              res.end()
+            } else if (req.url === '/navigate-302') {
+              res.end(`<html><body><script>window.location='${url}/302'</script></body></html>`)
+            } else {
+              res.end()
+            }
+          })
+          server.listen(0, '127.0.0.1', () => {
+            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+            done()
+          })
+        })
+
+        after(() => {
+          server.close()
+        })
+        it('is emitted on redirects', (done) => {
+          w.webContents.on('will-redirect', () => {
+            done()
+          })
+          w.loadURL(`${url}/302`)
+        })
+
+        it('is emitted after will-navigate on redirects', (done) => {
+          let navigateCalled = false
+          w.webContents.on('will-navigate', () => {
+            navigateCalled = true
+          })
+          w.webContents.on('will-redirect', () => {
+            expect(navigateCalled).to.equal(true, 'should have called will-navigate first')
+            done()
+          })
+          w.loadURL(`${url}/navigate-302`)
+        })
+
+        it('is emitted before did-stop-loading on redirects', (done) => {
+          let stopCalled = false
+          w.webContents.on('did-stop-loading', () => {
+            stopCalled = true
+          })
+          w.webContents.on('will-redirect', () => {
+            expect(stopCalled).to.equal(false, 'should not have called did-stop-loading first')
+            done()
+          })
+          w.loadURL(`${url}/302`)
+        })
+
+        it('allows the window to be closed from the event listener', (done) => {
+          w.webContents.once('will-redirect', () => {
+            w.close()
+            done()
+          })
+          w.loadURL(`${url}/302`)
+        })
+
+        it('can be prevented', (done) => {
+          w.webContents.once('will-redirect', (event) => {
+            event.preventDefault()
+          })
+          w.webContents.on('will-navigate', (e, u) => {
+            expect(u).to.equal(`${url}/302`)
+          })
+          w.webContents.on('did-stop-loading', () => {
+            expect(w.webContents.getURL()).to.equal(
+              `${url}/navigate-302`,
+              'url should not have changed after navigation event'
+            )
+            done()
+          })
+          w.webContents.on('will-redirect', (e, u) => {
+            expect(u).to.equal(`${url}/200`)
+          })
+          w.loadURL(`${url}/navigate-302`)
+        })
+      })
     })
-    afterEach(async () => {
-      await closeWindow(w)
-      w = null as unknown as BrowserWindow
-    })
-
-    describe('will-navigate event', () => {
-      it('allows the window to be closed from the event listener', (done) => {
-        w.webContents.once('will-navigate', () => {
-          w.close()
-          done()
-        })
-        w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'))
-      })
-    })
-
-    describe('will-redirect event', () => {
-      let server = null as unknown as http.Server
-      let url = null as unknown as string
-      before((done) => {
-        server = http.createServer((req, res) => {
-          if (req.url === '/302') {
-            res.setHeader('Location', '/200')
-            res.statusCode = 302
-            res.end()
-          } else if (req.url === '/navigate-302') {
-            res.end(`<html><body><script>window.location='${url}/302'</script></body></html>`)
-          } else {
-            res.end()
-          }
-        })
-        server.listen(0, '127.0.0.1', () => {
-          url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
-          done()
-        })
-      })
-
-      after(() => {
-        server.close()
-      })
-      it('is emitted on redirects', (done) => {
-        w.webContents.on('will-redirect', () => {
-          done()
-        })
-        w.loadURL(`${url}/302`)
-      })
-
-      it('is emitted after will-navigate on redirects', (done) => {
-        let navigateCalled = false
-        w.webContents.on('will-navigate', () => {
-          navigateCalled = true
-        })
-        w.webContents.on('will-redirect', () => {
-          expect(navigateCalled).to.equal(true, 'should have called will-navigate first')
-          done()
-        })
-        w.loadURL(`${url}/navigate-302`)
-      })
-
-      it('is emitted before did-stop-loading on redirects', (done) => {
-        let stopCalled = false
-        w.webContents.on('did-stop-loading', () => {
-          stopCalled = true
-        })
-        w.webContents.on('will-redirect', () => {
-          expect(stopCalled).to.equal(false, 'should not have called did-stop-loading first')
-          done()
-        })
-        w.loadURL(`${url}/302`)
-      })
-
-      it('allows the window to be closed from the event listener', (done) => {
-        w.webContents.once('will-redirect', () => {
-          w.close()
-          done()
-        })
-        w.loadURL(`${url}/302`)
-      })
-
-      it('can be prevented', (done) => {
-        w.webContents.once('will-redirect', (event) => {
-          event.preventDefault()
-        })
-        w.webContents.on('will-navigate', (e, u) => {
-          expect(u).to.equal(`${url}/302`)
-        })
-        w.webContents.on('did-stop-loading', () => {
-          expect(w.webContents.getURL()).to.equal(
-            `${url}/navigate-302`,
-            'url should not have changed after navigation event'
-          )
-          done()
-        })
-        w.webContents.on('will-redirect', (e, u) => {
-          expect(u).to.equal(`${url}/200`)
-        })
-        w.loadURL(`${url}/navigate-302`)
-      })
-    })
-  })
+  }
 
   describe('focus and visibility', () => {
     let w = null as unknown as BrowserWindow
@@ -1028,15 +1102,39 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('autoHideMenuBar property', () => {
+  describe('autoHideMenuBar state', () => {
     afterEach(closeAllWindows)
-    it('exists', () => {
-      const w = new BrowserWindow({ show: false })
-      expect(w).to.have.property('autoHideMenuBar')
 
-      // TODO(codebytere): remove when propertyification is complete
-      expect(w.setAutoHideMenuBar).to.be.a('function')
-      expect(w.isMenuBarAutoHide).to.be.a('function')
+    it('for properties', () => {
+      it('can be set with autoHideMenuBar constructor option', () => {
+        const w = new BrowserWindow({ show: false, autoHideMenuBar: true })
+        expect(w.autoHideMenuBar).to.be.true('autoHideMenuBar')
+      })
+
+      it('can be changed', () => {
+        const w = new BrowserWindow({ show: false })
+        expect(w.autoHideMenuBar).to.be.false('autoHideMenuBar')
+        w.autoHideMenuBar = true
+        expect(w.autoHideMenuBar).to.be.true('autoHideMenuBar')
+        w.autoHideMenuBar = false
+        expect(w.autoHideMenuBar).to.be.false('autoHideMenuBar')
+      })
+    })
+
+    it('for functions', () => {
+      it('can be set with autoHideMenuBar constructor option', () => {
+        const w = new BrowserWindow({ show: false, autoHideMenuBar: true })
+        expect(w.isMenuBarAutoHide()).to.be.true('autoHideMenuBar')
+      })
+
+      it('can be changed', () => {
+        const w = new BrowserWindow({ show: false })
+        expect(w.isMenuBarAutoHide()).to.be.false('autoHideMenuBar')
+        w.setAutoHideMenuBar(true)
+        expect(w.isMenuBarAutoHide()).to.be.true('autoHideMenuBar')
+        w.setAutoHideMenuBar(false)
+        expect(w.isMenuBarAutoHide()).to.be.false('autoHideMenuBar')
+      })
     })
   })
 
@@ -1270,6 +1368,31 @@ describe('BrowserWindow module', () => {
         w.setVibrancy('ultra-dark')
         w.setVibrancy('' as any)
       }).to.not.throw()
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('BrowserWindow.getTrafficLightPosition(pos)', () => {
+    afterEach(closeAllWindows)
+
+    it('gets the set traffic light position property', () => {
+      const pos = { x: 10, y: 10 }
+      const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos })
+      const currentPosition = w.getTrafficLightPosition()
+
+      expect(currentPosition).to.deep.equal(pos)
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('BrowserWindow.setTrafficLightPosition(pos)', () => {
+    afterEach(closeAllWindows)
+
+    it('can set the traffic light position property', () => {
+      const pos = { x: 10, y: 10 }
+      const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos })
+      w.setTrafficLightPosition(pos)
+      const currentPosition = w.getTrafficLightPosition()
+
+      expect(currentPosition).to.deep.equal(pos)
     })
   })
 
@@ -1539,7 +1662,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows)
 
     describe('"preload" option', () => {
-      const doesNotLeakSpec = (name: string, webPrefs: {nodeIntegration: boolean, sandbox: boolean, contextIsolation: boolean}) => {
+      const doesNotLeakSpec = (name: string, webPrefs: { nodeIntegration: boolean, sandbox: boolean, contextIsolation: boolean }) => {
         it(name, async () => {
           const w = new BrowserWindow({
             webPreferences: {
@@ -1801,7 +1924,7 @@ describe('BrowserWindow module', () => {
     })
 
     describe('"sandbox" option', () => {
-      function waitForEvents<T> (emitter: {once: Function}, events: string[], callback: () => void) {
+      function waitForEvents<T> (emitter: { once: Function }, events: string[], callback: () => void) {
         let count = events.length
         for (const event of events) {
           emitter.once(event, () => {
@@ -2072,8 +2195,7 @@ describe('BrowserWindow module', () => {
             'did-finish-load',
             'did-frame-finish-load',
             'did-navigate-in-page',
-            // TODO(nornagon): sandboxed pages should also emit will-navigate
-            // 'will-navigate',
+            'will-navigate',
             'did-start-loading',
             'did-stop-loading',
             'did-frame-finish-load',
@@ -2332,18 +2454,6 @@ describe('BrowserWindow module', () => {
         ])
         const webPreferences = (childWebContents as any).getLastWebPreferences()
         expect(webPreferences.foo).to.equal('bar')
-      })
-      it('should have nodeIntegration disabled in child windows', async () => {
-        const w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            nativeWindowOpen: true
-          }
-        })
-        w.loadFile(path.join(fixtures, 'api', 'native-window-open-argv.html'))
-        const [, typeofProcess] = await emittedOnce(ipcMain, 'answer')
-        expect(typeofProcess).to.eql('undefined')
       })
 
       describe('window.location', () => {
@@ -2802,7 +2912,7 @@ describe('BrowserWindow module', () => {
             return
           }
           if (rect.height === contentHeight && rect.width === contentWidth &&
-              !gotInitialFullSizeFrame) {
+            !gotInitialFullSizeFrame) {
             // The initial frame is full-size, but we're looking for a call
             // with just the dirty-rect. The next frame should be a smaller
             // rect.
@@ -3044,16 +3154,53 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    // The isEnabled API is not reliable on macOS.
-    ifdescribe(process.platform !== 'darwin')('modal option', () => {
-      it('disables parent window', () => {
+    describe('modal option', () => {
+      it('does not freeze or crash', async () => {
+        const parentWindow = new BrowserWindow()
+
+        const createTwo = async () => {
+          const two = new BrowserWindow({
+            width: 300,
+            height: 200,
+            parent: parentWindow,
+            modal: true,
+            show: false
+          })
+
+          const twoShown = emittedOnce(two, 'show')
+          two.show()
+          await twoShown
+          setTimeout(() => two.close(), 500)
+
+          await emittedOnce(two, 'closed')
+        }
+
+        const one = new BrowserWindow({
+          width: 600,
+          height: 400,
+          parent: parentWindow,
+          modal: true,
+          show: false
+        })
+
+        const oneShown = emittedOnce(one, 'show')
+        one.show()
+        await oneShown
+        setTimeout(() => one.destroy(), 500)
+
+        await emittedOnce(one, 'closed')
+        await createTwo()
+      })
+
+      ifit(process.platform !== 'darwin')('disables parent window', () => {
         const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         expect(w.isEnabled()).to.be.true('w.isEnabled')
         c.show()
         expect(w.isEnabled()).to.be.false('w.isEnabled')
       })
-      it('re-enables an enabled parent window when closed', (done) => {
+
+      ifit(process.platform !== 'darwin')('re-enables an enabled parent window when closed', (done) => {
         const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         c.once('closed', () => {
@@ -3063,7 +3210,8 @@ describe('BrowserWindow module', () => {
         c.show()
         c.close()
       })
-      it('does not re-enable a disabled parent window when closed', (done) => {
+
+      ifit(process.platform !== 'darwin')('does not re-enable a disabled parent window when closed', (done) => {
         const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         c.once('closed', () => {
@@ -3074,7 +3222,8 @@ describe('BrowserWindow module', () => {
         c.show()
         c.close()
       })
-      it('disables parent window recursively', () => {
+
+      ifit(process.platform !== 'darwin')('disables parent window recursively', () => {
         const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         const c2 = new BrowserWindow({ show: false, parent: w, modal: true })
@@ -3122,32 +3271,44 @@ describe('BrowserWindow module', () => {
     })
 
     describe('resizable state', () => {
-      it('can be changed with resizable option', () => {
-        const w = new BrowserWindow({ show: false, resizable: false })
-        expect(w.resizable).to.be.false('resizable')
+      it('with properties', () => {
+        it('can be set with resizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, resizable: false })
+          expect(w.resizable).to.be.false('resizable')
 
-        if (process.platform === 'darwin') {
-          expect(w.maximizable).to.to.true('maximizable')
-        }
+          if (process.platform === 'darwin') {
+            expect(w.maximizable).to.to.true('maximizable')
+          }
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.resizable).to.be.true('resizable')
+          w.resizable = false
+          expect(w.resizable).to.be.false('resizable')
+          w.resizable = true
+          expect(w.resizable).to.be.true('resizable')
+        })
       })
 
-      // TODO(codebytere): remove when propertyification is complete
-      it('can be changed with setResizable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isResizable()).to.be.true('resizable')
-        w.setResizable(false)
-        expect(w.isResizable()).to.be.false('resizable')
-        w.setResizable(true)
-        expect(w.isResizable()).to.be.true('resizable')
-      })
+      it('with functions', () => {
+        it('can be set with resizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, resizable: false })
+          expect(w.isResizable()).to.be.false('resizable')
 
-      it('can be changed with resizable property', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.resizable).to.be.true('resizable')
-        w.resizable = false
-        expect(w.resizable).to.be.false('resizable')
-        w.resizable = true
-        expect(w.resizable).to.be.true('resizable')
+          if (process.platform === 'darwin') {
+            expect(w.isMaximizable()).to.to.true('maximizable')
+          }
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isResizable()).to.be.true('resizable')
+          w.setResizable(false)
+          expect(w.isResizable()).to.be.false('resizable')
+          w.setResizable(true)
+          expect(w.isResizable()).to.be.true('resizable')
+        })
       })
 
       it('works for a frameless window', () => {
@@ -3236,200 +3397,203 @@ describe('BrowserWindow module', () => {
     // Not implemented on Linux.
     afterEach(closeAllWindows)
 
-    describe('movable state (property)', () => {
-      it('can be changed with movable option', () => {
-        const w = new BrowserWindow({ show: false, movable: false })
-        expect(w.movable).to.be.false('movable')
+    describe('movable state', () => {
+      it('with properties', () => {
+        it('can be set with movable constructor option', () => {
+          const w = new BrowserWindow({ show: false, movable: false })
+          expect(w.movable).to.be.false('movable')
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.movable).to.be.true('movable')
+          w.movable = false
+          expect(w.movable).to.be.false('movable')
+          w.movable = true
+          expect(w.movable).to.be.true('movable')
+        })
       })
-      it('can be changed with movable property', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.movable).to.be.true('movable')
-        w.movable = false
-        expect(w.movable).to.be.false('movable')
-        w.movable = true
-        expect(w.movable).to.be.true('movable')
+
+      it('with functions', () => {
+        it('can be set with movable constructor option', () => {
+          const w = new BrowserWindow({ show: false, movable: false })
+          expect(w.isMovable()).to.be.false('movable')
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isMovable()).to.be.true('movable')
+          w.setMovable(false)
+          expect(w.isMovable()).to.be.false('movable')
+          w.setMovable(true)
+          expect(w.isMovable()).to.be.true('movable')
+        })
       })
     })
 
-    // TODO(codebytere): remove when propertyification is complete
-    describe('movable state (methods)', () => {
-      it('can be changed with movable option', () => {
-        const w = new BrowserWindow({ show: false, movable: false })
-        expect(w.isMovable()).to.be.false('movable')
-      })
-      it('can be changed with setMovable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isMovable()).to.be.true('movable')
-        w.setMovable(false)
-        expect(w.isMovable()).to.be.false('movable')
-        w.setMovable(true)
-        expect(w.isMovable()).to.be.true('movable')
-      })
-    })
+    describe('minimizable state', () => {
+      it('with properties', () => {
+        it('can be set with minimizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, minimizable: false })
+          expect(w.minimizable).to.be.false('minimizable')
+        })
 
-    describe('minimizable state (property)', () => {
-      it('can be changed with minimizable option', () => {
-        const w = new BrowserWindow({ show: false, minimizable: false })
-        expect(w.minimizable).to.be.false('minimizable')
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.minimizable).to.be.true('minimizable')
+          w.minimizable = false
+          expect(w.minimizable).to.be.false('minimizable')
+          w.minimizable = true
+          expect(w.minimizable).to.be.true('minimizable')
+        })
       })
 
-      it('can be changed with minimizable property', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.minimizable).to.be.true('minimizable')
-        w.minimizable = false
-        expect(w.minimizable).to.be.false('minimizable')
-        w.minimizable = true
-        expect(w.minimizable).to.be.true('minimizable')
-      })
-    })
+      it('with functions', () => {
+        it('can be set with minimizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, minimizable: false })
+          expect(w.isMinimizable()).to.be.false('movable')
+        })
 
-    // TODO(codebytere): remove when propertyification is complete
-    describe('minimizable state (methods)', () => {
-      it('can be changed with minimizable option', () => {
-        const w = new BrowserWindow({ show: false, minimizable: false })
-        expect(w.isMinimizable()).to.be.false('movable')
-      })
-
-      it('can be changed with setMinimizable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isMinimizable()).to.be.true('isMinimizable')
-        w.setMinimizable(false)
-        expect(w.isMinimizable()).to.be.false('isMinimizable')
-        w.setMinimizable(true)
-        expect(w.isMinimizable()).to.be.true('isMinimizable')
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isMinimizable()).to.be.true('isMinimizable')
+          w.setMinimizable(false)
+          expect(w.isMinimizable()).to.be.false('isMinimizable')
+          w.setMinimizable(true)
+          expect(w.isMinimizable()).to.be.true('isMinimizable')
+        })
       })
     })
 
     describe('maximizable state (property)', () => {
-      it('can be changed with maximizable option', () => {
-        const w = new BrowserWindow({ show: false, maximizable: false })
-        expect(w.maximizable).to.be.false('maximizable')
+      it('with properties', () => {
+        it('can be set with maximizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, maximizable: false })
+          expect(w.maximizable).to.be.false('maximizable')
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.maximizable).to.be.true('maximizable')
+          w.maximizable = false
+          expect(w.maximizable).to.be.false('maximizable')
+          w.maximizable = true
+          expect(w.maximizable).to.be.true('maximizable')
+        })
+
+        it('is not affected when changing other states', () => {
+          const w = new BrowserWindow({ show: false })
+          w.maximizable = false
+          expect(w.maximizable).to.be.false('maximizable')
+          w.minimizable = false
+          expect(w.maximizable).to.be.false('maximizable')
+          w.closable = false
+          expect(w.maximizable).to.be.false('maximizable')
+
+          w.maximizable = true
+          expect(w.maximizable).to.be.true('maximizable')
+          w.closable = true
+          expect(w.maximizable).to.be.true('maximizable')
+          w.fullScreenable = false
+          expect(w.maximizable).to.be.true('maximizable')
+        })
       })
 
-      it('can be changed with maximizable property', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.maximizable).to.be.true('maximizable')
-        w.maximizable = false
-        expect(w.maximizable).to.be.false('maximizable')
-        w.maximizable = true
-        expect(w.maximizable).to.be.true('maximizable')
-      })
+      it('with functions', () => {
+        it('can be set with maximizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, maximizable: false })
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
+        })
 
-      it('is not affected when changing other states', () => {
-        const w = new BrowserWindow({ show: false })
-        w.maximizable = false
-        expect(w.maximizable).to.be.false('maximizable')
-        w.minimizable = false
-        expect(w.maximizable).to.be.false('maximizable')
-        w.closable = false
-        expect(w.maximizable).to.be.false('maximizable')
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+          w.setMaximizable(false)
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
+          w.setMaximizable(true)
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+        })
 
-        w.maximizable = true
-        expect(w.maximizable).to.be.true('maximizable')
-        w.closable = true
-        expect(w.maximizable).to.be.true('maximizable')
-        w.fullScreenable = false
-        expect(w.maximizable).to.be.true('maximizable')
-      })
-    })
+        it('is not affected when changing other states', () => {
+          const w = new BrowserWindow({ show: false })
+          w.setMaximizable(false)
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
+          w.setMinimizable(false)
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
+          w.setClosable(false)
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
 
-    // TODO(codebytere): remove when propertyification is complete
-    describe('maximizable state (methods)', () => {
-      it('can be changed with maximizable option', () => {
-        const w = new BrowserWindow({ show: false, maximizable: false })
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-      })
-
-      it('can be changed with setMaximizable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
-        w.setMaximizable(false)
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-        w.setMaximizable(true)
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
-      })
-
-      it('is not affected when changing other states', () => {
-        const w = new BrowserWindow({ show: false })
-        w.setMaximizable(false)
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-        w.setMinimizable(false)
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-        w.setClosable(false)
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-
-        w.setMaximizable(true)
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
-        w.setClosable(true)
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
-        w.setFullScreenable(false)
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
-      })
-    })
-
-    ifdescribe(process.platform === 'win32')('maximizable state (Windows only)', () => {
-      // Only implemented on windows.
-
-      it('is reset to its former state', () => {
-        const w = new BrowserWindow({ show: false })
-        w.maximizable = false
-        w.resizable = false
-        w.resizable = true
-        expect(w.maximizable).to.be.false('maximizable')
-        w.maximizable = true
-        w.resizable = false
-        w.resizable = true
-        expect(w.maximizable).to.be.true('maximizable')
+          w.setMaximizable(true)
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+          w.setClosable(true)
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+          w.setFullScreenable(false)
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+        })
       })
     })
 
-    // TODO(codebytere): remove when propertyification is complete
-    ifdescribe(process.platform === 'win32')('maximizable state (Windows only) (methods)', () => {
-      // Only implemented on windows.
+    ifdescribe(process.platform === 'win32')('maximizable state', () => {
+      it('with properties', () => {
+        it('is reset to its former state', () => {
+          const w = new BrowserWindow({ show: false })
+          w.maximizable = false
+          w.resizable = false
+          w.resizable = true
+          expect(w.maximizable).to.be.false('maximizable')
+          w.maximizable = true
+          w.resizable = false
+          w.resizable = true
+          expect(w.maximizable).to.be.true('maximizable')
+        })
+      })
 
-      it('is reset to its former state', () => {
-        const w = new BrowserWindow({ show: false })
-        w.setMaximizable(false)
-        w.setResizable(false)
-        w.setResizable(true)
-        expect(w.isMaximizable()).to.be.false('isMaximizable')
-        w.setMaximizable(true)
-        w.setResizable(false)
-        w.setResizable(true)
-        expect(w.isMaximizable()).to.be.true('isMaximizable')
+      it('with functions', () => {
+        it('is reset to its former state', () => {
+          const w = new BrowserWindow({ show: false })
+          w.setMaximizable(false)
+          w.setResizable(false)
+          w.setResizable(true)
+          expect(w.isMaximizable()).to.be.false('isMaximizable')
+          w.setMaximizable(true)
+          w.setResizable(false)
+          w.setResizable(true)
+          expect(w.isMaximizable()).to.be.true('isMaximizable')
+        })
       })
     })
 
-    ifdescribe(process.platform === 'darwin')('fullscreenable state (property)', () => {
-      it('can be changed with fullscreenable option', () => {
-        const w = new BrowserWindow({ show: false, fullscreenable: false })
-        expect(w.fullScreenable).to.be.false('fullScreenable')
+    ifdescribe(process.platform === 'darwin')('fullscreenable state', () => {
+      it('with properties', () => {
+        it('can be set with fullscreenable constructor option', () => {
+          const w = new BrowserWindow({ show: false, fullscreenable: false })
+          expect(w.fullScreenable).to.be.false('fullScreenable')
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.fullScreenable).to.be.true('fullScreenable')
+          w.fullScreenable = false
+          expect(w.fullScreenable).to.be.false('fullScreenable')
+          w.fullScreenable = true
+          expect(w.fullScreenable).to.be.true('fullScreenable')
+        })
       })
 
-      it('can be changed with fullScreenable property', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.fullScreenable).to.be.true('fullScreenable')
-        w.fullScreenable = false
-        expect(w.fullScreenable).to.be.false('fullScreenable')
-        w.fullScreenable = true
-        expect(w.fullScreenable).to.be.true('fullScreenable')
-      })
-    })
+      it('with functions', () => {
+        it('can be set with fullscreenable constructor option', () => {
+          const w = new BrowserWindow({ show: false, fullscreenable: false })
+          expect(w.isFullScreenable()).to.be.false('isFullScreenable')
+        })
 
-    // TODO(codebytere): remove when propertyification is complete
-    ifdescribe(process.platform === 'darwin')('fullscreenable state (methods)', () => {
-      it('can be changed with fullscreenable option', () => {
-        const w = new BrowserWindow({ show: false, fullscreenable: false })
-        expect(w.isFullScreenable()).to.be.false('isFullScreenable')
-      })
-
-      it('can be changed with setFullScreenable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isFullScreenable()).to.be.true('isFullScreenable')
-        w.setFullScreenable(false)
-        expect(w.isFullScreenable()).to.be.false('isFullScreenable')
-        w.setFullScreenable(true)
-        expect(w.isFullScreenable()).to.be.true('isFullScreenable')
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isFullScreenable()).to.be.true('isFullScreenable')
+          w.setFullScreenable(false)
+          expect(w.isFullScreenable()).to.be.false('isFullScreenable')
+          w.setFullScreenable(true)
+          expect(w.isFullScreenable()).to.be.true('isFullScreenable')
+        })
       })
     })
 
@@ -3512,36 +3676,37 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('closable state (property)', () => {
-      it('can be changed with closable option', () => {
-        const w = new BrowserWindow({ show: false, closable: false })
-        expect(w.closable).to.be.false('closable')
+    describe('closable state', () => {
+      it('with properties', () => {
+        it('can be set with closable constructor option', () => {
+          const w = new BrowserWindow({ show: false, closable: false })
+          expect(w.closable).to.be.false('closable')
+        })
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.closable).to.be.true('closable')
+          w.closable = false
+          expect(w.closable).to.be.false('closable')
+          w.closable = true
+          expect(w.closable).to.be.true('closable')
+        })
       })
 
-      it('can be changed with setClosable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.closable).to.be.true('closable')
-        w.closable = false
-        expect(w.closable).to.be.false('closable')
-        w.closable = true
-        expect(w.closable).to.be.true('closable')
-      })
-    })
+      it('with functions', () => {
+        it('can be set with closable constructor option', () => {
+          const w = new BrowserWindow({ show: false, closable: false })
+          expect(w.isClosable()).to.be.false('isClosable')
+        })
 
-    // TODO(codebytere): remove when propertyification is complete
-    describe('closable state (methods)', () => {
-      it('can be changed with closable option', () => {
-        const w = new BrowserWindow({ show: false, closable: false })
-        expect(w.isClosable()).to.be.false('isClosable')
-      })
-
-      it('can be changed with setClosable method', () => {
-        const w = new BrowserWindow({ show: false })
-        expect(w.isClosable()).to.be.true('isClosable')
-        w.setClosable(false)
-        expect(w.isClosable()).to.be.false('isClosable')
-        w.setClosable(true)
-        expect(w.isClosable()).to.be.true('isClosable')
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false })
+          expect(w.isClosable()).to.be.true('isClosable')
+          w.setClosable(false)
+          expect(w.isClosable()).to.be.false('isClosable')
+          w.setClosable(true)
+          expect(w.isClosable()).to.be.true('isClosable')
+        })
       })
     })
 
@@ -3735,6 +3900,22 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('window.webContents.focus()', () => {
+    afterEach(closeAllWindows)
+    it('focuses window', (done) => {
+      const w1 = new BrowserWindow({ x: 100, y: 300, width: 300, height: 200 })
+      w1.loadURL('about:blank')
+      const w2 = new BrowserWindow({ x: 300, y: 300, width: 300, height: 200 })
+      w2.loadURL('about:blank')
+      w1.webContents.focus()
+      // Give focus some time to switch to w1
+      setTimeout(() => {
+        expect(w1.webContents.isFocused()).to.be.true('focuses window')
+        done()
+      })
+    })
+  })
+
   const features = process.electronBinding('features')
   ifdescribe(features.isOffscreenRenderingEnabled())('offscreen rendering', () => {
     let w: BrowserWindow
@@ -3817,19 +3998,23 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    // TODO(codebytere): remove in Electron v8.0.0
-    describe('window.webContents.getFrameRate()', () => {
-      it('has default frame rate', (done) => {
+    describe('frameRate APIs', () => {
+      it('has default frame rate (functions)', (done) => {
         w.webContents.once('paint', function () {
           expect(w.webContents.getFrameRate()).to.equal(60)
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
       })
-    })
 
-    // TODO(codebytere): remove in Electron v8.0.0
-    describe('window.webContents.setFrameRate(frameRate)', () => {
+      it('has default frame rate', (done) => {
+        w.webContents.once('paint', function () {
+          expect(w.webContents.frameRate).to.equal(60)
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+
       it('sets custom frame rate', (done) => {
         w.webContents.on('dom-ready', () => {
           w.webContents.setFrameRate(30)
@@ -3837,16 +4022,6 @@ describe('BrowserWindow module', () => {
             expect(w.webContents.getFrameRate()).to.equal(30)
             done()
           })
-        })
-        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
-      })
-    })
-
-    describe('window.webContents.FrameRate', () => {
-      it('has default frame rate', (done) => {
-        w.webContents.once('paint', function () {
-          expect(w.webContents.frameRate).to.equal(60)
-          done()
         })
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
       })

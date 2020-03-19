@@ -14,6 +14,7 @@
 
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_window.h"
+#include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/controls/native/native_view_host.h"
 
 @class ElectronNSWindow;
@@ -26,7 +27,7 @@ namespace electron {
 
 class RootViewMac;
 
-class NativeWindowMac : public NativeWindow {
+class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
  public:
   NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
@@ -150,8 +151,11 @@ class NativeWindowMac : public NativeWindow {
   void SetWindowLevel(int level);
 
   // Custom traffic light positioning
-  void RepositionTrafficLights();
+  void RedrawTrafficLights();
   void SetExitingFullScreen(bool flag);
+  void SetTrafficLightPosition(const gfx::Point& position) override;
+  gfx::Point GetTrafficLightPosition() const override;
+  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
   enum class TitleBarStyle {
     NORMAL,
@@ -217,6 +221,9 @@ class NativeWindowMac : public NativeWindow {
   // The visibility mode of window button controls when explicitly set through
   // setWindowButtonVisibility().
   base::Optional<bool> window_button_visibility_;
+
+  // Maximizable window state; necessary for persistence through redraws.
+  bool maximizable_ = true;
 
   // Simple (pre-Lion) Fullscreen Settings
   bool always_simple_fullscreen_ = false;

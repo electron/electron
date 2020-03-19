@@ -33,7 +33,7 @@ gin_helper::WrappableBase* Button::New(gin_helper::Arguments* args) {
 // static
 void Button::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin_helper::StringTov8(isolate, "Button"));
+  prototype->SetClassName(gin::StringToV8(isolate, "Button"));
 }
 
 }  // namespace api
@@ -56,4 +56,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_button, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_button, Initialize)

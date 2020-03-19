@@ -232,6 +232,12 @@ static_library("chrome") {
 
   if (enable_electron_extensions) {
     sources += [
+      "//chrome/browser/extensions/chrome_url_request_util.cc",
+      "//chrome/browser/extensions/chrome_url_request_util.h",
+      "//chrome/browser/pdf/pdf_extension_util.cc",
+      "//chrome/browser/pdf/pdf_extension_util.h",
+      "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc",
+      "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.h",
       "//chrome/renderer/extensions/extension_hooks_delegate.cc",
       "//chrome/renderer/extensions/extension_hooks_delegate.h",
       "//chrome/renderer/extensions/tabs_hooks_delegate.cc",
@@ -292,14 +298,18 @@ source_set("plugins") {
     sources += [
       "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.cc",
       "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.h",
-      "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
       "//chrome/renderer/pepper/pepper_flash_fullscreen_host.cc",
       "//chrome/renderer/pepper/pepper_flash_fullscreen_host.h",
       "//chrome/renderer/pepper/pepper_flash_menu_host.cc",
       "//chrome/renderer/pepper/pepper_flash_menu_host.h",
       "//chrome/renderer/pepper/pepper_flash_renderer_host.cc",
       "//chrome/renderer/pepper/pepper_flash_renderer_host.h",
+    ]
+  }
+  if (enable_pepper_flash || enable_pdf_viewer) {
+    sources += [
+      "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
+      "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
     ]
   }
   deps += [

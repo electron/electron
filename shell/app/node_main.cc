@@ -74,6 +74,17 @@ void SetNodeCliFlags() {
   ProcessGlobalArgs(&args, nullptr, &errors, node::kDisallowedInEnvironment);
 }
 
+// TODO(codebytere): expose this from Node.js itself?
+void HostCleanupFinalizationGroupCallback(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::FinalizationGroup> group) {
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (env == nullptr) {
+    return;
+  }
+  env->RegisterFinalizationGroupForCleanup(group);
+}
+
 }  // namespace
 
 namespace electron {
@@ -127,46 +138,66 @@ int NodeMain(int argc, char* argv[]) {
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
 
-    node::IsolateData* isolate_data =
-        node::CreateIsolateData(gin_env.isolate(), loop, gin_env.platform());
-    CHECK_NE(nullptr, isolate_data);
+    v8::Isolate* isolate = gin_env.isolate();
+    v8::Isolate::Scope isolate_scope(isolate);
+    v8::Locker locker(isolate);
+    node::Environment* env = nullptr;
+    node::IsolateData* isolate_data = nullptr;
+    {
+      v8::HandleScope scope(isolate);
 
-    node::Environment* env =
-        node::CreateEnvironment(isolate_data, gin_env.context(), argc, argv,
-                                exec_argc, exec_argv, false);
-    CHECK_NE(nullptr, env);
+      isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
+      CHECK_NE(nullptr, isolate_data);
+
+      env = node::CreateEnvironment(isolate_data, gin_env.context(), argc, argv,
+                                    exec_argc, exec_argv);
+      CHECK_NE(nullptr, env);
+
+      // TODO(codebytere): we shouldn't have to call this - upstream?
+      env->InitializeDiagnostics();
+
+      // This is needed in order to enable v8 host weakref hooks.
+      // TODO(codebytere): we shouldn't have to call this - upstream?
+      isolate->SetHostCleanupFinalizationGroupCallback(
+          HostCleanupFinalizationGroupCallback);
+
+      gin_helper::Dictionary process(isolate, env->process_object());
+#if defined(OS_WIN)
+      process.SetMethod("log", &ElectronBindings::Log);
+#endif
+      process.SetMethod("crash", &ElectronBindings::Crash);
+
+      // Setup process.crashReporter.start in child node processes
+      gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
+      reporter.SetMethod("start",
+                         &crash_reporter::CrashReporter::StartInstance);
+
+#if !defined(OS_LINUX)
+      reporter.SetMethod("addExtraParameter", &AddExtraParameter);
+      reporter.SetMethod("removeExtraParameter", &RemoveExtraParameter);
+#endif
+
+      process.Set("crashReporter", reporter);
+
+      gin_helper::Dictionary versions;
+      if (process.Get("versions", &versions)) {
+        versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
+      }
+    }
 
     // Enable support for v8 inspector.
     NodeDebugger node_debugger(env);
     node_debugger.Start();
 
-    node::BootstrapEnvironment(env);
-
-    gin_helper::Dictionary process(gin_env.isolate(), env->process_object());
-#if defined(OS_WIN)
-    process.SetMethod("log", &ElectronBindings::Log);
-#endif
-    process.SetMethod("crash", &ElectronBindings::Crash);
-
-    // Setup process.crashReporter.start in child node processes
-    gin_helper::Dictionary reporter =
-        gin::Dictionary::CreateEmpty(gin_env.isolate());
-    reporter.SetMethod("start", &crash_reporter::CrashReporter::StartInstance);
-
-#if !defined(OS_LINUX)
-    reporter.SetMethod("addExtraParameter", &AddExtraParameter);
-    reporter.SetMethod("removeExtraParameter", &RemoveExtraParameter);
-#endif
-
-    process.Set("crashReporter", reporter);
-
-    gin_helper::Dictionary versions;
-    if (process.Get("versions", &versions)) {
-      versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
+    // TODO(codebytere): we should try to handle this upstream.
+    {
+      v8::HandleScope scope(isolate);
+      node::InternalCallbackScope callback_scope(
+          env, v8::Local<v8::Object>(), {1, 0},
+          node::InternalCallbackScope::kAllowEmptyResource |
+              node::InternalCallbackScope::kSkipAsyncHooks);
+      node::LoadEnvironment(env);
     }
-
-    node::LoadEnvironment(env);
-    v8::Isolate* isolate = env->isolate();
 
     {
       v8::SealHandleScope seal(isolate);
@@ -174,7 +205,7 @@ int NodeMain(int argc, char* argv[]) {
       do {
         uv_run(env->event_loop(), UV_RUN_DEFAULT);
 
-        gin_env.platform()->DrainTasks(env->isolate());
+        gin_env.platform()->DrainTasks(isolate);
 
         more = uv_loop_alive(env->event_loop());
         if (more && !env->is_stopping())

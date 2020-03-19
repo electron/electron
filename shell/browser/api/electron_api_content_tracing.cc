@@ -8,6 +8,7 @@
 
 #include "base/files/file_util.h"
 #include "base/optional.h"
+#include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "content/public/browser/tracing_controller.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -86,10 +87,8 @@ v8::Local<v8::Promise> StopRecording(gin_helper::Arguments* args) {
     StopTracing(std::move(promise), base::make_optional(path));
   } else {
     // use a temporary file.
-    base::PostTaskAndReplyWithResult(
-        FROM_HERE,
-        {base::ThreadPool(), base::MayBlock(),
-         base::TaskPriority::USER_VISIBLE},
+    base::ThreadPool::PostTaskAndReplyWithResult(
+        FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
         base::BindOnce(CreateTemporaryFileOnIO),
         base::BindOnce(StopTracing, std::move(promise)));
   }
@@ -162,4 +161,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_content_tracing, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_content_tracing, Initialize)

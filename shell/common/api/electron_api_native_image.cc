@@ -510,8 +510,8 @@ void NativeImage::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)
       .SetMethod("getSize", &NativeImage::GetSize)
-      .SetMethod("_setTemplateImage", &NativeImage::SetTemplateImage)
-      .SetMethod("_isTemplateImage", &NativeImage::IsTemplateImage)
+      .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
+      .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage)
       .SetProperty("isMacTemplateImage", &NativeImage::IsTemplateImage,
                    &NativeImage::SetTemplateImage)
       .SetMethod("resize", &NativeImage::Resize)
@@ -592,4 +592,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_native_image, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_common_native_image, Initialize)

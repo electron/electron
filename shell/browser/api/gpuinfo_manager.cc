@@ -34,8 +34,8 @@ bool GPUInfoManager::NeedsCompleteGpuInfoCollection() const {
 #if defined(OS_MACOSX)
   return gpu_data_manager_->GetGPUInfo().gl_vendor.empty();
 #elif defined(OS_WIN)
-  return (gpu_data_manager_->GetGPUInfo().dx_diagnostics.values.empty() &&
-          gpu_data_manager_->GetGPUInfo().dx_diagnostics.children.empty());
+  return gpu_data_manager_->DxdiagDx12VulkanRequested() &&
+         gpu_data_manager_->GetGPUInfo().dx_diagnostics.IsEmpty();
 #else
   return false;
 #endif

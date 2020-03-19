@@ -2,8 +2,10 @@ import { expect } from 'chai'
 import * as http from 'http'
 import * as qs from 'querystring'
 import * as path from 'path'
-import { session, WebContents, webContents } from 'electron'
+import * as WebSocket from 'ws'
+import { ipcMain, protocol, session, WebContents, webContents } from 'electron'
 import { AddressInfo } from 'net'
+import { emittedOnce } from './events-helpers'
 
 const fixturesPath = path.resolve(__dirname, 'fixtures')
 
@@ -29,6 +31,7 @@ describe('webRequest module', () => {
   let defaultURL: string
 
   before((done) => {
+    protocol.registerStringProtocol('neworigin', (req, cb) => cb(''))
     server.listen(0, '127.0.0.1', () => {
       const port = (server.address() as AddressInfo).port
       defaultURL = `http://127.0.0.1:${port}/`
@@ -38,6 +41,7 @@ describe('webRequest module', () => {
 
   after(() => {
     server.close()
+    protocol.unregisterProtocol('neworigin')
   })
 
   let contents: WebContents = null as unknown as WebContents
@@ -156,7 +160,7 @@ describe('webRequest module', () => {
       expect(data).to.equal('/header/received')
     })
 
-    it('can change CORS headers', async () => {
+    it('can change request origin', async () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders
         requestHeaders.Origin = 'http://new-origin'
@@ -164,6 +168,16 @@ describe('webRequest module', () => {
       })
       const { data } = await ajax(defaultURL)
       expect(data).to.equal('/new/origin')
+    })
+
+    it('can capture CORS requests', async () => {
+      let called = false
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        called = true
+        callback({ requestHeaders: details.requestHeaders })
+      })
+      await ajax('neworigin://host')
+      expect(called).to.be.true()
     })
 
     it('resets the whole headers', async () => {
@@ -220,7 +234,7 @@ describe('webRequest module', () => {
       expect(headers).to.match(/^custom: Changed$/m)
     })
 
-    it('can change CORS headers', async () => {
+    it('can change response origin', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!
         responseHeaders['access-control-allow-origin'] = ['http://new-origin'] as any
@@ -228,6 +242,16 @@ describe('webRequest module', () => {
       })
       const { headers } = await ajax(defaultURL)
       expect(headers).to.match(/^access-control-allow-origin: http:\/\/new-origin$/m)
+    })
+
+    it('can change headers of CORS responses', async () => {
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        const responseHeaders = details.responseHeaders!
+        responseHeaders['Custom'] = ['Changed'] as any
+        callback({ responseHeaders: responseHeaders })
+      })
+      const { headers } = await ajax('neworigin://host')
+      expect(headers).to.match(/^custom: Changed$/m)
     })
 
     it('does not change header by default', async () => {
@@ -346,6 +370,102 @@ describe('webRequest module', () => {
         expect(details.error).to.equal('net::ERR_BLOCKED_BY_CLIENT')
       })
       await expect(ajax(defaultURL)).to.eventually.be.rejectedWith('404')
+    })
+  })
+
+  describe('WebSocket connections', () => {
+    it('can be proxyed', async () => {
+      // Setup server.
+      const reqHeaders : { [key: string] : any } = {}
+      const server = http.createServer((req, res) => {
+        reqHeaders[req.url!] = req.headers
+        res.setHeader('foo1', 'bar1')
+        res.end('ok')
+      })
+      const wss = new WebSocket.Server({ noServer: true })
+      wss.on('connection', function connection (ws) {
+        ws.on('message', function incoming (message) {
+          if (message === 'foo') {
+            ws.send('bar')
+          }
+        })
+      })
+      server.on('upgrade', function upgrade (request, socket, head) {
+        const pathname = require('url').parse(request.url).pathname
+        if (pathname === '/websocket') {
+          reqHeaders[request.url] = request.headers
+          wss.handleUpgrade(request, socket, head, function done (ws) {
+            wss.emit('connection', ws, request)
+          })
+        }
+      })
+
+      // Start server.
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+      const port = String((server.address() as AddressInfo).port)
+
+      // Use a separate session for testing.
+      const ses = session.fromPartition('WebRequestWebSocket')
+
+      // Setup listeners.
+      const receivedHeaders : { [key: string] : any } = {}
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        details.requestHeaders.foo = 'bar'
+        callback({ requestHeaders: details.requestHeaders })
+      })
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        const pathname = require('url').parse(details.url).pathname
+        receivedHeaders[pathname] = details.responseHeaders
+        callback({ cancel: false })
+      })
+      ses.webRequest.onResponseStarted((details) => {
+        if (details.url.startsWith('ws://')) {
+          expect(details.responseHeaders!['Connection'][0]).be.equal('Upgrade')
+        } else if (details.url.startsWith('http')) {
+          expect(details.responseHeaders!['foo1'][0]).be.equal('bar1')
+        }
+      })
+      ses.webRequest.onSendHeaders((details) => {
+        if (details.url.startsWith('ws://')) {
+          expect(details.requestHeaders['foo']).be.equal('bar')
+          expect(details.requestHeaders['Upgrade']).be.equal('websocket')
+        } else if (details.url.startsWith('http')) {
+          expect(details.requestHeaders['foo']).be.equal('bar')
+        }
+      })
+      ses.webRequest.onCompleted((details) => {
+        if (details.url.startsWith('ws://')) {
+          expect(details['error']).be.equal('net::ERR_WS_UPGRADE')
+        } else if (details.url.startsWith('http')) {
+          expect(details['error']).be.equal('net::OK')
+        }
+      })
+
+      const contents = (webContents as any).create({
+        session: ses,
+        nodeIntegration: true,
+        webSecurity: false
+      })
+
+      // Cleanup.
+      after(() => {
+        contents.destroy()
+        server.close()
+        ses.webRequest.onBeforeRequest(null)
+        ses.webRequest.onBeforeSendHeaders(null)
+        ses.webRequest.onHeadersReceived(null)
+        ses.webRequest.onResponseStarted(null)
+        ses.webRequest.onSendHeaders(null)
+        ses.webRequest.onCompleted(null)
+      })
+
+      contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port } })
+      await emittedOnce(ipcMain, 'websocket-success')
+
+      expect(receivedHeaders['/websocket']['Upgrade'][0]).to.equal('websocket')
+      expect(receivedHeaders['/']['foo1'][0]).to.equal('bar1')
+      expect(reqHeaders['/websocket']['foo']).to.equal('bar')
+      expect(reqHeaders['/']['foo']).to.equal('bar')
     })
   })
 })

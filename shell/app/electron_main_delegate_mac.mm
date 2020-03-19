@@ -82,7 +82,7 @@ void ElectronMainDelegate::SetUpBundleOverrides() {
 
 void RegisterAtomCrApp() {
   // Force the NSApplication subclass to be used.
-  [ElectronApplication sharedApplication];
+  [AtomApplication sharedApplication];
 }
 
 }  // namespace electron

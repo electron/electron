@@ -39,11 +39,6 @@ class ElectronPermissionMessageProvider
     return extensions::PermissionMessages();
   }
 
-  extensions::PermissionMessages GetPowerfulPermissionMessages(
-      const extensions::PermissionIDSet& permissions) const override {
-    return extensions::PermissionMessages();
-  }
-
   bool IsPrivilegeIncrease(
       const extensions::PermissionSet& granted_permissions,
       const extensions::PermissionSet& requested_permissions,
@@ -117,7 +112,6 @@ extensions::URLPatternSet
 ElectronExtensionsClient::GetPermittedChromeSchemeHosts(
     const extensions::Extension* extension,
     const extensions::APIPermissionSet& api_permissions) const {
-  NOTIMPLEMENTED();
   return extensions::URLPatternSet();
 }
 

@@ -6,6 +6,7 @@
 
 #include "content/public/renderer/render_thread.h"
 #include "extensions/renderer/dispatcher.h"
+#include "shell/common/world_ids.h"
 #include "shell/renderer/extensions/electron_extensions_dispatcher_delegate.h"
 
 namespace electron {
@@ -24,11 +25,7 @@ bool ElectronExtensionsRendererClient::IsIncognitoProcess() const {
 }
 
 int ElectronExtensionsRendererClient::GetLowestIsolatedWorldId() const {
-  // app_shell doesn't need to reserve world IDs for anything other than
-  // extensions, so we always return 1. Note that 0 is reserved for the global
-  // world.
-  // TODO(samuelmaddock): skip electron worlds
-  return 10;
+  return WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS;
 }
 
 extensions::Dispatcher* ElectronExtensionsRendererClient::GetDispatcher() {

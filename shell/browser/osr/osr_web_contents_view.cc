@@ -33,7 +33,8 @@ void OffScreenWebContentsView::SetWebContents(
     content::WebContents* web_contents) {
   web_contents_ = web_contents;
 
-  RenderViewCreated(web_contents_->GetRenderViewHost());
+  if (GetView())
+    GetView()->InstallTransparency();
 }
 
 void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
@@ -143,12 +144,6 @@ OffScreenWebContentsView::CreateViewForChildWidget(
 }
 
 void OffScreenWebContentsView::SetPageTitle(const base::string16& title) {}
-
-void OffScreenWebContentsView::RenderViewCreated(
-    content::RenderViewHost* host) {
-  if (GetView())
-    GetView()->InstallTransparency();
-}
 
 void OffScreenWebContentsView::RenderViewReady() {}
 

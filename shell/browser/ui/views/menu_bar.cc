@@ -296,6 +296,7 @@ void MenuBar::RefreshColorCache() {
 }
 
 void MenuBar::OnThemeChanged() {
+  views::AccessiblePaneView::OnThemeChanged();
   RefreshColorCache();
   UpdateViewColors();
 }

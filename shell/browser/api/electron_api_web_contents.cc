@@ -4,9 +4,11 @@
 
 #include "shell/browser/api/electron_api_web_contents.h"
 
+#include <limits>
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -25,6 +27,7 @@
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/common/widget_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -41,16 +44,19 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/common/context_menu_params.h"
-#include "content/public/common/referrer_type_converters.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "gin/data_object_builder.h"
+#include "gin/handle.h"
+#include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
@@ -85,12 +91,16 @@
 #include "shell/common/mouse_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/v8_value_serializer.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
+#include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
-#include "third_party/blink/public/platform/web_cursor_info.h"
+#include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
+#include "ui/base/cursor/cursor.h"
+#include "ui/base/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
@@ -115,6 +125,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/script_executor.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
@@ -705,8 +716,9 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 }
 
 void WebContents::SetContentsBounds(content::WebContents* source,
-                                    const gfx::Rect& pos) {
-  Emit("move", pos);
+                                    const gfx::Rect& rect) {
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnSetContentBounds(rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
@@ -725,7 +737,8 @@ void WebContents::CloseContents(content::WebContents* source) {
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
-  Emit("activate");
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnActivateContents();
 }
 
 void WebContents::UpdateTargetURL(content::WebContents* source,
@@ -1084,6 +1097,49 @@ void WebContents::Invoke(bool internal,
                  std::move(callback), internal, channel, std::move(arguments));
 }
 
+void WebContents::ReceivePostMessage(const std::string& channel,
+                                     blink::TransferableMessage message) {
+  v8::HandleScope handle_scope(isolate());
+  auto wrapped_ports =
+      MessagePort::EntanglePorts(isolate(), std::move(message.ports));
+  v8::Local<v8::Value> message_value =
+      electron::DeserializeV8Value(isolate(), message);
+  EmitWithSender("-ipc-ports", bindings_.dispatch_context(), InvokeCallback(),
+                 false, channel, message_value, std::move(wrapped_ports));
+}
+
+void WebContents::PostMessage(const std::string& channel,
+                              v8::Local<v8::Value> message_value,
+                              base::Optional<v8::Local<v8::Value>> transfer) {
+  blink::TransferableMessage transferable_message;
+  if (!electron::SerializeV8Value(isolate(), message_value,
+                                  &transferable_message)) {
+    // SerializeV8Value sets an exception.
+    return;
+  }
+
+  std::vector<gin::Handle<MessagePort>> wrapped_ports;
+  if (transfer) {
+    if (!gin::ConvertFromV8(isolate(), *transfer, &wrapped_ports)) {
+      isolate()->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate(), "Invalid value for transfer")));
+      return;
+    }
+  }
+
+  bool threw_exception = false;
+  transferable_message.ports =
+      MessagePort::DisentanglePorts(isolate(), wrapped_ports, &threw_exception);
+  if (threw_exception)
+    return;
+
+  content::RenderFrameHost* frame_host = web_contents()->GetMainFrame();
+  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
+  frame_host->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
+  electron_renderer->ReceivePostMessage(channel,
+                                        std::move(transferable_message));
+}
+
 void WebContents::MessageSync(bool internal,
                               const std::string& channel,
                               blink::CloneableMessage arguments,
@@ -1228,16 +1284,18 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
       final_title = title;
     }
   }
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnPageTitleUpdated(final_title, explicit_set);
   Emit("page-title-updated", final_title, explicit_set);
 }
 
 void WebContents::DidUpdateFaviconURL(
-    const std::vector<content::FaviconURL>& urls) {
+    const std::vector<blink::mojom::FaviconURLPtr>& urls) {
   std::set<GURL> unique_urls;
   for (const auto& iter : urls) {
-    if (iter.icon_type != content::FaviconURL::IconType::kFavicon)
+    if (iter->icon_type != blink::mojom::FaviconIconType::kFavicon)
       continue;
-    const GURL& url = iter.icon_url;
+    const GURL& url = iter->icon_url;
     if (url.is_valid())
       unique_urls.insert(url);
   }
@@ -1500,17 +1558,23 @@ void WebContents::Stop() {
 }
 
 void WebContents::GoBack() {
-  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
+    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  }
   web_contents()->GetController().GoBack();
 }
 
 void WebContents::GoForward() {
-  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
+    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  }
   web_contents()->GetController().GoForward();
 }
 
 void WebContents::GoToOffset(int offset) {
-  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
+    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  }
   web_contents()->GetController().GoToOffset(offset);
 }
 
@@ -1755,6 +1819,14 @@ void WebContents::OnGetDefaultPrinter(
 
   base::string16 printer_name =
       device_name.empty() ? default_printer : device_name;
+
+  // If there are no valid printers available on the network, we bail.
+  if (printer_name.empty() || !IsDeviceNameValid(printer_name)) {
+    if (print_callback)
+      std::move(print_callback).Run(false, "no valid printers available");
+    return;
+  }
+
   print_settings.SetStringKey(printing::kSettingDeviceName, printer_name);
 
   auto* print_view_manager =
@@ -1803,18 +1875,21 @@ void WebContents::Print(gin_helper::Arguments* args) {
     settings.SetIntKey(printing::kSettingMarginsType, margin_type);
 
     if (margin_type == printing::CUSTOM_MARGINS) {
+      base::Value custom_margins(base::Value::Type::DICTIONARY);
       int top = 0;
       margins.Get("top", &top);
-      settings.SetIntKey(printing::kSettingMarginTop, top);
+      custom_margins.SetIntKey(printing::kSettingMarginTop, top);
       int bottom = 0;
       margins.Get("bottom", &bottom);
-      settings.SetIntKey(printing::kSettingMarginBottom, bottom);
+      custom_margins.SetIntKey(printing::kSettingMarginBottom, bottom);
       int left = 0;
       margins.Get("left", &left);
-      settings.SetIntKey(printing::kSettingMarginLeft, left);
+      custom_margins.SetIntKey(printing::kSettingMarginLeft, left);
       int right = 0;
       margins.Get("right", &right);
-      settings.SetIntKey(printing::kSettingMarginRight, right);
+      custom_margins.SetIntKey(printing::kSettingMarginRight, right);
+      settings.SetPath(printing::kSettingMarginsCustom,
+                       std::move(custom_margins));
     }
   } else {
     settings.SetIntKey(printing::kSettingMarginsType,
@@ -1926,9 +2001,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
     settings.SetIntKey(printing::kSettingDpiVertical, dpi);
   }
 
-  base::PostTaskAndReplyWithResult(
-      FROM_HERE,
-      {base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_BLOCKING},
+  base::ThreadPool::PostTaskAndReplyWithResult(
+      FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_BLOCKING},
       base::BindOnce(&GetDefaultPrinterAsync),
       base::BindOnce(&WebContents::OnGetDefaultPrinter,
                      weak_factory_.GetWeakPtr(), std::move(settings),
@@ -2058,6 +2132,12 @@ void WebContents::CopyImageAt(int x, int y) {
 }
 
 void WebContents::Focus() {
+  // Focusing on WebContents does not automatically focus the window on macOS
+  // and Linux, do it manually to match the behavior on Windows.
+#if defined(OS_MACOSX) || defined(OS_LINUX)
+  if (owner_window())
+    owner_window()->Focus(true);
+#endif
   web_contents()->Focus();
 }
 
@@ -2309,17 +2389,18 @@ bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChange(const content::WebCursor& cursor) {
-  const content::CursorInfo& info = cursor.info();
+void WebContents::OnCursorChange(const content::WebCursor& webcursor) {
+  const ui::Cursor& cursor = webcursor.cursor();
 
-  if (info.type == ui::CursorType::kCustom) {
-    Emit("cursor-changed", CursorTypeToString(info),
-         gfx::Image::CreateFrom1xBitmap(info.custom_image),
-         info.image_scale_factor,
-         gfx::Size(info.custom_image.width(), info.custom_image.height()),
-         info.hotspot);
+  if (cursor.type() == ui::mojom::CursorType::kCustom) {
+    Emit("cursor-changed", CursorTypeToString(cursor),
+         gfx::Image::CreateFrom1xBitmap(cursor.custom_bitmap()),
+         cursor.image_scale_factor(),
+         gfx::Size(cursor.custom_bitmap().width(),
+                   cursor.custom_bitmap().height()),
+         cursor.custom_hotspot());
   } else {
-    Emit("cursor-changed", CursorTypeToString(info));
+    Emit("cursor-changed", CursorTypeToString(cursor));
   }
 }
 
@@ -2409,7 +2490,13 @@ double WebContents::GetZoomLevel() const {
   return zoom_controller_->GetZoomLevel();
 }
 
-void WebContents::SetZoomFactor(double factor) {
+void WebContents::SetZoomFactor(gin_helper::ErrorThrower thrower,
+                                double factor) {
+  if (factor < std::numeric_limits<double>::epsilon()) {
+    thrower.ThrowError("'zoomFactor' must be a double greater than 0.0");
+    return;
+  }
+
   auto level = blink::PageZoomFactorToZoomLevel(factor);
   SetZoomLevel(level);
 }
@@ -2599,10 +2686,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_goForward", &WebContents::GoForward)
       .SetMethod("_goToOffset", &WebContents::GoToOffset)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
-      .SetMethod("_setUserAgent", &WebContents::SetUserAgent)
-      .SetMethod("_getUserAgent", &WebContents::GetUserAgent)
-      .SetProperty("userAgent", &WebContents::GetUserAgent,
-                   &WebContents::SetUserAgent)
+      .SetMethod("setUserAgent", &WebContents::SetUserAgent)
+      .SetMethod("getUserAgent", &WebContents::GetUserAgent)
       .SetMethod("savePage", &WebContents::SavePage)
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
@@ -2613,10 +2698,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
       .SetMethod("inspectElement", &WebContents::InspectElement)
       .SetMethod("setIgnoreMenuShortcuts", &WebContents::SetIgnoreMenuShortcuts)
-      .SetMethod("_setAudioMuted", &WebContents::SetAudioMuted)
-      .SetMethod("_isAudioMuted", &WebContents::IsAudioMuted)
-      .SetProperty("audioMuted", &WebContents::IsAudioMuted,
-                   &WebContents::SetAudioMuted)
+      .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
+      .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
       .SetMethod("isCurrentlyAudible", &WebContents::IsCurrentlyAudible)
       .SetMethod("undo", &WebContents::Undo)
       .SetMethod("redo", &WebContents::Redo)
@@ -2635,6 +2718,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isFocused", &WebContents::IsFocused)
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)
+      .SetMethod("_postMessage", &WebContents::PostMessage)
       .SetMethod("_sendToFrame", &WebContents::SendIPCMessageToFrame)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
       .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
@@ -2647,20 +2731,14 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startPainting", &WebContents::StartPainting)
       .SetMethod("stopPainting", &WebContents::StopPainting)
       .SetMethod("isPainting", &WebContents::IsPainting)
-      .SetMethod("_setFrameRate", &WebContents::SetFrameRate)
-      .SetMethod("_getFrameRate", &WebContents::GetFrameRate)
-      .SetProperty("frameRate", &WebContents::GetFrameRate,
-                   &WebContents::SetFrameRate)
+      .SetMethod("setFrameRate", &WebContents::SetFrameRate)
+      .SetMethod("getFrameRate", &WebContents::GetFrameRate)
 #endif
       .SetMethod("invalidate", &WebContents::Invalidate)
-      .SetMethod("_setZoomLevel", &WebContents::SetZoomLevel)
-      .SetMethod("_getZoomLevel", &WebContents::GetZoomLevel)
-      .SetProperty("zoomLevel", &WebContents::GetZoomLevel,
-                   &WebContents::SetZoomLevel)
-      .SetMethod("_setZoomFactor", &WebContents::SetZoomFactor)
-      .SetMethod("_getZoomFactor", &WebContents::GetZoomFactor)
-      .SetProperty("zoomFactor", &WebContents::GetZoomFactor,
-                   &WebContents::SetZoomFactor)
+      .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
+      .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
+      .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
+      .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
@@ -2767,4 +2845,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_web_contents, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_web_contents, Initialize)

@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 14 Feb 2020 14:05:33 -0800
+Subject: fix: ensure clocks header included in impl
+
+Fixes some build errors in uvwasi like: `error: no previous prototype for function 'uvwasi__clock_gettime_realtime'`
+This fix will be upstreamed to uvwasi if possible.
+
+diff --git a/deps/uvwasi/src/clocks.c b/deps/uvwasi/src/clocks.c
+index e1fbc696b62f058cb0007e77bdd2e52a3c26d765..d2ca006530f50a0e8d77e8223b8191fb8e35ff2b 100644
+--- a/deps/uvwasi/src/clocks.c
++++ b/deps/uvwasi/src/clocks.c
+@@ -1,3 +1,7 @@
++#ifdef _WIN32
++#include "clocks.h"
++#endif /* _WIN32 */
++
+ #ifndef _WIN32
+ # include <errno.h>
+ # include <sys/time.h>

@@ -40,7 +40,7 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   // once we have the complete information data
   std::vector<gin_helper::Promise<base::DictionaryValue>>
       complete_info_promise_set_;
-  content::GpuDataManager* gpu_data_manager_;
+  content::GpuDataManagerImpl* gpu_data_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(GPUInfoManager);
 };

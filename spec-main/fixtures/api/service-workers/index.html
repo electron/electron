@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+    <script>
+        navigator.serviceWorker.register('sw.js', {
+            scope: location.pathname.split('/').slice(0, 2).join('/') + '/'
+        })
+    </script>
+</body>
+</html>

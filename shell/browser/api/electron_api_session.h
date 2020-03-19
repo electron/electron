@@ -16,6 +16,10 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
+#endif
+
 class GURL;
 
 namespace base {
@@ -37,6 +41,9 @@ class ElectronBrowserContext;
 namespace api {
 
 class Session : public gin_helper::TrackableObject<Session>,
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+                public SpellcheckHunspellDictionary::Observer,
+#endif
                 public content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
@@ -79,6 +86,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, gin_helper::Arguments* args);
   std::string GetUserAgent();
+  bool IsPersistent();
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
                                      const std::string& uuid);
   void DownloadURL(const GURL& url);
@@ -87,6 +95,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   std::vector<base::FilePath::StringType> GetPreloads() const;
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
+  v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options,
@@ -115,11 +124,22 @@ class Session : public gin_helper::TrackableObject<Session>,
   void OnDownloadCreated(content::DownloadManager* manager,
                          download::DownloadItem* item) override;
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  // SpellcheckHunspellDictionary::Observer
+  void OnHunspellDictionaryInitialized(const std::string& language) override;
+  void OnHunspellDictionaryDownloadBegin(const std::string& language) override;
+  void OnHunspellDictionaryDownloadSuccess(
+      const std::string& language) override;
+  void OnHunspellDictionaryDownloadFailure(
+      const std::string& language) override;
+#endif
+
  private:
   // Cached gin_helper::Wrappable objects.
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;
   v8::Global<v8::Value> net_log_;
+  v8::Global<v8::Value> service_worker_context_;
 
   // Cached object.
   v8::Global<v8::Value> web_request_;

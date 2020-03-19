@@ -1,4 +1,5 @@
 import { Buffer } from 'buffer'
+import { EventEmitter } from 'events'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as util from 'util'
@@ -15,11 +16,15 @@ require('../common/reset-search-paths')
 // Import common settings.
 require('@electron/internal/common/init')
 
+process.electronBinding('event_emitter').setEventEmitterPrototype(EventEmitter.prototype)
+
 if (process.platform === 'win32') {
   // Redirect node's console to use our own implementations, since node can not
   // handle console output when running as GUI program.
-  const consoleLog = (format: any, ...args: any[]) => {
-    return process.log(util.format(format, ...args) + '\n')
+  const consoleLog = (...args: any[]) => {
+    // @ts-ignore this typing is incorrect; 'format' is an optional parameter
+    // See https://nodejs.org/api/util.html#util_util_format_format_args
+    return process.log(util.format(...args) + '\n')
   }
   const streamWrite: NodeJS.WritableStream['write'] = function (chunk: Buffer | string, encoding?: any, callback?: Function) {
     if (Buffer.isBuffer(chunk)) {

@@ -214,6 +214,7 @@ void Menu::OnMenuWillClose() {
 }
 
 void Menu::OnMenuWillShow() {
+  v8::HandleScope scope(isolate());
   g_menus[weak_map_id()] = v8::Global<v8::Object>(isolate(), GetWrapper());
   Emit("menu-will-show");
 }
@@ -287,4 +288,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_menu, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_menu, Initialize)

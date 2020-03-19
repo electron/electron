@@ -554,10 +554,16 @@ Returns `Promise<void>` - fulfilled when Electron is initialized.
 May be used as a convenient alternative to checking `app.isReady()`
 and subscribing to the `ready` event if the app is not ready yet.
 
-### `app.focus()`
+### `app.focus([options])`
+
+* `options` Object (optional)
+  * `steal` Boolean _macOS_ - Make the receiver the active app even if another app is
+  currently active.
 
 On Linux, focuses on the first visible window. On macOS, makes the application
 the active app. On Windows, focuses on the application's first window.
+
+You should seek to use the `steal` option as sparingly as possible.
 
 ### `app.hide()` _macOS_
 
@@ -659,8 +665,6 @@ to the npm modules spec. You should usually also specify a `productName`
 field, which is your application's full capitalized name, and which will be
 preferred over `name` by Electron.
 
-**[Deprecated](modernization/property-updates.md)**
-
 ### `app.setName(name)`
 
 * `name` String
@@ -668,8 +672,6 @@ preferred over `name` by Electron.
 Overrides the current application's name.
 
 **Note:** This function overrides the name used internally by Electron; it does not affect the name that the OS uses.
-
-**[Deprecated](modernization/property-updates.md)**
 
 ### `app.getLocale()`
 
@@ -703,34 +705,34 @@ Clears the recent documents list.
 
 ### `app.setAsDefaultProtocolClient(protocol[, path, args])`
 
-* `protocol` String - The name of your protocol, without `://`. If you want your
-  app to handle `electron://` links, call this method with `electron` as the
-  parameter.
-* `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` String[] (optional) _Windows_ - Defaults to an empty array
+* `protocol` String - The name of your protocol, without `://`. For example,
+  if you want your app to handle `electron://` links, call this method with
+  `electron` as the parameter.
+* `path` String (optional) _Windows_ - The path to the Electron executable.
+  Defaults to `process.execPath`
+* `args` String[] (optional) _Windows_ - Arguments passed to the executable.
+  Defaults to an empty array
 
 Returns `Boolean` - Whether the call succeeded.
 
-This method sets the current executable as the default handler for a protocol
-(aka URI scheme). It allows you to integrate your app deeper into the operating
-system. Once registered, all links with `your-protocol://` will be opened with
-the current executable. The whole link, including protocol, will be passed to
-your application as a parameter.
-
-On Windows, you can provide optional parameters path, the path to your executable,
-and args, an array of arguments to be passed to your executable when it launches.
+Sets the current executable as the default handler for a protocol (aka URI
+scheme). It allows you to integrate your app deeper into the operating system.
+Once registered, all links with `your-protocol://` will be opened with the
+current executable. The whole link, including protocol, will be passed to your
+application as a parameter.
 
 **Note:** On macOS, you can only register protocols that have been added to
-your app's `info.plist`, which can not be modified at runtime. You can however
-change the file with a simple text editor or script during build time.
-Please refer to [Apple's documentation][CFBundleURLTypes] for details.
+your app's `info.plist`, which cannot be modified at runtime. However, you can
+change the file during build time via [Electron Forge][electron-forge],
+[Electron Packager][electron-packager], or by editing `info.plist` with a text
+editor. Please refer to [Apple's documentation][CFBundleURLTypes] for details.
 
 **Note:** In a Windows Store environment (when packaged as an `appx`) this API
 will return `true` for all calls but the registry key it sets won't be accessible
 by other applications.  In order to register your Windows Store application
 as a default protocol handler you must [declare the protocol in your manifest](https://docs.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol).
 
-The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally.
+The API uses the Windows Registry and `LSSetDefaultHandlerForURLScheme` internally.
 
 ### `app.removeAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
@@ -749,10 +751,8 @@ protocol (aka URI scheme). If so, it will remove the app as the default handler.
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
 * `args` String[] (optional) _Windows_ - Defaults to an empty array
 
-Returns `Boolean`
-
-This method checks if the current executable is the default handler for a protocol
-(aka URI scheme). If so, it will return true. Otherwise, it will return false.
+Returns `Boolean` - Whether the current executable is the default handler for a
+protocol (aka URI scheme).
 
 **Note:** On macOS, you can use this method to check if the app has been
 registered as the default protocol handler for a protocol. You can also verify
@@ -760,7 +760,7 @@ this by checking `~/Library/Preferences/com.apple.LaunchServices.plist` on the
 macOS machine. Please refer to
 [Apple's documentation][LSCopyDefaultHandlerForURLScheme] for details.
 
-The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
+The API uses the Windows Registry and `LSCopyDefaultHandlerForURLScheme` internally.
 
 ### `app.getApplicationNameForProtocol(url)`
 
@@ -1091,13 +1091,9 @@ On macOS, it shows on the dock icon. On Linux, it only works for Unity launcher.
 **Note:** Unity launcher requires the existence of a `.desktop` file to work,
 for more information please read [Desktop Environment Integration][unity-requirement].
 
-**[Deprecated](modernization/property-updates.md)**
-
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
 Returns `Integer` - The current value displayed in the counter badge.
-
-**[Deprecated](modernization/property-updates.md)**
 
 ### `app.isUnityRunning()` _Linux_
 
@@ -1173,8 +1169,6 @@ technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
 details.
 
-**[Deprecated](modernization/property-updates.md)**
-
 ### `app.setAccessibilitySupportEnabled(enabled)` _macOS_ _Windows_
 
 * `enabled` Boolean - Enable or disable [accessibility tree](https://developers.google.com/web/fundamentals/accessibility/semantics-builtin/the-accessibility-tree) rendering
@@ -1185,8 +1179,6 @@ details. Disabled by default.
 This API must be called after the `ready` event is emitted.
 
 **Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
-
-**[Deprecated](modernization/property-updates.md)**
 
 ### `app.showAboutPanel()`
 
@@ -1327,6 +1319,8 @@ A `Boolean` property that returns  `true` if the app is packaged, `false` otherw
 [dock-menu]:https://developer.apple.com/macos/human-interface-guidelines/menus/dock-menus/
 [tasks]:https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[electron-forge]: https://www.electronforge.io/
+[electron-packager]: https://github.com/electron/electron-packager
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
 [LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html

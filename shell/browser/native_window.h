@@ -194,6 +194,12 @@ class NativeWindow : public base::SupportsUserData,
   // Vibrancy API
   virtual void SetVibrancy(const std::string& type);
 
+  // Traffic Light API
+#if defined(OS_MACOSX)
+  virtual void SetTrafficLightPosition(const gfx::Point& position) = 0;
+  virtual gfx::Point GetTrafficLightPosition() const = 0;
+#endif
+
   // Touchbar API
   virtual void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
   virtual void RefreshTouchBarItem(const std::string& item_id);
@@ -306,7 +312,8 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   // views::WidgetDelegate:
-  const views::Widget* GetWidgetImpl() const override;
+  views::Widget* GetWidget() override;
+  const views::Widget* GetWidget() const override;
   base::string16 GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }

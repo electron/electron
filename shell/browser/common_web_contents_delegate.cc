@@ -13,6 +13,7 @@
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/task/post_task.h"
+#include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
@@ -183,8 +184,8 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 
 CommonWebContentsDelegate::CommonWebContentsDelegate()
     : devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
-      file_task_runner_(base::CreateSequencedTaskRunner(
-          {base::ThreadPool(), base::MayBlock()})),
+      file_task_runner_(
+          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})),
       weak_factory_(this) {}
 
 CommonWebContentsDelegate::~CommonWebContentsDelegate() = default;
@@ -292,8 +293,21 @@ content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
   load_url_params.should_replace_current_entry =
       params.should_replace_current_entry;
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
+  load_url_params.started_from_context_menu = params.started_from_context_menu;
   load_url_params.initiator_origin = params.initiator_origin;
-  load_url_params.should_clear_history_list = true;
+  load_url_params.source_site_instance = params.source_site_instance;
+  load_url_params.frame_tree_node_id = params.frame_tree_node_id;
+  load_url_params.redirect_chain = params.redirect_chain;
+  load_url_params.has_user_gesture = params.user_gesture;
+  load_url_params.blob_url_loader_factory = params.blob_url_loader_factory;
+  load_url_params.href_translate = params.href_translate;
+  load_url_params.reload_type = params.reload_type;
+
+  if (params.post_data) {
+    load_url_params.load_type =
+        content::NavigationController::LOAD_TYPE_HTTP_POST;
+    load_url_params.post_data = params.post_data;
+  }
 
   source->GetController().LoadURLWithParams(load_url_params);
   return source;

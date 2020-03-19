@@ -83,35 +83,33 @@ describe('app module', () => {
     })
   })
 
-  describe('app.name', () => {
-    it('returns the name field of package.json', () => {
-      expect(app.name).to.equal('Electron Test Main')
+  describe('app name APIs', () => {
+    it('with properties', () => {
+      it('returns the name field of package.json', () => {
+        expect(app.name).to.equal('Electron Test Main')
+      })
+
+      it('overrides the name', () => {
+        expect(app.name).to.equal('Electron Test Main')
+        app.name = 'test-name'
+
+        expect(app.name).to.equal('test-name')
+        app.name = 'Electron Test Main'
+      })
     })
 
-    it('overrides the name', () => {
-      expect(app.name).to.equal('Electron Test Main')
-      app.name = 'test-name'
+    it('with functions', () => {
+      it('returns the name field of package.json', () => {
+        expect(app.getName()).to.equal('Electron Test Main')
+      })
 
-      expect(app.name).to.equal('test-name')
-      app.name = 'Electron Test Main'
-    })
-  })
+      it('overrides the name', () => {
+        expect(app.getName()).to.equal('Electron Test Main')
+        app.setName('test-name')
 
-  // TODO(codebytere): remove when propertyification is complete
-  describe('app.getName()', () => {
-    it('returns the name field of package.json', () => {
-      expect(app.getName()).to.equal('Electron Test Main')
-    })
-  })
-
-  // TODO(codebytere): remove when propertyification is complete
-  describe('app.setName(name)', () => {
-    it('overrides the name', () => {
-      expect(app.getName()).to.equal('Electron Test Main')
-      app.setName('test-name')
-
-      expect(app.getName()).to.equal('test-name')
-      app.setName('Electron Test Main')
+        expect(app.getName()).to.equal('test-name')
+        app.setName('Electron Test Main')
+      })
     })
   })
 
@@ -554,20 +552,42 @@ describe('app module', () => {
     after(() => { app.badgeCount = 0 })
 
     describe('on supported platform', () => {
-      it('sets a badge count', function () {
-        if (platformIsNotSupported) return this.skip()
+      it('with properties', () => {
+        it('sets a badge count', function () {
+          if (platformIsNotSupported) return this.skip()
 
-        app.badgeCount = expectedBadgeCount
-        expect(app.badgeCount).to.equal(expectedBadgeCount)
+          app.badgeCount = expectedBadgeCount
+          expect(app.badgeCount).to.equal(expectedBadgeCount)
+        })
+      })
+
+      it('with functions', () => {
+        it('sets a badge count', function () {
+          if (platformIsNotSupported) return this.skip()
+
+          app.setBadgeCount(expectedBadgeCount)
+          expect(app.getBadgeCount()).to.equal(expectedBadgeCount)
+        })
       })
     })
 
     describe('on unsupported platform', () => {
-      it('does not set a badge count', function () {
-        if (platformIsSupported) return this.skip()
+      it('with properties', () => {
+        it('does not set a badge count', function () {
+          if (platformIsSupported) return this.skip()
 
-        app.badgeCount = 9999
-        expect(app.badgeCount).to.equal(0)
+          app.badgeCount = 9999
+          expect(app.badgeCount).to.equal(0)
+        })
+      })
+
+      it('with functions', () => {
+        it('does not set a badge count)', function () {
+          if (platformIsSupported) return this.skip()
+
+          app.setBadgeCount(9999)
+          expect(app.getBadgeCount()).to.equal(0)
+        })
       })
     })
   })
@@ -655,15 +675,23 @@ describe('app module', () => {
     })
   })
 
-  describe('accessibilitySupportEnabled property', () => {
-    if (process.platform === 'linux') return
+  ifdescribe(process.platform !== 'linux')('accessibilitySupportEnabled property', () => {
+    it('with properties', () => {
+      it('can set accessibility support enabled', () => {
+        expect(app.accessibilitySupportEnabled).to.eql(false)
 
-    it('returns whether the Chrome has accessibility APIs enabled', () => {
-      expect(app.accessibilitySupportEnabled).to.be.a('boolean')
+        app.accessibilitySupportEnabled = true
+        expect(app.accessibilitySupportEnabled).to.eql(true)
+      })
+    })
 
-      // TODO(codebytere): remove when propertyification is complete
-      expect(app.isAccessibilitySupportEnabled).to.be.a('function')
-      expect(app.setAccessibilitySupportEnabled).to.be.a('function')
+    it('with functions', () => {
+      it('can set accessibility support enabled', () => {
+        expect(app.isAccessibilitySupportEnabled()).to.eql(false)
+
+        app.setAccessibilitySupportEnabled(true)
+        expect(app.isAccessibilitySupportEnabled()).to.eql(true)
+      })
     })
   })
 
@@ -712,6 +740,14 @@ describe('app module', () => {
   })
 
   describe('setPath(name, path)', () => {
+    it('throws when a relative path is passed', () => {
+      const badPath = 'hey/hi/hello'
+
+      expect(() => {
+        app.setPath('music', badPath)
+      }).to.throw(/Path must be absolute/)
+    })
+
     it('does not create a new directory by default', () => {
       const badPath = path.join(__dirname, 'music')
 
@@ -720,6 +756,16 @@ describe('app module', () => {
       expect(fs.existsSync(badPath)).to.be.false()
 
       expect(() => { app.getPath(badPath as any) }).to.throw()
+    })
+  })
+
+  describe('setAppLogsPath(path)', () => {
+    it('throws when a relative path is passed', () => {
+      const badPath = 'hey/hi/hello'
+
+      expect(() => {
+        app.setAppLogsPath(badPath)
+      }).to.throw(/Path must be absolute/)
     })
   })
 
@@ -1096,9 +1142,11 @@ describe('app module', () => {
         // Gl version is present in the complete info.
         expect(completeInfo).to.have.ownProperty('auxAttributes')
           .that.is.an('object')
-        expect(completeInfo.auxAttributes).to.have.ownProperty('glVersion')
-          .that.is.a('string')
-          .and.does.not.equal([])
+        if (completeInfo.gpuDevice.active) {
+          expect(completeInfo.auxAttributes).to.have.ownProperty('glVersion')
+            .that.is.a('string')
+            .and.does.not.equal([])
+        }
       }
     })
 
@@ -1423,8 +1471,8 @@ describe('default behavior', () => {
   })
 
   describe('app.allowRendererProcessReuse', () => {
-    it('should default to false', () => {
-      expect(app.allowRendererProcessReuse).to.equal(false)
+    it('should default to true', () => {
+      expect(app.allowRendererProcessReuse).to.equal(true)
     })
 
     it('should cause renderer processes to get new PIDs when false', async () => {

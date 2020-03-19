@@ -137,7 +137,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   [super windowDidResize:notification];
   shell_->NotifyWindowResize();
   if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
-    shell_->RepositionTrafficLights();
+    shell_->RedrawTrafficLights();
   }
 }
 
@@ -254,7 +254,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   }
   shell_->SetExitingFullScreen(true);
   if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
-    shell_->RepositionTrafficLights();
+    shell_->RedrawTrafficLights();
   }
 }
 
@@ -263,7 +263,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   shell_->NotifyWindowLeaveFullScreen();
   shell_->SetExitingFullScreen(false);
   if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
-    shell_->RepositionTrafficLights();
+    shell_->RedrawTrafficLights();
   }
 }
 

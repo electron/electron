@@ -135,9 +135,18 @@ describe('webContents module', () => {
       }).to.throw('Unsupported pageSize: i-am-a-bad-pagesize')
     })
 
-    it('does not crash', () => {
+    it('does not crash with custom margins', () => {
       expect(() => {
-        w.webContents.print({ silent: true })
+        w.webContents.print({
+          silent: true,
+          margins: {
+            marginType: 'custom',
+            top: 1,
+            bottom: 1,
+            left: 1,
+            right: 1
+          }
+        })
       }).to.not.throw()
     })
   })
@@ -761,6 +770,52 @@ describe('webContents module', () => {
     })
   })
 
+  describe('userAgent APIs', () => {
+    it('can set the user agent (functions)', () => {
+      const w = new BrowserWindow({ show: false })
+      const userAgent = w.webContents.getUserAgent()
+
+      w.webContents.setUserAgent('my-user-agent')
+      expect(w.webContents.getUserAgent()).to.equal('my-user-agent')
+
+      w.webContents.setUserAgent(userAgent)
+      expect(w.webContents.getUserAgent()).to.equal(userAgent)
+    })
+
+    it('can set the user agent (properties)', () => {
+      const w = new BrowserWindow({ show: false })
+      const userAgent = w.webContents.userAgent
+
+      w.webContents.userAgent = 'my-user-agent'
+      expect(w.webContents.userAgent).to.equal('my-user-agent')
+
+      w.webContents.userAgent = userAgent
+      expect(w.webContents.userAgent).to.equal(userAgent)
+    })
+  })
+
+  describe('audioMuted APIs', () => {
+    it('can set the audio mute level (functions)', () => {
+      const w = new BrowserWindow({ show: false })
+
+      w.webContents.setAudioMuted(true)
+      expect(w.webContents.isAudioMuted()).to.be.true()
+
+      w.webContents.setAudioMuted(false)
+      expect(w.webContents.isAudioMuted()).to.be.false()
+    })
+
+    it('can set the audio mute level (functions)', () => {
+      const w = new BrowserWindow({ show: false })
+
+      w.webContents.audioMuted = true
+      expect(w.webContents.audioMuted).to.be.true()
+
+      w.webContents.audioMuted = false
+      expect(w.webContents.audioMuted).to.be.false()
+    })
+  })
+
   describe('zoom api', () => {
     const scheme = (global as any).standardScheme
     const hostZoomMap: Record<string, number> = {
@@ -791,7 +846,19 @@ describe('webContents module', () => {
 
     afterEach(closeAllWindows)
 
-    // TODO(codebytere): remove in Electron v8.0.0
+    it('throws on an invalid zoomFactor', async () => {
+      const w = new BrowserWindow({ show: false })
+      await w.loadURL('about:blank')
+
+      expect(() => {
+        w.webContents.setZoomFactor(0.0)
+      }).to.throw(/'zoomFactor' must be a double greater than 0.0/)
+
+      expect(() => {
+        w.webContents.setZoomFactor(-2.0)
+      }).to.throw(/'zoomFactor' must be a double greater than 0.0/)
+    })
+
     it('can set the correct zoom level (functions)', async () => {
       const w = new BrowserWindow({ show: false })
       try {
@@ -806,7 +873,7 @@ describe('webContents module', () => {
       }
     })
 
-    it('can set the correct zoom level', async () => {
+    it('can set the correct zoom level (properties)', async () => {
       const w = new BrowserWindow({ show: false })
       try {
         await w.loadURL('about:blank')
@@ -817,6 +884,36 @@ describe('webContents module', () => {
         expect(newZoomLevel).to.eql(0.5)
       } finally {
         w.webContents.zoomLevel = 0
+      }
+    })
+
+    it('can set the correct zoom factor (functions)', async () => {
+      const w = new BrowserWindow({ show: false })
+      try {
+        await w.loadURL('about:blank')
+        const zoomFactor = w.webContents.getZoomFactor()
+        expect(zoomFactor).to.eql(1.0)
+
+        w.webContents.setZoomFactor(0.5)
+        const newZoomFactor = w.webContents.getZoomFactor()
+        expect(newZoomFactor).to.eql(0.5)
+      } finally {
+        w.webContents.setZoomFactor(1.0)
+      }
+    })
+
+    it('can set the correct zoom factor (properties)', async () => {
+      const w = new BrowserWindow({ show: false })
+      try {
+        await w.loadURL('about:blank')
+        const zoomFactor = w.webContents.zoomFactor
+        expect(zoomFactor).to.eql(1.0)
+
+        w.webContents.zoomFactor = 0.5
+        const newZoomFactor = w.webContents.zoomFactor
+        expect(newZoomFactor).to.eql(0.5)
+      } finally {
+        w.webContents.zoomFactor = 1.0
       }
     })
 
@@ -954,29 +1051,44 @@ describe('webContents module', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'webframe-zoom.html'))
     })
 
-    it('cannot persist zoom level after navigation with webFrame', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-      let initialNavigation = true
-      const source = `
-        const {ipcRenderer, webFrame} = require('electron')
-        webFrame.setZoomLevel(0.6)
-        ipcRenderer.send('zoom-level-set', webFrame.getZoomLevel())
-      `
-      w.webContents.on('did-finish-load', () => {
-        if (initialNavigation) {
-          w.webContents.executeJavaScript(source)
-        } else {
-          const zoomLevel = w.webContents.zoomLevel
-          expect(zoomLevel).to.equal(0)
+    describe('with unique domains', () => {
+      let server: http.Server
+      let serverUrl: string
+      let crossSiteUrl: string
+
+      before((done) => {
+        server = http.createServer((req, res) => {
+          setTimeout(() => res.end('hey'), 0)
+        })
+        server.listen(0, '127.0.0.1', () => {
+          serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+          crossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}`
           done()
-        }
+        })
       })
-      ipcMain.once('zoom-level-set', (e, zoomLevel) => {
+
+      after(() => {
+        server.close()
+      })
+
+      it('cannot persist zoom level after navigation with webFrame', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+        const source = `
+          const {ipcRenderer, webFrame} = require('electron')
+          webFrame.setZoomLevel(0.6)
+          ipcRenderer.send('zoom-level-set', webFrame.getZoomLevel())
+        `
+        const zoomLevelPromise = emittedOnce(ipcMain, 'zoom-level-set')
+        await w.loadURL(serverUrl)
+        await w.webContents.executeJavaScript(source)
+        let [, zoomLevel] = await zoomLevelPromise
         expect(zoomLevel).to.equal(0.6)
-        w.loadFile(path.join(fixturesPath, 'pages', 'd.html'))
-        initialNavigation = false
+        const loadPromise = emittedOnce(w.webContents, 'did-finish-load')
+        await w.loadURL(crossSiteUrl)
+        await loadPromise
+        zoomLevel = w.webContents.zoomLevel
+        expect(zoomLevel).to.equal(0)
       })
-      w.loadFile(path.join(fixturesPath, 'pages', 'c.html'))
     })
   })
 
@@ -1068,7 +1180,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false })
       let rvhDeletedCount = 0
       w.webContents.once('destroyed', () => {
-        const expectedRenderViewDeletedEventCount = 3 // 1 speculative upon redirection + 2 upon window close.
+        const expectedRenderViewDeletedEventCount = 1
         expect(rvhDeletedCount).to.equal(expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times')
         done()
       })
@@ -1651,7 +1763,7 @@ describe('webContents module', () => {
     })
 
     afterEach(async () => {
-      await session.defaultSession.clearAuthCache({ type: 'password' })
+      await session.defaultSession.clearAuthCache()
     })
 
     after(() => {

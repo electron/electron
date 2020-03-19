@@ -46,6 +46,7 @@
 #include "shell/browser/api/electron_api_download_item.h"
 #include "shell/browser/api/electron_api_net_log.h"
 #include "shell/browser/api/electron_api_protocol.h"
+#include "shell/browser/api/electron_api_service_worker_context.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_context.h"
@@ -75,7 +76,6 @@
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_factory.h"  // nogncheck
-#include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
 #include "chrome/browser/spellchecker/spellcheck_service.h"  // nogncheck
 #include "components/spellcheck/browser/pref_names.h"
 #include "components/spellcheck/common/spellcheck_common.h"
@@ -227,6 +227,7 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
   }
 }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
  private:
   std::unique_ptr<gin_helper::Promise<std::set<std::string>>> promise_;
@@ -262,6 +263,7 @@ class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
     // noop
   }
 };
+#endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 }  // namespace
 
@@ -278,11 +280,28 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
   Init(isolate);
   AttachAsUserData(browser_context);
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SpellcheckService* service =
+      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+  if (service) {
+    service->SetHunspellObserver(this);
+  }
+#endif
 }
 
 Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())
       ->RemoveObserver(this);
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SpellcheckService* service =
+      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+  if (service) {
+    service->SetHunspellObserver(nullptr);
+  }
+#endif
+
   // TODO(zcbenz): Now since URLRequestContextGetter is gone, is this still
   // needed?
   // Refs https://github.com/electron/electron/pull/12305.
@@ -310,6 +329,21 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     item->Remove();
   }
 }
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+void Session::OnHunspellDictionaryInitialized(const std::string& language) {
+  Emit("spellcheck-dictionary-initialized", language);
+}
+void Session::OnHunspellDictionaryDownloadBegin(const std::string& language) {
+  Emit("spellcheck-dictionary-download-begin", language);
+}
+void Session::OnHunspellDictionaryDownloadSuccess(const std::string& language) {
+  Emit("spellcheck-dictionary-download-success", language);
+}
+void Session::OnHunspellDictionaryDownloadFailure(const std::string& language) {
+  Emit("spellcheck-dictionary-download-failure", language);
+}
+#endif
 
 v8::Local<v8::Promise> Session::ResolveProxy(gin_helper::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
@@ -581,6 +615,10 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
+bool Session::IsPersistent() {
+  return !browser_context_->IsOffTheRecord();
+}
+
 v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
                                             const std::string& uuid) {
   gin::Handle<DataPipeHolder> holder = DataPipeHolder::From(isolate, uuid);
@@ -597,7 +635,7 @@ void Session::DownloadURL(const GURL& url) {
   auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
-      url, MISSING_TRAFFIC_ANNOTATION, net::NetworkIsolationKey());
+      url, MISSING_TRAFFIC_ANNOTATION);
   download_manager->DownloadUrl(std::move(download_params));
 }
 
@@ -702,7 +740,8 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
   auto installed_extensions = registry->GenerateInstalledExtensionsSet();
   std::vector<const extensions::Extension*> extensions_vector;
   for (const auto& extension : *installed_extensions) {
-    extensions_vector.emplace_back(extension.get());
+    if (extension->location() != extensions::Manifest::COMPONENT)
+      extensions_vector.emplace_back(extension.get());
   }
   return gin::ConvertToV8(isolate(), extensions_vector);
 }
@@ -718,6 +757,15 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, protocol_);
+}
+
+v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
+  if (service_worker_context_.IsEmpty()) {
+    v8::Local<v8::Value> handle;
+    handle = ServiceWorkerContext::Create(isolate, browser_context()).ToV8();
+    service_worker_context_.Reset(isolate, handle);
+  }
+  return v8::Local<v8::Value>::New(isolate, service_worker_context_);
 }
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
@@ -805,7 +853,7 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
         "valid URL");
     return;
   }
-  SpellcheckHunspellDictionary::SetDownloadURLForTesting(url);
+  SpellcheckHunspellDictionary::SetBaseDownloadURL(url);
 }
 
 v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
@@ -832,6 +880,12 @@ v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
 }
 
 bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
+  // don't let in-memory sessions add spellchecker words
+  // because files will persist unintentionally
+  bool is_in_memory = browser_context_->IsOffTheRecord();
+  if (is_in_memory)
+    return false;
+
   SpellcheckService* service =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
   if (!service)
@@ -847,6 +901,12 @@ bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
 }
 
 bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
+  // don't let in-memory sessions remove spellchecker words
+  // because files will persist unintentionally
+  bool is_in_memory = browser_context_->IsOffTheRecord();
+  if (is_in_memory)
+    return false;
+
   SpellcheckService* service =
       SpellcheckServiceFactory::GetForContext(browser_context_.get());
   if (!service)
@@ -860,7 +920,7 @@ bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
 #endif
   return service->GetCustomDictionary()->RemoveWord(word);
 }
-#endif
+#endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 // static
 gin::Handle<Session> Session::CreateFrom(
@@ -925,6 +985,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",
                  &Session::AllowNTLMCredentialsForDomains)
+      .SetMethod("isPersistent", &Session::IsPersistent)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
       .SetMethod("getBlobData", &Session::GetBlobData)
@@ -957,6 +1018,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
+      .SetProperty("serviceWorkers", &Session::ServiceWorkerContext)
       .SetProperty("webRequest", &Session::WebRequest);
 }
 
@@ -969,6 +1031,7 @@ namespace {
 using electron::api::Cookies;
 using electron::api::NetLog;
 using electron::api::Protocol;
+using electron::api::ServiceWorkerContext;
 using electron::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,
@@ -1001,9 +1064,12 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set(
       "Protocol",
       Protocol::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set("ServiceWorkerContext", ServiceWorkerContext::GetConstructor(isolate)
+                                       ->GetFunction(context)
+                                       .ToLocalChecked());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_session, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_session, Initialize)

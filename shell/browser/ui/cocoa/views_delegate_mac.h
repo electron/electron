@@ -19,7 +19,6 @@ class ViewsDelegateMac : public views::ViewsDelegate {
       views::Widget::InitParams* params,
       views::internal::NativeWidgetDelegate* delegate) override;
   ui::ContextFactory* GetContextFactory() override;
-  ui::ContextFactoryPrivate* GetContextFactoryPrivate() override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(ViewsDelegateMac);

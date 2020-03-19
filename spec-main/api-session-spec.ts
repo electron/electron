@@ -526,7 +526,7 @@ describe('session module', () => {
     })
   })
 
-  describe('ses.clearAuthCache(options)', () => {
+  describe('ses.clearAuthCache()', () => {
     it('can clear http auth info from cache', async () => {
       const ses = session.fromPartition('auth-cache')
       const server = http.createServer((req, res) => {
@@ -569,7 +569,7 @@ describe('session module', () => {
       expect(await fetch(`http://test:test@127.0.0.1:${port}`)).to.equal('authenticated')
       // subsequently, the credentials are cached
       expect(await fetch(`http://127.0.0.1:${port}`)).to.equal('authenticated')
-      await ses.clearAuthCache({ type: 'password' })
+      await ses.clearAuthCache()
       // once the cache is cleared, we should get an error again
       await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected()
     })
@@ -895,6 +895,30 @@ describe('session module', () => {
 
       const [, name] = await result
       expect(name).to.deep.equal('SecurityError')
+    })
+  })
+
+  describe('ses.isPersistent()', () => {
+    afterEach(closeAllWindows)
+
+    it('returns default session as persistent', () => {
+      const w = new BrowserWindow({
+        show: false
+      })
+
+      const ses = w.webContents.session
+
+      expect(ses.isPersistent()).to.be.true()
+    })
+
+    it('returns persist: session as persistent', () => {
+      const ses = session.fromPartition(`persist:${Math.random()}`)
+      expect(ses.isPersistent()).to.be.true()
+    })
+
+    it('returns temporary session as not persistent', () => {
+      const ses = session.fromPartition(`${Math.random()}`)
+      expect(ses.isPersistent()).to.be.false()
     })
   })
 

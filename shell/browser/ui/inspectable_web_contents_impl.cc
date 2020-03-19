@@ -50,11 +50,10 @@
 #include "ui/display/screen.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "extensions/browser/extension_registry.h"
-#include "extensions/common/manifest_constants.h"
-#include "extensions/common/manifest_url_handlers.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/electron_browser_context.h"
 #endif
@@ -601,8 +600,8 @@ void InspectableWebContentsImpl::AddDevToolsExtensionsToClient() {
 
   base::ListValue results;
   for (auto& extension : registry->enabled_extensions()) {
-    auto devtools_page_url = extensions::ManifestURL::Get(
-        extension.get(), extensions::manifest_keys::kDevToolsPage);
+    auto devtools_page_url =
+        extensions::chrome_manifest_urls::GetDevToolsPage(extension.get());
     if (devtools_page_url.is_empty())
       continue;
 

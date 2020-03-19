@@ -29,6 +29,7 @@ void ResolvePromiseObject(gin_helper::Promise<gin_helper::Dictionary> promise,
                           int result,
                           bool checkbox_checked) {
   v8::Isolate* isolate = promise.isolate();
+  v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
 
   dict.Set("response", result);
@@ -104,4 +105,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_dialog, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_dialog, Initialize)

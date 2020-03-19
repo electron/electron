@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Thu, 13 Feb 2020 10:34:31 -0800
+Subject: Avoid calling deprecated method
+
+The {SetExpectInlineWasm} method is deprecated and non-functional since
+V8 v8.1.
+Thus node should stop calling it, so that it can be fully removed in a
+future v8 version.
+
+diff --git a/src/node_serdes.cc b/src/node_serdes.cc
+index a2d185c4167a75e227cd4b2abbf5c5abc7e16acb..e918ed9d12e9fb1d13b2fc05a98cab099fb71a68 100644
+--- a/src/node_serdes.cc
++++ b/src/node_serdes.cc
+@@ -286,7 +286,6 @@ DeserializerContext::DeserializerContext(Environment* env,
+     length_(Buffer::Length(buffer)),
+     deserializer_(env->isolate(), data_, length_, this) {
+   object()->Set(env->context(), env->buffer_string(), buffer).Check();
+-  deserializer_.SetExpectInlineWasm(true);
+ 
+   MakeWeak();
+ }

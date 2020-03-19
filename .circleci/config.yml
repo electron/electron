@@ -41,6 +41,14 @@ parameters:
     type: boolean
     default: false
 
+  run-linux-publish:
+    type: boolean
+    default: false
+
+  run-macos-publish:
+    type: boolean
+    default: false
+
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
 #
@@ -291,13 +299,18 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform
       fi
 
+# On macOS delete all .git directories under src/ expect for
+# third_party/angle/ because of build time generation of file
+# gen/angle/commit.h depends on third_party/angle/.git/HEAD
+# https://chromium-review.googlesource.com/c/angle/angle/+/2074924
+# TODO: maybe better to always leave out */.git/HEAD file for all targets ?
 step-delete-git-directories: &step-delete-git-directories
   run:
     name: Delete all .git directories under src on MacOS to free space
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src
-        ( find . -type d -name ".git" ) | xargs rm -rf
+        ( find . -type d -name ".git" -not -path "./third_party/angle/*" ) | xargs rm -rf
       fi
 
 # On macOS the yarn install command during gclient sync was run on a linux
@@ -453,7 +466,7 @@ step-electron-maybe-chromedriver-gn-gen: &step-electron-maybe-chromedriver-gn-ge
       cd src
       if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
         if [ "$USE_GOMA" == "true" ]; then
-          gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"//electron/build/args/goma.gn\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+          gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
         else
           gn gen out/chromedriver --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
         fi
@@ -568,7 +581,7 @@ step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
     command: |
       cd src
       if [ "$USE_GOMA" == "true" ]; then
-        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") import(\"//electron/build/args/goma.gn\") $GN_EXTRA_ARGS"
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS"
       else
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") cc_wrapper=\"$SCCACHE_PATH\" $GN_EXTRA_ARGS"
       fi
@@ -673,6 +686,8 @@ step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
       if [ "$GENERATE_SYMBOLS" == "true" ]; then
         cd src
         ninja -C out/Default electron:electron_symbols
+        cd out/Default/breakpad_symbols
+        find . -name \*.sym -print0 | xargs -0 npx @sentry/cli@1.51.1 difutil bundle-sources
       fi
 
 step-maybe-zip-symbols: &step-maybe-zip-symbols
@@ -1030,56 +1045,6 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     #Compile ts/js to verify doc change didn't break anything
     - *step-ts-compile
 
-steps-electron-build-for-publish: &steps-electron-build-for-publish
-  steps:
-    - *step-checkout-electron
-    - *step-depot-tools-get
-    - *step-depot-tools-add-to-path
-    - *step-restore-brew-cache
-    - *step-get-more-space-on-mac
-    - *step-gclient-sync
-    - *step-setup-env-for-build
-    - *step-delete-git-directories
-    - *step-minimize-workspace-size-from-checkout
-    - *step-gn-gen-default
-
-    # Electron app
-    - *step-electron-build
-    - *step-maybe-generate-breakpad-symbols
-    - *step-maybe-electron-dist-strip
-    - *step-electron-dist-build
-    - *step-electron-dist-store
-    - *step-maybe-zip-symbols
-    - *step-symbols-store
-
-    # mksnapshot
-    - *step-mksnapshot-build
-    - *step-mksnapshot-store
-
-    # chromedriver
-    - *step-electron-maybe-chromedriver-gn-gen
-    - *step-electron-chromedriver-build
-    - *step-electron-chromedriver-store
-
-    # Node.js headers
-    - *step-nodejs-headers-build
-    - *step-nodejs-headers-store
-
-    # ffmpeg
-    - *step-ffmpeg-gn-gen
-    - *step-ffmpeg-build
-    - *step-ffmpeg-store
-
-    # hunspell
-    - *step-hunspell-build
-    - *step-hunspell-store
-
-    # typescript defs
-    - *step-maybe-generate-typescript-defs
-
-    # Publish
-    - *step-electron-publish
-
 steps-chromedriver-build: &steps-chromedriver-build
   steps:
     - attach_workspace:
@@ -1235,7 +1200,7 @@ steps-test-node: &steps-test-node
         name: Run Node Tests
         command: |
           cd src
-          node electron/script/node-spec-runner.js junit
+          node electron/script/node-spec-runner.js --default --jUnitDir=junit
     - store_test_results:
         path: src/junit
 
@@ -1304,6 +1269,12 @@ commands:
       use-out-cache:
         type: boolean
         default: true
+      restore-src-cache:
+        type: boolean
+        default: true
+      preserve-vendor-dirs:
+        type: boolean
+        default: false
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1330,17 +1301,38 @@ commands:
             - *step-get-more-space-on-mac
             - *step-generate-deps-hash
             - *step-touch-sync-done
-            - maybe-restore-portaled-src-cache
+            - when:
+                condition: << parameters.restore-src-cache >>
+                steps:
+                  - maybe-restore-portaled-src-cache
             - *step-maybe-restore-git-cache
             - *step-set-git-cache-path
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
             # These next few steps reset Electron to the correct commit regardless of which cache was restored
+            - when:
+                condition: << parameters.preserve-vendor-dirs >>
+                steps:
+                  - run:
+                      name: Preserve vendor dirs for release
+                      command: |
+                        mv src/electron/vendor/boto .
+                        mv src/electron/vendor/requests .
             - run:
                 name: Wipe Electron
                 command: rm -rf src/electron
             - *step-checkout-electron
             - *step-run-electron-only-hooks
+            - when:
+                condition: << parameters.preserve-vendor-dirs >>
+                steps:
+                  - run:
+                      name: Preserve vendor dirs for release
+                      command: |
+                        rm -rf src/electron/vendor/boto
+                        rm -rf src/electron/vendor/requests
+                        mv boto src/electron/vendor
+                        mv requests src/electron/vendor/requests
             - *step-generate-deps-hash-cleanly
             - *step-mark-sync-done
             - *step-minimize-workspace-size-from-checkout
@@ -1439,10 +1431,80 @@ commands:
                 steps:
                   - *step-save-out-cache
 
-      # Trigger tests on arm hardware if needed
-      - *step-maybe-trigger-arm-test
+            # Trigger tests on arm hardware if needed
+            - *step-maybe-trigger-arm-test
 
-      - *step-maybe-notify-slack-failure
+            - *step-maybe-notify-slack-failure
+
+  electron-publish:
+    parameters:
+      attach:
+        type: boolean
+        default: false
+      checkout:
+        type: boolean
+        default: true
+    steps:
+      - when:
+          condition: << parameters.attach >>
+          steps:
+            - attach_workspace:
+                at: .
+      - when:
+          condition: << parameters.checkout >>
+          steps:
+            - *step-depot-tools-get
+      - *step-depot-tools-add-to-path
+      - *step-restore-brew-cache
+      - *step-get-more-space-on-mac
+      - when:
+          condition: << parameters.checkout >>
+          steps:
+            - *step-checkout-electron
+            - *step-gclient-sync
+            - *step-delete-git-directories
+            - *step-minimize-workspace-size-from-checkout
+      - *step-fix-sync-on-mac            
+      - *step-setup-env-for-build
+      - *step-gn-gen-default
+
+      # Electron app
+      - *step-electron-build
+      - *step-show-sccache-stats
+      - *step-maybe-generate-breakpad-symbols
+      - *step-maybe-electron-dist-strip
+      - *step-electron-dist-build
+      - *step-electron-dist-store
+      - *step-maybe-zip-symbols
+      - *step-symbols-store
+
+      # mksnapshot
+      - *step-mksnapshot-build
+      - *step-mksnapshot-store
+
+      # chromedriver
+      - *step-electron-maybe-chromedriver-gn-gen
+      - *step-electron-chromedriver-build
+      - *step-electron-chromedriver-store
+
+      # Node.js headers
+      - *step-nodejs-headers-build
+      - *step-nodejs-headers-store
+
+      # ffmpeg
+      - *step-ffmpeg-gn-gen
+      - *step-ffmpeg-build
+      - *step-ffmpeg-store
+
+      # hunspell
+      - *step-hunspell-build
+      - *step-hunspell-store
+
+      # typescript defs
+      - *step-maybe-generate-typescript-defs
+
+      # Publish
+      - *step-electron-publish      
 
 # List of all jobs.
 jobs:
@@ -1461,6 +1523,20 @@ jobs:
     <<: *steps-electron-ts-compile-for-doc-change
 
   # Layer 1: Checkout.
+  linux-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          persist-checkout: true
+          restore-src-cache: false
+          preserve-vendor-dirs: true
+
   linux-checkout-fast:
     <<: *machine-linux-2xlarge
     environment:
@@ -1503,6 +1579,22 @@ jobs:
           build: false
           checkout: true
           persist-checkout: true
+
+  mac-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          persist-checkout: true
+          restore-src-cache: false
+          preserve-vendor-dirs: true
 
   mac-checkout-fast:
     <<: *machine-linux-2xlarge
@@ -1591,7 +1683,22 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  linux-x64-publish-skip-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   linux-ia32-testing:
     <<: *machine-linux-2xlarge
@@ -1640,7 +1747,24 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  linux-ia32-publish-skip-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-ia32
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-32bit-release
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   linux-arm-testing:
     <<: *machine-linux-2xlarge
@@ -1690,7 +1814,24 @@ jobs:
       <<: *env-32bit-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  linux-arm-publish-skip-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-arm
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-32bit-release
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   linux-arm64-testing:
     <<: *machine-linux-2xlarge
@@ -1747,7 +1888,23 @@ jobs:
       <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  linux-arm64-publish-skip-checkout:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-arm64
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   osx-testing:
     <<: *machine-mac-large
@@ -1801,7 +1958,22 @@ jobs:
       <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  osx-publish-skip-checkout:
+    <<: *machine-mac-large
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   mas-testing:
     <<: *machine-mac-large
@@ -1859,7 +2031,23 @@ jobs:
       <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-    <<: *steps-electron-build-for-publish
+    steps:
+      - electron-publish:  
+          attach: false
+          checkout: true
+
+  mas-publish-skip-checkout:
+    <<: *machine-mac-large
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-mas
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:  
+          attach: true
+          checkout: false
 
   # Layer 3: Tests.
   linux-x64-unittests:
@@ -2149,6 +2337,27 @@ workflows:
   # will need to be updated and there will most likely need to be changes to
   # sudowoodo
 
+  publish-linux:
+    when: << pipeline.parameters.run-linux-publish >>
+    jobs:
+    - linux-checkout
+    - linux-x64-publish-skip-checkout:
+        requires:
+          - linux-checkout
+        context: release-env
+    - linux-ia32-publish-skip-checkout:
+        requires:
+          - linux-checkout
+        context: release-env
+    - linux-arm-publish-skip-checkout:
+        requires:
+          - linux-checkout
+        context: release-env
+    - linux-arm64-publish-skip-checkout:
+        requires:
+          - linux-checkout
+        context: release-env
+
   publish-x64-linux:
     when: << pipeline.parameters.run-linux-x64-publish >>
     jobs:
@@ -2184,6 +2393,17 @@ workflows:
     jobs:
     - mas-publish:
         context: release-env
+
+  publish-macos:
+    when: << pipeline.parameters.run-macos-publish >>
+    jobs:
+    - mac-checkout
+    - osx-publish-skip-checkout:
+        requires:
+          - mac-checkout
+    - mas-publish-skip-checkout:
+        requires:
+          - mac-checkout
 
   lint:
     when: << pipeline.parameters.run-lint >>

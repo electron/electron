@@ -118,15 +118,6 @@ void LoadResourceBundle(const std::string& locale) {
   bundle.ReloadLocaleResources(locale);
   bundle.AddDataPackFromPath(pak_dir.Append(FILE_PATH_LITERAL("resources.pak")),
                              ui::SCALE_FACTOR_NONE);
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  NOTIMPLEMENTED()
-      << "Hi, whoever's fixing PDF support! Thanks! The pdf "
-         "viewer resources haven't been ported over to the GN build yet, so "
-         "you'll probably need to change this bit of code.";
-  bundle.AddDataPackFromPath(
-      pak_dir.Append(FILE_PATH_LITERAL("pdf_viewer_resources.pak")),
-      ui::GetSupportedScaleFactors()[0]);
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
 ElectronMainDelegate::ElectronMainDelegate() = default;
@@ -222,6 +213,21 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
     LOG(FATAL) << "Running as root without --"
                << service_manager::switches::kNoSandbox
                << " is not supported. See https://crbug.com/638180.";
+#endif
+
+#if defined(MAS_BUILD)
+  // In MAS build we are using --disable-remote-core-animation.
+  //
+  // According to ccameron:
+  // If you're running with --disable-remote-core-animation, you may want to
+  // also run with --disable-gpu-memory-buffer-compositor-resources as well.
+  // That flag makes it so we use regular GL textures instead of IOSurfaces
+  // for compositor resources. IOSurfaces are very heavyweight to
+  // create/destroy, but they can be displayed directly by CoreAnimation (and
+  // --disable-remote-core-animation makes it so we don't use this property,
+  // so they're just heavyweight with no upside).
+  command_line->AppendSwitch(
+      ::switches::kDisableGpuMemoryBufferCompositorResources);
 #endif
 
   content_client_ = std::make_unique<ElectronContentClient>();
@@ -336,14 +342,11 @@ int ElectronMainDelegate::RunProcess(
     return -1;
 }
 
-#if defined(OS_MACOSX)
-bool ElectronMainDelegate::DelaySandboxInitialization(
-    const std::string& process_type) {
-  return process_type == kRelauncherProcess;
-}
-#endif
-
 bool ElectronMainDelegate::ShouldCreateFeatureList() {
+  return false;
+}
+
+bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
   return false;
 }
 

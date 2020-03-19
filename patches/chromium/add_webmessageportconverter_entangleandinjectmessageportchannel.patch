@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Fri, 25 Oct 2019 11:23:03 -0700
+Subject: add WebMessagePortConverter::EntangleAndInjectMessagePortChannel
+
+This adds a method to the public Blink API that would otherwise require
+accessing Blink internals. Its inverse, which already exists, is used in
+Android WebView.
+
+diff --git a/third_party/blink/public/web/web_message_port_converter.h b/third_party/blink/public/web/web_message_port_converter.h
+index ad603aa7c557bfd4f571a541d70e2edf9ae757d9..d4b0bf8f5e8f3af9328b0099b65d9963414dfcc1 100644
+--- a/third_party/blink/public/web/web_message_port_converter.h
++++ b/third_party/blink/public/web/web_message_port_converter.h
+@@ -13,6 +13,7 @@ class Isolate;
+ template <class T>
+ class Local;
+ class Value;
++class Context;
+ }  // namespace v8
+ 
+ namespace blink {
+@@ -25,6 +26,9 @@ class WebMessagePortConverter {
+   // neutered, it will return nullopt.
+   BLINK_EXPORT static base::Optional<MessagePortChannel>
+   DisentangleAndExtractMessagePortChannel(v8::Isolate*, v8::Local<v8::Value>);
++
++  BLINK_EXPORT static v8::Local<v8::Value>
++  EntangleAndInjectMessagePortChannel(v8::Local<v8::Context>, MessagePortChannel);
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/exported/web_message_port_converter.cc b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
+index 333760d667f6b98b3e7674bf9082f999743dadfa..fc2f517de1951380482fbfa92c038041e15d9c3e 100644
+--- a/third_party/blink/renderer/core/exported/web_message_port_converter.cc
++++ b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
+@@ -21,4 +21,15 @@ WebMessagePortConverter::DisentangleAndExtractMessagePortChannel(
+   return port->Disentangle();
+ }
+ 
++v8::Local<v8::Value>
++WebMessagePortConverter::EntangleAndInjectMessagePortChannel(
++    v8::Local<v8::Context> context,
++    MessagePortChannel port_channel) {
++  auto* execution_context = ToExecutionContext(context);
++  CHECK(execution_context);
++  auto* port = MakeGarbageCollected<MessagePort>(*execution_context);
++  port->Entangle(std::move(port_channel));
++  return ToV8(port, context->Global(), context->GetIsolate());
++}
++
+ }  // namespace blink
