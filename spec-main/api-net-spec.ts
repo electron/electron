@@ -586,6 +586,48 @@ describe('net module', () => {
       });
     });
 
+    ['Lax', 'Strict'].forEach((mode) => {
+      it(`should be able to use the sessions cookie store with same-site ${mode} cookies`, async () => {
+        const serverUrl = await respondNTimes.toSingleURL((request, response) => {
+          response.statusCode = 200;
+          response.statusMessage = 'OK';
+          response.setHeader('set-cookie', `same=site; SameSite=${mode}`);
+          response.setHeader('x-cookie', `${request.headers.cookie}`);
+          response.end();
+        }, 2);
+        const sess = session.fromPartition(`cookie-tests-same-site-${mode}`);
+        let cookies = await sess.cookies.get({});
+        expect(cookies).to.have.lengthOf(0);
+        const urlRequest = net.request({
+          url: serverUrl,
+          session: sess,
+          useSessionCookies: true
+        });
+        const response = await getResponse(urlRequest);
+        expect(response.headers['x-cookie']).to.equal('undefined');
+        await collectStreamBody(response);
+        cookies = await sess.cookies.get({});
+        expect(cookies).to.have.lengthOf(1);
+        expect(cookies[0]).to.deep.equal({
+          name: 'same',
+          value: 'site',
+          domain: '127.0.0.1',
+          hostOnly: true,
+          path: '/',
+          secure: false,
+          httpOnly: false,
+          session: true
+        });
+        const urlRequest2 = net.request({
+          url: serverUrl,
+          session: sess,
+          useSessionCookies: true
+        });
+        const response2 = await getResponse(urlRequest2);
+        expect(response2.headers['x-cookie']).to.equal('same=site');
+      });
+    });
+
     it('should be able to use the sessions cookie store safely across redirects', async () => {
       const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
         response.statusCode = 302;

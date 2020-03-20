@@ -344,6 +344,7 @@ gin_helper::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
     return nullptr;
   }
   auto request = std::make_unique<network::ResourceRequest>();
+  request->attach_same_site_cookies = true;
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
   std::map<std::string, std::string> extra_headers;
