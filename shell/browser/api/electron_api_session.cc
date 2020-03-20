@@ -307,7 +307,6 @@ Session::~Session() {
   // Refs https://github.com/electron/electron/pull/12305.
   DestroyGlobalHandle(isolate(), cookies_);
   DestroyGlobalHandle(isolate(), protocol_);
-  DestroyGlobalHandle(isolate(), net_log_);
   g_sessions.erase(weak_map_id());
 }
 
@@ -1029,7 +1028,6 @@ void Session::BuildPrototype(v8::Isolate* isolate,
 namespace {
 
 using electron::api::Cookies;
-using electron::api::NetLog;
 using electron::api::Protocol;
 using electron::api::ServiceWorkerContext;
 using electron::api::Session;
@@ -1058,9 +1056,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set(
       "Cookies",
       Cookies::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
-  dict.Set(
-      "NetLog",
-      NetLog::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
   dict.Set(
       "Protocol",
       Protocol::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());

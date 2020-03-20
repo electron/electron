@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 chrome.runtime.sendMessage({ some: 'message' }, (response) => {
-  const script = document.createElement('script')
-  script.textContent = `require('electron').ipcRenderer.send('bg-page-message-response', ${JSON.stringify(response)})`
-  document.documentElement.appendChild(script)
-})
+  const script = document.createElement('script');
+  script.textContent = `require('electron').ipcRenderer.send('bg-page-message-response', ${JSON.stringify(response)})`;
+  document.documentElement.appendChild(script);
+});

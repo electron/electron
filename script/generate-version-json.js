@@ -1,23 +1,23 @@
-const fs = require('fs')
-const path = require('path')
-const semver = require('semver')
+const fs = require('fs');
+const path = require('path');
+const semver = require('semver');
 
-const outputPath = process.argv[2]
+const outputPath = process.argv[2];
 
-const currentVersion = fs.readFileSync(path.resolve(__dirname, '../ELECTRON_VERSION'), 'utf8').trim()
+const currentVersion = fs.readFileSync(path.resolve(__dirname, '../ELECTRON_VERSION'), 'utf8').trim();
 
-const parsed = semver.parse(currentVersion)
+const parsed = semver.parse(currentVersion);
 
-let prerelease = ''
+let prerelease = '';
 if (parsed.prerelease && parsed.prerelease.length > 0) {
-  prerelease = parsed.prerelease.join('.')
+  prerelease = parsed.prerelease.join('.');
 }
 
 const {
   major,
   minor,
   patch
-} = parsed
+} = parsed;
 
 fs.writeFileSync(outputPath, JSON.stringify({
   major,
@@ -25,4 +25,4 @@ fs.writeFileSync(outputPath, JSON.stringify({
   patch,
   prerelease,
   has_prerelease: prerelease === '' ? 0 : 1
-}, null, 2))
+}, null, 2));

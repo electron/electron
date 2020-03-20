@@ -1,32 +1,32 @@
-const { app, Menu } = require('electron')
+const { app, Menu } = require('electron');
 
 function output (value) {
-  process.stdout.write(JSON.stringify(value))
-  process.stdout.end()
+  process.stdout.write(JSON.stringify(value));
+  process.stdout.end();
 
-  app.quit()
+  app.quit();
 }
 
 try {
-  let expectedMenu
+  let expectedMenu;
 
   if (app.commandLine.hasSwitch('custom-menu')) {
-    expectedMenu = new Menu()
-    Menu.setApplicationMenu(expectedMenu)
+    expectedMenu = new Menu();
+    Menu.setApplicationMenu(expectedMenu);
   } else if (app.commandLine.hasSwitch('null-menu')) {
-    expectedMenu = null
-    Menu.setApplicationMenu(null)
+    expectedMenu = null;
+    Menu.setApplicationMenu(null);
   }
 
   app.whenReady().then(() => {
     setImmediate(() => {
       try {
-        output(Menu.getApplicationMenu() === expectedMenu)
+        output(Menu.getApplicationMenu() === expectedMenu);
       } catch (error) {
-        output(null)
+        output(null);
       }
-    })
-  })
+    });
+  });
 } catch (error) {
-  output(null)
+  output(null);
 }

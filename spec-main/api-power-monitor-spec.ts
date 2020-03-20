@@ -6,47 +6,47 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock for more information about
 // python-dbusmock.
-import { expect } from 'chai'
-import * as dbus from 'dbus-native'
-import { ifdescribe } from './spec-helpers'
-import { promisify } from 'util'
+import { expect } from 'chai';
+import * as dbus from 'dbus-native';
+import { ifdescribe } from './spec-helpers';
+import { promisify } from 'util';
 
 describe('powerMonitor', () => {
-  let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any
+  let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any;
 
   // TODO(deepak1556): Enable on arm64 after upgrade, it crashes at the moment.
   ifdescribe(process.platform === 'linux' && process.arch !== 'arm64' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)('when powerMonitor module is loaded with dbus mock', () => {
     before(async () => {
-      const systemBus = dbus.systemBus()
-      const loginService = systemBus.getService('org.freedesktop.login1')
-      const getInterface = promisify(loginService.getInterface.bind(loginService))
-      logindMock = await getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock')
-      getCalls = promisify(logindMock.GetCalls.bind(logindMock))
-      emitSignal = promisify(logindMock.EmitSignal.bind(logindMock))
-      reset = promisify(logindMock.Reset.bind(logindMock))
-    })
+      const systemBus = dbus.systemBus();
+      const loginService = systemBus.getService('org.freedesktop.login1');
+      const getInterface = promisify(loginService.getInterface.bind(loginService));
+      logindMock = await getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock');
+      getCalls = promisify(logindMock.GetCalls.bind(logindMock));
+      emitSignal = promisify(logindMock.EmitSignal.bind(logindMock));
+      reset = promisify(logindMock.Reset.bind(logindMock));
+    });
 
     after(async () => {
-      await reset()
-    })
+      await reset();
+    });
 
     function onceMethodCalled (done: () => void) {
       function cb () {
-        logindMock.removeListener('MethodCalled', cb)
+        logindMock.removeListener('MethodCalled', cb);
       }
-      done()
-      return cb
+      done();
+      return cb;
     }
 
     before(done => {
-      logindMock.on('MethodCalled', onceMethodCalled(done))
+      logindMock.on('MethodCalled', onceMethodCalled(done));
       // lazy load powerMonitor after we listen to MethodCalled mock signal
-      dbusMockPowerMonitor = require('electron').powerMonitor
-    })
+      dbusMockPowerMonitor = require('electron').powerMonitor;
+    });
 
     it('should call Inhibit to delay suspend', async () => {
-      const calls = await getCalls()
-      expect(calls).to.be.an('array').that.has.lengthOf(1)
+      const calls = await getCalls();
+      expect(calls).to.be.an('array').that.has.lengthOf(1);
       expect(calls[0].slice(1)).to.deep.equal([
         'Inhibit', [
           [[{ type: 's', child: [] }], ['sleep']],
@@ -54,26 +54,26 @@ describe('powerMonitor', () => {
           [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
           [[{ type: 's', child: [] }], ['delay']]
         ]
-      ])
-    })
+      ]);
+    });
 
     describe('when PrepareForSleep(true) signal is sent by logind', () => {
       it('should emit "suspend" event', (done) => {
-        dbusMockPowerMonitor.once('suspend', () => done())
+        dbusMockPowerMonitor.once('suspend', () => done());
         emitSignal('org.freedesktop.login1.Manager', 'PrepareForSleep',
-          'b', [['b', true]])
-      })
+          'b', [['b', true]]);
+      });
 
       describe('when PrepareForSleep(false) signal is sent by logind', () => {
         it('should emit "resume" event', done => {
-          dbusMockPowerMonitor.once('resume', () => done())
+          dbusMockPowerMonitor.once('resume', () => done());
           emitSignal('org.freedesktop.login1.Manager', 'PrepareForSleep',
-            'b', [['b', false]])
-        })
+            'b', [['b', false]]);
+        });
 
         it('should have called Inhibit again', async () => {
-          const calls = await getCalls()
-          expect(calls).to.be.an('array').that.has.lengthOf(2)
+          const calls = await getCalls();
+          expect(calls).to.be.an('array').that.has.lengthOf(2);
           expect(calls[1].slice(1)).to.deep.equal([
             'Inhibit', [
               [[{ type: 's', child: [] }], ['sleep']],
@@ -81,21 +81,21 @@ describe('powerMonitor', () => {
               [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
               [[{ type: 's', child: [] }], ['delay']]
             ]
-          ])
-        })
-      })
-    })
+          ]);
+        });
+      });
+    });
 
     describe('when a listener is added to shutdown event', () => {
       before(async () => {
-        const calls = await getCalls()
-        expect(calls).to.be.an('array').that.has.lengthOf(2)
-        dbusMockPowerMonitor.once('shutdown', () => { })
-      })
+        const calls = await getCalls();
+        expect(calls).to.be.an('array').that.has.lengthOf(2);
+        dbusMockPowerMonitor.once('shutdown', () => { });
+      });
 
       it('should call Inhibit to delay shutdown', async () => {
-        const calls = await getCalls()
-        expect(calls).to.be.an('array').that.has.lengthOf(3)
+        const calls = await getCalls();
+        expect(calls).to.be.an('array').that.has.lengthOf(3);
         expect(calls[2].slice(1)).to.deep.equal([
           'Inhibit', [
             [[{ type: 's', child: [] }], ['shutdown']],
@@ -103,55 +103,55 @@ describe('powerMonitor', () => {
             [[{ type: 's', child: [] }], ['Ensure a clean shutdown']],
             [[{ type: 's', child: [] }], ['delay']]
           ]
-        ])
-      })
+        ]);
+      });
 
       describe('when PrepareForShutdown(true) signal is sent by logind', () => {
         it('should emit "shutdown" event', done => {
-          dbusMockPowerMonitor.once('shutdown', () => { done() })
+          dbusMockPowerMonitor.once('shutdown', () => { done(); });
           emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown',
-            'b', [['b', true]])
-        })
-      })
-    })
-  })
+            'b', [['b', true]]);
+        });
+      });
+    });
+  });
 
   describe('when powerMonitor module is loaded', () => {
     // eslint-disable-next-line no-undef
-    let powerMonitor: typeof Electron.powerMonitor
+    let powerMonitor: typeof Electron.powerMonitor;
     before(() => {
-      powerMonitor = require('electron').powerMonitor
-    })
+      powerMonitor = require('electron').powerMonitor;
+    });
     describe('powerMonitor.getSystemIdleState', () => {
       it('gets current system idle state', () => {
         // this function is not mocked out, so we can test the result's
         // form and type but not its value.
-        const idleState = powerMonitor.getSystemIdleState(1)
-        expect(idleState).to.be.a('string')
-        const validIdleStates = [ 'active', 'idle', 'locked', 'unknown' ]
-        expect(validIdleStates).to.include(idleState)
-      })
+        const idleState = powerMonitor.getSystemIdleState(1);
+        expect(idleState).to.be.a('string');
+        const validIdleStates = ['active', 'idle', 'locked', 'unknown'];
+        expect(validIdleStates).to.include(idleState);
+      });
 
       it('does not accept non positive integer threshold', () => {
         expect(() => {
-          powerMonitor.getSystemIdleState(-1)
-        }).to.throw(/must be greater than 0/)
+          powerMonitor.getSystemIdleState(-1);
+        }).to.throw(/must be greater than 0/);
 
         expect(() => {
-          powerMonitor.getSystemIdleState(NaN)
-        }).to.throw(/conversion failure/)
+          powerMonitor.getSystemIdleState(NaN);
+        }).to.throw(/conversion failure/);
 
         expect(() => {
-          powerMonitor.getSystemIdleState('a' as any)
-        }).to.throw(/conversion failure/)
-      })
-    })
+          powerMonitor.getSystemIdleState('a' as any);
+        }).to.throw(/conversion failure/);
+      });
+    });
 
     describe('powerMonitor.getSystemIdleTime', () => {
       it('notify current system idle time', () => {
-        const idleTime = powerMonitor.getSystemIdleTime()
-        expect(idleTime).to.be.at.least(0)
-      })
-    })
-  })
-})
+        const idleTime = powerMonitor.getSystemIdleTime();
+        expect(idleTime).to.be.at.least(0);
+      });
+    });
+  });
+});

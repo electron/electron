@@ -5,10 +5,10 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 #define SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
-#include "base/compiler_specific.h"
+#include "base/power_monitor/power_observer.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/browser/lib/power_observer.h"
+#include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/idle/idle.h"
 
 namespace electron {
@@ -17,7 +17,8 @@ namespace api {
 
 class PowerMonitor : public gin::Wrappable<PowerMonitor>,
                      public gin_helper::EventEmitterMixin<PowerMonitor>,
-                     public PowerObserver {
+                     public gin_helper::Pinnable<PowerMonitor>,
+                     public base::PowerObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
@@ -65,6 +66,12 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
   // The window used for processing events.
   HWND window_;
 #endif
+
+#if defined(OS_LINUX)
+  PowerObserverLinux power_observer_linux_{this};
+#endif
+
+  v8::Global<v8::Value> pinned_;
 
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);
 };

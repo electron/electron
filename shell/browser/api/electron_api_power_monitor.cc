@@ -42,14 +42,13 @@ namespace api {
 gin::WrapperInfo PowerMonitor::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
-#if defined(OS_LINUX)
-  SetShutdownHandler(base::BindRepeating(&PowerMonitor::ShouldShutdown,
-                                         base::Unretained(this)));
-#elif defined(OS_MACOSX)
+#if defined(OS_MACOSX)
   Browser::Get()->SetShutdownHandler(base::BindRepeating(
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
+
   base::PowerMonitor::AddObserver(this);
+
 #if defined(OS_MACOSX) || defined(OS_WIN)
   InitPlatformSpecificMonitors();
 #endif
@@ -78,16 +77,36 @@ void PowerMonitor::OnResume() {
   Emit("resume");
 }
 
+#if defined(OS_LINUX)
+void PowerMonitor::SetListeningForShutdown(bool is_listening) {
+  if (is_listening) {
+    // unretained is OK because we own power_observer_linux_
+    power_observer_linux_.SetShutdownHandler(base::BindRepeating(
+        &PowerMonitor::ShouldShutdown, base::Unretained(this)));
+  } else {
+    power_observer_linux_.SetShutdownHandler(base::RepeatingCallback<bool()>());
+  }
+}
+#endif
+
 // static
 v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   CHECK(Browser::Get()->is_ready());
-  return gin::CreateHandle(isolate, new PowerMonitor(isolate)).ToV8();
+  auto* pm = new PowerMonitor(isolate);
+  auto handle = gin::CreateHandle(isolate, pm).ToV8();
+  pm->Pin(isolate);
+  return handle;
 }
 
 gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin_helper::EventEmitterMixin<PowerMonitor>::GetObjectTemplateBuilder(
-      isolate);
+             isolate)
+#if defined(OS_LINUX)
+      .SetMethod("setListeningForShutdown",
+                 &PowerMonitor::SetListeningForShutdown)
+#endif
+      ;
 }
 
 const char* PowerMonitor::GetTypeName() {
@@ -116,16 +135,6 @@ int GetSystemIdleTime() {
   return ui::CalculateIdleTime();
 }
 
-#if defined(OS_LINUX)
-void BlockShutdown() {
-  PowerObserverLinux::BlockShutdown();
-}
-
-void UnblockShutdown() {
-  PowerObserverLinux::UnblockShutdown();
-}
-#endif
-
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -137,10 +146,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("getSystemIdleState",
                  base::BindRepeating(&GetSystemIdleState));
   dict.SetMethod("getSystemIdleTime", base::BindRepeating(&GetSystemIdleTime));
-#if defined(OS_LINUX)
-  dict.SetMethod("blockShutdown", base::BindRepeating(&BlockShutdown));
-  dict.SetMethod("unblockShutdown", base::BindRepeating(&UnblockShutdown));
-#endif
 }
 
 }  // namespace
