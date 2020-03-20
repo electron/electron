@@ -1,5 +1,5 @@
-const { ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron');
 
 window.onload = function () {
-  ipcRenderer.send('webview', typeof WebView)
-}
+  ipcRenderer.send('webview', typeof WebView);
+};

@@ -1,36 +1,36 @@
 // Deprecated APIs are still supported and should be tested.
-process.throwDeprecation = false
+process.throwDeprecation = false;
 
-const electron = require('electron')
-const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents, session } = electron
+const electron = require('electron');
+const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents, session } = electron;
 
 try {
-  require('fs').rmdirSync(app.getPath('userData'), { recursive: true })
+  require('fs').rmdirSync(app.getPath('userData'), { recursive: true });
 } catch (e) {
-  console.warn(`Warning: couldn't clear user data directory:`, e)
+  console.warn('Warning: couldn\'t clear user data directory:', e);
 }
 
-const fs = require('fs')
-const path = require('path')
-const util = require('util')
-const v8 = require('v8')
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
+const v8 = require('v8');
 
 const argv = require('yargs')
   .boolean('ci')
   .array('files')
   .string('g').alias('g', 'grep')
   .boolean('i').alias('i', 'invert')
-  .argv
+  .argv;
 
-let window = null
+let window = null;
 
-v8.setFlagsFromString('--expose_gc')
-app.commandLine.appendSwitch('js-flags', '--expose_gc')
-app.commandLine.appendSwitch('ignore-certificate-errors')
-app.commandLine.appendSwitch('disable-renderer-backgrounding')
+v8.setFlagsFromString('--expose_gc');
+app.commandLine.appendSwitch('js-flags', '--expose_gc');
+app.commandLine.appendSwitch('ignore-certificate-errors');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
 // Disable security warnings (the security warnings test will enable them)
-process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true;
 
 // Accessing stdout in the main process will result in the process.stdout
 // throwing UnknownSystemError in renderer process sometimes. This line makes
@@ -43,62 +43,62 @@ process.stdout
 console
 
 ipcMain.on('message', function (event, ...args) {
-  event.sender.send('message', ...args)
-})
+  event.sender.send('message', ...args);
+});
 
-ipcMain.handle('get-modules', () => Object.keys(electron))
-ipcMain.handle('get-temp-dir', () => app.getPath('temp'))
-ipcMain.handle('ping', () => null)
+ipcMain.handle('get-modules', () => Object.keys(electron));
+ipcMain.handle('get-temp-dir', () => app.getPath('temp'));
+ipcMain.handle('ping', () => null);
 
 // Write output to file if OUTPUT_TO_FILE is defined.
-const outputToFile = process.env.OUTPUT_TO_FILE
+const outputToFile = process.env.OUTPUT_TO_FILE;
 const print = function (_, method, args) {
-  const output = util.format.apply(null, args)
+  const output = util.format.apply(null, args);
   if (outputToFile) {
-    fs.appendFileSync(outputToFile, output + '\n')
+    fs.appendFileSync(outputToFile, output + '\n');
   } else {
-    console[method](output)
+    console[method](output);
   }
-}
-ipcMain.on('console-call', print)
+};
+ipcMain.on('console-call', print);
 
 ipcMain.on('process.exit', function (event, code) {
-  process.exit(code)
-})
+  process.exit(code);
+});
 
 ipcMain.on('eval', function (event, script) {
   event.returnValue = eval(script) // eslint-disable-line
-})
+});
 
 ipcMain.on('echo', function (event, msg) {
-  event.returnValue = msg
-})
+  event.returnValue = msg;
+});
 
-process.removeAllListeners('uncaughtException')
+process.removeAllListeners('uncaughtException');
 process.on('uncaughtException', function (error) {
-  console.error(error, error.stack)
-  process.exit(1)
-})
+  console.error(error, error.stack);
+  process.exit(1);
+});
 
-global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
+global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
 
 app.on('window-all-closed', function () {
-  app.quit()
-})
+  app.quit();
+});
 
 app.on('gpu-process-crashed', (event, killed) => {
-  console.log(`GPU process crashed (killed=${killed})`)
-})
+  console.log(`GPU process crashed (killed=${killed})`);
+});
 
 app.on('renderer-process-crashed', (event, contents, killed) => {
-  console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`)
-})
+  console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`);
+});
 
 app.whenReady().then(async function () {
-  await session.defaultSession.clearCache()
-  await session.defaultSession.clearStorageData()
+  await session.defaultSession.clearCache();
+  await session.defaultSession.clearStorageData();
   // Test if using protocol module would crash.
-  electron.protocol.registerStringProtocol('test-if-crashes', function () {})
+  electron.protocol.registerStringProtocol('test-if-crashes', function () {});
 
   window = new BrowserWindow({
     title: 'Electron Tests',
@@ -111,77 +111,77 @@ app.whenReady().then(async function () {
       enableRemoteModule: false,
       webviewTag: true
     }
-  })
+  });
   window.loadFile('static/index.html', {
     query: {
       grep: argv.grep,
       invert: argv.invert ? 'true' : '',
       files: argv.files ? argv.files.join(',') : undefined
     }
-  })
+  });
   window.on('unresponsive', function () {
     const chosen = dialog.showMessageBox(window, {
       type: 'warning',
       buttons: ['Close', 'Keep Waiting'],
       message: 'Window is not responsing',
       detail: 'The window is not responding. Would you like to force close it or just keep waiting?'
-    })
-    if (chosen === 0) window.destroy()
-  })
+    });
+    if (chosen === 0) window.destroy();
+  });
   window.webContents.on('crashed', function () {
-    console.error('Renderer process crashed')
-    process.exit(1)
-  })
-})
+    console.error('Renderer process crashed');
+    process.exit(1);
+  });
+});
 
 ipcMain.on('prevent-next-will-attach-webview', (event) => {
-  event.sender.once('will-attach-webview', event => event.preventDefault())
-})
+  event.sender.once('will-attach-webview', event => event.preventDefault());
+});
 
 ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
   event.sender.once('will-attach-webview', (event, webPreferences, params) => {
-    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`
-    webPreferences.nodeIntegration = false
-  })
-})
+    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`;
+    webPreferences.nodeIntegration = false;
+  });
+});
 
 ipcMain.on('disable-preload-on-next-will-attach-webview', (event, id) => {
   event.sender.once('will-attach-webview', (event, webPreferences, params) => {
-    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'webview-stripped-preload.html')}`
-    delete webPreferences.preload
-    delete webPreferences.preloadURL
-  })
-})
+    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'webview-stripped-preload.html')}`;
+    delete webPreferences.preload;
+    delete webPreferences.preloadURL;
+  });
+});
 
 ipcMain.on('handle-uncaught-exception', (event, message) => {
   suspendListeners(process, 'uncaughtException', (error) => {
-    event.returnValue = error.message
-  })
+    event.returnValue = error.message;
+  });
   fs.readFile(__filename, () => {
-    throw new Error(message)
-  })
-})
+    throw new Error(message);
+  });
+});
 
 ipcMain.on('handle-unhandled-rejection', (event, message) => {
   suspendListeners(process, 'unhandledRejection', (error) => {
-    event.returnValue = error.message
-  })
+    event.returnValue = error.message;
+  });
   fs.readFile(__filename, () => {
-    Promise.reject(new Error(message))
-  })
-})
+    Promise.reject(new Error(message));
+  });
+});
 
 // Suspend listeners until the next event and then restore them
 const suspendListeners = (emitter, eventName, callback) => {
-  const listeners = emitter.listeners(eventName)
-  emitter.removeAllListeners(eventName)
+  const listeners = emitter.listeners(eventName);
+  emitter.removeAllListeners(eventName);
   emitter.once(eventName, (...args) => {
-    emitter.removeAllListeners(eventName)
+    emitter.removeAllListeners(eventName);
     listeners.forEach((listener) => {
-      emitter.on(eventName, listener)
-    })
+      emitter.on(eventName, listener);
+    });
 
     // eslint-disable-next-line standard/no-callback-literal
-    callback(...args)
-  })
-}
+    callback(...args);
+  });
+};

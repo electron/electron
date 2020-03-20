@@ -1,4 +1,4 @@
-const fs = require('fs')
+const fs = require('fs');
 process.on('message', function (file) {
-  process.send(fs.readFileSync(file).toString())
-})
+  process.send(fs.readFileSync(file).toString());
+});

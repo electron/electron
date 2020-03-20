@@ -1,13 +1,13 @@
-const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer } = require('electron');
 
-console.info(contextBridge)
+console.info(contextBridge);
 
-let bound = false
+let bound = false;
 try {
-  contextBridge.exposeInMainWorld('test', {})
-  bound = true
+  contextBridge.exposeInMainWorld('test', {});
+  bound = true;
 } catch {
   // Ignore
 }
 
-ipcRenderer.send('context-bridge-bound', bound)
+ipcRenderer.send('context-bridge-bound', bound);
