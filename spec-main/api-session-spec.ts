@@ -149,7 +149,7 @@ describe('session module', () => {
     it('should overwrite previous cookies', async () => {
       const { cookies } = session.defaultSession
       const name = 'DidOverwrite'
-      for (const value of [ 'No', 'Yes' ]) {
+      for (const value of ['No', 'Yes']) {
         await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 })
         const list = await cookies.get({ url })
 
@@ -303,7 +303,7 @@ describe('session module', () => {
     let customSession: Session
     const protocol = session.defaultSession.protocol
     const handler = (ignoredError: any, callback: Function) => {
-      callback({ data: `<script>require('electron').ipcRenderer.send('hello')</script>`, mimeType: 'text/html' })
+      callback({ data: '<script>require(\'electron\').ipcRenderer.send(\'hello\')</script>', mimeType: 'text/html' })
     }
 
     beforeEach(async () => {
@@ -869,7 +869,7 @@ describe('session module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: `very-temp-permision-handler`,
+          partition: 'very-temp-permision-handler',
           nodeIntegration: true
         }
       })

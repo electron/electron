@@ -29,12 +29,12 @@ describe('webFrame module', () => {
           }
         })
       })
-    const inputText = `spleling test you're `
+    const inputText = 'spleling test you\'re '
     for (const keyCode of inputText) {
       w.webContents.sendInputEvent({ type: 'char', keyCode })
     }
     const [words, callbackDefined] = await spellCheckerFeedback
-    expect(words.sort()).to.deep.equal(['spleling', 'test', `you're`, 'you', 're'].sort())
+    expect(words.sort()).to.deep.equal(['spleling', 'test', 'you\'re', 'you', 're'].sort())
     expect(callbackDefined).to.be.true()
   })
 })

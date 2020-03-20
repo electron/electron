@@ -217,7 +217,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         expect(details.statusLine).to.equal('HTTP/1.1 200 OK')
         expect(details.statusCode).to.equal(200)
-        expect(details.responseHeaders!['Custom']).to.deep.equal(['Header'])
+        expect(details.responseHeaders!.Custom).to.deep.equal(['Header'])
         callback({})
       })
       const { data } = await ajax(defaultURL)
@@ -227,7 +227,7 @@ describe('webRequest module', () => {
     it('can change the response header', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!
-        responseHeaders['Custom'] = ['Changed'] as any
+        responseHeaders.Custom = ['Changed'] as any
         callback({ responseHeaders: responseHeaders })
       })
       const { headers } = await ajax(defaultURL)
@@ -247,7 +247,7 @@ describe('webRequest module', () => {
     it('can change headers of CORS responses', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!
-        responseHeaders['Custom'] = ['Changed'] as any
+        responseHeaders.Custom = ['Changed'] as any
         callback({ responseHeaders: responseHeaders })
       })
       const { headers } = await ajax('neworigin://host')
@@ -306,7 +306,7 @@ describe('webRequest module', () => {
         expect(details.fromCache).to.be.a('boolean')
         expect(details.statusLine).to.equal('HTTP/1.1 200 OK')
         expect(details.statusCode).to.equal(200)
-        expect(details.responseHeaders!['Custom']).to.deep.equal(['Header'])
+        expect(details.responseHeaders!.Custom).to.deep.equal(['Header'])
       })
       const { data, headers } = await ajax(defaultURL)
       expect(headers).to.match(/^custom: Header$/m)
@@ -420,24 +420,24 @@ describe('webRequest module', () => {
       })
       ses.webRequest.onResponseStarted((details) => {
         if (details.url.startsWith('ws://')) {
-          expect(details.responseHeaders!['Connection'][0]).be.equal('Upgrade')
+          expect(details.responseHeaders!.Connection[0]).be.equal('Upgrade')
         } else if (details.url.startsWith('http')) {
-          expect(details.responseHeaders!['foo1'][0]).be.equal('bar1')
+          expect(details.responseHeaders!.foo1[0]).be.equal('bar1')
         }
       })
       ses.webRequest.onSendHeaders((details) => {
         if (details.url.startsWith('ws://')) {
-          expect(details.requestHeaders['foo']).be.equal('bar')
-          expect(details.requestHeaders['Upgrade']).be.equal('websocket')
+          expect(details.requestHeaders.foo).be.equal('bar')
+          expect(details.requestHeaders.Upgrade).be.equal('websocket')
         } else if (details.url.startsWith('http')) {
-          expect(details.requestHeaders['foo']).be.equal('bar')
+          expect(details.requestHeaders.foo).be.equal('bar')
         }
       })
       ses.webRequest.onCompleted((details) => {
         if (details.url.startsWith('ws://')) {
-          expect(details['error']).be.equal('net::ERR_WS_UPGRADE')
+          expect(details.error).be.equal('net::ERR_WS_UPGRADE')
         } else if (details.url.startsWith('http')) {
-          expect(details['error']).be.equal('net::OK')
+          expect(details.error).be.equal('net::OK')
         }
       })
 
@@ -462,10 +462,10 @@ describe('webRequest module', () => {
       contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port } })
       await emittedOnce(ipcMain, 'websocket-success')
 
-      expect(receivedHeaders['/websocket']['Upgrade'][0]).to.equal('websocket')
-      expect(receivedHeaders['/']['foo1'][0]).to.equal('bar1')
-      expect(reqHeaders['/websocket']['foo']).to.equal('bar')
-      expect(reqHeaders['/']['foo']).to.equal('bar')
+      expect(receivedHeaders['/websocket'].Upgrade[0]).to.equal('websocket')
+      expect(receivedHeaders['/'].foo1[0]).to.equal('bar1')
+      expect(reqHeaders['/websocket'].foo).to.equal('bar')
+      expect(reqHeaders['/'].foo).to.equal('bar')
     })
   })
 })

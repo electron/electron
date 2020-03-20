@@ -92,7 +92,7 @@ new Promise((resolve, reject) => {
       request.get({
         url: tsdAsset.url,
         headers: {
-          'accept': 'application/octet-stream',
+          accept: 'application/octet-stream',
           'user-agent': 'electron-npm-publisher'
         }
       }, (err, response, body) => {

@@ -1021,7 +1021,7 @@ describe('<webview> tag', function () {
         marginsType: 'terrible',
         scaleFactor: 'not-a-number',
         landscape: [],
-        pageRanges: { 'oops': 'im-not-the-right-key' },
+        pageRanges: { oops: 'im-not-the-right-key' },
         headerFooter: '123',
         printSelectionOnly: 1,
         printBackground: 2,

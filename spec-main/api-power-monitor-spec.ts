@@ -128,7 +128,7 @@ describe('powerMonitor', () => {
         // form and type but not its value.
         const idleState = powerMonitor.getSystemIdleState(1)
         expect(idleState).to.be.a('string')
-        const validIdleStates = [ 'active', 'idle', 'locked', 'unknown' ]
+        const validIdleStates = ['active', 'idle', 'locked', 'unknown']
         expect(validIdleStates).to.include(idleState)
       })
 

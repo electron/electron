@@ -235,7 +235,7 @@ describe('webContents module', () => {
       })
 
       it('executes after page load', (done) => {
-        w.webContents.executeJavaScript(`(() => "test")()`).then(result => {
+        w.webContents.executeJavaScript('(() => "test")()').then(result => {
           expect(result).to.equal('test')
           done()
         })
@@ -727,15 +727,15 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false })
       expect(() => {
         w.webContents.startDrag({ icon: path.join(fixturesPath, 'assets', 'logo.png') } as any)
-      }).to.throw(`Must specify either 'file' or 'files' option`)
+      }).to.throw('Must specify either \'file\' or \'files\' option')
 
       expect(() => {
         w.webContents.startDrag({ file: __filename } as any)
-      }).to.throw(`Must specify non-empty 'icon' option`)
+      }).to.throw('Must specify non-empty \'icon\' option')
 
       expect(() => {
         w.webContents.startDrag({ file: __filename, icon: __filename })
-      }).to.throw(`Must specify non-empty 'icon' option`)
+      }).to.throw('Must specify non-empty \'icon\' option')
     })
   })
 
@@ -1561,7 +1561,7 @@ describe('webContents module', () => {
         marginsType: 'terrible',
         scaleFactor: 'not-a-number',
         landscape: [],
-        pageRanges: { 'oops': 'im-not-the-right-key' },
+        pageRanges: { oops: 'im-not-the-right-key' },
         headerFooter: '123',
         printSelectionOnly: 1,
         printBackground: 2,
@@ -1783,7 +1783,7 @@ describe('webContents module', () => {
         cb(user, pass)
       })
       await w.loadURL(serverUrl)
-      const body = await w.webContents.executeJavaScript(`document.documentElement.textContent`)
+      const body = await w.webContents.executeJavaScript('document.documentElement.textContent')
       expect(body).to.equal(`Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`)
       expect(eventRequest.url).to.equal(serverUrl + '/')
       expect(eventAuthInfo.isProxy).to.be.false()
@@ -1807,7 +1807,7 @@ describe('webContents module', () => {
         cb(user, pass)
       })
       await w.loadURL(`${serverUrl}/no-auth`)
-      const body = await w.webContents.executeJavaScript(`document.documentElement.textContent`)
+      const body = await w.webContents.executeJavaScript('document.documentElement.textContent')
       expect(body).to.equal(`Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`)
       expect(eventRequest.url).to.equal(`${serverUrl}/no-auth`)
       expect(eventAuthInfo.isProxy).to.be.true()
@@ -1824,7 +1824,7 @@ describe('webContents module', () => {
         cb()
       })
       await w.loadURL(serverUrl)
-      const body = await w.webContents.executeJavaScript(`document.documentElement.textContent`)
+      const body = await w.webContents.executeJavaScript('document.documentElement.textContent')
       expect(body).to.equal('401')
     })
   })

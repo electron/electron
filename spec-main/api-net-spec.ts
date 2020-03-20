@@ -85,7 +85,7 @@ let routeFailure = false
 
 respondNTimes.toRoutes = (routes: Record<string, http.RequestListener>, n: number) => {
   return respondNTimes((request, response) => {
-    if (routes.hasOwnProperty(request.url || '')) {
+    if (Object.prototype.hasOwnProperty.call(routes, request.url || '')) {
       (async () => {
         await Promise.resolve(routes[request.url || ''](request, response))
       })().catch((err) => {
@@ -702,7 +702,7 @@ describe('net module', () => {
 
         expect(() => {
           session.defaultSession.webRequest.onBeforeRequest(
-            { urls: [ '*://www.googleapis.com/', '*://blahblah.dev' ] },
+            { urls: ['*://www.googleapis.com/', '*://blahblah.dev'] },
             (details, callback) => { callback({ cancel: false }) }
           )
         }).to.throw('Invalid url pattern *://blahblah.dev: Empty path.')

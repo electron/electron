@@ -228,7 +228,7 @@ describe('protocol module', () => {
         expect(() => callback({
           path: filePath,
           headers: { 'X-Great-Header': (42 as any) }
-        })).to.throw(Error, `Value of 'X-Great-Header' header has to be a string`)
+        })).to.throw(Error, 'Value of \'X-Great-Header\' header has to be a string')
         done()
       }).then(() => {
         ajax(protocolName + '://fake-host')
@@ -371,8 +371,8 @@ describe('protocol module', () => {
       await registerStreamProtocol(protocolName, (request, callback) => {
         callback({
           headers: {
-            'header1': ['value1', 'value2'],
-            'header2': 'value3'
+            header1: ['value1', 'value2'],
+            header2: 'value3'
           },
           data: getStream()
         })

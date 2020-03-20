@@ -196,7 +196,7 @@ const throwRPCError = function (message: string) {
 
 const removeRemoteListenersAndLogWarning = (sender: any, callIntoRenderer: (...args: any[]) => void) => {
   const location = v8Util.getHiddenValue(callIntoRenderer, 'location')
-  let message = `Attempting to call a function in a renderer window that has been closed or released.` +
+  let message = 'Attempting to call a function in a renderer window that has been closed or released.' +
     `\nFunction provided here: ${location}`
 
   if (sender instanceof EventEmitter) {
@@ -281,11 +281,12 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         }
         return ret
       }
-      case 'function-with-return-value':
+      case 'function-with-return-value': {
         const returnValue = metaToValue(meta.value)
         return function () {
           return returnValue
         }
+      }
       case 'function': {
         // Merge contextId and meta.id, since meta.id can be the same in
         // different webContents.

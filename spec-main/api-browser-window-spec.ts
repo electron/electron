@@ -45,7 +45,7 @@ describe('BrowserWindow module', () => {
           show: false,
           // apparently void 0 had different behaviour from undefined in the
           // issue that this test is supposed to catch.
-          webContents: void 0
+          webContents: void 0 // eslint-disable-line no-void
         } as any)
         w.destroy()
       }).not.to.throw()
@@ -940,9 +940,9 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe(`BrowserWindow.getNormalBounds()`, () => {
-      describe(`Normal state`, () => {
-        it(`checks normal bounds after resize`, (done) => {
+    describe('BrowserWindow.getNormalBounds()', () => {
+      describe('Normal state', () => {
+        it('checks normal bounds after resize', (done) => {
           const size = [300, 400]
           w.once('resize', () => {
             expectBoundsEqual(w.getNormalBounds(), w.getBounds())
@@ -950,7 +950,7 @@ describe('BrowserWindow module', () => {
           })
           w.setSize(size[0], size[1])
         })
-        it(`checks normal bounds after move`, (done) => {
+        it('checks normal bounds after move', (done) => {
           const pos = [10, 10]
           w.once('move', () => {
             expectBoundsEqual(w.getNormalBounds(), w.getBounds())
@@ -959,8 +959,8 @@ describe('BrowserWindow module', () => {
           w.setPosition(pos[0], pos[1])
         })
       })
-      ifdescribe(process.platform !== 'linux')(`Maximized state`, () => {
-        it(`checks normal bounds when maximized`, (done) => {
+      ifdescribe(process.platform !== 'linux')('Maximized state', () => {
+        it('checks normal bounds when maximized', (done) => {
           const bounds = w.getBounds()
           w.once('maximize', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds)
@@ -969,7 +969,7 @@ describe('BrowserWindow module', () => {
           w.show()
           w.maximize()
         })
-        it(`checks normal bounds when unmaximized`, (done) => {
+        it('checks normal bounds when unmaximized', (done) => {
           const bounds = w.getBounds()
           w.once('maximize', () => {
             w.unmaximize()
@@ -982,8 +982,8 @@ describe('BrowserWindow module', () => {
           w.maximize()
         })
       })
-      ifdescribe(process.platform !== 'linux')(`Minimized state`, () => {
-        it(`checks normal bounds when minimized`, (done) => {
+      ifdescribe(process.platform !== 'linux')('Minimized state', () => {
+        it('checks normal bounds when minimized', (done) => {
           const bounds = w.getBounds()
           w.once('minimize', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds)
@@ -992,7 +992,7 @@ describe('BrowserWindow module', () => {
           w.show()
           w.minimize()
         })
-        it(`checks normal bounds when restored`, (done) => {
+        it('checks normal bounds when restored', (done) => {
           const bounds = w.getBounds()
           w.once('minimize', () => {
             w.restore()
@@ -1005,8 +1005,8 @@ describe('BrowserWindow module', () => {
           w.minimize()
         })
       })
-      ifdescribe(process.platform === 'win32')(`Fullscreen state`, () => {
-        it(`checks normal bounds when fullscreen'ed`, (done) => {
+      ifdescribe(process.platform === 'win32')('Fullscreen state', () => {
+        it('checks normal bounds when fullscreen\'ed', (done) => {
           const bounds = w.getBounds()
           w.once('enter-full-screen', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds)
@@ -1015,7 +1015,7 @@ describe('BrowserWindow module', () => {
           w.show()
           w.setFullScreen(true)
         })
-        it(`checks normal bounds when unfullscreen'ed`, (done) => {
+        it('checks normal bounds when unfullscreen\'ed', (done) => {
           const bounds = w.getBounds()
           w.once('enter-full-screen', () => {
             w.setFullScreen(false)
@@ -1262,7 +1262,7 @@ describe('BrowserWindow module', () => {
       server = http.createServer((req, res) => {
         if (req.url === '/link') {
           res.setHeader('Content-type', 'text/html')
-          res.end(`<head><link rel="preconnect" href="//example.com" /></head><body>foo</body>`)
+          res.end('<head><link rel="preconnect" href="//example.com" /></head><body>foo</body>')
           return
         }
         res.end()
@@ -2092,10 +2092,10 @@ describe('BrowserWindow module', () => {
         await closeWindow(popupWindow, { assertNotWindows: false })
 
         expect(popupAccessMessage).to.be.a('string',
-          `child's .document is accessible from its parent window`)
+          'child\'s .document is accessible from its parent window')
         expect(popupAccessMessage).to.match(/^Blocked a frame with origin/)
         expect(openerAccessMessage).to.be.a('string',
-          `opener .document is accessible from a popup window`)
+          'opener .document is accessible from a popup window')
         expect(openerAccessMessage).to.match(/^Blocked a frame with origin/)
       })
 
@@ -2178,7 +2178,7 @@ describe('BrowserWindow module', () => {
           waitForEvents(w, [
             'page-title-updated'
           ], done)
-          w.loadURL(`data:text/html,<script>document.title = 'changed'</script>`)
+          w.loadURL('data:text/html,<script>document.title = \'changed\'</script>')
         })
 
         it('works for stop events', (done) => {
@@ -2187,7 +2187,7 @@ describe('BrowserWindow module', () => {
             'did-fail-load',
             'did-stop-loading'
           ], done)
-          w.loadURL(`data:text/html,<script>stop()</script>`)
+          w.loadURL('data:text/html,<script>stop()</script>')
         })
 
         it('works for web contents events', (done) => {

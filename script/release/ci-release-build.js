@@ -66,8 +66,8 @@ async function makeRequest (requestOptions, parseResponse) {
 async function circleCIcall (targetBranch, job, options) {
   console.log(`Triggering CircleCI to run build job: ${job} on branch: ${targetBranch} with release flag.`)
   const buildRequest = {
-    'branch': targetBranch,
-    'parameters': {
+    branch: targetBranch,
+    parameters: {
       'run-lint': false,
       'run-build-linux': false,
       'run-build-mac': false
@@ -185,7 +185,7 @@ async function circleCIRequest (url, method, requestBody) {
     url,
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      Accept: 'application/json'
     },
     body: requestBody ? JSON.stringify(requestBody) : null
   }, true).catch(err => {

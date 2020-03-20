@@ -47,7 +47,7 @@ describe('systemPreferences module', () => {
         1,
         null,
         new Date(),
-        { 'one': null }
+        { one: null }
       ]
 
       for (const badDefault of badDefaults) {
@@ -90,7 +90,7 @@ describe('systemPreferences module', () => {
       ['integer', 11],
       ['url', 'https://github.com/electron'],
       ['array', [1, 2, 3]],
-      ['dictionary', { 'a': 1, 'b': 2 }]
+      ['dictionary', { a: 1, b: 2 }]
     ]
 
     it('sets values', () => {

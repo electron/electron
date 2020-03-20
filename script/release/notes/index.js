@@ -144,8 +144,8 @@ async function getReleaseNotes (range, newVersion, explicitLinks) {
 
 async function main () {
   const opts = minimist(process.argv.slice(2), {
-    boolean: [ 'explicit-links', 'help' ],
-    string: [ 'version' ]
+    boolean: ['explicit-links', 'help'],
+    string: ['version']
   })
   opts.range = opts._.shift()
   if (opts.help || !opts.range) {

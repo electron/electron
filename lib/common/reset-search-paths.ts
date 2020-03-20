@@ -30,7 +30,7 @@ Object.defineProperty(electronModule, 'exports', {
   get: () => require('electron')
 })
 
-Module._cache['electron'] = electronModule
+Module._cache.electron = electronModule
 
 const originalResolveFilename = Module._resolveFilename
 Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean) {

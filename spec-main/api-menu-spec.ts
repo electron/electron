@@ -83,7 +83,7 @@ describe('Menu module', function () {
 
     it('does throw exception for object without role, label, or type attribute', () => {
       expect(() => {
-        Menu.buildFromTemplate([{ 'visible': true }])
+        Menu.buildFromTemplate([{ visible: true }])
       }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/)
     })
     it('does throw exception for undefined', () => {
@@ -99,7 +99,8 @@ describe('Menu module', function () {
             {
               label: 'two',
               id: '2',
-              afterGroupContaining: ['1'] },
+              afterGroupContaining: ['1']
+            },
             { type: 'separator' },
             {
               id: '1',
@@ -132,8 +133,8 @@ describe('Menu module', function () {
           })
           const sep = new MenuItem({ type: 'separator' })
 
-          const items = [ secondItem, sep, firstItem ]
-          const expected = [ firstItem, sep, secondItem ]
+          const items = [secondItem, sep, firstItem]
+          const expected = [firstItem, sep, secondItem]
 
           expect(sortMenuItems(items)).to.deep.equal(expected)
         })

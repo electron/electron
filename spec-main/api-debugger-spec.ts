@@ -104,7 +104,7 @@ describe('debugger module', () => {
       w.webContents.loadURL('about:blank')
       w.webContents.debugger.attach()
 
-      const params = { 'expression': '4+2' }
+      const params = { expression: '4+2' }
       const res = await w.webContents.debugger.sendCommand('Runtime.evaluate', params)
 
       expect(res.wasThrown).to.be.undefined()
@@ -121,7 +121,7 @@ describe('debugger module', () => {
       w.webContents.openDevTools()
       await opened
 
-      const params = { 'expression': '4+2' }
+      const params = { expression: '4+2' }
       const res = await w.webContents.debugger.sendCommand('Runtime.evaluate', params)
 
       expect(res.wasThrown).to.be.undefined()

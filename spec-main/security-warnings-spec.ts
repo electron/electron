@@ -48,7 +48,7 @@ describe('security warnings', () => {
             return
           }
 
-          const cspHeaders = { 'Content-Security-Policy': `script-src 'self' 'unsafe-inline'` }
+          const cspHeaders = { 'Content-Security-Policy': 'script-src \'self\' \'unsafe-inline\'' }
           response.writeHead(200, useCsp ? cspHeaders : undefined)
           response.write(file, 'binary')
           response.end()

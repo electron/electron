@@ -16,9 +16,9 @@ const readFile = promisify(fs.readFile)
 function parseCommandLine () {
   let help
   const opts = minimist(process.argv.slice(2), {
-    string: [ 'bump', 'version' ],
-    boolean: [ 'dryRun', 'help' ],
-    alias: { 'version': ['v'] },
+    string: ['bump', 'version'],
+    boolean: ['dryRun', 'help'],
+    alias: { version: ['v'] },
     unknown: arg => { help = true }
   })
   if (help || opts.help || !opts.bump) {

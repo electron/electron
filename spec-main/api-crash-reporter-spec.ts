@@ -277,10 +277,10 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
       w.loadURL('about:blank')
       await expect(
-        w.webContents.executeJavaScript(`require('electron').crashReporter.setUploadToServer(true)`)
+        w.webContents.executeJavaScript('require(\'electron\').crashReporter.setUploadToServer(true)')
       ).to.eventually.be.rejected()
       await expect(
-        w.webContents.executeJavaScript(`require('electron').crashReporter.getUploadToServer()`)
+        w.webContents.executeJavaScript('require(\'electron\').crashReporter.getUploadToServer()')
       ).to.eventually.be.rejected()
     })
     it('sets uploadToServer false when called with false', function () {

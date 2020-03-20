@@ -21,7 +21,7 @@ describe('version-bumper', () => {
         major: 2,
         minor: 0,
         patch: 0,
-        pre: [ 'nightly', 12345678 ]
+        pre: ['nightly', 12345678]
       }
 
       const version = utils.makeVersion(components, '.', utils.preType.PARTIAL)
@@ -33,7 +33,7 @@ describe('version-bumper', () => {
         major: 2,
         minor: 0,
         patch: 0,
-        pre: [ 'nightly', 12345678 ]
+        pre: ['nightly', 12345678]
       }
 
       const version = utils.makeVersion(components, '.', utils.preType.FULL)

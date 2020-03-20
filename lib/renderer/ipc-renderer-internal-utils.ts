@@ -14,7 +14,7 @@ export const handle = function <T extends IPCHandler> (channel: string, handler:
 }
 
 export function invokeSync<T> (command: string, ...args: any[]): T {
-  const [ error, result ] = ipcRendererInternal.sendSync(command, ...args)
+  const [error, result] = ipcRendererInternal.sendSync(command, ...args)
 
   if (error) {
     throw error

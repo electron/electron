@@ -45,7 +45,7 @@ const replacePlaceholders = (message: string, placeholders: Record<string, Place
 
 const getMessage = (extensionId: number, messageName: string, substitutions: string[]) => {
   const messages = getMessages(extensionId)
-  if (messages.hasOwnProperty(messageName)) {
+  if (Object.prototype.hasOwnProperty.call(messages, messageName)) {
     const { message, placeholders } = messages[messageName]
     return replacePlaceholders(message, placeholders, substitutions)
   }

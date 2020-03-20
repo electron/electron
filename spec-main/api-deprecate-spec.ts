@@ -181,8 +181,8 @@ describe('deprecate', () => {
 
     deprecate.fnToProperty(mod, 'newProp', '_oldGetterFn', '_oldSetterFn')
 
-    mod['oldGetterFn']()
-    mod['oldSetterFn']()
+    mod.oldGetterFn()
+    mod.oldSetterFn()
 
     expect(warnings).to.have.lengthOf(2)
 

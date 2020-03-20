@@ -20,10 +20,10 @@ const getHeaders = (filePath, fileName) => {
   const extension = fileName.split('.').pop()
   const size = fs.statSync(filePath).size
   const options = {
-    'json': 'text/json',
-    'zip': 'application/zip',
-    'txt': 'text/plain',
-    'ts': 'application/typescript'
+    json: 'text/json',
+    zip: 'application/zip',
+    txt: 'text/plain',
+    ts: 'application/typescript'
   }
 
   return {
@@ -74,7 +74,7 @@ function uploadToGitHub () {
           uploadToGitHub()
         }
       }).catch((getReleaseErr) => {
-        console.log(`Fatal: Unable to get current release assets via getRelease!  Error was:`, getReleaseErr)
+        console.log('Fatal: Unable to get current release assets via getRelease!  Error was:', getReleaseErr)
       })
     } else {
       console.log(`Error retrying uploading ${fileName} to GitHub:`, err)

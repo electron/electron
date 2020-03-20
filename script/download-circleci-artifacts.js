@@ -38,7 +38,7 @@ async function downloadArtifact (name, buildNum, dest) {
     url: circleArtifactUrl,
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      Accept: 'application/json'
     }
   }, true).catch(err => {
     if (args.verbose) {

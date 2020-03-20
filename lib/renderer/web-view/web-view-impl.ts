@@ -72,7 +72,7 @@ export class WebViewImpl {
     // heard back from createGuest yet. We will not reset the flag in this case so
     // that we don't end up allocating a second guest.
     if (this.guestInstanceId) {
-      this.guestInstanceId = void 0
+      this.guestInstanceId = undefined
     }
 
     this.beforeFirstNavigation = true
@@ -173,7 +173,7 @@ export class WebViewImpl {
     }
 
     for (const attributeName in this.attributes) {
-      if (this.attributes.hasOwnProperty(attributeName)) {
+      if (Object.prototype.hasOwnProperty.call(this.attributes, attributeName)) {
         params[attributeName] = this.attributes[attributeName].getValue()
       }
     }

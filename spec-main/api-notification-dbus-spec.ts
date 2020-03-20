@@ -116,9 +116,9 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
         body: 'body',
         actions: [],
         hints: {
-          'append': 'true',
+          append: 'true',
           'desktop-entry': appName,
-          'urgency': 1
+          urgency: 1
         }
       })
     })
