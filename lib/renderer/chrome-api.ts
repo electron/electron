@@ -1,14 +1,14 @@
-import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
-import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
-import * as url from 'url'
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
+import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
+import * as url from 'url';
 
-import { Event } from '@electron/internal/renderer/extensions/event'
+import { Event } from '@electron/internal/renderer/extensions/event';
 
 class Tab {
   public id: number
 
   constructor (tabId: number) {
-    this.id = tabId
+    this.id = tabId;
   }
 }
 
@@ -18,9 +18,9 @@ class MessageSender {
   public url: string
 
   constructor (tabId: number, extensionId: string) {
-    this.tab = tabId ? new Tab(tabId) : null
-    this.id = extensionId
-    this.url = `chrome-extension://${extensionId}`
+    this.tab = tabId ? new Tab(tabId) : null;
+    this.id = extensionId;
+    this.url = `chrome-extension://${extensionId}`;
   }
 }
 
@@ -31,69 +31,69 @@ class Port {
   public sender: MessageSender
 
   constructor (public tabId: number, public portId: number, extensionId: string, public name: string) {
-    this.onDisconnect = new Event()
-    this.onMessage = new Event()
-    this.sender = new MessageSender(tabId, extensionId)
+    this.onDisconnect = new Event();
+    this.onMessage = new Event();
+    this.sender = new MessageSender(tabId, extensionId);
 
     ipcRendererInternal.once(`CHROME_PORT_DISCONNECT_${portId}`, () => {
-      this._onDisconnect()
-    })
+      this._onDisconnect();
+    });
 
     ipcRendererInternal.on(`CHROME_PORT_POSTMESSAGE_${portId}`, (
       _event: Electron.Event, message: any
     ) => {
-      const sendResponse = function () { console.error('sendResponse is not implemented') }
-      this.onMessage.emit(JSON.parse(message), this.sender, sendResponse)
-    })
+      const sendResponse = function () { console.error('sendResponse is not implemented'); };
+      this.onMessage.emit(JSON.parse(message), this.sender, sendResponse);
+    });
   }
 
   disconnect () {
-    if (this.disconnected) return
+    if (this.disconnected) return;
 
-    ipcRendererInternal.sendToAll(this.tabId, `CHROME_PORT_DISCONNECT_${this.portId}`)
-    this._onDisconnect()
+    ipcRendererInternal.sendToAll(this.tabId, `CHROME_PORT_DISCONNECT_${this.portId}`);
+    this._onDisconnect();
   }
 
   postMessage (message: any) {
-    ipcRendererInternal.sendToAll(this.tabId, `CHROME_PORT_POSTMESSAGE_${this.portId}`, JSON.stringify(message))
+    ipcRendererInternal.sendToAll(this.tabId, `CHROME_PORT_POSTMESSAGE_${this.portId}`, JSON.stringify(message));
   }
 
   _onDisconnect () {
-    this.disconnected = true
-    ipcRendererInternal.removeAllListeners(`CHROME_PORT_POSTMESSAGE_${this.portId}`)
-    this.onDisconnect.emit()
+    this.disconnected = true;
+    ipcRendererInternal.removeAllListeners(`CHROME_PORT_POSTMESSAGE_${this.portId}`);
+    this.onDisconnect.emit();
   }
 }
 
 // Inject chrome API to the |context|
 export function injectTo (extensionId: string, context: any) {
   if (process.electronBinding('features').isExtensionsEnabled()) {
-    throw new Error('Attempted to load JS chrome-extension polyfill with //extensions support enabled')
+    throw new Error('Attempted to load JS chrome-extension polyfill with //extensions support enabled');
   }
 
-  const chrome = context.chrome = context.chrome || {}
+  const chrome = context.chrome = context.chrome || {};
 
   ipcRendererInternal.on(`CHROME_RUNTIME_ONCONNECT_${extensionId}`, (
     _event: Electron.Event, tabId: number, portId: number, connectInfo: { name: string }
   ) => {
-    chrome.runtime.onConnect.emit(new Port(tabId, portId, extensionId, connectInfo.name))
-  })
+    chrome.runtime.onConnect.emit(new Port(tabId, portId, extensionId, connectInfo.name));
+  });
 
   ipcRendererUtils.handle(`CHROME_RUNTIME_ONMESSAGE_${extensionId}`, (
     _event: Electron.Event, tabId: number, message: string
   ) => {
     return new Promise(resolve => {
-      chrome.runtime.onMessage.emit(message, new MessageSender(tabId, extensionId), resolve)
-    })
-  })
+      chrome.runtime.onMessage.emit(message, new MessageSender(tabId, extensionId), resolve);
+    });
+  });
 
   ipcRendererInternal.on('CHROME_TABS_ONCREATED', (_event: Electron.Event, tabId: number) => {
-    chrome.tabs.onCreated.emit(new Tab(tabId))
-  })
+    chrome.tabs.onCreated.emit(new Tab(tabId));
+  });
 
   ipcRendererInternal.on('CHROME_TABS_ONREMOVED', (_event: Electron.Event, tabId: number) => {
-    chrome.tabs.onRemoved.emit(tabId)
-  })
+    chrome.tabs.onRemoved.emit(tabId);
+  });
 
   chrome.runtime = {
     id: extensionId,
@@ -105,69 +105,69 @@ export function injectTo (extensionId: string, context: any) {
         slashes: true,
         hostname: extensionId,
         pathname: path
-      })
+      });
     },
 
     // https://developer.chrome.com/extensions/runtime#method-getManifest
     getManifest: function () {
-      const manifest = ipcRendererUtils.invokeSync('CHROME_EXTENSION_MANIFEST', extensionId)
-      return manifest
+      const manifest = ipcRendererUtils.invokeSync('CHROME_EXTENSION_MANIFEST', extensionId);
+      return manifest;
     },
 
     // https://developer.chrome.com/extensions/runtime#method-connect
     connect (...args: Array<any>) {
       // Parse the optional args.
-      let targetExtensionId = extensionId
-      let connectInfo = { name: '' }
+      let targetExtensionId = extensionId;
+      let connectInfo = { name: '' };
       if (args.length === 1) {
         if (typeof args[0] === 'string') {
-          targetExtensionId = args[0]
+          targetExtensionId = args[0];
         } else {
-          connectInfo = args[0]
+          connectInfo = args[0];
         }
       } else if (args.length === 2) {
-        [targetExtensionId, connectInfo] = args
+        [targetExtensionId, connectInfo] = args;
       }
 
-      const { tabId, portId } = ipcRendererUtils.invokeSync('CHROME_RUNTIME_CONNECT', targetExtensionId, connectInfo)
-      return new Port(tabId, portId, extensionId, connectInfo.name)
+      const { tabId, portId } = ipcRendererUtils.invokeSync('CHROME_RUNTIME_CONNECT', targetExtensionId, connectInfo);
+      return new Port(tabId, portId, extensionId, connectInfo.name);
     },
 
     // https://developer.chrome.com/extensions/runtime#method-sendMessage
     sendMessage (...args: Array<any>) {
       // Parse the optional args.
-      const targetExtensionId = extensionId
-      let message: string
-      let options: Object | undefined
-      let responseCallback: Chrome.Tabs.SendMessageCallback = () => {}
+      const targetExtensionId = extensionId;
+      let message: string;
+      let options: Object | undefined;
+      let responseCallback: Chrome.Tabs.SendMessageCallback = () => {};
 
       if (typeof args[args.length - 1] === 'function') {
-        responseCallback = args.pop()
+        responseCallback = args.pop();
       }
 
       if (args.length === 1) {
-        [message] = args
+        [message] = args;
       } else if (args.length === 2) {
         if (typeof args[0] === 'string') {
-          [extensionId, message] = args
+          [extensionId, message] = args;
         } else {
-          [message, options] = args
+          [message, options] = args;
         }
       } else {
-        [extensionId, message, options] = args
+        [extensionId, message, options] = args;
       }
 
       if (options) {
-        console.error('options are not supported')
+        console.error('options are not supported');
       }
 
-      ipcRendererInternal.invoke('CHROME_RUNTIME_SEND_MESSAGE', targetExtensionId, message).then(responseCallback)
+      ipcRendererInternal.invoke('CHROME_RUNTIME_SEND_MESSAGE', targetExtensionId, message).then(responseCallback);
     },
 
     onConnect: new Event(),
     onMessage: new Event(),
     onInstalled: new Event()
-  }
+  };
 
   chrome.tabs = {
     // https://developer.chrome.com/extensions/tabs#method-executeScript
@@ -177,7 +177,7 @@ export function injectTo (extensionId: string, context: any) {
       resultCallback: Chrome.Tabs.ExecuteScriptCallback = () => {}
     ) {
       ipcRendererInternal.invoke('CHROME_TABS_EXECUTE_SCRIPT', tabId, extensionId, details)
-        .then((result: any) => resultCallback([result]))
+        .then((result: any) => resultCallback([result]));
     },
 
     // https://developer.chrome.com/extensions/tabs#method-sendMessage
@@ -187,13 +187,13 @@ export function injectTo (extensionId: string, context: any) {
       _options: Chrome.Tabs.SendMessageDetails,
       responseCallback: Chrome.Tabs.SendMessageCallback = () => {}
     ) {
-      ipcRendererInternal.invoke('CHROME_TABS_SEND_MESSAGE', tabId, extensionId, message).then(responseCallback)
+      ipcRendererInternal.invoke('CHROME_TABS_SEND_MESSAGE', tabId, extensionId, message).then(responseCallback);
     },
 
     onUpdated: new Event(),
     onCreated: new Event(),
     onRemoved: new Event()
-  }
+  };
 
   chrome.extension = {
     getURL: chrome.runtime.getURL,
@@ -201,9 +201,9 @@ export function injectTo (extensionId: string, context: any) {
     onConnect: chrome.runtime.onConnect,
     sendMessage: chrome.runtime.sendMessage,
     onMessage: chrome.runtime.onMessage
-  }
+  };
 
-  chrome.storage = require('@electron/internal/renderer/extensions/storage').setup(extensionId)
+  chrome.storage = require('@electron/internal/renderer/extensions/storage').setup(extensionId);
 
   chrome.pageAction = {
     show () {},
@@ -213,14 +213,14 @@ export function injectTo (extensionId: string, context: any) {
     setIcon () {},
     setPopup () {},
     getPopup () {}
-  }
+  };
 
-  chrome.i18n = require('@electron/internal/renderer/extensions/i18n').setup(extensionId)
-  chrome.webNavigation = require('@electron/internal/renderer/extensions/web-navigation').setup()
+  chrome.i18n = require('@electron/internal/renderer/extensions/i18n').setup(extensionId);
+  chrome.webNavigation = require('@electron/internal/renderer/extensions/web-navigation').setup();
 
   // Electron has no concept of a browserAction but we should stub these APIs for compatibility
   chrome.browserAction = {
     setIcon () {},
     setPopup () {}
-  }
+  };
 }

@@ -1,4 +1,4 @@
-const features = process.electronBinding('features')
+const features = process.electronBinding('features');
 
 export const moduleList: ElectronInternal.ModuleEntry[] = [
   {
@@ -27,18 +27,18 @@ export const moduleList: ElectronInternal.ModuleEntry[] = [
     loader: () => require('@electron/internal/common/api/deprecate'),
     private: true
   }
-]
+];
 
 if (features.isDesktopCapturerEnabled()) {
   moduleList.push({
     name: 'desktopCapturer',
     loader: () => require('@electron/internal/renderer/api/desktop-capturer')
-  })
+  });
 }
 
 if (features.isRemoteModuleEnabled() && process.isRemoteModuleEnabled) {
   moduleList.push({
     name: 'remote',
     loader: () => require('@electron/internal/renderer/api/remote')
-  })
+  });
 }
