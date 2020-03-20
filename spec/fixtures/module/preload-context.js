@@ -5,6 +5,6 @@ const types = {
   electron: typeof electron,
   window: typeof window,
   localVar: typeof window.test
-}
+};
 
-console.log(JSON.stringify(types))
+console.log(JSON.stringify(types));

@@ -1,38 +1,38 @@
-const cp = require('child_process')
-const fs = require('fs')
-const path = require('path')
+const cp = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
-const certificatePath = process.argv[2]
-const outPath = process.argv[3]
-const templatePath = path.resolve(__dirname, 'trust.xml')
+const certificatePath = process.argv[2];
+const outPath = process.argv[3];
+const templatePath = path.resolve(__dirname, 'trust.xml');
 
-const template = fs.readFileSync(templatePath, 'utf8')
+const template = fs.readFileSync(templatePath, 'utf8');
 
-const fingerprintResult = cp.spawnSync('openssl', ['x509', '-noout', '-fingerprint', '-sha1', '-in', certificatePath])
+const fingerprintResult = cp.spawnSync('openssl', ['x509', '-noout', '-fingerprint', '-sha1', '-in', certificatePath]);
 if (fingerprintResult.status !== 0) {
-  console.error(fingerprintResult.stderr.toString())
-  process.exit(1)
+  console.error(fingerprintResult.stderr.toString());
+  process.exit(1);
 }
 
-const fingerprint = fingerprintResult.stdout.toString().replace(/^SHA1 Fingerprint=/, '').replace(/:/g, '').trim()
+const fingerprint = fingerprintResult.stdout.toString().replace(/^SHA1 Fingerprint=/, '').replace(/:/g, '').trim();
 
-const serialResult = cp.spawnSync('openssl', ['x509', '-serial', '-noout', '-in', certificatePath])
+const serialResult = cp.spawnSync('openssl', ['x509', '-serial', '-noout', '-in', certificatePath]);
 if (serialResult.status !== 0) {
-  console.error(serialResult.stderr.toString())
-  process.exit(1)
+  console.error(serialResult.stderr.toString());
+  process.exit(1);
 }
 
-let serialHex = serialResult.stdout.toString().replace(/^serial=/, '').trim()
+let serialHex = serialResult.stdout.toString().replace(/^serial=/, '').trim();
 // Pad the serial number out to 18 hex chars
 while (serialHex.length < 18) {
-  serialHex = `0${serialHex}`
+  serialHex = `0${serialHex}`;
 }
-const serialB64 = Buffer.from(serialHex, 'hex').toString('base64')
+const serialB64 = Buffer.from(serialHex, 'hex').toString('base64');
 
 const trust = template
   .replace(/{{FINGERPRINT}}/g, fingerprint)
-  .replace(/{{SERIAL_BASE64}}/g, serialB64)
+  .replace(/{{SERIAL_BASE64}}/g, serialB64);
 
-fs.writeFileSync(outPath, trust)
+fs.writeFileSync(outPath, trust);
 
-console.log('Generated Trust Settings')
+console.log('Generated Trust Settings');

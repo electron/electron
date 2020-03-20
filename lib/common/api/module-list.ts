@@ -5,4 +5,4 @@ export const commonModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'shell', loader: () => require('./shell') },
   // The internal modules, invisible unless you know their names.
   { name: 'deprecate', loader: () => require('./deprecate'), private: true }
-]
+];
