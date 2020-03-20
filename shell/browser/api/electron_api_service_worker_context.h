@@ -8,7 +8,8 @@
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/service_worker_context_observer.h"
 #include "gin/handle.h"
-#include "shell/common/gin_helper/trackable_object.h"
+#include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
 
 namespace electron {
 
@@ -17,15 +18,13 @@ class ElectronBrowserContext;
 namespace api {
 
 class ServiceWorkerContext
-    : public gin_helper::TrackableObject<ServiceWorkerContext>,
+    : public gin::Wrappable<ServiceWorkerContext>,
+      public gin_helper::EventEmitterMixin<ServiceWorkerContext>,
       public content::ServiceWorkerContextObserver {
  public:
   static gin::Handle<ServiceWorkerContext> Create(
       v8::Isolate* isolate,
       ElectronBrowserContext* browser_context);
-
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
 
   v8::Local<v8::Value> GetAllRunningWorkerInfo(v8::Isolate* isolate);
   v8::Local<v8::Value> GetWorkerInfoFromID(gin_helper::ErrorThrower thrower,
@@ -35,6 +34,12 @@ class ServiceWorkerContext
   void OnReportConsoleMessage(int64_t version_id,
                               const content::ConsoleMessage& message) override;
   void OnDestruct(content::ServiceWorkerContext* context) override;
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
   explicit ServiceWorkerContext(v8::Isolate* isolate,
