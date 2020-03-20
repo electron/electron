@@ -60,7 +60,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       mojo::PendingReceiver<network::mojom::WebSocketClient> client_receiver,
       network::mojom::WebSocketHandshakeResponsePtr response,
       mojo::ScopedDataPipeConsumerHandle readable,
-      mojo::ScopedDataPipeConsumerHandle writable) override;
+      mojo::ScopedDataPipeProducerHandle writable) override;
 
   // network::mojom::AuthenticationHandler method:
   void OnAuthRequired(const net::AuthChallengeInfo& auth_info,
@@ -150,6 +150,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   mojo::PendingReceiver<network::mojom::WebSocketClient> client_receiver_;
   network::mojom::WebSocketHandshakeResponsePtr handshake_response_ = nullptr;
   mojo::ScopedDataPipeConsumerHandle readable_;
+  mojo::ScopedDataPipeProducerHandle writable_;
 
   extensions::WebRequestInfo info_;
 

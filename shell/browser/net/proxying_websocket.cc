@@ -120,7 +120,8 @@ void ProxyingWebSocket::OnConnectionEstablished(
     mojo::PendingRemote<network::mojom::WebSocket> websocket,
     mojo::PendingReceiver<network::mojom::WebSocketClient> client_receiver,
     network::mojom::WebSocketHandshakeResponsePtr response,
-    mojo::ScopedDataPipeConsumerHandle readable) {
+    mojo::ScopedDataPipeConsumerHandle readable,
+    mojo::ScopedDataPipeProducerHandle writable) {
   DCHECK(forwarding_handshake_client_);
   DCHECK(!is_done_);
   is_done_ = true;
@@ -156,7 +157,8 @@ void ProxyingWebSocket::ContinueToCompleted() {
   web_request_api_->OnCompleted(&info_, request_, net::ERR_WS_UPGRADE);
   forwarding_handshake_client_->OnConnectionEstablished(
       std::move(websocket_), std::move(client_receiver_),
-      std::move(handshake_response_), std::move(readable_));
+      std::move(handshake_response_), std::move(readable_),
+      std::move(writable_));
 
   // Deletes |this|.
   delete this;
