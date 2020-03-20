@@ -1,41 +1,41 @@
-const { expect } = require('chai')
-const { remote } = require('electron')
-const path = require('path')
+const { expect } = require('chai');
+const { remote } = require('electron');
+const path = require('path');
 
-const { closeWindow } = require('./window-helpers')
-const { emittedNTimes } = require('./events-helpers')
+const { closeWindow } = require('./window-helpers');
+const { emittedNTimes } = require('./events-helpers');
 
-const { BrowserWindow, ipcMain } = remote
+const { BrowserWindow, ipcMain } = remote;
 
 describe('chrome extension content scripts', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures')
-  const extensionPath = path.resolve(fixtures, 'extensions')
+  const fixtures = path.resolve(__dirname, 'fixtures');
+  const extensionPath = path.resolve(fixtures, 'extensions');
 
-  const addExtension = (name) => BrowserWindow.addExtension(path.resolve(extensionPath, name))
+  const addExtension = (name) => BrowserWindow.addExtension(path.resolve(extensionPath, name));
   const removeAllExtensions = () => {
     Object.keys(BrowserWindow.getExtensions()).map(extName => {
-      BrowserWindow.removeExtension(extName)
-    })
-  }
+      BrowserWindow.removeExtension(extName);
+    });
+  };
 
-  let responseIdCounter = 0
+  let responseIdCounter = 0;
   const executeJavaScriptInFrame = (webContents, frameRoutingId, code) => {
     return new Promise(resolve => {
-      const responseId = responseIdCounter++
+      const responseId = responseIdCounter++;
       ipcMain.once(`executeJavaScriptInFrame_${responseId}`, (event, result) => {
-        resolve(result)
-      })
-      webContents.send('executeJavaScriptInFrame', frameRoutingId, code, responseId)
-    })
-  }
+        resolve(result);
+      });
+      webContents.send('executeJavaScriptInFrame', frameRoutingId, code, responseId);
+    });
+  };
 
   const generateTests = (sandboxEnabled, contextIsolationEnabled) => {
     describe(`with sandbox ${sandboxEnabled ? 'enabled' : 'disabled'} and context isolation ${contextIsolationEnabled ? 'enabled' : 'disabled'}`, () => {
-      let w
+      let w;
 
       describe('supports "run_at" option', () => {
         beforeEach(async () => {
-          await closeWindow(w)
+          await closeWindow(w);
           w = new BrowserWindow({
             show: false,
             width: 400,
@@ -44,55 +44,55 @@ describe('chrome extension content scripts', () => {
               contextIsolation: contextIsolationEnabled,
               sandbox: sandboxEnabled
             }
-          })
-        })
+          });
+        });
 
         afterEach(() => {
-          removeAllExtensions()
-          return closeWindow(w).then(() => { w = null })
-        })
+          removeAllExtensions();
+          return closeWindow(w).then(() => { w = null; });
+        });
 
         it('should run content script at document_start', () => {
-          addExtension('content-script-document-start')
+          addExtension('content-script-document-start');
           w.webContents.once('dom-ready', async () => {
-            const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
-            expect(result).to.equal('red')
-          })
-          w.loadURL('about:blank')
-        })
+            const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
+            expect(result).to.equal('red');
+          });
+          w.loadURL('about:blank');
+        });
 
         it('should run content script at document_idle', async () => {
-          addExtension('content-script-document-idle')
-          w.loadURL('about:blank')
-          const result = await w.webContents.executeJavaScript('document.body.style.backgroundColor')
-          expect(result).to.equal('red')
-        })
+          addExtension('content-script-document-idle');
+          w.loadURL('about:blank');
+          const result = await w.webContents.executeJavaScript('document.body.style.backgroundColor');
+          expect(result).to.equal('red');
+        });
 
         it('should run content script at document_end', () => {
-          addExtension('content-script-document-end')
+          addExtension('content-script-document-end');
           w.webContents.once('did-finish-load', async () => {
-            const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
-            expect(result).to.equal('red')
-          })
-          w.loadURL('about:blank')
-        })
-      })
+            const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
+            expect(result).to.equal('red');
+          });
+          w.loadURL('about:blank');
+        });
+      });
 
       describe('supports "all_frames" option', () => {
-        const contentScript = path.resolve(fixtures, 'extensions/content-script')
+        const contentScript = path.resolve(fixtures, 'extensions/content-script');
 
         // Computed style values
-        const COLOR_RED = `rgb(255, 0, 0)`
-        const COLOR_BLUE = `rgb(0, 0, 255)`
-        const COLOR_TRANSPARENT = `rgba(0, 0, 0, 0)`
+        const COLOR_RED = `rgb(255, 0, 0)`;
+        const COLOR_BLUE = `rgb(0, 0, 255)`;
+        const COLOR_TRANSPARENT = `rgba(0, 0, 0, 0)`;
 
         before(() => {
-          BrowserWindow.addExtension(contentScript)
-        })
+          BrowserWindow.addExtension(contentScript);
+        });
 
         after(() => {
-          BrowserWindow.removeExtension('content-script-test')
-        })
+          BrowserWindow.removeExtension('content-script-test');
+        });
 
         beforeEach(() => {
           w = new BrowserWindow({
@@ -102,22 +102,22 @@ describe('chrome extension content scripts', () => {
               nodeIntegrationInSubFrames: true,
               preload: path.join(contentScript, 'all_frames-preload.js')
             }
-          })
-        })
+          });
+        });
 
         afterEach(() =>
           closeWindow(w).then(() => {
-            w = null
+            w = null;
           })
-        )
+        );
 
         it('applies matching rules in subframes', async () => {
-          const detailsPromise = emittedNTimes(w.webContents, 'did-frame-finish-load', 2)
-          w.loadFile(path.join(contentScript, 'frame-with-frame.html'))
-          const frameEvents = await detailsPromise
+          const detailsPromise = emittedNTimes(w.webContents, 'did-frame-finish-load', 2);
+          w.loadFile(path.join(contentScript, 'frame-with-frame.html'));
+          const frameEvents = await detailsPromise;
           await Promise.all(
             frameEvents.map(async frameEvent => {
-              const [, isMainFrame, , frameRoutingId] = frameEvent
+              const [, isMainFrame, , frameRoutingId] = frameEvent;
               const result = await executeJavaScriptInFrame(
                 w.webContents,
                 frameRoutingId,
@@ -129,22 +129,22 @@ describe('chrome extension content scripts', () => {
                     disabledColor: getComputedStyle(b).backgroundColor
                   }
                 })()`
-              )
-              expect(result.enabledColor).to.equal(COLOR_RED)
+              );
+              expect(result.enabledColor).to.equal(COLOR_RED);
               if (isMainFrame) {
-                expect(result.disabledColor).to.equal(COLOR_BLUE)
+                expect(result.disabledColor).to.equal(COLOR_BLUE);
               } else {
-                expect(result.disabledColor).to.equal(COLOR_TRANSPARENT) // null color
+                expect(result.disabledColor).to.equal(COLOR_TRANSPARENT); // null color
               }
             })
-          )
-        })
-      })
-    })
-  }
+          );
+        });
+      });
+    });
+  };
 
-  generateTests(false, false)
-  generateTests(false, true)
-  generateTests(true, false)
-  generateTests(true, true)
-})
+  generateTests(false, false);
+  generateTests(false, true);
+  generateTests(true, false);
+  generateTests(true, true);
+});

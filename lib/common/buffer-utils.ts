@@ -1,4 +1,4 @@
-import { Buffer } from 'buffer'
+import { Buffer } from 'buffer';
 
 const typedArrays: Record<string, Function> = {
   Buffer,
@@ -12,31 +12,31 @@ const typedArrays: Record<string, Function> = {
   Uint32Array,
   Float32Array,
   Float64Array
-}
+};
 
 type BufferLike = Buffer | ArrayBuffer | ArrayBufferView
 
 function getType (value: BufferLike) {
   for (const type of Object.keys(typedArrays)) {
     if (value instanceof typedArrays[type]) {
-      return type
+      return type;
     }
   }
-  throw new Error('Invalid buffer')
+  throw new Error('Invalid buffer');
 }
 
 function getBuffer (value: BufferLike) {
   if (value instanceof Buffer) {
-    return value
+    return value;
   } else if (value instanceof ArrayBuffer) {
-    return Buffer.from(value)
+    return Buffer.from(value);
   } else {
-    return Buffer.from(value.buffer, value.byteOffset, value.byteLength)
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength);
   }
 }
 
 export function isBuffer (value: BufferLike) {
-  return ArrayBuffer.isView(value) || value instanceof ArrayBuffer
+  return ArrayBuffer.isView(value) || value instanceof ArrayBuffer;
 }
 
 interface BufferMeta {
@@ -52,20 +52,20 @@ export function bufferToMeta (value: BufferLike): BufferMeta {
     // NB. We only use length when decoding Int8Array and friends.
     // For other buffer-like types this is expected to be undefined.
     length: (value as Buffer).length
-  }
+  };
 }
 
 export function metaToBuffer (value: BufferMeta) {
-  const constructor = typedArrays[value.type]
-  const data = getBuffer(value.data)
+  const constructor = typedArrays[value.type];
+  const data = getBuffer(value.data);
 
   if (constructor === Buffer) {
-    return data
+    return data;
   } else if (constructor === ArrayBuffer) {
-    return data.buffer
+    return data.buffer;
   } else if (constructor) {
-    return new (constructor as any)(data.buffer, data.byteOffset, value.length)
+    return new (constructor as any)(data.buffer, data.byteOffset, value.length);
   } else {
-    return data
+    return data;
   }
 }

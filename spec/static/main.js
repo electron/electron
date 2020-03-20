@@ -1,32 +1,32 @@
 // Deprecated APIs are still supported and should be tested.
-process.throwDeprecation = false
+process.throwDeprecation = false;
 
-const electron = require('electron')
-const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents } = electron
+const electron = require('electron');
+const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents } = electron;
 
-const fs = require('fs')
-const path = require('path')
-const util = require('util')
-const v8 = require('v8')
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
+const v8 = require('v8');
 
 const argv = require('yargs')
   .boolean('ci')
   .string('g').alias('g', 'grep')
   .boolean('i').alias('i', 'invert')
-  .argv
+  .argv;
 
-let window = null
+let window = null;
 
 // will be used by crash-reporter spec.
-process.port = 0
+process.port = 0;
 
-v8.setFlagsFromString('--expose_gc')
-app.commandLine.appendSwitch('js-flags', '--expose_gc')
-app.commandLine.appendSwitch('ignore-certificate-errors')
-app.commandLine.appendSwitch('disable-renderer-backgrounding')
+v8.setFlagsFromString('--expose_gc');
+app.commandLine.appendSwitch('js-flags', '--expose_gc');
+app.commandLine.appendSwitch('ignore-certificate-errors');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
 // Disable security warnings (the security warnings test will enable them)
-process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true;
 
 // Accessing stdout in the main process will result in the process.stdout
 // throwing UnknownSystemError in renderer process sometimes. This line makes
@@ -39,62 +39,62 @@ process.stdout
 console
 
 ipcMain.on('message', function (event, ...args) {
-  event.sender.send('message', ...args)
-})
+  event.sender.send('message', ...args);
+});
 
-ipcMain.handle('get-modules', () => Object.keys(electron))
+ipcMain.handle('get-modules', () => Object.keys(electron));
 
 // Set productName so getUploadedReports() uses the right directory in specs
 if (process.platform !== 'darwin') {
-  crashReporter.productName = 'Zombies'
+  crashReporter.productName = 'Zombies';
 }
 
 // Write output to file if OUTPUT_TO_FILE is defined.
-const outputToFile = process.env.OUTPUT_TO_FILE
+const outputToFile = process.env.OUTPUT_TO_FILE;
 const print = function (_, method, args) {
-  const output = util.format.apply(null, args)
+  const output = util.format.apply(null, args);
   if (outputToFile) {
-    fs.appendFileSync(outputToFile, output + '\n')
+    fs.appendFileSync(outputToFile, output + '\n');
   } else {
-    console[method](output)
+    console[method](output);
   }
-}
-ipcMain.on('console-call', print)
+};
+ipcMain.on('console-call', print);
 
 ipcMain.on('process.exit', function (event, code) {
-  process.exit(code)
-})
+  process.exit(code);
+});
 
 ipcMain.on('eval', function (event, script) {
   event.returnValue = eval(script) // eslint-disable-line
-})
+});
 
 ipcMain.on('echo', function (event, msg) {
-  event.returnValue = msg
-})
+  event.returnValue = msg;
+});
 
-global.setTimeoutPromisified = util.promisify(setTimeout)
-global.returnAPromise = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 100))
+global.setTimeoutPromisified = util.promisify(setTimeout);
+global.returnAPromise = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 100));
 
 global.permissionChecks = {
   allow: () => electron.session.defaultSession.setPermissionCheckHandler(null),
   reject: () => electron.session.defaultSession.setPermissionCheckHandler(() => false)
-}
+};
 
-global.isCi = !!argv.ci
+global.isCi = !!argv.ci;
 if (global.isCi) {
-  process.removeAllListeners('uncaughtException')
+  process.removeAllListeners('uncaughtException');
   process.on('uncaughtException', function (error) {
-    console.error(error, error.stack)
-    process.exit(1)
-  })
+    console.error(error, error.stack);
+    process.exit(1);
+  });
 }
 
-global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
+global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
 
 // Register app as standard scheme.
-global.standardScheme = 'app'
-global.zoomScheme = 'zoom'
+global.standardScheme = 'app';
+global.zoomScheme = 'zoom';
 protocol.registerSchemesAsPrivileged([
   { scheme: global.standardScheme, privileges: { standard: true, secure: true } },
   { scheme: global.zoomScheme, privileges: { standard: true, secure: true } },
@@ -102,28 +102,28 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
   { scheme: 'no-fetch', privileges: { corsEnabled: true } }
-])
+]);
 
 app.on('window-all-closed', function () {
-  app.quit()
-})
+  app.quit();
+});
 
 app.on('gpu-process-crashed', (event, killed) => {
-  console.log(`GPU process crashed (killed=${killed})`)
-})
+  console.log(`GPU process crashed (killed=${killed})`);
+});
 
 app.on('renderer-process-crashed', (event, contents, killed) => {
-  console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`)
-})
+  console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`);
+});
 
 app.on('ready', function () {
   // Test if using protocol module would crash.
-  electron.protocol.registerStringProtocol('test-if-crashes', function () {})
+  electron.protocol.registerStringProtocol('test-if-crashes', function () {});
 
   // Send auto updater errors to window to be verified in specs
   electron.autoUpdater.on('error', function (error) {
-    window.send('auto-updater-error', error.message)
-  })
+    window.send('auto-updater-error', error.message);
+  });
 
   window = new BrowserWindow({
     title: 'Electron Tests',
@@ -135,40 +135,40 @@ app.on('ready', function () {
       nodeIntegration: true,
       webviewTag: true
     }
-  })
+  });
   window.loadFile('static/index.html', {
     query: {
       grep: argv.grep,
       invert: argv.invert ? 'true' : ''
     }
-  })
+  });
   window.on('unresponsive', function () {
     const chosen = dialog.showMessageBox(window, {
       type: 'warning',
       buttons: ['Close', 'Keep Waiting'],
       message: 'Window is not responsing',
       detail: 'The window is not responding. Would you like to force close it or just keep waiting?'
-    })
-    if (chosen === 0) window.destroy()
-  })
+    });
+    if (chosen === 0) window.destroy();
+  });
   window.webContents.on('crashed', function () {
-    console.error('Renderer process crashed')
-    process.exit(1)
-  })
+    console.error('Renderer process crashed');
+    process.exit(1);
+  });
 
   ipcMain.on('prevent-next-input-event', (event, key, id) => {
     webContents.fromId(id).once('before-input-event', (event, input) => {
-      if (key === input.key) event.preventDefault()
-    })
-    event.returnValue = null
-  })
-})
+      if (key === input.key) event.preventDefault();
+    });
+    event.returnValue = null;
+  });
+});
 
 ipcMain.on('handle-next-ipc-message-sync', function (event, returnValue) {
   event.sender.once('ipc-message-sync', (event, channel, args) => {
-    event.returnValue = returnValue
-  })
-})
+    event.returnValue = returnValue;
+  });
+});
 
 for (const eventName of [
   'desktop-capturer-get-sources',
@@ -177,111 +177,111 @@ for (const eventName of [
   ipcMain.on(`handle-next-${eventName}`, function (event, returnValue) {
     event.sender.once(eventName, (event) => {
       if (returnValue) {
-        event.returnValue = returnValue
+        event.returnValue = returnValue;
       } else {
-        event.preventDefault()
+        event.preventDefault();
       }
-    })
-  })
+    });
+  });
 }
 
 ipcMain.on('set-client-certificate-option', function (event, skip) {
   app.once('select-client-certificate', function (event, webContents, url, list, callback) {
-    event.preventDefault()
+    event.preventDefault();
     if (skip) {
-      callback()
+      callback();
     } else {
       ipcMain.on('client-certificate-response', function (event, certificate) {
-        callback(certificate)
-      })
-      window.webContents.send('select-client-certificate', webContents.id, list)
+        callback(certificate);
+      });
+      window.webContents.send('select-client-certificate', webContents.id, list);
     }
-  })
-  event.returnValue = 'done'
-})
+  });
+  event.returnValue = 'done';
+});
 
 ipcMain.on('create-window-with-options-cycle', (event) => {
   // This can't be done over remote since cycles are already
   // nulled out at the IPC layer
-  const foo = {}
-  foo.bar = foo
+  const foo = {};
+  foo.bar = foo;
   foo.baz = {
     hello: {
       world: true
     }
-  }
-  foo.baz2 = foo.baz
-  const window = new BrowserWindow({ show: false, foo: foo })
-  event.returnValue = window.id
-})
+  };
+  foo.baz2 = foo.baz;
+  const window = new BrowserWindow({ show: false, foo: foo });
+  event.returnValue = window.id;
+});
 
 ipcMain.on('prevent-next-will-attach-webview', (event) => {
-  event.sender.once('will-attach-webview', event => event.preventDefault())
-})
+  event.sender.once('will-attach-webview', event => event.preventDefault());
+});
 
 ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
   event.sender.once('will-attach-webview', (event, webPreferences, params) => {
-    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`
-    webPreferences.nodeIntegration = false
-  })
-})
+    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`;
+    webPreferences.nodeIntegration = false;
+  });
+});
 
 ipcMain.on('disable-preload-on-next-will-attach-webview', (event, id) => {
   event.sender.once('will-attach-webview', (event, webPreferences, params) => {
-    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'webview-stripped-preload.html')}`
-    delete webPreferences.preload
-    delete webPreferences.preloadURL
-  })
-})
+    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'webview-stripped-preload.html')}`;
+    delete webPreferences.preload;
+    delete webPreferences.preloadURL;
+  });
+});
 
 ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
-  const consoleWarn = console.warn
-  const contents = webContents.fromId(id)
-  const listenerCountBefore = contents.listenerCount(eventName)
+  const consoleWarn = console.warn;
+  const contents = webContents.fromId(id);
+  const listenerCountBefore = contents.listenerCount(eventName);
 
   console.warn = (warningMessage) => {
-    console.warn = consoleWarn
+    console.warn = consoleWarn;
 
-    const listenerCountAfter = contents.listenerCount(eventName)
+    const listenerCountAfter = contents.listenerCount(eventName);
     event.returnValue = {
       warningMessage,
       listenerCountBefore,
       listenerCountAfter
-    }
-  }
+    };
+  };
 
-  contents.emit(eventName, { sender: contents })
-})
+  contents.emit(eventName, { sender: contents });
+});
 
 ipcMain.on('handle-uncaught-exception', (event, message) => {
   suspendListeners(process, 'uncaughtException', (error) => {
-    event.returnValue = error.message
-  })
+    event.returnValue = error.message;
+  });
   fs.readFile(__filename, () => {
-    throw new Error(message)
-  })
-})
+    throw new Error(message);
+  });
+});
 
 ipcMain.on('handle-unhandled-rejection', (event, message) => {
   suspendListeners(process, 'unhandledRejection', (error) => {
-    event.returnValue = error.message
-  })
+    event.returnValue = error.message;
+  });
   fs.readFile(__filename, () => {
-    Promise.reject(new Error(message))
-  })
-})
+    Promise.reject(new Error(message));
+  });
+});
 
 // Suspend listeners until the next event and then restore them
 const suspendListeners = (emitter, eventName, callback) => {
-  const listeners = emitter.listeners(eventName)
-  emitter.removeAllListeners(eventName)
+  const listeners = emitter.listeners(eventName);
+  emitter.removeAllListeners(eventName);
   emitter.once(eventName, (...args) => {
-    emitter.removeAllListeners(eventName)
+    emitter.removeAllListeners(eventName);
     listeners.forEach((listener) => {
-      emitter.on(eventName, listener)
-    })
+      emitter.on(eventName, listener);
+    });
 
     // eslint-disable-next-line standard/no-callback-literal
-    callback(...args)
-  })
-}
+    callback(...args);
+  });
+};

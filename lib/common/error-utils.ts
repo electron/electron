@@ -6,18 +6,18 @@ const constructors = new Map([
   [SyntaxError.name, SyntaxError],
   [TypeError.name, TypeError],
   [URIError.name, URIError]
-])
+]);
 
 export function deserialize (error: Electron.SerializedError): Electron.ErrorWithCause {
   if (error && error.__ELECTRON_SERIALIZED_ERROR__ && constructors.has(error.name)) {
-    const constructor = constructors.get(error.name)
-    const deserializedError = new constructor!(error.message) as Electron.ErrorWithCause
-    deserializedError.stack = error.stack
-    deserializedError.from = error.from
-    deserializedError.cause = exports.deserialize(error.cause)
-    return deserializedError
+    const constructor = constructors.get(error.name);
+    const deserializedError = new constructor!(error.message) as Electron.ErrorWithCause;
+    deserializedError.stack = error.stack;
+    deserializedError.from = error.from;
+    deserializedError.cause = exports.deserialize(error.cause);
+    return deserializedError;
   }
-  return error
+  return error;
 }
 
 export function serialize (error: Electron.ErrorWithCause): Electron.SerializedError {
@@ -31,7 +31,7 @@ export function serialize (error: Electron.ErrorWithCause): Electron.SerializedE
       from: process.type as Electron.ProcessType,
       cause: exports.serialize(error.cause),
       __ELECTRON_SERIALIZED_ERROR__: true
-    }
+    };
   }
-  return error
+  return error;
 }

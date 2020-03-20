@@ -1,5 +1,5 @@
-const { ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron');
 
 window.addEventListener('pdf-loaded', function (event) {
-  ipcRenderer.send('pdf-loaded', event.detail)
-})
+  ipcRenderer.send('pdf-loaded', event.detail);
+});
