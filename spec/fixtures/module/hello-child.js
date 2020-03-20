@@ -1,6 +1,6 @@
 class Hello {
   say () {
-    return 'hi child window'
+    return 'hi child window';
   }
 }
-module.exports = Hello
+module.exports = Hello;

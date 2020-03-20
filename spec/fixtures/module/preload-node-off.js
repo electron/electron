@@ -5,9 +5,9 @@ setImmediate(function () {
       setImmediate: typeof setImmediate,
       global: typeof global,
       Buffer: typeof Buffer
-    }
-    console.log(JSON.stringify(types))
+    };
+    console.log(JSON.stringify(types));
   } catch (e) {
-    console.log(e.message)
+    console.log(e.message);
   }
-})
+});
