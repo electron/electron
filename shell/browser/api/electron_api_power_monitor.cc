@@ -6,10 +6,10 @@
 
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_monitor_device_source.h"
-#include "gin/dictionary.h"
 #include "gin/handle.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
@@ -63,16 +63,6 @@ bool PowerMonitor::ShouldShutdown() {
   return !Emit("shutdown");
 }
 
-#if defined(OS_LINUX)
-void PowerMonitor::BlockShutdown() {
-  PowerObserverLinux::BlockShutdown();
-}
-
-void PowerMonitor::UnblockShutdown() {
-  PowerObserverLinux::UnblockShutdown();
-}
-#endif
-
 void PowerMonitor::OnPowerStateChange(bool on_battery_power) {
   if (on_battery_power)
     Emit("on-battery");
@@ -88,44 +78,16 @@ void PowerMonitor::OnResume() {
   Emit("resume");
 }
 
-ui::IdleState PowerMonitor::GetSystemIdleState(v8::Isolate* isolate,
-                                               int idle_threshold) {
-  if (idle_threshold > 0) {
-    return ui::CalculateIdleState(idle_threshold);
-  } else {
-    isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
-        isolate, "Invalid idle threshold, must be greater than 0")));
-    return ui::IDLE_STATE_UNKNOWN;
-  }
-}
-
-int PowerMonitor::GetSystemIdleTime() {
-  return ui::CalculateIdleTime();
-}
-
 // static
 v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
-  if (!Browser::Get()->is_ready()) {
-    isolate->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate,
-                        "The 'powerMonitor' module can't be used before the "
-                        "app 'ready' event")));
-    return v8::Null(isolate);
-  }
-
+  CHECK(Browser::Get()->is_ready());
   return gin::CreateHandle(isolate, new PowerMonitor(isolate)).ToV8();
 }
 
 gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin_helper::EventEmitterMixin<PowerMonitor>::GetObjectTemplateBuilder(
-             isolate)
-#if defined(OS_LINUX)
-      .SetMethod("blockShutdown", &PowerMonitor::BlockShutdown)
-      .SetMethod("unblockShutdown", &PowerMonitor::UnblockShutdown)
-#endif
-      .SetMethod("getSystemIdleState", &PowerMonitor::GetSystemIdleState)
-      .SetMethod("getSystemIdleTime", &PowerMonitor::GetSystemIdleTime);
+      isolate);
 }
 
 const char* PowerMonitor::GetTypeName() {
@@ -140,13 +102,45 @@ namespace {
 
 using electron::api::PowerMonitor;
 
+ui::IdleState GetSystemIdleState(v8::Isolate* isolate, int idle_threshold) {
+  if (idle_threshold > 0) {
+    return ui::CalculateIdleState(idle_threshold);
+  } else {
+    isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
+        isolate, "Invalid idle threshold, must be greater than 0")));
+    return ui::IDLE_STATE_UNKNOWN;
+  }
+}
+
+int GetSystemIdleTime() {
+  return ui::CalculateIdleTime();
+}
+
+#if defined(OS_LINUX)
+void BlockShutdown() {
+  PowerObserverLinux::BlockShutdown();
+}
+
+void UnblockShutdown() {
+  PowerObserverLinux::UnblockShutdown();
+}
+#endif
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
-  dict.Set("createPowerMonitor", base::BindRepeating(&PowerMonitor::Create));
+  gin_helper::Dictionary dict(isolate, exports);
+  dict.SetMethod("createPowerMonitor",
+                 base::BindRepeating(&PowerMonitor::Create));
+  dict.SetMethod("getSystemIdleState",
+                 base::BindRepeating(&GetSystemIdleState));
+  dict.SetMethod("getSystemIdleTime", base::BindRepeating(&GetSystemIdleTime));
+#if defined(OS_LINUX)
+  dict.SetMethod("blockShutdown", base::BindRepeating(&BlockShutdown));
+  dict.SetMethod("unblockShutdown", base::BindRepeating(&UnblockShutdown));
+#endif
 }
 
 }  // namespace

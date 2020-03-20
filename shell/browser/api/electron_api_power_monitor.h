@@ -34,12 +34,6 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
   // Called by native calles.
   bool ShouldShutdown();
 
-#if defined(OS_LINUX)
-  // Private JS APIs.
-  void BlockShutdown();
-  void UnblockShutdown();
-#endif
-
 #if defined(OS_MACOSX) || defined(OS_WIN)
   void InitPlatformSpecificMonitors();
 #endif
@@ -50,9 +44,6 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
   void OnResume() override;
 
  private:
-  ui::IdleState GetSystemIdleState(v8::Isolate* isolate, int idle_threshold);
-  int GetSystemIdleTime();
-
 #if defined(OS_WIN)
   // Static callback invoked when a message comes in to our messaging window.
   static LRESULT CALLBACK WndProcStatic(HWND hwnd,

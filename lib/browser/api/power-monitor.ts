@@ -1,56 +1,50 @@
+import { EventEmitter } from 'events'
 import { app } from 'electron'
 
-const { createPowerMonitor } = process.electronBinding('power_monitor')
+const { createPowerMonitor, getSystemIdleState, getSystemIdleTime, blockShutdown, unblockShutdown } = process.electronBinding('power_monitor')
 
-function bindAllMethods (obj: any) {
-  for (const method of Object.getOwnPropertyNames(obj)) {
-    obj[method] = obj[method].bind(obj)
-  }
-}
-
-let initialized = false
-function initialize () {
-  if (initialized) throw new Error('powerMonitor already initialized')
-  const instance = createPowerMonitor()
-  // The instance methods must be bound otherwise they would be invoked with
-  // the Proxy as |this|, which gin finds distasteful.
-  bindAllMethods(instance)
-  initialized = true
-  if (process.platform === 'linux') {
-    // In order to delay system shutdown when e.preventDefault() is invoked
-    // on a powerMonitor 'shutdown' event, we need an org.freedesktop.login1
-    // shutdown delay lock. For more details see the "Taking Delay Locks"
-    // section of https://www.freedesktop.org/wiki/Software/systemd/inhibit/
-    //
-    // So here we watch for 'shutdown' listeners to be added or removed and
-    // set or unset our shutdown delay lock accordingly.
-    instance.on('newListener', (event: string) => {
-      // whenever the listener count is incremented to one...
-      if (event === 'shutdown' && instance.listenerCount('shutdown') === 0) {
-        instance.blockShutdown()
-      }
+class PowerMonitor extends EventEmitter {
+  constructor () {
+    super()
+    // Don't start the event source until both a) the app is ready and b)
+    // there's a listener registered for a powerMonitor event.
+    this.once('newListener', () => {
+      app.whenReady().then(() => {
+        const pm = createPowerMonitor()
+        pm.emit = this.emit.bind(this)
+      })
     })
-    instance.on('removeListener', (event: string) => {
-      // whenever the listener count is decremented to zero...
-      if (event === 'shutdown' && instance.listenerCount('shutdown') === 0) {
-        instance.unblockShutdown()
-      }
-    })
-  }
-  return instance
-}
 
-// powerMonitor must be lazily initialized, as the native object can't be
-// created until the app is ready.
-const powerMonitor = new Proxy({} as Electron.PowerMonitor, {
-  get (obj, prop) {
-    if (!app.isReady()) throw new Error("The 'powerMonitor' module can't be used before the app is ready.")
-    if (!initialized) {
-      const instance = initialize()
-      Object.assign(obj, instance)
+    if (process.platform === 'linux') {
+      // In order to delay system shutdown when e.preventDefault() is invoked
+      // on a powerMonitor 'shutdown' event, we need an org.freedesktop.login1
+      // shutdown delay lock. For more details see the "Taking Delay Locks"
+      // section of https://www.freedesktop.org/wiki/Software/systemd/inhibit/
+      //
+      // So here we watch for 'shutdown' listeners to be added or removed and
+      // set or unset our shutdown delay lock accordingly.
+      this.on('newListener', (event) => {
+        // whenever the listener count is incremented to one...
+        if (event === 'shutdown' && this.listenerCount('shutdown') === 0) {
+          blockShutdown()
+        }
+      })
+      this.on('removeListener', (event) => {
+        // whenever the listener count is decremented to zero...
+        if (event === 'shutdown' && this.listenerCount('shutdown') === 0) {
+          unblockShutdown()
+        }
+      })
     }
-    return (obj as any)[prop]
   }
-})
 
-module.exports = powerMonitor
+  getSystemIdleState (idleThreshold: number) {
+    return getSystemIdleState(idleThreshold)
+  }
+
+  getSystemIdleTime () {
+    return getSystemIdleTime()
+  }
+}
+
+module.exports = new PowerMonitor()
