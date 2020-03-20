@@ -511,6 +511,131 @@ describe('net module', () => {
       expect(response.headers['set-cookie']).to.have.same.members(cookie);
     });
 
+    it('should not use the sessions cookie store by default', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.setHeader('x-cookie', `${request.headers.cookie!}`);
+        response.end();
+      });
+      const sess = session.fromPartition('cookie-tests-1');
+      const cookieVal = `${Date.now()}`;
+      await sess.cookies.set({
+        url: serverUrl,
+        name: 'wild_cookie',
+        value: cookieVal
+      });
+      const urlRequest = net.request({
+        url: serverUrl,
+        session: sess
+      });
+      const response = await getResponse(urlRequest);
+      expect(response.headers['x-cookie']).to.equal(`undefined`);
+    });
+
+    it('should be able to use the sessions cookie store', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.setHeader('x-cookie', request.headers.cookie!);
+        response.end();
+      });
+      const sess = session.fromPartition('cookie-tests-2');
+      const cookieVal = `${Date.now()}`;
+      await sess.cookies.set({
+        url: serverUrl,
+        name: 'wild_cookie',
+        value: cookieVal
+      });
+      const urlRequest = net.request({
+        url: serverUrl,
+        session: sess,
+        useSessionCookies: true
+      });
+      const response = await getResponse(urlRequest);
+      expect(response.headers['x-cookie']).to.equal(`wild_cookie=${cookieVal}`);
+    });
+
+    it('should be able to use the sessions cookie store with set-cookie', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.setHeader('set-cookie', 'foo=bar');
+        response.end();
+      });
+      const sess = session.fromPartition('cookie-tests-3');
+      let cookies = await sess.cookies.get({});
+      expect(cookies).to.have.lengthOf(0);
+      const urlRequest = net.request({
+        url: serverUrl,
+        session: sess,
+        useSessionCookies: true
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+      cookies = await sess.cookies.get({});
+      expect(cookies).to.have.lengthOf(1);
+      expect(cookies[0]).to.deep.equal({
+        name: 'foo',
+        value: 'bar',
+        domain: '127.0.0.1',
+        hostOnly: true,
+        path: '/',
+        secure: false,
+        httpOnly: false,
+        session: true
+      });
+    });
+
+    it('should be able to use the sessions cookie store safely across redirects', async () => {
+      const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
+        response.statusCode = 302;
+        response.statusMessage = 'Moved';
+        const newUrl = await respondOnce.toSingleURL((req, res) => {
+          res.statusCode = 200;
+          res.statusMessage = 'OK';
+          res.setHeader('x-cookie', req.headers.cookie!);
+          res.end();
+        });
+        response.setHeader('x-cookie', request.headers.cookie!);
+        response.setHeader('location', newUrl.replace('127.0.0.1', 'localhost'));
+        response.end();
+      });
+      const sess = session.fromPartition('cookie-tests-4');
+      const cookie127Val = `${Date.now()}-127`;
+      const cookieLocalVal = `${Date.now()}-local`;
+      const localhostUrl = serverUrl.replace('127.0.0.1', 'localhost');
+      expect(localhostUrl).to.not.equal(serverUrl);
+      await Promise.all([
+        sess.cookies.set({
+          url: serverUrl,
+          name: 'wild_cookie',
+          value: cookie127Val
+        }), sess.cookies.set({
+          url: localhostUrl,
+          name: 'wild_cookie',
+          value: cookieLocalVal
+        })
+      ]);
+      const urlRequest = net.request({
+        url: serverUrl,
+        session: sess,
+        useSessionCookies: true
+      });
+      urlRequest.on('redirect', (status, method, url, headers) => {
+        // The initial redirect response should have received the 127 value here
+        expect(headers['x-cookie'][0]).to.equal(`wild_cookie=${cookie127Val}`);
+        urlRequest.followRedirect();
+      });
+      const response = await getResponse(urlRequest);
+      // We expect the server to have received the localhost value here
+      // The original request was to a 127.0.0.1 URL
+      // That request would have the cookie127Val cookie attached
+      // The request is then redirect to a localhost URL (different site)
+      // Because we are using the session cookie store it should do the safe / secure thing
+      // and attach the cookies for the new target domain
+      expect(response.headers['x-cookie']).to.equal(`wild_cookie=${cookieLocalVal}`);
+    });
+
     it('should be able to abort an HTTP request before first write', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.end();
