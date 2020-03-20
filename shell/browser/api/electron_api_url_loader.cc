@@ -16,6 +16,7 @@
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
+#include "net/base/load_flags.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
@@ -355,6 +356,12 @@ gin_helper::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
       }
       request->headers.SetHeader(it.first, it.second);
     }
+  }
+
+  bool use_session_cookies = false;
+  opts.Get("useSessionCookies", &use_session_cookies);
+  if (!use_session_cookies) {
+    request->load_flags |= net::LOAD_DO_NOT_SEND_COOKIES;
   }
 
   // Chromium filters headers using browser rules, while for net module we have
