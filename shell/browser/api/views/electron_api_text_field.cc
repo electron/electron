@@ -13,9 +13,7 @@ namespace electron {
 
 namespace api {
 
-TextField::TextField() : View(new views::Textfield()) {
-  view()->set_owned_by_client();
-}
+TextField::TextField() : View(new views::Textfield()) {}
 
 TextField::~TextField() {}
 
