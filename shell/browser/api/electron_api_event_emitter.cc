@@ -6,6 +6,7 @@
 
 #include "base/bind.h"
 #include "base/callback.h"
+#include "base/no_destructor.h"
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
@@ -13,11 +14,14 @@
 
 namespace {
 
-v8::Global<v8::Object> event_emitter_prototype;
+v8::Global<v8::Object>* GetEventEmitterPrototypeReference() {
+  static base::NoDestructor<v8::Global<v8::Object>> event_emitter_prototype;
+  return event_emitter_prototype.get();
+}
 
 void SetEventEmitterPrototype(v8::Isolate* isolate,
                               v8::Local<v8::Object> proto) {
-  event_emitter_prototype.Reset(isolate, proto);
+  GetEventEmitterPrototypeReference()->Reset(isolate, proto);
 }
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -36,8 +40,8 @@ void Initialize(v8::Local<v8::Object> exports,
 namespace electron {
 
 v8::Local<v8::Object> GetEventEmitterPrototype(v8::Isolate* isolate) {
-  CHECK(!event_emitter_prototype.IsEmpty());
-  return event_emitter_prototype.Get(isolate);
+  CHECK(!GetEventEmitterPrototypeReference()->IsEmpty());
+  return GetEventEmitterPrototypeReference()->Get(isolate);
 }
 
 }  // namespace electron
