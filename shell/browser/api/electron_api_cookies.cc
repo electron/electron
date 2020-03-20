@@ -30,6 +30,24 @@ using content::BrowserThread;
 namespace gin {
 
 template <>
+struct Converter<net::CookieSameSite> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::CookieSameSite& val) {
+    switch (val) {
+      case net::CookieSameSite::UNSPECIFIED:
+        return ConvertToV8(isolate, "unspecified");
+      case net::CookieSameSite::NO_RESTRICTION:
+        return ConvertToV8(isolate, "norestriction");
+      case net::CookieSameSite::LAX_MODE:
+        return ConvertToV8(isolate, "lax");
+      case net::CookieSameSite::STRICT_MODE:
+        return ConvertToV8(isolate, "strict");
+    }
+    return ConvertToV8(isolate, "unknown");
+  }
+};
+
+template <>
 struct Converter<net::CanonicalCookie> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::CanonicalCookie& val) {
@@ -44,6 +62,7 @@ struct Converter<net::CanonicalCookie> {
     dict.Set("session", !val.IsPersistent());
     if (val.IsPersistent())
       dict.Set("expirationDate", val.ExpiryDate().ToDoubleT());
+    dict.Set("sameSite", val.SameSite());
     return ConvertToV8(isolate, dict).As<v8::Object>();
   }
 };
@@ -171,6 +190,22 @@ std::string InclusionStatusToString(
   return "Setting cookie failed";
 }
 
+net::CookieSameSite StringToCookieSameSite(const std::string* str_ptr) {
+  if (!str_ptr)
+    return net::CookieSameSite::NO_RESTRICTION;
+  std::string str = *str_ptr;
+  if (str == "unspecified") {
+    return net::CookieSameSite::UNSPECIFIED;
+  } else if (str == "norestriction") {
+    return net::CookieSameSite::NO_RESTRICTION;
+  } else if (str == "lax") {
+    return net::CookieSameSite::LAX_MODE;
+  } else if (str == "strict") {
+    return net::CookieSameSite::STRICT_MODE;
+  }
+  return net::CookieSameSite::NO_RESTRICTION;
+}
+
 }  // namespace
 
 gin::WrapperInfo Cookies::kWrapperInfo = {gin::kEmbedderNativeGin};
@@ -254,6 +289,8 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   const std::string* path = details.FindStringKey("path");
   bool secure = details.FindBoolKey("secure").value_or(false);
   bool http_only = details.FindBoolKey("httpOnly").value_or(false);
+  const std::string* same_site_string = details.FindStringKey("sameSite");
+  net::CookieSameSite same_site = StringToCookieSameSite(same_site_string);
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
@@ -270,8 +307,7 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       ParseTimeProperty(details.FindDoubleKey("creationDate")),
       ParseTimeProperty(details.FindDoubleKey("expirationDate")),
       ParseTimeProperty(details.FindDoubleKey("lastAccessDate")), secure,
-      http_only, net::CookieSameSite::NO_RESTRICTION,
-      net::COOKIE_PRIORITY_DEFAULT);
+      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT);
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     promise.RejectWithErrorMessage(
         InclusionStatusToString(net::CanonicalCookie::CookieInclusionStatus(
