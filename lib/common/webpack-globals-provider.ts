@@ -5,4 +5,4 @@
 //
 // Will mutate this captured one as well and that is OK.
 
-export const Promise = global.Promise
+export const Promise = global.Promise;

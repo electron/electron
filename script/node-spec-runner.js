@@ -1,24 +1,24 @@
-const cp = require('child_process')
-const fs = require('fs')
-const path = require('path')
+const cp = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 const args = require('minimist')(process.argv.slice(2), {
   boolean: ['default'],
   string: ['jUnitDir']
-})
+});
 
-const BASE = path.resolve(__dirname, '../..')
-const DISABLED_TESTS = require('./node-disabled-tests.json')
-const NODE_DIR = path.resolve(BASE, 'third_party', 'electron_node')
-const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
-const JUNIT_DIR = args.jUnitDir ? path.resolve(args.jUnitDir) : null
-const TAP_FILE_NAME = 'test.tap'
+const BASE = path.resolve(__dirname, '../..');
+const DISABLED_TESTS = require('./node-disabled-tests.json');
+const NODE_DIR = path.resolve(BASE, 'third_party', 'electron_node');
+const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const JUNIT_DIR = args.jUnitDir ? path.resolve(args.jUnitDir) : null;
+const TAP_FILE_NAME = 'test.tap';
 
-const utils = require('./lib/utils')
-const { YARN_VERSION } = require('./yarn')
+const utils = require('./lib/utils');
+const { YARN_VERSION } = require('./yarn');
 
 if (!process.mainModule) {
-  throw new Error('Must call the node spec runner directly')
+  throw new Error('Must call the node spec runner directly');
 }
 
 const defaultOptions = [
@@ -33,15 +33,15 @@ const defaultOptions = [
   '--shell',
   utils.getAbsoluteElectronExec(),
   '-J'
-]
+];
 
 const getCustomOptions = () => {
-  let customOptions = ['tools/test.py']
+  let customOptions = ['tools/test.py'];
 
   // Add all custom arguments.
-  const extra = process.argv.slice(2)
+  const extra = process.argv.slice(2);
   if (extra) {
-    customOptions = customOptions.concat(extra)
+    customOptions = customOptions.concat(extra);
   }
 
   // We need this unilaterally or Node.js will try
@@ -49,13 +49,13 @@ const getCustomOptions = () => {
   customOptions = customOptions.concat([
     '--shell',
     utils.getAbsoluteElectronExec()
-  ])
+  ]);
 
-  return customOptions
-}
+  return customOptions;
+};
 
 async function main () {
-  const options = args.default ? defaultOptions : getCustomOptions()
+  const options = args.default ? defaultOptions : getCustomOptions();
 
   const testChild = cp.spawn('python', options, {
     env: {
@@ -65,23 +65,23 @@ async function main () {
     },
     cwd: NODE_DIR,
     stdio: 'inherit'
-  })
+  });
   testChild.on('exit', (testCode) => {
     if (JUNIT_DIR) {
-      fs.mkdirSync(JUNIT_DIR)
-      const converterStream = require('tap-xunit')()
+      fs.mkdirSync(JUNIT_DIR);
+      const converterStream = require('tap-xunit')();
       fs.createReadStream(
         path.resolve(NODE_DIR, TAP_FILE_NAME)
       ).pipe(converterStream).pipe(
         fs.createWriteStream(path.resolve(JUNIT_DIR, 'nodejs.xml'))
       ).on('close', () => {
-        process.exit(testCode)
-      })
+        process.exit(testCode);
+      });
     }
-  })
+  });
 }
 
 main().catch((err) => {
-  console.error('An unhandled error occurred in the node spec runner', err)
-  process.exit(1)
-})
+  console.error('An unhandled error occurred in the node spec runner', err);
+  process.exit(1);
+});

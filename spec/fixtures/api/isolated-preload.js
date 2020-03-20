@@ -1,8 +1,8 @@
-const { ipcRenderer, webFrame } = require('electron')
+const { ipcRenderer, webFrame } = require('electron');
 
-window.foo = 3
+window.foo = 3;
 
-webFrame.executeJavaScript('window.preloadExecuteJavaScriptProperty = 1234;')
+webFrame.executeJavaScript('window.preloadExecuteJavaScriptProperty = 1234;');
 
 window.addEventListener('message', (event) => {
   ipcRenderer.send('isolated-world', {
@@ -16,5 +16,5 @@ window.addEventListener('message', (event) => {
       typeofPreloadExecuteJavaScriptProperty: typeof window.preloadExecuteJavaScriptProperty
     },
     pageContext: event.data
-  })
-})
+  });
+});
