@@ -102,12 +102,12 @@ gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto builder =
       gin_helper::EventEmitterMixin<PowerMonitor>::GetObjectTemplateBuilder(
-          isolate)
+          isolate);
 #if defined(OS_LINUX)
-          builder.SetMethod("setListeningForShutdown",
-                            &PowerMonitor::SetListeningForShutdown)
+  builder.SetMethod("setListeningForShutdown",
+                    &PowerMonitor::SetListeningForShutdown);
 #endif
-              return builder;
+  return builder;
 }
 
 const char* PowerMonitor::GetTypeName() {

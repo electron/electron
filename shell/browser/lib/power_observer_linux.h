@@ -20,7 +20,7 @@ namespace electron {
 class PowerObserverLinux {
  public:
   explicit PowerObserverLinux(base::PowerObserver* observer);
-  ~PowerObserverLinux() override;
+  ~PowerObserverLinux();
 
   void SetShutdownHandler(base::Callback<bool()> should_shutdown);
 
