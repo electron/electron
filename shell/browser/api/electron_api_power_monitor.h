@@ -11,6 +11,10 @@
 #include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/idle/idle.h"
 
+#if defined(OS_LINUX)
+#include "shell/browser/lib/power_observer_linux.h"
+#endif
+
 namespace electron {
 
 namespace api {
@@ -28,9 +32,13 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
- protected:
+ private:
   explicit PowerMonitor(v8::Isolate* isolate);
   ~PowerMonitor() override;
+
+#if defined(OS_LINUX)
+  void SetListeningForShutdown(bool);
+#endif
 
   // Called by native calles.
   bool ShouldShutdown();
@@ -44,7 +52,6 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
   void OnSuspend() override;
   void OnResume() override;
 
- private:
 #if defined(OS_WIN)
   // Static callback invoked when a message comes in to our messaging window.
   static LRESULT CALLBACK WndProcStatic(HWND hwnd,
