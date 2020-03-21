@@ -100,13 +100,14 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
 
 gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::EventEmitterMixin<PowerMonitor>::GetObjectTemplateBuilder(
-             isolate)
+  auto builder =
+      gin_helper::EventEmitterMixin<PowerMonitor>::GetObjectTemplateBuilder(
+          isolate)
 #if defined(OS_LINUX)
-      .SetMethod("setListeningForShutdown",
-                 &PowerMonitor::SetListeningForShutdown)
+          builder.SetMethod("setListeningForShutdown",
+                            &PowerMonitor::SetListeningForShutdown)
 #endif
-      ;
+              return builder;
 }
 
 const char* PowerMonitor::GetTypeName() {
