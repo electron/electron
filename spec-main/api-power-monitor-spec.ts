@@ -44,17 +44,30 @@ describe('powerMonitor', () => {
       dbusMockPowerMonitor = require('electron').powerMonitor;
     });
 
-    it('should call Inhibit to delay suspend', async () => {
-      const calls = await getCalls();
-      expect(calls).to.be.an('array').that.has.lengthOf(1);
-      expect(calls[0].slice(1)).to.deep.equal([
-        'Inhibit', [
-          [[{ type: 's', child: [] }], ['sleep']],
-          [[{ type: 's', child: [] }], ['electron']],
-          [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
-          [[{ type: 's', child: [] }], ['delay']]
-        ]
-      ]);
+    it('should call Inhibit to delay suspend once a listener is added', async () => {
+      // No calls to dbus until a listener is added
+      {
+        const calls = await getCalls();
+        expect(calls).to.be.an('array').that.has.lengthOf(0);
+      }
+      // Add a dummy listener to engage the monitors
+      dbusMockPowerMonitor.on('dummy-event', () => {});
+      // Wait a tick to let the dbus call be made
+      await new Promise(resolve => setTimeout(resolve));
+      try {
+        const calls = await getCalls();
+        expect(calls).to.be.an('array').that.has.lengthOf(0);
+        expect(calls[0].slice(1)).to.deep.equal([
+          'Inhibit', [
+            [[{ type: 's', child: [] }], ['sleep']],
+            [[{ type: 's', child: [] }], ['electron']],
+            [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
+            [[{ type: 's', child: [] }], ['delay']]
+          ]
+        ]);
+      } finally {
+        dbusMockPowerMonitor.removeAllListeners('dummy-event');
+      }
     });
 
     describe('when PrepareForSleep(true) signal is sent by logind', () => {
