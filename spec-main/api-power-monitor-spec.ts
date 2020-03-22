@@ -56,7 +56,7 @@ describe('powerMonitor', () => {
       await new Promise(resolve => setTimeout(resolve));
       try {
         const calls = await getCalls();
-        expect(calls).to.be.an('array').that.has.lengthOf(0);
+        expect(calls).to.be.an('array').that.has.lengthOf(1);
         expect(calls[0].slice(1)).to.deep.equal([
           'Inhibit', [
             [[{ type: 's', child: [] }], ['sleep']],
