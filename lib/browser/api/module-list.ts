@@ -39,6 +39,7 @@ if (features.isViewApiEnabled()) {
   browserModuleList.push(
     { name: 'BoxLayout', loader: () => require('./views/box-layout') },
     { name: 'Button', loader: () => require('./views/button') },
+    { name: 'ImageView', loader: () => require('./views/image-view') },
     { name: 'LabelButton', loader: () => require('./views/label-button') },
     { name: 'LayoutManager', loader: () => require('./views/layout-manager') },
     { name: 'MdTextButton', loader: () => require('./views/md-text-button') },

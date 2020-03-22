@@ -244,6 +244,7 @@ auto_filenames = {
     "lib/browser/api/view.js",
     "lib/browser/api/views/box-layout.js",
     "lib/browser/api/views/button.js",
+    "lib/browser/api/views/image-view.js",
     "lib/browser/api/views/label-button.js",
     "lib/browser/api/views/layout-manager.js",
     "lib/browser/api/views/md-text-button.js",
