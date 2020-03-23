@@ -52,19 +52,26 @@ describe('powerMonitor', () => {
       }
       // Add a dummy listener to engage the monitors
       dbusMockPowerMonitor.on('dummy-event', () => {});
-      // Wait a tick to let the dbus call be made
-      await new Promise(resolve => setTimeout(resolve));
       try {
-        const calls = await getCalls();
-        expect(calls).to.be.an('array').that.has.lengthOf(1);
-        expect(calls[0].slice(1)).to.deep.equal([
-          'Inhibit', [
-            [[{ type: 's', child: [] }], ['sleep']],
-            [[{ type: 's', child: [] }], ['electron']],
-            [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
-            [[{ type: 's', child: [] }], ['delay']]
-          ]
-        ]);
+        let retriesRemaining = 3;
+        while (true) {
+          const calls = await getCalls();
+          if (--retriesRemaining && calls.length < 1) {
+            // There doesn't seem to be a way to get a notification when a call
+            // happens, so poll `getCalls` a few times to reduce flake.
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          expect(calls).to.be.an('array').that.has.lengthOf(1);
+          expect(calls[0].slice(1)).to.deep.equal([
+            'Inhibit', [
+              [[{ type: 's', child: [] }], ['sleep']],
+              [[{ type: 's', child: [] }], ['electron']],
+              [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
+              [[{ type: 's', child: [] }], ['delay']]
+            ]
+          ]);
+        }
       } finally {
         dbusMockPowerMonitor.removeAllListeners('dummy-event');
       }
