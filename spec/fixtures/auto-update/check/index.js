@@ -1,23 +1,23 @@
 process.on('uncaughtException', (err) => {
-  console.error(err)
-  process.exit(1)
-})
+  console.error(err);
+  process.exit(1);
+});
 
-const { autoUpdater } = require('electron')
+const { autoUpdater } = require('electron');
 
 autoUpdater.on('error', (err) => {
-  console.error(err)
-  process.exit(1)
-})
+  console.error(err);
+  process.exit(1);
+});
 
-const feedUrl = process.argv[1]
+const feedUrl = process.argv[1];
 
 autoUpdater.setFeedURL({
   url: feedUrl
-})
+});
 
-autoUpdater.checkForUpdates()
+autoUpdater.checkForUpdates();
 
 autoUpdater.on('update-not-available', () => {
-  process.exit(0)
-})
+  process.exit(0);
+});

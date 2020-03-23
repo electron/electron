@@ -1,6 +1,6 @@
 // TODO: Updating this file also required updating the module-keys file
 
-const features = process.electronBinding('features')
+const features = process.electronBinding('features');
 
 // Browser side modules, please sort alphabetically.
 export const browserModuleList: ElectronInternal.ModuleEntry[] = [
@@ -32,7 +32,7 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'View', loader: () => require('./view') },
   { name: 'webContents', loader: () => require('./web-contents') },
   { name: 'WebContentsView', loader: () => require('./web-contents-view') }
-]
+];
 
 if (features.isViewApiEnabled()) {
   browserModuleList.push(
@@ -43,5 +43,5 @@ if (features.isViewApiEnabled()) {
     { name: 'MdTextButton', loader: () => require('./views/md-text-button') },
     { name: 'ResizeArea', loader: () => require('./views/resize-area') },
     { name: 'TextField', loader: () => require('./views/text-field') }
-  )
+  );
 }
