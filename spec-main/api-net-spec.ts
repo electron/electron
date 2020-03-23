@@ -598,14 +598,9 @@ describe('net module', () => {
         const sess = session.fromPartition(`cookie-tests-same-site-${mode}`);
         let cookies = await sess.cookies.get({});
         expect(cookies).to.have.lengthOf(0);
-        const urlRequest = net.request({
-          url: serverUrl,
-          session: sess,
-          useSessionCookies: true
-        });
-        const response = await getResponse(urlRequest);
-        expect(response.headers['x-cookie']).to.equal('undefined');
-        await collectStreamBody(response);
+        const bw = new BrowserWindow({ show: false, webPreferences: { session: sess } });
+        await bw.loadURL(serverUrl);
+        bw.close();
         cookies = await sess.cookies.get({});
         expect(cookies).to.have.lengthOf(1);
         expect(cookies[0]).to.deep.equal({
