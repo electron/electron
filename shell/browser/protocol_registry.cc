@@ -2,8 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/protocol_registry.h"
+#include <memory>
+
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/protocol_registry.h"
 
 namespace electron {
 
