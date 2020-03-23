@@ -54,24 +54,23 @@ describe('powerMonitor', () => {
       dbusMockPowerMonitor.on('dummy-event', () => {});
       try {
         let retriesRemaining = 3;
-        while (true) {
-          const calls = await getCalls();
-          if (--retriesRemaining && calls.length < 1) {
-            // There doesn't seem to be a way to get a notification when a call
-            // happens, so poll `getCalls` a few times to reduce flake.
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            continue;
-          }
-          expect(calls).to.be.an('array').that.has.lengthOf(1);
-          expect(calls[0].slice(1)).to.deep.equal([
-            'Inhibit', [
-              [[{ type: 's', child: [] }], ['sleep']],
-              [[{ type: 's', child: [] }], ['electron']],
-              [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
-              [[{ type: 's', child: [] }], ['delay']]
-            ]
-          ]);
+        // There doesn't seem to be a way to get a notification when a call
+        // happens, so poll `getCalls` a few times to reduce flake.
+        let calls: any[] = [];
+        while (retriesRemaining-- > 0) {
+          calls = await getCalls();
+          if (calls.length > 0) break;
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
+        expect(calls).to.be.an('array').that.has.lengthOf(1);
+        expect(calls[0].slice(1)).to.deep.equal([
+          'Inhibit', [
+            [[{ type: 's', child: [] }], ['sleep']],
+            [[{ type: 's', child: [] }], ['electron']],
+            [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
+            [[{ type: 's', child: [] }], ['delay']]
+          ]
+        ]);
       } finally {
         dbusMockPowerMonitor.removeAllListeners('dummy-event');
       }
