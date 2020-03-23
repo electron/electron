@@ -26,7 +26,7 @@ class PowerMonitor extends EventEmitter {
           });
           this.on('removeListener', (event) => {
             if (event === 'shutdown') {
-              pm.setListeningForShutdown(this.listenerCount('shutdown') - 1 > 0);
+              pm.setListeningForShutdown(this.listenerCount('shutdown') > 0);
             }
           });
         }
