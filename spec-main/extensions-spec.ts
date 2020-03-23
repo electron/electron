@@ -33,8 +33,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     // extension in an in-memory session results in it being installed in the
     // default session.
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-    await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
-    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+    (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'red-bg'));
+    const w = new BrowserWindow({show: false, webPreferences: {session: customSession}})
     await w.loadURL(url);
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
     expect(bg).to.equal('red');
