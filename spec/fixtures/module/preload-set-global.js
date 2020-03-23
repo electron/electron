@@ -1,1 +1,1 @@
-window.foo = 'bar'
+window.foo = 'bar';

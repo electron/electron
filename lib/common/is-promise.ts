@@ -8,5 +8,5 @@ export function isPromise (val: any) {
     val.constructor.reject instanceof Function &&
     val.constructor.resolve &&
     val.constructor.resolve instanceof Function
-  )
+  );
 }

@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron');
 window.onload = function () {
-  ipcRenderer.send('answer', process.argv)
-}
+  ipcRenderer.send('answer', process.argv);
+};
