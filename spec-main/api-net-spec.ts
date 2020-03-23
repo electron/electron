@@ -218,7 +218,7 @@ describe('net module', () => {
       const response = await getResponse(urlRequest);
       expect(response.statusCode).to.equal(200);
       const received = await collectStreamBodyBuffer(response);
-      expect(sent.equals(received)).to.be.true();
+      expect(sent.equals(received)).to.be.true('sent equals received');
       expect(chunkIndex).to.be.equal(chunkCount);
     });
 
@@ -294,7 +294,7 @@ describe('net module', () => {
         return response.writeHead(200).end('ok');
       }, 2);
       const customSession = session.fromPartition(`net-proxy-test-${Math.random()}`);
-      await customSession.setProxy({ proxyRules: proxyUrl.replace('http://', ''), proxyBypassRules: '<-loopback>' });
+      await customSession.setProxy({ proxyRules: proxyUrl.replace('http://', ''), proxyBypassRules: '<-loopback>' } as any);
       const bw = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       bw.webContents.on('login', (event, details, authInfo, cb) => {
         event.preventDefault();
