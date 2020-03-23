@@ -247,6 +247,9 @@ base::IDMap<SimpleURLLoaderWrapper*>& GetAllRequests() {
 
 }  // namespace
 
+gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
+
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     std::unique_ptr<network::ResourceRequest> request,
     network::mojom::URLLoaderFactory* url_loader_factory)
@@ -279,14 +282,14 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
 }
 
 void SimpleURLLoaderWrapper::Pin() {
-  // Prevent ourselves from being GC'd until the request is complete.
-  // Must be called after InitWithArgs(), otherwise GetWrapper() isn't
-  // initialized.
-  pinned_wrapper_.Reset(isolate(), GetWrapper());
+  // Prevent ourselves from being GC'd until the request is complete.  Must be
+  // called after gin::CreateHandle, otherwise the wrapper isn't initialized.
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  pinned_wrapper_.Reset(isolate, GetWrapper(isolate).ToLocalChecked());
 }
 
 void SimpleURLLoaderWrapper::PinBodyGetter(v8::Local<v8::Value> body_getter) {
-  pinned_chunk_pipe_getter_.Reset(isolate(), body_getter);
+  pinned_chunk_pipe_getter_.Reset(v8::Isolate::GetCurrent(), body_getter);
 }
 
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() {
@@ -338,11 +341,12 @@ void SimpleURLLoaderWrapper::Cancel() {
 }
 
 // static
-gin_helper::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
+gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
+    gin::Arguments* args) {
   gin_helper::Dictionary opts;
   if (!args->GetNext(&opts)) {
     args->ThrowTypeError("Expected a dictionary");
-    return nullptr;
+    return gin::Handle<SimpleURLLoaderWrapper>();
   }
   auto request = std::make_unique<network::ResourceRequest>();
   request->attach_same_site_cookies = true;
@@ -354,7 +358,7 @@ gin_helper::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
       if (!net::HttpUtil::IsValidHeaderName(it.first) ||
           !net::HttpUtil::IsValidHeaderValue(it.second)) {
         args->ThrowTypeError("Invalid header name or value");
-        return nullptr;
+        return gin::Handle<SimpleURLLoaderWrapper>();
       }
       request->headers.SetHeader(it.first, it.second);
     }
@@ -404,9 +408,9 @@ gin_helper::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
 
   auto url_loader_factory = session->browser_context()->GetURLLoaderFactory();
 
-  auto* ret =
-      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get());
-  ret->InitWithArgs(args);
+  auto ret = gin::CreateHandle(
+      args->isolate(),
+      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get()));
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);
@@ -417,8 +421,9 @@ gin_helper::WrappableBase* SimpleURLLoaderWrapper::New(gin::Arguments* args) {
 void SimpleURLLoaderWrapper::OnDataReceived(base::StringPiece string_piece,
                                             base::OnceClosure resume) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  v8::HandleScope handle_scope(isolate());
-  auto array_buffer = v8::ArrayBuffer::New(isolate(), string_piece.size());
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
+  auto array_buffer = v8::ArrayBuffer::New(isolate, string_piece.size());
   auto backing_store = array_buffer->GetBackingStore();
   memcpy(backing_store->Data(), string_piece.data(), string_piece.size());
   Emit("data", array_buffer);
@@ -441,8 +446,9 @@ void SimpleURLLoaderWrapper::OnRetry(base::OnceClosure start_retry) {}
 void SimpleURLLoaderWrapper::OnResponseStarted(
     const GURL& final_url,
     const network::mojom::URLResponseHead& response_head) {
-  v8::HandleScope scope(isolate());
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate());
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
+  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("statusCode", response_head.headers->response_code());
   dict.Set("statusMessage", response_head.headers->GetStatusText());
   dict.Set("httpVersion", response_head.headers->GetHttpVersion());
@@ -471,12 +477,15 @@ void SimpleURLLoaderWrapper::OnDownloadProgress(uint64_t current) {
 }
 
 // static
-void SimpleURLLoaderWrapper::BuildPrototype(
-    v8::Isolate* isolate,
-    v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "SimpleURLLoaderWrapper"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder SimpleURLLoaderWrapper::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::EventEmitterMixin<
+             SimpleURLLoaderWrapper>::GetObjectTemplateBuilder(isolate)
       .SetMethod("cancel", &SimpleURLLoaderWrapper::Cancel);
+}
+
+const char* SimpleURLLoaderWrapper::GetTypeName() {
+  return "SimpleURLLoaderWrapper";
 }
 
 }  // namespace api
