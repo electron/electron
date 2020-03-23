@@ -19,6 +19,7 @@
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
+#include "net/base/load_flags.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
@@ -345,6 +346,7 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(mate::Arguments* args) {
     return nullptr;
   }
   auto request = std::make_unique<network::ResourceRequest>();
+  request->attach_same_site_cookies = true;
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
   std::map<std::string, std::string> extra_headers;
@@ -357,6 +359,12 @@ mate::WrappableBase* SimpleURLLoaderWrapper::New(mate::Arguments* args) {
       }
       request->headers.SetHeader(it.first, it.second);
     }
+  }
+
+  bool use_session_cookies = false;
+  opts.Get("useSessionCookies", &use_session_cookies);
+  if (!use_session_cookies) {
+    request->load_flags |= net::LOAD_DO_NOT_SEND_COOKIES;
   }
 
   // Chromium filters headers using browser rules, while for net module we have
