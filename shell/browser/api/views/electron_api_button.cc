@@ -13,7 +13,6 @@ namespace electron {
 namespace api {
 
 Button::Button(views::Button* impl) : View(impl) {
-  view()->set_owned_by_client();
   // Make the button focusable as per the platform.
   button()->SetFocusForPlatform();
 }

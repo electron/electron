@@ -10,9 +10,9 @@
  */
 const waitForEvent = (target, eventName) => {
   return new Promise(resolve => {
-    target.addEventListener(eventName, resolve, { once: true })
-  })
-}
+    target.addEventListener(eventName, resolve, { once: true });
+  });
+};
 
 /**
  * @param {!EventEmitter} emitter
@@ -20,23 +20,23 @@ const waitForEvent = (target, eventName) => {
  * @return {!Promise<!Array>} With Event as the first item.
  */
 const emittedOnce = (emitter, eventName) => {
-  return emittedNTimes(emitter, eventName, 1).then(([result]) => result)
-}
+  return emittedNTimes(emitter, eventName, 1).then(([result]) => result);
+};
 
 const emittedNTimes = (emitter, eventName, times) => {
-  const events = []
+  const events = [];
   return new Promise(resolve => {
     const handler = (...args) => {
-      events.push(args)
+      events.push(args);
       if (events.length === times) {
-        emitter.removeListener(eventName, handler)
-        resolve(events)
+        emitter.removeListener(eventName, handler);
+        resolve(events);
       }
-    }
-    emitter.on(eventName, handler)
-  })
-}
+    };
+    emitter.on(eventName, handler);
+  });
+};
 
-exports.emittedOnce = emittedOnce
-exports.emittedNTimes = emittedNTimes
-exports.waitForEvent = waitForEvent
+exports.emittedOnce = emittedOnce;
+exports.emittedNTimes = emittedNTimes;
+exports.waitForEvent = waitForEvent;

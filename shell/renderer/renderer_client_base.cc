@@ -68,6 +68,7 @@
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/renderer/pepper/chrome_pdf_print_client.h"
 #include "content/public/common/webplugininfo.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extensions_client.h"
@@ -155,6 +156,9 @@ void RendererClientBase::RenderThreadStarted() {
 
   extensions_renderer_client_.reset(new ElectronExtensionsRendererClient);
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
+
+  // Enables printing from Chrome PDF viewer.
+  pdf::PepperPDFHost::SetPrintClient(new ChromePDFPrintClient());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
 #endif
