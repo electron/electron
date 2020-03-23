@@ -76,6 +76,7 @@
 #define ELECTRON_VIEW_MODULES(V)     \
   V(electron_browser_box_layout)     \
   V(electron_browser_button)         \
+  V(electron_browser_image_view)     \
   V(electron_browser_label_button)   \
   V(electron_browser_layout_manager) \
   V(electron_browser_md_text_button) \
