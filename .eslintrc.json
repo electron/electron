@@ -6,6 +6,7 @@
     "browser": true
   },
   "rules": {
+    "semi": ["error", "always"],
     "no-var": "error",
     "no-unused-vars": 0,
     "no-global-assign": 0,

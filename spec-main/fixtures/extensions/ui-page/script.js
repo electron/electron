@@ -1,1 +1,1 @@
-document.write('script loaded ok')
+document.write('script loaded ok');

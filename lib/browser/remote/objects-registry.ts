@@ -1,12 +1,12 @@
-'use strict'
+'use strict';
 
-import { WebContents } from 'electron'
+import { WebContents } from 'electron';
 
-const v8Util = process.electronBinding('v8_util')
+const v8Util = process.electronBinding('v8_util');
 
 const getOwnerKey = (webContents: WebContents, contextId: string) => {
-  return `${webContents.id}-${contextId}`
-}
+  return `${webContents.id}-${contextId}`;
+};
 
 class ObjectsRegistry {
   private nextId: number = 0
@@ -23,29 +23,29 @@ class ObjectsRegistry {
   // registered then the already assigned ID would be returned.
   add (webContents: WebContents, contextId: string, obj: any) {
     // Get or assign an ID to the object.
-    const id = this.saveToStorage(obj)
+    const id = this.saveToStorage(obj);
 
     // Add object to the set of referenced objects.
-    const ownerKey = getOwnerKey(webContents, contextId)
-    let owner = this.owners[ownerKey]
+    const ownerKey = getOwnerKey(webContents, contextId);
+    let owner = this.owners[ownerKey];
     if (!owner) {
-      owner = this.owners[ownerKey] = new Map()
-      this.registerDeleteListener(webContents, contextId)
+      owner = this.owners[ownerKey] = new Map();
+      this.registerDeleteListener(webContents, contextId);
     }
     if (!owner.has(id)) {
-      owner.set(id, 0)
+      owner.set(id, 0);
       // Increase reference count if not referenced before.
-      this.storage[id].count++
+      this.storage[id].count++;
     }
 
-    owner.set(id, owner.get(id)! + 1)
-    return id
+    owner.set(id, owner.get(id)! + 1);
+    return id;
   }
 
   // Get an object according to its ID.
   get (id: number) {
-    const pointer = this.storage[id]
-    if (pointer != null) return pointer.object
+    const pointer = this.storage[id];
+    if (pointer != null) return pointer.object;
   }
 
   // Dereference an object according to its ID.
@@ -60,79 +60,79 @@ class ObjectsRegistry {
   // For more details on why we do renderer side ref counting see
   // https://github.com/electron/electron/pull/17464
   remove (webContents: WebContents, contextId: string, id: number, rendererSideRefCount: number) {
-    const ownerKey = getOwnerKey(webContents, contextId)
-    const owner = this.owners[ownerKey]
+    const ownerKey = getOwnerKey(webContents, contextId);
+    const owner = this.owners[ownerKey];
     if (owner && owner.has(id)) {
-      const newRefCount = owner.get(id)! - rendererSideRefCount
+      const newRefCount = owner.get(id)! - rendererSideRefCount;
 
       // Only completely remove if the number of references GCed in the
       // renderer is the same as the number of references we sent them
       if (newRefCount <= 0) {
         // Remove the reference in owner.
-        owner.delete(id)
+        owner.delete(id);
         // Dereference from the storage.
-        this.dereference(id)
+        this.dereference(id);
       } else {
-        owner.set(id, newRefCount)
+        owner.set(id, newRefCount);
       }
     }
   }
 
   // Clear all references to objects refrenced by the WebContents.
   clear (webContents: WebContents, contextId: string) {
-    const ownerKey = getOwnerKey(webContents, contextId)
-    const owner = this.owners[ownerKey]
-    if (!owner) return
+    const ownerKey = getOwnerKey(webContents, contextId);
+    const owner = this.owners[ownerKey];
+    if (!owner) return;
 
-    for (const id of owner.keys()) this.dereference(id)
+    for (const id of owner.keys()) this.dereference(id);
 
-    delete this.owners[ownerKey]
+    delete this.owners[ownerKey];
   }
 
   // Private: Saves the object into storage and assigns an ID for it.
   saveToStorage (object: any) {
-    let id: number = v8Util.getHiddenValue(object, 'atomId')
+    let id: number = v8Util.getHiddenValue(object, 'atomId');
     if (!id) {
-      id = ++this.nextId
+      id = ++this.nextId;
       this.storage[id] = {
         count: 0,
         object: object
-      }
-      v8Util.setHiddenValue(object, 'atomId', id)
+      };
+      v8Util.setHiddenValue(object, 'atomId', id);
     }
-    return id
+    return id;
   }
 
   // Private: Dereference the object from store.
   dereference (id: number) {
-    const pointer = this.storage[id]
+    const pointer = this.storage[id];
     if (pointer == null) {
-      return
+      return;
     }
-    pointer.count -= 1
+    pointer.count -= 1;
     if (pointer.count === 0) {
-      v8Util.deleteHiddenValue(pointer.object, 'atomId')
-      delete this.storage[id]
+      v8Util.deleteHiddenValue(pointer.object, 'atomId');
+      delete this.storage[id];
     }
   }
 
   // Private: Clear the storage when renderer process is destroyed.
   registerDeleteListener (webContents: WebContents, contextId: string) {
     // contextId => ${processHostId}-${contextCount}
-    const processHostId = contextId.split('-')[0]
+    const processHostId = contextId.split('-')[0];
     const listener = (_: any, deletedProcessHostId: string) => {
       if (deletedProcessHostId &&
           deletedProcessHostId.toString() === processHostId) {
-        webContents.removeListener('render-view-deleted' as any, listener)
-        this.clear(webContents, contextId)
+        webContents.removeListener('render-view-deleted' as any, listener);
+        this.clear(webContents, contextId);
       }
-    }
+    };
     // Note that the "render-view-deleted" event may not be emitted on time when
     // the renderer process get destroyed because of navigation, we rely on the
     // renderer process to send "ELECTRON_BROWSER_CONTEXT_RELEASE" message to
     // guard this situation.
-    webContents.on('render-view-deleted' as any, listener)
+    webContents.on('render-view-deleted' as any, listener);
   }
 }
 
-export default new ObjectsRegistry()
+export default new ObjectsRegistry();
