@@ -3,5 +3,5 @@ const types = {
   module: typeof module,
   process: typeof process,
   Buffer: typeof Buffer
-}
-console.log(JSON.stringify(types))
+};
+console.log(JSON.stringify(types));
