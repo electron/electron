@@ -12,10 +12,11 @@
 #include "content/public/browser/storage_partition.h"
 #include "gin/data_object_builder.h"
 #include "gin/handle.h"
+#include "gin/object_template_builder.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -67,11 +68,12 @@ v8::Local<v8::Value> ServiceWorkerRunningInfoToDict(
 
 }  // namespace
 
+gin::WrapperInfo ServiceWorkerContext::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 ServiceWorkerContext::ServiceWorkerContext(
     v8::Isolate* isolate,
     ElectronBrowserContext* browser_context)
     : browser_context_(browser_context), weak_ptr_factory_(this) {
-  Init(isolate);
   service_worker_context_ =
       content::BrowserContext::GetDefaultStoragePartition(browser_context_)
           ->GetServiceWorkerContext();
@@ -140,15 +142,18 @@ gin::Handle<ServiceWorkerContext> ServiceWorkerContext::Create(
 }
 
 // static
-void ServiceWorkerContext::BuildPrototype(
-    v8::Isolate* isolate,
-    v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "ServiceWorkerContext"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder ServiceWorkerContext::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::EventEmitterMixin<
+             ServiceWorkerContext>::GetObjectTemplateBuilder(isolate)
       .SetMethod("getAllRunning",
                  &ServiceWorkerContext::GetAllRunningWorkerInfo)
       .SetMethod("getFromVersionID",
                  &ServiceWorkerContext::GetWorkerInfoFromID);
+}
+
+const char* ServiceWorkerContext::GetTypeName() {
+  return "ServiceWorkerContext";
 }
 
 }  // namespace api

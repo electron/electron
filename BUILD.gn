@@ -606,6 +606,8 @@ source_set("electron_lib") {
       "shell/browser/api/views/electron_api_box_layout.h",
       "shell/browser/api/views/electron_api_button.cc",
       "shell/browser/api/views/electron_api_button.h",
+      "shell/browser/api/views/electron_api_image_view.cc",
+      "shell/browser/api/views/electron_api_image_view.h",
       "shell/browser/api/views/electron_api_label_button.cc",
       "shell/browser/api/views/electron_api_label_button.h",
       "shell/browser/api/views/electron_api_layout_manager.cc",

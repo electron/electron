@@ -12,11 +12,11 @@ namespace electron {
 
 namespace api {
 
-View::View(views::View* view) : view_(view) {}
-
-View::View() : view_(new views::View()) {
+View::View(views::View* view) : view_(view) {
   view_->set_owned_by_client();
 }
+
+View::View() : View(new views::View()) {}
 
 View::~View() {
   if (delete_view_)

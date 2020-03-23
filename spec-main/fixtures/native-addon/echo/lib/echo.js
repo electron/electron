@@ -1,1 +1,1 @@
-module.exports = require('../build/Release/echo.node').Print
+module.exports = require('../build/Release/echo.node').Print;

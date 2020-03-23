@@ -1,6 +1,6 @@
 class Hello {
   say () {
-    return 'hi'
+    return 'hi';
   }
 }
-module.exports = Hello
+module.exports = Hello;

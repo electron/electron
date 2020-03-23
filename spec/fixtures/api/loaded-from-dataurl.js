@@ -1,1 +1,1 @@
-require('electron').ipcRenderer.send('answer', 'test')
+require('electron').ipcRenderer.send('answer', 'test');

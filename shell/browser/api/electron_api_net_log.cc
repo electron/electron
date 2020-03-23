@@ -12,11 +12,11 @@
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
 #include "electron/electron_version.h"
+#include "gin/object_template_builder.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
@@ -76,18 +76,19 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
+gin::WrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 NetLog::NetLog(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : browser_context_(browser_context), weak_ptr_factory_(this) {
-  Init(isolate);
   file_task_runner_ = CreateFileTaskRunner();
 }
 
 NetLog::~NetLog() = default;
 
 v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
-                                            gin_helper::Arguments* args) {
+                                            gin::Arguments* args) {
   if (log_path.empty()) {
-    args->ThrowError("The first parameter must be a valid string");
+    args->ThrowTypeError("The first parameter must be a valid string");
     return v8::Local<v8::Promise>();
   }
 
@@ -100,7 +101,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
     if (dict.Get("captureMode", &capture_mode_v8)) {
       if (!gin::ConvertFromV8(args->isolate(), capture_mode_v8,
                               &capture_mode)) {
-        args->ThrowError("Invalid value for captureMode");
+        args->ThrowTypeError("Invalid value for captureMode");
         return v8::Local<v8::Promise>();
       }
     }
@@ -108,19 +109,19 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
     if (dict.Get("maxFileSize", &max_file_size_v8)) {
       if (!gin::ConvertFromV8(args->isolate(), max_file_size_v8,
                               &max_file_size)) {
-        args->ThrowError("Invalid value for maxFileSize");
+        args->ThrowTypeError("Invalid value for maxFileSize");
         return v8::Local<v8::Promise>();
       }
     }
   }
 
   if (net_log_exporter_) {
-    args->ThrowError("There is already a net log running");
+    args->ThrowTypeError("There is already a net log running");
     return v8::Local<v8::Promise>();
   }
 
   pending_start_promise_ =
-      base::make_optional<gin_helper::Promise<void>>(isolate());
+      base::make_optional<gin_helper::Promise<void>>(args->isolate());
   v8::Local<v8::Promise> handle = pending_start_promise_->GetHandle();
 
   auto command_line_string =
@@ -189,8 +190,8 @@ bool NetLog::IsCurrentlyLogging() const {
   return !!net_log_exporter_;
 }
 
-v8::Local<v8::Promise> NetLog::StopLogging(gin_helper::Arguments* args) {
-  gin_helper::Promise<void> promise(isolate());
+v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
+  gin_helper::Promise<void> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (net_log_exporter_) {
@@ -212,20 +213,22 @@ v8::Local<v8::Promise> NetLog::StopLogging(gin_helper::Arguments* args) {
   return handle;
 }
 
+gin::ObjectTemplateBuilder NetLog::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::Wrappable<NetLog>::GetObjectTemplateBuilder(isolate)
+      .SetProperty("currentlyLogging", &NetLog::IsCurrentlyLogging)
+      .SetMethod("startLogging", &NetLog::StartLogging)
+      .SetMethod("stopLogging", &NetLog::StopLogging);
+}
+
+const char* NetLog::GetTypeName() {
+  return "NetLog";
+}
+
 // static
 gin::Handle<NetLog> NetLog::Create(v8::Isolate* isolate,
                                    ElectronBrowserContext* browser_context) {
   return gin::CreateHandle(isolate, new NetLog(isolate, browser_context));
-}
-
-// static
-void NetLog::BuildPrototype(v8::Isolate* isolate,
-                            v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "NetLog"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetProperty("currentlyLogging", &NetLog::IsCurrentlyLogging)
-      .SetMethod("startLogging", &NetLog::StartLogging)
-      .SetMethod("stopLogging", &NetLog::StopLogging);
 }
 
 }  // namespace api

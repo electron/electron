@@ -12,9 +12,7 @@ namespace electron {
 
 namespace api {
 
-ResizeArea::ResizeArea() : View(new views::ResizeArea(this)) {
-  view()->set_owned_by_client();
-}
+ResizeArea::ResizeArea() : View(new views::ResizeArea(this)) {}
 
 ResizeArea::~ResizeArea() {}
 
