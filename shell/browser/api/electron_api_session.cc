@@ -306,7 +306,6 @@ Session::~Session() {
   // needed?
   // Refs https://github.com/electron/electron/pull/12305.
   DestroyGlobalHandle(isolate(), cookies_);
-  DestroyGlobalHandle(isolate(), protocol_);
   g_sessions.erase(weak_map_id());
 }
 
@@ -751,11 +750,11 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
     auto handle = Cookies::Create(isolate, browser_context());
     cookies_.Reset(isolate, handle.ToV8());
   }
-  return v8::Local<v8::Value>::New(isolate, cookies_);
+  return cookies_.Get(isolate);
 }
 
 v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
-  return v8::Local<v8::Value>::New(isolate, protocol_);
+  return protocol_.Get(isolate);
 }
 
 v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
@@ -764,7 +763,7 @@ v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
     handle = ServiceWorkerContext::Create(isolate, browser_context()).ToV8();
     service_worker_context_.Reset(isolate, handle);
   }
-  return v8::Local<v8::Value>::New(isolate, service_worker_context_);
+  return service_worker_context_.Get(isolate);
 }
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
@@ -772,15 +771,15 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
     auto handle = WebRequest::Create(isolate, browser_context());
     web_request_.Reset(isolate, handle.ToV8());
   }
-  return v8::Local<v8::Value>::New(isolate, web_request_);
+  return web_request_.Get(isolate);
 }
 
 v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
   if (net_log_.IsEmpty()) {
-    auto handle = electron::api::NetLog::Create(isolate, browser_context());
+    auto handle = NetLog::Create(isolate, browser_context());
     net_log_.Reset(isolate, handle.ToV8());
   }
-  return v8::Local<v8::Value>::New(isolate, net_log_);
+  return net_log_.Get(isolate);
 }
 
 static void StartPreconnectOnUI(
@@ -1056,9 +1055,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set(
       "Cookies",
       Cookies::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
-  dict.Set(
-      "Protocol",
-      Protocol::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 

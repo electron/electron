@@ -10,13 +10,13 @@
 
 #include "content/public/browser/content_browser_client.h"
 #include "gin/handle.h"
+#include "gin/wrappable.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
-#include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
 
 class ElectronBrowserContext;
+class ProtocolRegistry;
 
 namespace api {
 
@@ -35,22 +35,19 @@ enum class ProtocolError {
 };
 
 // Protocol implementation based on network services.
-class Protocol : public gin_helper::TrackableObject<Protocol> {
+class Protocol : public gin::Wrappable<Protocol> {
  public:
   static gin::Handle<Protocol> Create(v8::Isolate* isolate,
                                       ElectronBrowserContext* browser_context);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
-
-  // Used by ElectronBrowserClient for creating URLLoaderFactory.
-  void RegisterURLLoaderFactories(
-      content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories);
-
-  const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  private:
-  Protocol(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
+  Protocol(v8::Isolate* isolate, ProtocolRegistry* protocol_registry);
   ~Protocol() override;
 
   // Callback types.
@@ -91,8 +88,9 @@ class Protocol : public gin_helper::TrackableObject<Protocol> {
   // Be compatible with old interface, which accepts optional callback.
   void HandleOptionalCallback(gin::Arguments* args, ProtocolError error);
 
-  HandlersMap handlers_;
-  HandlersMap intercept_handlers_;
+  // Weak pointer; the lifetime of the ProtocolRegistry is guaranteed to be
+  // longer than the lifetime of this JS interface.
+  ProtocolRegistry* protocol_registry_;
 };
 
 }  // namespace api

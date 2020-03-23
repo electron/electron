@@ -140,8 +140,6 @@ class Session : public gin_helper::TrackableObject<Session>,
   v8::Global<v8::Value> protocol_;
   v8::Global<v8::Value> net_log_;
   v8::Global<v8::Value> service_worker_context_;
-
-  // Cached object.
   v8::Global<v8::Value> web_request_;
 
   // The client id to enable the network throttler.
