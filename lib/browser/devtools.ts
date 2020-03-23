@@ -1,9 +1,9 @@
-import { dialog, Menu } from 'electron'
-import * as fs from 'fs'
-import * as url from 'url'
+import { dialog, Menu } from 'electron';
+import * as fs from 'fs';
+import * as url from 'url';
 
-import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal'
-import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils'
+import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
+import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 
 const convertToMenuTemplate = function (items: ContextMenuItem[], handler: (id: number) => void) {
   return items.map(function (item) {
@@ -23,15 +23,15 @@ const convertToMenuTemplate = function (items: ContextMenuItem[], handler: (id: 
       type: 'normal',
       label: item.label,
       enabled: item.enabled
-    }
+    };
 
     if (item.id != null) {
-      transformed.click = () => handler(item.id)
+      transformed.click = () => handler(item.id);
     }
 
-    return transformed
-  })
-}
+    return transformed;
+  });
+};
 
 const getEditMenuItems = function (): Electron.MenuItemConstructorOptions[] {
   return [
@@ -44,56 +44,56 @@ const getEditMenuItems = function (): Electron.MenuItemConstructorOptions[] {
     { role: 'pasteAndMatchStyle' },
     { role: 'delete' },
     { role: 'selectAll' }
-  ]
-}
+  ];
+};
 
 const isChromeDevTools = function (pageURL: string) {
-  const { protocol } = url.parse(pageURL)
-  return protocol === 'devtools:'
-}
+  const { protocol } = url.parse(pageURL);
+  return protocol === 'devtools:';
+};
 
 const assertChromeDevTools = function (contents: Electron.WebContents, api: string) {
-  const pageURL = contents._getURL()
+  const pageURL = contents._getURL();
   if (!isChromeDevTools(pageURL)) {
-    console.error(`Blocked ${pageURL} from calling ${api}`)
-    throw new Error(`Blocked ${api}`)
+    console.error(`Blocked ${pageURL} from calling ${api}`);
+    throw new Error(`Blocked ${api}`);
   }
-}
+};
 
 ipcMainInternal.handle('ELECTRON_INSPECTOR_CONTEXT_MENU', function (event: Electron.IpcMainInvokeEvent, items: ContextMenuItem[], isEditMenu: boolean) {
   return new Promise(resolve => {
-    assertChromeDevTools(event.sender, 'window.InspectorFrontendHost.showContextMenuAtPoint()')
+    assertChromeDevTools(event.sender, 'window.InspectorFrontendHost.showContextMenuAtPoint()');
 
-    const template = isEditMenu ? getEditMenuItems() : convertToMenuTemplate(items, resolve)
-    const menu = Menu.buildFromTemplate(template)
-    const window = event.sender.getOwnerBrowserWindow()
+    const template = isEditMenu ? getEditMenuItems() : convertToMenuTemplate(items, resolve);
+    const menu = Menu.buildFromTemplate(template);
+    const window = event.sender.getOwnerBrowserWindow();
 
-    menu.popup({ window, callback: () => resolve() })
-  })
-})
+    menu.popup({ window, callback: () => resolve() });
+  });
+});
 
 ipcMainInternal.handle('ELECTRON_INSPECTOR_SELECT_FILE', async function (event: Electron.IpcMainInvokeEvent) {
-  assertChromeDevTools(event.sender, 'window.UI.createFileSelectorElement()')
+  assertChromeDevTools(event.sender, 'window.UI.createFileSelectorElement()');
 
-  const result = await dialog.showOpenDialog({})
-  if (result.canceled) return []
+  const result = await dialog.showOpenDialog({});
+  if (result.canceled) return [];
 
-  const path = result.filePaths[0]
-  const data = await fs.promises.readFile(path)
+  const path = result.filePaths[0];
+  const data = await fs.promises.readFile(path);
 
-  return [path, data]
-})
+  return [path, data];
+});
 
 ipcMainUtils.handleSync('ELECTRON_INSPECTOR_CONFIRM', async function (event: Electron.IpcMainInvokeEvent, message: string = '', title: string = '') {
-  assertChromeDevTools(event.sender, 'window.confirm()')
+  assertChromeDevTools(event.sender, 'window.confirm()');
 
   const options = {
     message: String(message),
     title: String(title),
     buttons: ['OK', 'Cancel'],
     cancelId: 1
-  }
-  const window = event.sender.getOwnerBrowserWindow()
-  const { response } = await dialog.showMessageBox(window, options)
-  return response === 0
-})
+  };
+  const window = event.sender.getOwnerBrowserWindow();
+  const { response } = await dialog.showMessageBox(window, options);
+  return response === 0;
+});

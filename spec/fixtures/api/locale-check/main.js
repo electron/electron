@@ -1,8 +1,8 @@
-const { app } = require('electron')
+const { app } = require('electron');
 
 app.whenReady().then(() => {
-  process.stdout.write(app.getLocale())
-  process.stdout.end()
+  process.stdout.write(app.getLocale());
+  process.stdout.end();
 
-  app.quit()
-})
+  app.quit();
+});

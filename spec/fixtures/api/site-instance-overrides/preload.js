@@ -1,3 +1,3 @@
-const { ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron');
 
-ipcRenderer.send('pid', process.pid)
+ipcRenderer.send('pid', process.pid);
