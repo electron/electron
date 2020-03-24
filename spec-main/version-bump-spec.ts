@@ -95,6 +95,14 @@ describe('version-bumper', () => {
       expect(next).to.equal('2.0.0-beta.9');
     });
 
+    it('bumps to beta from beta if the previous beta is at least beta.10', async () => {
+      const version = 'v6.0.0-beta.10';
+      const next = await nextVersion('beta', version);
+      // Last 6.0.0 beta we did was beta.15
+      // So we expect a beta.16 here
+      expect(next).to.equal('6.0.0-beta.16');
+    });
+
     it('bumps to stable from beta', async () => {
       const version = 'v2.0.0-beta.1';
       const next = await nextVersion('stable', version);
