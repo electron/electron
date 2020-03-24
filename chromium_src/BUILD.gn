@@ -261,6 +261,7 @@ source_set("plugins") {
     "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h",
   ]
   deps += [
+    "//components/pdf/browser",
     "//media:media_buildflags",
     "//ppapi/buildflags",
     "//ppapi/proxy:ipc",
@@ -313,6 +314,7 @@ source_set("plugins") {
     ]
   }
   deps += [
+    "//components/pdf/renderer",
     "//components/strings",
     "//media:media_buildflags",
     "//ppapi/host",
