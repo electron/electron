@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { Notification } from 'electron';
 import { emittedOnce } from './events-helpers';
+import { ifit } from './spec-helpers';
 
 describe('Notification module', () => {
   it('is supported', () => {
@@ -107,7 +108,7 @@ describe('Notification module', () => {
     n.close();
   });
 
-  it('emits show and close events', async () => {
+  ifit(process.platform === 'darwin')('emits show and close events', async () => {
     const n = new Notification({
       title: 'test notification',
       body: 'test body',
