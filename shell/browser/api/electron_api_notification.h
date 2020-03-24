@@ -10,30 +10,31 @@
 #include <vector>
 
 #include "base/strings/utf_string_conversions.h"
+#include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/trackable_object.h"
 #include "ui/gfx/image/image.h"
 
 namespace gin {
 class Arguments;
-}
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace electron {
 
 namespace api {
 
-class Notification : public gin_helper::TrackableObject<Notification>,
+class Notification : public gin::Wrappable<Notification>,
+                     public gin_helper::EventEmitterMixin<Notification>,
                      public NotificationDelegate {
  public:
-  static gin_helper::WrappableBase* New(gin_helper::ErrorThrower thrower,
-                                        gin::Arguments* args);
+  static gin::Handle<Notification> New(gin_helper::ErrorThrower thrower,
+                                       gin::Arguments* args);
   static bool IsSupported();
-
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
 
   // NotificationDelegate:
   void NotificationAction(int index) override;
@@ -42,6 +43,12 @@ class Notification : public gin_helper::TrackableObject<Notification>,
   void NotificationDisplayed() override;
   void NotificationDestroyed() override;
   void NotificationClosed() override;
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
   explicit Notification(gin::Arguments* args);
