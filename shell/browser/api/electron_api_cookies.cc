@@ -193,7 +193,7 @@ std::string InclusionStatusToString(
 net::CookieSameSite StringToCookieSameSite(const std::string* str_ptr) {
   if (!str_ptr)
     return net::CookieSameSite::NO_RESTRICTION;
-  std::string str = *str_ptr;
+  const std::string& str = *str_ptr;
   if (str == "unspecified") {
     return net::CookieSameSite::UNSPECIFIED;
   } else if (str == "norestriction") {
