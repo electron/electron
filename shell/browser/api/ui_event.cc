@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "shell/browser/api/ui_event.h"
+
 #include "gin/data_object_builder.h"
 #include "ui/events/event_constants.h"
 #include "v8/include/v8.h"
