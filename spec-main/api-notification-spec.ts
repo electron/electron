@@ -5,7 +5,7 @@ import { ifit } from './spec-helpers';
 
 describe('Notification module', () => {
   it('is supported', () => {
-    expect(Notification.isSupported()).to.be.true();
+    expect(Notification.isSupported()).to.be.a('boolean');
   });
 
   it('inits, gets and sets basic string properties correctly', () => {
