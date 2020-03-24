@@ -283,11 +283,9 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
 
     remotely.it(path.join(fixtures, 'module', 'no-prototype.js'))('should work when object has no prototype', (module: string) => {
       const a = require('electron').remote.require(module);
-      expect(a.foo.constructor.name).to.equal('');
       expect(a.foo.bar).to.equal('baz');
       expect(a.foo.baz).to.equal(false);
       expect(a.bar).to.equal(1234);
-      expect(a.anonymous.constructor.name).to.equal('');
       expect(a.getConstructorName(Object.create(null))).to.equal('');
       expect(a.getConstructorName(new (class {})())).to.equal('');
     });
@@ -436,7 +434,8 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   });
 
   describe('remote object in renderer', () => {
-    const remotely = makeRemotely(makeWindow());
+    const win = makeWindow();
+    const remotely = makeRemotely(win);
 
     remotely.it(fixtures)('can change its properties', (fixtures: string) => {
       const module = require('path').join(fixtures, 'module', 'property.js');
@@ -499,6 +498,15 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       const stringify = require('electron').remote.getGlobal('JSON').stringify;
       global.gc();
       stringify({});
+    });
+
+    it('can handle objects without constructors', async () => {
+      win().webContents.once('remote-get-global', (event) => {
+        class Foo { bar () { return 'bar'; } }
+        Foo.prototype.constructor = undefined as any;
+        event.returnValue = new Foo();
+      });
+      expect(await remotely(() => require('electron').remote.getGlobal('test').bar())).to.equal('bar');
     });
   });
 
