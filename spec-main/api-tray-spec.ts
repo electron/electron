@@ -18,7 +18,7 @@ describe('tray module', () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {
         tray = new Tray(badPath);
-      }).to.throw(/Image could not be created from .*/);
+      }).to.throw(/Error processing argument at index 0/);
     });
 
     ifit(process.platform === 'win32')('throws a descriptive error if an invlaid guid is given', () => {

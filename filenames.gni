@@ -129,6 +129,8 @@ filenames = {
     "shell/browser/api/process_metric.h",
     "shell/browser/api/save_page_handler.cc",
     "shell/browser/api/save_page_handler.h",
+    "shell/browser/api/ui_event.cc",
+    "shell/browser/api/ui_event.h",
     "shell/browser/auto_updater.cc",
     "shell/browser/auto_updater.h",
     "shell/browser/auto_updater_mac.mm",
