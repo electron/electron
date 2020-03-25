@@ -12,7 +12,7 @@ Electron a completely separate product from NW.js:
 In NW.js, the main entry point of an application can be an HTML web page. In
 that case, NW.js will open the given entry point in a browser window.
 
-In Electron, the entry point is always JavaScript script. Instead of providing a
+In Electron, the entry point is always a JavaScript script. Instead of providing a
 URL directly, you manually create a browser window and load an HTML file using
 the API. You also need to listen to window events to decide when to quit the
 application.
