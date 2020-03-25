@@ -206,7 +206,8 @@ function buildAppVeyor (targetBranch, options) {
 async function callAppVeyor (targetBranch, job, options) {
   console.log(`Triggering AppVeyor to run build job: ${job} on branch: ${targetBranch} with release flag.`);
   const environmentVariables = {
-    ELECTRON_RELEASE: 1
+    ELECTRON_RELEASE: 1,
+    APPVEYOR_BUILD_WORKER_CLOUD: 'libcc-20'
   };
 
   if (!options.ghRelease) {
