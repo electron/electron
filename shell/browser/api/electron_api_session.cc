@@ -302,10 +302,6 @@ Session::~Session() {
   }
 #endif
 
-  // TODO(zcbenz): Now since URLRequestContextGetter is gone, is this still
-  // needed?
-  // Refs https://github.com/electron/electron/pull/12305.
-  DestroyGlobalHandle(isolate(), cookies_);
   g_sessions.erase(weak_map_id());
 }
 
@@ -1052,9 +1048,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set(
       "Session",
       Session::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
-  dict.Set(
-      "Cookies",
-      Cookies::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 
