@@ -73,6 +73,36 @@ describe('tray module', () => {
       });
       tray.popUpContextMenu();
     });
+
+    it('can be called with a menu', () => {
+      const menu = Menu.buildFromTemplate([{ label: 'Test' }]);
+      expect(() => {
+        tray.popUpContextMenu(menu);
+      }).to.not.throw();
+    });
+
+    it('can be called with a position', () => {
+      expect(() => {
+        tray.popUpContextMenu({ x: 0, y: 0 } as any);
+      }).to.not.throw();
+    });
+
+    it('can be called with a menu and a position', () => {
+      const menu = Menu.buildFromTemplate([{ label: 'Test' }]);
+      expect(() => {
+        tray.popUpContextMenu(menu, { x: 0, y: 0 });
+      }).to.not.throw();
+    });
+
+    it('throws an error on invalid arguments', () => {
+      expect(() => {
+        tray.popUpContextMenu({} as any);
+      }).to.throw(/index 0/);
+      const menu = Menu.buildFromTemplate([{ label: 'Test' }]);
+      expect(() => {
+        tray.popUpContextMenu(menu, {} as any);
+      }).to.throw(/index 1/);
+    });
   });
 
   describe('tray.closeContextMenu()', () => {

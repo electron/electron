@@ -277,9 +277,22 @@ void Tray::PopUpContextMenu(gin::Arguments* args) {
   if (!CheckDestroyed())
     return;
   gin::Handle<Menu> menu;
-  args->GetNext(&menu);
   gfx::Point pos;
-  args->GetNext(&pos);
+
+  v8::Local<v8::Value> first_arg;
+  if (args->GetNext(&first_arg)) {
+    if (!gin::ConvertFromV8(args->isolate(), first_arg, &menu)) {
+      if (!gin::ConvertFromV8(args->isolate(), first_arg, &pos)) {
+        args->ThrowError();
+        return;
+      }
+    } else if (args->Length() >= 2) {
+      if (!args->GetNext(&pos)) {
+        args->ThrowError();
+        return;
+      }
+    }
+  }
   tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
 }
 
