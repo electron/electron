@@ -5,7 +5,7 @@ technologies. Both platforms enable developers to utilize HTML, JavaScript, and
 Node.js. On the surface, they seem very similar.
 
 There are however fundamental differences between the two projects that make
-Electron a completely separate product from NW.js:
+Electron a completely separate product from NW.js.
 
 ## 1) Entry of Application
 
