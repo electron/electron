@@ -103,9 +103,8 @@ file](https://github.com/electron/fiddle/blob/master/forge.config.js).
 
 ## `electron-builder`
 
-Electron Builder comes with a custom solution for both signing and notarizing
-your application. You can find [its documentation
-here](https://www.electron.build/code-signing).
+Electron Builder comes with a custom solution for signing your application. You
+can find [its documentation here](https://www.electron.build/code-signing).
 
 ## `electron-packager`
 
