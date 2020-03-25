@@ -64,11 +64,11 @@ As an example, Electron has built-in support for automatic updates and countless
 tools that make the creation of installers easier. As an example in favor of
 NW.js, NW.js supports more `Chrome.*` APIs for the development of Chrome Apps.
 
-We at Electron obviously believe that Electron is the better package for the
-development of polished production applications built with web technologies
-(like Visual Studio Code, Slack, or Facebook Messenger). However, we want to be
-fair to our web technology friends - you might end up wanting to use NW.js if
-you have specific feature needs that Electron does not meet.
+Naturally, we believe that Electron is the better platform for polished
+production applications built with web technologies (like Visual Studio Code,
+Slack, or Facebook Messenger); however, we want to be fair to our web technology
+friends. If you have feature needs that Electron does not meet, you might want
+to try NW.js.
 
 [nwjs]: https://nwjs.io/
 [electron-modules]: https://www.npmjs.com/search?q=electron
