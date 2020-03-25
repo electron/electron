@@ -1598,9 +1598,15 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('can move the window out of screen', () => {
       const w = new BrowserWindow({ show: true, enableLargerThanScreen: true });
+      w.setPosition(-10, 50);
+      const after = w.getPosition();
+      expect(after).to.deep.equal([-10, 50]);
+    });
+    it('cannot move the window behind menu bar', () => {
+      const w = new BrowserWindow({ show: true, enableLargerThanScreen: true });
       w.setPosition(-10, -10);
       const after = w.getPosition();
-      expect(after).to.deep.equal([-10, -10]);
+      expect(after[1]).to.be.at.least(0);
     });
     it('without it, cannot move the window out of screen', () => {
       const w = new BrowserWindow({ show: true, enableLargerThanScreen: false });
