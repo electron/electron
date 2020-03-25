@@ -33,3 +33,17 @@ index b6f95fdfa88b0094dc8316d61660a16e8ac0e8a8..b8d70e8973518f46f0c322af4bd2c86a
    void set_hung_renderer_delay(const base::TimeDelta& delay) {
      hung_renderer_delay_ = delay;
    }
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 3e2190700aee..0ccdaa8d037c 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -692,7 +692,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+   DCHECK(visibility_ == Visibility::HIDDEN ||
+          visibility_ == Visibility::OCCLUDED);
+ 
+-  if (!host()->is_hidden()) {
++  if (!host()->is_hidden() && !host()->disable_hidden_) {
+     host()->WasHidden();
+     aura::WindowTreeHost* host = window_->GetHost();
+     if (delegated_frame_host_) {
