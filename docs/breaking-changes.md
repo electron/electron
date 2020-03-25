@@ -249,7 +249,7 @@ webFrame.setIsolatedWorldInfo(
 
 This property was removed in Chromium 77, and as such is no longer available.
 
-### API Changed: `webkitdirectory` attribute for `<input type="file"/>` now lists directory contents
+### Behavior Changed: `webkitdirectory` attribute for `<input type="file"/>` now lists directory contents
 
 The `webkitdirectory` property on HTML file inputs allows them to select folders.
 Previous versions of Electron had an incorrect implementation where the `event.target.files`
@@ -406,7 +406,7 @@ Child windows opened with the `nativeWindowOpen` option will always have Node.js
 
 ### API Changed: Registering privileged schemes must now be done before app ready
 
-Renderer process APIs `webFrame.setRegisterURLSchemeAsPrivileged` and `webFrame.registerURLSchemeAsBypassingCSP` as well as browser process API `protocol.registerStandardSchemes` have been removed.
+Renderer process APIs `webFrame.registerURLSchemeAsPrivileged` and `webFrame.registerURLSchemeAsBypassingCSP` as well as browser process API `protocol.registerStandardSchemes` have been removed.
 A new API, `protocol.registerSchemesAsPrivileged` has been added and should be used for registering custom schemes with the required privileges. Custom schemes are required to be registered before app ready.
 
 ### Deprecated: `webFrame.setIsolatedWorld*` replaced with `webFrame.setIsolatedWorldInfo`
