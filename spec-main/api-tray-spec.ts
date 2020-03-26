@@ -32,6 +32,10 @@ describe('tray module', () => {
         tray = new Tray(nativeImage.createEmpty(), '0019A433-3526-48BA-A66C-676742C0FEFB');
       }).to.not.throw();
     });
+
+    it('is an instance of Tray', () => {
+      expect(tray).to.be.an.instanceOf(Tray);
+    });
   });
 
   ifdescribe(process.platform === 'darwin')('tray get/set ignoreDoubleClickEvents', () => {

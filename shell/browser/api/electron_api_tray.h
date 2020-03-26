@@ -40,18 +40,22 @@ class Tray : public gin::Wrappable<Tray>,
                                gin::Handle<NativeImage> image,
                                base::Optional<UUID> guid,
                                gin::Arguments* args);
+  static v8::Local<v8::Function> GetConstructor(v8::Local<v8::Context> context);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
 
  private:
   Tray(gin::Handle<NativeImage> image,
        base::Optional<UUID> guid,
        gin::Arguments* args);
   ~Tray() override;
+
+  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+      v8::Isolate*,
+      v8::Local<v8::ObjectTemplate>);
 
   // TrayIconObserver:
   void OnClicked(const gfx::Rect& bounds,

@@ -335,10 +335,19 @@ bool Tray::CheckDestroyed() {
   return true;
 }
 
-// static
 gin::ObjectTemplateBuilder Tray::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::EventEmitterMixin<Tray>::GetObjectTemplateBuilder(isolate)
+  // We fill the object template ourselves via Tray::GetConstructor, so this
+  // function should never be called.
+  NOTREACHED();
+  return gin::ObjectTemplateBuilder(isolate);
+}
+
+// static
+v8::Local<v8::ObjectTemplate> Tray::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
+  return gin::ObjectTemplateBuilder(isolate, "Tray", templ)
       .SetMethod("destroy", &Tray::Destroy)
       .SetMethod("isDestroyed", &Tray::IsDestroyed)
       .SetMethod("setImage", &Tray::SetImage)
@@ -356,11 +365,30 @@ gin::ObjectTemplateBuilder Tray::GetObjectTemplateBuilder(
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
       .SetMethod("closeContextMenu", &Tray::CloseContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
-      .SetMethod("getBounds", &Tray::GetBounds);
+      .SetMethod("getBounds", &Tray::GetBounds)
+      .Build();
 }
 
-const char* Tray::GetTypeName() {
-  return "Tray";
+// static
+v8::Local<v8::Function> Tray::GetConstructor(v8::Local<v8::Context> context) {
+  v8::Isolate* isolate = context->GetIsolate();
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  auto* wrapper_info = &Tray::kWrapperInfo;
+  v8::Local<v8::FunctionTemplate> constructor =
+      data->GetFunctionTemplate(wrapper_info);
+  if (constructor.IsEmpty()) {
+    constructor = gin::CreateConstructorFunctionTemplate(
+        isolate, base::BindRepeating(&Tray::New));
+    constructor->Inherit(
+        gin_helper::internal::GetEventEmitterTemplate(isolate));
+    constructor->InstanceTemplate()->SetInternalFieldCount(
+        gin::kNumberOfInternalFields);
+    v8::Local<v8::ObjectTemplate> obj_templ =
+        Tray::FillObjectTemplate(isolate, constructor->InstanceTemplate());
+    data->SetObjectTemplate(wrapper_info, obj_templ);
+    data->SetFunctionTemplate(wrapper_info, constructor);
+  }
+  return constructor->GetFunction(context).ToLocalChecked();
 }
 
 }  // namespace api
@@ -378,7 +406,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
 
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("createTray", &Tray::New);
+  dict.Set("Tray", Tray::GetConstructor(context));
 }
 
 }  // namespace
