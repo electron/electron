@@ -193,8 +193,8 @@ See the [Windows Store Guide].
 [`electron-osx-sign`]: https://github.com/electron-userland/electron-osx-sign
 [`electron-packager`]: https://github.com/electron/electron-packager
 [`electron-notarize`]: https://github.com/electron/electron-notarize
-[`electron-winstaller`]: https://github.com/electron/windows-installer [Xcode]:
-https://developer.apple.com/xcode [signing certificates]:
-https://github.com/electron/electron-osx-sign/wiki/1.-Getting-Started#certificates
-[Mac App Store Guide]: mac-app-store-submission-guide.md [Windows Store Guide]:
-windows-store-guide.md
+[`electron-winstaller`]: https://github.com/electron/windows-installer
+[Xcode]: https://developer.apple.com/xcode
+[signing certificates]: https://github.com/electron/electron-osx-sign/wiki/1.-Getting-Started#certificates
+[Mac App Store Guide]: mac-app-store-submission-guide.md
+[Windows Store Guide]: windows-store-guide.md
