@@ -209,24 +209,6 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       false, std::vector<download::DownloadItem::ReceivedSlice>());
 }
 
-void DestroyGlobalHandle(v8::Isolate* isolate,
-                         const v8::Global<v8::Value>& global_handle) {
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  if (!global_handle.IsEmpty()) {
-    v8::Local<v8::Value> local_handle = global_handle.Get(isolate);
-    v8::Local<v8::Object> object;
-    if (local_handle->IsObject() &&
-        local_handle->ToObject(isolate->GetCurrentContext()).ToLocal(&object)) {
-      void* ptr = object->GetAlignedPointerFromInternalField(0);
-      if (!ptr)
-        return;
-      delete static_cast<gin_helper::WrappableBase*>(ptr);
-      object->SetAlignedPointerInInternalField(0, nullptr);
-    }
-  }
-}
-
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
  private:
