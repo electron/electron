@@ -2,6 +2,16 @@
 
 Breaking changes will be documented here, and deprecation warnings added to JS code where possible, at least [one major version](tutorial/electron-versioning.md#semver) before the change is made.
 
+### Types of Breaking Changes
+
+This document uses the following convention to categorize breaking changes:
+
+- **API Changed:** An API was changed in such a way that code that has not been updated is guaranteed to throw an exception.
+- **Behavior Changed:** The behavior of Electron has changed, but not in such a way that an exception will necessarily be thrown.
+- **Default Changed:** Code depending on the old default may break, not necessarily throwing an exception. The old behavior can be restored by explicitly specifying the value.
+- **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
+- **Removed:** An API or feature was removed, and is no longer supported by Electron.
+
 ## Planned Breaking API Changes (10.0)
 
 ### Removed: Browser Window Affinity
