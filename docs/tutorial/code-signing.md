@@ -45,7 +45,7 @@ ways to get your application signed and notarized.
 ## `electron-forge`
 
 If you're using Electron's favorite build tool, getting your application signed
-and notarized requires a few additions to your configuration. Forge is a
+and notarized requires a few additions to your configuration. [Forge](https://electronforge.io) is a
 collection of the official Electron tools, using [`electron-packager`],
 [`electron-osx-sign`], and [`electron-notarize`] under the hood.
 
