@@ -17,7 +17,7 @@ This document uses the following convention to categorize breaking changes:
 ### Removed: Browser Window Affinity
 
 The `affinity` option when constructing a new `BrowserWindow` will be removed
-as part of our plan to more closely align with Chromiums process model for security,
+as part of our plan to more closely align with Chromium's process model for security,
 performance and maintainability.
 
 For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
