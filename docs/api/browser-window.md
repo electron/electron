@@ -952,7 +952,7 @@ Returns `Boolean` - Whether the window is in fullscreen mode.
 
 Enters or leaves simple fullscreen mode.
 
-Simple fullscreen mode emulates the native fullscreen behavior found in versions of Mac OS X prior to Lion (10.7).
+Simple fullscreen mode emulates the native fullscreen behavior found in versions of macOS prior to Lion (10.7).
 
 #### `win.isSimpleFullScreen()` _macOS_
 
