@@ -108,7 +108,7 @@ can find [its documentation here](https://www.electron.build/code-signing).
 
 ## `electron-packager`
 
-Even if you're not using an integrated build pipeline like Forge or Builder, you
+If you're not using an integrated build pipeline like Forge or Builder, you
 are likely using [`electron-packager`], which includes [`electron-osx-sign`] and
 [`electron-notarize`].
 
