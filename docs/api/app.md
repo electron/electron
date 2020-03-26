@@ -75,7 +75,7 @@ Returns:
 * `event` Event
 
 Emitted when all windows have been closed and the application will quit.
-Calling `event.preventDefault()` will prevent the default behaviour, which is
+Calling `event.preventDefault()` will prevent the default behavior, which is
 terminating the application.
 
 See the description of the `window-all-closed` event for the differences between
@@ -1027,7 +1027,7 @@ This method can only be called before app is ready.
 
 By default, Chromium disables 3D APIs (e.g. WebGL) until restart on a per
 domain basis if the GPU processes crashes too frequently. This function
-disables that behaviour.
+disables that behavior.
 
 This method can only be called before app is ready.
 

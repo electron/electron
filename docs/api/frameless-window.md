@@ -158,7 +158,7 @@ buttons in titlebar non-draggable.
 
 ## Text selection
 
-In a frameless window the dragging behaviour may conflict with selecting text.
+In a frameless window the dragging behavior may conflict with selecting text.
 For example, when you drag the titlebar you may accidentally select the text on
 the titlebar. To prevent this, you need to disable text selection within a
 draggable area like this:
