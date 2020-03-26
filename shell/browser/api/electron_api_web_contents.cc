@@ -44,6 +44,7 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/referrer_type_converters.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/data_object_builder.h"
@@ -641,25 +642,25 @@ void WebContents::OnCreateWindow(
     const content::Referrer& referrer,
     const std::string& frame_name,
     WindowOpenDisposition disposition,
-    const std::vector<std::string>& features,
+    const std::string& features,
     const scoped_refptr<network::ResourceRequestBody>& body) {
-  if (type_ == Type::BROWSER_WINDOW || type_ == Type::OFF_SCREEN)
-    Emit("-new-window", target_url, frame_name, disposition, features, body,
-         referrer);
-  else
-    Emit("new-window", target_url, frame_name, disposition, features);
+  Emit("-new-window", target_url, frame_name, disposition, features, referrer,
+       body);
 }
 
-void WebContents::WebContentsCreated(content::WebContents* source_contents,
-                                     int opener_render_process_id,
-                                     int opener_render_frame_id,
-                                     const std::string& frame_name,
-                                     const GURL& target_url,
-                                     content::WebContents* new_contents) {
+void WebContents::WebContentsCreatedWithFullParams(
+    content::WebContents* source_contents,
+    int opener_render_process_id,
+    int opener_render_frame_id,
+    const content::mojom::CreateNewWindowParams& params,
+    content::WebContents* new_contents) {
   ChildWebContentsTracker::CreateForWebContents(new_contents);
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents);
-  tracker->url = target_url;
-  tracker->frame_name = frame_name;
+  tracker->url = params.target_url;
+  tracker->frame_name = params.frame_name;
+  tracker->referrer = params.referrer.To<content::Referrer>();
+  tracker->raw_features = params.raw_features;
+  tracker->body = params.body;
 }
 
 void WebContents::AddNewContents(
@@ -678,7 +679,8 @@ void WebContents::AddNewContents(
       CreateAndTake(isolate(), std::move(new_contents), Type::BROWSER_WINDOW);
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
-           initial_rect.height(), tracker->url, tracker->frame_name)) {
+           initial_rect.height(), tracker->url, tracker->frame_name,
+           tracker->referrer, tracker->raw_features, tracker->body)) {
     // TODO(zcbenz): Can we make this sync?
     api_web_contents->DestroyWebContents(true /* async */);
   }
@@ -688,10 +690,8 @@ content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
-    if (type_ == Type::BROWSER_WINDOW || type_ == Type::OFF_SCREEN)
-      Emit("-new-window", params.url, "", params.disposition);
-    else
-      Emit("new-window", params.url, "", params.disposition);
+    Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
+         params.post_data);
     return nullptr;
   }
 

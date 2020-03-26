@@ -9,7 +9,7 @@ Object.setPrototypeOf(protocol, new Proxy({}, {
     if (!app.isReady()) return;
 
     const protocol = session.defaultSession!.protocol;
-    if (!Object.prototype.hasOwnProperty.call(Object.getPrototypeOf(protocol), property)) return;
+    if (!Object.prototype.hasOwnProperty.call(protocol, property)) return;
 
     // Returning a native function directly would throw error.
     return (...args: any[]) => (protocol[property as keyof Electron.Protocol] as Function)(...args);
