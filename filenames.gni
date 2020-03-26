@@ -290,6 +290,8 @@ filenames = {
     "shell/browser/plugins/plugin_utils.h",
     "shell/browser/pref_store_delegate.cc",
     "shell/browser/pref_store_delegate.h",
+    "shell/browser/protocol_registry.cc",
+    "shell/browser/protocol_registry.h",
     "shell/browser/relauncher.cc",
     "shell/browser/relauncher.h",
     "shell/browser/relauncher_linux.cc",

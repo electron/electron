@@ -10,8 +10,10 @@
 
 #include "base/stl_util.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -73,6 +75,8 @@ struct Converter<CustomScheme> {
 
 namespace electron {
 namespace api {
+
+gin::WrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 std::vector<std::string> GetStandardSchemes() {
   return g_standard_schemes;
@@ -160,59 +164,45 @@ std::string ErrorCodeToString(ProtocolError error) {
 
 }  // namespace
 
-Protocol::Protocol(v8::Isolate* isolate,
-                   ElectronBrowserContext* browser_context) {
-  Init(isolate);
-  AttachAsUserData(browser_context);
-}
+Protocol::Protocol(v8::Isolate* isolate, ProtocolRegistry* protocol_registry)
+    : protocol_registry_(protocol_registry) {}
 
 Protocol::~Protocol() = default;
-
-void Protocol::RegisterURLLoaderFactories(
-    content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
-  for (const auto& it : handlers_) {
-    factories->emplace(it.first, std::make_unique<ElectronURLLoaderFactory>(
-                                     it.second.first, it.second.second));
-  }
-}
 
 ProtocolError Protocol::RegisterProtocol(ProtocolType type,
                                          const std::string& scheme,
                                          const ProtocolHandler& handler) {
-  const bool added = base::TryEmplace(handlers_, scheme, type, handler).second;
+  bool added = protocol_registry_->RegisterProtocol(type, scheme, handler);
   return added ? ProtocolError::OK : ProtocolError::REGISTERED;
 }
 
 void Protocol::UnregisterProtocol(const std::string& scheme,
                                   gin::Arguments* args) {
-  const bool removed = handlers_.erase(scheme) != 0;
-  const auto error =
-      removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED;
-  HandleOptionalCallback(args, error);
+  bool removed = protocol_registry_->UnregisterProtocol(scheme);
+  HandleOptionalCallback(
+      args, removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED);
 }
 
 bool Protocol::IsProtocolRegistered(const std::string& scheme) {
-  return base::Contains(handlers_, scheme);
+  return protocol_registry_->IsProtocolRegistered(scheme);
 }
 
 ProtocolError Protocol::InterceptProtocol(ProtocolType type,
                                           const std::string& scheme,
                                           const ProtocolHandler& handler) {
-  const bool added =
-      base::TryEmplace(intercept_handlers_, scheme, type, handler).second;
+  bool added = protocol_registry_->InterceptProtocol(type, scheme, handler);
   return added ? ProtocolError::OK : ProtocolError::INTERCEPTED;
 }
 
 void Protocol::UninterceptProtocol(const std::string& scheme,
                                    gin::Arguments* args) {
-  const bool removed = intercept_handlers_.erase(scheme) != 0;
-  const auto error =
-      removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED;
-  HandleOptionalCallback(args, error);
+  bool removed = protocol_registry_->UninterceptProtocol(scheme);
+  HandleOptionalCallback(
+      args, removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED);
 }
 
 bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
-  return base::Contains(intercept_handlers_, scheme);
+  return protocol_registry_->IsProtocolIntercepted(scheme);
 }
 
 v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
@@ -224,21 +214,21 @@ v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
               "instead.",
               "ProtocolDeprecateIsProtocolHandled");
   return gin_helper::Promise<bool>::ResolvedPromise(
-      isolate(), IsProtocolRegistered(scheme) ||
-                     IsProtocolIntercepted(scheme) ||
-                     // The |isProtocolHandled| should return true for builtin
-                     // schemes, however with NetworkService it is impossible to
-                     // know which schemes are registered until a real network
-                     // request is sent.
-                     // So we have to test against a hard-coded builtin schemes
-                     // list make it work with old code. We should deprecate
-                     // this API with the new |isProtocolRegistered| API.
-                     base::Contains(kBuiltinSchemes, scheme));
+      args->isolate(),
+      IsProtocolRegistered(scheme) || IsProtocolIntercepted(scheme) ||
+          // The |isProtocolHandled| should return true for builtin
+          // schemes, however with NetworkService it is impossible to
+          // know which schemes are registered until a real network
+          // request is sent.
+          // So we have to test against a hard-coded builtin schemes
+          // list make it work with old code. We should deprecate
+          // this API with the new |isProtocolRegistered| API.
+          base::Contains(kBuiltinSchemes, scheme));
 }
 
 void Protocol::HandleOptionalCallback(gin::Arguments* args,
                                       ProtocolError error) {
-  CompletionCallback callback;
+  base::RepeatingCallback<void(v8::Local<v8::Value>)> callback;
   if (args->GetNext(&callback)) {
     node::Environment* env = node::Environment::GetCurrent(args->isolate());
     EmitWarning(
@@ -249,7 +239,7 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args,
       callback.Run(v8::Null(args->isolate()));
     else
       callback.Run(v8::Exception::Error(
-          gin::StringToV8(isolate(), ErrorCodeToString(error))));
+          gin::StringToV8(args->isolate(), ErrorCodeToString(error))));
   }
 }
 
@@ -257,14 +247,13 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args,
 gin::Handle<Protocol> Protocol::Create(
     v8::Isolate* isolate,
     ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new Protocol(isolate, browser_context));
+  return gin::CreateHandle(
+      isolate, new Protocol(isolate, browser_context->protocol_registry()));
 }
 
-// static
-void Protocol::BuildPrototype(v8::Isolate* isolate,
-                              v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "Protocol"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::Wrappable<Protocol>::GetObjectTemplateBuilder(isolate)
       .SetMethod("registerStringProtocol",
                  &Protocol::RegisterProtocolFor<ProtocolType::kString>)
       .SetMethod("registerBufferProtocol",
@@ -294,6 +283,10 @@ void Protocol::BuildPrototype(v8::Isolate* isolate,
                  &Protocol::InterceptProtocolFor<ProtocolType::kFree>)
       .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol)
       .SetMethod("isProtocolIntercepted", &Protocol::IsProtocolIntercepted);
+}
+
+const char* Protocol::GetTypeName() {
+  return "Protocol";
 }
 
 }  // namespace api
