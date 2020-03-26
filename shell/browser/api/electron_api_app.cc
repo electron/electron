@@ -671,7 +671,7 @@ bool App::CanCreateWindow(
     const std::string& frame_name,
     WindowOpenDisposition disposition,
     const blink::mojom::WindowFeatures& features,
-    const std::vector<std::string>& additional_features,
+    const std::string& raw_features,
     const scoped_refptr<network::ResourceRequestBody>& body,
     bool user_gesture,
     bool opener_suppressed,
@@ -685,7 +685,7 @@ bool App::CanCreateWindow(
     // No need to emit any event if the WebContents is not available in JS.
     if (!api_web_contents.IsEmpty()) {
       api_web_contents->OnCreateWindow(target_url, referrer, frame_name,
-                                       disposition, additional_features, body);
+                                       disposition, raw_features, body);
     }
   }
 
