@@ -1,0 +1,50 @@
+From fd211b44535c09af58353f0799a624f076e98dda Mon Sep 17 00:00:00 2001
+From: Raymond Toy <rtoy@chromium.org>
+Date: Mon, 16 Dec 2019 17:06:28 +0000
+Subject: [PATCH] AudioContext HasPendingActivity unless it's closed
+
+An AudioContext is considered to have activity if it's not closed.
+Previously, suspended contexts were considered has having no activity,
+but that's not quite true since the context can be resumed at any time
+after.  This would allow contexts to be collected prematurely even
+though the context was resumed.  This causes the audio thread to
+access objects that are possibly deleted.
+
+Manually tested against test case from the bug; no issues seen.
+
+TBR=hongchan@chromium.org
+(cherry picked from commit 5efc951230de524c2b6787e25ec651c46f2652b4)
+
+Bug: 1023810
+Change-Id: I81cc0aff57bf4701b3ef9c36dd72b7e8922af5b9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1955339
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Commit-Queue: Raymond Toy <rtoy@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#724364}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1969044
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Cr-Commit-Position: refs/branch-heads/3987@{#158}
+Cr-Branched-From: c4e8da9871cc266be74481e212f3a5252972509d-refs/heads/master@{#722274}
+---
+ .../blink/renderer/modules/webaudio/audio_context.cc      | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_context.cc b/third_party/blink/renderer/modules/webaudio/audio_context.cc
+index bd76a6a7deca2..063475274c168 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_context.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_context.cc
+@@ -551,9 +551,11 @@ void AudioContext::ContextDestroyed(ExecutionContext*) {
+ }
+ 
+ bool AudioContext::HasPendingActivity() const {
+-  // There's activity only if the context is running.  Suspended contexts are
+-  // basically idle with nothing going on.
+-  return (ContextState() == kRunning) && BaseAudioContext::HasPendingActivity();
++  // There's activity if the context is is not closed.  Suspended contexts count
++  // as having activity even though they are basically idle with nothing going
++  // on.  However, the can be resumed at any time, so we don't want contexts
++  // going away prematurely.
++  return (ContextState() != kClosed) && BaseAudioContext::HasPendingActivity();
+ }
+ 
+ bool AudioContext::HandlePreRenderTasks(const AudioIOPosition* output_position,
