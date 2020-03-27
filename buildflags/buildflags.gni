@@ -12,7 +12,7 @@ declare_args() {
 
   enable_remote_module = true
 
-  enable_view_api = false
+  enable_view_api = true
 
   enable_pdf_viewer = true
 
