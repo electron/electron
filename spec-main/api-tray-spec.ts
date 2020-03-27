@@ -51,6 +51,13 @@ describe('tray module', () => {
       })
       tray.popUpContextMenu()
     })
+
+    it('can be called with a menu', () => {
+      const menu = Menu.buildFromTemplate([{ label: 'Test' }]);
+      expect(() => {
+        tray.popUpContextMenu(menu);
+      }).to.not.throw();
+    });
   })
 
   describe('tray.getBounds()', () => {
