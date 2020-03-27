@@ -24,7 +24,11 @@ class WebContentsView : public View, public content::WebContentsObserver {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  // Public APIs.
+  v8::Local<v8::Value> GetWebContents(v8::Isolate* isolate);
+
  protected:
+  // Takes an existing WebContents.
   WebContentsView(v8::Isolate* isolate,
                   gin::Handle<WebContents> web_contents,
                   InspectableWebContents* iwc);

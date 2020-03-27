@@ -10,6 +10,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
 #if defined(OS_MACOSX)
@@ -78,6 +79,12 @@ WebContentsView::~WebContentsView() {
   }
 }
 
+v8::Local<v8::Value> WebContentsView::GetWebContents(v8::Isolate* isolate) {
+  if (web_contents_.IsEmpty())
+    return v8::Null(isolate);
+  return v8::Local<v8::Value>::New(isolate, web_contents_);
+}
+
 void WebContentsView::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   web_contents_.Reset();
@@ -109,7 +116,11 @@ gin_helper::WrappableBase* WebContentsView::New(
 // static
 void WebContentsView::BuildPrototype(
     v8::Isolate* isolate,
-    v8::Local<v8::FunctionTemplate> prototype) {}
+    v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(gin::StringToV8(isolate, "WebContentsView"));
+  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetProperty("webContents", &WebContentsView::GetWebContents);
+}
 
 }  // namespace api
 
