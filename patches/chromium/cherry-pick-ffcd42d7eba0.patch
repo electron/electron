@@ -1,0 +1,62 @@
+From ffcd42d7eba0427e57c56ba4b2c2dd5afe6d09c6 Mon Sep 17 00:00:00 2001
+From: Ryan Hamilton <rch@chromium.org>
+Date: Thu, 19 Dec 2019 20:00:02 +0000
+Subject: [PATCH] Move some test-only code to install a fake decrypter from
+ QuicStreamFactory to MockCryptoClientStream.
+
+This was originally introduced in
+
+https://chromium-review.googlesource.com/c/chromium/src/+/1566714
+
+Change-Id: I6c5692b156e784b41d788c967c0ecef44ea99015
+
+(cherry picked from commit 801e443001db8432ae5b16822659b42ed19982cc)
+
+Bug: 1034745
+Change-Id: I6c5692b156e784b41d788c967c0ecef44ea99015
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1970586
+Commit-Queue: Ryan Hamilton <rch@chromium.org>
+Reviewed-by: Nick Harper <nharper@chromium.org>
+Reviewed-by: Zhongyi Shi <zhongyi@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#725404}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1975996
+Reviewed-by: Ryan Hamilton <rch@chromium.org>
+Cr-Commit-Position: refs/branch-heads/3987@{#285}
+Cr-Branched-From: c4e8da9871cc266be74481e212f3a5252972509d-refs/heads/master@{#722274}
+---
+ net/quic/mock_crypto_client_stream.cc | 5 +++++
+ net/quic/quic_stream_factory.cc       | 5 -----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/net/quic/mock_crypto_client_stream.cc b/net/quic/mock_crypto_client_stream.cc
+index a930b3902de00..b4be81b27c075 100644
+--- a/net/quic/mock_crypto_client_stream.cc
++++ b/net/quic/mock_crypto_client_stream.cc
+@@ -87,6 +87,11 @@ void MockCryptoClientStream::OnHandshakeMessage(
+ }
+ 
+ bool MockCryptoClientStream::CryptoConnect() {
++  if (session()->connection()->version().KnowsWhichDecrypterToUse()) {
++    session()->connection()->InstallDecrypter(
++        ENCRYPTION_FORWARD_SECURE,
++        std::make_unique<NullDecrypter>(Perspective::IS_CLIENT));
++  }
+   if (proof_verify_details_) {
+     if (!proof_verify_details_->cert_verify_result.verified_cert
+              ->VerifyNameMatch(server_id_.host())) {
+diff --git a/net/quic/quic_stream_factory.cc b/net/quic/quic_stream_factory.cc
+index d35bfde6bd6b3..ee0fd904aeabe 100644
+--- a/net/quic/quic_stream_factory.cc
++++ b/net/quic/quic_stream_factory.cc
+@@ -1994,11 +1994,6 @@ int QuicStreamFactory::CreateSession(
+     *session = nullptr;
+     return ERR_CONNECTION_CLOSED;
+   }
+-  if (connection->version().KnowsWhichDecrypterToUse()) {
+-    connection->InstallDecrypter(
+-        quic::ENCRYPTION_FORWARD_SECURE,
+-        std::make_unique<quic::NullDecrypter>(quic::Perspective::IS_CLIENT));
+-  }
+   return OK;
+ }
+ 
