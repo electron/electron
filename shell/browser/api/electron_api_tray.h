@@ -15,6 +15,7 @@
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
 #include "shell/common/gin_converters/guid_converter.h"
+#include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
 namespace gfx {
@@ -34,28 +35,26 @@ class NativeImage;
 
 class Tray : public gin::Wrappable<Tray>,
              public gin_helper::EventEmitterMixin<Tray>,
+             public gin_helper::Constructible<Tray>,
              public TrayIconObserver {
  public:
+  // gin_helper::Constructible
   static gin::Handle<Tray> New(gin_helper::ErrorThrower thrower,
                                gin::Handle<NativeImage> image,
                                base::Optional<UUID> guid,
                                gin::Arguments* args);
-  static v8::Local<v8::Function> GetConstructor(v8::Local<v8::Context> context);
+  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+      v8::Isolate*,
+      v8::Local<v8::ObjectTemplate>);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
 
  private:
   Tray(gin::Handle<NativeImage> image,
        base::Optional<UUID> guid,
        gin::Arguments* args);
   ~Tray() override;
-
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate*,
-      v8::Local<v8::ObjectTemplate>);
 
   // TrayIconObserver:
   void OnClicked(const gfx::Rect& bounds,

@@ -510,6 +510,7 @@ filenames = {
     "shell/common/gin_helper/arguments.h",
     "shell/common/gin_helper/callback.cc",
     "shell/common/gin_helper/callback.h",
+    "shell/common/gin_helper/constructible.h",
     "shell/common/gin_helper/constructor.h",
     "shell/common/gin_helper/destroyable.cc",
     "shell/common/gin_helper/destroyable.h",

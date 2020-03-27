@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/threading/thread_task_runner_handle.h"
+#include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/ui_event.h"
@@ -335,14 +336,6 @@ bool Tray::CheckDestroyed() {
   return true;
 }
 
-gin::ObjectTemplateBuilder Tray::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  // We fill the object template ourselves via Tray::GetConstructor, so this
-  // function should never be called.
-  NOTREACHED();
-  return gin::ObjectTemplateBuilder(isolate);
-}
-
 // static
 v8::Local<v8::ObjectTemplate> Tray::FillObjectTemplate(
     v8::Isolate* isolate,
@@ -369,28 +362,6 @@ v8::Local<v8::ObjectTemplate> Tray::FillObjectTemplate(
       .Build();
 }
 
-// static
-v8::Local<v8::Function> Tray::GetConstructor(v8::Local<v8::Context> context) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  auto* wrapper_info = &Tray::kWrapperInfo;
-  v8::Local<v8::FunctionTemplate> constructor =
-      data->GetFunctionTemplate(wrapper_info);
-  if (constructor.IsEmpty()) {
-    constructor = gin::CreateConstructorFunctionTemplate(
-        isolate, base::BindRepeating(&Tray::New));
-    constructor->Inherit(
-        gin_helper::internal::GetEventEmitterTemplate(isolate));
-    constructor->InstanceTemplate()->SetInternalFieldCount(
-        gin::kNumberOfInternalFields);
-    v8::Local<v8::ObjectTemplate> obj_templ =
-        Tray::FillObjectTemplate(isolate, constructor->InstanceTemplate());
-    data->SetObjectTemplate(wrapper_info, obj_templ);
-    data->SetFunctionTemplate(wrapper_info, constructor);
-  }
-  return constructor->GetFunction(context).ToLocalChecked();
-}
-
 }  // namespace api
 
 }  // namespace electron
@@ -405,7 +376,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
 
-  gin_helper::Dictionary dict(isolate, exports);
+  gin::Dictionary dict(isolate, exports);
   dict.Set("Tray", Tray::GetConstructor(context));
 }
 
