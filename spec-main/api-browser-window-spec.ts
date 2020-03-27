@@ -4001,7 +4001,9 @@ describe('BrowserWindow module', () => {
   })
 
   const features = process.electronBinding('features')
-  ifdescribe(features.isOffscreenRenderingEnabled())('offscreen rendering', () => {
+  const skip = features.isOffscreenRenderingEnabled() && 
+    (process.platform !== 'linux' || process.arch !== 'ia32')
+  ifdescribe(skip)('offscreen rendering', () => {
     let w: BrowserWindow
     beforeEach(function () {
       w = new BrowserWindow({
