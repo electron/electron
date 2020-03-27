@@ -1,5 +1,9 @@
-#ifndef SHELL_COMMON_GIN_HELPER_CONSTRUCTABLE_H_
-#define SHELL_COMMON_GIN_HELPER_CONSTRUCTABLE_H_
+// Copyright (c) 2020 Slack Technologies, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_
+#define SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_
 
 #include "gin/wrappable.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
@@ -60,4 +64,4 @@ class Constructible {
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_CONSTRUCTABLE_H_
+#endif  // SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_
