@@ -10,13 +10,14 @@
 
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "ui/views/view.h"
 
 namespace electron {
 
 namespace api {
 
-class View : public gin_helper::TrackableObject<View> {
+class View : public gin_helper::Wrappable<View> {
  public:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
 
@@ -50,22 +51,5 @@ class View : public gin_helper::TrackableObject<View> {
 }  // namespace api
 
 }  // namespace electron
-
-namespace gin {
-
-template <>
-struct Converter<views::View*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     views::View** out) {
-    electron::api::View* view;
-    if (!Converter<electron::api::View*>::FromV8(isolate, val, &view))
-      return false;
-    *out = view->view();
-    return true;
-  }
-};
-
-}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
