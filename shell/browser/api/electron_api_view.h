@@ -10,7 +10,6 @@
 
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
-#include "shell/browser/api/views/electron_api_layout_manager.h"
 #include "ui/views/view.h"
 
 namespace electron {
@@ -25,7 +24,6 @@ class View : public gin_helper::TrackableObject<View> {
                              v8::Local<v8::FunctionTemplate> prototype);
 
 #if BUILDFLAG(ENABLE_VIEW_API)
-  void SetLayoutManager(gin::Handle<LayoutManager> layout_manager);
   void AddChildView(gin::Handle<View> view);
   void AddChildViewAt(gin::Handle<View> view, size_t index);
 #endif
@@ -41,7 +39,6 @@ class View : public gin_helper::TrackableObject<View> {
   void set_delete_view(bool should) { delete_view_ = should; }
 
  private:
-  v8::Global<v8::Object> layout_manager_;
   std::vector<v8::Global<v8::Object>> child_views_;
 
   bool delete_view_ = true;

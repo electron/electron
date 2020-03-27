@@ -24,11 +24,6 @@ View::~View() {
 }
 
 #if BUILDFLAG(ENABLE_VIEW_API)
-void View::SetLayoutManager(gin::Handle<LayoutManager> layout_manager) {
-  layout_manager_.Reset(isolate(), layout_manager->GetWrapper());
-  view()->SetLayoutManager(layout_manager->TakeOver());
-}
-
 void View::AddChildView(gin::Handle<View> child) {
   AddChildViewAt(child, child_views_.size());
 }
@@ -55,7 +50,6 @@ void View::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(gin::StringToV8(isolate, "View"));
 #if BUILDFLAG(ENABLE_VIEW_API)
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setLayoutManager", &View::SetLayoutManager)
       .SetMethod("addChildView", &View::AddChildView)
       .SetMethod("addChildViewAt", &View::AddChildViewAt);
 #endif
