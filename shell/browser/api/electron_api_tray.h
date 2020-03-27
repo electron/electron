@@ -15,6 +15,7 @@
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
 #include "shell/common/gin_converters/guid_converter.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
@@ -36,6 +37,7 @@ class NativeImage;
 class Tray : public gin::Wrappable<Tray>,
              public gin_helper::EventEmitterMixin<Tray>,
              public gin_helper::Constructible<Tray>,
+             public gin_helper::CleanedUpAtExit,
              public TrayIconObserver {
  public:
   // gin_helper::Constructible
