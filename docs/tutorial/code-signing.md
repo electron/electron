@@ -112,7 +112,7 @@ If you're not using an integrated build pipeline like Forge or Builder, you
 are likely using [`electron-packager`], which includes [`electron-osx-sign`] and
 [`electron-notarize`].
 
-If you're using packager's API, you can pass [in configuration that both signs
+If you're using Packager's API, you can pass [in configuration that both signs
 and notarizes your
 application](https://electron.github.io/electron-packager/master/interfaces/electronpackager.options.html).
 
