@@ -598,28 +598,18 @@ void NativeWindowMac::SetContentView(views::View* view) {
 }
 
 void NativeWindowMac::Close() {
-  // When this is a sheet showing, performClose won't work.
-  if (is_modal() && parent() && IsVisible()) {
-    NSWindow* window = parent()->GetNativeWindow().GetNativeNSWindow();
-    if (NSWindow* sheetParent = [window sheetParent]) {
-      base::ThreadTaskRunnerHandle::Get()->PostTask(
-          FROM_HERE, base::BindOnce(base::RetainBlock(^{
-            [sheetParent endSheet:window];
-          })));
-    }
-
-    // Manually emit close event (not triggered from close fn)
-    NotifyWindowCloseButtonClicked();
-    CloseImmediately();
-    return;
-  }
-
   if (!IsClosable()) {
     WindowList::WindowCloseCancelled(this);
     return;
   }
 
   [window_ performClose:nil];
+
+  // Closing a sheet doesn't trigger windowShouldClose,
+  // so we need to manually call it ourselves here.
+  if (is_modal() && parent() && IsVisible()) {
+    NotifyWindowCloseButtonClicked();
+  }
 }
 
 void NativeWindowMac::CloseImmediately() {
@@ -656,9 +646,9 @@ bool NativeWindowMac::IsFocused() {
 
 void NativeWindowMac::Show() {
   if (is_modal() && parent()) {
+    NSWindow* window = parent()->GetNativeWindow().GetNativeNSWindow();
     if ([window_ sheetParent] == nil)
-      [parent()->GetNativeWindow().GetNativeNSWindow()
-                 beginSheet:window_
+      [window beginSheet:window_
           completionHandler:^(NSModalResponse){
           }];
     return;
