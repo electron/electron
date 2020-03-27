@@ -24,7 +24,7 @@ class View : public gin_helper::Wrappable<View> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-#if BUILDFLAG(ENABLE_VIEW_API)
+#if BUILDFLAG(ENABLE_VIEWS_API)
   void AddChildView(gin::Handle<View> view);
   void AddChildViewAt(gin::Handle<View> view, size_t index);
 #endif
