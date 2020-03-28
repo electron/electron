@@ -107,8 +107,7 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
   electron::ShowMessageBox(
       settings,
       base::BindOnce(&ElectronJavaScriptDialogManager::OnMessageBoxCallback,
-                     base::Unretained(this), base::Passed(std::move(callback)),
-                     origin));
+                     base::Unretained(this), std::move(callback), origin));
 }
 
 void ElectronJavaScriptDialogManager::RunBeforeUnloadDialog(
