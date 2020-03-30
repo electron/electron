@@ -710,9 +710,9 @@ void NativeWindowMac::SetExitingFullScreen(bool flag) {
 }
 
 void NativeWindowMac::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {
-  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                 base::BindOnce(&NativeWindowMac::RedrawTrafficLights,
-                                base::Unretained(this)));
+  base::PostTask(
+      FROM_HERE, {content::BrowserThread::UI},
+      base::BindOnce(&NativeWindow::RedrawTrafficLights, GetWeakPtr()));
 }
 
 bool NativeWindowMac::IsEnabled() {
