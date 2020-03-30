@@ -326,25 +326,6 @@ NativeWindowViews::~NativeWindowViews() {
 #endif
 }
 
-void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
-#if defined(USE_X11)
-  XDisplay* xdisplay = gfx::GetXDisplay();
-  if (use_dark_theme) {
-    XChangeProperty(xdisplay, GetAcceleratedWidget(),
-                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
-                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
-                    PropModeReplace,
-                    reinterpret_cast<const unsigned char*>("dark"), 4);
-  } else {
-    XChangeProperty(xdisplay, GetAcceleratedWidget(),
-                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
-                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
-                    PropModeReplace,
-                    reinterpret_cast<const unsigned char*>("light"), 5);
-  }
-#endif
-}
-
 void NativeWindowViews::SetContentView(views::View* view) {
   if (content_view()) {
     root_view_->RemoveChildView(content_view());
@@ -1290,6 +1271,25 @@ void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
   auto* tree_host = views::DesktopWindowTreeHostLinux::GetHostForWidget(
       GetAcceleratedWidget());
   tree_host->SetWindowIcons(icon, {});
+}
+#endif
+
+#if defined(USE_X11)
+void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
+  XDisplay* xdisplay = gfx::GetXDisplay();
+  if (use_dark_theme) {
+    XChangeProperty(xdisplay, GetAcceleratedWidget(),
+                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
+                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
+                    PropModeReplace,
+                    reinterpret_cast<const unsigned char*>("dark"), 4);
+  } else {
+    XChangeProperty(xdisplay, GetAcceleratedWidget(),
+                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
+                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
+                    PropModeReplace,
+                    reinterpret_cast<const unsigned char*>("light"), 5);
+  }
 }
 #endif
 

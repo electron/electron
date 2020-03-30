@@ -10,7 +10,8 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/handle.h"
-#include "shell/browser/api/atom_api_top_level_window.h"
+#include "shell/browser/native_window_views.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -48,12 +49,13 @@ void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
   // Update the macOS appearance setting for this new override value
   UpdateMacOSAppearanceForOverrideValue(override);
 #endif
+#if defined(USE_X11)
   const bool dark_enabled = ShouldUseDarkColors();
-  for (auto* window : electron::api::TopLevelWindow::GetAllWindows()) {
-    window->SetGTKDarkThemeEnabled(dark_enabled);
+  for (auto* window : WindowList::GetWindows()) {
+    static_cast<NativeWindowViews*>(window)->SetGTKDarkThemeEnabled(
+        dark_enabled);
   }
-  // TODO(MarshallOfSound): Update all existing browsers windows to use GTK dark
-  // theme
+#endif
 }
 
 ui::NativeTheme::ThemeSource NativeTheme::GetThemeSource() const {

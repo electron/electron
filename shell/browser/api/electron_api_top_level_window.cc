@@ -74,12 +74,9 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 
 }  // namespace
 
-std::vector<TopLevelWindow*> TopLevelWindow::all_windows_;
-
 TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
                                const gin_helper::Dictionary& options)
     : weak_factory_(this) {
-  all_windows_.push_back(this);
   // The parent window.
   gin::Handle<TopLevelWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
@@ -117,9 +114,6 @@ TopLevelWindow::TopLevelWindow(gin_helper::Arguments* args,
 }
 
 TopLevelWindow::~TopLevelWindow() {
-  all_windows_.erase(
-      std::remove(all_windows_.begin(), all_windows_.end(), this),
-      all_windows_.end());
   if (!window_->IsClosed())
     window_->CloseImmediately();
 
@@ -910,10 +904,6 @@ void TopLevelWindow::PreviewFile(const std::string& path,
 
 void TopLevelWindow::CloseFilePreview() {
   window_->CloseFilePreview();
-}
-
-void TopLevelWindow::SetGTKDarkThemeEnabled(bool use_dark_theme) {
-  window_->SetGTKDarkThemeEnabled(use_dark_theme);
 }
 
 v8::Local<v8::Value> TopLevelWindow::GetContentView() const {
