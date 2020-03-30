@@ -49,6 +49,14 @@ parameters:
     type: boolean
     default: false
 
+  run-linux-release:
+    type: boolean
+    default: false
+
+  run-macos-release:
+    type: boolean
+    default: false
+
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
 #
@@ -2400,14 +2408,7 @@ workflows:
             - mas-testing
 
   nightly-linux-release-test:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-                - *chromium-upgrade-branches
+    when: << pipeline.parameters.run-linux-release >>
     jobs:
       - linux-checkout-fast
       - linux-checkout-and-save-cache
@@ -2449,14 +2450,7 @@ workflows:
             - linux-arm64-release
 
   nightly-mac-release-test:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-                - *chromium-upgrade-branches
+    when: << pipeline.parameters.run-macos-release >>
     jobs:
       - mac-checkout-fast
       - mac-checkout-and-save-cache
