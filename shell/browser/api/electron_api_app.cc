@@ -497,8 +497,7 @@ void OnClientCertificateSelected(
 }
 
 #if defined(USE_NSS_CERTS)
-int ImportIntoCertStore(CertificateManagerModel* model,
-                        const base::DictionaryValue& options) {
+int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   std::string file_data, cert_path;
   base::string16 password;
   net::ScopedCERTCertificateList imported_certs;
@@ -1071,31 +1070,34 @@ Browser::LoginItemSettings App::GetLoginItemSettings(
 }
 
 #if defined(USE_NSS_CERTS)
-void App::ImportCertificate(const base::DictionaryValue& options,
+void App::ImportCertificate(base::Value options,
                             net::CompletionRepeatingCallback callback) {
+  DCHECK(options.is_dict());
+
   auto browser_context = ElectronBrowserContext::From("", false);
   if (!certificate_manager_model_) {
-    auto copy = base::DictionaryValue::From(
-        base::Value::ToUniquePtrValue(options.Clone()));
     CertificateManagerModel::Create(
         browser_context.get(),
         base::BindRepeating(&App::OnCertificateManagerModelCreated,
-                            base::Unretained(this), base::Passed(&copy),
+                            base::Unretained(this), std::move(options),
                             callback));
     return;
   }
 
-  int rv = ImportIntoCertStore(certificate_manager_model_.get(), options);
+  int rv =
+      ImportIntoCertStore(certificate_manager_model_.get(), std::move(options));
   std::move(callback).Run(rv);
 }
 
 void App::OnCertificateManagerModelCreated(
-    std::unique_ptr<base::DictionaryValue> options,
+    base::Value options,
     net::CompletionOnceCallback callback,
     std::unique_ptr<CertificateManagerModel> model) {
+  DCHECK(options.is_dict());
+
   certificate_manager_model_ = std::move(model);
   int rv =
-      ImportIntoCertStore(certificate_manager_model_.get(), *(options.get()));
+      ImportIntoCertStore(certificate_manager_model_.get(), std::move(options));
   std::move(callback).Run(rv);
 }
 #endif

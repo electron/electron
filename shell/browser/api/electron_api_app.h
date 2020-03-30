@@ -184,7 +184,7 @@ class App : public ElectronBrowserClient::Delegate,
                                       bool enabled);
   Browser::LoginItemSettings GetLoginItemSettings(gin_helper::Arguments* args);
 #if defined(USE_NSS_CERTS)
-  void ImportCertificate(const base::DictionaryValue& options,
+  void ImportCertificate(base::Value options,
                          net::CompletionRepeatingCallback callback);
 #endif
   v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
