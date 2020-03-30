@@ -15,6 +15,8 @@
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
+#include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "ui/gfx/image/image.h"
 
@@ -30,11 +32,18 @@ namespace api {
 
 class Notification : public gin::Wrappable<Notification>,
                      public gin_helper::EventEmitterMixin<Notification>,
+                     public gin_helper::Constructible<Notification>,
+                     public gin_helper::CleanedUpAtExit,
                      public NotificationDelegate {
  public:
+  static bool IsSupported();
+
+  // gin_helper::Constructible
   static gin::Handle<Notification> New(gin_helper::ErrorThrower thrower,
                                        gin::Arguments* args);
-  static bool IsSupported();
+  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+      v8::Isolate*,
+      v8::Local<v8::ObjectTemplate>);
 
   // NotificationDelegate:
   void NotificationAction(int index) override;
@@ -46,9 +55,6 @@ class Notification : public gin::Wrappable<Notification>,
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
 
  protected:
   explicit Notification(gin::Arguments* args);

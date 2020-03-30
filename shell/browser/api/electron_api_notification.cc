@@ -241,10 +241,10 @@ bool Notification::IsSupported() {
                ->GetNotificationPresenter();
 }
 
-gin::ObjectTemplateBuilder Notification::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin_helper::EventEmitterMixin<Notification>::GetObjectTemplateBuilder(
-             isolate)
+v8::Local<v8::ObjectTemplate> Notification::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
+  return gin::ObjectTemplateBuilder(isolate, "Notification", templ)
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
@@ -264,11 +264,8 @@ gin::ObjectTemplateBuilder Notification::GetObjectTemplateBuilder(
       .SetProperty("actions", &Notification::GetActions,
                    &Notification::SetActions)
       .SetProperty("closeButtonText", &Notification::GetCloseButtonText,
-                   &Notification::SetCloseButtonText);
-}
-
-const char* Notification::GetTypeName() {
-  return "Notification";
+                   &Notification::SetCloseButtonText)
+      .Build();
 }
 
 }  // namespace api
@@ -285,7 +282,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("createNotification", &Notification::New);
+  dict.Set("Notification", Notification::GetConstructor(context));
   dict.SetMethod("isSupported", &Notification::IsSupported);
 }
 
