@@ -10,22 +10,21 @@
 
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
-#include "shell/browser/api/views/electron_api_layout_manager.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "ui/views/view.h"
 
 namespace electron {
 
 namespace api {
 
-class View : public gin_helper::TrackableObject<View> {
+class View : public gin_helper::Wrappable<View> {
  public:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-#if BUILDFLAG(ENABLE_VIEW_API)
-  void SetLayoutManager(gin::Handle<LayoutManager> layout_manager);
+#if BUILDFLAG(ENABLE_VIEWS_API)
   void AddChildView(gin::Handle<View> view);
   void AddChildViewAt(gin::Handle<View> view, size_t index);
 #endif
@@ -41,7 +40,6 @@ class View : public gin_helper::TrackableObject<View> {
   void set_delete_view(bool should) { delete_view_ = should; }
 
  private:
-  v8::Global<v8::Object> layout_manager_;
   std::vector<v8::Global<v8::Object>> child_views_;
 
   bool delete_view_ = true;
@@ -53,22 +51,5 @@ class View : public gin_helper::TrackableObject<View> {
 }  // namespace api
 
 }  // namespace electron
-
-namespace gin {
-
-template <>
-struct Converter<views::View*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     views::View** out) {
-    electron::api::View* view;
-    if (!Converter<electron::api::View*>::FromV8(isolate, val, &view))
-      return false;
-    *out = view->view();
-    return true;
-  }
-};
-
-}  // namespace gin
 
 #endif  // SHELL_BROWSER_API_ELECTRON_API_VIEW_H_

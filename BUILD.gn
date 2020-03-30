@@ -600,24 +600,10 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_view_api) {
+  if (enable_views_api) {
     sources += [
-      "shell/browser/api/views/electron_api_box_layout.cc",
-      "shell/browser/api/views/electron_api_box_layout.h",
-      "shell/browser/api/views/electron_api_button.cc",
-      "shell/browser/api/views/electron_api_button.h",
       "shell/browser/api/views/electron_api_image_view.cc",
       "shell/browser/api/views/electron_api_image_view.h",
-      "shell/browser/api/views/electron_api_label_button.cc",
-      "shell/browser/api/views/electron_api_label_button.h",
-      "shell/browser/api/views/electron_api_layout_manager.cc",
-      "shell/browser/api/views/electron_api_layout_manager.h",
-      "shell/browser/api/views/electron_api_md_text_button.cc",
-      "shell/browser/api/views/electron_api_md_text_button.h",
-      "shell/browser/api/views/electron_api_resize_area.cc",
-      "shell/browser/api/views/electron_api_resize_area.h",
-      "shell/browser/api/views/electron_api_text_field.cc",
-      "shell/browser/api/views/electron_api_text_field.h",
     ]
   }
 

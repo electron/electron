@@ -44,7 +44,11 @@ async function nextBeta (v) {
 
   const tagBlob = await GitProcess.exec(['tag', '--list', '-l', `v${next}-beta.*`], ELECTRON_DIR);
   const tags = tagBlob.stdout.split('\n').filter(e => e !== '');
-  tags.sort((t1, t2) => semver.gt(t1, t2));
+  tags.sort((t1, t2) => {
+    const a = parseInt(t1.split('.').pop(), 10);
+    const b = parseInt(t2.split('.').pop(), 10);
+    return a - b;
+  });
 
   // increment the latest existing beta tag or start at beta.1 if it's a new beta line
   return tags.length === 0 ? `${next}-beta.1` : semver.inc(tags.pop(), 'prerelease');
