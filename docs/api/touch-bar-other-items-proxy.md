@@ -9,4 +9,4 @@
 
 Process: [Main](../tutorial/application-architecture.md#main-and-renderer-processes)
 
-### `new TouchBarOtherItemsProxy()` _Experimental_
+### `new TouchBarOtherItemsProxy()`
