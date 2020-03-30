@@ -67,6 +67,10 @@ machine-linux-medium: &machine-linux-medium
   <<: *docker-image
   resource_class: medium
 
+machine-linux-xlarge: &machine-linux-xlarge
+  <<: *docker-image
+  resource_class: xlarge
+
 machine-linux-2xlarge: &machine-linux-2xlarge
   <<: *docker-image
   resource_class: 2xlarge+
@@ -1621,9 +1625,9 @@ jobs:
 
   # Layer 2: Builds.
   linux-x64-testing:
-    <<: *machine-linux-2xlarge
+    <<: *machine-linux-xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-global
       <<: *env-testing-build
       <<: *env-ninja-status
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
@@ -1701,9 +1705,9 @@ jobs:
           checkout: false
 
   linux-ia32-testing:
-    <<: *machine-linux-2xlarge
+    <<: *machine-linux-xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-global
       <<: *env-ia32
       <<: *env-testing-build
       <<: *env-ninja-status
@@ -1767,9 +1771,9 @@ jobs:
           checkout: false
 
   linux-arm-testing:
-    <<: *machine-linux-2xlarge
+    <<: *machine-linux-xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-global
       <<: *env-arm
       <<: *env-testing-build
       <<: *env-ninja-status
@@ -1834,9 +1838,9 @@ jobs:
           checkout: false
 
   linux-arm64-testing:
-    <<: *machine-linux-2xlarge
+    <<: *machine-linux-xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-global
       <<: *env-arm64
       <<: *env-testing-build
       <<: *env-ninja-status

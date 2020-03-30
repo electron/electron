@@ -49,6 +49,14 @@ fixes previously merged to `master`, though this may be on a case-by-case
 basis for some older supported lines. All contested decisions around release
 line backports will be resolved by the [Releases Working Group](https://github.com/electron/governance/tree/master/wg-releases) as an agenda item at their weekly meeting the week the backport PR is raised.
 
+When an API is changed or removed in a way that breaks existing functionality, the
+previous functionality will be supported for a minimum of two major versions when
+possible before being removed. For example, if a function takes three arguments,
+and that number is reduced to two in major version 10, the three-argument version would
+continue to work until, at minimum, major version 12. Past the minimum two-version
+threshold, we will attempt to support backwards compatibility beyond two versions
+until the maintainers feel the maintenance burden is too high to continue doing so.
+
 ### Currently supported versions
 - 8.1.x
 - 7.1.x
