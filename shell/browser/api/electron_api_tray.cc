@@ -7,14 +7,17 @@
 #include <string>
 
 #include "base/threading/thread_task_runner_handle.h"
+#include "gin/dictionary.h"
+#include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_menu.h"
+#include "shell/browser/api/ui_event.h"
 #include "shell/browser/browser.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/node_includes.h"
 #include "ui/gfx/image/image.h"
 
@@ -55,50 +58,50 @@ namespace electron {
 
 namespace api {
 
+gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 Tray::Tray(gin::Handle<NativeImage> image,
            base::Optional<UUID> guid,
-           gin_helper::Arguments* args)
+           gin::Arguments* args)
     : tray_icon_(TrayIcon::Create(guid)) {
-  SetImage(args->isolate(), image);
+  SetImage(image);
   tray_icon_->AddObserver(this);
-
-  InitWithArgs(args);
 }
 
 Tray::~Tray() = default;
 
 // static
-gin_helper::WrappableBase* Tray::New(gin_helper::ErrorThrower thrower,
-                                     gin::Handle<NativeImage> image,
-                                     base::Optional<UUID> guid,
-                                     gin_helper::Arguments* args) {
+gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
+                            gin::Handle<NativeImage> image,
+                            base::Optional<UUID> guid,
+                            gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
-    return nullptr;
+    return gin::Handle<Tray>();
   }
 
 #if defined(OS_WIN)
   if (!guid.has_value() && args->Length() > 1) {
     thrower.ThrowError("Invalid GUID format");
-    return nullptr;
+    return gin::Handle<Tray>();
   }
 #endif
 
-  return new Tray(image, guid, args);
+  return gin::CreateHandle(thrower.isolate(), new Tray(image, guid, args));
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds,
                      const gfx::Point& location,
                      int modifiers) {
-  EmitWithFlags("click", modifiers, bounds, location);
+  EmitCustomEvent("click", CreateEventFromFlags(modifiers), bounds, location);
 }
 
 void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
-  EmitWithFlags("double-click", modifiers, bounds);
+  EmitCustomEvent("double-click", CreateEventFromFlags(modifiers), bounds);
 }
 
 void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
-  EmitWithFlags("right-click", modifiers, bounds);
+  EmitCustomEvent("right-click", CreateEventFromFlags(modifiers), bounds);
 }
 
 void Tray::OnBalloonShow() {
@@ -126,23 +129,23 @@ void Tray::OnDropText(const std::string& text) {
 }
 
 void Tray::OnMouseEntered(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-enter", modifiers, location);
+  EmitCustomEvent("mouse-enter", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseExited(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-leave", modifiers, location);
+  EmitCustomEvent("mouse-leave", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseMoved(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-move", modifiers, location);
+  EmitCustomEvent("mouse-move", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseUp(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-up", modifiers, location);
+  EmitCustomEvent("mouse-up", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseDown(const gfx::Point& location, int modifiers) {
-  EmitWithFlags("mouse-down", modifiers, location);
+  EmitCustomEvent("mouse-down", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnDragEntered() {
@@ -157,7 +160,18 @@ void Tray::OnDragEnded() {
   Emit("drag-end");
 }
 
-void Tray::SetImage(v8::Isolate* isolate, gin::Handle<NativeImage> image) {
+void Tray::Destroy() {
+  menu_.Reset();
+  tray_icon_.reset();
+}
+
+bool Tray::IsDestroyed() {
+  return !tray_icon_;
+}
+
+void Tray::SetImage(gin::Handle<NativeImage> image) {
+  if (!CheckDestroyed())
+    return;
 #if defined(OS_WIN)
   tray_icon_->SetImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
@@ -165,8 +179,9 @@ void Tray::SetImage(v8::Isolate* isolate, gin::Handle<NativeImage> image) {
 #endif
 }
 
-void Tray::SetPressedImage(v8::Isolate* isolate,
-                           gin::Handle<NativeImage> image) {
+void Tray::SetPressedImage(gin::Handle<NativeImage> image) {
+  if (!CheckDestroyed())
+    return;
 #if defined(OS_WIN)
   tray_icon_->SetPressedImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
@@ -175,16 +190,22 @@ void Tray::SetPressedImage(v8::Isolate* isolate,
 }
 
 void Tray::SetToolTip(const std::string& tool_tip) {
+  if (!CheckDestroyed())
+    return;
   tray_icon_->SetToolTip(tool_tip);
 }
 
 void Tray::SetTitle(const std::string& title) {
+  if (!CheckDestroyed())
+    return;
 #if defined(OS_MACOSX)
   tray_icon_->SetTitle(title);
 #endif
 }
 
 std::string Tray::GetTitle() {
+  if (!CheckDestroyed())
+    return std::string();
 #if defined(OS_MACOSX)
   return tray_icon_->GetTitle();
 #else
@@ -193,12 +214,16 @@ std::string Tray::GetTitle() {
 }
 
 void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
+  if (!CheckDestroyed())
+    return;
 #if defined(OS_MACOSX)
   tray_icon_->SetIgnoreDoubleClickEvents(ignore);
 #endif
 }
 
 bool Tray::GetIgnoreDoubleClickEvents() {
+  if (!CheckDestroyed())
+    return false;
 #if defined(OS_MACOSX)
   return tray_icon_->GetIgnoreDoubleClickEvents();
 #else
@@ -208,6 +233,8 @@ bool Tray::GetIgnoreDoubleClickEvents() {
 
 void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
                           const gin_helper::Dictionary& options) {
+  if (!CheckDestroyed())
+    return;
   TrayIcon::BalloonOptions balloon_options;
 
   if (!options.Get("title", &balloon_options.title) ||
@@ -236,27 +263,50 @@ void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
 }
 
 void Tray::RemoveBalloon() {
+  if (!CheckDestroyed())
+    return;
   tray_icon_->RemoveBalloon();
 }
 
 void Tray::Focus() {
+  if (!CheckDestroyed())
+    return;
   tray_icon_->Focus();
 }
 
-void Tray::PopUpContextMenu(gin_helper::Arguments* args) {
+void Tray::PopUpContextMenu(gin::Arguments* args) {
+  if (!CheckDestroyed())
+    return;
   gin::Handle<Menu> menu;
-  args->GetNext(&menu);
   gfx::Point pos;
-  args->GetNext(&pos);
+
+  v8::Local<v8::Value> first_arg;
+  if (args->GetNext(&first_arg)) {
+    if (!gin::ConvertFromV8(args->isolate(), first_arg, &menu)) {
+      if (!gin::ConvertFromV8(args->isolate(), first_arg, &pos)) {
+        args->ThrowError();
+        return;
+      }
+    } else if (args->Length() >= 2) {
+      if (!args->GetNext(&pos)) {
+        args->ThrowError();
+        return;
+      }
+    }
+  }
   tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
 }
 
 void Tray::CloseContextMenu() {
+  if (!CheckDestroyed())
+    return;
   tray_icon_->CloseContextMenu();
 }
 
 void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
                           v8::Local<v8::Value> arg) {
+  if (!CheckDestroyed())
+    return;
   gin::Handle<Menu> menu;
   if (arg->IsNull()) {
     menu_.Reset();
@@ -270,15 +320,29 @@ void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
 }
 
 gfx::Rect Tray::GetBounds() {
+  if (!CheckDestroyed())
+    return gfx::Rect();
   return tray_icon_->GetBounds();
 }
 
+bool Tray::CheckDestroyed() {
+  if (!tray_icon_) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Locker locker(isolate);
+    v8::HandleScope scope(isolate);
+    gin_helper::ErrorThrower(isolate).ThrowError("Tray is destroyed");
+    return false;
+  }
+  return true;
+}
+
 // static
-void Tray::BuildPrototype(v8::Isolate* isolate,
-                          v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "Tray"));
-  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+v8::Local<v8::ObjectTemplate> Tray::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
+  return gin::ObjectTemplateBuilder(isolate, "Tray", templ)
+      .SetMethod("destroy", &Tray::Destroy)
+      .SetMethod("isDestroyed", &Tray::IsDestroyed)
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
@@ -294,7 +358,8 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
       .SetMethod("closeContextMenu", &Tray::CloseContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
-      .SetMethod("getBounds", &Tray::GetBounds);
+      .SetMethod("getBounds", &Tray::GetBounds)
+      .Build();
 }
 
 }  // namespace api
@@ -310,12 +375,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Tray::SetConstructor(isolate, base::BindRepeating(&Tray::New));
 
-  gin_helper::Dictionary dict(isolate, exports);
-  dict.Set(
-      "Tray",
-      Tray::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  gin::Dictionary dict(isolate, exports);
+  dict.Set("Tray", Tray::GetConstructor(context));
 }
 
 }  // namespace

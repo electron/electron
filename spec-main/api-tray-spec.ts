@@ -18,7 +18,7 @@ describe('tray module', () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {
         tray = new Tray(badPath);
-      }).to.throw(/Image could not be created from .*/);
+      }).to.throw(/Error processing argument at index 0/);
     });
 
     ifit(process.platform === 'win32')('throws a descriptive error if an invlaid guid is given', () => {
@@ -31,6 +31,10 @@ describe('tray module', () => {
       expect(() => {
         tray = new Tray(nativeImage.createEmpty(), '0019A433-3526-48BA-A66C-676742C0FEFB');
       }).to.not.throw();
+    });
+
+    it('is an instance of Tray', () => {
+      expect(tray).to.be.an.instanceOf(Tray);
     });
   });
 
@@ -79,6 +83,29 @@ describe('tray module', () => {
       expect(() => {
         tray.popUpContextMenu(menu);
       }).to.not.throw();
+    });
+
+    it('can be called with a position', () => {
+      expect(() => {
+        tray.popUpContextMenu({ x: 0, y: 0 } as any);
+      }).to.not.throw();
+    });
+
+    it('can be called with a menu and a position', () => {
+      const menu = Menu.buildFromTemplate([{ label: 'Test' }]);
+      expect(() => {
+        tray.popUpContextMenu(menu, { x: 0, y: 0 });
+      }).to.not.throw();
+    });
+
+    it('throws an error on invalid arguments', () => {
+      expect(() => {
+        tray.popUpContextMenu({} as any);
+      }).to.throw(/index 0/);
+      const menu = Menu.buildFromTemplate([{ label: 'Test' }]);
+      expect(() => {
+        tray.popUpContextMenu(menu, {} as any);
+      }).to.throw(/index 1/);
     });
   });
 

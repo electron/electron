@@ -33,6 +33,21 @@ class EventEmitterMixin {
                          std::forward<Args>(args)...);
   }
 
+  // this.emit(name, event, args...);
+  template <typename... Args>
+  bool EmitCustomEvent(base::StringPiece name,
+                       v8::Local<v8::Object> custom_event,
+                       Args&&... args) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Local<v8::Object> wrapper;
+    if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
+      return false;
+    v8::Local<v8::Object> event =
+        internal::CreateEvent(isolate, wrapper, custom_event);
+    return EmitWithEvent(isolate, wrapper, name, event,
+                         std::forward<Args>(args)...);
+  }
+
  protected:
   EventEmitterMixin() = default;
 
