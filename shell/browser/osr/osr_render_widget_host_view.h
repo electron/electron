@@ -21,7 +21,6 @@
 #include "components/viz/common/frame_sinks/begin_frame_source.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
-#include "content/browser/frame_host/render_widget_host_view_guest.h"  // nogncheck
 #include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
 #include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
@@ -134,8 +133,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const gfx::Size& output_size,
       base::OnceCallback<void(const SkBitmap&)> callback) override;
   void GetScreenInfo(content::ScreenInfo* results) override;
-  void InitAsGuest(content::RenderWidgetHostView*,
-                   content::RenderWidgetHostViewGuest*) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;
@@ -169,7 +166,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   void OnBeginFrameTimerTick();
   void SendBeginFrame(base::TimeTicks frame_time, base::TimeDelta vsync_period);
-
   void CancelWidget();
   void AddGuestHostView(OffScreenRenderWidgetHostView* guest_host);
   void RemoveGuestHostView(OffScreenRenderWidgetHostView* guest_host);
@@ -230,7 +226,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetupFrameRate(bool force);
   void ResizeRootLayer(bool force);
 
-  viz::FrameSinkId AllocateFrameSinkId(bool is_guest_view_hack);
+  viz::FrameSinkId AllocateFrameSinkId();
 
   // Applies background color without notifying the RenderWidget about
   // opaqueness changes.
@@ -286,12 +282,10 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   // Provides |source_id| for BeginFrameArgs that we create.
   viz::StubBeginFrameSource begin_frame_source_;
   uint64_t begin_frame_number_ = viz::BeginFrameArgs::kStartingFrameNumber;
-
   std::unique_ptr<ElectronDelegatedFrameHostClient>
       delegated_frame_host_client_;
 
   content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
-
   viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_ =
       nullptr;
 

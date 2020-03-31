@@ -17,6 +17,7 @@
 #include "base/task/post_task.h"
 #include "base/time/time.h"
 #include "components/viz/common/features.h"
+#include "components/viz/common/frame_sinks/begin_frame_args.h"
 #include "components/viz/common/frame_sinks/copy_output_request.h"
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
 #include "components/viz/common/gl_helper.h"
@@ -152,7 +153,6 @@ class ElectronBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBeginFrameTimer);
 };
-
 class ElectronDelegatedFrameHostClient
     : public content::DelegatedFrameHostClient {
  public:
@@ -220,7 +220,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       backing_(new SkBitmap),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
-  bool is_guest_view_hack = parent_host_view_ != nullptr;
+  DCHECK(!render_widget_host_->GetView());
 
   current_device_scale_factor_ = kDefaultScaleFactor;
 
@@ -234,8 +234,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   delegated_frame_host_client_ =
       std::make_unique<ElectronDelegatedFrameHostClient>(this);
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
-      AllocateFrameSinkId(is_guest_view_hack),
-      delegated_frame_host_client_.get(),
+      AllocateFrameSinkId(), delegated_frame_host_client_.get(),
       true /* should_register_frame_sink_id */);
 
   root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
@@ -244,20 +243,16 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   GetRootLayer()->SetFillsBoundsOpaquely(opaque);
   GetRootLayer()->SetColor(background_color_);
 
-  content::ImageTransportFactory* factory =
-      content::ImageTransportFactory::GetInstance();
-
   ui::ContextFactoryPrivate* context_factory_private =
-      factory->GetContextFactoryPrivate();
+      content::GetContextFactoryPrivate();
   compositor_ = std::make_unique<ui::Compositor>(
       context_factory_private->AllocateFrameSinkId(),
       content::GetContextFactory(), context_factory_private,
       base::ThreadTaskRunnerHandle::Get(), false /* enable_pixel_canvas */,
       false /* use_external_begin_frame_control */);
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
+  compositor_->SetDelegate(this);
   compositor_->SetRootLayer(root_layer_.get());
-
-  GetCompositor()->SetDelegate(this);
 
   ResizeRootLayer(false);
   render_widget_host_->SetView(this);
@@ -321,7 +316,6 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(
       compositor_.get(), begin_frame_args, /* force */ true,
       base::NullCallback());
 }
-
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
   DCHECK(parent_host_view_);
 
@@ -450,8 +444,6 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
     content::RenderWidgetHostView* view) {
   DCHECK(!static_cast<content::RenderWidgetHostViewBase*>(view)
               ->IsRenderWidgetHostViewChildFrame());
-  DCHECK(!static_cast<content::RenderWidgetHostViewBase*>(view)
-              ->IsRenderWidgetHostViewGuest());
   OffScreenRenderWidgetHostView* view_osr =
       static_cast<OffScreenRenderWidgetHostView*>(view);
   SetBackgroundColor(view_osr->background_color_);
@@ -478,7 +470,6 @@ void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
     base::Optional<viz::HitTestRegionList> hit_test_region_list) {
   NOTREACHED();
 }
-
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
   GetDelegatedFrameHost()->ResetFallbackToFirstNavigationSurface();
 }
@@ -580,13 +571,6 @@ void OffScreenRenderWidgetHostView::GetScreenInfo(
       content::SCREEN_ORIENTATION_VALUES_LANDSCAPE_PRIMARY;
   screen_info->rect = gfx::Rect(size_);
   screen_info->available_rect = gfx::Rect(size_);
-}
-
-void OffScreenRenderWidgetHostView::InitAsGuest(
-    content::RenderWidgetHostView* parent_host_view,
-    content::RenderWidgetHostViewGuest* guest_view) {
-  parent_host_view_->AddGuestHostView(this);
-  SetPainting(parent_host_view_->IsPainting());
 }
 
 void OffScreenRenderWidgetHostView::TransformPointToRootSurface(
@@ -737,7 +721,6 @@ void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
 }
 
 void OffScreenRenderWidgetHostView::SetWantsAnimateOnlyBeginFrames() {}
-
 #if defined(OS_MACOSX)
 void OffScreenRenderWidgetHostView::SetActive(bool active) {}
 
@@ -1098,18 +1081,18 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   const gfx::Size& size_in_pixels =
       gfx::ConvertSizeToPixel(current_device_scale_factor_, size);
 
-  compositor_allocator_.GenerateId();
-  compositor_allocation_ =
-      compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
-
-  GetCompositor()->SetScaleAndSize(current_device_scale_factor_, size_in_pixels,
-                                   compositor_allocation_);
+  if (compositor_) {
+    compositor_allocator_.GenerateId();
+    compositor_allocation_ =
+        compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
+    compositor_->SetScaleAndSize(current_device_scale_factor_, size_in_pixels,
+                                 compositor_allocation_);
+  }
 
   delegated_frame_host_allocator_.GenerateId();
   delegated_frame_host_allocation_ =
       delegated_frame_host_allocator_.GetCurrentLocalSurfaceIdAllocation();
 
-  bool resized = true;
   GetDelegatedFrameHost()->EmbedSurface(
       delegated_frame_host_allocation_.local_surface_id(), size,
       cc::DeadlinePolicy::UseDefaultDeadline());
@@ -1117,25 +1100,15 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   // Note that |render_widget_host_| will retrieve resize parameters from the
   // DelegatedFrameHost, so it must have SynchronizeVisualProperties called
   // after.
-  if (resized && render_widget_host_) {
+  if (render_widget_host_) {
     render_widget_host_->SynchronizeVisualProperties();
   }
 }
 
-viz::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId(
-    bool is_guest_view_hack) {
-  // GuestViews have two RenderWidgetHostViews and so we need to make sure
-  // we don't have FrameSinkId collisions.
-  // The FrameSinkId generated here must be unique with FrameSinkId allocated
-  // in ContextFactoryPrivate.
-  content::ImageTransportFactory* factory =
-      content::ImageTransportFactory::GetInstance();
-  return is_guest_view_hack
-             ? factory->GetContextFactoryPrivate()->AllocateFrameSinkId()
-             : viz::FrameSinkId(base::checked_cast<uint32_t>(
-                                    render_widget_host_->GetProcess()->GetID()),
-                                base::checked_cast<uint32_t>(
-                                    render_widget_host_->GetRoutingID()));
+viz::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId() {
+  return viz::FrameSinkId(
+      base::checked_cast<uint32_t>(render_widget_host_->GetProcess()->GetID()),
+      base::checked_cast<uint32_t>(render_widget_host_->GetRoutingID()));
 }
 
 void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(

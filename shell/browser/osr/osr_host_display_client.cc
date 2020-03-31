@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "base/memory/shared_memory.h"
 #include "components/viz/common/resources/resource_format.h"
 #include "components/viz/common/resources/resource_sizes.h"
 #include "mojo/public/cpp/system/platform_handle.h"
@@ -23,9 +22,9 @@
 namespace electron {
 
 LayeredWindowUpdater::LayeredWindowUpdater(
-    viz::mojom::LayeredWindowUpdaterRequest request,
+    mojo::PendingReceiver<viz::mojom::LayeredWindowUpdater> receiver,
     OnPaintCallback callback)
-    : callback_(callback), binding_(this, std::move(request)) {}
+    : callback_(callback), receiver_(this, std::move(receiver)) {}
 
 LayeredWindowUpdater::~LayeredWindowUpdater() = default;
 
@@ -96,10 +95,15 @@ void OffScreenHostDisplayClient::IsOffscreen(IsOffscreenCallback callback) {
 }
 
 void OffScreenHostDisplayClient::CreateLayeredWindowUpdater(
-    viz::mojom::LayeredWindowUpdaterRequest request) {
+    mojo::PendingReceiver<viz::mojom::LayeredWindowUpdater> receiver) {
   layered_window_updater_ =
-      std::make_unique<LayeredWindowUpdater>(std::move(request), callback_);
+      std::make_unique<LayeredWindowUpdater>(std::move(receiver), callback_);
   layered_window_updater_->SetActive(active_);
 }
+
+#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
+void OffScreenHostDisplayClient::DidCompleteSwapWithNewSize(
+    const gfx::Size& size) {}
+#endif
 
 }  // namespace electron

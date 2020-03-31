@@ -829,6 +829,7 @@ if (is_mac) {
 
     include_dirs = [ "." ]
     sources = filenames.framework_sources
+    libs = []
 
     if (enable_osr) {
       libs += [ "IOSurface.framework" ]
