@@ -545,12 +545,13 @@ index 0000000000000000000000000000000000000000..da9e2b42dccacc1ed9b00202c1ff73eb
 +}
 diff --git a/deps/llhttp/BUILD.gn b/deps/llhttp/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e34e241e6733b19bf1b5762ad1307af0eba383f6
+index 0000000000000000000000000000000000000000..ce15bc57093caa1bd84ea77e7438e892fb916427
 --- /dev/null
 +++ b/deps/llhttp/BUILD.gn
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,14 @@
 +config("llhttp_config") {
 +  include_dirs = [ "include" ]
++  cflags = [ "-Wno-unreachable-code" ]
 +}
 +
 +static_library("llhttp") {
