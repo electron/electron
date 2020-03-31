@@ -1107,18 +1107,6 @@ steps-verify-ffmpeg: &steps-verify-ffmpeg
     - *step-verify-ffmpeg
     - *step-maybe-notify-slack-failure
 
-steps-verify-mksnapshot: &steps-verify-mksnapshot
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-electron-dist-unzip
-    - *step-mksnapshot-unzip
-    - *step-setup-linux-for-headless-testing
-
-    - *step-verify-mksnapshot
-    - *step-maybe-notify-slack-failure
-
 steps-verify-chromedriver: &steps-verify-chromedriver
   steps:
     - attach_workspace:
@@ -2003,14 +1991,6 @@ jobs:
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
-  mas-chromedriver:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-release-build
-      <<: *env-send-slack-notifications
-    <<: *steps-chromedriver-build
-
   mas-release:
     <<: *machine-mac-large
     environment:
@@ -2130,22 +2110,6 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
-  linux-x64-verify-mksnapshot:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-headless-testing
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-mksnapshot
-
-  linux-x64-verify-chromedriver:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-headless-testing
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-chromedriver
-
   linux-ia32-testing-tests:
     <<: *machine-linux-medium
     environment:
@@ -2192,23 +2156,6 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
-  linux-ia32-verify-mksnapshot:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-ia32
-      <<: *env-headless-testing
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-mksnapshot
-
-  linux-ia32-verify-chromedriver:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-headless-testing
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-chromedriver
-
   osx-testing-tests:
     <<: *machine-mac-large
     environment:
@@ -2232,20 +2179,6 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
-  osx-verify-mksnapshot:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-mksnapshot
-
-  osx-verify-chromedriver:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-chromedriver
-
   mas-testing-tests:
     <<: *machine-mac-large
     environment:
@@ -2268,20 +2201,6 @@ jobs:
       <<: *env-machine-mac
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
-
-  mas-verify-mksnapshot:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-mksnapshot
-
-  mas-verify-chromedriver:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-chromedriver
 
   # Layer 4: Summary.
   linux-x64-release-summary:
@@ -2501,67 +2420,37 @@ workflows:
       - linux-x64-release-tests:
           requires:
             - linux-x64-release
-      - linux-x64-chromedriver:
-          requires:
-            - linux-checkout-fast
       - linux-x64-verify-ffmpeg:
           requires:
             - linux-x64-release
-      - linux-x64-verify-mksnapshot:
-          requires:
-            - linux-x64-release
-      - linux-x64-verify-chromedriver:
-          requires:
-            - linux-x64-release
-            - linux-x64-chromedriver
       - linux-x64-release-summary:
           requires:
             - linux-x64-release
             - linux-x64-release-tests
             - linux-x64-verify-ffmpeg
-            - linux-x64-chromedriver
 
       - linux-ia32-release
       - linux-ia32-release-tests:
           requires:
             - linux-ia32-release
-      - linux-ia32-chromedriver:
-          requires:
-            - linux-checkout-fast
       - linux-ia32-verify-ffmpeg:
           requires:
             - linux-ia32-release
-      - linux-ia32-verify-mksnapshot:
-          requires:
-            - linux-ia32-release
-      - linux-x64-verify-chromedriver:
-          requires:
-            - linux-ia32-release
-            - linux-ia32-chromedriver
       - linux-ia32-release-summary:
           requires:
             - linux-ia32-release
             - linux-ia32-release-tests
             - linux-ia32-verify-ffmpeg
-            - linux-ia32-chromedriver
 
       - linux-arm-release
-      - linux-arm-chromedriver:
-          requires:
-            - linux-checkout-fast
       - linux-arm-release-summary:
           requires:
             - linux-arm-release
-            - linux-arm-chromedriver
 
       - linux-arm64-release
-      - linux-arm64-chromedriver:
-          requires:
-            - linux-checkout-fast
       - linux-arm64-release-summary:
           requires:
             - linux-arm64-release
-            - linux-arm64-chromedriver
 
   nightly-mac-release-test:
     triggers:
@@ -2582,25 +2471,14 @@ workflows:
       - osx-release-tests:
           requires:
             - osx-release
-      - osx-chromedriver:
-          requires:
-            - mac-checkout-fast
       - osx-verify-ffmpeg:
           requires:
             - osx-release
-      - osx-verify-mksnapshot:
-          requires:
-            - osx-release
-      - osx-verify-chromedriver:
-          requires:
-            - osx-release
-            - osx-chromedriver
       - osx-release-summary:
           requires:
           - osx-release
           - osx-release-tests
           - osx-verify-ffmpeg
-          - osx-chromedriver
 
       - mas-release:
           requires:
@@ -2608,25 +2486,14 @@ workflows:
       - mas-release-tests:
           requires:
             - mas-release
-      - mas-chromedriver:
-          requires:
-            - mac-checkout-fast
       - mas-verify-ffmpeg:
           requires:
             - mas-release
-      - mas-verify-mksnapshot:
-          requires:
-            - mas-release
-      - mas-verify-chromedriver:
-          requires:
-            - mas-release
-            - mas-chromedriver
       - mas-release-summary:
           requires:
           - mas-release
           - mas-release-tests
           - mas-verify-ffmpeg
-          - mas-chromedriver
 
   # Various slow and non-essential checks we run only nightly.
   # Sanitizer jobs should be added here.
