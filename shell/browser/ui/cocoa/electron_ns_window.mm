@@ -192,6 +192,10 @@ bool ScopedDisableResize::disable_resize_ = false;
         return;
     }
     [self close];
+  } else if (shell_->is_modal() && shell_->parent() && shell_->IsVisible()) {
+    // We don't want to actually call [window close] here since
+    // we've already called endSheet on the modal sheet.
+    return;
   } else {
     [super performClose:sender];
   }
