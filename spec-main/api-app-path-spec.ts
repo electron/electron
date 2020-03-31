@@ -62,14 +62,14 @@ describe('app path module', () => {
       expect(output.userData).to.equal(expectedUserdata);
       // expect(output.userData).to.equal(expectedUserdata);
       CleanUp(output);
-    })
+    });
 
     it(`app.name='${appName}'`, async () => {
       const output = await runTestApp('app-custom-path', `-custom-appname=${appName}`);
       const expectedUserdata = path.join(output.appData, appName);
       expect(output.userData).to.equal(expectedUserdata);
       CleanUp(output);
-    })
+    });
 
     it(`setPath('appData', '${appData}')`, async () => {
       RemoveDir(appData);
@@ -81,8 +81,8 @@ describe('app path module', () => {
       expect(fs.existsSync(appData));
       CleanUp(output);
       RemoveDir(appData);
-    })
-  })
+    });
+  });
 
   describe(`customizes 'userData'`, () => {
     it(`setPath('userData', '${userData}')`, async () => {
@@ -92,7 +92,7 @@ describe('app path module', () => {
       // On App ready event, the appData path is created
       expect(fs.existsSync(userData));
       CleanUp(output);
-    })
+    });
 
     it(`--user-data-dir='${userData}')`, async () => {
       RemoveDir(userData);
@@ -101,8 +101,8 @@ describe('app path module', () => {
       // On App ready event, the appData path is created
       expect(fs.existsSync(userData));
       CleanUp(output);
-    })
-  })
+    });
+  });
 
   describe(`computes 'userCache' from 'cache', 'appData' and app name`, () => {
     it('by default', async () => {
@@ -111,14 +111,14 @@ describe('app path module', () => {
       expect(output.userCache).to.equal(expectedUsercache);
       expect(ExistsCacheSync(expectedUsercache));
       CleanUp(output);
-    })
+    });
 
     it(`app.name='${appName}'`, async () => {
       const output = await runTestApp('app-custom-path', '-create-cache', `-custom-appname=${appName}`);
       const expectedUsercache = path.join(output.appCache, appName);
       expect(output.userCache).to.equal(expectedUsercache);
       expect(ExistsCacheSync(expectedUsercache));
-    })
+    });
 
     it(`setPath('appData', '${appData}')`, async () => {
       RemoveDir(appData);
@@ -133,20 +133,19 @@ describe('app path module', () => {
       expect(ExistsCacheSync(expectedUsercache));
       CleanUp(output);
       RemoveDir(appData);
-    })
-  })
+    });
+  });
 
   describe(`customizes 'userCache'`, () => {
     it(`setPath('userCache', '${userCache}')`, async () => {
-      RemoveDir(userCache)
+      RemoveDir(userCache);
       const output = await runTestApp('app-custom-path', '-create-cache', `-custom-usercache=${userCache}`);
       expect(output.userCache).to.equal(userCache);
       expect(output.userData).to.not.equal(userCache);
       expect(ExistsCacheSync(userCache));
       CleanUp(output);
-    })
-  })
-
+    });
+  });
 
   describe('getAppPath', () => {
     it('works for directories with package.json', async () => {
@@ -219,14 +218,14 @@ describe('app path module', () => {
       switch (process.platform) {
         case 'darwin':
           expect(output.appLogs).to.equal(path.join(os.homedir(), 'Library', 'Logs', 'Electron'));
-          break
+          break;
         case 'win32':
         default:
           expect(output.appLogs).to.equal(path.join(output.appData, defaultAppName, 'logs'));
           expect(output.appLogs).to.equal(path.join(output.userData, 'logs'));
-          break
+          break;
       }
-    })
+    });
 
     // Linux
     // app path module setAppLogsPath() setAppLogsPath(/tmp/mylogs) - setAppLogsPath(/tmp/mylogs)
@@ -247,16 +246,16 @@ describe('app path module', () => {
       expect(app.getPath('logs')).to.equal(appLogsPath);
       app.setAppLogsPath();
       expect(app.getPath('logs')).to.equal(defaultAppLogs);
-    })
+    });
 
     it('throws when a relative path is passed', () => {
       const badPath = 'hey/hi/hello';
 
       expect(() => {
-        app.setAppLogsPath(badPath)
+        app.setAppLogsPath(badPath);
       }).to.throw(/Path must be absolute/);
-    })
-  })
+    });
+  });
 
   //  describe('getPath("logs")', () => {
   //    const logsPaths = {
@@ -277,7 +276,7 @@ describe('app path module', () => {
   //      expect(fs.existsSync(osLogPath)).to.be.true()
   //    })
   //  })
-})
+});
 
 async function runTestApp (name: string, ...args: any[]) {
   const appPath = path.join(fixturesPath, name);
@@ -285,7 +284,7 @@ async function runTestApp (name: string, ...args: any[]) {
   const appProcess = cp.spawn(electronPath, [appPath, ...args]);
 
   let output = '';
-  appProcess.stdout.on('data', (data) => { output += data });
+  appProcess.stdout.on('data', (data) => { output += data; });
 
   await emittedOnce(appProcess.stdout, 'end');
 
