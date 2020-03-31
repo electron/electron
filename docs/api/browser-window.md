@@ -207,7 +207,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `opacity` Number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
   * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
-    some GTK+3 desktop environments. Default is [`nativeTheme.shouldUseDarkColors`](native-theme.md).
+    some GTK desktop environments. Default is [`nativeTheme.shouldUseDarkColors`](native-theme.md).
   * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md#transparent-window).
     Default is `false`. On Windows, does not work unless the window is frameless.
   * `type` String (optional) - The type of window, default is normal window. See more about
@@ -952,7 +952,7 @@ Returns `Boolean` - Whether the window is in fullscreen mode.
 
 Enters or leaves simple fullscreen mode.
 
-Simple fullscreen mode emulates the native fullscreen behavior found in versions of Mac OS X prior to Lion (10.7).
+Simple fullscreen mode emulates the native fullscreen behavior found in versions of macOS prior to Lion (10.7).
 
 #### `win.isSimpleFullScreen()` _macOS_
 
