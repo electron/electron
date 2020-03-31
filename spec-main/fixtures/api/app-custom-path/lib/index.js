@@ -65,4 +65,4 @@ app.on('ready', () => {
   } else {
     exitApp();
   }
-})
+});
