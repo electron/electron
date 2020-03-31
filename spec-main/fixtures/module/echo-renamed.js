@@ -1,7 +1,7 @@
-let echo
+let echo;
 try {
-  echo = require('echo')
+  echo = require('echo');
 } catch (e) {
-  process.exit(1)
+  process.exit(1);
 }
-process.exit(echo(0))
+process.exit(echo(0));

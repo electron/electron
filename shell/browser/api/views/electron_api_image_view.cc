@@ -1,9 +1,10 @@
-// Copyright (c) 2018 GitHub, Inc.
+// Copyright (c) 2020 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/api/views/electron_api_text_field.h"
+#include "shell/browser/api/views/electron_api_image_view.h"
 
+#include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -13,35 +14,30 @@ namespace electron {
 
 namespace api {
 
-TextField::TextField() : View(new views::Textfield()) {
+ImageView::ImageView() : View(new views::ImageView()) {
   view()->set_owned_by_client();
 }
 
-TextField::~TextField() {}
+ImageView::~ImageView() {}
 
-void TextField::SetText(const base::string16& new_text) {
-  text_field()->SetText(new_text);
-}
-
-base::string16 TextField::GetText() const {
-  return text_field()->GetText();
+void ImageView::SetImage(const gfx::Image& image) {
+  image_view()->SetImage(image.AsImageSkia());
 }
 
 // static
-gin_helper::WrappableBase* TextField::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* ImageView::New(gin_helper::Arguments* args) {
   // Constructor call.
-  auto* view = new TextField();
+  auto* view = new ImageView();
   view->InitWithArgs(args);
   return view;
 }
 
 // static
-void TextField::BuildPrototype(v8::Isolate* isolate,
+void ImageView::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "TextField"));
+  prototype->SetClassName(gin::StringToV8(isolate, "ImageView"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setText", &TextField::SetText)
-      .SetMethod("getText", &TextField::GetText);
+      .SetMethod("setImage", &ImageView::SetImage);
 }
 
 }  // namespace api
@@ -50,7 +46,7 @@ void TextField::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
-using electron::api::TextField;
+using electron::api::ImageView;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -58,10 +54,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("TextField", gin_helper::CreateConstructor<TextField>(
-                            isolate, base::BindRepeating(&TextField::New)));
+  dict.Set("ImageView", gin_helper::CreateConstructor<ImageView>(
+                            isolate, base::BindRepeating(&ImageView::New)));
 }
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_text_field, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_image_view, Initialize)

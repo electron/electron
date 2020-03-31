@@ -42,6 +42,7 @@
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/pref_store_delegate.h"
+#include "shell/browser/protocol_registry.h"
 #include "shell/browser/special_storage_policy.h"
 #include "shell/browser/ui/inspectable_web_contents_impl.h"
 #include "shell/browser/web_view_manager.h"
@@ -100,6 +101,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
           base::ThreadTaskRunnerHandle::Get()),
       in_memory_pref_store_(nullptr),
       storage_policy_(new SpecialStoragePolicy),
+      protocol_registry_(new ProtocolRegistry),
       in_memory_(in_memory),
       weak_factory_(this) {
   // TODO(nornagon): remove once https://crbug.com/1048822 is fixed.

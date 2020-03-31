@@ -1,2 +1,2 @@
-const process = 'declared process'
-module.exports = process
+const process = 'declared process';
+module.exports = process;

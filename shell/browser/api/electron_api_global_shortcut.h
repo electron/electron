@@ -12,7 +12,7 @@
 #include "base/callback.h"
 #include "chrome/browser/extensions/global_shortcut_listener.h"
 #include "gin/handle.h"
-#include "shell/common/gin_helper/trackable_object.h"
+#include "gin/wrappable.h"
 #include "ui/base/accelerators/accelerator.h"
 
 namespace electron {
@@ -20,12 +20,15 @@ namespace electron {
 namespace api {
 
 class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
-                       public gin_helper::TrackableObject<GlobalShortcut> {
+                       public gin::Wrappable<GlobalShortcut> {
  public:
   static gin::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
   explicit GlobalShortcut(v8::Isolate* isolate);

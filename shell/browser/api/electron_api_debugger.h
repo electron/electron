@@ -12,9 +12,11 @@
 #include "base/values.h"
 #include "content/public/browser/devtools_agent_host_client.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "gin/arguments.h"
 #include "gin/handle.h"
+#include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/gin_helper/trackable_object.h"
 
 namespace content {
 class DevToolsAgentHost;
@@ -25,16 +27,19 @@ namespace electron {
 
 namespace api {
 
-class Debugger : public gin_helper::TrackableObject<Debugger>,
+class Debugger : public gin::Wrappable<Debugger>,
+                 public gin_helper::EventEmitterMixin<Debugger>,
                  public content::DevToolsAgentHostClient,
                  public content::WebContentsObserver {
  public:
   static gin::Handle<Debugger> Create(v8::Isolate* isolate,
                                       content::WebContents* web_contents);
 
-  // gin_helper::TrackableObject:
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
   Debugger(v8::Isolate* isolate, content::WebContents* web_contents);
@@ -53,10 +58,10 @@ class Debugger : public gin_helper::TrackableObject<Debugger>,
   using PendingRequestMap =
       std::map<int, gin_helper::Promise<base::DictionaryValue>>;
 
-  void Attach(gin_helper::Arguments* args);
+  void Attach(gin::Arguments* args);
   bool IsAttached();
   void Detach();
-  v8::Local<v8::Promise> SendCommand(gin_helper::Arguments* args);
+  v8::Local<v8::Promise> SendCommand(gin::Arguments* args);
   void ClearPendingRequests();
 
   content::WebContents* web_contents_;  // Weak Reference.

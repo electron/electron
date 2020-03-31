@@ -5,35 +5,43 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 #define SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
-#include "base/compiler_specific.h"
-#include "shell/browser/lib/power_observer.h"
-#include "shell/common/gin_helper/trackable_object.h"
+#include "base/power_monitor/power_observer.h"
+#include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/idle/idle.h"
+
+#if defined(OS_LINUX)
+#include "shell/browser/lib/power_observer_linux.h"
+#endif
 
 namespace electron {
 
 namespace api {
 
-class PowerMonitor : public gin_helper::TrackableObject<PowerMonitor>,
-                     public PowerObserver {
+class PowerMonitor : public gin::Wrappable<PowerMonitor>,
+                     public gin_helper::EventEmitterMixin<PowerMonitor>,
+                     public gin_helper::Pinnable<PowerMonitor>,
+                     public base::PowerObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
- protected:
+ private:
   explicit PowerMonitor(v8::Isolate* isolate);
   ~PowerMonitor() override;
 
+#if defined(OS_LINUX)
+  void SetListeningForShutdown(bool);
+#endif
+
   // Called by native calles.
   bool ShouldShutdown();
-
-#if defined(OS_LINUX)
-  // Private JS APIs.
-  void BlockShutdown();
-  void UnblockShutdown();
-#endif
 
 #if defined(OS_MACOSX) || defined(OS_WIN)
   void InitPlatformSpecificMonitors();
@@ -43,10 +51,6 @@ class PowerMonitor : public gin_helper::TrackableObject<PowerMonitor>,
   void OnPowerStateChange(bool on_battery_power) override;
   void OnSuspend() override;
   void OnResume() override;
-
- private:
-  ui::IdleState GetSystemIdleState(v8::Isolate* isolate, int idle_threshold);
-  int GetSystemIdleTime();
 
 #if defined(OS_WIN)
   // Static callback invoked when a message comes in to our messaging window.
@@ -69,6 +73,12 @@ class PowerMonitor : public gin_helper::TrackableObject<PowerMonitor>,
   // The window used for processing events.
   HWND window_;
 #endif
+
+#if defined(OS_LINUX)
+  PowerObserverLinux power_observer_linux_{this};
+#endif
+
+  v8::Global<v8::Value> pinned_;
 
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);
 };

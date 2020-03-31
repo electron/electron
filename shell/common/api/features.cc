@@ -38,7 +38,7 @@ bool IsFakeLocationProviderEnabled() {
 }
 
 bool IsViewApiEnabled() {
-  return BUILDFLAG(ENABLE_VIEW_API);
+  return BUILDFLAG(ENABLE_VIEWS_API);
 }
 
 bool IsTtsEnabled() {

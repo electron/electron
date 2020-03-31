@@ -9,7 +9,9 @@
 namespace electron {
 
 WindowStateWatcher::WindowStateWatcher(NativeWindowViews* window)
-    : window_(window), widget_(window->GetAcceleratedWidget()) {
+    : window_(window),
+      widget_(window->GetAcceleratedWidget()),
+      window_state_atom_(gfx::GetAtom("_NET_WM_STATE")) {
   ui::X11EventSource::GetInstance()->AddXEventObserver(this);
 }
 
@@ -53,9 +55,8 @@ void WindowStateWatcher::DidProcessXEvent(XEvent* xev) {
   }
 }
 
-bool WindowStateWatcher::IsWindowStateEvent(XEvent* xev) {
-  ::Atom changed_atom = xev->xproperty.atom;
-  return (changed_atom == gfx::GetAtom("_NET_WM_STATE") &&
+bool WindowStateWatcher::IsWindowStateEvent(XEvent* xev) const {
+  return (xev->xproperty.atom == window_state_atom_ &&
           xev->type == PropertyNotify && xev->xproperty.window == widget_);
 }
 
