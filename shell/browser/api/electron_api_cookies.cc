@@ -37,7 +37,7 @@ struct Converter<net::CookieSameSite> {
       case net::CookieSameSite::UNSPECIFIED:
         return ConvertToV8(isolate, "unspecified");
       case net::CookieSameSite::NO_RESTRICTION:
-        return ConvertToV8(isolate, "norestriction");
+        return ConvertToV8(isolate, "no_restriction");
       case net::CookieSameSite::LAX_MODE:
         return ConvertToV8(isolate, "lax");
       case net::CookieSameSite::STRICT_MODE:
@@ -196,7 +196,7 @@ net::CookieSameSite StringToCookieSameSite(const std::string* str_ptr) {
   const std::string& str = *str_ptr;
   if (str == "unspecified") {
     return net::CookieSameSite::UNSPECIFIED;
-  } else if (str == "norestriction") {
+  } else if (str == "no_restriction") {
     return net::CookieSameSite::NO_RESTRICTION;
   } else if (str == "lax") {
     return net::CookieSameSite::LAX_MODE;
