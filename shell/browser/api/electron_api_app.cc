@@ -1078,9 +1078,8 @@ void App::ImportCertificate(base::Value options,
   if (!certificate_manager_model_) {
     CertificateManagerModel::Create(
         browser_context.get(),
-        base::BindRepeating(&App::OnCertificateManagerModelCreated,
-                            base::Unretained(this), std::move(options),
-                            callback));
+        base::BindOnce(&App::OnCertificateManagerModelCreated,
+                       base::Unretained(this), std::move(options), callback));
     return;
   }
 

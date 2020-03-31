@@ -69,12 +69,12 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
 
 // static
 void CertificateManagerModel::Create(content::BrowserContext* browser_context,
-                                     const CreationCallback& callback) {
+                                     CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  base::PostTask(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&CertificateManagerModel::GetCertDBOnIOThread,
-                     browser_context->GetResourceContext(), callback));
+  base::PostTask(FROM_HERE, {BrowserThread::IO},
+                 base::BindOnce(&CertificateManagerModel::GetCertDBOnIOThread,
+                                browser_context->GetResourceContext(),
+                                std::move(callback)));
 }
 
 CertificateManagerModel::CertificateManagerModel(
@@ -129,17 +129,17 @@ bool CertificateManagerModel::Delete(CERTCertificate* cert) {
 void CertificateManagerModel::DidGetCertDBOnUIThread(
     net::NSSCertDatabase* cert_db,
     bool is_user_db_available,
-    const CreationCallback& callback) {
+    CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   std::unique_ptr<CertificateManagerModel> model(
       new CertificateManagerModel(cert_db, is_user_db_available));
-  callback.Run(std::move(model));
+  std::move(callback).Run(std::move(model));
 }
 
 // static
 void CertificateManagerModel::DidGetCertDBOnIOThread(
-    const CreationCallback& callback,
+    CreationCallback callback,
     net::NSSCertDatabase* cert_db) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
@@ -147,17 +147,17 @@ void CertificateManagerModel::DidGetCertDBOnIOThread(
   base::PostTask(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(&CertificateManagerModel::DidGetCertDBOnUIThread, cert_db,
-                     is_user_db_available, callback));
+                     is_user_db_available, std::move(callback)));
 }
 
 // static
 void CertificateManagerModel::GetCertDBOnIOThread(
     content::ResourceContext* context,
-    const CreationCallback& callback) {
+    CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   net::NSSCertDatabase* cert_db = GetNSSCertDatabaseForResourceContext(
       context, base::BindOnce(&CertificateManagerModel::DidGetCertDBOnIOThread,
-                              callback));
+                              std::move(callback)));
   if (cert_db)
-    DidGetCertDBOnIOThread(callback, cert_db);
+    DidGetCertDBOnIOThread(std::move(callback), cert_db);
 }
