@@ -642,15 +642,19 @@ describe('protocol module', () => {
     it('does not crash on exit', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'custom-protocol-shutdown.js');
       const appProcess = ChildProcess.spawn(process.execPath, ['--enable-logging', appPath]);
-      let output = '';
-      appProcess.stdout.on('data', data => { output += data; });
-      appProcess.stderr.on('data', data => { output += data; });
+      let stdout = '';
+      let stderr = '';
+      appProcess.stdout.on('data', data => { stdout += data; });
+      appProcess.stderr.on('data', data => { stderr += data; });
       const [code] = await emittedOnce(appProcess, 'exit');
       if (code !== 0) {
-        console.log(code, output);
+        console.log('Exit code : ', code);
+        console.log('stdout : ', stdout);
+        console.log('stderr : ', stderr);
       }
       expect(code).to.equal(0);
-      expect(output).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
+      expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
+      expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
     });
   });
 
