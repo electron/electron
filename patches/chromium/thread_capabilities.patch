@@ -11,10 +11,10 @@ system.
 See https://github.com/atom/electron/issues/3666
 
 diff --git a/sandbox/linux/services/credentials.cc b/sandbox/linux/services/credentials.cc
-index 542567f3ee58776a8ca915f1f62dcffa29141798..0f5f017b0ee63bbe7107f39143484bc6d728104e 100644
+index d7b5d8c441354965ee0cb87a57d9552a4ae1f20d..dd145dd38fdbd7c426bd821baff0d9fe76201469 100644
 --- a/sandbox/linux/services/credentials.cc
 +++ b/sandbox/linux/services/credentials.cc
-@@ -352,8 +352,10 @@ pid_t Credentials::ForkAndDropCapabilitiesInChild() {
+@@ -354,8 +354,10 @@ pid_t Credentials::ForkAndDropCapabilitiesInChild() {
      return pid;
    }
  

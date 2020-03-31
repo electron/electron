@@ -71,10 +71,10 @@ index dbfc24395349cfa40b5783590d60cc7e44b31205..499af1cdcf13cf57f97a0c28430cbe87
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index e030711ce7c2679d9fca46e81d55772b53daa22a..32d04dc798019f901ef337e956df94431a0e19e1 100644
+index 50533c338dd75f606ba542813cfe724301ad6527..3a06ae9ad9d36fea4c055e610dac5b6d66d95e7b 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2343,6 +2343,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2392,6 +2392,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -91,7 +91,7 @@ index e030711ce7c2679d9fca46e81d55772b53daa22a..32d04dc798019f901ef337e956df9443
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2362,10 +2372,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2411,10 +2421,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -156,7 +156,7 @@ index e030711ce7c2679d9fca46e81d55772b53daa22a..32d04dc798019f901ef337e956df9443
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2407,6 +2467,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2456,6 +2516,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
@@ -167,10 +167,10 @@ index e030711ce7c2679d9fca46e81d55772b53daa22a..32d04dc798019f901ef337e956df9443
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index 9dbc9bb7114e1dea5e8a24395f39bd9d068eeb76..31bddf69f2e805451d42d1a284a53f41bdaa5650 100644
+index c1eb23c23901158410f224baebf7786b97e6df6b..d1a1aee132d8ecce9892477addd39a35de6ef9ee 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -426,6 +426,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
+@@ -456,6 +456,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
    return browsing_instance_->HasSiteInstance(url);
  }
  
@@ -182,7 +182,7 @@ index 9dbc9bb7114e1dea5e8a24395f39bd9d068eeb76..31bddf69f2e805451d42d1a284a53f41
      const GURL& url) {
    return browsing_instance_->GetSiteInstanceForURL(
 diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
-index caa100b3889e17a9afdc8127e0e13bb6b86e8042..f08d3a2eb28f0f6fff89b5759eff5369b7111821 100644
+index 85288dac0acfb51330669cd87cfc0343af3dfd2c..3bb39459fd3c87a0968044e02d684f6b777935bb 100644
 --- a/content/browser/site_instance_impl.h
 +++ b/content/browser/site_instance_impl.h
 @@ -98,6 +98,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
@@ -194,7 +194,7 @@ index caa100b3889e17a9afdc8127e0e13bb6b86e8042..f08d3a2eb28f0f6fff89b5759eff5369
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 75cd0ad7a8dc1efd89683d8da192050659c5016f..54d7947751a0cc7007ba737ebdeafcda98d284ce 100644
+index 294db724572266f54c9559bf5278920b819bef03..d2e28037a4005df4a4552440cb8486f5f111c764 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -58,6 +58,21 @@
@@ -220,7 +220,7 @@ index 75cd0ad7a8dc1efd89683d8da192050659c5016f..54d7947751a0cc7007ba737ebdeafcda
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 5fc3d0e31927b618d04024fcc42b2061580a4f22..343d94a74fb87677200021f480f7874efe33385d 100644
+index c9b26a69ff139d91dd0c5deb65017eed5b9fda12..959384005b1d3f73b9aca03db2999e8de09b0bdb 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -233,8 +233,45 @@ class CONTENT_EXPORT ContentBrowserClient {
