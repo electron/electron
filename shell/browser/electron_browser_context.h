@@ -47,6 +47,7 @@ class CookieChangeNotifier;
 class ResolveProxyHelper;
 class SpecialStoragePolicy;
 class WebViewManager;
+class ProtocolRegistry;
 
 class ElectronBrowserContext
     : public base::RefCountedDeleteOnSequence<ElectronBrowserContext>,
@@ -143,6 +144,10 @@ class ElectronBrowserContext
   }
 #endif
 
+  ProtocolRegistry* protocol_registry() const {
+    return protocol_registry_.get();
+  }
+
  protected:
   ElectronBrowserContext(const std::string& partition,
                          bool in_memory,
@@ -173,8 +178,8 @@ class ElectronBrowserContext
   std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
   scoped_refptr<ResolveProxyHelper> resolve_proxy_helper_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
-
   std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;
+  std::unique_ptr<ProtocolRegistry> protocol_registry_;
 
   std::string user_agent_;
   base::FilePath path_;

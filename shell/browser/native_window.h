@@ -198,6 +198,7 @@ class NativeWindow : public base::SupportsUserData,
 #if defined(OS_MACOSX)
   virtual void SetTrafficLightPosition(const gfx::Point& position) = 0;
   virtual gfx::Point GetTrafficLightPosition() const = 0;
+  virtual void RedrawTrafficLights() = 0;
 #endif
 
   // Touchbar API
@@ -231,8 +232,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void PreviewFile(const std::string& path,
                            const std::string& display_name);
   virtual void CloseFilePreview();
-
-  virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) = 0;
 
   // Converts between content bounds and window bounds.
   virtual gfx::Rect ContentBoundsToWindowBounds(

@@ -16,6 +16,7 @@
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
 #include "tracing/trace_event.h"
 
@@ -39,7 +40,9 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
 
 JavascriptEnvironment::~JavascriptEnvironment() {
   {
+    v8::Locker locker(isolate_);
     v8::HandleScope scope(isolate_);
+    gin_helper::CleanedUpAtExit::DoCleanup();
     context_.Get(isolate_)->Exit();
   }
   isolate_->Exit();

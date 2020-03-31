@@ -129,8 +129,8 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   // Pointer to exit code.
   int* exit_code_ = nullptr;
 
-  std::unique_ptr<Browser> browser_;
   std::unique_ptr<JavascriptEnvironment> js_env_;
+  std::unique_ptr<Browser> browser_;
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<ElectronBindings> electron_bindings_;
   std::unique_ptr<NodeEnvironment> node_env_;

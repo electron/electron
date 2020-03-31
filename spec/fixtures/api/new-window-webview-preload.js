@@ -1,3 +1,3 @@
-const { ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron');
 
-window.ipcRenderer = ipcRenderer
+window.ipcRenderer = ipcRenderer;

@@ -5,8 +5,8 @@ try {
     global: typeof global,
     Buffer: typeof Buffer,
     'global.Buffer': typeof global.Buffer
-  }
-  console.log(JSON.stringify(types))
+  };
+  console.log(JSON.stringify(types));
 } catch (e) {
-  console.log(e.message)
+  console.log(e.message);
 }

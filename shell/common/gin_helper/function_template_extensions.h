@@ -37,6 +37,24 @@ inline bool GetNextArgument(Arguments* args,
   return true;
 }
 
+// Like gin::CreateFunctionTemplate, but doesn't remove the template's
+// prototype.
+template <typename Sig>
+v8::Local<v8::FunctionTemplate> CreateConstructorFunctionTemplate(
+    v8::Isolate* isolate,
+    base::RepeatingCallback<Sig> callback,
+    InvokerOptions invoker_options = {}) {
+  typedef internal::CallbackHolder<Sig> HolderT;
+  HolderT* holder =
+      new HolderT(isolate, std::move(callback), std::move(invoker_options));
+
+  v8::Local<v8::FunctionTemplate> tmpl = v8::FunctionTemplate::New(
+      isolate, &internal::Dispatcher<Sig>::DispatchToCallback,
+      ConvertToV8<v8::Local<v8::External>>(isolate,
+                                           holder->GetHandle(isolate)));
+  return tmpl;
+}
+
 }  // namespace gin
 
 #endif  // SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_

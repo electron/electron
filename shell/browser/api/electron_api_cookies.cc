@@ -173,9 +173,10 @@ std::string InclusionStatusToString(
 
 }  // namespace
 
+gin::WrapperInfo Cookies::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 Cookies::Cookies(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : browser_context_(browser_context) {
-  Init(isolate);
   cookie_change_subscription_ =
       browser_context_->cookie_change_notifier()->RegisterCookieChangeCallback(
           base::BindRepeating(&Cookies::OnCookieChanged,
@@ -184,16 +185,17 @@ Cookies::Cookies(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
 Cookies::~Cookies() = default;
 
-v8::Local<v8::Promise> Cookies::Get(const gin_helper::Dictionary& filter) {
-  gin_helper::Promise<net::CookieList> promise(isolate());
+v8::Local<v8::Promise> Cookies::Get(v8::Isolate* isolate,
+                                    const gin_helper::Dictionary& filter) {
+  gin_helper::Promise<net::CookieList> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
-      browser_context_.get());
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_);
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
   base::DictionaryValue dict;
-  gin::ConvertFromV8(isolate(), filter.GetHandle(), &dict);
+  gin::ConvertFromV8(isolate, filter.GetHandle(), &dict);
 
   std::string url;
   filter.Get("url", &url);
@@ -215,17 +217,18 @@ v8::Local<v8::Promise> Cookies::Get(const gin_helper::Dictionary& filter) {
   return handle;
 }
 
-v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
+v8::Local<v8::Promise> Cookies::Remove(v8::Isolate* isolate,
+                                       const GURL& url,
                                        const std::string& name) {
-  gin_helper::Promise<void> promise(isolate());
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto cookie_deletion_filter = network::mojom::CookieDeletionFilter::New();
   cookie_deletion_filter->url = url;
   cookie_deletion_filter->cookie_name = name;
 
-  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
-      browser_context_.get());
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_);
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
   manager->DeleteCookies(
@@ -239,8 +242,9 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
   return handle;
 }
 
-v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
-  gin_helper::Promise<void> promise(isolate());
+v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
+                                    const base::DictionaryValue& details) {
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   const std::string* url_string = details.FindStringKey("url");
@@ -280,8 +284,8 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
     options.set_include_httponly();
   }
 
-  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
-      browser_context_.get());
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_);
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
   manager->SetCanonicalCookie(
       *canonical_cookie, url.scheme(), options,
@@ -299,12 +303,12 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
   return handle;
 }
 
-v8::Local<v8::Promise> Cookies::FlushStore() {
-  gin_helper::Promise<void> promise(isolate());
+v8::Local<v8::Promise> Cookies::FlushStore(v8::Isolate* isolate) {
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
-      browser_context_.get());
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_);
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
   manager->FlushCookieStore(base::BindOnce(
@@ -314,10 +318,11 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
 }
 
 void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
-  v8::HandleScope scope(isolate());
-  Emit("changed", gin::ConvertToV8(isolate(), change.cookie),
-       gin::ConvertToV8(isolate(), change.cause),
-       gin::ConvertToV8(isolate(),
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
+  Emit("changed", gin::ConvertToV8(isolate, change.cookie),
+       gin::ConvertToV8(isolate, change.cause),
+       gin::ConvertToV8(isolate,
                         change.cause != net::CookieChangeCause::INSERTED));
 }
 
@@ -327,15 +332,18 @@ gin::Handle<Cookies> Cookies::Create(v8::Isolate* isolate,
   return gin::CreateHandle(isolate, new Cookies(isolate, browser_context));
 }
 
-// static
-void Cookies::BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "Cookies"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::EventEmitterMixin<Cookies>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("get", &Cookies::Get)
       .SetMethod("remove", &Cookies::Remove)
       .SetMethod("set", &Cookies::Set)
       .SetMethod("flushStore", &Cookies::FlushStore);
+}
+
+const char* Cookies::GetTypeName() {
+  return "Cookies";
 }
 
 }  // namespace api

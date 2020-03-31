@@ -1,4 +1,4 @@
-declare let standardScheme: string
+declare let standardScheme: string;
 
 declare namespace Electron {
   interface Menu {

@@ -7,6 +7,7 @@
 #include <map>
 #include <utility>
 
+#include "shell/browser/api/ui_event.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -100,9 +101,7 @@ bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
 void Menu::ExecuteCommand(int command_id, int flags) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  execute_command_.Run(
-      GetWrapper(),
-      gin_helper::internal::CreateEventFromFlags(isolate(), flags), command_id);
+  execute_command_.Run(GetWrapper(), CreateEventFromFlags(flags), command_id);
 }
 
 void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {

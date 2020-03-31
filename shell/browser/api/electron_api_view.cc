@@ -12,23 +12,18 @@ namespace electron {
 
 namespace api {
 
-View::View(views::View* view) : view_(view) {}
-
-View::View() : view_(new views::View()) {
+View::View(views::View* view) : view_(view) {
   view_->set_owned_by_client();
 }
+
+View::View() : View(new views::View()) {}
 
 View::~View() {
   if (delete_view_)
     delete view_;
 }
 
-#if BUILDFLAG(ENABLE_VIEW_API)
-void View::SetLayoutManager(gin::Handle<LayoutManager> layout_manager) {
-  layout_manager_.Reset(isolate(), layout_manager->GetWrapper());
-  view()->SetLayoutManager(layout_manager->TakeOver());
-}
-
+#if BUILDFLAG(ENABLE_VIEWS_API)
 void View::AddChildView(gin::Handle<View> child) {
   AddChildViewAt(child, child_views_.size());
 }
@@ -53,9 +48,8 @@ gin_helper::WrappableBase* View::New(gin::Arguments* args) {
 void View::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "View"));
-#if BUILDFLAG(ENABLE_VIEW_API)
+#if BUILDFLAG(ENABLE_VIEWS_API)
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setLayoutManager", &View::SetLayoutManager)
       .SetMethod("addChildView", &View::AddChildView)
       .SetMethod("addChildViewAt", &View::AddChildViewAt);
 #endif

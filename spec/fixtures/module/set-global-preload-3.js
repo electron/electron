@@ -1,1 +1,1 @@
-window.preload3 = window.preload2 + '-3'
+window.preload3 = window.preload2 + '-3';

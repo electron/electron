@@ -87,8 +87,6 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
       devtools_visible_(false),
       devtools_window_delegate_(nullptr),
       title_(base::ASCIIToUTF16("Developer Tools")) {
-  set_owned_by_client();
-
   if (!inspectable_web_contents_->IsGuest() &&
       inspectable_web_contents_->GetWebContents()->GetNativeView()) {
     views::WebView* contents_web_view = new views::WebView(nullptr);

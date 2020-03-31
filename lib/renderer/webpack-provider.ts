@@ -7,12 +7,12 @@
 
 // Rip global off of window (which is also global) so that webpack doesn't
 // auto replace it with a looped reference to this file
-const _global = (self as any || window as any).global as NodeJS.Global
-const process = _global.process
-const Buffer = _global.Buffer
+const _global = (self as any || window as any).global as NodeJS.Global;
+const process = _global.process;
+const Buffer = _global.Buffer;
 
 export {
   _global,
   process,
   Buffer
-}
+};

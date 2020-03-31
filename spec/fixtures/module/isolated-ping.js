@@ -1,2 +1,2 @@
-const { ipcRenderer } = require('electron')
-ipcRenderer.send('pong')
+const { ipcRenderer } = require('electron');
+ipcRenderer.send('pong');
