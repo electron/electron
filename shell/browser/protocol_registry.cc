@@ -3,11 +3,45 @@
 // found in the LICENSE file.
 
 #include <memory>
+#include <utility>
 
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/protocol_registry.h"
 
 namespace electron {
+
+namespace {
+
+// Provide support for accessing asar archives in file:// protocol.
+class AsarURLLoaderFactory : public network::mojom::URLLoaderFactory {
+ public:
+  AsarURLLoaderFactory() {}
+
+ private:
+  // network::mojom::URLLoaderFactory:
+  void CreateLoaderAndStart(
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      int32_t routing_id,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& request,
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
+      override {
+    asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
+                              new net::HttpResponseHeaders(""));
+  }
+
+  void Clone(
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> loader) override {
+    receivers_.Add(this, std::move(loader));
+  }
+
+  mojo::ReceiverSet<network::mojom::URLLoaderFactory> receivers_;
+};
+
+}  // namespace
 
 // static
 ProtocolRegistry* ProtocolRegistry::FromBrowserContext(
@@ -21,6 +55,12 @@ ProtocolRegistry::~ProtocolRegistry() = default;
 
 void ProtocolRegistry::RegisterURLLoaderFactories(
     content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
+  // Override the default FileURLLoaderFactory to support asar archives.
+  //
+  // Note that |insert| or |emplace| should not be used here, as they do nothing
+  // if the key already exists, while we would like to overwrite the factory.
+  (*factories)[url::kFileScheme] = std::make_unique<AsarURLLoaderFactory>();
+
   for (const auto& it : handlers_) {
     factories->emplace(it.first, std::make_unique<ElectronURLLoaderFactory>(
                                      it.second.first, it.second.second));
