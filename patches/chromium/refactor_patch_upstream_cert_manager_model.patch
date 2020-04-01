@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 1 Apr 2020 09:42:00 -0700
+Subject: refactor: patch upstream cert manager model
+
+This patch allows for Electron's usage of CertificateManagerModel in its apis to 
+import client certificates on Linux. It will be upstreamed. 
+
+diff --git a/chrome/browser/certificate_manager_model.cc b/chrome/browser/certificate_manager_model.cc
+index 86b237c63a11c27fb9d1d26865cda0bf37364ccd..8a7571ca429d8f5fa4eeb7d6864ae62ba250d56c 100644
+--- a/chrome/browser/certificate_manager_model.cc
++++ b/chrome/browser/certificate_manager_model.cc
+@@ -480,7 +480,7 @@ CertificateManagerModel::Params::Params(Params&& other) = default;
+ void CertificateManagerModel::Create(
+     content::BrowserContext* browser_context,
+     CertificateManagerModel::Observer* observer,
+-    const CreationCallback& callback) {
++    CreationCallback callback) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+ 
+   std::unique_ptr<Params> params = std::make_unique<Params>();
+@@ -501,7 +501,7 @@ void CertificateManagerModel::Create(
+       FROM_HERE, {BrowserThread::IO},
+       base::BindOnce(&CertificateManagerModel::GetCertDBOnIOThread,
+                      std::move(params), browser_context->GetResourceContext(),
+-                     observer, callback));
++                     observer, std::move(callback)));
+ }
+ 
+ CertificateManagerModel::CertificateManagerModel(
+@@ -614,9 +614,10 @@ void CertificateManagerModel::FilterAndBuildOrgGroupingMap(
+ int CertificateManagerModel::ImportFromPKCS12(PK11SlotInfo* slot_info,
+                                               const std::string& data,
+                                               const base::string16& password,
+-                                              bool is_extractable) {
++                                              bool is_extractable,
++                                              net::ScopedCERTCertificateList* imported_certs) {
+   int result = cert_db_->ImportFromPKCS12(slot_info, data, password,
+-                                          is_extractable, nullptr);
++                                          is_extractable, imported_certs);
+   if (result == net::OK)
+     Refresh();
+   return result;
+@@ -673,7 +674,7 @@ bool CertificateManagerModel::Delete(CERTCertificate* cert) {
+ void CertificateManagerModel::DidGetCertDBOnUIThread(
+     std::unique_ptr<Params> params,
+     CertificateManagerModel::Observer* observer,
+-    const CreationCallback& callback,
++    CreationCallback callback,
+     net::NSSCertDatabase* cert_db,
+     bool is_user_db_available,
+     bool is_tpm_available) {
+@@ -683,14 +684,14 @@ void CertificateManagerModel::DidGetCertDBOnUIThread(
+       std::make_unique<CertificateManagerModel>(std::move(params), observer,
+                                                 cert_db, is_user_db_available,
+                                                 is_tpm_available);
+-  callback.Run(std::move(model));
++  std::move(callback).Run(std::move(model));
+ }
+ 
+ // static
+ void CertificateManagerModel::DidGetCertDBOnIOThread(
+     std::unique_ptr<Params> params,
+     CertificateManagerModel::Observer* observer,
+-    const CreationCallback& callback,
++    CreationCallback callback,
+     net::NSSCertDatabase* cert_db) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+ 
+@@ -702,7 +703,7 @@ void CertificateManagerModel::DidGetCertDBOnIOThread(
+   base::PostTask(
+       FROM_HERE, {BrowserThread::UI},
+       base::BindOnce(&CertificateManagerModel::DidGetCertDBOnUIThread,
+-                     std::move(params), observer, callback, cert_db,
++                     std::move(params), observer, std::move(callback), cert_db,
+                      is_user_db_available, is_tpm_available));
+ }
+ 
+@@ -711,12 +712,12 @@ void CertificateManagerModel::GetCertDBOnIOThread(
+     std::unique_ptr<Params> params,
+     content::ResourceContext* resource_context,
+     CertificateManagerModel::Observer* observer,
+-    const CreationCallback& callback) {
++    CreationCallback callback) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+ 
+   auto did_get_cert_db_callback = base::AdaptCallbackForRepeating(
+       base::BindOnce(&CertificateManagerModel::DidGetCertDBOnIOThread,
+-                     std::move(params), observer, callback));
++                     std::move(params), observer, std::move(callback)));
+ 
+   net::NSSCertDatabase* cert_db = GetNSSCertDatabaseForResourceContext(
+       resource_context, did_get_cert_db_callback);
+diff --git a/chrome/browser/certificate_manager_model.h b/chrome/browser/certificate_manager_model.h
+index 0fcda22365b677ab5007b582d49d7a6a0add190a..9b80c6ec8dc2f17e551c9ca15b51fce63708b45f 100644
+--- a/chrome/browser/certificate_manager_model.h
++++ b/chrome/browser/certificate_manager_model.h
+@@ -143,7 +143,7 @@ class CertificateManagerModel {
+   typedef std::map<std::string, std::vector<std::unique_ptr<CertInfo>>>
+       OrgGroupingMap;
+ 
+-  typedef base::Callback<void(std::unique_ptr<CertificateManagerModel>)>
++  typedef base::OnceCallback<void(std::unique_ptr<CertificateManagerModel>)>
+       CreationCallback;
+ 
+   class Observer {
+@@ -162,7 +162,7 @@ class CertificateManagerModel {
+   // |browser_context|.
+   static void Create(content::BrowserContext* browser_context,
+                      Observer* observer,
+-                     const CreationCallback& callback);
++                     CreationCallback callback);
+ 
+   // Use |Create| instead to create a |CertificateManagerModel| for a
+   // |BrowserContext|.
+@@ -194,7 +194,8 @@ class CertificateManagerModel {
+   // mark the private key as unextractable from the slot.
+   // Returns a net error code on failure.
+   int ImportFromPKCS12(PK11SlotInfo* slot_info, const std::string& data,
+-                       const base::string16& password, bool is_extractable);
++                       const base::string16& password, bool is_extractable,
++                       net::ScopedCERTCertificateList* imported_certs);
+ 
+   // Import user certificate from DER encoded |data|.
+   // Returns a net error code on failure.
+@@ -252,19 +253,19 @@ class CertificateManagerModel {
+   static void DidGetCertDBOnUIThread(
+       std::unique_ptr<Params> params,
+       CertificateManagerModel::Observer* observer,
+-      const CreationCallback& callback,
++      CreationCallback callback,
+       net::NSSCertDatabase* cert_db,
+       bool is_user_db_available,
+       bool is_tpm_available);
+   static void DidGetCertDBOnIOThread(
+       std::unique_ptr<Params> params,
+       CertificateManagerModel::Observer* observer,
+-      const CreationCallback& callback,
++      CreationCallback callback,
+       net::NSSCertDatabase* cert_db);
+   static void GetCertDBOnIOThread(std::unique_ptr<Params> params,
+                                   content::ResourceContext* resource_context,
+                                   CertificateManagerModel::Observer* observer,
+-                                  const CreationCallback& callback);
++                                  CreationCallback callback);
+ 
+   net::NSSCertDatabase* cert_db_;
+ 

@@ -498,12 +498,15 @@ void OnClientCertificateSelected(
 
 #if defined(USE_NSS_CERTS)
 int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
-  std::string file_data, cert_path;
-  base::string16 password;
+  std::string file_data;
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
-  options.GetString("certificate", &cert_path);
-  options.GetString("password", &password);
+
+  std::string* cert_path_ptr = options.FindStringPath("certificate");
+  std::string cert_path = *cert_path_ptr;
+
+  std::string* pwd = options.FindStringPath("password");
+  base::string16 password = base::UTF8ToUTF16(*pwd);
 
   if (!cert_path.empty()) {
     if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
@@ -1070,16 +1073,20 @@ Browser::LoginItemSettings App::GetLoginItemSettings(
 }
 
 #if defined(USE_NSS_CERTS)
-void App::ImportCertificate(base::Value options,
-                            net::CompletionRepeatingCallback callback) {
-  DCHECK(options.is_dict());
+void App::ImportCertificate(gin_helper::ErrorThrower thrower,
+                            base::Value options,
+                            net::CompletionOnceCallback callback) {
+  if (!options.is_dict()) {
+    thrower.ThrowTypeError("Expected options to be an object");
+  }
 
   auto browser_context = ElectronBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     CertificateManagerModel::Create(
-        browser_context.get(),
+        browser_context.get(), nullptr /* Observer* observer */,
         base::BindOnce(&App::OnCertificateManagerModelCreated,
-                       base::Unretained(this), std::move(options), callback));
+                       base::Unretained(this), std::move(options),
+                       std::move(callback)));
     return;
   }
 
@@ -1092,8 +1099,6 @@ void App::OnCertificateManagerModelCreated(
     base::Value options,
     net::CompletionOnceCallback callback,
     std::unique_ptr<CertificateManagerModel> model) {
-  DCHECK(options.is_dict());
-
   certificate_manager_model_ = std::move(model);
   int rv =
       ImportIntoCertStore(certificate_manager_model_.get(), std::move(options));

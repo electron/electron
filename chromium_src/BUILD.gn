@@ -74,8 +74,20 @@ static_library("chrome") {
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
     sources += [
+      "//chrome/browser/certificate_manager_model.cc",
+      "//chrome/browser/certificate_manager_model.h",
       "//chrome/browser/extensions/global_shortcut_listener_x11.cc",
       "//chrome/browser/extensions/global_shortcut_listener_x11.h",
+      "//chrome/browser/net/nss_context.h",
+      "//chrome/browser/net/nss_context_linux.cc",
+      "//chrome/browser/ui/browser_dialogs.cc",
+      "//chrome/browser/ui/browser_dialogs.h",
+      "//chrome/browser/ui/crypto_module_password_dialog_nss.cc",
+      "//chrome/browser/ui/crypto_module_password_dialog_nss.h",
+      "//chrome/browser/ui/views/chrome_layout_provider.cc",
+      "//chrome/browser/ui/views/chrome_layout_provider.h",
+      "//chrome/browser/ui/views/crypto_module_password_dialog_view.cc",
+      "//chrome/browser/ui/views/crypto_module_password_dialog_view.h",
       "//chrome/browser/ui/views/status_icons/concat_menu_model.cc",
       "//chrome/browser/ui/views/status_icons/concat_menu_model.h",
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc",

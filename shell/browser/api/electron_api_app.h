@@ -62,7 +62,7 @@ class App : public ElectronBrowserClient::Delegate,
 
 #if defined(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
-      std::unique_ptr<base::DictionaryValue> options,
+      base::Value options,
       net::CompletionOnceCallback callback,
       std::unique_ptr<CertificateManagerModel> model);
 #endif
@@ -184,8 +184,9 @@ class App : public ElectronBrowserClient::Delegate,
                                       bool enabled);
   Browser::LoginItemSettings GetLoginItemSettings(gin_helper::Arguments* args);
 #if defined(USE_NSS_CERTS)
-  void ImportCertificate(base::Value options,
-                         net::CompletionRepeatingCallback callback);
+  void ImportCertificate(gin_helper::ErrorThrower thrower,
+                         base::Value options,
+                         net::CompletionOnceCallback callback);
 #endif
   v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
                                      gin_helper::Arguments* args);
