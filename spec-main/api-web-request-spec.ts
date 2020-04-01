@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import * as http from 'http'
 import * as qs from 'querystring'
 import * as path from 'path'
+import * as url from 'url';
 import * as WebSocket from 'ws'
 import { ipcMain, session, WebContents, webContents } from 'electron'
 import { AddressInfo } from 'net';
@@ -122,11 +123,24 @@ describe('webRequest module', () => {
       const { data } = await ajax(defaultURL)
       expect(data).to.equal('/redirect')
     })
+
+    it('works with file:// protocol', (done) => {
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        callback({ cancel: true })
+        done()
+      })
+      ajax(url.format({
+        pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      }))
+    })
   })
 
   describe('webRequest.onBeforeSendHeaders', () => {
     afterEach(() => {
       ses.webRequest.onBeforeSendHeaders(null)
+      ses.webRequest.onSendHeaders(null)
     })
 
     it('receives details object', async () => {
@@ -170,6 +184,24 @@ describe('webRequest module', () => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders)
       })
       await ajax(defaultURL)
+    })
+
+    it('works with file:// protocol', (done) => {
+      const requestHeaders = {
+        Test: 'header'
+      }
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        callback({ requestHeaders: requestHeaders })
+      })
+      ses.webRequest.onSendHeaders((details) => {
+        expect(details.requestHeaders).to.deep.equal(requestHeaders)
+        done()
+      })
+      ajax(url.format({
+        pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      }))
     })
   })
 

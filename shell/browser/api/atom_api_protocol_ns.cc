@@ -12,6 +12,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/common/deprecate_util.h"
 #include "shell/common/native_mate_converters/net_converter.h"
 #include "shell/common/native_mate_converters/once_callback.h"
@@ -35,6 +36,32 @@ struct SchemeOptions {
 struct CustomScheme {
   std::string scheme;
   SchemeOptions options;
+};
+
+// Provide support for accessing asar archives in file:// protocol.
+class AsarURLLoaderFactory : public network::mojom::URLLoaderFactory {
+ public:
+  AsarURLLoaderFactory() {}
+
+ private:
+  // network::mojom::URLLoaderFactory:
+  void CreateLoaderAndStart(network::mojom::URLLoaderRequest loader,
+                            int32_t routing_id,
+                            int32_t request_id,
+                            uint32_t options,
+                            const network::ResourceRequest& request,
+                            network::mojom::URLLoaderClientPtr client,
+                            const net::MutableNetworkTrafficAnnotationTag&
+                                traffic_annotation) override {
+    asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
+                              new net::HttpResponseHeaders(""));
+  }
+
+  void Clone(network::mojom::URLLoaderFactoryRequest loader_request) override {
+    receivers_.AddBinding(this, std::move(loader_request));
+  }
+
+  mojo::BindingSet<network::mojom::URLLoaderFactory> receivers_;
 };
 
 }  // namespace
@@ -166,7 +193,25 @@ ProtocolNS::ProtocolNS(v8::Isolate* isolate,
 ProtocolNS::~ProtocolNS() = default;
 
 void ProtocolNS::RegisterURLLoaderFactories(
+    URLLoaderFactoryType type,
     content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
+  // Override the default FileURLLoaderFactory to support asar archives.
+  if (type == URLLoaderFactoryType::kNavigation) {
+    // Always allow navigating to file:// URLs.
+    //
+    // Note that Chromium calls |emplace| to create the default file factory
+    // after this call, so it won't override our asar factory.
+    DCHECK(!base::Contains(*factories, url::kFileScheme));
+    factories->emplace(url::kFileScheme,
+                       std::make_unique<AsarURLLoaderFactory>());
+  } else if (type == URLLoaderFactoryType::kDocumentSubResource) {
+    // Only support requesting file:// subresource URLs when Chromium does so,
+    // it is usually supported under file:// or about:blank documents.
+    auto file_factory = factories->find(url::kFileScheme);
+    if (file_factory != factories->end())
+      file_factory->second = std::make_unique<AsarURLLoaderFactory>();
+  }
+
   for (const auto& it : handlers_) {
     factories->emplace(it.first, std::make_unique<AtomURLLoaderFactory>(
                                      it.second.first, it.second.second));

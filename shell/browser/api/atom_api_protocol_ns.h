@@ -43,8 +43,12 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  using URLLoaderFactoryType =
+      content::ContentBrowserClient::URLLoaderFactoryType;
+
   // Used by AtomBrowserClient for creating URLLoaderFactory.
   void RegisterURLLoaderFactories(
+      URLLoaderFactoryType type,
       content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories);
 
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
