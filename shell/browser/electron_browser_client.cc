@@ -973,8 +973,10 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
   api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
       v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
-  if (protocol)
-    protocol->RegisterURLLoaderFactories(factories);
+  if (protocol) {
+    protocol->RegisterURLLoaderFactories(URLLoaderFactoryType::kNavigation,
+                                         factories);
+  }
 }
 
 void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
@@ -989,8 +991,10 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   if (web_contents) {
     api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
         v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
-    if (protocol)
-      protocol->RegisterURLLoaderFactories(factories);
+    if (protocol) {
+      protocol->RegisterURLLoaderFactories(
+          URLLoaderFactoryType::kDocumentSubResource, factories);
+    }
   }
 }
 
