@@ -15,6 +15,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/common/content_constants.h"
+#include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
 #include "ppapi/buildflags/buildflags.h"
@@ -231,14 +232,27 @@ base::RefCountedMemory* ElectronContentClient::GetDataResourceBytes(
 }
 
 void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
-  AppendDelimitedSwitchToVector(switches::kServiceWorkerSchemes,
-                                &schemes->service_worker_schemes);
-  AppendDelimitedSwitchToVector(switches::kSecureSchemes,
-                                &schemes->secure_schemes);
-  AppendDelimitedSwitchToVector(switches::kBypassCSPSchemes,
-                                &schemes->csp_bypassing_schemes);
-  AppendDelimitedSwitchToVector(switches::kCORSSchemes,
-                                &schemes->cors_enabled_schemes);
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  // Browser Process registration happens in
+  // `api::Protocol::RegisterSchemesAsPrivileged`
+  //
+  // Renderer Process registration happens in `RendererClientBase`
+  //
+  // We use this for registration to network utility process
+  if (process_type == ::switches::kUtilityProcess) {
+    AppendDelimitedSwitchToVector(switches::kServiceWorkerSchemes,
+                                  &schemes->service_worker_schemes);
+    AppendDelimitedSwitchToVector(switches::kStandardSchemes,
+                                  &schemes->standard_schemes);
+    AppendDelimitedSwitchToVector(switches::kSecureSchemes,
+                                  &schemes->secure_schemes);
+    AppendDelimitedSwitchToVector(switches::kBypassCSPSchemes,
+                                  &schemes->csp_bypassing_schemes);
+    AppendDelimitedSwitchToVector(switches::kCORSSchemes,
+                                  &schemes->cors_enabled_schemes);
+  }
 
   schemes->service_worker_schemes.emplace_back(url::kFileScheme);
   schemes->standard_schemes.emplace_back(extensions::kExtensionScheme);
