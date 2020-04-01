@@ -69,11 +69,11 @@ v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
                                 gin::Wrappable<T>* object,
                                 const char* method_name,
                                 Args&&... args) {
-  v8::HandleScope scope(isolate);
+  v8::EscapableHandleScope scope(isolate);
   v8::Local<v8::Object> v8_object;
   if (object->GetWrapper(isolate).ToLocal(&v8_object))
-    return CustomEmit(isolate, v8_object, method_name,
-                      std::forward<Args>(args)...);
+    return scope.Escape(CustomEmit(isolate, v8_object, method_name,
+                                   std::forward<Args>(args)...));
   else
     return v8::Local<v8::Value>();
 }

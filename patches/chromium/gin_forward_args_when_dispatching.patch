@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Mon, 30 Mar 2020 17:17:36 -0700
+Subject: gin: forward args when dispatching
+
+Backport of https://chromium-review.googlesource.com/c/chromium/src/+/2129029
+
+diff --git a/gin/function_template.h b/gin/function_template.h
+index 7edcc9e20dfa6367dde5f58237cca5f4ca637f7a..231e22f37bf460cab795264a06b5b1833c9fb038 100644
+--- a/gin/function_template.h
++++ b/gin/function_template.h
+@@ -166,14 +166,18 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
+   template <typename ReturnType>
+   void DispatchToCallback(
+       base::RepeatingCallback<ReturnType(ArgTypes...)> callback) {
+-    args_->Return(callback.Run(ArgumentHolder<indices, ArgTypes>::value...));
++    args_->Return(callback.Run(
++        std::forward<decltype(ArgumentHolder<indices, ArgTypes>::value)>(
++            ArgumentHolder<indices, ArgTypes>::value)...));
+   }
+ 
+   // In C++, you can declare the function foo(void), but you can't pass a void
+   // expression to foo. As a result, we must specialize the case of Callbacks
+   // that have the void return type.
+   void DispatchToCallback(base::RepeatingCallback<void(ArgTypes...)> callback) {
+-    callback.Run(ArgumentHolder<indices, ArgTypes>::value...);
++    callback.Run(
++        std::forward<decltype(ArgumentHolder<indices, ArgTypes>::value)>(
++            ArgumentHolder<indices, ArgTypes>::value)...);
+   }
+ 
+  private:

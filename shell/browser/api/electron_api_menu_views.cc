@@ -84,8 +84,10 @@ void MenuViews::OnClosed(int32_t window_id, base::OnceClosure callback) {
 }
 
 // static
-gin_helper::WrappableBase* Menu::New(gin::Arguments* args) {
-  return new MenuViews(args);
+gin::Handle<Menu> Menu::New(gin::Arguments* args) {
+  auto handle = gin::CreateHandle(args->isolate(), new MenuViews(args));
+  gin_helper::CallMethod(args->isolate(), handle.get(), "_init");
+  return handle;
 }
 
 }  // namespace api
