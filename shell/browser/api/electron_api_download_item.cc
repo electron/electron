@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_download_item.h"
 
 #include <map>
+#include <memory>
 
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -60,7 +61,8 @@ namespace {
 // api::DownloadItem are fully independent, and either one may be destroyed
 // before the other.
 struct UserDataLink : base::SupportsUserData::Data {
-  UserDataLink(base::WeakPtr<DownloadItem> item) : download_item(item) {}
+  explicit UserDataLink(base::WeakPtr<DownloadItem> item)
+      : download_item(item) {}
 
   base::WeakPtr<DownloadItem> download_item;
 };
