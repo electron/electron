@@ -43,8 +43,12 @@ class Protocol : public gin_helper::TrackableObject<Protocol> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  using URLLoaderFactoryType =
+      content::ContentBrowserClient::URLLoaderFactoryType;
+
   // Used by ElectronBrowserClient for creating URLLoaderFactory.
   void RegisterURLLoaderFactories(
+      URLLoaderFactoryType type,
       content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories);
 
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }

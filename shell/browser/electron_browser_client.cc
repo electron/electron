@@ -1176,8 +1176,10 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
           web_contents->GetBrowserContext(),
           false /* we don't support extensions::WebViewGuest */));
 #endif
-  if (protocol)
-    protocol->RegisterURLLoaderFactories(factories);
+  if (protocol) {
+    protocol->RegisterURLLoaderFactories(URLLoaderFactoryType::kNavigation,
+                                         factories);
+  }
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1238,8 +1240,10 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   if (web_contents) {
     api::Protocol* protocol = api::Protocol::FromWrappedClass(
         v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
-    if (protocol)
-      protocol->RegisterURLLoaderFactories(factories);
+    if (protocol) {
+      protocol->RegisterURLLoaderFactories(
+          URLLoaderFactoryType::kDocumentSubResource, factories);
+    }
   }
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
