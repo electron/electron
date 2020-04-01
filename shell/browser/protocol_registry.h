@@ -22,7 +22,11 @@ class ProtocolRegistry {
 
   static ProtocolRegistry* FromBrowserContext(content::BrowserContext*);
 
+  using URLLoaderFactoryType =
+      content::ContentBrowserClient::URLLoaderFactoryType;
+
   void RegisterURLLoaderFactories(
+      URLLoaderFactoryType type,
       content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories);
 
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
