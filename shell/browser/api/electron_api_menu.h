@@ -50,6 +50,10 @@ class Menu : public gin::Wrappable<Menu>,
   explicit Menu(gin::Arguments* args);
   ~Menu() override;
 
+  // Returns a new callback which keeps references of the JS wrapper until the
+  // passed |callback| is called.
+  base::OnceClosure BindSelfToClosure(base::OnceClosure callback);
+
   // ui::SimpleMenuModel::Delegate:
   bool IsCommandIdChecked(int command_id) const override;
   bool IsCommandIdEnabled(int command_id) const override;

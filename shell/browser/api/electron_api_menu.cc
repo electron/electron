@@ -92,6 +92,24 @@ void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
   gin_helper::CallMethod(isolate, const_cast<Menu*>(this), "_menuWillShow");
 }
 
+base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
+  // return ((callback, ref) => { callback() }).bind(null, callback, this)
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Object> self;
+  if (GetWrapper(isolate).ToLocal(&self)) {
+    v8::Global<v8::Value> ref(isolate, self);
+    return base::BindOnce(
+        [](base::OnceClosure callback, v8::Global<v8::Value> ref) {
+          std::move(callback).Run();
+        },
+        std::move(callback), std::move(ref));
+  } else {
+    return base::DoNothing();
+  }
+}
+
 void Menu::InsertItemAt(int index,
                         int command_id,
                         const base::string16& label) {
