@@ -133,16 +133,16 @@ describe('webRequest module', () => {
       await ajax(defaultURL + 'serverRedirect')
     })
 
-    it('works with file:// protocol', (done) => {
+    it('works with file:// protocol', async () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         callback({ cancel: true })
-        done()
       })
-      ajax(url.format({
+      const fileURL = url.format({
         pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
         protocol: 'file',
         slashes: true
-      }))
+      })
+      await expect(ajax(fileURL)).to.eventually.be.rejectedWith('404')
     })
   })
 
@@ -195,22 +195,24 @@ describe('webRequest module', () => {
       await ajax(defaultURL)
     })
 
-    it('works with file:// protocol', (done) => {
+    it('works with file:// protocol', async () => {
       const requestHeaders = {
         Test: 'header'
       }
+      let onSendHeadersCalled = false
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         callback({ requestHeaders: requestHeaders })
       })
       ses.webRequest.onSendHeaders((details) => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders)
-        done()
+        onSendHeadersCalled = true
       })
-      ajax(url.format({
-        pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
+      await ajax(url.format({
+        pathname: path.join(fixturesPath, 'pages', 'blank.html').replace(/\\/g, '/'),
         protocol: 'file',
         slashes: true
       }))
+      expect(onSendHeadersCalled).to.be.true()
     })
   })
 
