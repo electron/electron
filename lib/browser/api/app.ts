@@ -138,7 +138,3 @@ for (const name of events) {
 // Deprecate allowRendererProcessReuse but only if they set it to false, no need to log if
 // they are setting it to true
 deprecate.removeProperty(app, 'allowRendererProcessReuse', [false]);
-
-// Wrappers for native classes.
-const { DownloadItem } = process.electronBinding('download_item');
-Object.setPrototypeOf(DownloadItem.prototype, EventEmitter.prototype);

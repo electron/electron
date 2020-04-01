@@ -38,7 +38,6 @@
   V(electron_browser_browser_view)       \
   V(electron_browser_content_tracing)    \
   V(electron_browser_dialog)             \
-  V(electron_browser_download_item)      \
   V(electron_browser_event)              \
   V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
