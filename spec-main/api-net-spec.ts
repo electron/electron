@@ -582,7 +582,8 @@ describe('net module', () => {
         path: '/',
         secure: false,
         httpOnly: false,
-        session: true
+        session: true,
+        sameSite: 'unspecified'
       });
     });
 
@@ -616,7 +617,8 @@ describe('net module', () => {
           path: '/',
           secure: false,
           httpOnly: false,
-          session: true
+          session: true,
+          sameSite: mode.toLowerCase()
         });
         const urlRequest2 = net.request({
           url: serverUrl,
