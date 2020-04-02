@@ -1,10 +1,10 @@
 {
   "name": "electron",
-  "version": "10.0.0-nightly.20200331",
+  "version": "10.0.0-nightly.20200402",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
-    "@electron/docs-parser": "^0.4.2",
+    "@electron/docs-parser": "^0.7.2",
     "@electron/typescript-definitions": "^8.6.4",
     "@octokit/rest": "^16.3.2",
     "@primer/octicons": "^9.1.1",

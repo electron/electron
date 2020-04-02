@@ -389,7 +389,7 @@ Calling `event.preventDefault` will prevent the page `keydown`/`keyup` events
 and the menu shortcuts.
 
 To only prevent the menu shortcuts, use
-[`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore-experimental):
+[`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore):
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -1051,7 +1051,7 @@ or is rejected if the result of the code is a rejected promise.
 
 Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
 
-#### `contents.setIgnoreMenuShortcuts(ignore)` _Experimental_
+#### `contents.setIgnoreMenuShortcuts(ignore)`
 
 * `ignore` Boolean
 
