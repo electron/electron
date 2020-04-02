@@ -5,7 +5,8 @@ Subject: fix: undo redo broken in webviews
 
 When propagating the undo and redo events from the menu, Chromium was not
 properly sending the events to the focused webcontents on macOS. This fixes
-that error, and will be upstreamed into Chromium.
+that error. A crbug has been opened at https://bugs.chromium.org/p/chromium/issues/detail?id=1067284
+and this patch will be removed when it has been resolved upstream.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
 index 591305cb57a2f89067b25189b9c33d92858f01a0..a3112cb03bc73eb670631ff429f38414537f19cf 100644
