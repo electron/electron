@@ -32,8 +32,8 @@ app needs to be code-signed. Then, the app needs to be uploaded to Apple for a
 process called "notarization", where automated systems will further verify that
 your app isn't doing anything to endanger its users.
 
-First, ensure that you fullfil the requirements for signing and notarizing your
-app:
+To start the process, ensure that you fulfill the requirements for signing and
+notarizing your app:
 
 1. Enroll in the [Apple Developer Program] (requires an annual fee)
 2. Download and install [Xcode]
