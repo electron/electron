@@ -43,6 +43,7 @@ struct Converter<net::CookieSameSite> {
       case net::CookieSameSite::STRICT_MODE:
         return ConvertToV8(isolate, "strict");
     }
+    DCHECK(false);
     return ConvertToV8(isolate, "unknown");
   }
 };
@@ -187,7 +188,8 @@ std::string InclusionStatusToString(
   if (status.HasExclusionReason(net::CanonicalCookie::CookieInclusionStatus::
                                     EXCLUDE_NONCOOKIEABLE_SCHEME))
     return "Cannot set cookie for current scheme";
-  return "Setting cookie failed";
+  LOG(WARNING) << "Cookie inclusion debug string: "
+               << status.GetDebugString() return "Setting cookie failed";
 }
 
 net::CookieSameSite StringToCookieSameSite(const std::string* str_ptr) {
@@ -319,6 +321,8 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   if (http_only) {
     options.set_include_httponly();
   }
+  options.set_same_site_cookie_context(
+      net::CookieOptions::SameSiteCookieContext::SAME_SITE_STRICT);
 
   auto* storage_partition =
       content::BrowserContext::GetDefaultStoragePartition(browser_context_);

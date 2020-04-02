@@ -116,6 +116,18 @@ describe('session module', () => {
       expect(c.value).to.equal(value);
     });
 
+    for (const sameSite of <const>['unspecified', 'no_restriction', 'lax', 'strict']) {
+      it(`sets cookies with samesite=${sameSite}`, async () => {
+        const { cookies } = session.defaultSession;
+        const value = 'hithere';
+        await cookies.set({ url, value, sameSite });
+        const c = (await cookies.get({ url }))[0];
+        expect(c.name).to.be.empty();
+        expect(c.value).to.equal(value);
+        expect(c.sameSite).to.equal(sameSite);
+      });
+    }
+
     it('gets cookies without url', async () => {
       const { cookies } = session.defaultSession;
       const name = '1';
