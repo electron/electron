@@ -503,11 +503,11 @@ int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
 
-  std::string* cert_path_ptr = options.FindStringPath("certificate");
+  std::string* cert_path_ptr = options.FindStringKey("certificate");
   if (cert_path_ptr)
     cert_path = *cert_path_ptr;
 
-  std::string* pwd = options.FindStringPath("password");
+  std::string* pwd = options.FindStringKey("password");
   if (pwd)
     password = base::UTF8ToUTF16(*pwd);
 
