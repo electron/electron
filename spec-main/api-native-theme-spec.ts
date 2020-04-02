@@ -1,10 +1,12 @@
 import { expect } from 'chai'
-import { nativeTheme, systemPreferences } from 'electron'
+import { nativeTheme, systemPreferences, BrowserWindow } from 'electron'
 import * as os from 'os'
+import * as path from 'path'
 import * as semver from 'semver'
 
 import { delay, ifdescribe } from './spec-helpers'
 import { emittedOnce } from './events-helpers';
+import { closeAllWindows } from './window-helpers';
 
 describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {
@@ -18,7 +20,9 @@ describe('nativeTheme module', () => {
       nativeTheme.themeSource = 'system'
       // Wait for any pending events to emit
       await delay(20)
-    })
+
+      closeAllWindows()
+    });
 
     it('is system by default', () => {
       expect(nativeTheme.themeSource).to.equal('system')
@@ -56,13 +60,33 @@ describe('nativeTheme module', () => {
 
     ifdescribe(process.platform === 'darwin' && semver.gte(os.release(), '18.0.0'))('on macOS 10.14', () => {
       it('should update appLevelAppearance when set', () => {
-        nativeTheme.themeSource = 'dark'
-        expect(systemPreferences.appLevelAppearance).to.equal('dark')
-        nativeTheme.themeSource = 'light'
-        expect(systemPreferences.appLevelAppearance).to.equal('light')
-      })
-    })
-  })
+        nativeTheme.themeSource = 'dark';
+        expect(systemPreferences.appLevelAppearance).to.equal('dark');
+        nativeTheme.themeSource = 'light';
+        expect(systemPreferences.appLevelAppearance).to.equal('light');
+      });
+    });
+
+    const getPrefersColorSchemeIsDark = async (w: Electron.BrowserWindow) => {
+      const isDark: boolean = await w.webContents.executeJavaScript(
+        'matchMedia("(prefers-color-scheme: dark)").matches'
+      );
+      return isDark;
+    };
+
+    it('should override the result of prefers-color-scheme CSS media query', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      const originalSystemIsDark = await getPrefersColorSchemeIsDark(w);
+      nativeTheme.themeSource = 'dark';
+      expect(await getPrefersColorSchemeIsDark(w)).to.equal(true);
+      nativeTheme.themeSource = 'light';
+      expect(await getPrefersColorSchemeIsDark(w)).to.equal(false);
+      nativeTheme.themeSource = 'system';
+      expect(await getPrefersColorSchemeIsDark(w)).to.equal(originalSystemIsDark);
+      w.close();
+    });
+  });
 
   describe('nativeTheme.shouldUseInvertedColorScheme', () => {
     it('returns a boolean', () => {

@@ -8,7 +8,7 @@ This patch fixes the memory_instrumentation module returning 0.
 Backport https://chromium-review.googlesource.com/c/chromium/src/+/1967436.
 
 diff --git a/services/resource_coordinator/public/cpp/memory_instrumentation/os_metrics_mac.cc b/services/resource_coordinator/public/cpp/memory_instrumentation/os_metrics_mac.cc
-index a20418240d52..487336bbd484 100644
+index a20418240d52d65a0b905df7ff8754c50d38c0fc..487336bbd48440edde753d03fc8c79b2a4dbc299 100644
 --- a/services/resource_coordinator/public/cpp/memory_instrumentation/os_metrics_mac.cc
 +++ b/services/resource_coordinator/public/cpp/memory_instrumentation/os_metrics_mac.cc
 @@ -50,8 +50,34 @@ struct ChromeTaskVMInfo {

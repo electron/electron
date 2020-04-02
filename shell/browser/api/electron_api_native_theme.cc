@@ -21,14 +21,16 @@ namespace electron {
 
 namespace api {
 
-NativeTheme::NativeTheme(v8::Isolate* isolate, ui::NativeTheme* theme)
-    : theme_(theme) {
-  theme_->AddObserver(this);
+NativeTheme::NativeTheme(v8::Isolate* isolate,
+                         ui::NativeTheme* ui_theme,
+                         ui::NativeTheme* web_theme)
+    : ui_theme_(ui_theme), web_theme_(web_theme) {
+  ui_theme_->AddObserver(this);
   Init(isolate);
 }
 
 NativeTheme::~NativeTheme() {
-  theme_->RemoveObserver(this);
+  ui_theme_->RemoveObserver(this);
 }
 
 void NativeTheme::OnNativeThemeUpdatedOnUI() {
@@ -42,7 +44,8 @@ void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
 }
 
 void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
-  theme_->set_theme_source(override);
+  ui_theme_->set_theme_source(override);
+  web_theme_->set_theme_source(override);
 #if defined(OS_MACOSX)
   // Update the macOS appearance setting for this new override value
   UpdateMacOSAppearanceForOverrideValue(override);
@@ -52,15 +55,15 @@ void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
 }
 
 ui::NativeTheme::ThemeSource NativeTheme::GetThemeSource() const {
-  return theme_->theme_source();
+  return ui_theme_->theme_source();
 }
 
 bool NativeTheme::ShouldUseDarkColors() {
-  return theme_->ShouldUseDarkColors();
+  return ui_theme_->ShouldUseDarkColors();
 }
 
 bool NativeTheme::ShouldUseHighContrastColors() {
-  return theme_->UsesHighContrastColors();
+  return ui_theme_->UsesHighContrastColors();
 }
 
 #if defined(OS_MACOSX)
@@ -85,8 +88,11 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
 
 // static
 v8::Local<v8::Value> NativeTheme::Create(v8::Isolate* isolate) {
-  ui::NativeTheme* theme = ui::NativeTheme::GetInstanceForNativeUi();
-  return gin::CreateHandle(isolate, new NativeTheme(isolate, theme)).ToV8();
+  ui::NativeTheme* ui_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  ui::NativeTheme* web_theme = ui::NativeTheme::GetInstanceForWeb();
+  return gin::CreateHandle(isolate,
+                           new NativeTheme(isolate, ui_theme, web_theme))
+      .ToV8();
 }
 
 // static

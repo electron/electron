@@ -151,7 +151,7 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void SetWindowLevel(int level);
 
   // Custom traffic light positioning
-  void RepositionTrafficLights();
+  void RepositionTrafficLights() override;
   void SetExitingFullScreen(bool flag);
   void SetTrafficLightPosition(const gfx::Point& position) override;
   gfx::Point GetTrafficLightPosition() const override;
