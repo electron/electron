@@ -188,8 +188,7 @@ std::string InclusionStatusToString(
   if (status.HasExclusionReason(net::CanonicalCookie::CookieInclusionStatus::
                                     EXCLUDE_NONCOOKIEABLE_SCHEME))
     return "Cannot set cookie for current scheme";
-  LOG(WARNING) << "Cookie inclusion debug string: "
-               << status.GetDebugString() return "Setting cookie failed";
+  return "Setting cookie failed";
 }
 
 net::CookieSameSite StringToCookieSameSite(const std::string* str_ptr) {
