@@ -27,7 +27,7 @@ it should be code-signed.
 
 # Signing & notarizing macOS builds
 
-Properly preparing macOS applications for release require two steps: First, the
+Properly preparing macOS applications for release requires two steps: First, the
 app needs to be code-signed. Then, the app needs to be uploaded to Apple for a
 process called "notarization", where automated systems will further verify that
 your app isn't doing anything to endanger its users.
