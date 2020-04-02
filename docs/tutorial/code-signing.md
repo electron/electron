@@ -36,7 +36,7 @@ To start the process, ensure that you fulfill the requirements for signing and
 notarizing your app:
 
 1. Enroll in the [Apple Developer Program] (requires an annual fee)
-2. Download and install [Xcode]
+2. Download and install [Xcode] - this requires a computer running macOS
 3. Generate, download, and install [signing certificates]
 
 Electron's ecosystem favors configuration and freedom, so there are multiple
