@@ -498,15 +498,18 @@ void OnClientCertificateSelected(
 
 #if defined(USE_NSS_CERTS)
 int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
-  std::string file_data;
+  std::string file_data, cert_path;
+  base::string16 password;
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
 
   std::string* cert_path_ptr = options.FindStringPath("certificate");
-  std::string cert_path = *cert_path_ptr;
+  if (cert_path_ptr)
+    cert_path = *cert_path_ptr;
 
   std::string* pwd = options.FindStringPath("password");
-  base::string16 password = base::UTF8ToUTF16(*pwd);
+  if (pwd)
+    password = base::UTF8ToUTF16(*pwd);
 
   if (!cert_path.empty()) {
     if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
