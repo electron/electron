@@ -99,7 +99,7 @@ class Tray : public gin::Wrappable<Tray>,
                       v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();
 
-  bool CheckDestroyed();
+  bool CheckAlive();
 
   v8::Global<v8::Value> menu_;
   std::unique_ptr<TrayIcon> tray_icon_;

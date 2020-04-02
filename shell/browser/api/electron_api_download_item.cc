@@ -99,17 +99,17 @@ DownloadItem::~DownloadItem() {
   }
 }
 
-bool DownloadItem::CheckDestroyed() const {
+bool DownloadItem::CheckAlive() const {
   if (!download_item_) {
     gin_helper::ErrorThrower(v8::Isolate::GetCurrent())
-        .ThrowError("Object has been destroyed");
+        .ThrowError("DownloadItem used after being destroyed");
     return false;
   }
   return true;
 }
 
 void DownloadItem::OnDownloadUpdated(download::DownloadItem* item) {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   if (download_item_->IsDone()) {
     Emit("done", item->GetState());
@@ -121,64 +121,65 @@ void DownloadItem::OnDownloadUpdated(download::DownloadItem* item) {
 
 void DownloadItem::OnDownloadDestroyed(download::DownloadItem* download_item) {
   download_item_ = nullptr;
+  Unpin();
 }
 
 void DownloadItem::Pause() {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   download_item_->Pause();
 }
 
 bool DownloadItem::IsPaused() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return false;
   return download_item_->IsPaused();
 }
 
 void DownloadItem::Resume() {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   download_item_->Resume(true /* user_gesture */);
 }
 
 bool DownloadItem::CanResume() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return false;
   return download_item_->CanResume();
 }
 
 void DownloadItem::Cancel() {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   download_item_->Cancel(true);
 }
 
 int64_t DownloadItem::GetReceivedBytes() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return 0;
   return download_item_->GetReceivedBytes();
 }
 
 int64_t DownloadItem::GetTotalBytes() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return 0;
   return download_item_->GetTotalBytes();
 }
 
 std::string DownloadItem::GetMimeType() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return "";
   return download_item_->GetMimeType();
 }
 
 bool DownloadItem::HasUserGesture() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return false;
   return download_item_->HasUserGesture();
 }
 
 std::string DownloadItem::GetFilename() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return "";
   return base::UTF16ToUTF8(
       net::GenerateFileName(GetURL(), GetContentDisposition(), std::string(),
@@ -188,31 +189,31 @@ std::string DownloadItem::GetFilename() const {
 }
 
 std::string DownloadItem::GetContentDisposition() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return "";
   return download_item_->GetContentDisposition();
 }
 
 const GURL& DownloadItem::GetURL() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return GURL::EmptyGURL();
   return download_item_->GetURL();
 }
 
 v8::Local<v8::Value> DownloadItem::GetURLChain(v8::Isolate* isolate) const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return v8::Local<v8::Value>();
   return gin::ConvertToV8(isolate, download_item_->GetUrlChain());
 }
 
 download::DownloadItem::DownloadState DownloadItem::GetState() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return download::DownloadItem::IN_PROGRESS;
   return download_item_->GetState();
 }
 
 bool DownloadItem::IsDone() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return false;
   return download_item_->IsDone();
 }
@@ -235,19 +236,19 @@ void DownloadItem::SetSaveDialogOptions(
 }
 
 std::string DownloadItem::GetLastModifiedTime() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return "";
   return download_item_->GetLastModifiedTime();
 }
 
 std::string DownloadItem::GetETag() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return "";
   return download_item_->GetETag();
 }
 
 double DownloadItem::GetStartTime() const {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return 0;
   return download_item_->GetStartTime().ToDoubleT();
 }

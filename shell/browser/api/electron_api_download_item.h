@@ -47,7 +47,7 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   DownloadItem(v8::Isolate* isolate, download::DownloadItem* download_item);
   ~DownloadItem() override;
 
-  bool CheckDestroyed() const;
+  bool CheckAlive() const;
 
   // download::DownloadItem::Observer
   void OnDownloadUpdated(download::DownloadItem* download) override;
