@@ -265,7 +265,8 @@ void SetZoomLevel(gin_helper::ErrorThrower thrower,
   content::RenderFrame* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     thrower.ThrowError(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before webFrame.setZoomLevel could be "
+        "executed");
     return;
   }
 
@@ -281,7 +282,8 @@ double GetZoomLevel(gin_helper::ErrorThrower thrower,
   content::RenderFrame* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     thrower.ThrowError(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before webFrame.getZoomLevel could be "
+        "executed");
     return result;
   }
 
@@ -316,7 +318,8 @@ void SetVisualZoomLevelLimits(gin_helper::ErrorThrower thrower,
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     thrower.ThrowError(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before webFrame.setVisualZoomLevelLimits "
+        "could be executed");
     return;
   }
 
@@ -336,7 +339,8 @@ void AllowGuestViewElementDefinition(gin_helper::ErrorThrower thrower,
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     thrower.ThrowError(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before "
+        "webFrame.allowGuestViewElementDefinition could be executed");
     return;
   }
 
@@ -380,7 +384,8 @@ void SetSpellCheckProvider(gin_helper::Arguments* args,
   content::RenderFrame* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     args->ThrowError(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before webFrame.setSpellCheckProvider "
+        "could be executed");
     return;
   }
 
@@ -404,7 +409,8 @@ void InsertText(gin_helper::ErrorThrower thrower,
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     thrower.ThrowError(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before webFrame.insertText could be "
+        "executed");
     return;
   }
 
@@ -432,7 +438,8 @@ base::string16 InsertCSS(v8::Local<v8::Value> window,
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     args->ThrowError(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before webFrame.insertCSS could be "
+        "executed");
     return base::string16();
   }
 
@@ -452,7 +459,8 @@ void RemoveInsertedCSS(gin_helper::ErrorThrower thrower,
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     thrower.ThrowError(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before webFrame.removeInsertedCSS could be "
+        "executed");
     return;
   }
 
@@ -473,7 +481,8 @@ v8::Local<v8::Promise> ExecuteJavaScript(gin_helper::Arguments* args,
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     promise.RejectWithErrorMessage(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before webFrame.executeJavaScript could be "
+        "executed");
     return handle;
   }
 
@@ -504,7 +513,8 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     promise.RejectWithErrorMessage(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before "
+        "webFrame.executeJavaScriptInIsolatedWorld could be executed");
     return handle;
   }
 
@@ -564,7 +574,8 @@ void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     args->ThrowError(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before webFrame.setIsolatedWorldInfo could "
+        "be executed");
     return;
   }
 
@@ -708,7 +719,8 @@ int GetRoutingId(gin_helper::ErrorThrower thrower,
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     thrower.ThrowError(
-        "Render frame was torn down before script could be executed");
+        "Render frame was torn down before webFrame.getRoutingId could be "
+        "executed");
     return 0;
   }
 
