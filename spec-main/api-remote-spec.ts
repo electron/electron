@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { closeAllWindows } from './window-helpers';
 import { ifdescribe } from './spec-helpers';
 
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 
 const features = process.electronBinding('features');

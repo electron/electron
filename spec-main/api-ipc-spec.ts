@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { expect } from 'chai';
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as path from 'path';
-import { ipcMain, BrowserWindow, WebContents, WebPreferences, webContents } from 'electron';
+import { ipcMain, BrowserWindow, WebContents, WebPreferences, webContents } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
 

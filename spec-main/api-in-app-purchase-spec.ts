@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { inAppPurchase } from 'electron';
+import { inAppPurchase } from 'electron/main';
 
 describe('inAppPurchase module', function () {
   if (process.platform !== 'darwin') return;

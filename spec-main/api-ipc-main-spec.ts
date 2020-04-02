@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as cp from 'child_process';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron/main';
 
 describe('ipc main module', () => {
   const fixtures = path.join(__dirname, 'fixtures');

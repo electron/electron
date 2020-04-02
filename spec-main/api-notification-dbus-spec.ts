@@ -8,7 +8,7 @@
 
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { app } from 'electron';
+import { app } from 'electron/main';
 import { ifdescribe } from './spec-helpers';
 import { promisify } from 'util';
 

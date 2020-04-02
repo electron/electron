@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { dialog, BrowserWindow } from 'electron';
+import { dialog, BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { ifit } from './spec-helpers';
 

@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { BrowserWindow, TouchBar } from 'electron';
+import { BrowserWindow, TouchBar } from 'electron/main';
 import { closeWindow } from './window-helpers';
 import { expect } from 'chai';
 

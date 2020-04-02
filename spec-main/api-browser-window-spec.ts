@@ -5,7 +5,7 @@ import * as os from 'os';
 import * as qs from 'querystring';
 import * as http from 'http';
 import { AddressInfo } from 'net';
-import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron';
+import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
 import { emittedOnce } from './events-helpers';
 import { ifit, ifdescribe } from './spec-helpers';

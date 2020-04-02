@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { Notification } from 'electron';
+import { Notification } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { ifit } from './spec-helpers';
 

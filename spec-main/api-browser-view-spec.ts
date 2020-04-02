@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as ChildProcess from 'child_process';
 import * as path from 'path';
 import { emittedOnce } from './events-helpers';
-import { BrowserView, BrowserWindow } from 'electron';
+import { BrowserView, BrowserWindow } from 'electron/main';
 import { closeWindow } from './window-helpers';
 
 describe('BrowserView module', () => {

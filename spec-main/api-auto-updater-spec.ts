@@ -1,4 +1,4 @@
-import { autoUpdater } from 'electron';
+import { autoUpdater } from 'electron/main';
 import { expect } from 'chai';
 import { ifit, ifdescribe } from './spec-helpers';
 

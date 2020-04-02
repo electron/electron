@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { app, session, BrowserWindow, ipcMain, WebContents, Extension } from 'electron';
+import { app, session, BrowserWindow, ipcMain, WebContents, Extension } from 'electron/main';
 import { closeAllWindows, closeWindow } from './window-helpers';
 import * as http from 'http';
 import { AddressInfo } from 'net';

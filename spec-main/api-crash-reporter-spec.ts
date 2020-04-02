@@ -7,7 +7,7 @@ import * as path from 'path';
 import { ifdescribe, ifit } from './spec-helpers';
 import * as temp from 'temp';
 import * as url from 'url';
-import { ipcMain, app, BrowserWindow, crashReporter, BrowserWindowConstructorOptions } from 'electron';
+import { ipcMain, app, BrowserWindow, crashReporter, BrowserWindowConstructorOptions } from 'electron/main';
 import { AddressInfo } from 'net';
 import { closeWindow, closeAllWindows } from './window-helpers';
 import { EventEmitter } from 'events';

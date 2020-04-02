@@ -1,4 +1,4 @@
-import { contextBridge, BrowserWindow, ipcMain } from 'electron';
+import { contextBridge, BrowserWindow, ipcMain } from 'electron/main';
 import { expect } from 'chai';
 import * as fs from 'fs-extra';
 import * as os from 'os';
