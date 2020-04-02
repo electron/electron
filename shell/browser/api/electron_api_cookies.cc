@@ -191,20 +191,26 @@ std::string InclusionStatusToString(
   return "Setting cookie failed";
 }
 
-net::CookieSameSite StringToCookieSameSite(const std::string* str_ptr) {
-  if (!str_ptr)
-    return net::CookieSameSite::NO_RESTRICTION;
+std::string StringToCookieSameSite(const std::string* str_ptr,
+                                   net::CookieSameSite* same_site) {
+  if (!str_ptr) {
+    *same_site = net::CookieSameSite::NO_RESTRICTION;
+    return "";
+  }
   const std::string& str = *str_ptr;
   if (str == "unspecified") {
-    return net::CookieSameSite::UNSPECIFIED;
+    *same_site = net::CookieSameSite::UNSPECIFIED;
   } else if (str == "no_restriction") {
-    return net::CookieSameSite::NO_RESTRICTION;
+    *same_site = net::CookieSameSite::NO_RESTRICTION;
   } else if (str == "lax") {
-    return net::CookieSameSite::LAX_MODE;
+    *same_site = net::CookieSameSite::LAX_MODE;
   } else if (str == "strict") {
-    return net::CookieSameSite::STRICT_MODE;
+    *same_site = net::CookieSameSite::STRICT_MODE;
+  } else {
+    return "Failed to convert '" + str +
+           "' to an appropriate cookie same site value";
   }
-  return net::CookieSameSite::NO_RESTRICTION;
+  return "";
 }
 
 }  // namespace
@@ -291,7 +297,12 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   bool secure = details.FindBoolKey("secure").value_or(false);
   bool http_only = details.FindBoolKey("httpOnly").value_or(false);
   const std::string* same_site_string = details.FindStringKey("sameSite");
-  net::CookieSameSite same_site = StringToCookieSameSite(same_site_string);
+  net::CookieSameSite same_site;
+  std::string error = StringToCookieSameSite(same_site_string, &same_site);
+  if (!error.empty()) {
+    promise.RejectWithErrorMessage(error);
+    return handle;
+  }
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
