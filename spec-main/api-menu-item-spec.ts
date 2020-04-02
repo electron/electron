@@ -48,7 +48,7 @@ describe('MenuItems', () => {
           done();
         }
       }]);
-      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId);
+      menu._executeCommand({}, menu.items[0].commandId);
     });
   });
 
@@ -60,7 +60,7 @@ describe('MenuItems', () => {
       }]);
 
       expect(menu.items[0].checked).to.be.false('menu item checked');
-      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId);
+      menu._executeCommand({}, menu.items[0].commandId);
       expect(menu.items[0].checked).to.be.true('menu item checked');
     });
 
@@ -70,9 +70,9 @@ describe('MenuItems', () => {
         type: 'radio'
       }]);
 
-      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId);
+      menu._executeCommand({}, menu.items[0].commandId);
       expect(menu.items[0].checked).to.be.true('menu item checked');
-      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId);
+      menu._executeCommand({}, menu.items[0].commandId);
       expect(menu.items[0].checked).to.be.true('menu item checked');
     });
 
@@ -123,7 +123,7 @@ describe('MenuItems', () => {
 
       it('at least have one item checked in each group', () => {
         const menu = Menu.buildFromTemplate(template);
-        menu.delegate.menuWillShow(menu);
+        menu._menuWillShow();
 
         const groups = findRadioGroups(template);
 

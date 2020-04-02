@@ -2,10 +2,8 @@ declare let standardScheme: string;
 
 declare namespace Electron {
   interface Menu {
-    delegate: {
-      executeCommand(menu: Menu, event: any, id: number): void;
-      menuWillShow(menu: Menu): void;
-    };
+    _executeCommand(event: any, id: number): void;
+    _menuWillShow(): void;
     getAcceleratorTextAt(index: number): string;
   }
 
