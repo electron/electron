@@ -14,6 +14,8 @@ channel messaging.
 
 ## Class: MessagePortMain
 
+Process: [Main](../glossary.md#main-process)
+
 ### Instance Methods
 
 #### `port.postMessage(message, [transfer])`

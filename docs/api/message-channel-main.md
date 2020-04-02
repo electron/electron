@@ -9,6 +9,8 @@ channel messaging.
 
 ## Class: MessageChannelMain
 
+Process: [Main](../glossary.md#main-process)
+
 Example:
 ```js
 const { port1, port2 } = new MessageChannelMain()
