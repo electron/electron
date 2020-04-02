@@ -1768,7 +1768,7 @@ Set a custom position for the traffic light buttons. Can only be used with `titl
 Returns `Point` - The current position for the traffic light buttons. Can only be used with `titleBarStyle`
 set to `hidden`.
 
-#### `win.setTouchBar(touchBar)` _macOS_ _Experimental_
+#### `win.setTouchBar(touchBar)` _macOS_
 
 * `touchBar` TouchBar | null
 
