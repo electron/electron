@@ -617,10 +617,10 @@ index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..510d86194ed71d78b2c89c7a77422afc0ef614ad
+index 0000000000000000000000000000000000000000..67116f2070bb9200aace81afdf0b1e7a6e4fd0c0
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,191 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -665,6 +665,7 @@ index 0000000000000000000000000000000000000000..510d86194ed71d78b2c89c7a77422afc
 +    "-Wno-switch",
 +    "-Wno-unused-function",
 +    "-Wno-unused-variable",
++    "-Wno-unreachable-code",
 +  ]
 +
 +  libs = []
