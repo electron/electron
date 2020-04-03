@@ -311,7 +311,7 @@ describe('session module', () => {
       const { item, itemUrl, itemFilename } = await downloadPrevented;
       expect(itemUrl).to.equal(url);
       expect(itemFilename).to.equal('mockFile.txt');
-      expect(() => item.getURL()).to.throw('Object has been destroyed');
+      expect(() => item.getURL()).to.throw('DownloadItem used after being destroyed');
     });
   });
 

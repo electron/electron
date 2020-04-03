@@ -65,11 +65,7 @@ ElectronDownloadManagerDelegate::~ElectronDownloadManagerDelegate() {
 void ElectronDownloadManagerDelegate::GetItemSavePath(
     download::DownloadItem* item,
     base::FilePath* path) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  api::DownloadItem* download =
-      api::DownloadItem::FromWrappedClass(isolate, item);
+  api::DownloadItem* download = api::DownloadItem::FromDownloadItem(item);
   if (download)
     *path = download->GetSavePath();
 }
@@ -77,11 +73,7 @@ void ElectronDownloadManagerDelegate::GetItemSavePath(
 void ElectronDownloadManagerDelegate::GetItemSaveDialogOptions(
     download::DownloadItem* item,
     file_dialog::DialogSettings* options) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  api::DownloadItem* download =
-      api::DownloadItem::FromWrappedClass(isolate, item);
+  api::DownloadItem* download = api::DownloadItem::FromDownloadItem(item);
   if (download)
     *options = download->GetSaveDialogOptions();
 }
@@ -165,13 +157,9 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
       browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
                                             path.DirName());
 
-      v8::Isolate* isolate = v8::Isolate::GetCurrent();
-      v8::Locker locker(isolate);
-      v8::HandleScope handle_scope(isolate);
-      api::DownloadItem* download_item =
-          api::DownloadItem::FromWrappedClass(isolate, item);
-      if (download_item)
-        download_item->SetSavePath(path);
+      api::DownloadItem* download = api::DownloadItem::FromDownloadItem(item);
+      if (download)
+        download->SetSavePath(path);
     }
   }
 
