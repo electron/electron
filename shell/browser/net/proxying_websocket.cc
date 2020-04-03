@@ -129,6 +129,7 @@ void ProxyingWebSocket::OnConnectionEstablished(
   client_receiver_ = std::move(client_receiver);
   handshake_response_ = std::move(response);
   readable_ = std::move(readable);
+  writable_ = std::move(writable);
 
   response_->remote_endpoint = handshake_response_->remote_endpoint;
 
