@@ -155,6 +155,9 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
       // |media_list_sources|.
       if (!webrtc::DxgiDuplicatorController::Instance()->GetDeviceNames(
               &device_names)) {
+        v8::Isolate* isolate = v8::Isolate::GetCurrent();
+        v8::Locker locker(isolate);
+        v8::HandleScope scope(isolate);
         gin_helper::CallMethod(this, "_onerror", "Failed to get sources.");
         return;
       }
@@ -184,9 +187,13 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
               std::back_inserter(captured_sources_));
   }
 
-  if (!capture_window_ && !capture_screen_)
+  if (!capture_window_ && !capture_screen_) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Locker locker(isolate);
+    v8::HandleScope scope(isolate);
     gin_helper::CallMethod(this, "_onfinished", captured_sources_,
                            fetch_window_icons_);
+  }
 }
 
 // static

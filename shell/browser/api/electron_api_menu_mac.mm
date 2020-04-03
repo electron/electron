@@ -177,8 +177,11 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-gin_helper::WrappableBase* Menu::New(gin::Arguments* args) {
-  return new MenuMac(args);
+gin::Handle<Menu> Menu::New(gin::Arguments* args) {
+  auto handle =
+      gin::CreateHandle(args->isolate(), static_cast<Menu*>(new MenuMac(args)));
+  gin_helper::CallMethod(args->isolate(), handle.get(), "_init");
+  return handle;
 }
 
 }  // namespace api

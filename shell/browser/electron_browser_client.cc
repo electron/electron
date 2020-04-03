@@ -1176,7 +1176,8 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
           context, false /* we don't support extensions::WebViewGuest */));
 #endif
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
-  protocol_registry->RegisterURLLoaderFactories(factories);
+  protocol_registry->RegisterURLLoaderFactories(
+      URLLoaderFactoryType::kNavigation, factories);
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1236,7 +1237,8 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
 
   if (web_contents) {
     ProtocolRegistry::FromBrowserContext(web_contents->GetBrowserContext())
-        ->RegisterURLLoaderFactories(factories);
+        ->RegisterURLLoaderFactories(URLLoaderFactoryType::kDocumentSubResource,
+                                     factories);
   }
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,

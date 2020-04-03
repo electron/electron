@@ -16,21 +16,13 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-namespace {
-
-// We need this map to keep references to currently opened menus.
-// Without this menus would be destroyed by js garbage collector
-// even when they are still displayed.
-std::map<uint32_t, v8::Global<v8::Object>> g_menus;
-
-}  // unnamed namespace
-
 namespace electron {
 
 namespace api {
 
+gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 Menu::Menu(gin::Arguments* args) : model_(new ElectronMenuModel(this)) {
-  InitWithArgs(args);
   model_->AddObserver(this);
 }
 
@@ -40,74 +32,82 @@ Menu::~Menu() {
   }
 }
 
-void Menu::AfterInit(v8::Isolate* isolate) {
-  gin::Dictionary wrappable(isolate, GetWrapper());
-  gin::Dictionary delegate(nullptr);
-  if (!wrappable.Get("delegate", &delegate))
-    return;
-
-  delegate.Get("isCommandIdChecked", &is_checked_);
-  delegate.Get("isCommandIdEnabled", &is_enabled_);
-  delegate.Get("isCommandIdVisible", &is_visible_);
-  delegate.Get("shouldCommandIdWorkWhenHidden", &works_when_hidden_);
-  delegate.Get("getAcceleratorForCommandId", &get_accelerator_);
-  delegate.Get("shouldRegisterAcceleratorForCommandId",
-               &should_register_accelerator_);
-  delegate.Get("executeCommand", &execute_command_);
-  delegate.Get("menuWillShow", &menu_will_show_);
+bool InvokeBoolMethod(const Menu* menu,
+                      const char* method,
+                      int command_id,
+                      bool default_value = false) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
+  // We need to cast off const here because GetWrapper() is non-const, but
+  // ui::SimpleMenuModel::Delegate's methods are const.
+  v8::Local<v8::Value> val = gin_helper::CallMethod(
+      isolate, const_cast<Menu*>(menu), method, command_id);
+  bool ret = false;
+  return gin::ConvertFromV8(isolate, val, &ret) ? ret : default_value;
 }
 
 bool Menu::IsCommandIdChecked(int command_id) const {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  return is_checked_.Run(GetWrapper(), command_id);
+  return InvokeBoolMethod(this, "_isCommandIdChecked", command_id);
 }
 
 bool Menu::IsCommandIdEnabled(int command_id) const {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  return is_enabled_.Run(GetWrapper(), command_id);
+  return InvokeBoolMethod(this, "_isCommandIdEnabled", command_id);
 }
 
 bool Menu::IsCommandIdVisible(int command_id) const {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  return is_visible_.Run(GetWrapper(), command_id);
+  return InvokeBoolMethod(this, "_isCommandIdVisible", command_id);
 }
 
 bool Menu::ShouldCommandIdWorkWhenHidden(int command_id) const {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  return works_when_hidden_.Run(GetWrapper(), command_id);
+  return InvokeBoolMethod(this, "_shouldCommandIdWorkWhenHidden", command_id);
 }
 
 bool Menu::GetAcceleratorForCommandIdWithParams(
     int command_id,
     bool use_default_accelerator,
     ui::Accelerator* accelerator) const {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  v8::Local<v8::Value> val =
-      get_accelerator_.Run(GetWrapper(), command_id, use_default_accelerator);
-  return gin::ConvertFromV8(isolate(), val, accelerator);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val = gin_helper::CallMethod(
+      isolate, const_cast<Menu*>(this), "_getAcceleratorForCommandId",
+      command_id, use_default_accelerator);
+  return gin::ConvertFromV8(isolate, val, accelerator);
 }
 
 bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  return should_register_accelerator_.Run(GetWrapper(), command_id);
+  return InvokeBoolMethod(this, "_shouldRegisterAcceleratorForCommandId",
+                          command_id);
 }
 
 void Menu::ExecuteCommand(int command_id, int flags) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  execute_command_.Run(GetWrapper(), CreateEventFromFlags(flags), command_id);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
+  gin_helper::CallMethod(isolate, const_cast<Menu*>(this), "_executeCommand",
+                         CreateEventFromFlags(flags), command_id);
 }
 
 void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  menu_will_show_.Run(GetWrapper());
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
+  gin_helper::CallMethod(isolate, const_cast<Menu*>(this), "_menuWillShow");
+}
+
+base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
+  // return ((callback, ref) => { callback() }).bind(null, callback, this)
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Object> self;
+  if (GetWrapper(isolate).ToLocal(&self)) {
+    v8::Global<v8::Value> ref(isolate, self);
+    return base::BindOnce(
+        [](base::OnceClosure callback, v8::Global<v8::Value> ref) {
+          std::move(callback).Run();
+        },
+        std::move(callback), std::move(ref));
+  } else {
+    return base::DoNothing();
+  }
 }
 
 void Menu::InsertItemAt(int index,
@@ -208,32 +208,20 @@ bool Menu::WorksWhenHiddenAt(int index) const {
 }
 
 void Menu::OnMenuWillClose() {
-  g_menus.erase(weak_map_id());
+  Unpin();
   Emit("menu-will-close");
 }
 
 void Menu::OnMenuWillShow() {
-  v8::HandleScope scope(isolate());
-  g_menus[weak_map_id()] = v8::Global<v8::Object>(isolate(), GetWrapper());
+  Pin(v8::Isolate::GetCurrent());
   Emit("menu-will-show");
 }
 
-base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
-  // return ((callback, ref) => { callback() }).bind(null, callback, this)
-  v8::Global<v8::Value> ref(isolate(), GetWrapper());
-  return base::BindOnce(
-      [](base::OnceClosure callback, v8::Global<v8::Value> ref) {
-        std::move(callback).Run();
-      },
-      std::move(callback), std::move(ref));
-}
-
 // static
-void Menu::BuildPrototype(v8::Isolate* isolate,
-                          v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "Menu"));
-  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
+  return gin::ObjectTemplateBuilder(isolate, "Menu", templ)
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
       .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)
@@ -256,7 +244,8 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
-      .SetMethod("closePopupAt", &Menu::ClosePopupAt);
+      .SetMethod("closePopupAt", &Menu::ClosePopupAt)
+      .Build();
 }
 
 }  // namespace api
@@ -272,12 +261,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Menu::SetConstructor(isolate, base::BindRepeating(&Menu::New));
 
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set(
-      "Menu",
-      Menu::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set("Menu", Menu::GetConstructor(context));
 #if defined(OS_MACOSX)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",

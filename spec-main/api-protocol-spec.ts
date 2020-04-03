@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain } from 'electron';
 import { promisify } from 'util';
 import { AddressInfo } from 'net';
+import * as ChildProcess from 'child_process';
 import * as path from 'path';
 import * as http from 'http';
 import * as fs from 'fs';
@@ -634,6 +635,26 @@ describe('protocol module', () => {
 
     it('returns error when scheme is not intercepted', async () => {
       await expect(uninterceptProtocol('http')).to.be.eventually.rejectedWith(Error);
+    });
+  });
+
+  describe('protocol.registerSchemeAsPrivileged', () => {
+    it('does not crash on exit', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'custom-protocol-shutdown.js');
+      const appProcess = ChildProcess.spawn(process.execPath, ['--enable-logging', appPath]);
+      let stdout = '';
+      let stderr = '';
+      appProcess.stdout.on('data', data => { stdout += data; });
+      appProcess.stderr.on('data', data => { stderr += data; });
+      const [code] = await emittedOnce(appProcess, 'exit');
+      if (code !== 0) {
+        console.log('Exit code : ', code);
+        console.log('stdout : ', stdout);
+        console.log('stderr : ', stderr);
+      }
+      expect(code).to.equal(0);
+      expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
+      expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
     });
   });
 

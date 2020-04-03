@@ -54,7 +54,7 @@ only via IPC. The use of this option stops Electron from creating a Node.js runt
 within this new window `window.open` follows the native behavior (by default Electron creates a [`BrowserWindow`](browser-window.md)
 and returns a proxy to this via `window.open`).
 
-[`app.enableSandbox`](app.md#appenablesandbox-experimental) can be used to force `sandbox: true` for all `BrowserWindow` instances.
+[`app.enableSandbox`](app.md#appenablesandbox) can be used to force `sandbox: true` for all `BrowserWindow` instances.
 
 ```js
 let win

@@ -1,7 +1,13 @@
 import { expect } from 'chai';
 import { Notification } from 'electron';
+import { emittedOnce } from './events-helpers';
+import { ifit } from './spec-helpers';
 
 describe('Notification module', () => {
+  it('is supported', () => {
+    expect(Notification.isSupported()).to.be.a('boolean');
+  });
+
   it('inits, gets and sets basic string properties correctly', () => {
     const n = new Notification({
       title: 'title',
@@ -90,6 +96,34 @@ describe('Notification module', () => {
     expect(n.actions[0].text).to.equal('3');
     expect(n.actions[1].type).to.equal('button');
     expect(n.actions[1].text).to.equal('4');
+  });
+
+  it('can be shown and closed', () => {
+    const n = new Notification({
+      title: 'test notification',
+      body: 'test body',
+      silent: true
+    });
+    n.show();
+    n.close();
+  });
+
+  ifit(process.platform === 'darwin')('emits show and close events', async () => {
+    const n = new Notification({
+      title: 'test notification',
+      body: 'test body',
+      silent: true
+    });
+    {
+      const e = emittedOnce(n, 'show');
+      n.show();
+      await e;
+    }
+    {
+      const e = emittedOnce(n, 'close');
+      n.close();
+      await e;
+    }
   });
 
   // TODO(sethlu): Find way to test init with notification icon?

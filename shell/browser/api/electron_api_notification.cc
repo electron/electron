@@ -6,6 +6,7 @@
 
 #include "base/guid.h"
 #include "base/strings/utf_string_conversions.h"
+#include "gin/handle.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
@@ -48,9 +49,9 @@ namespace electron {
 
 namespace api {
 
-Notification::Notification(gin::Arguments* args) {
-  InitWithArgs(args);
+gin::WrapperInfo Notification::kWrapperInfo = {gin::kEmbedderNativeGin};
 
+Notification::Notification(gin::Arguments* args) {
   presenter_ = static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
                    ->GetNotificationPresenter();
 
@@ -80,13 +81,13 @@ Notification::~Notification() {
 }
 
 // static
-gin_helper::WrappableBase* Notification::New(gin_helper::ErrorThrower thrower,
-                                             gin::Arguments* args) {
+gin::Handle<Notification> Notification::New(gin_helper::ErrorThrower thrower,
+                                            gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Notification before app is ready");
-    return nullptr;
+    return gin::Handle<Notification>();
   }
-  return new Notification(args);
+  return gin::CreateHandle(thrower.isolate(), new Notification(args));
 }
 
 // Getters
@@ -240,12 +241,10 @@ bool Notification::IsSupported() {
                ->GetNotificationPresenter();
 }
 
-// static
-void Notification::BuildPrototype(v8::Isolate* isolate,
-                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "Notification"));
-  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+v8::Local<v8::ObjectTemplate> Notification::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
+  return gin::ObjectTemplateBuilder(isolate, "Notification", templ)
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
@@ -265,7 +264,8 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("actions", &Notification::GetActions,
                    &Notification::SetActions)
       .SetProperty("closeButtonText", &Notification::GetCloseButtonText,
-                   &Notification::SetCloseButtonText);
+                   &Notification::SetCloseButtonText)
+      .Build();
 }
 
 }  // namespace api
@@ -281,14 +281,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Notification::SetConstructor(isolate,
-                               base::BindRepeating(&Notification::New));
-
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("Notification", Notification::GetConstructor(isolate)
-                               ->GetFunction(context)
-                               .ToLocalChecked());
-
+  dict.Set("Notification", Notification::GetConstructor(context));
   dict.SetMethod("isSupported", &Notification::IsSupported);
 }
 

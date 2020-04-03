@@ -26,7 +26,7 @@ The `Notification` class has the following static methods:
 
 Returns `Boolean` - Whether or not desktop notifications are supported on the current system
 
-### `new Notification([options])` _Experimental_
+### `new Notification([options])`
 
 * `options` Object (optional)
   * `title` String - A title for the notification, which will be shown at the top of the notification window when it is shown.
