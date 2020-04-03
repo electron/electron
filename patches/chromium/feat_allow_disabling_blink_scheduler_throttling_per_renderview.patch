@@ -61,7 +61,7 @@ index 893c45a5c71b4e55ea323ae60e11d12ddb099efd..db9a1ff0fe1a912db83692ab17c620cf
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 98855151d1f07177a20b0f6079f2f48826d215ca..ae1d910ad32c8c26db0396f675aa81a145468945 100644
+index 88f84ddd99f85eb1396ffa4774e8b5bffdf46afb..834c8a96f904261bd230cdfb55ecc7a6d152710d 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -1183,6 +1183,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
@@ -73,7 +73,7 @@ index 98855151d1f07177a20b0f6079f2f48826d215ca..ae1d910ad32c8c26db0396f675aa81a1
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
-@@ -1683,6 +1685,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
+@@ -1685,6 +1687,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
    return send_content_state_immediately_;
  }
  

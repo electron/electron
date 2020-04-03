@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrea Brancaleoni <abc@pompel.me>
+Date: Fri, 3 Apr 2020 22:08:22 +0200
+Subject: build: strip uuid from darwin binaries
+
+since uuid introduce a sort of non-determinism,
+strip them from MACH-O headers.
+
+diff --git a/build/config/mac/BUILD.gn b/build/config/mac/BUILD.gn
+index de8233bba4a1dec56f2b429d99642dae2b9eb7f4..2806cb8e0cb270e93cde7a0867ae142c0d9c2ec2 100644
+--- a/build/config/mac/BUILD.gn
++++ b/build/config/mac/BUILD.gn
+@@ -95,6 +95,6 @@ config("mac_dynamic_flags") {
+ # preserve specific symbols.
+ config("strip_all") {
+   if (enable_stripping) {
+-    ldflags = [ "-Wcrl,strip,-x,-S" ]
++    ldflags = [ "-Wcrl,strip,-x,-S,-no_uuid" ]
+   }
+ }
