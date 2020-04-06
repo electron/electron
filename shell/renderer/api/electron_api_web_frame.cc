@@ -18,6 +18,7 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
@@ -258,17 +259,34 @@ void SetName(v8::Local<v8::Value> window, const std::string& name) {
       blink::WebString::FromUTF8(name));
 }
 
-void SetZoomLevel(v8::Local<v8::Value> window, double level) {
+void SetZoomLevel(gin_helper::ErrorThrower thrower,
+                  v8::Local<v8::Value> window,
+                  double level) {
   content::RenderFrame* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    thrower.ThrowError(
+        "Render frame was torn down before webFrame.setZoomLevel could be "
+        "executed");
+    return;
+  }
+
   mojom::ElectronBrowserPtr browser_ptr;
   render_frame->GetRemoteInterfaces()->GetInterface(
       mojo::MakeRequest(&browser_ptr));
   browser_ptr->SetTemporaryZoomLevel(level);
 }
 
-double GetZoomLevel(v8::Local<v8::Value> window) {
+double GetZoomLevel(gin_helper::ErrorThrower thrower,
+                    v8::Local<v8::Value> window) {
   double result = 0.0;
   content::RenderFrame* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    thrower.ThrowError(
+        "Render frame was torn down before webFrame.getZoomLevel could be "
+        "executed");
+    return result;
+  }
+
   mojom::ElectronBrowserPtr browser_ptr;
   render_frame->GetRemoteInterfaces()->GetInterface(
       mojo::MakeRequest(&browser_ptr));
@@ -284,31 +302,51 @@ void SetZoomFactor(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  SetZoomLevel(window, blink::PageZoomFactorToZoomLevel(factor));
+  SetZoomLevel(thrower, window, blink::PageZoomFactorToZoomLevel(factor));
 }
 
-double GetZoomFactor(v8::Local<v8::Value> window) {
-  return blink::PageZoomLevelToZoomFactor(GetZoomLevel(window));
+double GetZoomFactor(gin_helper::ErrorThrower thrower,
+                     v8::Local<v8::Value> window) {
+  double zoom_level = GetZoomLevel(thrower, window);
+  return blink::PageZoomLevelToZoomFactor(zoom_level);
 }
 
-void SetVisualZoomLevelLimits(v8::Local<v8::Value> window,
+void SetVisualZoomLevelLimits(gin_helper::ErrorThrower thrower,
+                              v8::Local<v8::Value> window,
                               double min_level,
                               double max_level) {
-  blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    thrower.ThrowError(
+        "Render frame was torn down before webFrame.setVisualZoomLevelLimits "
+        "could be executed");
+    return;
+  }
+
+  blink::WebFrame* web_frame = render_frame->GetWebFrame();
   web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
   web_frame->View()->SetIgnoreViewportTagScaleLimits(true);
 }
 
-void AllowGuestViewElementDefinition(v8::Isolate* isolate,
+void AllowGuestViewElementDefinition(gin_helper::ErrorThrower thrower,
                                      v8::Local<v8::Value> window,
                                      v8::Local<v8::Object> context,
                                      v8::Local<v8::Function> register_cb) {
-  v8::HandleScope handle_scope(isolate);
+  v8::HandleScope handle_scope(thrower.isolate());
   v8::Context::Scope context_scope(context->CreationContext());
   blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
-  GetRenderFrame(context)->GetWebFrame()->RequestExecuteV8Function(
-      context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
-      nullptr);
+
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    thrower.ThrowError(
+        "Render frame was torn down before "
+        "webFrame.allowGuestViewElementDefinition could be executed");
+    return;
+  }
+
+  render_frame->GetWebFrame()->RequestExecuteV8Function(
+      context->CreationContext(), register_cb, v8::Null(thrower.isolate()), 0,
+      nullptr, nullptr);
 }
 
 int GetWebFrameId(v8::Local<v8::Value> window,
@@ -344,6 +382,13 @@ void SetSpellCheckProvider(gin_helper::Arguments* args,
 
   // Remove the old client.
   content::RenderFrame* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    args->ThrowError(
+        "Render frame was torn down before webFrame.setSpellCheckProvider "
+        "could be executed");
+    return;
+  }
+
   auto* existing = SpellCheckerHolder::FromRenderFrame(render_frame);
   if (existing)
     existing->UnsetAndDestroy();
@@ -358,8 +403,18 @@ void SetSpellCheckProvider(gin_helper::Arguments* args,
   new SpellCheckerHolder(render_frame, std::move(spell_check_client));
 }
 
-void InsertText(v8::Local<v8::Value> window, const std::string& text) {
-  blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
+void InsertText(gin_helper::ErrorThrower thrower,
+                v8::Local<v8::Value> window,
+                const std::string& text) {
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    thrower.ThrowError(
+        "Render frame was torn down before webFrame.insertText could be "
+        "executed");
+    return;
+  }
+
+  blink::WebFrame* web_frame = render_frame->GetWebFrame();
   if (web_frame->IsWebLocalFrame()) {
     web_frame->ToWebLocalFrame()
         ->FrameWidget()
@@ -380,7 +435,15 @@ base::string16 InsertCSS(v8::Local<v8::Value> window,
   if (args->GetNext(&options))
     options.Get("cssOrigin", &css_origin);
 
-  blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    args->ThrowError(
+        "Render frame was torn down before webFrame.insertCSS could be "
+        "executed");
+    return base::string16();
+  }
+
+  blink::WebFrame* web_frame = render_frame->GetWebFrame();
   if (web_frame->IsWebLocalFrame()) {
     return web_frame->ToWebLocalFrame()
         ->GetDocument()
@@ -390,8 +453,18 @@ base::string16 InsertCSS(v8::Local<v8::Value> window,
   return base::string16();
 }
 
-void RemoveInsertedCSS(v8::Local<v8::Value> window, const base::string16& key) {
-  blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
+void RemoveInsertedCSS(gin_helper::ErrorThrower thrower,
+                       v8::Local<v8::Value> window,
+                       const base::string16& key) {
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    thrower.ThrowError(
+        "Render frame was torn down before webFrame.removeInsertedCSS could be "
+        "executed");
+    return;
+  }
+
+  blink::WebFrame* web_frame = render_frame->GetWebFrame();
   if (web_frame->IsWebLocalFrame()) {
     web_frame->ToWebLocalFrame()->GetDocument().RemoveInsertedStyleSheet(
         blink::WebString::FromUTF16(key));
@@ -405,13 +478,21 @@ v8::Local<v8::Promise> ExecuteJavaScript(gin_helper::Arguments* args,
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    promise.RejectWithErrorMessage(
+        "Render frame was torn down before webFrame.executeJavaScript could be "
+        "executed");
+    return handle;
+  }
+
   bool has_user_gesture = false;
   args->GetNext(&has_user_gesture);
 
   ScriptExecutionCallback::CompletionCallback completion_callback;
   args->GetNext(&completion_callback);
 
-  GetRenderFrame(window)->GetWebFrame()->RequestExecuteScriptAndReturnValue(
+  render_frame->GetWebFrame()->RequestExecuteScriptAndReturnValue(
       blink::WebScriptSource(blink::WebString::FromUTF16(code)),
       has_user_gesture,
       new ScriptExecutionCallback(std::move(promise),
@@ -428,6 +509,14 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
   v8::Isolate* isolate = args->isolate();
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    promise.RejectWithErrorMessage(
+        "Render frame was torn down before "
+        "webFrame.executeJavaScriptInIsolatedWorld could be executed");
+    return handle;
+  }
 
   bool has_user_gesture = false;
   args->GetNext(&has_user_gesture);
@@ -469,7 +558,7 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
   // Debugging tip: if you see a crash stack trace beginning from this call,
   // then it is very likely that some exception happened when executing the
   // "content_script/init.js" script.
-  GetRenderFrame(window)->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
+  render_frame->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
       world_id, &sources.front(), sources.size(), has_user_gesture,
       scriptExecutionType,
       new ScriptExecutionCallback(std::move(promise),
@@ -482,6 +571,14 @@ void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
                           int world_id,
                           const gin_helper::Dictionary& options,
                           gin_helper::Arguments* args) {
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    args->ThrowError(
+        "Render frame was torn down before webFrame.setIsolatedWorldInfo could "
+        "be executed");
+    return;
+  }
+
   std::string origin_url, security_policy, name;
   options.Get("securityOrigin", &origin_url);
   options.Get("csp", &security_policy);
@@ -498,7 +595,7 @@ void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
       blink::WebString::FromUTF8(origin_url));
   info.content_security_policy = blink::WebString::FromUTF8(security_policy);
   info.human_readable_name = blink::WebString::FromUTF8(name);
-  GetRenderFrame(window)->GetWebFrame()->SetIsolatedWorldInfo(world_id, info);
+  render_frame->GetWebFrame()->SetIsolatedWorldInfo(world_id, info);
 }
 
 blink::WebCacheResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
@@ -527,7 +624,11 @@ v8::Local<v8::Value> FindFrameByRoutingId(v8::Isolate* isolate,
 
 v8::Local<v8::Value> GetOpener(v8::Isolate* isolate,
                                v8::Local<v8::Value> window) {
-  blink::WebFrame* frame = GetRenderFrame(window)->GetWebFrame()->Opener();
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame)
+    return v8::Null(isolate);
+
+  blink::WebFrame* frame = render_frame->GetWebFrame()->Opener();
   if (frame && frame->IsWebLocalFrame())
     return frame->ToWebLocalFrame()->MainWorldScriptContext()->Global();
   else
@@ -545,7 +646,11 @@ v8::Local<v8::Value> GetFrameParent(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Value> GetTop(v8::Isolate* isolate, v8::Local<v8::Value> window) {
-  blink::WebFrame* frame = GetRenderFrame(window)->GetWebFrame()->Top();
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame)
+    return v8::Null(isolate);
+
+  blink::WebFrame* frame = render_frame->GetWebFrame()->Top();
   if (frame && frame->IsWebLocalFrame())
     return frame->ToWebLocalFrame()->MainWorldScriptContext()->Global();
   else
@@ -554,7 +659,11 @@ v8::Local<v8::Value> GetTop(v8::Isolate* isolate, v8::Local<v8::Value> window) {
 
 v8::Local<v8::Value> GetFirstChild(v8::Isolate* isolate,
                                    v8::Local<v8::Value> window) {
-  blink::WebFrame* frame = GetRenderFrame(window)->GetWebFrame()->FirstChild();
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame)
+    return v8::Null(isolate);
+
+  blink::WebFrame* frame = render_frame->GetWebFrame()->FirstChild();
   if (frame && frame->IsWebLocalFrame())
     return frame->ToWebLocalFrame()->MainWorldScriptContext()->Global();
   else
@@ -563,7 +672,11 @@ v8::Local<v8::Value> GetFirstChild(v8::Isolate* isolate,
 
 v8::Local<v8::Value> GetNextSibling(v8::Isolate* isolate,
                                     v8::Local<v8::Value> window) {
-  blink::WebFrame* frame = GetRenderFrame(window)->GetWebFrame()->NextSibling();
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame)
+    return v8::Null(isolate);
+
+  blink::WebFrame* frame = render_frame->GetWebFrame()->NextSibling();
   if (frame && frame->IsWebLocalFrame())
     return frame->ToWebLocalFrame()->MainWorldScriptContext()->Global();
   else
@@ -589,17 +702,29 @@ v8::Local<v8::Value> GetFrameForSelector(v8::Isolate* isolate,
 v8::Local<v8::Value> FindFrameByName(v8::Isolate* isolate,
                                      v8::Local<v8::Value> window,
                                      const std::string& name) {
-  blink::WebFrame* frame =
-      GetRenderFrame(window)->GetWebFrame()->FindFrameByName(
-          blink::WebString::FromUTF8(name));
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame)
+    return v8::Null(isolate);
+
+  blink::WebFrame* frame = render_frame->GetWebFrame()->FindFrameByName(
+      blink::WebString::FromUTF8(name));
   if (frame && frame->IsWebLocalFrame())
     return frame->ToWebLocalFrame()->MainWorldScriptContext()->Global();
   else
     return v8::Null(isolate);
 }
 
-int GetRoutingId(v8::Local<v8::Value> window) {
-  return GetRenderFrame(window)->GetRoutingID();
+int GetRoutingId(gin_helper::ErrorThrower thrower,
+                 v8::Local<v8::Value> window) {
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame) {
+    thrower.ThrowError(
+        "Render frame was torn down before webFrame.getRoutingId could be "
+        "executed");
+    return 0;
+  }
+
+  return render_frame->GetRoutingID();
 }
 
 }  // namespace api
