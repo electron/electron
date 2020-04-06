@@ -102,3 +102,4 @@ move_readablestream_requests_onto_the_stack_before_iteration.patch
 streams_convert_state_dchecks_to_checks.patch
 cherry-pick-fd211b44535c.patch
 cherry-pick-db71a0afc1d0.patch
+cherry-pick-a0a48e0132bc.patch
