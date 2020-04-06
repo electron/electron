@@ -6,7 +6,7 @@ Subject: mas_disable_remote_layer.patch
 Disable remote layer APIs (CAContext and CALayerHost) for MAS build.
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index f343b7e0e04a..d0ecefd4333c 100644
+index f343b7e0e04ab6b36c5eb3d544af28684ca2ef37..d0ecefd4333ccb92349d9c99e458b11d5c7bbe31 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -20,7 +20,9 @@
@@ -30,10 +30,10 @@ index f343b7e0e04a..d0ecefd4333c 100644
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 10b345d3727c..b52f03be6351 100644
+index 10b345d3727c95f243e6fed4692af99094c16565..b52f03be6351e9648238147b87433c81d7a4078f 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -63,6 +63,7 @@
+@@ -63,6 +63,7 @@ ImageTransportSurfaceOverlayMacBase<
  template <typename BaseClass>
  bool ImageTransportSurfaceOverlayMacBase<BaseClass>::Initialize(
      gl::GLSurfaceFormat format) {
@@ -41,7 +41,7 @@ index 10b345d3727c..b52f03be6351 100644
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -71,6 +72,7 @@
+@@ -71,6 +72,7 @@ bool ImageTransportSurfaceOverlayMacBase<BaseClass>::Initialize(
          [CAContext contextWithCGSConnection:connection_id options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -49,7 +49,7 @@ index 10b345d3727c..b52f03be6351 100644
    return true;
  }
  
-@@ -136,7 +138,9 @@
+@@ -136,7 +138,9 @@ ImageTransportSurfaceOverlayMacBase<BaseClass>::SwapBuffersInternal(
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
@@ -60,10 +60,10 @@ index 10b345d3727c..b52f03be6351 100644
        IOSurfaceRef io_surface =
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index 60abe639bd9c..c38eed5fbdef 100644
+index 60abe639bd9c9cf6885f811c741a45eeb683ec58..c38eed5fbdefc96a3d60e4ab70d3b007264ccb3c 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-@@ -98,6 +98,7 @@ - (void)setContentsChanged;
+@@ -98,6 +98,7 @@ void DisplayCALayerTree::UpdateCALayerTree(
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
@@ -71,7 +71,7 @@ index 60abe639bd9c..c38eed5fbdef 100644
    // Early-out if the remote layer has not changed.
    if ([remote_layer_ contextId] == ca_context_id)
      return;
-@@ -122,6 +123,9 @@ - (void)setContentsChanged;
+@@ -122,6 +123,9 @@ void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
      [io_surface_layer_ removeFromSuperlayer];
      io_surface_layer_.reset();
    }
@@ -82,7 +82,7 @@ index 60abe639bd9c..c38eed5fbdef 100644
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/base/cocoa/remote_layer_api.h b/ui/base/cocoa/remote_layer_api.h
-index 2057fe69d1bb..2aba330fc488 100644
+index 2057fe69d1bb4a2eb0b1dabc5473a30d676847fe..2aba330fc488660ef874caae26a06e6847cdaf93 100644
 --- a/ui/base/cocoa/remote_layer_api.h
 +++ b/ui/base/cocoa/remote_layer_api.h
 @@ -13,6 +13,7 @@
@@ -103,7 +103,7 @@ index 2057fe69d1bb..2aba330fc488 100644
  
  // This function will check if all of the interfaces listed above are supported
 diff --git a/ui/base/cocoa/remote_layer_api.mm b/ui/base/cocoa/remote_layer_api.mm
-index bbaf9f466f49..8c846ce9523a 100644
+index bbaf9f466f4999acb5bfccf3b9565fd8f556ca2f..8c846ce9523a4b2f6fbdbdbeae4f94b45ac3c115 100644
 --- a/ui/base/cocoa/remote_layer_api.mm
 +++ b/ui/base/cocoa/remote_layer_api.mm
 @@ -12,6 +12,7 @@
@@ -125,7 +125,7 @@ index bbaf9f466f49..8c846ce9523a 100644
  
  }  // namespace
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 528ec883d226..5058eb6048a6 100644
+index 528ec883d22679a92c1d82da783588f8e33e4d99..5058eb6048a6120dab6f1ce30ff56a6fee7be7b7 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -446,11 +446,13 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
@@ -143,10 +143,10 @@ index 528ec883d226..5058eb6048a6 100644
    // The geometry of the window and its contents view, in screen coordinates.
    gfx::Rect window_bounds_in_screen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 6aa9e71245f1..89eb028e840b 100644
+index 6aa9e71245f131b176a2c6d4416786d5bcac621e..89eb028e840b4e997e3e4706fcc6c9bb070c2491 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -213,6 +213,7 @@ bool PositionWindowInScreenCoordinates(Widget* widget,
+@@ -213,6 +213,7 @@ uint64_t g_last_bridged_native_widget_id = 0;
  
  }  // namespace
  
@@ -154,7 +154,7 @@ index 6aa9e71245f1..89eb028e840b 100644
  // A gfx::CALayerParams may pass the content to be drawn across processes via
  // either an IOSurface (sent as mach port) or a CAContextID (which is an
  // integer). For historical reasons, software compositing uses IOSurfaces.
-@@ -267,6 +268,8 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+@@ -267,6 +268,8 @@ class NativeWidgetMacNSWindowHost::IOSurfaceToRemoteLayerInterceptor {
    base::scoped_nsobject<CALayer> io_surface_layer_;
  };
  
@@ -163,7 +163,7 @@ index 6aa9e71245f1..89eb028e840b 100644
  // static
  NativeWidgetMacNSWindowHost* NativeWidgetMacNSWindowHost::GetFromNativeWindow(
      gfx::NativeWindow native_window) {
-@@ -1472,6 +1475,7 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+@@ -1472,6 +1475,7 @@ void NativeWidgetMacNSWindowHost::AcceleratedWidgetCALayerParamsUpdated() {
    const gfx::CALayerParams* ca_layer_params =
        compositor_->widget()->GetCALayerParams();
    if (ca_layer_params) {
@@ -171,7 +171,7 @@ index 6aa9e71245f1..89eb028e840b 100644
      // Replace IOSurface mach ports with CAContextIDs only when using the
      // out-of-process bridge (to reduce risk, because this workaround is being
      // merged to late-life-cycle release branches) and when an IOSurface
-@@ -1488,8 +1492,11 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+@@ -1488,8 +1492,11 @@ void NativeWidgetMacNSWindowHost::AcceleratedWidgetCALayerParamsUpdated() {
            &updated_ca_layer_params);
        remote_ns_window_ptr_->SetCALayerParams(updated_ca_layer_params);
      } else {
