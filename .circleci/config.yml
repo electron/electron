@@ -233,7 +233,7 @@ step-gclient-sync: &step-gclient-sync
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags
         # Re-export all the patches to check if there were changes.
-        python script/export_all_patches.py src/electron/patches/config.json
+        python src/electron/script/export_all_patches.py src/electron/patches/config.json
         cd src/electron
         if ! git diff-index --quiet HEAD --; then
           # There are changes to the patches. Make a git commit with the updated patches
