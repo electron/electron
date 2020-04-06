@@ -1,7 +1,7 @@
-From d4564dcc2520b00c23c287461f8fa0489e6d1d32 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Dominik=20R=C3=B6ttsches?= <drott@chromium.org>
 Date: Fri, 31 Jan 2020 21:40:11 +0000
-Subject: [PATCH] Reland: Sequentialise access to callbacks in
+Subject: Reland: Sequentialise access to callbacks in
  DWriteFontLookupTableBuilder
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -34,17 +34,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2032119
 Reviewed-by: Matthew Denton <mpdenton@chromium.org>
 Commit-Queue: Dominik Röttsches <drott@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#737466}
----
- .../font_unique_name_browsertest.cc           | 12 +---
- .../dwrite_font_lookup_table_builder_win.cc   | 69 +++++++++++++++----
- .../dwrite_font_lookup_table_builder_win.h    | 17 +++++
- 3 files changed, 74 insertions(+), 24 deletions(-)
 
 diff --git a/content/browser/font_unique_name_lookup/font_unique_name_browsertest.cc b/content/browser/font_unique_name_lookup/font_unique_name_browsertest.cc
-index 6b9ee1c98bd01..f9967d2502b41 100644
+index c79d06edd9538dcfd82d23eec885f31f2952508b..8266e6fc1628310dafd497debbe1c6ba43aa02ca 100644
 --- a/content/browser/font_unique_name_lookup/font_unique_name_browsertest.cc
 +++ b/content/browser/font_unique_name_lookup/font_unique_name_browsertest.cc
-@@ -117,20 +117,10 @@ class FontUniqueNameBrowserTest : public DevToolsProtocolTest {
+@@ -119,15 +119,19 @@ class FontUniqueNameBrowserTest : public DevToolsProtocolTest {
    }
  
  #if defined(OS_WIN)
@@ -53,24 +48,29 @@ index 6b9ee1c98bd01..f9967d2502b41 100644
 -  // this test.
 -  void SetUpInProcessBrowserTestFixture() override {
 -    DevToolsProtocolTest::SetUpInProcessBrowserTestFixture();
--    DWriteFontLookupTableBuilder* table_builder =
--        DWriteFontLookupTableBuilder::GetInstance();
--    ASSERT_TRUE(cache_directory_.CreateUniqueTempDir());
--    table_builder->SetCacheDirectoryForTesting(cache_directory_.GetPath());
--  }
--
-   void PreRunTestOnMainThread() override {
++  void PreRunTestOnMainThread() override {
      DWriteFontLookupTableBuilder* table_builder =
          DWriteFontLookupTableBuilder::GetInstance();
+-    ASSERT_TRUE(cache_directory_.CreateUniqueTempDir());
+-    table_builder->SetCacheDirectoryForTesting(cache_directory_.GetPath());
 +    table_builder->ResetStateForTesting();
-     table_builder->SchedulePrepareFontUniqueNameTableIfNeeded();
-     DevToolsProtocolTest::PreRunTestOnMainThread();
++    table_builder->SchedulePrepareFontUniqueNameTableIfNeeded();
++    DevToolsProtocolTest::PreRunTestOnMainThread();
++  }
++
++  void PostRunTestOnMainThread() override {
++    DWriteFontLookupTableBuilder* table_builder =
++        DWriteFontLookupTableBuilder::GetInstance();
++    table_builder->ResetStateForTesting();
++    DevToolsProtocolTest::PostRunTestOnMainThread();
    }
+ #endif
+ 
 diff --git a/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc b/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc
-index 55bacfb313223..de346ae1cae8e 100644
+index e02e585ca8bb3ce2e39e0f317f7c4c4fad772718..36763afb42fba85df2332caf569f031a60ccef93 100644
 --- a/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc
 +++ b/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc
-@@ -23,6 +23,7 @@
+@@ -24,6 +24,7 @@
  #include "base/strings/utf_string_conversions.h"
  #include "base/task/post_task.h"
  #include "base/task/task_traits.h"
@@ -78,12 +78,26 @@ index 55bacfb313223..de346ae1cae8e 100644
  #include "base/threading/scoped_blocking_call.h"
  #include "base/threading/sequenced_task_runner_handle.h"
  #include "base/threading/thread_restrictions.h"
-@@ -129,16 +130,29 @@ DWriteFontLookupTableBuilder::FamilyResult::~FamilyResult() = default;
+@@ -114,18 +115,31 @@ DWriteFontLookupTableBuilder::FontFileWithUniqueNames::FontFileWithUniqueNames(
  
  DWriteFontLookupTableBuilder::DWriteFontLookupTableBuilder()
      : font_indexing_timeout_(kFontIndexingTimeoutDefault) {
+-  // In FontUniqueNameBrowserTest the DWriteFontLookupTableBuilder is
+-  // instantiated to configure the cache directory for testing explicitly before
+-  // GetContentClient() is available. Catch this case here. It is safe to not
+-  // set the cache directory here, as an invalid cache directory would be
+-  // detected by TableCacheFilePath and the LoadFromFile and PersistToFile
+-  // methods.
 +  ResetCallbacksAccessTaskRunner();
-   InitializeCacheDirectoryFromProfile();
++  // Unit tests that do not launch a full browser environment usually don't need
++  // testing of src:local()-style font matching. Check that an environment is
++  // present here and configcure the cache directory based on that. If none is
++  // configured, catch this in DuplicateMemoryRegion(), i.e. when a client
++  // tries to use this API.
+   cache_directory_ =
+       GetContentClient()
+           ? GetContentClient()->browser()->GetFontLookupTableCacheDir()
+           : base::FilePath();
  }
  
 +void DWriteFontLookupTableBuilder::ResetCallbacksAccessTaskRunner() {
@@ -99,22 +113,10 @@ index 55bacfb313223..de346ae1cae8e 100644
 +  DETACH_FROM_SEQUENCE(callbacks_access_sequence_checker_);
 +}
 +
- void DWriteFontLookupTableBuilder::InitializeCacheDirectoryFromProfile() {
--  // In FontUniqueNameBrowserTest the DWriteFontLookupTableBuilder is
--  // instantiated to configure the cache directory for testing explicitly before
--  // GetContentClient() is available. Catch this case here. It is safe to not
--  // set the cache directory here, as an invalid cache directory would be
--  // detected by TableCacheFilePath and the LoadFromFile and PersistToFile
--  // methods.
-+  // Unit tests that do not launch a full browser environment usually don't need
-+  // testing of src:local()-style font matching. Check that an environment is
-+  // present here and configcure the cache directory based on that. If none is
-+  // configured, catch this in DuplicateMemoryRegion(), i.e. when a client
-+  // tries to use this API.
-   cache_directory_ =
-       GetContentClient() && GetContentClient()->browser()
-           ? GetContentClient()->browser()->GetFontLookupTableCacheDir()
-@@ -250,7 +264,8 @@ base::TimeDelta DWriteFontLookupTableBuilder::IndexingTimeout() {
+ DWriteFontLookupTableBuilder::~DWriteFontLookupTableBuilder() = default;
+ 
+ base::ReadOnlySharedMemoryRegion
+@@ -242,7 +256,8 @@ base::TimeDelta DWriteFontLookupTableBuilder::IndexingTimeout() {
    return font_indexing_timeout_;
  }
  
@@ -124,7 +126,7 @@ index 55bacfb313223..de346ae1cae8e 100644
    for (auto& pending_callback : pending_callbacks_) {
      pending_callback.task_runner->PostTask(
          FROM_HERE, base::BindOnce(std::move(pending_callback.mojo_callback),
-@@ -259,6 +274,13 @@ void DWriteFontLookupTableBuilder::PostCallbacks() {
+@@ -251,6 +266,13 @@ void DWriteFontLookupTableBuilder::PostCallbacks() {
    pending_callbacks_.clear();
  }
  
@@ -138,7 +140,7 @@ index 55bacfb313223..de346ae1cae8e 100644
  base::FilePath DWriteFontLookupTableBuilder::TableCacheFilePath() {
    if (!EnsureCacheDirectory(cache_directory_))
      return base::FilePath();
-@@ -300,18 +322,38 @@ DWriteFontLookupTableBuilder::CallbackOnTaskRunner::CallbackOnTaskRunner(
+@@ -339,6 +361,26 @@ DWriteFontLookupTableBuilder::CallbackOnTaskRunner::CallbackOnTaskRunner(
  DWriteFontLookupTableBuilder::CallbackOnTaskRunner::~CallbackOnTaskRunner() =
      default;
  
@@ -165,15 +167,11 @@ index 55bacfb313223..de346ae1cae8e 100644
  void DWriteFontLookupTableBuilder::QueueShareMemoryRegionWhenReady(
      scoped_refptr<base::SequencedTaskRunner> task_runner,
      blink::mojom::DWriteFontProxy::GetUniqueNameLookupTableCallback callback) {
-   TRACE_EVENT0("dwrite,fonts",
+@@ -346,7 +388,12 @@ void DWriteFontLookupTableBuilder::QueueShareMemoryRegionWhenReady(
                 "DWriteFontLookupTableBuilder::QueueShareMemoryRegionWhenReady");
    DCHECK(!HasDWriteUniqueFontLookups());
+   DCHECK(!font_table_built_.IsSignaled());
 -  pending_callbacks_.emplace_back(std::move(task_runner), std::move(callback));
--  // Cover for the condition in which the font table becomes ready briefly after
--  // a renderer asking for GetUniqueNameLookupTableIfAvailable(), receiving the
--  // information that it wasn't ready.
--  if (font_table_built_.IsSignaled())
--    PostCallbacks();
 +  CHECK(callbacks_access_task_runner_);
 +  callbacks_access_task_runner_->PostTask(
 +      FROM_HERE,
@@ -183,7 +181,7 @@ index 55bacfb313223..de346ae1cae8e 100644
  }
  
  bool DWriteFontLookupTableBuilder::FontUniqueNameTableReady() {
-@@ -730,6 +772,7 @@ void DWriteFontLookupTableBuilder::ResetLookupTableForTesting() {
+@@ -709,6 +756,7 @@ void DWriteFontLookupTableBuilder::ResetLookupTableForTesting() {
    font_indexing_timeout_ = kFontIndexingTimeoutDefault;
    font_table_memory_ = base::MappedReadOnlyRegion();
    caching_enabled_ = true;
@@ -192,10 +190,10 @@ index 55bacfb313223..de346ae1cae8e 100644
  }
  
 diff --git a/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.h b/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.h
-index 80c75e0633f3e..2d743753a07c9 100644
+index 0543a28c81b7be3c2607945e72fc7c55272261ac..061979884f650d7c74d5e72ea96cfb59cd76e2b3 100644
 --- a/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.h
 +++ b/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.h
-@@ -176,6 +176,21 @@ class CONTENT_EXPORT DWriteFontLookupTableBuilder {
+@@ -159,6 +159,21 @@ class CONTENT_EXPORT DWriteFontLookupTableBuilder {
    // constructed protobuf to disk.
    void FinalizeFontTable();
  
@@ -217,10 +215,10 @@ index 80c75e0633f3e..2d743753a07c9 100644
    void OnTimeout();
  
    bool IsFontUniqueNameTableValid();
-@@ -232,6 +247,8 @@ class CONTENT_EXPORT DWriteFontLookupTableBuilder {
+@@ -213,6 +228,8 @@ class CONTENT_EXPORT DWriteFontLookupTableBuilder {
+   };
  
    std::vector<CallbackOnTaskRunner> pending_callbacks_;
-   std::map<HRESULT, unsigned> scanning_error_reasons_;
 +  scoped_refptr<base::SequencedTaskRunner> callbacks_access_task_runner_;
 +  SEQUENCE_CHECKER(callbacks_access_sequence_checker_);
  
