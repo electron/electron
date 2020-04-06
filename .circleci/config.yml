@@ -997,6 +997,8 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
     - *step-set-git-cache-path
     # This sync call only runs if .circle-sync-done is an EMPTY file
     - *step-gclient-sync
+    - store_artifacts:
+        path: patches
     - *step-save-git-cache
     # These next few steps reset Electron to the correct commit regardless of which cache was restored
     - run:
@@ -1044,8 +1046,6 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-set-git-cache-path
     # This sync call only runs if .circle-sync-done is an EMPTY file
     - *step-gclient-sync
-    - store_artifacts:
-        path: patches
     # These next few steps reset Electron to the correct commit regardless of which cache was restored
     - run:
         name: Wipe Electron
@@ -1319,6 +1319,8 @@ commands:
             - *step-set-git-cache-path
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
+            - store_artifacts:
+                path: patches
             # These next few steps reset Electron to the correct commit regardless of which cache was restored
             - when:
                 condition: << parameters.preserve-vendor-dirs >>
