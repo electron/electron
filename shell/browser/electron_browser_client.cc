@@ -1316,13 +1316,11 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
           browser_context);
 
-  if (!web_request_api)
-    return false;
-
-  return web_request->HasListener() || web_request_api->MayHaveProxies();
-#else
-  return web_request->HasListener();
+  if (web_request_api)
+    return web_request->HasListener() || web_request_api->MayHaveProxies();
 #endif
+  
+  return web_request->HasListener();
 }
 
 void ElectronBrowserClient::CreateWebSocket(
