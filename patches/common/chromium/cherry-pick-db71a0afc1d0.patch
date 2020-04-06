@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Toy <rtoy@chromium.org>
+Date: Thu, 19 Mar 2020 21:54:36 +0000
+Subject: Clear context from orphan handlers when BaseAudioContext is going
+ away
+
+When preparing to collect a BaseAudioContext, go through all the
+rendering_orphan_handlers_ and deletable_orphan_handlers_ and remove
+the context from the handler.  This ensures that these handlers no
+longer have references to the context when the BaseAudioContext is
+destroyed because in some cases, these orphan handlers will get pulled
+and access the context, which is already gone.
+
+Clearing these in a prefinalizer ensures these orphan handlers don't
+try to touch the context.
+
+Manually verified that the repro case no longer reproduces.
+
+Bug: 1062247
+Change-Id: I50d083743903eb9544e09aa1ee912fc880331501
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2107806
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Commit-Queue: Raymond Toy <rtoy@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#751814}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/base_audio_context.cc b/third_party/blink/renderer/modules/webaudio/base_audio_context.cc
+index c232899becfa2810a3dd86b5404050498aeca84f..0004f0c9470620f3201afe1d5fe535f17bc963f3 100644
+--- a/third_party/blink/renderer/modules/webaudio/base_audio_context.cc
++++ b/third_party/blink/renderer/modules/webaudio/base_audio_context.cc
+@@ -187,6 +187,12 @@ void BaseAudioContext::Uninitialize() {
+   DCHECK_EQ(resume_resolvers_.size(), 0u);
+ }
+ 
++void BaseAudioContext::Dispose() {
++  // BaseAudioContext is going away, so remove the context from the orphan
++  // handlers.
++  GetDeferredTaskHandler().ClearContextFromOrphanHandlers();
++}
++
+ void BaseAudioContext::ContextLifecycleStateChanged(
+     mojom::FrameLifecycleState state) {
+   // Don't need to do anything for an offline context.
+diff --git a/third_party/blink/renderer/modules/webaudio/base_audio_context.h b/third_party/blink/renderer/modules/webaudio/base_audio_context.h
+index 8351bd861e871e441b467c509d16f930e083f2a8..88244e5f24775c5bd59057ae9ffff2149d110e1f 100644
+--- a/third_party/blink/renderer/modules/webaudio/base_audio_context.h
++++ b/third_party/blink/renderer/modules/webaudio/base_audio_context.h
+@@ -95,6 +95,7 @@ class MODULES_EXPORT BaseAudioContext
+       public ContextLifecycleStateObserver {
+   USING_GARBAGE_COLLECTED_MIXIN(BaseAudioContext);
+   DEFINE_WRAPPERTYPEINFO();
++  USING_PRE_FINALIZER(BaseAudioContext, Dispose);
+ 
+  public:
+   // The state of an audio context.  On creation, the state is Suspended. The
+@@ -119,6 +120,8 @@ class MODULES_EXPORT BaseAudioContext
+     return dest ? dest->GetAudioDestinationHandler().IsInitialized() : false;
+   }
+ 
++  void Dispose();
++
+   // Document notification
+   void ContextLifecycleStateChanged(mojom::FrameLifecycleState) override;
+   void ContextDestroyed(ExecutionContext*) override;
+diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
+index e8fe36a1060ae846692f90bee836304ec593fc46..b1b189567dca1b83277f02952719d384c638b32b 100644
+--- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
+@@ -293,10 +293,7 @@ void DeferredTaskHandler::HandleDeferredTasks() {
+ }
+ 
+ void DeferredTaskHandler::ContextWillBeDestroyed() {
+-  for (auto& handler : rendering_orphan_handlers_)
+-    handler->ClearContext();
+-  for (auto& handler : deletable_orphan_handlers_)
+-    handler->ClearContext();
++  ClearContextFromOrphanHandlers();
+   ClearHandlersToBeDeleted();
+   // Some handlers might live because of their cross thread tasks.
+ }
+@@ -359,6 +356,19 @@ void DeferredTaskHandler::ClearHandlersToBeDeleted() {
+   active_source_handlers_.clear();
+ }
+ 
++void DeferredTaskHandler::ClearContextFromOrphanHandlers() {
++  DCHECK(IsMainThread());
++
++  // |rendering_orphan_handlers_| and |deletable_orphan_handlers_| can
++  // be modified on the audio thread.
++  GraphAutoLocker locker(*this);
++
++  for (auto& handler : rendering_orphan_handlers_)
++    handler->ClearContext();
++  for (auto& handler : deletable_orphan_handlers_)
++    handler->ClearContext();
++}
++
+ void DeferredTaskHandler::SetAudioThreadToCurrentThread() {
+   DCHECK(!IsMainThread());
+   audio_thread_.store(CurrentThread(), std::memory_order_relaxed);
+diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
+index 0ede5f5b5dabeeef9decc94c94d91ddc7351c722..2900b0f7cf3c47c8e92cc3ad4dda665eabdc479f 100644
+--- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
++++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
+@@ -109,6 +109,9 @@ class MODULES_EXPORT DeferredTaskHandler final
+   void RequestToDeleteHandlersOnMainThread();
+   void ClearHandlersToBeDeleted();
+ 
++  // Clear the context from the rendering and deletable orphan handlers.
++  void ClearContextFromOrphanHandlers();
++
+   bool AcceptsTailProcessing() const { return accepts_tail_processing_; }
+   void StopAcceptingTailProcessing() { accepts_tail_processing_ = false; }
+ 
