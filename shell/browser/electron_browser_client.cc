@@ -1319,7 +1319,7 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
   if (web_request_api)
     return web_request->HasListener() || web_request_api->MayHaveProxies();
 #endif
-  
+
   return web_request->HasListener();
 }
 
@@ -1341,9 +1341,12 @@ void ElectronBrowserClient::CreateWebSocket(
           browser_context);
 
   DCHECK(web_request_api);
-  web_request_api->ProxyWebSocket(frame, std::move(factory), url,
-                                  site_for_cookies.RepresentativeUrl(),
-                                  user_agent, std::move(handshake_client));
+
+  if (web_request_api->MayHaveProxies()) {
+    web_request_api->ProxyWebSocket(frame, std::move(factory), url,
+                                    site_for_cookies.RepresentativeUrl(),
+                                    user_agent, std::move(handshake_client));
+  }
 #endif
 
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
