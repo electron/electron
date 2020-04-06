@@ -1,7 +1,7 @@
-From b5950ad76471d6aa446af46aee645fb5e32c435d Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
 Date: Fri, 13 Mar 2020 02:52:15 +0000
-Subject: [PATCH] Protect automatic pull handlers with Mutex
+Subject: Protect automatic pull handlers with Mutex
 
 In some cases, |rendering_automatic_pull_handlers_| in
 DeferredTaskHandler can be touched from both the main thread and the
@@ -17,13 +17,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2101712
 Commit-Queue: Hongchan Choi <hongchan@chromium.org>
 Reviewed-by: Raymond Toy <rtoy@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#750000}
----
- .../modules/webaudio/deferred_task_handler.cc | 26 ++++++++++++++-----
- .../modules/webaudio/deferred_task_handler.h  |  5 ++++
- 2 files changed, 25 insertions(+), 6 deletions(-)
 
 diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
-index d02a7f69fe191..00bfc7b8d624b 100644
+index e8fe36a1060ae846692f90bee836304ec593fc46..4bced21399ec23ad242bdb32d9f4472a51ae6f28 100644
 --- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
 +++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
 @@ -132,6 +132,7 @@ void DeferredTaskHandler::HandleDirtyAudioNodeOutputs() {
@@ -85,14 +81,14 @@ index d02a7f69fe191..00bfc7b8d624b 100644
    deletable_orphan_handlers_.clear();
    automatic_pull_handlers_.clear();
 -  rendering_automatic_pull_handlers_.clear();
-   finished_source_handlers_.clear();
    active_source_handlers_.clear();
  }
+ 
 diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
-index 3cf47ca77a8b1..49cbf6977ddfc 100644
+index 0ede5f5b5dabeeef9decc94c94d91ddc7351c722..af384d0941da47bbe544be3c0ce5739ca4c384e1 100644
 --- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
 +++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
-@@ -265,6 +265,11 @@ class MODULES_EXPORT DeferredTaskHandler final
+@@ -263,6 +263,11 @@ class MODULES_EXPORT DeferredTaskHandler final
  
    // Graph locking.
    RecursiveMutex context_graph_mutex_;
