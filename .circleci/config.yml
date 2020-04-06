@@ -233,14 +233,15 @@ step-gclient-sync: &step-gclient-sync
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags
         # Re-export all the patches to check if there were changes.
-        python src/electron/script/export_all_patches.py src/electron/patches/config.json
-        if ! git -C src/electron diff-index --quiet HEAD --; then
+        cd src/electron
+        python script/export_all_patches.py patches/config.json
+        if ! git diff-index --quiet HEAD --; then
           # There are changes to the patches. Make a git commit with the updated patches
-          git -C src/electron add patches
-          GIT_COMMITTER_NAME="Electron Bot" GIT_COMMITTER_EMAIL="anonymous@electronjs.org" git -C src/electron commit -m "update patches" --author="Electron Bot <anonymous@electronjs.org>"
+          git add patches
+          GIT_COMMITTER_NAME="Electron Bot" GIT_COMMITTER_EMAIL="anonymous@electronjs.org" git commit -m "update patches" --author="Electron Bot <anonymous@electronjs.org>"
           # Export it
           mkdir -p patches
-          git -C src/electron format-patch -1 --stdout --keep-subject --no-stat --full-index > patches/update-patches.patch
+          git format-patch -1 --stdout --keep-subject --no-stat --full-index > patches/update-patches.patch
           echo
           echo "======================================================================"
           echo "There were changes to the patches when applying."
