@@ -99,3 +99,4 @@ allow_restricted_clock_nanosleep_in_linux_sandbox.patch
 move_readablestream_requests_onto_the_stack_before_iteration.patch
 streams_convert_state_dchecks_to_checks.patch
 cherry-pick-fd211b44535c.patch
+cherry-pick-728c6deeffe1.patch
