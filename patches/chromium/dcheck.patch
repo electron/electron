@@ -46,10 +46,10 @@ index f950552abbe9e9a0002156b596438fe9aa4f01b9..23931899eb58432fd8eabf4d681d2294
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 23681d4192ac329a68822dbcdb06369f34e5e28a..a6f07372bdc576ad8d2cce0b04ffe2adc9ab37ad 100644
+index 7a80d2f2eb940a92a2711365ddb5b52f8f8f6606..4c9ca5a3635230c1db43568cfc6ddcb264179d80 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -767,10 +767,10 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
+@@ -768,10 +768,10 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
  
  void ClipboardWin::WriteToClipboard(ClipboardFormatType format, HANDLE handle) {
    UINT cf_format = format.ToFormatEtc().cfFormat;
