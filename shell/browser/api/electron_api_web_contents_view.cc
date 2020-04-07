@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_web_contents_view.h"
 
+#include "base/no_destructor.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
@@ -91,6 +92,33 @@ void WebContentsView::WebContentsDestroyed() {
 }
 
 // static
+gin::Handle<WebContentsView> WebContentsView::Create(
+    v8::Isolate* isolate,
+    gin::Handle<WebContents> web_contents) {
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Function> constructor = GetConstructor(isolate);
+  v8::Local<v8::Value> arg = web_contents.ToV8();
+  v8::Local<v8::Object> obj;
+  if (constructor->NewInstance(context, 1, &arg).ToLocal(&obj)) {
+    gin::Handle<WebContentsView> web_contents_view;
+    if (gin::ConvertFromV8(isolate, obj, &web_contents_view))
+      return web_contents_view;
+  }
+  return gin::Handle<WebContentsView>();
+}
+
+// static
+v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
+  static base::NoDestructor<v8::Global<v8::Function>> constructor;
+  if (constructor.get()->IsEmpty()) {
+    constructor->Reset(
+        isolate, gin_helper::CreateConstructor<WebContentsView>(
+                     isolate, base::BindRepeating(&WebContentsView::New)));
+  }
+  return v8::Local<v8::Function>::New(isolate, *constructor.get());
+}
+
+// static
 gin_helper::WrappableBase* WebContentsView::New(
     gin_helper::Arguments* args,
     gin::Handle<WebContents> web_contents) {
@@ -136,9 +164,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("WebContentsView",
-           gin_helper::CreateConstructor<WebContentsView>(
-               isolate, base::BindRepeating(&WebContentsView::New)));
+  dict.Set("WebContentsView", WebContentsView::GetConstructor(isolate));
 }
 
 }  // namespace

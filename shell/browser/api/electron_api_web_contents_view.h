@@ -18,9 +18,15 @@ class WebContents;
 
 class WebContentsView : public View, public content::WebContentsObserver {
  public:
-  static gin_helper::WrappableBase* New(gin_helper::Arguments* args,
-                                        gin::Handle<WebContents> web_contents);
+  // Create a new instance of WebContentsView.
+  static gin::Handle<WebContentsView> Create(
+      v8::Isolate* isolate,
+      gin::Handle<WebContents> web_contents);
 
+  // Return the cached constructor function.
+  static v8::Local<v8::Function> GetConstructor(v8::Isolate* isolate);
+
+  // gin_helper::Wrappable
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
@@ -38,6 +44,9 @@ class WebContentsView : public View, public content::WebContentsObserver {
   void WebContentsDestroyed() override;
 
  private:
+  static gin_helper::WrappableBase* New(gin_helper::Arguments* args,
+                                        gin::Handle<WebContents> web_contents);
+
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;
   api::WebContents* api_web_contents_;
