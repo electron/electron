@@ -1,7 +1,7 @@
-From fd211b44535c09af58353f0799a624f076e98dda Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Raymond Toy <rtoy@chromium.org>
 Date: Mon, 16 Dec 2019 17:06:28 +0000
-Subject: [PATCH] AudioContext HasPendingActivity unless it's closed
+Subject: AudioContext HasPendingActivity unless it's closed
 
 An AudioContext is considered to have activity if it's not closed.
 Previously, suspended contexts were considered has having no activity,
@@ -25,15 +25,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1969044
 Reviewed-by: Raymond Toy <rtoy@chromium.org>
 Cr-Commit-Position: refs/branch-heads/3987@{#158}
 Cr-Branched-From: c4e8da9871cc266be74481e212f3a5252972509d-refs/heads/master@{#722274}
----
- .../blink/renderer/modules/webaudio/audio_context.cc      | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_context.cc b/third_party/blink/renderer/modules/webaudio/audio_context.cc
-index bd76a6a7deca2..063475274c168 100644
+index 839d8c83973b979a3382464a05c2368eec8a7bae..990fe75f1ddd4ebf9a526a9e416d2ee865afca86 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_context.cc
 +++ b/third_party/blink/renderer/modules/webaudio/audio_context.cc
-@@ -551,9 +551,11 @@ void AudioContext::ContextDestroyed(ExecutionContext*) {
+@@ -545,9 +545,11 @@ void AudioContext::ContextDestroyed(ExecutionContext*) {
  }
  
  bool AudioContext::HasPendingActivity() const {
