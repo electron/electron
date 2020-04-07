@@ -180,7 +180,7 @@ Some popular `key` and `type`s are:
 ### `systemPreferences.setUserDefault(key, type, value)` _macOS_
 
 * `key` String
-* `type` String - See [`getUserDefault`](#systempreferencesgetuserdefaultkey-type-macos).
+* `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`, `url`, `array` or `dictionary`.
 * `value` String
 
 Set the value of `key` in `NSUserDefaults`.
