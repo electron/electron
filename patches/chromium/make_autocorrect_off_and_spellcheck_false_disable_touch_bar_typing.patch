@@ -18,7 +18,7 @@ diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/co
 index 9113fb00d144d6cee789f608f8b3761b93ca7ae8..1e92b2b515056235de6277a43be207f79c94dedf 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -2220,7 +2220,9 @@ - (void)invalidateTouchBar {
+@@ -2220,7 +2220,9 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
  }
  
  - (NSTouchBar*)makeTouchBar {
