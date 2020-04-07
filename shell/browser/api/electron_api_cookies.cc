@@ -248,7 +248,7 @@ v8::Local<v8::Promise> Cookies::Get(v8::Isolate* isolate,
     net::CookieOptions options;
     options.set_include_httponly();
     options.set_same_site_cookie_context(
-        net::CookieOptions::SameSiteCookieContext::SAME_SITE_STRICT);
+        net::CookieOptions::SameSiteCookieContext::MakeInclusive());
     options.set_do_not_update_access_time();
 
     manager->GetCookieList(GURL(url), options,
@@ -332,7 +332,7 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
     options.set_include_httponly();
   }
   options.set_same_site_cookie_context(
-      net::CookieOptions::SameSiteCookieContext::SAME_SITE_STRICT);
+      net::CookieOptions::SameSiteCookieContext::MakeInclusive());
 
   auto* storage_partition =
       content::BrowserContext::GetDefaultStoragePartition(browser_context_);
