@@ -18,7 +18,7 @@ index 1ffb647e85e00ff60d84234e47f5d7d385f65245..439cc6df5e0cc1ec3732d6f2a2e00d54
  @interface NSWindow (PrivateBrowserNativeWidgetAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -69,10 +70,13 @@ - (NSRect)_draggableFrame NS_DEPRECATED_MAC(10_10, 10_11) {
+@@ -69,10 +70,13 @@
  
  @end
  
@@ -32,7 +32,7 @@ index 1ffb647e85e00ff60d84234e47f5d7d385f65245..439cc6df5e0cc1ec3732d6f2a2e00d54
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -87,6 +91,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -87,6 +91,8 @@
    return NO;
  }
  
@@ -54,7 +54,7 @@ index 8416c7c6e052dafb2aad61c0bd3224c36e945d23..cd356beda023ab2409b16d58ca38c70b
  @interface NSWindow (PrivateAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -18,8 +20,12 @@ - (CGFloat)_titlebarHeight {
+@@ -18,8 +20,12 @@
  }
  @end
  
@@ -67,7 +67,7 @@ index 8416c7c6e052dafb2aad61c0bd3224c36e945d23..cd356beda023ab2409b16d58ca38c70b
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    if ([NativeWidgetMacFramelessNSWindowFrame class]) {
      return [NativeWidgetMacFramelessNSWindowFrame class];
-@@ -27,4 +33,6 @@ + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
+@@ -27,4 +33,6 @@
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -108,7 +108,7 @@ index bf4cd6d246358c568cbe192c48748099a3c1de20..6955d39751832815ddec1fec32d791fc
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  
-@@ -56,6 +58,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -56,6 +58,8 @@
  }
  @end
  
@@ -117,7 +117,7 @@ index bf4cd6d246358c568cbe192c48748099a3c1de20..6955d39751832815ddec1fec32d791fc
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -77,6 +81,8 @@ - (BOOL)usesCustomDrawing {
+@@ -77,6 +81,8 @@
  }
  @end
  
@@ -126,7 +126,7 @@ index bf4cd6d246358c568cbe192c48748099a3c1de20..6955d39751832815ddec1fec32d791fc
  @implementation NativeWidgetMacNSWindow {
   @private
    base::scoped_nsobject<CommandDispatcher> commandDispatcher_;
-@@ -154,6 +160,8 @@ - (BOOL)hasViewsMenuActive {
+@@ -154,6 +160,8 @@
  
  // NSWindow overrides.
  
@@ -135,7 +135,7 @@ index bf4cd6d246358c568cbe192c48748099a3c1de20..6955d39751832815ddec1fec32d791fc
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -165,6 +173,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -165,6 +173,8 @@
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
