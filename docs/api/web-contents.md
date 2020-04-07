@@ -150,6 +150,10 @@ Returns:
 * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
   passed to the new window. May or may not result in the `Referer` header being
   sent, depending on the referrer policy.
+* `postBody` [PostBody](structures/post-body.md) (optional) - The post data that
+  will be sent to the new window, along with the appropriate headers that will
+  be set. If no post data is to be sent, the value will be `null`. Only defined
+  when the window is being created by a form that set `target=_blank`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
@@ -162,7 +166,7 @@ new [`BrowserWindow`](browser-window.md). If you call `event.preventDefault()` a
 instance, failing to do so may result in unexpected behavior. For example:
 
 ```javascript
-myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition, options) => {
+myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition, options, additionalFeatures, referrer, postBody) => {
   event.preventDefault()
   const win = new BrowserWindow({
     webContents: options.webContents, // use existing webContents if provided
@@ -170,7 +174,16 @@ myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition
   })
   win.once('ready-to-show', () => win.show())
   if (!options.webContents) {
-    win.loadURL(url) // existing webContents will be navigated automatically
+    const loadOptions = {
+      httpReferrer: referrer
+    }
+    if (postBody != null) {
+      const { data, contentType, boundary } = postBody
+      loadOptions.postData = postBody.data
+      loadOptions.extraHeaders = `content-type: ${contentType}; boundary=${boundary}`
+    }
+
+    win.loadURL(url, loadOptions) // existing webContents will be navigated automatically
   }
   event.newGuest = win
 })
@@ -376,7 +389,7 @@ Calling `event.preventDefault` will prevent the page `keydown`/`keyup` events
 and the menu shortcuts.
 
 To only prevent the menu shortcuts, use
-[`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore-experimental):
+[`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore):
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -967,13 +980,9 @@ Returns `Boolean` - Whether the renderer process has crashed.
 
 Overrides the user agent for this web page.
 
-**[Deprecated](modernization/property-updates.md)**
-
 #### `contents.getUserAgent()`
 
 Returns `String` - The user agent for this web page.
-
-**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.insertCSS(css[, options])`
 
@@ -1042,7 +1051,7 @@ or is rejected if the result of the code is a rejected promise.
 
 Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
 
-#### `contents.setIgnoreMenuShortcuts(ignore)` _Experimental_
+#### `contents.setIgnoreMenuShortcuts(ignore)`
 
 * `ignore` Boolean
 
@@ -1054,13 +1063,9 @@ Ignore application menu shortcuts while this web contents is focused.
 
 Mute the audio on the current web page.
 
-**[Deprecated](modernization/property-updates.md)**
-
 #### `contents.isAudioMuted()`
 
 Returns `Boolean` - Whether this page has been muted.
-
-**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.isCurrentlyAudible()`
 
@@ -1068,18 +1073,16 @@ Returns `Boolean` - Whether audio is currently playing.
 
 #### `contents.setZoomFactor(factor)`
 
-* `factor` Number - Zoom factor.
+* `factor` Double - Zoom factor; default is 1.0.
 
 Changes the zoom factor to the specified factor. Zoom factor is
 zoom percent divided by 100, so 300% = 3.0.
 
-**[Deprecated](modernization/property-updates.md)**
+The factor must be greater than 0.0.
 
 #### `contents.getZoomFactor()`
 
 Returns `Number` - the current zoom factor.
-
-**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.setZoomLevel(level)`
 
@@ -1090,13 +1093,9 @@ increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
 
-**[Deprecated](modernization/property-updates.md)**
-
 #### `contents.getZoomLevel()`
 
 Returns `Number` - the current zoom level.
-
-**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
 
@@ -1735,13 +1734,9 @@ Returns `Boolean` - If *offscreen rendering* is enabled returns whether it is cu
 If *offscreen rendering* is enabled sets the frame rate to the specified number.
 Only values between 1 and 60 are accepted.
 
-**[Deprecated](modernization/property-updates.md)**
-
 #### `contents.getFrameRate()`
 
 Returns `Integer` - If *offscreen rendering* is enabled returns the current frame rate.
-
-**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.invalidate()`
 

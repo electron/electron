@@ -51,7 +51,6 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/idle/idle.h"
-#include "ui/base/material_design/material_design_controller.h"
 #include "ui/base/ui_base_switches.h"
 
 #if defined(USE_AURA)
@@ -228,15 +227,6 @@ ElectronBrowserMainParts::ElectronBrowserMainParts(
 
 ElectronBrowserMainParts::~ElectronBrowserMainParts() {
   asar::ClearArchives();
-  // Leak the JavascriptEnvironment on exit.
-  // This is to work around the bug that V8 would be waiting for background
-  // tasks to finish on exit, while somehow it waits forever in Electron, more
-  // about this can be found at
-  // https://github.com/electron/electron/issues/4767. On the other handle there
-  // is actually no need to gracefully shutdown V8 on exit in the main process,
-  // we already ensured all necessary resources get cleaned up, and it would
-  // make quitting faster.
-  ignore_result(js_env_.release());
 }
 
 // static
@@ -375,8 +365,6 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 }
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
-  ui::MaterialDesignController::Initialize();
-
 #if defined(USE_AURA) && defined(USE_X11)
   views::LinuxUI::instance()->Initialize();
 #endif

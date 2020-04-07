@@ -1,18 +1,18 @@
 function resolveSingleObjectGetters (object) {
   if (object && typeof object === 'object') {
-    const newObject = {}
-    for (const key in object) {
-      newObject[key] = resolveGetters(object[key])[0]
+    const newObject = {};
+    for (const key in object) { // eslint-disable-line guard-for-in
+      newObject[key] = resolveGetters(object[key])[0];
     }
-    return newObject
+    return newObject;
   }
-  return object
+  return object;
 }
 
 function resolveGetters (...args) {
-  return args.map(resolveSingleObjectGetters)
+  return args.map(resolveSingleObjectGetters);
 }
 
 module.exports = {
   resolveGetters
-}
+};

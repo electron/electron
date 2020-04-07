@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_web_contents.h"
 
+#include <limits>
 #include <memory>
 #include <set>
 #include <string>
@@ -26,6 +27,7 @@
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/common/widget_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -42,7 +44,7 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/common/context_menu_params.h"
+#include "content/public/common/referrer_type_converters.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/data_object_builder.h"
@@ -640,25 +642,25 @@ void WebContents::OnCreateWindow(
     const content::Referrer& referrer,
     const std::string& frame_name,
     WindowOpenDisposition disposition,
-    const std::vector<std::string>& features,
+    const std::string& features,
     const scoped_refptr<network::ResourceRequestBody>& body) {
-  if (type_ == Type::BROWSER_WINDOW || type_ == Type::OFF_SCREEN)
-    Emit("-new-window", target_url, frame_name, disposition, features, body,
-         referrer);
-  else
-    Emit("new-window", target_url, frame_name, disposition, features);
+  Emit("-new-window", target_url, frame_name, disposition, features, referrer,
+       body);
 }
 
-void WebContents::WebContentsCreated(content::WebContents* source_contents,
-                                     int opener_render_process_id,
-                                     int opener_render_frame_id,
-                                     const std::string& frame_name,
-                                     const GURL& target_url,
-                                     content::WebContents* new_contents) {
+void WebContents::WebContentsCreatedWithFullParams(
+    content::WebContents* source_contents,
+    int opener_render_process_id,
+    int opener_render_frame_id,
+    const content::mojom::CreateNewWindowParams& params,
+    content::WebContents* new_contents) {
   ChildWebContentsTracker::CreateForWebContents(new_contents);
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents);
-  tracker->url = target_url;
-  tracker->frame_name = frame_name;
+  tracker->url = params.target_url;
+  tracker->frame_name = params.frame_name;
+  tracker->referrer = params.referrer.To<content::Referrer>();
+  tracker->raw_features = params.raw_features;
+  tracker->body = params.body;
 }
 
 void WebContents::AddNewContents(
@@ -677,7 +679,8 @@ void WebContents::AddNewContents(
       CreateAndTake(isolate(), std::move(new_contents), Type::BROWSER_WINDOW);
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
-           initial_rect.height(), tracker->url, tracker->frame_name)) {
+           initial_rect.height(), tracker->url, tracker->frame_name,
+           tracker->referrer, tracker->raw_features, tracker->body)) {
     // TODO(zcbenz): Can we make this sync?
     api_web_contents->DestroyWebContents(true /* async */);
   }
@@ -687,10 +690,8 @@ content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
-    if (type_ == Type::BROWSER_WINDOW || type_ == Type::OFF_SCREEN)
-      Emit("-new-window", params.url, "", params.disposition);
-    else
-      Emit("new-window", params.url, "", params.disposition);
+    Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
+         params.post_data);
     return nullptr;
   }
 
@@ -2389,17 +2390,18 @@ bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChange(const content::WebCursor& cursor) {
-  const content::CursorInfo& info = cursor.info();
+void WebContents::OnCursorChange(const content::WebCursor& webcursor) {
+  const ui::Cursor& cursor = webcursor.cursor();
 
-  if (info.type == ui::mojom::CursorType::kCustom) {
-    Emit("cursor-changed", CursorTypeToString(info),
-         gfx::Image::CreateFrom1xBitmap(info.custom_image),
-         info.image_scale_factor,
-         gfx::Size(info.custom_image.width(), info.custom_image.height()),
-         info.hotspot);
+  if (cursor.type() == ui::mojom::CursorType::kCustom) {
+    Emit("cursor-changed", CursorTypeToString(cursor),
+         gfx::Image::CreateFrom1xBitmap(cursor.custom_bitmap()),
+         cursor.image_scale_factor(),
+         gfx::Size(cursor.custom_bitmap().width(),
+                   cursor.custom_bitmap().height()),
+         cursor.custom_hotspot());
   } else {
-    Emit("cursor-changed", CursorTypeToString(info));
+    Emit("cursor-changed", CursorTypeToString(cursor));
   }
 }
 
@@ -2489,7 +2491,13 @@ double WebContents::GetZoomLevel() const {
   return zoom_controller_->GetZoomLevel();
 }
 
-void WebContents::SetZoomFactor(double factor) {
+void WebContents::SetZoomFactor(gin_helper::ErrorThrower thrower,
+                                double factor) {
+  if (factor < std::numeric_limits<double>::epsilon()) {
+    thrower.ThrowError("'zoomFactor' must be a double greater than 0.0");
+    return;
+  }
+
   auto level = blink::PageZoomFactorToZoomLevel(factor);
   SetZoomLevel(level);
 }
@@ -2679,10 +2687,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_goForward", &WebContents::GoForward)
       .SetMethod("_goToOffset", &WebContents::GoToOffset)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
-      .SetMethod("_setUserAgent", &WebContents::SetUserAgent)
-      .SetMethod("_getUserAgent", &WebContents::GetUserAgent)
-      .SetProperty("userAgent", &WebContents::GetUserAgent,
-                   &WebContents::SetUserAgent)
+      .SetMethod("setUserAgent", &WebContents::SetUserAgent)
+      .SetMethod("getUserAgent", &WebContents::GetUserAgent)
       .SetMethod("savePage", &WebContents::SavePage)
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
@@ -2693,10 +2699,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
       .SetMethod("inspectElement", &WebContents::InspectElement)
       .SetMethod("setIgnoreMenuShortcuts", &WebContents::SetIgnoreMenuShortcuts)
-      .SetMethod("_setAudioMuted", &WebContents::SetAudioMuted)
-      .SetMethod("_isAudioMuted", &WebContents::IsAudioMuted)
-      .SetProperty("audioMuted", &WebContents::IsAudioMuted,
-                   &WebContents::SetAudioMuted)
+      .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
+      .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
       .SetMethod("isCurrentlyAudible", &WebContents::IsCurrentlyAudible)
       .SetMethod("undo", &WebContents::Undo)
       .SetMethod("redo", &WebContents::Redo)
@@ -2728,20 +2732,14 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startPainting", &WebContents::StartPainting)
       .SetMethod("stopPainting", &WebContents::StopPainting)
       .SetMethod("isPainting", &WebContents::IsPainting)
-      .SetMethod("_setFrameRate", &WebContents::SetFrameRate)
-      .SetMethod("_getFrameRate", &WebContents::GetFrameRate)
-      .SetProperty("frameRate", &WebContents::GetFrameRate,
-                   &WebContents::SetFrameRate)
+      .SetMethod("setFrameRate", &WebContents::SetFrameRate)
+      .SetMethod("getFrameRate", &WebContents::GetFrameRate)
 #endif
       .SetMethod("invalidate", &WebContents::Invalidate)
-      .SetMethod("_setZoomLevel", &WebContents::SetZoomLevel)
-      .SetMethod("_getZoomLevel", &WebContents::GetZoomLevel)
-      .SetProperty("zoomLevel", &WebContents::GetZoomLevel,
-                   &WebContents::SetZoomLevel)
-      .SetMethod("_setZoomFactor", &WebContents::SetZoomFactor)
-      .SetMethod("_getZoomFactor", &WebContents::GetZoomFactor)
-      .SetProperty("zoomFactor", &WebContents::GetZoomFactor,
-                   &WebContents::SetZoomFactor)
+      .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
+      .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
+      .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
+      .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)

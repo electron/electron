@@ -14,6 +14,8 @@ channel messaging.
 
 ## Class: MessagePortMain
 
+Process: [Main](../glossary.md#main-process)
+
 ### Instance Methods
 
 #### `port.postMessage(message, [transfer])`
@@ -44,6 +46,10 @@ Returns:
   * `ports` MessagePortMain[]
 
 Emitted when a MessagePortMain object receives a message.
+
+#### Event: 'close'
+
+Emitted when the remote end of a MessagePortMain object becomes disconnected.
 
 [`MessagePort`]: https://developer.mozilla.org/en-US/docs/Web/API/MessagePort
 [Channel Messaging API]: https://developer.mozilla.org/en-US/docs/Web/API/Channel_Messaging_API

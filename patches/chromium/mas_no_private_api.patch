@@ -50,7 +50,7 @@ index 5124b17f020849671a7f03d92bda052eff84d169..f9730f71c122965f7ce7815a1b9a7b32
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 7504dd00bedb793b4cdaa87a3a2259cf82ce2e13..102a82f5922365f93d4ed228f775a0e68f74dfc5 100644
+index bd9fa917f7b5cabb5d2b21dfb9c8b427440ff067..bd573f2d0e39218f802f35e0e3bd4e5d5f902d3f 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -206,6 +206,7 @@
@@ -245,7 +245,7 @@ index 7504dd00bedb793b4cdaa87a3a2259cf82ce2e13..102a82f5922365f93d4ed228f775a0e6
  
    if ([attribute isEqualToString:
                       NSAccessibilityBoundsForRangeParameterizedAttribute]) {
-@@ -3023,6 +3050,7 @@ AXPlatformRange range(std::move(lineStartPosition),
+@@ -3025,6 +3052,7 @@ AXPlatformRange range(std::move(lineStartPosition),
      return nil;
    }
  
@@ -253,7 +253,7 @@ index 7504dd00bedb793b4cdaa87a3a2259cf82ce2e13..102a82f5922365f93d4ed228f775a0e6
    if ([attribute
            isEqualToString:
                NSAccessibilityLineTextMarkerRangeForTextMarkerParameterizedAttribute]) {
-@@ -3137,6 +3165,7 @@ AXPlatformRange range(std::move(lineStartPosition),
+@@ -3139,6 +3167,7 @@ AXPlatformRange range(std::move(lineStartPosition),
  
      return @(child->GetIndexInParent());
    }
@@ -262,10 +262,10 @@ index 7504dd00bedb793b4cdaa87a3a2259cf82ce2e13..102a82f5922365f93d4ed228f775a0e6
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 292d3ed82bf5cc6fdfbda2b05fb211afff5f0b69..5bdacb75ddafd56901d298993d71d772f0f51c0d 100644
+index 8e8b6b785ed6e2831f107e925c387f723f55a8fc..33324bbca5953f6f2f9d829e4c7b5d7daa3f49ea 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -531,6 +531,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -534,6 +534,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -273,7 +273,7 @@ index 292d3ed82bf5cc6fdfbda2b05fb211afff5f0b69..5bdacb75ddafd56901d298993d71d772
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -538,6 +539,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -541,6 +542,7 @@ void PostAnnouncementNotification(NSString* announcement) {
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }

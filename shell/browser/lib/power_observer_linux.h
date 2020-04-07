@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/callback.h"
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/power_monitor/power_observer.h"
@@ -16,20 +17,19 @@
 
 namespace electron {
 
-class PowerObserverLinux : public base::PowerObserver {
+class PowerObserverLinux {
  public:
-  PowerObserverLinux();
-  ~PowerObserverLinux() override;
+  explicit PowerObserverLinux(base::PowerObserver* observer);
+  ~PowerObserverLinux();
 
- protected:
+  void SetShutdownHandler(base::Callback<bool()> should_shutdown);
+
+ private:
   void BlockSleep();
   void UnblockSleep();
   void BlockShutdown();
   void UnblockShutdown();
 
-  void SetShutdownHandler(base::Callback<bool()> should_shutdown);
-
- private:
   void OnLoginServiceAvailable(bool available);
   void OnInhibitResponse(base::ScopedFD* scoped_fd, dbus::Response* response);
   void OnPrepareForSleep(dbus::Signal* signal);
@@ -38,13 +38,14 @@ class PowerObserverLinux : public base::PowerObserver {
                          const std::string& signal,
                          bool success);
 
-  base::Callback<bool()> should_shutdown_;
+  base::RepeatingCallback<bool()> should_shutdown_;
+  base::PowerObserver* observer_;
 
   scoped_refptr<dbus::ObjectProxy> logind_;
   std::string lock_owner_name_;
   base::ScopedFD sleep_lock_;
   base::ScopedFD shutdown_lock_;
-  base::WeakPtrFactory<PowerObserverLinux> weak_ptr_factory_;
+  base::WeakPtrFactory<PowerObserverLinux> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(PowerObserverLinux);
 };

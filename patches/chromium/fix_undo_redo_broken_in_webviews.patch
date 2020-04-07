@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 31 Mar 2020 14:32:33 -0700
+Subject: fix: undo redo broken in webviews
+
+When propagating the undo and redo events from the menu, Chromium was not
+properly sending the events to the focused webcontents on macOS. This fixes
+that error. A crbug has been opened at https://bugs.chromium.org/p/chromium/issues/detail?id=1067284
+and this patch will be removed when it has been resolved upstream.
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
+index 591305cb57a2f89067b25189b9c33d92858f01a0..a3112cb03bc73eb670631ff429f38414537f19cf 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac.mm
++++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
+@@ -38,6 +38,7 @@
+ #include "content/browser/renderer_host/render_widget_host_input_event_router.h"
+ #import "content/browser/renderer_host/text_input_client_mac.h"
+ #import "content/browser/renderer_host/ui_events_helper.h"
++#include "content/browser/web_contents/web_contents_impl.h"
+ #include "content/common/text_input_state.h"
+ #include "content/common/view_messages.h"
+ #include "content/public/browser/browser_context.h"
+@@ -978,7 +979,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+ }
+ 
+ WebContents* RenderWidgetHostViewMac::GetWebContents() {
+-  return WebContents::FromRenderViewHost(RenderViewHost::From(host()));
++  auto* wc = WebContents::FromRenderViewHost(RenderViewHost::From(host()));
++  if (wc) {
++    WebContentsImpl* web_contents_impl = static_cast<WebContentsImpl*>(wc);
++    return web_contents_impl->GetFocusedWebContents();
++  }
++  return wc;
+ }
+ 
+ bool RenderWidgetHostViewMac::GetCachedFirstRectForCharacterRange(

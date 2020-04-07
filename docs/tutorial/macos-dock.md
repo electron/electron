@@ -1,4 +1,4 @@
-# MacOS Dock
+# macOS Dock
 
 Electron has APIs to configure the app's icon in the macOS Dock. A macOS-only
 API exists to create a custom dock menu, but

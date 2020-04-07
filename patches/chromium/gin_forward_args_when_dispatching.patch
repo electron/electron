@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Wed, 1 Apr 2020 01:06:45 +0000
+Subject: gin: forward args when dispatching
+
+This allows passing arguments with move-only semantics.
+
+Change-Id: I852eb343398e6f763abfe2a44e623f28353d79a5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2129029
+Commit-Queue: Jeremy Apthorp <jeremya@chromium.org>
+Reviewed-by: Jeremy Roman <jbroman@chromium.org>
+Auto-Submit: Jeremy Apthorp <jeremya@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#755196}
+
+diff --git a/gin/converter_unittest.cc b/gin/converter_unittest.cc
+index 6f9205f06a3e4747e70149c440c4548e54045001..162572385bdd8a54612eb64414fe80e0f9d619d1 100644
+--- a/gin/converter_unittest.cc
++++ b/gin/converter_unittest.cc
+@@ -12,6 +12,7 @@
+ #include "base/stl_util.h"
+ #include "base/strings/string16.h"
+ #include "base/strings/utf_string_conversions.h"
++#include "gin/function_template.h"
+ #include "gin/handle.h"
+ #include "gin/public/isolate_holder.h"
+ #include "gin/test/v8_test.h"
+@@ -224,4 +225,45 @@ TEST_F(ConverterTest, VectorOfWrappables) {
+   EXPECT_THAT(out_value2, testing::ContainerEq(vector));
+ }
+ 
++namespace {
++
++class MoveOnlyObject {
++ public:
++  MoveOnlyObject() = default;
++  MoveOnlyObject(const MoveOnlyObject&) = delete;
++  MoveOnlyObject& operator=(const MoveOnlyObject&) = delete;
++
++  MoveOnlyObject(MoveOnlyObject&&) noexcept = default;
++  MoveOnlyObject& operator=(MoveOnlyObject&&) noexcept = default;
++};
++
++}  // namespace
++
++template <>
++struct Converter<MoveOnlyObject> {
++  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, MoveOnlyObject in) {
++    return v8::Undefined(isolate);
++  }
++  static bool FromV8(v8::Isolate* isolate,
++                     v8::Local<v8::Value> val,
++                     MoveOnlyObject* out) {
++    *out = MoveOnlyObject();
++    return true;
++  }
++};
++
++TEST_F(ConverterTest, MoveOnlyParameters) {
++  v8::Isolate* isolate = instance_->isolate();
++  v8::HandleScope handle_scope(isolate);
++
++  auto receives_move_only_obj = [](MoveOnlyObject obj) {};
++  auto func_templ = gin::CreateFunctionTemplate(
++      isolate, base::BindRepeating(receives_move_only_obj));
++
++  v8::Local<v8::Context> context = instance_->isolate()->GetCurrentContext();
++  auto func = func_templ->GetFunction(context).ToLocalChecked();
++  v8::Local<v8::Value> argv[] = {v8::Undefined(isolate)};
++  func->Call(context, v8::Undefined(isolate), 1, argv).ToLocalChecked();
++}
++
+ }  // namespace gin
+diff --git a/gin/function_template.h b/gin/function_template.h
+index 7edcc9e20dfa6367dde5f58237cca5f4ca637f7a..8c641d934fdeebb9a90f6eb49960e4fe06217913 100644
+--- a/gin/function_template.h
++++ b/gin/function_template.h
+@@ -166,14 +166,15 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
+   template <typename ReturnType>
+   void DispatchToCallback(
+       base::RepeatingCallback<ReturnType(ArgTypes...)> callback) {
+-    args_->Return(callback.Run(ArgumentHolder<indices, ArgTypes>::value...));
++    args_->Return(
++        callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
+   }
+ 
+   // In C++, you can declare the function foo(void), but you can't pass a void
+   // expression to foo. As a result, we must specialize the case of Callbacks
+   // that have the void return type.
+   void DispatchToCallback(base::RepeatingCallback<void(ArgTypes...)> callback) {
+-    callback.Run(ArgumentHolder<indices, ArgTypes>::value...);
++    callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
+   }
+ 
+  private:

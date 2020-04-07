@@ -5,7 +5,5 @@
 
   "src/electron/patches/v8":  "src/v8",
 
-  "src/electron/patches/node": "src/third_party/electron_node",
-
-  "src/electron/patches/swiftshader": "src/third_party/swiftshader"
+  "src/electron/patches/node": "src/third_party/electron_node"
 }

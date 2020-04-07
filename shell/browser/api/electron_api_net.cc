@@ -33,15 +33,6 @@ v8::Local<v8::Value> Net::Create(v8::Isolate* isolate) {
 void Net::BuildPrototype(v8::Isolate* isolate,
                          v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "Net"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetProperty("URLLoader", &Net::URLLoader);
-}
-
-v8::Local<v8::Value> Net::URLLoader(v8::Isolate* isolate) {
-  v8::Local<v8::FunctionTemplate> constructor;
-  constructor = SimpleURLLoaderWrapper::GetConstructor(isolate);
-  return constructor->GetFunction(isolate->GetCurrentContext())
-      .ToLocalChecked();
 }
 
 }  // namespace api
@@ -67,15 +58,13 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
 
-  SimpleURLLoaderWrapper::SetConstructor(
-      isolate, base::BindRepeating(SimpleURLLoaderWrapper::New));
-
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("net", Net::Create(isolate));
   dict.Set("Net",
            Net::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
-  dict.SetMethod("_isValidHeaderName", &IsValidHeaderName);
-  dict.SetMethod("_isValidHeaderValue", &IsValidHeaderValue);
+  dict.SetMethod("isValidHeaderName", &IsValidHeaderName);
+  dict.SetMethod("isValidHeaderValue", &IsValidHeaderValue);
+  dict.SetMethod("createURLLoader", &SimpleURLLoaderWrapper::Create);
 }
 
 }  // namespace

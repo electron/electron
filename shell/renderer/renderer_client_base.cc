@@ -68,6 +68,7 @@
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/renderer/pepper/chrome_pdf_print_client.h"
 #include "content/public/common/webplugininfo.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extensions_client.h"
@@ -101,6 +102,11 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
   for (const std::string& scheme : standard_schemes_list)
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITH_HOST);
+  // Parse --cors-schemes=scheme1,scheme2
+  std::vector<std::string> cors_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kCORSSchemes);
+  for (const std::string& scheme : cors_schemes_list)
+    url::AddCorsEnabledScheme(scheme.c_str());
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
   // We rely on the unique process host id which is notified to the
@@ -155,6 +161,9 @@ void RendererClientBase::RenderThreadStarted() {
 
   extensions_renderer_client_.reset(new ElectronExtensionsRendererClient);
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
+
+  // Enables printing from Chrome PDF viewer.
+  pdf::PepperPDFHost::SetPrintClient(new ChromePDFPrintClient());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
 #endif

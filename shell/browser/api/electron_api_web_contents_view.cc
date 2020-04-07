@@ -53,12 +53,10 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 #endif
       web_contents_(isolate, web_contents->GetWrapper()),
       api_web_contents_(web_contents.get()) {
-#if defined(OS_MACOSX)
-  // On macOS a View is created to wrap the NSView, and its lifetime is managed
-  // by us.
-  view()->set_owned_by_client();
-#else
-  // On other platforms the View is managed by InspectableWebContents.
+#if !defined(OS_MACOSX)
+  // On macOS the View is a newly-created |DelayedNativeViewHost| and it is our
+  // responsibility to delete it. On other platforms the View is created and
+  // managed by InspectableWebContents.
   set_delete_view(false);
 #endif
   WebContentsViewRelay::CreateForWebContents(web_contents->web_contents());
@@ -67,9 +65,16 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 
 WebContentsView::~WebContentsView() {
   if (api_web_contents_) {  // destroy() is called
-    // Destroy WebContents asynchronously unless app is shutting down,
-    // because destroy() might be called inside WebContents's event handler.
-    api_web_contents_->DestroyWebContents(!Browser::Get()->is_shutting_down());
+    // Destroy WebContents asynchronously, as we might be in GC currently and
+    // WebContents emits an event in its destructor.
+    base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                   base::BindOnce(
+                       [](base::WeakPtr<WebContents> contents) {
+                         if (contents)
+                           contents->DestroyWebContents(
+                               !Browser::Get()->is_shutting_down());
+                       },
+                       api_web_contents_->GetWeakPtr()));
   }
 }
 

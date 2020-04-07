@@ -22,7 +22,9 @@ class NativeTheme : public gin_helper::EventEmitter<NativeTheme>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  NativeTheme(v8::Isolate* isolate, ui::NativeTheme* theme);
+  NativeTheme(v8::Isolate* isolate,
+              ui::NativeTheme* ui_theme,
+              ui::NativeTheme* web_theme);
   ~NativeTheme() override;
 
   void SetThemeSource(ui::NativeTheme::ThemeSource override);
@@ -40,7 +42,8 @@ class NativeTheme : public gin_helper::EventEmitter<NativeTheme>,
   void OnNativeThemeUpdatedOnUI();
 
  private:
-  ui::NativeTheme* theme_;
+  ui::NativeTheme* ui_theme_;
+  ui::NativeTheme* web_theme_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeTheme);
 };

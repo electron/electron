@@ -1,18 +1,18 @@
-const { app } = require('electron')
+const { app } = require('electron');
 
 app.whenReady().then(() => {
-  console.log('started') // ping parent
-})
+  console.log('started'); // ping parent
+});
 
-const gotTheLock = app.requestSingleInstanceLock()
+const gotTheLock = app.requestSingleInstanceLock();
 
 app.on('second-instance', (event, args) => {
   setImmediate(() => {
-    console.log(JSON.stringify(args))
-    app.exit(0)
-  })
-})
+    console.log(JSON.stringify(args));
+    app.exit(0);
+  });
+});
 
 if (!gotTheLock) {
-  app.exit(1)
+  app.exit(1);
 }

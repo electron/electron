@@ -9,25 +9,51 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/memory/weak_ptr.h"
 #include "components/download/public/common/download_item.h"
 #include "gin/handle.h"
+#include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/file_dialog.h"
-#include "shell/common/gin_helper/trackable_object.h"
+#include "shell/common/gin_helper/pinnable.h"
 #include "url/gurl.h"
 
 namespace electron {
 
 namespace api {
 
-class DownloadItem : public gin_helper::TrackableObject<DownloadItem>,
+class DownloadItem : public gin::Wrappable<DownloadItem>,
+                     public gin_helper::Pinnable<DownloadItem>,
+                     public gin_helper::EventEmitterMixin<DownloadItem>,
                      public download::DownloadItem::Observer {
  public:
-  static gin::Handle<DownloadItem> Create(v8::Isolate* isolate,
-                                          download::DownloadItem* item);
+  static gin::Handle<DownloadItem> FromOrCreate(v8::Isolate* isolate,
+                                                download::DownloadItem* item);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  static DownloadItem* FromDownloadItem(download::DownloadItem*);
 
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
+
+  // JS API, but also C++ calls it sometimes
+  void SetSavePath(const base::FilePath& path);
+  base::FilePath GetSavePath() const;
+  file_dialog::DialogSettings GetSaveDialogOptions() const;
+
+ private:
+  DownloadItem(v8::Isolate* isolate, download::DownloadItem* download_item);
+  ~DownloadItem() override;
+
+  bool CheckAlive() const;
+
+  // download::DownloadItem::Observer
+  void OnDownloadUpdated(download::DownloadItem* download) override;
+  void OnDownloadDestroyed(download::DownloadItem* download) override;
+
+  // JS API
   void Pause();
   bool IsPaused() const;
   void Resume();
@@ -40,29 +66,19 @@ class DownloadItem : public gin_helper::TrackableObject<DownloadItem>,
   std::string GetFilename() const;
   std::string GetContentDisposition() const;
   const GURL& GetURL() const;
-  const std::vector<GURL>& GetURLChain() const;
+  v8::Local<v8::Value> GetURLChain(v8::Isolate*) const;
   download::DownloadItem::DownloadState GetState() const;
   bool IsDone() const;
-  void SetSavePath(const base::FilePath& path);
-  base::FilePath GetSavePath() const;
-  file_dialog::DialogSettings GetSaveDialogOptions() const;
   void SetSaveDialogOptions(const file_dialog::DialogSettings& options);
   std::string GetLastModifiedTime() const;
   std::string GetETag() const;
   double GetStartTime() const;
 
- protected:
-  DownloadItem(v8::Isolate* isolate, download::DownloadItem* download_item);
-  ~DownloadItem() override;
-
-  // Override download::DownloadItem::Observer methods
-  void OnDownloadUpdated(download::DownloadItem* download) override;
-  void OnDownloadDestroyed(download::DownloadItem* download) override;
-
- private:
   base::FilePath save_path_;
   file_dialog::DialogSettings dialog_options_;
   download::DownloadItem* download_item_;
+
+  base::WeakPtrFactory<DownloadItem> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(DownloadItem);
 };

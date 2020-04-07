@@ -15,8 +15,13 @@ namespace electron {
 // created by native `window.open()`
 struct ChildWebContentsTracker
     : public content::WebContentsUserData<ChildWebContentsTracker> {
+  ~ChildWebContentsTracker() override;
+
   GURL url;
   std::string frame_name;
+  content::Referrer referrer;
+  std::string raw_features;
+  scoped_refptr<network::ResourceRequestBody> body;
 
  private:
   explicit ChildWebContentsTracker(content::WebContents* web_contents);

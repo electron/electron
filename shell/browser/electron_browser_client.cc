@@ -83,6 +83,7 @@
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
+#include "shell/browser/protocol_registry.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
@@ -525,6 +526,11 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   prefs->picture_in_picture_enabled = false;
 #endif
 
+  ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  prefs->preferred_color_scheme = native_theme->ShouldUseDarkColors()
+                                      ? blink::PreferredColorScheme::kDark
+                                      : blink::PreferredColorScheme::kLight;
+
   SetFontDefaults(prefs);
 
   // Custom preferences of guest page.
@@ -763,7 +769,7 @@ bool ElectronBrowserClient::CanCreateWindow(
     const std::string& frame_name,
     WindowOpenDisposition disposition,
     const blink::mojom::WindowFeatures& features,
-    const std::vector<std::string>& additional_features,
+    const std::string& raw_features,
     const scoped_refptr<network::ResourceRequestBody>& body,
     bool user_gesture,
     bool opener_suppressed,
@@ -787,7 +793,7 @@ bool ElectronBrowserClient::CanCreateWindow(
     return delegate_->CanCreateWindow(
         opener, opener_url, opener_top_level_frame_url, source_origin,
         container_type, target_url, referrer, frame_name, disposition, features,
-        additional_features, body, user_gesture, opener_suppressed,
+        raw_features, body, user_gesture, opener_suppressed,
         no_javascript_access);
   }
 
@@ -1164,17 +1170,16 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
-  api::Protocol* protocol = api::Protocol::FromWrappedClass(
-      v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
+  content::BrowserContext* context = web_contents->GetBrowserContext();
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionNavigationURLLoaderFactory(
-          web_contents->GetBrowserContext(),
-          false /* we don't support extensions::WebViewGuest */));
+          context, false /* we don't support extensions::WebViewGuest */));
 #endif
-  if (protocol)
-    protocol->RegisterURLLoaderFactories(factories);
+  auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
+  protocol_registry->RegisterURLLoaderFactories(
+      URLLoaderFactoryType::kNavigation, factories);
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1233,10 +1238,9 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
       content::WebContents::FromRenderFrameHost(frame_host);
 
   if (web_contents) {
-    api::Protocol* protocol = api::Protocol::FromWrappedClass(
-        v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
-    if (protocol)
-      protocol->RegisterURLLoaderFactories(factories);
+    ProtocolRegistry::FromBrowserContext(web_contents->GetBrowserContext())
+        ->RegisterURLLoaderFactories(URLLoaderFactoryType::kDocumentSubResource,
+                                     factories);
   }
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
@@ -1387,9 +1391,6 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
 #endif
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::HandleScope scope(isolate);
-  api::Protocol* protocol =
-      api::Protocol::FromWrappedClass(isolate, browser_context);
-  DCHECK(protocol);
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
   DCHECK(web_request.get());
 
@@ -1413,12 +1414,14 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
   if (header_client)
     header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
 
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(browser_context);
   new ProxyingURLLoaderFactory(
-      web_request.get(), protocol->intercept_handlers(), browser_context,
-      render_process_id, &next_id_, std::move(navigation_ui_data),
-      std::move(navigation_id), std::move(proxied_receiver),
-      std::move(target_factory_remote), std::move(header_client_receiver),
-      type);
+      web_request.get(), protocol_registry->intercept_handlers(),
+      browser_context, render_process_id, &next_id_,
+      std::move(navigation_ui_data), std::move(navigation_id),
+      std::move(proxied_receiver), std::move(target_factory_remote),
+      std::move(header_client_receiver), type);
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;

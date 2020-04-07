@@ -73,6 +73,10 @@ declare namespace Electron {
   }
 
   const deprecate: ElectronInternal.DeprecationUtil;
+
+  namespace Main {
+    const deprecate: ElectronInternal.DeprecationUtil;
+  }
 }
 
 declare namespace ElectronInternal {
@@ -94,7 +98,8 @@ declare namespace ElectronInternal {
 
   interface DesktopCapturer {
     startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean): void;
-    emit: typeof NodeJS.EventEmitter.prototype.emit | null;
+    _onerror: (error: string) => void;
+    _onfinished: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
   }
 
   interface GetSourcesOptions {
@@ -153,7 +158,7 @@ declare namespace ElectronInternal {
     isMainFrame: boolean;
   }
 
-  abstract class WebViewElement extends HTMLElement {
+  class WebViewElement extends HTMLElement {
     static observedAttributes: Array<string>;
 
     public contentWindow: Window;

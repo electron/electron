@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Wed, 4 Mar 2020 11:18:03 -0800
+Subject: feat: add onclose to MessagePort
+
+This adds the 'onclose' event to MessagePort. This is
+[proposed](https://github.com/w3ctag/design-reviews/issues/269#issuecomment-407584290)
+in w3c and has been discussed for years without conclusion. I'd like to
+get this standardised, but in lieu of that, this makes MessagePort a
+whole bunch more useful!
+
+diff --git a/third_party/blink/renderer/core/messaging/message_port.cc b/third_party/blink/renderer/core/messaging/message_port.cc
+index 3e71122bfbc87b481d620d67d01926690ae5270a..cd1abc51fa216215b5ab00d0a8b63638c24cbd57 100644
+--- a/third_party/blink/renderer/core/messaging/message_port.cc
++++ b/third_party/blink/renderer/core/messaging/message_port.cc
+@@ -149,6 +149,7 @@ void MessagePort::close() {
+     Entangle(mojo::MessagePipe().handle0);
+   }
+   closed_ = true;
++  DispatchEvent(*Event::Create(event_type_names::kClose));
+ }
+ 
+ void MessagePort::Entangle(mojo::ScopedMessagePipeHandle handle) {
+diff --git a/third_party/blink/renderer/core/messaging/message_port.h b/third_party/blink/renderer/core/messaging/message_port.h
+index d24804499949c237462ee455e7cec93836debca9..53e61229e73e2343414aa1ac5c5ac1ff2d3db439 100644
+--- a/third_party/blink/renderer/core/messaging/message_port.h
++++ b/third_party/blink/renderer/core/messaging/message_port.h
+@@ -119,6 +119,13 @@ class CORE_EXPORT MessagePort : public EventTargetWithInlineData,
+     return GetAttributeEventListener(event_type_names::kMessageerror);
+   }
+ 
++  void setOnclose(EventListener* listener) {
++    SetAttributeEventListener(event_type_names::kClose, listener);
++  }
++  EventListener* onclose() {
++    return GetAttributeEventListener(event_type_names::kClose);
++  }
++
+   // A port starts out its life entangled, and remains entangled until it is
+   // closed or is cloned.
+   bool IsEntangled() const { return !closed_ && !IsNeutered(); }
+diff --git a/third_party/blink/renderer/core/messaging/message_port.idl b/third_party/blink/renderer/core/messaging/message_port.idl
+index 6fab27fcdf1c333739b6ffe88b3cc4eed3301ee4..3f1f181d9b8a66997136f870f55c97c08294b6eb 100644
+--- a/third_party/blink/renderer/core/messaging/message_port.idl
++++ b/third_party/blink/renderer/core/messaging/message_port.idl
+@@ -40,4 +40,5 @@
+     // event handlers
+     attribute EventHandler onmessage;
+     attribute EventHandler onmessageerror;
++    attribute EventHandler onclose;
+ };

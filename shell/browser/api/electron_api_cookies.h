@@ -12,6 +12,7 @@
 #include "gin/handle.h"
 #include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_change_dispatcher.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
@@ -33,23 +34,30 @@ class ElectronBrowserContext;
 
 namespace api {
 
-class Cookies : public gin_helper::TrackableObject<Cookies> {
+class Cookies : public gin::Wrappable<Cookies>,
+                public gin_helper::EventEmitterMixin<Cookies> {
  public:
   static gin::Handle<Cookies> Create(v8::Isolate* isolate,
                                      ElectronBrowserContext* browser_context);
 
-  // gin_helper::TrackableObject:
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
   Cookies(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Cookies() override;
 
-  v8::Local<v8::Promise> Get(const gin_helper::Dictionary& filter);
-  v8::Local<v8::Promise> Set(base::DictionaryValue details);
-  v8::Local<v8::Promise> Remove(const GURL& url, const std::string& name);
-  v8::Local<v8::Promise> FlushStore();
+  v8::Local<v8::Promise> Get(v8::Isolate*,
+                             const gin_helper::Dictionary& filter);
+  v8::Local<v8::Promise> Set(v8::Isolate*,
+                             const base::DictionaryValue& details);
+  v8::Local<v8::Promise> Remove(v8::Isolate*,
+                                const GURL& url,
+                                const std::string& name);
+  v8::Local<v8::Promise> FlushStore(v8::Isolate*);
 
   // CookieChangeNotifier subscription:
   void OnCookieChanged(const net::CookieChangeInfo& change);
@@ -58,7 +66,9 @@ class Cookies : public gin_helper::TrackableObject<Cookies> {
   std::unique_ptr<base::CallbackList<void(
       const net::CookieChangeInfo& change)>::Subscription>
       cookie_change_subscription_;
-  scoped_refptr<ElectronBrowserContext> browser_context_;
+
+  // Weak reference; ElectronBrowserContext is guaranteed to outlive us.
+  ElectronBrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };

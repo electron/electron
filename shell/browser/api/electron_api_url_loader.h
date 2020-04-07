@@ -10,18 +10,21 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "gin/wrappable.h"
 #include "net/base/auth.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
-#include "shell/common/gin_helper/event_emitter.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "url/gurl.h"
 #include "v8/include/v8.h"
 
 namespace gin {
 class Arguments;
-}
+template <typename T>
+class Handle;
+}  // namespace gin
 
 namespace network {
 class SimpleURLLoader;
@@ -34,14 +37,12 @@ namespace api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper
-    : public gin_helper::EventEmitter<SimpleURLLoaderWrapper>,
+    : public gin::Wrappable<SimpleURLLoaderWrapper>,
+      public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
       public network::SimpleURLLoaderStreamConsumer {
  public:
   ~SimpleURLLoaderWrapper() override;
-  static gin_helper::WrappableBase* New(gin::Arguments* args);
-
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  static gin::Handle<SimpleURLLoaderWrapper> Create(gin::Arguments* args);
 
   static SimpleURLLoaderWrapper* FromID(uint32_t id);
 
@@ -54,6 +55,12 @@ class SimpleURLLoaderWrapper
           auth_challenge_responder);
 
   void Cancel();
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  private:
   SimpleURLLoaderWrapper(std::unique_ptr<network::ResourceRequest> loader,

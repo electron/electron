@@ -6,9 +6,11 @@
     "browser": true
   },
   "rules": {
+    "semi": ["error", "always"],
     "no-var": "error",
     "no-unused-vars": 0,
     "no-global-assign": 0,
+    "guard-for-in": 2,
     "@typescript-eslint/no-unused-vars": ["error", {
       "vars": "all",
       "args": "after-used",
