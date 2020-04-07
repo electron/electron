@@ -32,8 +32,6 @@ namespace api {
 BrowserWindow::BrowserWindow(gin::Arguments* args,
                              const gin_helper::Dictionary& options)
     : TopLevelWindow(args->isolate(), options), weak_factory_(this) {
-  gin::Handle<class WebContents> web_contents;
-
   // Use options.webPreferences in WebContents.
   v8::Isolate* isolate = args->isolate();
   gin_helper::Dictionary web_preferences =
@@ -60,22 +58,9 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, show);
   }
 
-  if (options.Get("webContents", &web_contents) && !web_contents.IsEmpty()) {
-    // Set webPreferences from options if using an existing webContents.
-    // These preferences will be used when the webContent launches new
-    // render processes.
-    auto* existing_preferences =
-        WebContentsPreferences::From(web_contents->web_contents());
-    base::DictionaryValue web_preferences_dict;
-    if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
-                           &web_preferences_dict)) {
-      existing_preferences->Clear();
-      existing_preferences->Merge(web_preferences_dict);
-    }
-  } else {
-    // Creates the WebContents used by BrowserWindow.
-    web_contents = WebContents::Create(isolate, web_preferences);
-  }
+  // Creates the WebContents used by BrowserWindow.
+  gin::Handle<class WebContents> web_contents =
+      WebContents::Create(isolate, web_preferences);
 
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents->GetWeakPtr();
