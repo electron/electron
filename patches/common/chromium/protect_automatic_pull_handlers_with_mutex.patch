@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Fri, 13 Mar 2020 02:52:15 +0000
+Subject: Protect automatic pull handlers with Mutex
+
+In some cases, |rendering_automatic_pull_handlers_| in
+DeferredTaskHandler can be touched from both the main thread and the
+audio rendering thread. This CL adds a lock when it is updated,
+processed, and cleared.
+
+crash on the repro case after 30 min.
+
+Test: Locally confirmed that the ASAN build with this patch does not
+Bug: 1061018
+Change-Id: I5f4440edcdc26e4a3afbfe8fad88492bdb49c323
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2101712
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#750000}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
+index e8fe36a1060ae846692f90bee836304ec593fc46..4bced21399ec23ad242bdb32d9f4472a51ae6f28 100644
+--- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
+@@ -132,6 +132,7 @@ void DeferredTaskHandler::HandleDirtyAudioNodeOutputs() {
+ 
+ void DeferredTaskHandler::AddAutomaticPullNode(
+     scoped_refptr<AudioHandler> node) {
++  DCHECK(IsAudioThread());
+   AssertGraphOwner();
+ 
+   if (!automatic_pull_handlers_.Contains(node)) {
+@@ -151,11 +152,16 @@ void DeferredTaskHandler::RemoveAutomaticPullNode(AudioHandler* node) {
+ }
+ 
+ void DeferredTaskHandler::UpdateAutomaticPullNodes() {
++  DCHECK(IsAudioThread());
+   AssertGraphOwner();
+ 
+   if (automatic_pull_handlers_need_updating_) {
+-    CopyToVector(automatic_pull_handlers_, rendering_automatic_pull_handlers_);
+-    automatic_pull_handlers_need_updating_ = false;
++    MutexTryLocker try_locker(automatic_pull_handlers_lock_);
++    if (try_locker.Locked()) {
++      CopyToVector(automatic_pull_handlers_,
++                   rendering_automatic_pull_handlers_);
++      automatic_pull_handlers_need_updating_ = false;
++    }
+   }
+ }
+ 
+@@ -163,9 +169,12 @@ void DeferredTaskHandler::ProcessAutomaticPullNodes(
+     uint32_t frames_to_process) {
+   DCHECK(IsAudioThread());
+ 
+-  for (unsigned i = 0; i < rendering_automatic_pull_handlers_.size(); ++i) {
+-    rendering_automatic_pull_handlers_[i]->ProcessIfNecessary(
+-        frames_to_process);
++  MutexTryLocker try_locker(automatic_pull_handlers_lock_);
++  if (try_locker.Locked()) {
++    for (auto& rendering_automatic_pull_handler :
++         rendering_automatic_pull_handlers_) {
++      rendering_automatic_pull_handler->ProcessIfNecessary(frames_to_process);
++    }
+   }
+ }
+ 
+@@ -350,12 +359,17 @@ void DeferredTaskHandler::DeleteHandlersOnMainThread() {
+ 
+ void DeferredTaskHandler::ClearHandlersToBeDeleted() {
+   DCHECK(IsMainThread());
++
++  {
++    MutexLocker locker(automatic_pull_handlers_lock_);
++    rendering_automatic_pull_handlers_.clear();
++  }
++
+   GraphAutoLocker locker(*this);
+   tail_processing_handlers_.clear();
+   rendering_orphan_handlers_.clear();
+   deletable_orphan_handlers_.clear();
+   automatic_pull_handlers_.clear();
+-  rendering_automatic_pull_handlers_.clear();
+   active_source_handlers_.clear();
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
+index 0ede5f5b5dabeeef9decc94c94d91ddc7351c722..af384d0941da47bbe544be3c0ce5739ca4c384e1 100644
+--- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
++++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
+@@ -263,6 +263,11 @@ class MODULES_EXPORT DeferredTaskHandler final
+ 
+   // Graph locking.
+   RecursiveMutex context_graph_mutex_;
++
++  // Protects |rendering_automatic_pull_handlers| when updating, processing, and
++  // clearing. (See crbug.com/1061018)
++  mutable Mutex automatic_pull_handlers_lock_;
++
+   std::atomic<base::PlatformThreadId> audio_thread_;
+ };
+ 
