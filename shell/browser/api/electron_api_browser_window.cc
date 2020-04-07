@@ -59,16 +59,15 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, show);
   }
 
-  // Creates the WebContents used by BrowserWindow.
-  gin::Handle<class WebContents> web_contents =
-      WebContents::Create(isolate, web_preferences);
-  web_contents_.Reset(isolate, web_contents.ToV8());
-
   // Creates the WebContentsView.
   gin::Handle<WebContentsView> web_contents_view =
-      WebContentsView::Create(isolate, web_contents);
+      WebContentsView::Create(isolate, web_preferences.GetHandle());
   DCHECK(web_contents_view.get());
 
+  // Save a reference of the WebContents.
+  gin::Handle<WebContents> web_contents =
+      web_contents_view->GetWebContents(isolate);
+  web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents->GetWeakPtr();
   api_web_contents_->AddObserver(this);
   Observe(api_web_contents_->web_contents());

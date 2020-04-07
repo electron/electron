@@ -46,12 +46,12 @@ namespace electron {
 namespace api {
 
 WebContentsView::WebContentsView(v8::Isolate* isolate,
-                                 gin::Handle<WebContents> web_contents,
-                                 InspectableWebContents* iwc)
+                                 gin::Handle<WebContents> web_contents)
 #if defined(OS_MACOSX)
-    : View(new DelayedNativeViewHost(iwc->GetView()->GetNativeView())),
+    : View(new DelayedNativeViewHost(
+          web_contents->managed_web_contents()->GetView()->GetNativeView())),
 #else
-    : View(iwc->GetView()->GetView()),
+    : View(web_contents->managed_web_contents()->GetView()->GetView()),
 #endif
       web_contents_(isolate, web_contents->GetWrapper()),
       api_web_contents_(web_contents.get()) {
@@ -80,10 +80,8 @@ WebContentsView::~WebContentsView() {
   }
 }
 
-v8::Local<v8::Value> WebContentsView::GetWebContents(v8::Isolate* isolate) {
-  if (web_contents_.IsEmpty())
-    return v8::Null(isolate);
-  return v8::Local<v8::Value>::New(isolate, web_contents_);
+gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, api_web_contents_);
 }
 
 void WebContentsView::WebContentsDestroyed() {
@@ -94,12 +92,11 @@ void WebContentsView::WebContentsDestroyed() {
 // static
 gin::Handle<WebContentsView> WebContentsView::Create(
     v8::Isolate* isolate,
-    gin::Handle<WebContents> web_contents) {
+    v8::Local<v8::Value> web_preferences) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::Function> constructor = GetConstructor(isolate);
-  v8::Local<v8::Value> arg = web_contents.ToV8();
   v8::Local<v8::Object> obj;
-  if (constructor->NewInstance(context, 1, &arg).ToLocal(&obj)) {
+  if (constructor->NewInstance(context, 1, &web_preferences).ToLocal(&obj)) {
     gin::Handle<WebContentsView> web_contents_view;
     if (gin::ConvertFromV8(isolate, obj, &web_contents_view))
       return web_contents_view;
@@ -121,22 +118,10 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 // static
 gin_helper::WrappableBase* WebContentsView::New(
     gin_helper::Arguments* args,
-    gin::Handle<WebContents> web_contents) {
-  // Currently we only support InspectableWebContents, e.g. the WebContents
-  // created by users directly. To support devToolsWebContents we need to create
-  // a wrapper view.
-  if (!web_contents->managed_web_contents()) {
-    args->ThrowError("The WebContents must be created by user");
-    return nullptr;
-  }
-  // Check if the WebContents has already been added to a view.
-  if (WebContentsViewRelay::FromWebContents(web_contents->web_contents())) {
-    args->ThrowError("The WebContents has already been added to a View");
-    return nullptr;
-  }
+    const gin_helper::Dictionary& web_preferences) {
   // Constructor call.
-  auto* view = new WebContentsView(args->isolate(), web_contents,
-                                   web_contents->managed_web_contents());
+  auto* view = new WebContentsView(
+      args->isolate(), WebContents::Create(args->isolate(), web_preferences));
   view->InitWithArgs(args);
   return view;
 }
