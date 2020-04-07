@@ -240,8 +240,8 @@ step-gclient-sync: &step-gclient-sync
           git add patches
           GIT_COMMITTER_NAME="Electron Bot" GIT_COMMITTER_EMAIL="anonymous@electronjs.org" git commit -m "update patches" --author="Electron Bot <anonymous@electronjs.org>"
           # Export it
-          mkdir -p patches
-          git format-patch -1 --stdout --keep-subject --no-stat --full-index > patches/update-patches.patch
+          mkdir -p ../../patches
+          git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
           echo
           echo "======================================================================"
           echo "There were changes to the patches when applying."
