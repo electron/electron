@@ -45,6 +45,25 @@ namespace electron {
 
 namespace api {
 
+namespace {
+
+// Helper to create WebContentsView by calling from constructor.
+gin::Handle<WebContentsView> CallConstructor(
+    v8::Isolate* isolate,
+    v8::Local<v8::Function> constructor,
+    v8::Local<v8::Value> arg) {
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Object> obj;
+  if (constructor->NewInstance(context, 1, &arg).ToLocal(&obj)) {
+    gin::Handle<WebContentsView> web_contents_view;
+    if (gin::ConvertFromV8(isolate, obj, &web_contents_view))
+      return web_contents_view;
+  }
+  return gin::Handle<WebContentsView>();
+}
+
+}  // namespace
+
 WebContentsView::WebContentsView(v8::Isolate* isolate,
                                  gin::Handle<WebContents> web_contents)
 #if defined(OS_MACOSX)
@@ -92,20 +111,22 @@ void WebContentsView::WebContentsDestroyed() {
 // static
 gin::Handle<WebContentsView> WebContentsView::Create(
     v8::Isolate* isolate,
-    v8::Local<v8::Value> web_preferences) {
-  v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Local<v8::Function> constructor = GetConstructor(isolate);
-  v8::Local<v8::Object> obj;
-  if (constructor->NewInstance(context, 1, &web_preferences).ToLocal(&obj)) {
-    gin::Handle<WebContentsView> web_contents_view;
-    if (gin::ConvertFromV8(isolate, obj, &web_contents_view))
-      return web_contents_view;
-  }
-  return gin::Handle<WebContentsView>();
+    const gin_helper::Dictionary& web_preferences) {
+  return CallConstructor(isolate, GetConstructorForNew(isolate),
+                         gin::ConvertToV8(isolate, web_preferences));
 }
 
 // static
-v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
+gin::Handle<WebContentsView> WebContentsView::CreateWithWebContents(
+    v8::Isolate* isolate,
+    gin::Handle<WebContents> web_contents) {
+  return CallConstructor(isolate, GetConstructorForNewWithWebContents(isolate),
+                         gin::ConvertToV8(isolate, web_contents));
+}
+
+// static
+v8::Local<v8::Function> WebContentsView::GetConstructorForNew(
+    v8::Isolate* isolate) {
   static base::NoDestructor<v8::Global<v8::Function>> constructor;
   if (constructor.get()->IsEmpty()) {
     constructor->Reset(
@@ -116,12 +137,32 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 }
 
 // static
+v8::Local<v8::Function> WebContentsView::GetConstructorForNewWithWebContents(
+    v8::Isolate* isolate) {
+  static base::NoDestructor<v8::Global<v8::Function>> constructor;
+  if (constructor.get()->IsEmpty()) {
+    constructor->Reset(isolate,
+                       gin_helper::CreateConstructor<WebContentsView>(
+                           isolate, base::BindRepeating(
+                                        &WebContentsView::NewWithWebContents)));
+  }
+  return v8::Local<v8::Function>::New(isolate, *constructor.get());
+}
+
+// static
 gin_helper::WrappableBase* WebContentsView::New(
     gin_helper::Arguments* args,
     const gin_helper::Dictionary& web_preferences) {
+  return NewWithWebContents(
+      args, WebContents::Create(args->isolate(), web_preferences));
+}
+
+// static
+gin_helper::WrappableBase* WebContentsView::NewWithWebContents(
+    gin_helper::Arguments* args,
+    gin::Handle<WebContents> web_contents) {
   // Constructor call.
-  auto* view = new WebContentsView(
-      args->isolate(), WebContents::Create(args->isolate(), web_preferences));
+  auto* view = new WebContentsView(args->isolate(), web_contents);
   view->InitWithArgs(args);
   return view;
 }
@@ -149,7 +190,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("WebContentsView", WebContentsView::GetConstructor(isolate));
+  // Note that the public API should only take webPreferences as parameter
+  dict.Set("WebContentsView", WebContentsView::GetConstructorForNew(isolate));
 }
 
 }  // namespace

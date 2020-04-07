@@ -25,10 +25,15 @@ class WebContentsView : public View, public content::WebContentsObserver {
   // Create a new instance of WebContentsView.
   static gin::Handle<WebContentsView> Create(
       v8::Isolate* isolate,
-      v8::Local<v8::Value> web_preferences);
+      const gin_helper::Dictionary& web_preferences);
+  static gin::Handle<WebContentsView> CreateWithWebContents(
+      v8::Isolate* isolate,
+      gin::Handle<WebContents> web_contents);
 
   // Return the cached constructor function.
-  static v8::Local<v8::Function> GetConstructor(v8::Isolate* isolate);
+  static v8::Local<v8::Function> GetConstructorForNew(v8::Isolate* isolate);
+  static v8::Local<v8::Function> GetConstructorForNewWithWebContents(
+      v8::Isolate* isolate);
 
   // gin_helper::Wrappable
   static void BuildPrototype(v8::Isolate* isolate,
@@ -49,6 +54,9 @@ class WebContentsView : public View, public content::WebContentsObserver {
   static gin_helper::WrappableBase* New(
       gin_helper::Arguments* args,
       const gin_helper::Dictionary& web_preferences);
+  static gin_helper::WrappableBase* NewWithWebContents(
+      gin_helper::Arguments* args,
+      gin::Handle<WebContents> web_contents);
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;

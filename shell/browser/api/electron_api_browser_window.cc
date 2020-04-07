@@ -60,13 +60,33 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   }
 
   // Creates the WebContentsView.
-  gin::Handle<WebContentsView> web_contents_view =
-      WebContentsView::Create(isolate, web_preferences.GetHandle());
+  gin::Handle<WebContentsView> web_contents_view;
+  gin::Handle<WebContents> web_contents;
+  if (options.Get("webContents", &web_contents) && !web_contents.IsEmpty()) {
+    // When there is a webContents passed, create a WebContentsView by wrapping
+    // it. This is only used internally to implement nativeWindowOpen option.
+    web_contents_view =
+        WebContentsView::CreateWithWebContents(isolate, web_contents);
+    // Set webPreferences from options if using an existing webContents.
+    // These preferences will be used when the webContent launches new
+    // render processes.
+    auto* existing_preferences =
+        WebContentsPreferences::From(web_contents->web_contents());
+    base::DictionaryValue web_preferences_dict;
+    if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
+                           &web_preferences_dict)) {
+      existing_preferences->Clear();
+      existing_preferences->Merge(web_preferences_dict);
+    }
+  } else {
+    // Otherwise pass |web_preferences| and let WebContentsView create the
+    // WebContents for us.
+    web_contents_view = WebContentsView::Create(isolate, web_preferences);
+    web_contents = web_contents_view->GetWebContents(isolate);
+  }
   DCHECK(web_contents_view.get());
 
   // Save a reference of the WebContents.
-  gin::Handle<WebContents> web_contents =
-      web_contents_view->GetWebContents(isolate);
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents->GetWeakPtr();
   api_web_contents_->AddObserver(this);
