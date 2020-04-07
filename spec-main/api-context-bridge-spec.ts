@@ -1,4 +1,5 @@
-import { contextBridge, BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron/main';
+import { contextBridge } from 'electron/renderer';
 import { expect } from 'chai';
 import * as fs from 'fs-extra';
 import * as os from 'os';
@@ -45,10 +46,10 @@ describe('contextBridge', () => {
   const generateTests = (useSandbox: boolean) => {
     describe(`with sandbox=${useSandbox}`, () => {
       const makeBindingWindow = async (bindingCreator: Function) => {
-        const preloadContent = `const electron_1 = require('electron');
+        const preloadContent = `const renderer_1 = require('electron');
         ${useSandbox ? '' : `require('v8').setFlagsFromString('--expose_gc');
         const gc=require('vm').runInNewContext('gc');
-        electron_1.contextBridge.exposeInMainWorld('GCRunner', {
+        renderer_1.contextBridge.exposeInMainWorld('GCRunner', {
           run: () => gc()
         });`}
         (${bindingCreator.toString()})();`;

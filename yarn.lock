@@ -25,21 +25,6 @@
   dependencies:
     regenerator-runtime "^0.13.2"
 
-"@electron/docs-parser@^0.4.1":
-  version "0.4.4"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.4.4.tgz#4b22be74aa9073315241d2d4b06b22e7ff487106"
-  integrity sha512-EGQMXBIkW6JtwaxbmuWrmJivmrR420dX1cEy5I5Az71aVIz/E4gxlLmlT5L/jOzWwJ+1rbpri9LKVWPl0Bnasw==
-  dependencies:
-    "@types/markdown-it" "^0.0.9"
-    chai "^4.2.0"
-    chalk "^3.0.0"
-    fs-extra "^8.1.0"
-    lodash.camelcase "^4.3.0"
-    markdown-it "^10.0.0"
-    minimist "^1.2.0"
-    ora "^4.0.3"
-    pretty-ms "^5.1.0"
-
 "@electron/docs-parser@^0.7.2":
   version "0.7.2"
   resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.7.2.tgz#f0d5b9f314db519ac1f83359c07c6ec42d3123d1"
@@ -55,12 +40,11 @@
     ora "^4.0.3"
     pretty-ms "^5.1.0"
 
-"@electron/typescript-definitions@^8.6.4":
-  version "8.6.4"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.6.4.tgz#d4727c825afcebf6ff00a7d18416878288cac632"
-  integrity sha512-Fb4o56fikSE3id61U0MbPVBPcweVw8YwzO+JtT9aOorJR4baJZGmpsGxuaHeLSGv+D0Zd5XiWk13cEM/nv9fFw==
+"@electron/typescript-definitions@^8.7.2":
+  version "8.7.2"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.7.2.tgz#a653859975c6a19721b3f47f4f7953876498a8ed"
+  integrity sha512-AE1NjiP2nZsUGYMU78+W6QPCZCRKQe54Tee6qJnBW42rZktZ0hwYXglfpIavpo9dRp4pWncgCo56PXj2rKwCSA==
   dependencies:
-    "@electron/docs-parser" "^0.4.1"
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
     colors "^1.1.2"

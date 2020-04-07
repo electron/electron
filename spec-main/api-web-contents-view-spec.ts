@@ -4,7 +4,7 @@ import * as path from 'path';
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
 
-import { webContents, TopLevelWindow, WebContentsView } from 'electron';
+import { webContents, TopLevelWindow, WebContentsView } from 'electron/main';
 
 describe('WebContentsView', () => {
   let w: TopLevelWindow;

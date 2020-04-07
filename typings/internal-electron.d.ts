@@ -73,6 +73,10 @@ declare namespace Electron {
   }
 
   const deprecate: ElectronInternal.DeprecationUtil;
+
+  namespace Main {
+    const deprecate: ElectronInternal.DeprecationUtil;
+  }
 }
 
 declare namespace ElectronInternal {

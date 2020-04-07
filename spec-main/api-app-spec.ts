@@ -5,7 +5,7 @@ import * as http from 'http';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
-import { app, BrowserWindow, Menu, session } from 'electron';
+import { app, BrowserWindow, Menu, session } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 import { ifdescribe } from './spec-helpers';

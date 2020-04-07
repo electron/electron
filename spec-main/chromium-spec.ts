@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron';
+import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import * as https from 'https';

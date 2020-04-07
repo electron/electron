@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as util from 'util';
 import { emittedOnce } from './events-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
-import { webContents, WebContents } from 'electron';
+import { webContents, WebContents } from 'electron/main';
 
 const features = process.electronBinding('features');
 

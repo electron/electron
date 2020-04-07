@@ -29,6 +29,12 @@ declare namespace Electron {
   class WebContentsView {
     constructor(webContents: WebContents)
   }
+
+  namespace Main {
+    class TopLevelWindow extends Electron.TopLevelWindow {}
+    class View extends Electron.View {}
+    class WebContentsView extends Electron.WebContentsView {}
+  }
 }
 
 declare module 'dbus-native';

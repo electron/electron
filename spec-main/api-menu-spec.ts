@@ -1,7 +1,7 @@
 import * as cp from 'child_process';
 import * as path from 'path';
 import { expect } from 'chai';
-import { BrowserWindow, Menu, MenuItem } from 'electron';
+import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
 import { emittedOnce } from './events-helpers';
 import { ifit } from './spec-helpers';

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain } from 'electron';
+import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain } from 'electron/main';
 import { promisify } from 'util';
 import { AddressInfo } from 'net';
 import * as ChildProcess from 'child_process';

@@ -4,7 +4,7 @@ import * as qs from 'querystring';
 import * as path from 'path';
 import * as url from 'url';
 import * as WebSocket from 'ws';
-import { ipcMain, protocol, session, WebContents, webContents } from 'electron';
+import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
 import { AddressInfo } from 'net';
 import { emittedOnce } from './events-helpers';
 

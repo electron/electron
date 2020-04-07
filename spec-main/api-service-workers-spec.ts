@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as http from 'http';
 import * as path from 'path';
-import { session, BrowserWindow } from 'electron';
+import { session, BrowserWindow } from 'electron/main';
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { AddressInfo } from 'net';

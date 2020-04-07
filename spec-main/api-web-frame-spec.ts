@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as path from 'path';
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 
 describe('webFrame module', () => {

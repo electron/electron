@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron';
+import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { expect } from 'chai';

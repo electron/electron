@@ -1,5 +1,5 @@
 import { closeWindow } from './window-helpers';
-import { TopLevelWindow, View } from 'electron';
+import { TopLevelWindow, View } from 'electron/main';
 
 describe('View', () => {
   let w: TopLevelWindow;

@@ -4,7 +4,7 @@ import * as https from 'https';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ChildProcess from 'child_process';
-import { session, BrowserWindow, net, ipcMain, Session } from 'electron';
+import { session, BrowserWindow, net, ipcMain, Session } from 'electron/main';
 import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './window-helpers';

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { screen } from 'electron';
+import { screen } from 'electron/main';
 
 describe('screen module', () => {
   describe('screen.getCursorScreenPoint()', () => {
