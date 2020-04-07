@@ -27,7 +27,7 @@ declare namespace Electron {
   }
   class View {}
   class WebContentsView {
-    constructor(webContents: WebContents)
+    constructor(options: BrowserWindowConstructorOptions)
   }
 
   namespace Main {
