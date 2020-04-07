@@ -94,8 +94,8 @@ ResolveProxyHelper::PendingRequest::PendingRequest(
 
 ResolveProxyHelper::PendingRequest::~PendingRequest() noexcept = default;
 
-ResolveProxyHelper::PendingRequest& ResolveProxyHelper::PendingRequest::
-operator=(ResolveProxyHelper::PendingRequest&& pending_request) noexcept =
-    default;
+ResolveProxyHelper::PendingRequest&
+ResolveProxyHelper::PendingRequest::operator=(
+    ResolveProxyHelper::PendingRequest&& pending_request) noexcept = default;
 
 }  // namespace electron
