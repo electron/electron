@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 
 #include "base/no_destructor.h"
-#include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -17,29 +16,6 @@
 #if defined(OS_MACOSX)
 #include "shell/browser/ui/cocoa/delayed_native_view_host.h"
 #endif
-
-namespace {
-
-// Used to indicate whether a WebContents already has a view.
-class WebContentsViewRelay
-    : public content::WebContentsUserData<WebContentsViewRelay> {
- public:
-  ~WebContentsViewRelay() override = default;
-
- private:
-  explicit WebContentsViewRelay(content::WebContents* contents) {}
-  friend class content::WebContentsUserData<WebContentsViewRelay>;
-
-  electron::api::WebContentsView* view_ = nullptr;
-
-  WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(WebContentsViewRelay);
-};
-
-WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsViewRelay)
-
-}  // namespace
 
 namespace electron {
 
@@ -80,7 +56,6 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
   // managed by InspectableWebContents.
   set_delete_view(false);
 #endif
-  WebContentsViewRelay::CreateForWebContents(web_contents->web_contents());
   Observe(web_contents->web_contents());
 }
 
