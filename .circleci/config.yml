@@ -231,7 +231,25 @@ step-gclient-sync: &step-gclient-sync
           $GCLIENT_EXTRA_ARGS \
           "$CIRCLE_REPOSITORY_URL"
 
-        gclient sync --with_branch_heads --with_tags
+        ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags
+        # Re-export all the patches to check if there were changes.
+        python src/electron/script/export_all_patches.py src/electron/patches/config.json
+        cd src/electron
+        git update-index --refresh
+        if ! git diff-index --quiet HEAD --; then
+          # There are changes to the patches. Make a git commit with the updated patches
+          git add patches
+          GIT_COMMITTER_NAME="Electron Bot" GIT_COMMITTER_EMAIL="anonymous@electronjs.org" git commit -m "update patches" --author="Electron Bot <anonymous@electronjs.org>"
+          # Export it
+          mkdir -p ../../patches
+          git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
+          echo
+          echo "======================================================================"
+          echo "There were changes to the patches when applying."
+          echo "Check the CI artifacts for a patch you can apply to fix it."
+          echo "======================================================================"
+          exit 1
+        fi
       fi
 
 step-setup-env-for-build: &step-setup-env-for-build
@@ -981,6 +999,8 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
     - *step-set-git-cache-path
     # This sync call only runs if .circle-sync-done is an EMPTY file
     - *step-gclient-sync
+    - store_artifacts:
+        path: patches
     - *step-save-git-cache
     # These next few steps reset Electron to the correct commit regardless of which cache was restored
     - run:
@@ -1301,6 +1321,8 @@ commands:
             - *step-set-git-cache-path
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
+            - store_artifacts:
+                path: patches
             # These next few steps reset Electron to the correct commit regardless of which cache was restored
             - when:
                 condition: << parameters.preserve-vendor-dirs >>
