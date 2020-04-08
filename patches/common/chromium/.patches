@@ -103,3 +103,4 @@ streams_convert_state_dchecks_to_checks.patch
 audiocontext_haspendingactivity_unless_it_s_closed.patch
 protect_automatic_pull_handlers_with_mutex.patch
 cherry-pick-adc8f05aa3ab.patch
+mojovideoencodeacceleratorservice_handle_potential_later.patch
