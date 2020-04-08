@@ -1,7 +1,7 @@
-From 1fc72276f91c7d378f14dfd0bb6b0ca8667e4bc5 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ben Noordhuis <info@bnoordhuis.nl>
 Date: Fri, 9 Aug 2019 13:34:20 +0200
-Subject: [PATCH] win: fix uv_spawn() ENOMEM on empty env
+Subject: win: fix uv_spawn() ENOMEM on empty env
 
 Commit ba780231 ("unix,win: handle zero-sized allocations uniformly")
 makes `uv__malloc()` return NULL when `size == 0`.
@@ -17,7 +17,7 @@ Reviewed-By: Jameson Nash <vtjnash+github@gmail.com>
 Reviewed-By: Bartosz Sosnowski <bartosz@janeasystems.com>
 
 diff --git a/deps/uv/src/win/process.c b/deps/uv/src/win/process.c
-index f9c53de0..9b7fdc1d 100644
+index fa1a76a2e6626e15bdd0681626fc82c9ca6907fe..e1010d1248a95a3927d6ed1a1affbb545c1d7201 100644
 --- a/deps/uv/src/win/process.c
 +++ b/deps/uv/src/win/process.c
 @@ -714,7 +714,7 @@ int make_program_env(char* env_block[], WCHAR** dst_ptr) {
@@ -39,7 +39,7 @@ index f9c53de0..9b7fdc1d 100644
    /* sort our (UTF-16) copy */
    qsort(env_copy, env_block_count-1, sizeof(wchar_t*), qsort_wcscmp);
 diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
-index 3f94360f..6eb8ecad 100644
+index 911426f7e1d2d84452a8d247b46e93ed65e5ffdd..4849f89f78261c53b3f1336dfe02efa57ba4418e 100644
 --- a/deps/uv/test/test-list.h
 +++ b/deps/uv/test/test-list.h
 @@ -264,6 +264,7 @@ TEST_DECLARE   (spawn_fails)
@@ -50,7 +50,7 @@ index 3f94360f..6eb8ecad 100644
  TEST_DECLARE   (spawn_exit_code)
  TEST_DECLARE   (spawn_stdout)
  TEST_DECLARE   (spawn_stdin)
-@@ -829,6 +830,7 @@ TASK_LIST_START
+@@ -822,6 +823,7 @@ TASK_LIST_START
  #ifndef _WIN32
    TEST_ENTRY  (spawn_fails_check_for_waitpid_cleanup)
  #endif
@@ -59,7 +59,7 @@ index 3f94360f..6eb8ecad 100644
    TEST_ENTRY  (spawn_stdout)
    TEST_ENTRY  (spawn_stdin)
 diff --git a/deps/uv/test/test-spawn.c b/deps/uv/test/test-spawn.c
-index fea1165d..fec610bf 100644
+index fea1165d89e08e9e56257cded55048b09c27d1d0..fec610bfdef97eff778c28158c2360ef02cb08e5 100644
 --- a/deps/uv/test/test-spawn.c
 +++ b/deps/uv/test/test-spawn.c
 @@ -232,6 +232,34 @@ TEST_IMPL(spawn_fails_check_for_waitpid_cleanup) {
