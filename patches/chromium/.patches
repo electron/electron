@@ -101,3 +101,4 @@ streams_convert_state_dchecks_to_checks.patch
 audiocontext_haspendingactivity_unless_it_s_closed.patch
 protect_automatic_pull_handlers_with_mutex.patch
 handle_err_cache_race_in_dodoneheadersaddtoentrycomplete.patch
+cherry-pick-e246871765f5.patch
