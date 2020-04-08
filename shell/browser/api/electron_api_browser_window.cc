@@ -18,7 +18,6 @@
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
-#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -59,34 +58,20 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, show);
   }
 
-  // Creates the WebContentsView.
-  gin::Handle<WebContentsView> web_contents_view;
-  gin::Handle<WebContents> web_contents;
-  if (options.Get("webContents", &web_contents) && !web_contents.IsEmpty()) {
-    // When there is a webContents passed, create a WebContentsView by wrapping
-    // it. This is only used internally to implement nativeWindowOpen option.
-    web_contents_view =
-        WebContentsView::CreateWithWebContents(isolate, web_contents);
-    // Set webPreferences from options if using an existing webContents.
-    // These preferences will be used when the webContent launches new
-    // render processes.
-    auto* existing_preferences =
-        WebContentsPreferences::From(web_contents->web_contents());
-    base::DictionaryValue web_preferences_dict;
-    if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
-                           &web_preferences_dict)) {
-      existing_preferences->Clear();
-      existing_preferences->Merge(web_preferences_dict);
-    }
-  } else {
-    // Otherwise pass |web_preferences| and let WebContentsView create the
-    // WebContents for us.
-    web_contents_view = WebContentsView::Create(isolate, web_preferences);
-    web_contents = web_contents_view->GetWebContents(isolate);
+  // Copy the webContents option to webPreferences. This is only used internally
+  // to implement nativeWindowOpen option.
+  if (options.Get("webContents", &value)) {
+    web_preferences.SetHidden("webContents", value);
   }
+
+  // Creates the WebContentsView.
+  gin::Handle<WebContentsView> web_contents_view =
+      WebContentsView::Create(isolate, web_preferences);
   DCHECK(web_contents_view.get());
 
   // Save a reference of the WebContents.
+  gin::Handle<WebContents> web_contents =
+      web_contents_view->GetWebContents(isolate);
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents->GetWeakPtr();
   api_web_contents_->AddObserver(this);
