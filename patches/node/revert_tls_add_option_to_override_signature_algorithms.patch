@@ -8,7 +8,7 @@ Upstreamed at https://boringssl-review.googlesource.com/c/boringssl/+/38404
 and can be removed when that is merged and rolled into Chromium.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 2c702d2f051d6b8f59ac53a4e2729ee02ba98a47..d7eff663a5d7465d33f53930868edca6cb89bf49 100644
+index 9250246a453a89f29bb607ebcc6c9d07642c3561..cc03ab2e175adbd0a8558097c2df4098c22e045a 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -470,7 +470,6 @@ void SecureContext::Initialize(Environment* env, Local<Object> target) {
@@ -141,7 +141,7 @@ index 2c702d2f051d6b8f59ac53a4e2729ee02ba98a47..d7eff663a5d7465d33f53930868edca6
  void SSLWrap<Base>::GetProtocol(const FunctionCallbackInfo<Value>& args) {
    Base* w;
 diff --git a/src/node_crypto.h b/src/node_crypto.h
-index 206a19119a73216ffe16f935ee6a9423bff6865f..6aa4654d5deb07e6e97507c2b746b577ea8a0b17 100644
+index 560694bfd2c1e2ce999b61682b0f3ea757f4f69e..0a9c684fa3d3092294b40c4df82d32f98ac6dd79 100644
 --- a/src/node_crypto.h
 +++ b/src/node_crypto.h
 @@ -129,7 +129,6 @@ class SecureContext : public BaseObject {
