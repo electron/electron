@@ -12,23 +12,23 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index bf76db245cb4a9de24500c74f415c5ab23c64ce4..2dbd8e485c5138101921972d632a67d934120c16 100644
+index ba01477a3deea383f538adfe519bc53154df3321..441010b3e5cbe70f49e8aece3120dc24bd41e43c 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
-@@ -146,6 +146,11 @@ bool GpuDataManagerImpl::Dx12VulkanRequested() const {
-   base::AutoLock auto_lock(lock_);
+@@ -147,6 +147,11 @@ bool GpuDataManagerImpl::Dx12VulkanRequested() const {
    return private_->Dx12VulkanRequested();
  }
-+
+ 
 +bool GpuDataManagerImpl::DxdiagDx12VulkanRequested() const {
 +  base::AutoLock auto_lock(lock_);
 +  return private_->DxdiagDx12VulkanRequested();
 +}
- #endif
- 
- void GpuDataManagerImpl::UpdateGpuFeatureInfo(
++
+ void GpuDataManagerImpl::OnBrowserThreadsStarted() {
+   base::AutoLock auto_lock(lock_);
+   private_->OnBrowserThreadsStarted();
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index 917b55d4dd0f2a5e8de8267d27f094e13b2935c1..934e52d29ac545e61945504576a421befe70d033 100644
+index c5515870a1dcf017b3477d890510a672e82e00e3..436a16a581f5d39bd64e0101d2c0e59d5f8a4dc6 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
 @@ -87,6 +87,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
@@ -36,27 +36,27 @@ index 917b55d4dd0f2a5e8de8267d27f094e13b2935c1..934e52d29ac545e61945504576a421be
    void UpdateDx12VulkanRequestStatus(bool request_continues);
    bool Dx12VulkanRequested() const;
 +  bool DxdiagDx12VulkanRequested() const;
+   // Called from BrowserMainLoop::BrowserThreadsStarted().
+   void OnBrowserThreadsStarted();
  #endif
-   // Update the GPU feature info. This updates the blacklist and enabled status
-   // of GPU rasterization. In the future this will be used for more features.
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 3dfda3d93904d9eb323dae585404e7c4c46f84c2..5a76ff6f0b792e16a7ba1517ec2f91cb8755113f 100644
+index aae01a85f5d37d4c8e809815540662dee1550dbc..c70dbbc6ec1fc460f8a1f95613dbf1a65482f4f4 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -890,6 +890,11 @@ void GpuDataManagerImplPrivate::UpdateDx12VulkanRequestStatus(
- bool GpuDataManagerImplPrivate::Dx12VulkanRequested() const {
+@@ -885,6 +885,11 @@ bool GpuDataManagerImplPrivate::Dx12VulkanRequested() const {
    return gpu_info_dx12_vulkan_requested_;
  }
-+
+ 
 +bool GpuDataManagerImplPrivate::DxdiagDx12VulkanRequested() const {
 +  return !(gpu_info_dx12_vulkan_request_failed_ ||
 +           gpu_info_dx_diag_request_failed_);
 +}
- #endif
- 
- void GpuDataManagerImplPrivate::UpdateGpuFeatureInfo(
++
+ void GpuDataManagerImplPrivate::OnBrowserThreadsStarted() {
+   // Launch the info collection GPU process to collect DX12 and Vulkan support
+   // information. Not to affect Chrome startup, this is done in a delayed mode,
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index dc1f2a69a5ed25a1067c442528725864a53cd891..f617fef81a34499dcbcee2ac1cc9382fda8e8981 100644
+index 6a082f73e77d9f5e7630cc4dbc18188c7e565c0b..1468b5a9a469e9fa9f9911dc4ca9eb91a20b5cad 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
 @@ -70,6 +70,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
@@ -64,6 +64,6 @@ index dc1f2a69a5ed25a1067c442528725864a53cd891..f617fef81a34499dcbcee2ac1cc9382f
    void UpdateDxDiagNodeRequestStatus(bool request_continues);
    bool Dx12VulkanRequested() const;
 +  bool DxdiagDx12VulkanRequested() const;
+   void OnBrowserThreadsStarted();
  #endif
    void UpdateGpuFeatureInfo(const gpu::GpuFeatureInfo& gpu_feature_info,
-                             const base::Optional<gpu::GpuFeatureInfo>&

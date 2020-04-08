@@ -6,10 +6,10 @@ Subject: scroll_bounce_flag.patch
 Patch to make scrollBounce option work.
 
 diff --git a/content/renderer/render_thread_impl.cc b/content/renderer/render_thread_impl.cc
-index 1ba5936414aa46efae4999b2b06bf4f71904ef7b..b9c2de3aa2bb2647c85cf51a0990260a51f53be5 100644
+index 7cbdbcef0ce0f18aba40f6bdf71ac8064b4b6d71..460e85470f6dad7c38d2c50d3b4b668a01f17456 100644
 --- a/content/renderer/render_thread_impl.cc
 +++ b/content/renderer/render_thread_impl.cc
-@@ -1345,7 +1345,7 @@ bool RenderThreadImpl::IsGpuMemoryBufferCompositorResourcesEnabled() {
+@@ -1344,7 +1344,7 @@ bool RenderThreadImpl::IsGpuMemoryBufferCompositorResourcesEnabled() {
  }
  
  bool RenderThreadImpl::IsElasticOverscrollEnabled() {

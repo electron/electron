@@ -112,28 +112,30 @@ index a258d038da4a2bbfc6ec13c250781166235c1fbc..f6dbaa19cdb8938204c3452622589708
 +  EXPECT_EQ(7, changed_count());
  }
 diff --git a/chrome/browser/ui/views/menu_item_view_interactive_uitest.cc b/chrome/browser/ui/views/menu_item_view_interactive_uitest.cc
-index 326fe5abe680051a393c49ecbbdb07354ee16191..b80baf9290c054a3f254b73b4ed82f785c02b4b1 100644
+index 331f33660d682c14f7c5d096d8d1241d3670f4ee..2281623e9a4a41a7715f97b340984cf213ee3803 100644
 --- a/chrome/browser/ui/views/menu_item_view_interactive_uitest.cc
 +++ b/chrome/browser/ui/views/menu_item_view_interactive_uitest.cc
-@@ -91,8 +91,8 @@ class MenuItemViewTestInsert : public MenuTestBase {
+@@ -92,8 +92,9 @@ class MenuItemViewTestInsert : public MenuTestBase {
  
      inserted_item_ = menu()->AddMenuItemAt(
          INSERT_INDEX, 1000, ASCIIToUTF16("inserted item"), base::string16(),
--        nullptr, gfx::ImageSkia(), nullptr, views::MenuItemView::Type::kNormal,
--        ui::NORMAL_SEPARATOR);
-+        base::string16(), nullptr, gfx::ImageSkia(), nullptr,
-+        views::MenuItemView::Type::kNormal, ui::NORMAL_SEPARATOR);
+-        ui::ThemedVectorIcon(), gfx::ImageSkia(), ui::ThemedVectorIcon(),
+-        views::MenuItemView::Type::kNormal, ui::NORMAL_SEPARATOR);
++        base::string16(), ui::ThemedVectorIcon(), gfx::ImageSkia(),
++        ui::ThemedVectorIcon(), views::MenuItemView::Type::kNormal,
++        ui::NORMAL_SEPARATOR);
      ASSERT_TRUE(inserted_item_);
      menu()->ChildrenChanged();
  
-@@ -186,8 +186,8 @@ class MenuItemViewTestInsertWithSubmenu : public MenuTestBase {
+@@ -187,8 +188,9 @@ class MenuItemViewTestInsertWithSubmenu : public MenuTestBase {
    void Step2() {
      inserted_item_ = menu()->AddMenuItemAt(
          INSERT_INDEX, 1000, ASCIIToUTF16("inserted item"), base::string16(),
--        nullptr, gfx::ImageSkia(), nullptr, views::MenuItemView::Type::kNormal,
--        ui::NORMAL_SEPARATOR);
-+        base::string16(), nullptr, gfx::ImageSkia(), nullptr,
-+        views::MenuItemView::Type::kNormal, ui::NORMAL_SEPARATOR);
+-        ui::ThemedVectorIcon(), gfx::ImageSkia(), ui::ThemedVectorIcon(),
+-        views::MenuItemView::Type::kNormal, ui::NORMAL_SEPARATOR);
++        base::string16(), ui::ThemedVectorIcon(), gfx::ImageSkia(),
++        ui::ThemedVectorIcon(), views::MenuItemView::Type::kNormal,
++        ui::NORMAL_SEPARATOR);
      ASSERT_TRUE(inserted_item_);
      menu()->ChildrenChanged();
  
@@ -267,26 +269,26 @@ index 1ae8909a1404a43b34b9ef585511c7a3de39fa28..0d2a74ab5e9d55201a4992d81aecf9c2
      const gfx::VectorIcon* minor_icon = nullptr;
      gfx::Image icon;
 diff --git a/ui/views/controls/menu/menu_item_view.cc b/ui/views/controls/menu/menu_item_view.cc
-index c67fc8503db775079068d23c84bee615506ee81f..4522060274f0dd4081d39fbd07b6ae9022655d02 100644
+index 6f45e5ac5d1cec52f6f9a434c06cd894a788e421..7bab0474a57d6be35fd8dcefb260206914eb197f 100644
 --- a/ui/views/controls/menu/menu_item_view.cc
 +++ b/ui/views/controls/menu/menu_item_view.cc
-@@ -279,6 +279,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
+@@ -261,6 +261,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
      int index,
      int item_id,
      const base::string16& label,
 +    const base::string16& sublabel,
      const base::string16& minor_text,
-     const gfx::VectorIcon* minor_icon,
+     const ui::ThemedVectorIcon& minor_icon,
      const gfx::ImageSkia& icon,
-@@ -299,6 +300,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
+@@ -282,6 +283,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
      item->SetTitle(GetDelegate()->GetLabel(item_id));
    else
      item->SetTitle(label);
 +  item->SetSubtitle(sublabel);
    item->SetMinorText(minor_text);
    item->SetMinorIcon(minor_icon);
-   if (vector_icon) {
-@@ -340,21 +342,22 @@ void MenuItemView::RemoveAllMenuItems() {
+   if (!vector_icon.empty()) {
+@@ -322,21 +324,22 @@ void MenuItemView::RemoveAllMenuItems() {
  MenuItemView* MenuItemView::AppendMenuItem(int item_id,
                                             const base::string16& label,
                                             const gfx::ImageSkia& icon) {
@@ -309,10 +311,10 @@ index c67fc8503db775079068d23c84bee615506ee81f..4522060274f0dd4081d39fbd07b6ae90
  void MenuItemView::AddSeparatorAt(int index) {
    AddMenuItemAt(index, /*item_id=*/0, /*label=*/base::string16(),
 +                /*sub_label=*/base::string16(),
-                 /*minor_text=*/base::string16(), /*minor_icon=*/nullptr,
-                 /*icon=*/gfx::ImageSkia(), /*vector_icon=*/nullptr,
-                 /*type=*/Type::kSeparator,
-@@ -363,10 +366,11 @@ void MenuItemView::AddSeparatorAt(int index) {
+                 /*minor_text=*/base::string16(),
+                 /*minor_icon=*/ui::ThemedVectorIcon(),
+                 /*icon=*/gfx::ImageSkia(),
+@@ -347,10 +350,11 @@ void MenuItemView::AddSeparatorAt(int index) {
  
  MenuItemView* MenuItemView::AppendMenuItemImpl(int item_id,
                                                 const base::string16& label,
@@ -320,12 +322,12 @@ index c67fc8503db775079068d23c84bee615506ee81f..4522060274f0dd4081d39fbd07b6ae90
                                                 const gfx::ImageSkia& icon,
                                                 Type type) {
    const int index = submenu_ ? int{submenu_->children().size()} : 0;
--  return AddMenuItemAt(index, item_id, label, base::string16(), nullptr, icon,
-+  return AddMenuItemAt(index, item_id, label, sublabel, base::string16(), nullptr, icon,
-                        nullptr, type, ui::NORMAL_SEPARATOR);
+-  return AddMenuItemAt(index, item_id, label, base::string16(),
++  return AddMenuItemAt(index, item_id, label, sublabel, base::string16(),
+                        ui::ThemedVectorIcon(), icon, ui::ThemedVectorIcon(),
+                        type, ui::NORMAL_SEPARATOR);
  }
- 
-@@ -399,6 +403,11 @@ void MenuItemView::SetTitle(const base::string16& title) {
+@@ -383,6 +387,11 @@ void MenuItemView::SetTitle(const base::string16& title) {
    invalidate_dimensions();  // Triggers preferred size recalculation.
  }
  
@@ -337,7 +339,7 @@ index c67fc8503db775079068d23c84bee615506ee81f..4522060274f0dd4081d39fbd07b6ae90
  void MenuItemView::SetMinorText(const base::string16& minor_text) {
    minor_text_ = minor_text;
    invalidate_dimensions();  // Triggers preferred size recalculation.
-@@ -989,13 +998,23 @@ void MenuItemView::PaintButton(gfx::Canvas* canvas, PaintButtonMode mode) {
+@@ -937,13 +946,23 @@ void MenuItemView::PaintButton(gfx::Canvas* canvas, PaintButtonMode mode) {
                (!delegate || delegate->ShouldReserveSpaceForSubmenuIndicator()
                     ? item_right_margin_
                     : config.arrow_to_edge_padding);
@@ -362,7 +364,7 @@ index c67fc8503db775079068d23c84bee615506ee81f..4522060274f0dd4081d39fbd07b6ae90
    PaintMinorIconAndText(canvas, style);
  
    // Set the submenu indicator (arrow) image and color.
-@@ -1244,15 +1263,21 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
+@@ -1195,15 +1214,21 @@ MenuItemView::MenuItemDimensions MenuItemView::CalculateDimensions() const {
  
    // Determine the length of the label text.
    int string_width = gfx::GetStringWidth(title_, style.font_list);
@@ -388,18 +390,18 @@ index c67fc8503db775079068d23c84bee615506ee81f..4522060274f0dd4081d39fbd07b6ae90
        std::max(dimensions.height, MenuConfig::instance().item_min_height);
  
 diff --git a/ui/views/controls/menu/menu_item_view.h b/ui/views/controls/menu/menu_item_view.h
-index 294b0ea5d2bf28a41a1ae5e114d6e68936b958a9..ae97f8d3bb4b94ea89957cb761ee63ffab78b26a 100644
+index b38a048c22e6f89dfc02d7bda2ed053519a80e29..2db46616cb9a443d6fd280947e5a2673f9ca670c 100644
 --- a/ui/views/controls/menu/menu_item_view.h
 +++ b/ui/views/controls/menu/menu_item_view.h
-@@ -153,6 +153,7 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -148,6 +148,7 @@ class VIEWS_EXPORT MenuItemView : public View {
    MenuItemView* AddMenuItemAt(int index,
                                int item_id,
                                const base::string16& label,
 +                              const base::string16& sublabel,
                                const base::string16& minor_text,
-                               const gfx::VectorIcon* minor_icon,
+                               const ui::ThemedVectorIcon& minor_icon,
                                const gfx::ImageSkia& icon,
-@@ -195,6 +196,7 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -190,6 +191,7 @@ class VIEWS_EXPORT MenuItemView : public View {
    // All the AppendXXX methods funnel into this.
    MenuItemView* AppendMenuItemImpl(int item_id,
                                     const base::string16& label,
@@ -407,7 +409,7 @@ index 294b0ea5d2bf28a41a1ae5e114d6e68936b958a9..ae97f8d3bb4b94ea89957cb761ee63ff
                                     const gfx::ImageSkia& icon,
                                     Type type);
  
-@@ -219,6 +221,9 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -214,6 +216,9 @@ class VIEWS_EXPORT MenuItemView : public View {
    void SetTitle(const base::string16& title);
    const base::string16& title() const { return title_; }
  
@@ -417,7 +419,7 @@ index 294b0ea5d2bf28a41a1ae5e114d6e68936b958a9..ae97f8d3bb4b94ea89957cb761ee63ff
    // Sets the minor text.
    void SetMinorText(const base::string16& minor_text);
  
-@@ -427,7 +432,7 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -420,7 +425,7 @@ class VIEWS_EXPORT MenuItemView : public View {
    void DestroyAllMenuHosts();
  
    // Returns the text that should be displayed on the end (right) of the menu
@@ -426,7 +428,7 @@ index 294b0ea5d2bf28a41a1ae5e114d6e68936b958a9..ae97f8d3bb4b94ea89957cb761ee63ff
    base::string16 GetMinorText() const;
  
    // Returns the icon that should be displayed to the left of the minor text.
-@@ -518,6 +523,9 @@ class VIEWS_EXPORT MenuItemView : public View {
+@@ -511,6 +516,9 @@ class VIEWS_EXPORT MenuItemView : public View {
    // Title.
    base::string16 title_;
  
@@ -437,46 +439,42 @@ index 294b0ea5d2bf28a41a1ae5e114d6e68936b958a9..ae97f8d3bb4b94ea89957cb761ee63ff
    base::string16 minor_text_;
  
 diff --git a/ui/views/controls/menu/menu_item_view_unittest.cc b/ui/views/controls/menu/menu_item_view_unittest.cc
-index 6b5229578e0856a07c85db7d5eb36ffee812cef8..3d90eefa5345f4dc8563dfcefb2ee1376dd668d3 100644
+index 119aa4a49c32c2cb14832fd88a520e8645b732bd..e1f99e1fc7a3e42173250f5980a35378867ab298 100644
 --- a/ui/views/controls/menu/menu_item_view_unittest.cc
 +++ b/ui/views/controls/menu/menu_item_view_unittest.cc
-@@ -322,10 +322,10 @@ class MenuItemViewPaintUnitTest : public ViewsTestBase {
- // Provides assertion coverage for painting minor text and icons.
+@@ -324,8 +324,8 @@ class MenuItemViewPaintUnitTest : public ViewsTestBase {
  TEST_F(MenuItemViewPaintUnitTest, MinorTextAndIconAssertionCoverage) {
    auto AddItem = [this](auto label, auto minor_label, auto minor_icon) {
--    menu_item_view()->AddMenuItemAt(0, 1000, base::ASCIIToUTF16(label),
--                                    minor_label, minor_icon, gfx::ImageSkia(),
--                                    nullptr, views::MenuItemView::Type::kNormal,
--                                    ui::NORMAL_SEPARATOR);
-+    menu_item_view()->AddMenuItemAt(
+     menu_item_view()->AddMenuItemAt(
+-        0, 1000, base::ASCIIToUTF16(label), minor_label, minor_icon,
+-        gfx::ImageSkia(), ui::ThemedVectorIcon(),
 +        0, 1000, base::ASCIIToUTF16(label), base::string16(), minor_label,
-+        minor_icon, gfx::ImageSkia(), nullptr, views::MenuItemView::Type::kNormal,
-+        ui::NORMAL_SEPARATOR);
++        minor_icon, gfx::ImageSkia(), ui::ThemedVectorIcon(),
+         views::MenuItemView::Type::kNormal, ui::NORMAL_SEPARATOR);
    };
-   AddItem("No minor content", base::string16(), nullptr);
-   AddItem("Minor text only", base::ASCIIToUTF16("minor text"), nullptr);
+   AddItem("No minor content", base::string16(), ui::ThemedVectorIcon());
 diff --git a/ui/views/controls/menu/menu_model_adapter.cc b/ui/views/controls/menu/menu_model_adapter.cc
-index 373ea41937feea562ed25dbcb8c1ad6546beecb5..7307ac7b82b6432343c404d19cf0cdd60557d3d5 100644
+index 88a868cf6f9873b148cca0a42130978d09bf4712..1a5953ad911da5a9684086783c2e78b9d8b365b3 100644
 --- a/ui/views/controls/menu/menu_model_adapter.cc
 +++ b/ui/views/controls/menu/menu_model_adapter.cc
-@@ -99,8 +99,8 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
+@@ -99,8 +99,9 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
  
    if (*type == MenuItemView::Type::kSeparator) {
      return menu->AddMenuItemAt(menu_index, item_id, base::string16(),
--                               base::string16(), nullptr, gfx::ImageSkia(),
--                               nullptr, *type,
-+                               base::string16(), base::string16(), nullptr,
-+                               gfx::ImageSkia(), nullptr, *type,
+-                               base::string16(), ui::ThemedVectorIcon(),
+-                               gfx::ImageSkia(), ui::ThemedVectorIcon(), *type,
++                               base::string16(), base::string16(),
++                               ui::ThemedVectorIcon(), gfx::ImageSkia(),
++                               ui::ThemedVectorIcon(), *type,
                                 model->GetSeparatorTypeAt(model_index));
    }
  
-@@ -108,7 +108,8 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
+@@ -108,7 +109,7 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
    model->GetIconAt(model_index, &icon);
    return menu->AddMenuItemAt(
        menu_index, item_id, model->GetLabelAt(model_index),
--      model->GetMinorTextAt(model_index), model->GetMinorIconAt(model_index),
+-      model->GetMinorTextAt(model_index),
 +      model->GetSublabelAt(model_index), model->GetMinorTextAt(model_index),
-+      model->GetMinorIconAt(model_index),
+       ui::ThemedVectorIcon(model->GetMinorIconAt(model_index)),
        icon.IsEmpty() ? gfx::ImageSkia() : *icon.ToImageSkia(),
-       icon.IsEmpty() ? model->GetVectorIconAt(model_index) : nullptr, *type,
-       ui::NORMAL_SEPARATOR);
+       icon.IsEmpty() ? ui::ThemedVectorIcon(model->GetVectorIconAt(model_index))

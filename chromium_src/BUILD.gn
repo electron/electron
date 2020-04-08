@@ -109,11 +109,15 @@ static_library("chrome") {
     ]
 
     if (use_aura) {
-      sources += [
-        "//chrome/browser/platform_util_aura.cc",
-        "//chrome/browser/ui/views/color_chooser_aura.cc",
-        "//chrome/browser/ui/views/color_chooser_aura.h",
-      ]
+      sources += [ "//chrome/browser/platform_util_aura.cc" ]
+
+      if (!is_win) {
+        sources += [
+          "//chrome/browser/ui/views/color_chooser_aura.cc",
+          "//chrome/browser/ui/views/color_chooser_aura.h",
+        ]
+      }
+
       deps += [ "//components/feature_engagement" ]
     }
 

@@ -69,6 +69,9 @@
 #include "ui/base/x/x11_util.h"
 #include "ui/base/x/x11_util_internal.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
+#include "ui/gfx/x/x11_types.h"
+#include "ui/gtk/gtk_ui_delegate.h"
+#include "ui/gtk/gtk_ui_delegate_x11.h"
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
 
@@ -267,7 +270,6 @@ void ElectronBrowserMainParts::RegisterDestructionCallback(
 int ElectronBrowserMainParts::PreEarlyInitialization() {
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
 #if defined(USE_X11)
-  views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
 
   // Installs the X11 error handlers for the browser process used during
@@ -403,6 +405,13 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 }
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
+#if defined(USE_X11)
+  // In Aura/X11, Gtk-based LinuxUI implementation is used.
+  gtk_ui_delegate_ = std::make_unique<ui::GtkUiDelegateX11>(gfx::GetXDisplay());
+  ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
+  views::LinuxUI::SetInstance(BuildGtkUi(ui::GtkUiDelegate::instance()));
+#endif
+
 #if defined(USE_AURA) && defined(USE_X11)
   views::LinuxUI::instance()->Initialize();
 #endif

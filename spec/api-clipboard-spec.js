@@ -19,7 +19,8 @@ describe('clipboard module', () => {
       const p = path.join(fixtures, 'assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
       clipboard.writeImage(p);
-      expect(clipboard.readImage().toDataURL()).to.equal(i.toDataURL());
+      const readImage = clipboard.readImage();
+      expect(readImage.toDataURL()).to.equal(i.toDataURL());
     });
   });
 
@@ -89,7 +90,8 @@ describe('clipboard module', () => {
       expect(clipboard.readText()).to.equal(text);
       expect(clipboard.readHTML()).to.equal(markup);
       expect(clipboard.readRTF()).to.equal(rtf);
-      expect(clipboard.readImage().toDataURL()).to.equal(i.toDataURL());
+      const readImage = clipboard.readImage();
+      expect(readImage.toDataURL()).to.equal(i.toDataURL());
 
       if (process.platform !== 'linux') {
         expect(clipboard.readBookmark()).to.deep.equal(bookmark);
