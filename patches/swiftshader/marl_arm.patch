@@ -10,7 +10,7 @@ get an answer at:
 https://bugs.chromium.org/p/chromium/issues/detail?id=1058107
 
 diff --git a/third_party/marl/src/osfiber_asm_arm.S b/third_party/marl/src/osfiber_asm_arm.S
-index d276ac806..b2be5face 100644
+index d276ac8066c6e562b9e324243edcb70dfde36070..b2be5face72d3ec4701b625ee3b7af11a81d9e13 100644
 --- a/third_party/marl/src/osfiber_asm_arm.S
 +++ b/third_party/marl/src/osfiber_asm_arm.S
 @@ -22,6 +22,7 @@

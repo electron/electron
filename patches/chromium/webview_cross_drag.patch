@@ -23,7 +23,7 @@ diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser
 index b874b3c4b16ca87c9730c6caaf5788cff0ab3493..8931859b944905a80bb9d174a67d3aee0f0bf5d6 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -419,6 +419,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
+@@ -419,6 +419,7 @@ void DropCompletionCallback(
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {

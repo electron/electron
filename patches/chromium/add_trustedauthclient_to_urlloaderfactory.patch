@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index c37432121142472010b767b7fb257e20bc60b3fc..099c94d1db7994a0608864cb05e3686a85b7070d 100644
+index eed9fa476222e69f0ab3003fd1cdfc8fd7b1ad75..b78ea69e234228bbdcf893f7f83704a9fdfead74 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -193,6 +193,25 @@ struct HttpAuthStaticNetworkContextParams {
@@ -39,7 +39,7 @@ index c37432121142472010b767b7fb257e20bc60b3fc..099c94d1db7994a0608864cb05e3686a
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -633,6 +652,8 @@ struct URLLoaderFactoryParams {
+@@ -637,6 +656,8 @@ struct URLLoaderFactoryParams {
    // interface. This still respects the per-context block lists.
    CorsOriginAccessPatterns? factory_bound_access_patterns;
  

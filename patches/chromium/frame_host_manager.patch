@@ -193,7 +193,7 @@ index caa100b3889e17a9afdc8127e0e13bb6b86e8042..f08d3a2eb28f0f6fff89b5759eff5369
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 0520b0b7d4144666b95dc2bfd25c0b0ae5892bfe..384812677668fb487cdfed2c7ad898e3591e1022 100644
+index 975a174d0b8d76471ddf402c77b03f1058bbc601..6cfe7bbc7ae04e615ec26e8b818cbba2034f004c 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -58,6 +58,21 @@
@@ -219,7 +219,7 @@ index 0520b0b7d4144666b95dc2bfd25c0b0ae5892bfe..384812677668fb487cdfed2c7ad898e3
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 8ae9b370cf842a4c6d95d96d94f8b2d7a2122966..7da056827a8ed77de708b8a378dcdccf0c98bb1a 100644
+index d3a039622c93a2497d2d4903761997ecfb7d4d30..07b2cff259b93041083f29f56be9639486f3f9e1 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -231,8 +231,45 @@ class CONTENT_EXPORT ContentBrowserClient {
