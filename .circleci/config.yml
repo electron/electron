@@ -235,7 +235,7 @@ step-gclient-sync: &step-gclient-sync
         # Re-export all the patches to check if there were changes.
         python src/electron/script/export_all_patches.py src/electron/patches/config.json
         cd src/electron
-        git update-index --refresh
+        git update-index --refresh || true
         if ! git diff-index --quiet HEAD --; then
           # There are changes to the patches. Make a git commit with the updated patches
           git add patches
