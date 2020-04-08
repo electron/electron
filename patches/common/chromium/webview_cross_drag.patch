@@ -20,7 +20,7 @@ diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser
 index f4250007968103cb174d201eb377b04e589dc0a8..90e548004049f3636dee08341f2b77af6de78e1a 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -336,6 +336,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
+@@ -336,6 +336,7 @@ content::GlobalRoutingID GetRenderViewHostID(content::RenderViewHost* rvh) {
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {

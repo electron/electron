@@ -32,7 +32,7 @@ diff --git a/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_loc
 index 2aa04c3764e6361fccec7ba47feb51fa40d99d3b..6bea303d86447f8a1311c67e183b4724b2e802e8 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_local.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_ns_view_bridge_local.mm
-@@ -185,9 +185,11 @@
+@@ -185,9 +185,11 @@ void RenderWidgetHostNSViewBridgeLocal::CancelComposition() {
    [cocoa_view_ cancelComposition];
  }
  
@@ -79,7 +79,7 @@ index 46fcb918f42654ec1d7d2c5c5ea70e4a402dede1..2815129bd44643fea242977a7f7dcf9d
  #include "ui/accessibility/platform/ax_platform_node.h"
  #import "ui/base/clipboard/clipboard_util_mac.h"
  #import "ui/base/cocoa/appkit_utils.h"
-@@ -190,6 +191,7 @@ - (void)candidateListTouchBarItem:(NSCandidateListTouchBarItem*)anItem
+@@ -190,6 +191,7 @@ void ExtractUnderlines(NSAttributedString* string,
  @implementation RenderWidgetHostViewCocoa
  @synthesize markedRange = markedRange_;
  @synthesize textInputType = textInputType_;
@@ -87,7 +87,7 @@ index 46fcb918f42654ec1d7d2c5c5ea70e4a402dede1..2815129bd44643fea242977a7f7dcf9d
  @synthesize spellCheckerForTesting = spellCheckerForTesting_;
  
  - (id)initWithClient:(RenderWidgetHostNSViewClient*)client
-@@ -1945,7 +1947,9 @@ - (void)invalidateTouchBar {
+@@ -1945,7 +1947,9 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
  
  - (NSTouchBar*)makeTouchBar {
    if (textInputType_ != ui::TEXT_INPUT_TYPE_NONE &&
@@ -102,7 +102,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/cont
 index 477cef4973bc4f2d50aa173571fc1d2bcd0a6469..2ad881d2dd3bec1de545eaab29b69c12a05bbfe2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -566,7 +566,11 @@
+@@ -566,7 +566,11 @@ void RenderWidgetHostViewMac::OnUpdateTextInputStateCalled(
    if (!did_update_state)
      return;
  
@@ -115,7 +115,7 @@ index 477cef4973bc4f2d50aa173571fc1d2bcd0a6469..2ad881d2dd3bec1de545eaab29b69c12
  
    // |updated_view| is the last view to change its TextInputState which can be
    // used to start/stop monitoring composition info when it has a focused
-@@ -582,7 +586,6 @@
+@@ -582,7 +586,6 @@ void RenderWidgetHostViewMac::OnUpdateTextInputStateCalled(
  
    // Set the monitor state based on the text input focus state.
    const bool has_focus = HasFocus();
