@@ -12,7 +12,7 @@ This commit fixes this problem by changing node_worker to use the three-arg
 implementation of `NewIsolate` to prevent it trying to use a possibly-null ptr.
 
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 8f97f5c351..2bfbb28e61 100644
+index 8f97f5c3514639ab799c316b67bd782dfbda17f8..edc5a7fcaf8995df790151037ca0c6894fb1885c 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
 @@ -112,7 +112,10 @@ class WorkerThreadData {
