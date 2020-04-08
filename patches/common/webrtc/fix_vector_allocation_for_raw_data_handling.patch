@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Armando Miraglia <armax@webrtc.org>
+Date: Mon, 16 Mar 2020 13:10:26 +0100
+Subject: Fix vector allocation for raw data handling.
+
+std::vector::reserve has the effect to reserve space in memory but does
+not affect the result of size(), which keeps on returning 0. If size is
+0, however, data() might either return null or not [1].
+
+This CL fixes the use of reserve() in favour of resize() which
+effectively allocates the memory in the vector and updates its size.
+This way size() returns a value bigger than 0 and data() returns a valid
+pointer.
+
+[1] https://en.cppreference.com/w/cpp/container/vector/data
+
+Fixed: chromium:1059764
+Change-Id: Ida3dbe643710c6895f09b9da87b0075b7d7b28df
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/170470
+Reviewed-by: Jamie Walch <jamiewalch@chromium.org>
+Commit-Queue: Armando Miraglia <armax@webrtc.org>
+Cr-Commit-Position: refs/heads/master@{#30836}
+
+diff --git a/modules/desktop_capture/win/dxgi_output_duplicator.cc b/modules/desktop_capture/win/dxgi_output_duplicator.cc
+index 70172c2ae3c6c765ee793208b9ac374fb6521589..e5bde24e996ab266461b3570d0576e1c23658f96 100644
+--- a/modules/desktop_capture/win/dxgi_output_duplicator.cc
++++ b/modules/desktop_capture/win/dxgi_output_duplicator.cc
+@@ -276,7 +276,7 @@ bool DxgiOutputDuplicator::DoDetectUpdatedRegion(
+ 
+   if (metadata_.capacity() < frame_info.TotalMetadataBufferSize) {
+     metadata_.clear();  // Avoid data copy
+-    metadata_.reserve(frame_info.TotalMetadataBufferSize);
++    metadata_.resize(frame_info.TotalMetadataBufferSize);
+   }
+ 
+   UINT buff_size = 0;
