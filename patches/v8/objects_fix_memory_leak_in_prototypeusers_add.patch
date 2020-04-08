@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Dominik=20Inf=C3=BChr?= <dinfuehr@chromium.org>
 Date: Fri, 13 Dec 2019 14:13:21 +0100
-Subject: [objects] Fix memory leak in PrototypeUsers::Add
+Subject: Fix memory leak in PrototypeUsers::Add
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -23,7 +23,7 @@ Commit-Queue: Dominik Inführ <dinfuehr@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#65456}
 
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
-index 635a5b2e108ca3257dc2131ec375bb6bfbb556e1..89a13434294affd49c971df549a718ea24ea235b 100644
+index ffe9555238aa8ae9111c6d7f43178f3e298edbb0..df192142c16de26678f832b1f7107c383f28ff2a 100644
 --- a/src/objects/objects.cc
 +++ b/src/objects/objects.cc
 @@ -4044,6 +4044,13 @@ Handle<WeakArrayList> PrototypeUsers::Add(Isolate* isolate,
