@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lily Chen <chlily@chromium.org>
+Date: Fri, 3 Apr 2020 00:25:12 +0000
+Subject: Revert "Enable SameSiteByDefaultCookies and
+ CookiesWithoutSameSiteMustBeSecure"
+
+This reverts commit 2507555fe83d314ef6300317cd6f90ff165150bd.
+
+Reason for revert: Expected full rollout delayed
+
+Original change's description:
+> Enable SameSiteByDefaultCookies and CookiesWithoutSameSiteMustBeSecure
+>
+> TBR=jschuh@chromium.org
+>
+> Bug: 953306
+> Change-Id: I5bde61d8ff66261ade4e68caadafda73c522df00
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2122809
+> Reviewed-by: Lily Chen <chlily@chromium.org>
+> Commit-Queue: Lily Chen <chlily@chromium.org>
+> Cr-Commit-Position: refs/heads/master@{#753807}
+
+TBR=jschuh@chromium.org,chlily@chromium.org
+
+# Not skipping CQ checks because original CL landed > 1 day ago.
+
+Bug: 953306
+Change-Id: Ic7da4e9938184e2833895ff263325c01948be6f0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2135046
+Reviewed-by: Lily Chen <chlily@chromium.org>
+Commit-Queue: Lily Chen <chlily@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#756087}
+
+diff --git a/net/base/features.cc b/net/base/features.cc
+index 0a0c2da968ca115eb6422ee244a7a97bb4627375..46b4562c621633c19bb7033a3c95618b8578e227 100644
+--- a/net/base/features.cc
++++ b/net/base/features.cc
+@@ -57,11 +57,11 @@ const base::FeatureParam<int> kEsniDnsMaxAbsoluteAdditionalWaitMilliseconds{
+ const base::FeatureParam<int> kEsniDnsMaxRelativeAdditionalWaitPercent{
+     &kRequestEsniDnsRecords, "EsniDnsMaxRelativeAdditionalWaitPercent", 5};
+ 
+-const base::Feature kSameSiteByDefaultCookies{"SameSiteByDefaultCookies",
+-                                              base::FEATURE_ENABLED_BY_DEFAULT};
++const base::Feature kSameSiteByDefaultCookies{
++    "SameSiteByDefaultCookies", base::FEATURE_DISABLED_BY_DEFAULT};
+ 
+ const base::Feature kCookiesWithoutSameSiteMustBeSecure{
+-    "CookiesWithoutSameSiteMustBeSecure", base::FEATURE_ENABLED_BY_DEFAULT};
++    "CookiesWithoutSameSiteMustBeSecure", base::FEATURE_DISABLED_BY_DEFAULT};
+ 
+ const base::Feature kShortLaxAllowUnsafeThreshold{
+     "ShortLaxAllowUnsafeThreshold", base::FEATURE_DISABLED_BY_DEFAULT};
