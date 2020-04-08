@@ -557,12 +557,13 @@ index 0000000000000000000000000000000000000000..da9e2b42dccacc1ed9b00202c1ff73eb
 +}
 diff --git a/deps/llhttp/BUILD.gn b/deps/llhttp/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e34e241e6733b19bf1b5762ad1307af0eba383f6
+index 0000000000000000000000000000000000000000..ce15bc57093caa1bd84ea77e7438e892fb916427
 --- /dev/null
 +++ b/deps/llhttp/BUILD.gn
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,14 @@
 +config("llhttp_config") {
 +  include_dirs = [ "include" ]
++  cflags = [ "-Wno-unreachable-code" ]
 +}
 +
 +static_library("llhttp") {
@@ -628,10 +629,10 @@ index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d1cf42562
+index 0000000000000000000000000000000000000000..c90d5d9cf767c1460a549a993ad8a1ad16792703
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,185 @@
+@@ -0,0 +1,186 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -676,6 +677,7 @@ index 0000000000000000000000000000000000000000..4674bdd48b4bfc9b7152377b8cd0984d
 +    "-Wno-switch",
 +    "-Wno-unused-function",
 +    "-Wno-unused-variable",
++    "-Wno-unreachable-code",
 +  ]
 +
 +  libs = []

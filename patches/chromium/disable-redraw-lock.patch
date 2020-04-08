@@ -15,10 +15,10 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 10f39e919d5692ad265086aa6d95d975df7a21fa..4ecb8fc211e2c1d80fb8b0541b489950026e0f8c 100644
+index e18afe3c8c287c4cd44ff7139c1cc4004a9704ec..281c722d81c0ad5fa7bacbe25c07a7578dfa43b6 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -305,6 +305,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
+@@ -306,6 +306,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
  
  }  // namespace
  
@@ -29,7 +29,7 @@ index 10f39e919d5692ad265086aa6d95d975df7a21fa..4ecb8fc211e2c1d80fb8b0541b489950
  // A scoping class that prevents a window from being able to redraw in response
  // to invalidations that may occur within it for the lifetime of the object.
  //
-@@ -356,6 +360,7 @@ class HWNDMessageHandler::ScopedRedrawLock {
+@@ -357,6 +361,7 @@ class HWNDMessageHandler::ScopedRedrawLock {
          cancel_unlock_(false),
          should_lock_(owner_->IsVisible() && !owner->HasChildRenderingWindow() &&
                       ::IsWindow(hwnd_) &&
@@ -37,7 +37,7 @@ index 10f39e919d5692ad265086aa6d95d975df7a21fa..4ecb8fc211e2c1d80fb8b0541b489950
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
-@@ -969,6 +974,10 @@ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
+@@ -974,6 +979,10 @@ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
    return scoped_enable;
  }
  
@@ -49,7 +49,7 @@ index 10f39e919d5692ad265086aa6d95d975df7a21fa..4ecb8fc211e2c1d80fb8b0541b489950
  // HWNDMessageHandler, gfx::WindowImpl overrides:
  
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index 6c94ab3e4972fff2fe984be748bcbc41fc6c97fc..2ca10cec3c065c3a7d5a42d3377ec9ba01524569 100644
+index 7b56d58faff84a72cc8cf9f77daeafdee110ce3a..d46ba47aaa31a0b893ab43e9f70dddbc48c5ea41 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
 @@ -203,6 +203,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
@@ -62,7 +62,7 @@ index 6c94ab3e4972fff2fe984be748bcbc41fc6c97fc..2ca10cec3c065c3a7d5a42d3377ec9ba
    HICON GetDefaultWindowIcon() const override;
    HICON GetSmallWindowIcon() const override;
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 649163d22b7ebe5be8e2010cd30eea96587be578..d7d971937362d08f7b508244f58cc1e2d2993e9f 100644
+index 98efa2b7c4033c9ce8c73f7201e68e85baf05bba..4f0897ecc675d3e366ec07df28e09698c6b6e4cf 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
 @@ -46,6 +46,8 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {

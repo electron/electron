@@ -8,26 +8,32 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 025f82ede5c7105ffcf5cd834c8ab6392de672bc..1792809631d50e2a2761d385ffb8b526fe4d9833 100644
+index 025f82ede5c7105ffcf5cd834c8ab6392de672bc..84cd07bc48e680053a012a674bd4b50fcf5123af 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -796,6 +796,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
+@@ -796,9 +796,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
  
  bool WebContentsViewAura::IsValidDragTarget(
      RenderWidgetHostImpl* target_rwh) const {
+-  return target_rwh->GetProcess()->GetID() == drag_start_process_id_ ||
+-      GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
+-      drag_start_view_id_;
 +  return true;
-   return target_rwh->GetProcess()->GetID() == drag_start_process_id_ ||
-       GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
-       drag_start_view_id_;
+ }
+ 
+ ////////////////////////////////////////////////////////////////////////////////
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index b874b3c4b16ca87c9730c6caaf5788cff0ab3493..8931859b944905a80bb9d174a67d3aee0f0bf5d6 100644
+index b874b3c4b16ca87c9730c6caaf5788cff0ab3493..2c82d63d646c9201abd6a669b726dae0f8bec12b 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -419,6 +419,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
+@@ -419,9 +419,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {
+-  return targetRWH->GetProcess()->GetID() == _dragStartProcessID ||
+-         GetRenderViewHostID(_webContents->GetRenderViewHost()) !=
+-             _dragStartViewID;
 +  return YES;
-   return targetRWH->GetProcess()->GetID() == _dragStartProcessID ||
-          GetRenderViewHostID(_webContents->GetRenderViewHost()) !=
-              _dragStartViewID;
+ }
+ 
+ @end

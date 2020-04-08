@@ -44,7 +44,7 @@ hunspell_dictionaries = [
   "//third_party/hunspell_dictionaries/ta-IN-3-0.bdic",
   "//third_party/hunspell_dictionaries/tg-TG-5-0.bdic",
   "//third_party/hunspell_dictionaries/tr-TR-4-0.bdic",
-  "//third_party/hunspell_dictionaries/uk-UA-3-0.bdic",
+  "//third_party/hunspell_dictionaries/uk-UA-4-0.bdic",
   "//third_party/hunspell_dictionaries/vi-VN-3-0.bdic",
   "//third_party/hunspell_dictionaries/xx-XX-3-0.bdic",
 ]
