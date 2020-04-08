@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index fe60749bfdbff9dc4336ccc11006745f2c2889c3..ea736817be4084f43ef5266e4a7aac3a8bdaa9d7 100644
+index 9455ee13834bff4e2ff8a0f9b31b95289a70d854..7faeda55e7190baee5e1a821611998d9914e6224 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -413,6 +413,11 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -415,6 +415,11 @@ class RendererSandboxedProcessLauncherDelegate
    {
    }
  
@@ -37,7 +37,7 @@ index fe60749bfdbff9dc4336ccc11006745f2c2889c3..ea736817be4084f43ef5266e4a7aac3a
    ~RendererSandboxedProcessLauncherDelegate() override {}
  
  #if defined(OS_WIN)
-@@ -434,6 +439,9 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -436,6 +441,9 @@ class RendererSandboxedProcessLauncherDelegate
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
    service_manager::ZygoteHandle GetZygote() override {
@@ -47,7 +47,7 @@ index fe60749bfdbff9dc4336ccc11006745f2c2889c3..ea736817be4084f43ef5266e4a7aac3a
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -448,10 +456,13 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -450,10 +458,13 @@ class RendererSandboxedProcessLauncherDelegate
      return service_manager::SandboxType::kRenderer;
    }
  
@@ -62,7 +62,7 @@ index fe60749bfdbff9dc4336ccc11006745f2c2889c3..ea736817be4084f43ef5266e4a7aac3a
  };
  
  const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1819,11 +1830,18 @@ bool RenderProcessHostImpl::Init() {
+@@ -1821,11 +1832,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  

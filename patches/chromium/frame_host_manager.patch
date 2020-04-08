@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index dbfc24395349cfa40b5783590d60cc7e44b31205..499af1cdcf13cf57f97a0c28430cbe874c8ed7e7 100644
+index 5b22d003b32cdeec8a5c9032606a435aeb3f482d..f912a0b9485d43b0fc7aa2f6c681167bef304232 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1257,6 +1257,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1266,6 +1266,24 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -71,7 +71,7 @@ index dbfc24395349cfa40b5783590d60cc7e44b31205..499af1cdcf13cf57f97a0c28430cbe87
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 50533c338dd75f606ba542813cfe724301ad6527..3a06ae9ad9d36fea4c055e610dac5b6d66d95e7b 100644
+index f76a633c85c8e53d99c1280d359b6ddcf6bcfbbc..f1d4a349a7d4648e5ac987b24cbe2fb541fa54b6 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2392,6 +2392,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -156,7 +156,7 @@ index 50533c338dd75f606ba542813cfe724301ad6527..3a06ae9ad9d36fea4c055e610dac5b6d
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2456,6 +2516,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2457,6 +2517,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  

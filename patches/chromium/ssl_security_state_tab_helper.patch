@@ -6,7 +6,7 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index 02cfe5551f579c83b5e0d015566681704ce31e3f..779f33c17972f892e1086d1e65fb8071d7acb15f 100644
+index 84911137de0ab2d91f28a53e2499cc94f1549e1b..9e77e4f401e93e3eed53e05d9f3ee7a7999732d6 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -13,22 +13,26 @@
@@ -89,7 +89,7 @@ index 02cfe5551f579c83b5e0d015566681704ce31e3f..779f33c17972f892e1086d1e65fb8071
  
    return state;
  }
-@@ -229,8 +239,10 @@ void SecurityStateTabHelper::DidFinishNavigation(
+@@ -242,8 +252,10 @@ void SecurityStateTabHelper::DidFinishNavigation(
      UMA_HISTOGRAM_BOOLEAN("interstitial.ssl.visited_site_after_warning", true);
    }
  
@@ -100,7 +100,7 @@ index 02cfe5551f579c83b5e0d015566681704ce31e3f..779f33c17972f892e1086d1e65fb8071
  }
  
  void SecurityStateTabHelper::DidChangeVisibleSecurityState() {
-@@ -254,6 +266,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -267,6 +279,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
        web_contents()->GetController().GetVisibleEntry();
    if (!entry)
      return security_state::MALICIOUS_CONTENT_STATUS_NONE;
@@ -108,7 +108,7 @@ index 02cfe5551f579c83b5e0d015566681704ce31e3f..779f33c17972f892e1086d1e65fb8071
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -336,6 +349,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -349,6 +362,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }
