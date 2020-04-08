@@ -48,7 +48,7 @@ diff --git a/components/remote_cocoa/app_shim/bridged_native_widget_impl.mm b/co
 index 402b6099126e0ac8dd3b6be5c0ffb1a1946dc139..c6b03fe02d9228bc22b9343687ea845c77c47d8d 100644
 --- a/components/remote_cocoa/app_shim/bridged_native_widget_impl.mm
 +++ b/components/remote_cocoa/app_shim/bridged_native_widget_impl.mm
-@@ -310,9 +310,11 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -310,9 +310,11 @@ BridgedNativeWidgetImpl::BridgedNativeWidgetImpl(
        bridge_mojo_binding_(this) {
    DCHECK(GetIdToWidgetImplMap().find(id_) == GetIdToWidgetImplMap().end());
    GetIdToWidgetImplMap().insert(std::make_pair(id_, this));
@@ -60,7 +60,7 @@ index 402b6099126e0ac8dd3b6be5c0ffb1a1946dc139..c6b03fe02d9228bc22b9343687ea845c
    // The delegate should be cleared already. Note this enforces the precondition
    // that -[NSWindow close] is invoked on the hosted window before the
    // destructor is called.
-@@ -1102,7 +1104,17 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1102,7 +1104,17 @@ remote_cocoa::DragDropClient* BridgedNativeWidgetImpl::drag_drop_client() {
  }
  
  ////////////////////////////////////////////////////////////////////////////////
@@ -83,7 +83,7 @@ diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
 index 463ff7105ac329cafed793fd87cfc8423e0a0ed7..6b5424c3dae77585bc95b2da48d20168706b3f33 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
-@@ -31,8 +31,8 @@
+@@ -31,8 +31,8 @@ Boolean CGDisplayUsesForceToGray(void);
  namespace display {
  namespace {
  
@@ -94,7 +94,7 @@ index 463ff7105ac329cafed793fd87cfc8423e0a0ed7..6b5424c3dae77585bc95b2da48d20168
  const int64_t kConfigureDelayMs = 500;
  
  NSScreen* GetMatchingScreen(const gfx::Rect& match_rect) {
-@@ -155,20 +155,27 @@ CGFloat GetMinimumDistanceToCorner(const NSPoint& point, NSScreen* screen) {
+@@ -155,20 +155,27 @@ class ScreenMac : public Screen {
      CGDisplayRegisterReconfigurationCallback(
          ScreenMac::DisplayReconfigurationCallBack, this);
  
@@ -126,7 +126,7 @@ index 463ff7105ac329cafed793fd87cfc8423e0a0ed7..6b5424c3dae77585bc95b2da48d20168
  
      CGDisplayRemoveReconfigurationCallback(
          ScreenMac::DisplayReconfigurationCallBack, this);
-@@ -193,16 +200,18 @@ bool IsWindowUnderCursor(gfx::NativeWindow native_window) override {
+@@ -193,16 +200,18 @@ class ScreenMac : public Screen {
    int GetNumDisplays() const override { return GetAllDisplays().size(); }
  
    const std::vector<Display>& GetAllDisplays() const override {
@@ -147,7 +147,7 @@ index 463ff7105ac329cafed793fd87cfc8423e0a0ed7..6b5424c3dae77585bc95b2da48d20168
      if (!window)
        return GetPrimaryDisplay();
  
-@@ -275,31 +284,30 @@ void RemoveObserver(DisplayObserver* observer) override {
+@@ -275,31 +284,30 @@ class ScreenMac : public Screen {
    static void DisplayReconfigurationCallBack(CGDirectDisplayID display,
                                               CGDisplayChangeSummaryFlags flags,
                                               void* userInfo) {
@@ -189,7 +189,7 @@ index 463ff7105ac329cafed793fd87cfc8423e0a0ed7..6b5424c3dae77585bc95b2da48d20168
      if (displays_require_update_) {
        displays_ = BuildDisplaysFromQuartz();
        displays_require_update_ = false;
-@@ -307,7 +315,7 @@ void EnsureDisplaysValid() const {
+@@ -307,7 +315,7 @@ class ScreenMac : public Screen {
    }
  
    void ConfigureTimerFired() {
@@ -198,7 +198,7 @@ index 463ff7105ac329cafed793fd87cfc8423e0a0ed7..6b5424c3dae77585bc95b2da48d20168
      change_notifier_.NotifyDisplaysChanged(old_displays_, displays_);
      old_displays_ = displays_;
    }
-@@ -321,7 +329,7 @@ void ConfigureTimerFired() {
+@@ -321,7 +329,7 @@ class ScreenMac : public Screen {
      // It would be ridiculous to have this many displays connected, but
      // CGDirectDisplayID is just an integer, so supporting up to this many
      // doesn't hurt.
@@ -207,7 +207,7 @@ index 463ff7105ac329cafed793fd87cfc8423e0a0ed7..6b5424c3dae77585bc95b2da48d20168
      CGDisplayCount online_display_count = 0;
      if (CGGetOnlineDisplayList(base::size(online_displays), online_displays,
                                 &online_display_count) != kCGErrorSuccess) {
-@@ -357,21 +365,32 @@ void ConfigureTimerFired() {
+@@ -357,21 +365,32 @@ class ScreenMac : public Screen {
                              : displays;
    }
  
