@@ -62,18 +62,10 @@ index 18e63dfaec08f37e107215876f4a0511542148d8..8266e6fc1628310dafd497debbe1c6ba
      DevToolsProtocolTest::PreRunTestOnMainThread();
    }
 diff --git a/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc b/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc
-index f8ba10769691864f59ea6f2ef55700d0cd9c4969..c5beb1fb980c0b42e00508e09179c83dfe48e9cf 100644
+index f8ba10769691864f59ea6f2ef55700d0cd9c4969..f151db4394e1b77f8ffbda6851af586943c8da3a 100644
 --- a/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc
 +++ b/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc
-@@ -23,6 +23,7 @@
- #include "base/strings/utf_string_conversions.h"
- #include "base/task/post_task.h"
- #include "base/task/task_traits.h"
-+#include "base/task/thread_pool.h"
- #include "base/threading/scoped_blocking_call.h"
- #include "base/threading/sequenced_task_runner_handle.h"
- #include "base/threading/thread_restrictions.h"
-@@ -116,16 +117,29 @@ DWriteFontLookupTableBuilder::FontFileWithUniqueNames::FontFileWithUniqueNames(
+@@ -116,16 +116,30 @@ DWriteFontLookupTableBuilder::FontFileWithUniqueNames::FontFileWithUniqueNames(
  
  DWriteFontLookupTableBuilder::DWriteFontLookupTableBuilder()
      : font_indexing_timeout_(kFontIndexingTimeoutDefault) {
@@ -82,7 +74,8 @@ index f8ba10769691864f59ea6f2ef55700d0cd9c4969..c5beb1fb980c0b42e00508e09179c83d
  }
  
 +void DWriteFontLookupTableBuilder::ResetCallbacksAccessTaskRunner() {
-+  callbacks_access_task_runner_ = base::ThreadPool::CreateSequencedTaskRunner({
++  callbacks_access_task_runner_ = base::CreateSequencedTaskRunner({
++    base::ThreadPool(),
 +    base::TaskPriority::USER_VISIBLE,
 +#if DCHECK_IS_ON()
 +        // Needed for DCHECK in DuplicateMemoryRegion() which performs file
