@@ -7,7 +7,9 @@ structure, or make assumptions about the passed arguments or calls' outcomes.
 """
 
 import os
+import re
 import subprocess
+import sys
 
 
 def is_repo_root(path):
@@ -126,7 +128,7 @@ def reset(repo):
 
 
 def commit(repo, author, message):
-  """ Commit whatever in the index is now."""
+  """Commit whatever in the index is now."""
 
   # Let's setup committer info so git won't complain about it being missing.
   # TODO: Is there a better way to set committer's name and email?
@@ -142,3 +144,143 @@ def commit(repo, author, message):
   return_code = subprocess.call(args, env=env)
   committed_successfully = (return_code == 0)
   return committed_successfully
+
+def get_upstream_head(repo):
+  args = [
+    'git',
+    '-C',
+    repo,
+    'rev-parse',
+    '--verify',
+    'refs/patches/upstream-head',
+  ]
+  return subprocess.check_output(args).strip()
+
+def get_commit_count(repo, commit_range):
+  args = [
+    'git',
+    '-C',
+    repo,
+    'rev-list',
+    '--count',
+    commit_range
+  ]
+  return int(subprocess.check_output(args).strip())
+
+def guess_base_commit(repo):
+  """Guess which commit the patches might be based on"""
+  try:
+    upstream_head = get_upstream_head(repo)
+    num_commits = get_commit_count(repo, upstream_head + '..')
+    return [upstream_head, num_commits]
+  except subprocess.CalledProcessError:
+    args = [
+      'git',
+      '-C',
+      repo,
+      'describe',
+      '--tags',
+    ]
+    return subprocess.check_output(args).rsplit('-', 2)[0:2]
+
+
+def format_patch(repo, since):
+  args = [
+    'git',
+    '-C',
+    repo,
+    '-c',
+    'core.attributesfile=' + os.path.join(os.path.dirname(os.path.realpath(__file__)), '.electron.attributes'),
+    # Ensure it is not possible to match anything
+    # Disabled for now as we have consistent chunk headers
+    # '-c',
+    # 'diff.electron.xfuncname=$^',
+    'format-patch',
+    '--keep-subject',
+    '--no-stat',
+    '--stdout',
+
+    # Per RFC 3676 the signature is separated from the body by a line with
+    # '-- ' on it. If the signature option is omitted the signature defaults
+    # to the Git version number.
+    '--no-signature',
+
+    # The name of the parent commit object isn't useful information in this
+    # context, so zero it out to avoid needless patch-file churn.
+    '--zero-commit',
+
+    # Some versions of git print out different numbers of characters in the
+    # 'index' line of patches, so pass --full-index to get consistent
+    # behaviour.
+    '--full-index',
+    since
+  ]
+  return subprocess.check_output(args)
+
+
+def split_patches(patch_data):
+  """Split a concatenated series of patches into N separate patches"""
+  patches = []
+  patch_start = re.compile('^From [0-9a-f]+ ')
+  for line in patch_data.splitlines():
+    if patch_start.match(line):
+      patches.append([])
+    patches[-1].append(line)
+  return patches
+
+
+def munge_subject_to_filename(subject):
+  """Derive a suitable filename from a commit's subject"""
+  if subject.endswith('.patch'):
+    subject = subject[:-6]
+  return re.sub(r'[^A-Za-z0-9-]+', '_', subject).strip('_').lower() + '.patch'
+
+
+def get_file_name(patch):
+  """Return the name of the file to which the patch should be written"""
+  for line in patch:
+    if line.startswith('Patch-Filename: '):
+      return line[len('Patch-Filename: '):]
+  # If no patch-filename header, munge the subject.
+  for line in patch:
+    if line.startswith('Subject: '):
+      return munge_subject_to_filename(line[len('Subject: '):])
+
+
+def remove_patch_filename(patch):
+  """Strip out the Patch-Filename trailer from a patch's message body"""
+  force_keep_next_line = False
+  for i, l in enumerate(patch):
+    is_patchfilename = l.startswith('Patch-Filename: ')
+    next_is_patchfilename = i < len(patch) - 1 and patch[i+1].startswith('Patch-Filename: ')
+    if not force_keep_next_line and (is_patchfilename or (next_is_patchfilename and len(l.rstrip()) == 0)):
+      pass # drop this line
+    else:
+      yield l
+    force_keep_next_line = l.startswith('Subject: ')
+
+
+def export_patches(repo, out_dir, patch_range=None):
+  if patch_range is None:
+    patch_range, num_patches = guess_base_commit(repo)
+    sys.stderr.write("Exporting {} patches since {}\n".format(num_patches, patch_range))
+  patch_data = format_patch(repo, patch_range)
+  patches = split_patches(patch_data)
+
+  try:
+    os.mkdir(out_dir)
+  except OSError:
+    pass
+
+  # remove old patches, so that deleted commits are correctly reflected in the
+  # patch files (as a removed file)
+  for p in os.listdir(out_dir):
+    if p.endswith('.patch'):
+      os.remove(os.path.join(out_dir, p))
+
+  with open(os.path.join(out_dir, '.patches'), 'w') as pl:
+    for patch in patches:
+      filename = get_file_name(patch)
+      with open(os.path.join(out_dir, filename), 'w') as f:
+        f.write('\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n')
+      pl.write(filename + '\n')
