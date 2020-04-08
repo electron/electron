@@ -67,18 +67,10 @@ index c79d06edd9538dcfd82d23eec885f31f2952508b..8266e6fc1628310dafd497debbe1c6ba
  #endif
  
 diff --git a/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc b/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc
-index e02e585ca8bb3ce2e39e0f317f7c4c4fad772718..36763afb42fba85df2332caf569f031a60ccef93 100644
+index e02e585ca8bb3ce2e39e0f317f7c4c4fad772718..861278455146d9aa3a6001d8bc655254c28e5df8 100644
 --- a/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc
 +++ b/content/browser/renderer_host/dwrite_font_lookup_table_builder_win.cc
-@@ -24,6 +24,7 @@
- #include "base/strings/utf_string_conversions.h"
- #include "base/task/post_task.h"
- #include "base/task/task_traits.h"
-+#include "base/task/thread_pool.h"
- #include "base/threading/scoped_blocking_call.h"
- #include "base/threading/sequenced_task_runner_handle.h"
- #include "base/threading/thread_restrictions.h"
-@@ -114,18 +115,31 @@ DWriteFontLookupTableBuilder::FontFileWithUniqueNames::FontFileWithUniqueNames(
+@@ -114,18 +114,31 @@ DWriteFontLookupTableBuilder::FontFileWithUniqueNames::FontFileWithUniqueNames(
  
  DWriteFontLookupTableBuilder::DWriteFontLookupTableBuilder()
      : font_indexing_timeout_(kFontIndexingTimeoutDefault) {
@@ -101,7 +93,7 @@ index e02e585ca8bb3ce2e39e0f317f7c4c4fad772718..36763afb42fba85df2332caf569f031a
  }
  
 +void DWriteFontLookupTableBuilder::ResetCallbacksAccessTaskRunner() {
-+  callbacks_access_task_runner_ = base::ThreadPool::CreateSequencedTaskRunner({
++  callbacks_access_task_runner_ = base::CreateSequencedTaskRunnerWithTraits({
 +    base::TaskPriority::USER_VISIBLE,
 +#if DCHECK_IS_ON()
 +        // Needed for DCHECK in DuplicateMemoryRegion() which performs file
@@ -116,7 +108,7 @@ index e02e585ca8bb3ce2e39e0f317f7c4c4fad772718..36763afb42fba85df2332caf569f031a
  DWriteFontLookupTableBuilder::~DWriteFontLookupTableBuilder() = default;
  
  base::ReadOnlySharedMemoryRegion
-@@ -242,7 +256,8 @@ base::TimeDelta DWriteFontLookupTableBuilder::IndexingTimeout() {
+@@ -242,7 +255,8 @@ base::TimeDelta DWriteFontLookupTableBuilder::IndexingTimeout() {
    return font_indexing_timeout_;
  }
  
@@ -126,7 +118,7 @@ index e02e585ca8bb3ce2e39e0f317f7c4c4fad772718..36763afb42fba85df2332caf569f031a
    for (auto& pending_callback : pending_callbacks_) {
      pending_callback.task_runner->PostTask(
          FROM_HERE, base::BindOnce(std::move(pending_callback.mojo_callback),
-@@ -251,6 +266,13 @@ void DWriteFontLookupTableBuilder::PostCallbacks() {
+@@ -251,6 +265,13 @@ void DWriteFontLookupTableBuilder::PostCallbacks() {
    pending_callbacks_.clear();
  }
  
@@ -140,7 +132,7 @@ index e02e585ca8bb3ce2e39e0f317f7c4c4fad772718..36763afb42fba85df2332caf569f031a
  base::FilePath DWriteFontLookupTableBuilder::TableCacheFilePath() {
    if (!EnsureCacheDirectory(cache_directory_))
      return base::FilePath();
-@@ -339,6 +361,26 @@ DWriteFontLookupTableBuilder::CallbackOnTaskRunner::CallbackOnTaskRunner(
+@@ -339,6 +360,26 @@ DWriteFontLookupTableBuilder::CallbackOnTaskRunner::CallbackOnTaskRunner(
  DWriteFontLookupTableBuilder::CallbackOnTaskRunner::~CallbackOnTaskRunner() =
      default;
  
@@ -167,7 +159,7 @@ index e02e585ca8bb3ce2e39e0f317f7c4c4fad772718..36763afb42fba85df2332caf569f031a
  void DWriteFontLookupTableBuilder::QueueShareMemoryRegionWhenReady(
      scoped_refptr<base::SequencedTaskRunner> task_runner,
      blink::mojom::DWriteFontProxy::GetUniqueNameLookupTableCallback callback) {
-@@ -346,7 +388,12 @@ void DWriteFontLookupTableBuilder::QueueShareMemoryRegionWhenReady(
+@@ -346,7 +387,12 @@ void DWriteFontLookupTableBuilder::QueueShareMemoryRegionWhenReady(
                 "DWriteFontLookupTableBuilder::QueueShareMemoryRegionWhenReady");
    DCHECK(!HasDWriteUniqueFontLookups());
    DCHECK(!font_table_built_.IsSignaled());
@@ -181,7 +173,7 @@ index e02e585ca8bb3ce2e39e0f317f7c4c4fad772718..36763afb42fba85df2332caf569f031a
  }
  
  bool DWriteFontLookupTableBuilder::FontUniqueNameTableReady() {
-@@ -709,6 +756,7 @@ void DWriteFontLookupTableBuilder::ResetLookupTableForTesting() {
+@@ -709,6 +755,7 @@ void DWriteFontLookupTableBuilder::ResetLookupTableForTesting() {
    font_indexing_timeout_ = kFontIndexingTimeoutDefault;
    font_table_memory_ = base::MappedReadOnlyRegion();
    caching_enabled_ = true;
