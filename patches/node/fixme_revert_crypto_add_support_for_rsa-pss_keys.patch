@@ -110,7 +110,7 @@ index b6a3376e735094f970ef61a52ef9bb6d6101647a..bb70c2305fd44cfea46a8df5e65d1af5
  
  Sign.prototype.sign = function sign(options, encoding) {
 diff --git a/src/env.h b/src/env.h
-index ecb845803776f5ff6e7eec712ec7a5ebea2e8d0a..1516d77be8514ce55d8d21b78a7cd85ead2cb95f 100644
+index 0500fce2610f2a3fe3ce975fd60cc94d571af07c..7ce3d3f467e9a44c33d24df5968f16e09558f2ec 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -173,7 +173,6 @@ constexpr size_t kFsStatsBufferLength = kFsStatsFieldsNumber * 2;
