@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: vasilvv <vasilvv@google.com>
 Date: Thu, 3 Oct 2019 09:37:10 -0700
-Subject: [build] Include ostream in quic_ip_address.h
+Subject: Include ostream in quic_ip_address.h
 
 Explicitly #include <ostream> in quic/platform/api/quic_ip_address.h, since std::ostream is referenced in it. In the C++ STL shipped with Visual Studio 2019, none of the headers included in quic_ip_address.h ends up including the required templates, which caused a compile error.
 
