@@ -1,7 +1,7 @@
-From 4c57222340cfb78edadf08532f4468c676df5395 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Raymond Toy <rtoy@chromium.org>
 Date: Wed, 11 Mar 2020 20:23:49 +0000
-Subject: [PATCH] Make finished_source_handlers_ hold scoped_refptrs
+Subject: Make finished_source_handlers_ hold scoped_refptrs
 
 Previously, finished_source_handlers_ held raw pointers to
 AudioHandlers and assumed that active_source_handlers_ also had a
@@ -25,39 +25,36 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2098260
 Reviewed-by: Hongchan Choi <hongchan@chromium.org>
 Commit-Queue: Raymond Toy <rtoy@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#749302}
----
- .../blink/renderer/modules/webaudio/deferred_task_handler.cc | 5 ++---
- .../blink/renderer/modules/webaudio/deferred_task_handler.h  | 4 ++--
- 2 files changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
-index d0cbb762a8de9..d02a7f69fe191 100644
+index 6ecedccc14ed15b81e916f0e1ff8f635489dcecc..1cbae52a782e71773684af932f9fc5c554d0caf8 100644
 --- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
 +++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
-@@ -77,9 +77,7 @@ void DeferredTaskHandler::BreakConnections() {
+@@ -77,9 +77,9 @@ void DeferredTaskHandler::BreakConnections() {
    // connection.
    wtf_size_t size = finished_source_handlers_.size();
    if (size > 0) {
 -    for (auto* finished : finished_source_handlers_) {
--      // Break connection first and then remove from the list because that can
--      // cause the handler to be deleted.
+-      active_source_handlers_.erase(finished);
 +    for (auto finished : finished_source_handlers_) {
        finished->BreakConnectionWithLock();
-       active_source_handlers_.erase(finished);
++      active_source_handlers_.erase(finished);
      }
-@@ -358,6 +356,7 @@ void DeferredTaskHandler::ClearHandlersToBeDeleted() {
+     finished_source_handlers_.clear();
+   }
+@@ -370,6 +370,7 @@ void DeferredTaskHandler::ClearHandlersToBeDeleted() {
+   rendering_orphan_handlers_.clear();
    deletable_orphan_handlers_.clear();
    automatic_pull_handlers_.clear();
-   rendering_automatic_pull_handlers_.clear();
 +  finished_source_handlers_.clear();
    active_source_handlers_.clear();
  }
  
 diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
-index 9d2ae46db53ff..3cf47ca77a8b1 100644
+index af384d0941da47bbe544be3c0ce5739ca4c384e1..5fbc449639c5c04c7ae85c9b65047a8e28bb2a2e 100644
 --- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
 +++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
-@@ -190,7 +190,7 @@ class MODULES_EXPORT DeferredTaskHandler final
+@@ -188,7 +188,7 @@ class MODULES_EXPORT DeferredTaskHandler final
      return &active_source_handlers_;
    }
  
@@ -66,7 +63,7 @@ index 9d2ae46db53ff..3cf47ca77a8b1 100644
      return &finished_source_handlers_;
    }
  
-@@ -259,7 +259,7 @@ class MODULES_EXPORT DeferredTaskHandler final
+@@ -257,7 +257,7 @@ class MODULES_EXPORT DeferredTaskHandler final
    // connection and elements here are removed from |active_source_handlers_|.
    //
    // This must be accessed only from the audio thread.
