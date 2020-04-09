@@ -14,7 +14,7 @@ when there is code doing that.
 This patch reverts the change to fix the crash in Electron.
 
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index ab0d55c3de88faf10e25ef8cbb6ebd3f7f580654..4660af81c248fe39c1df428a3b892a251a957363 100644
+index 0b3593de98e9fbd712db06df77ca805f478901ab..e24535cfb7b55713ae1212f3577240f190dbc7fd 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -472,10 +472,6 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
