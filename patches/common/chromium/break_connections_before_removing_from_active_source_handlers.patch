@@ -1,8 +1,7 @@
-From 3ac8883297e17ea27828bac2bcf39fa5e009f384 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Raymond Toy <rtoy@chromium.org>
 Date: Mon, 2 Mar 2020 23:22:26 +0000
-Subject: [PATCH] Break connections before removing from
- active_source_handlers_.
+Subject: Break connections before removing from active_source_handlers_.
 
 In DeferredTaskHandler::BreakConnections, we want to remove finished
 handlers and break the connection.  when a finished handler is removed
@@ -19,12 +18,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2083436
 Commit-Queue: Raymond Toy <rtoy@chromium.org>
 Reviewed-by: Hongchan Choi <hongchan@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#746142}
----
- .../blink/renderer/modules/webaudio/deferred_task_handler.cc  | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
-index 9fd38f0dde71b..fca70458c5a1f 100644
+index 4bced21399ec23ad242bdb32d9f4472a51ae6f28..6e2c075b30aeea47973e14bda0ae121af738d0da 100644
 --- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
 +++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
 @@ -78,8 +78,10 @@ void DeferredTaskHandler::BreakConnections() {
