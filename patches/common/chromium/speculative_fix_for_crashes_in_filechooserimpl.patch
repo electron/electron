@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kent Tamura <tkent@chromium.org>
+Date: Tue, 25 Feb 2020 01:19:39 +0000
+Subject: Speculative fix for crashes in ~FileChooserImpl()
+
+FileChooserImpl can outlive ListenerProxy.  We should clear
+FileChooserImpl::proxy_ on ~ListenerProxy().
+
+This CL has no tests.  We don't know how to reproduce crashes.
+
+Bug: 1054260
+Change-Id: I2be7a8957f2f725c51081961357ef09f6dabb823
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2067819
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Reviewed-by: Matthew Denton <mpdenton@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#744142}
+
+diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
+index 1e69d769e0b7db66c7ed5bbd27546cd5810274c5..1c5b38c20b36692837d1de152d39c5d89db261fe 100644
+--- a/content/browser/frame_host/render_frame_host_impl.cc
++++ b/content/browser/frame_host/render_frame_host_impl.cc
+@@ -667,6 +667,8 @@ class FileChooserImpl : public blink::mojom::FileChooser,
+     std::move(callback_).Run(nullptr);
+   }
+ 
++  void ResetProxy() { proxy_ = nullptr; }
++
+  private:
+   class ListenerProxy : public content::FileSelectListener {
+    public:
+@@ -677,6 +679,8 @@ class FileChooserImpl : public blink::mojom::FileChooser,
+           << "Should call either FileSelectListener::FileSelected() or "
+              "FileSelectListener::FileSelectionCanceled()";
+ #endif
++      if (owner_)
++        owner_->ResetProxy();
+     }
+     void ResetOwner() { owner_ = nullptr; }
+ 
