@@ -13,7 +13,7 @@ Bug: chromium:1010616
 Change-Id: I971ff888306d6bdbaf6e6b886f9ca506ddc1b30a
 
 diff --git a/include/perfetto/ext/base/metatrace.h b/include/perfetto/ext/base/metatrace.h
-index 3858f68ec5eaf130aafa7d33f52a00e370395204..2c587c3fc63093f71a05e4c757def5c6384bf703 100644
+index ceb4bfb1cd1a58c9a011a043d2d6904e9d15bee4..d626039d4da0beb41433f7c4807f78269c86d848 100644
 --- a/include/perfetto/ext/base/metatrace.h
 +++ b/include/perfetto/ext/base/metatrace.h
 @@ -116,22 +116,33 @@ struct Record {
