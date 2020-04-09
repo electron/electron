@@ -1,8 +1,8 @@
-From 913247c378d54e0378ffd09524e0aa7503035fc4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
 Date: Wed, 4 Mar 2020 00:45:41 +0000
-Subject: [PATCH] Use SupportsWeakPtr for messaging from rendering thread to
- main thread
+Subject: Use SupportsWeakPtr for messaging from rendering thread to main
+ thread
 
 In cross-thread messaging, the associated execution context can be
 already gone when a posted task is performed sometime later in the task
@@ -18,13 +18,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2082897
 Commit-Queue: Hongchan Choi <hongchan@chromium.org>
 Reviewed-by: Raymond Toy <rtoy@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#746613}
----
- .../renderer/modules/webaudio/audio_scheduled_source_node.cc | 2 +-
- .../renderer/modules/webaudio/audio_scheduled_source_node.h  | 5 ++++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.cc b/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.cc
-index 9594f5fe1c278..8e9c4c60163e0 100644
+index 9594f5fe1c2783e7c5aa5f3b20440bd0abc1f548..8e9c4c60163e0b0a2403292df53926a069ebe3e7 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.cc
 +++ b/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.cc
 @@ -250,7 +250,7 @@ void AudioScheduledSourceHandler::Finish() {
@@ -37,7 +33,7 @@ index 9594f5fe1c278..8e9c4c60163e0 100644
  
  void AudioScheduledSourceHandler::NotifyEnded() {
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.h b/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.h
-index 2bf257ceabb3e..3cd126a3333d7 100644
+index 2fdb9bac867bee1ad79bf98ee5b963e86321becb..d526a776c4c243d4bc186497f729d29b3bd7ef09 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.h
 +++ b/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.h
 @@ -30,6 +30,7 @@
