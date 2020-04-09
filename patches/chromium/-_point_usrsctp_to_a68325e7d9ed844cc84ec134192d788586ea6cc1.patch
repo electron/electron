@@ -1,8 +1,7 @@
-From 3030db702eee4f24e74e84b66024bd0875fd5418 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Mirko Bonadei <mbonadei@chromium.org>
 Date: Tue, 10 Mar 2020 06:04:07 +0000
-Subject: [PATCH] [Merge M81] - Point usrsctp to
- a68325e7d9ed844cc84ec134192d788586ea6cc1.
+Subject: - Point usrsctp to a68325e7d9ed844cc84ec134192d788586ea6cc1.
 
 Bug: 1059349
 Change-Id: I451873d552b6fe0ca6cd481385042bf37a05fbfd
@@ -10,15 +9,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2093604
 Reviewed-by: Guido Urdaneta <guidou@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4044@{#735}
 Cr-Branched-From: a6d9daf149a473ceea37f629c41d4527bf2055bd-refs/heads/master@{#737173}
----
- DEPS | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/DEPS b/DEPS
-index a95e9b828dda0..e86ca48012b57 100644
+index 4efda890e2a2b9e4597a03a435a5fc0b716f6564..6a46b05c750c82fc43fe118b2493c78518f271a9 100644
 --- a/DEPS
 +++ b/DEPS
-@@ -1463,7 +1463,7 @@ deps = {
+@@ -1388,7 +1388,7 @@ deps = {
    },
  
    'src/third_party/usrsctp/usrsctplib':
