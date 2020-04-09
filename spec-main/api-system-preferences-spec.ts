@@ -111,7 +111,7 @@ describe('systemPreferences module', () => {
 
     it('throws when type is not valid', () => {
       expect(() => {
-        systemPreferences.setUserDefault(KEY, 'abc', 'foo');
+        systemPreferences.setUserDefault(KEY, 'abc' as any, 'foo');
       }).to.throw('Invalid type: abc');
     });
   });
