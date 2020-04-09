@@ -345,6 +345,9 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 
   fake_browser_process_->PreCreateThreads();
 
+  // Notify observers.
+  Browser::Get()->PreCreateThreads();
+
   return 0;
 }
 
