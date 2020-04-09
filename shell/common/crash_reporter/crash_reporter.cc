@@ -107,7 +107,9 @@ void CrashReporter::Init(const std::string& product_name,
                          const std::string& submit_url,
                          const base::FilePath& crashes_dir,
                          bool auto_submit,
-                         bool skip_system_crash_handler) {}
+                         bool skip_system_crash_handler,
+                         bool rate_limit,
+                         bool compress) {}
 
 void CrashReporter::SetUploadParameters() {}
 
