@@ -33,7 +33,7 @@ diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/se
 index cf6b3450c209db70c2f0bd8658258e01b9f7421c..af720dc0ef327011ec9e965603d4ee6cb9c9edee 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -57,6 +57,7 @@
+@@ -57,6 +57,7 @@ ImageTransportSurfaceOverlayMac::~ImageTransportSurfaceOverlayMac() {
  }
  
  bool ImageTransportSurfaceOverlayMac::Initialize(gl::GLSurfaceFormat format) {
@@ -41,7 +41,7 @@ index cf6b3450c209db70c2f0bd8658258e01b9f7421c..af720dc0ef327011ec9e965603d4ee6c
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -65,6 +66,7 @@
+@@ -65,6 +66,7 @@ bool ImageTransportSurfaceOverlayMac::Initialize(gl::GLSurfaceFormat format) {
          [CAContext contextWithCGSConnection:connection_id options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -49,7 +49,7 @@ index cf6b3450c209db70c2f0bd8658258e01b9f7421c..af720dc0ef327011ec9e965603d4ee6c
    return true;
  }
  
-@@ -123,7 +125,9 @@
+@@ -123,7 +125,9 @@ gfx::SwapResult ImageTransportSurfaceOverlayMac::SwapBuffersInternal(
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
@@ -63,7 +63,7 @@ diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated
 index 60abe639bd9c9cf6885f811c741a45eeb683ec58..c38eed5fbdefc96a3d60e4ab70d3b007264ccb3c 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-@@ -98,6 +98,7 @@ - (void)setContentsChanged;
+@@ -98,6 +98,7 @@ void DisplayCALayerTree::UpdateCALayerTree(
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
@@ -71,7 +71,7 @@ index 60abe639bd9c9cf6885f811c741a45eeb683ec58..c38eed5fbdefc96a3d60e4ab70d3b007
    // Early-out if the remote layer has not changed.
    if ([remote_layer_ contextId] == ca_context_id)
      return;
-@@ -122,6 +123,9 @@ - (void)setContentsChanged;
+@@ -122,6 +123,9 @@ void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
      [io_surface_layer_ removeFromSuperlayer];
      io_surface_layer_.reset();
    }
@@ -146,7 +146,7 @@ diff --git a/ui/views/cocoa/bridged_native_widget_host_impl.mm b/ui/views/cocoa/
 index be87bb2cede4e859486cc5e4daa1ac435ee8fefa..dd3365aa841dc7d4d9c998ff097ffc8f21c811eb 100644
 --- a/ui/views/cocoa/bridged_native_widget_host_impl.mm
 +++ b/ui/views/cocoa/bridged_native_widget_host_impl.mm
-@@ -211,6 +211,8 @@ bool PositionWindowInScreenCoordinates(Widget* widget,
+@@ -211,6 +211,8 @@ uint64_t g_last_bridged_native_widget_id = 0;
  
  }  // namespace
  
@@ -155,7 +155,7 @@ index be87bb2cede4e859486cc5e4daa1ac435ee8fefa..dd3365aa841dc7d4d9c998ff097ffc8f
  // A gfx::CALayerParams may pass the content to be drawn across processes via
  // either an IOSurface (sent as mach port) or a CAContextID (which is an
  // integer). For historical reasons, software compositing uses IOSurfaces.
-@@ -265,6 +267,8 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+@@ -265,6 +267,8 @@ class BridgedNativeWidgetHostImpl::IOSurfaceToRemoteLayerInterceptor {
    base::scoped_nsobject<CALayer> io_surface_layer_;
  };
  
@@ -164,7 +164,7 @@ index be87bb2cede4e859486cc5e4daa1ac435ee8fefa..dd3365aa841dc7d4d9c998ff097ffc8f
  // static
  BridgedNativeWidgetHostImpl* BridgedNativeWidgetHostImpl::GetFromNativeWindow(
      gfx::NativeWindow native_window) {
-@@ -1451,6 +1455,7 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+@@ -1451,6 +1455,7 @@ void BridgedNativeWidgetHostImpl::AcceleratedWidgetCALayerParamsUpdated() {
    const gfx::CALayerParams* ca_layer_params =
        compositor_->widget()->GetCALayerParams();
    if (ca_layer_params) {
@@ -172,7 +172,7 @@ index be87bb2cede4e859486cc5e4daa1ac435ee8fefa..dd3365aa841dc7d4d9c998ff097ffc8f
      // Replace IOSurface mach ports with CAContextIDs only when using the
      // out-of-process bridge (to reduce risk, because this workaround is being
      // merged to late-life-cycle release branches) and when an IOSurface
-@@ -1467,8 +1472,11 @@ void UpdateCALayerParams(gfx::CALayerParams* ca_layer_params) {
+@@ -1467,8 +1472,11 @@ void BridgedNativeWidgetHostImpl::AcceleratedWidgetCALayerParamsUpdated() {
            &updated_ca_layer_params);
        bridge_ptr_->SetCALayerParams(updated_ca_layer_params);
      } else {

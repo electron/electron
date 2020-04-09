@@ -12,10 +12,10 @@ This commit fixes this problem by changing node_worker to use the three-arg
 implementation of `NewIsolate` to prevent it trying to use a possibly-null ptr.
 
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 8f97f5c351..2bfbb28e61 100644
+index e84b36f132ae3b89b4b0ae101195bcd0ebbf5673..4a95e6e409185341655024a11943aee47a1051e4 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
-@@ -112,7 +112,10 @@ class WorkerThreadData {
+@@ -124,7 +124,10 @@ class WorkerThreadData {
        array_buffer_allocator_(ArrayBufferAllocator::Create()) {
      CHECK_EQ(uv_loop_init(&loop_), 0);
  

@@ -10,6 +10,12 @@ from lib.patches import patch_from_dir
 
 def apply_patches(dirs):
   for patch_dir, repo in dirs.iteritems():
+    # save the upstream HEAD so we can refer to it when we later export patches
+    git.update_ref(
+        repo=repo,
+        ref='refs/patches/upstream-head',
+        newvalue='HEAD'
+    )
     git.am(repo=repo, patch_data=patch_from_dir(patch_dir),
       committer_name="Electron Scripts", committer_email="scripts@electron")
 

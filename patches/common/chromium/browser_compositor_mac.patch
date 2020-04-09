@@ -29,7 +29,7 @@ diff --git a/content/browser/renderer_host/browser_compositor_view_mac.mm b/cont
 index 4b3f3c7e97e73ad6d0166ad114f4168d9ed00e11..59e58d693c971742951434f6582140d9179235f2 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.mm
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.mm
-@@ -80,6 +80,12 @@
+@@ -80,6 +80,12 @@ BrowserCompositorMac::~BrowserCompositorMac() {
    DCHECK_EQ(1u, num_erased);
  }
  
