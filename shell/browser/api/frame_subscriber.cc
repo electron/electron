@@ -145,6 +145,8 @@ void FrameSubscriber::OnFrameCaptured(
 
 void FrameSubscriber::OnStopped() {}
 
+void FrameSubscriber::OnLog(const std::string& message) {}
+
 void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   if (frame.drawsNothing())
     return;
