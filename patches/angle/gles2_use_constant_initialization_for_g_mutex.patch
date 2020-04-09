@@ -28,10 +28,10 @@ index ab39ee01a47c15da57b531d2c711649f1685091b..7a0f3b32b101b34195c57637b227062d
  Nick Shaforostov
 +Jaime Bernardo
 diff --git a/src/common/angleutils.h b/src/common/angleutils.h
-index 131d5796da4399df1144bc349c506cde8220973a..3a1391e29b72e7ec356e44c7ced202cc29773fb3 100644
+index d5d3ca8312a61e2debf304cac21f3536ef6cb472..3c93d1bfdca21bab33168c144ea5fb6002bff5ee 100644
 --- a/src/common/angleutils.h
 +++ b/src/common/angleutils.h
-@@ -345,4 +345,10 @@ std::string ToString(const T &value)
+@@ -333,4 +333,10 @@ std::string ToString(const T &value)
  #    define ANGLE_MAYBE_UNUSED
  #endif  // __has_cpp_attribute(maybe_unused)
  

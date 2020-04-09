@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -250,7 +251,14 @@ double GetZoomLevel(v8::Local<v8::Value> window) {
   return result;
 }
 
-void SetZoomFactor(v8::Local<v8::Value> window, double factor) {
+void SetZoomFactor(mate::Arguments* args,
+                   v8::Local<v8::Value> window,
+                   double factor) {
+  if (factor < std::numeric_limits<double>::epsilon()) {
+    args->ThrowError("'zoomFactor' must be a double greater than 0.0");
+    return;
+  }
+
   SetZoomLevel(window, blink::WebView::ZoomFactorToZoomLevel(factor));
 }
 
