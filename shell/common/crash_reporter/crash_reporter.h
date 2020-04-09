@@ -40,6 +40,8 @@ class CrashReporter {
              const base::FilePath& crashes_dir,
              bool upload_to_server,
              bool skip_system_crash_handler,
+             bool rate_limit,
+             bool compress,
              const StringMap& extra_parameters);
 
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(

@@ -52,12 +52,14 @@ void CrashReporter::Start(const std::string& product_name,
                           const base::FilePath& crashes_dir,
                           bool upload_to_server,
                           bool skip_system_crash_handler,
+                          bool rate_limit,
+                          bool compress,
                           const StringMap& extra_parameters) {
   is_initialized_ = true;
   SetUploadParameters(extra_parameters);
 
   Init(product_name, company_name, submit_url, crashes_dir, upload_to_server,
-       skip_system_crash_handler);
+       skip_system_crash_handler, rate_limit, compress);
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
