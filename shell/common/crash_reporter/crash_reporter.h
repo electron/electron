@@ -63,7 +63,8 @@ class CrashReporter {
                     const std::string& submit_url,
                     const base::FilePath& crashes_dir,
                     bool upload_to_server,
-                    bool skip_system_crash_handler);
+                    bool skip_system_crash_handler bool rate_limit,
+                    bool compress);
   virtual void SetUploadParameters();
 
   StringMap upload_parameters_;
