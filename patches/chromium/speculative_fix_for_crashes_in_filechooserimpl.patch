@@ -1,7 +1,7 @@
-From 728c6deeffe1f266bd1639806dd9a27b79e81b1a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kent Tamura <tkent@chromium.org>
 Date: Tue, 25 Feb 2020 01:19:39 +0000
-Subject: [PATCH] Speculative fix for crashes in ~FileChooserImpl()
+Subject: Speculative fix for crashes in ~FileChooserImpl()
 
 FileChooserImpl can outlive ListenerProxy.  We should clear
 FileChooserImpl::proxy_ on ~ListenerProxy().
@@ -15,15 +15,12 @@ Commit-Queue: Kent Tamura <tkent@chromium.org>
 Reviewed-by: Avi Drissman <avi@chromium.org>
 Reviewed-by: Matthew Denton <mpdenton@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#744142}
----
- content/browser/frame_host/render_frame_host_impl.cc | 4 ++++
- 1 file changed, 4 insertions(+)
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 4f63d97781f12..4310f69d69c25 100644
+index a68e9246f5ec435becca41737cf73f6611970e88..e8b3b88be02cf45ea333b55b931676d80da826c8 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -727,6 +727,8 @@ class FileChooserImpl : public blink::mojom::FileChooser,
+@@ -675,6 +675,8 @@ class FileChooserImpl : public blink::mojom::FileChooser,
      std::move(callback_).Run(nullptr);
    }
  
@@ -32,7 +29,7 @@ index 4f63d97781f12..4310f69d69c25 100644
   private:
    class ListenerProxy : public content::FileSelectListener {
     public:
-@@ -737,6 +739,8 @@ class FileChooserImpl : public blink::mojom::FileChooser,
+@@ -685,6 +687,8 @@ class FileChooserImpl : public blink::mojom::FileChooser,
            << "Should call either FileSelectListener::FileSelected() or "
               "FileSelectListener::FileSelectionCanceled()";
  #endif
