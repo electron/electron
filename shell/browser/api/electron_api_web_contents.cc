@@ -392,7 +392,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents),
       type_(Type::REMOTE),
       weak_factory_(this) {
-  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
+  web_contents->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
+                                         GetBrowserContext()->GetUserAgent()),
                                      false);
   Init(isolate);
   AttachAsUserData(web_contents);
@@ -570,7 +571,8 @@ void WebContents::InitWithSessionAndOptions(
       &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
-  web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
+  web_contents()->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
+                                           GetBrowserContext()->GetUserAgent()),
                                        false);
 
   if (IsGuest()) {
@@ -1467,7 +1469,8 @@ void WebContents::LoadURL(const GURL& url,
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
-    web_contents()->SetUserAgentOverride(user_agent, false);
+    web_contents()->SetUserAgentOverride(
+        blink::UserAgentOverride::UserAgentOnly(user_agent), false);
 
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
@@ -1599,11 +1602,12 @@ bool WebContents::IsCrashed() const {
 
 void WebContents::SetUserAgent(const std::string& user_agent,
                                gin_helper::Arguments* args) {
-  web_contents()->SetUserAgentOverride(user_agent, false);
+  web_contents()->SetUserAgentOverride(
+      blink::UserAgentOverride::UserAgentOnly(user_agent), false);
 }
 
 std::string WebContents::GetUserAgent() {
-  return web_contents()->GetUserAgentOverride();
+  return web_contents()->GetUserAgentOverride().ua_string_override;
 }
 
 v8::Local<v8::Promise> WebContents::SavePage(
