@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Miguel Casas <mcasas@chromium.org>
+Date: Thu, 5 Mar 2020 19:42:53 +0000
+Subject: MojoVideoEncodeAcceleratorService: handle potential later
+ Initialize()
+
+This CL fixes a potential Initialize()-after-Initialize() of the said
+service, as described in the bug, following the suggestion in #c11.
+
+Bug: 1056222
+Change-Id: Idd951d3f0bee62b94382ffe80e4e6b3cef33e6d9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2090031
+Commit-Queue: Miguel Casas <mcasas@chromium.org>
+Commit-Queue: Chrome Cunningham <chcunningham@chromium.org>
+Auto-Submit: Miguel Casas <mcasas@chromium.org>
+Reviewed-by: danakj <danakj@chromium.org>
+Reviewed-by: Chrome Cunningham <chcunningham@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#747376}
+
+diff --git a/media/mojo/services/mojo_video_encode_accelerator_service.cc b/media/mojo/services/mojo_video_encode_accelerator_service.cc
+index 03d2d30914e1b5dfcebe0df8aaca3d314ac94d42..be881b0de4f968bd74aef68a052bbed37afa78c6 100644
+--- a/media/mojo/services/mojo_video_encode_accelerator_service.cc
++++ b/media/mojo/services/mojo_video_encode_accelerator_service.cc
+@@ -48,11 +48,16 @@ void MojoVideoEncodeAcceleratorService::Initialize(
+     InitializeCallback success_callback) {
+   DVLOG(1) << __func__ << " " << config.AsHumanReadableString();
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  DCHECK(!encoder_);
+   DCHECK(config.input_format == PIXEL_FORMAT_I420 ||
+          config.input_format == PIXEL_FORMAT_NV12)
+       << "Only I420 or NV12 format supported";
+ 
++  if (encoder_) {
++    DLOG(ERROR) << __func__ << " VEA is already initialized";
++    std::move(success_callback).Run(false);
++    return;
++  }
++
+   if (!client) {
+     DLOG(ERROR) << __func__ << "null |client|";
+     std::move(success_callback).Run(false);
