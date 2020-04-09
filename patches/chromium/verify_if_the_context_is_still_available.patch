@@ -1,7 +1,7 @@
-From 54454ec7fbcbd043f7eafea03049e53ccec5e04f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: David Manouchehri <david@davidmanouchehri.com>
 Date: Wed, 19 Feb 2020 00:29:19 +0000
-Subject: [PATCH] Verify if the context is still available.
+Subject: Verify if the context is still available.
 
 Bug: 1051748
 Change-Id: I6bbef3ef50930048984593270fbe39a59a6d61f3
@@ -11,20 +11,17 @@ Reviewed-by: Kenneth Russell <kbr@chromium.org>
 Commit-Queue: Kenneth Russell <kbr@chromium.org>
 Auto-Submit: David Manouchehri <david@davidmanouchehri.com>
 Cr-Commit-Position: refs/heads/master@{#742401}
----
- .../renderer/modules/webgl/webgl_rendering_context_base.cc      | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
-index 270d3c99e8d15..e6b812db1f52d 100644
+index e14c25d63ac372cc7b0d72a94063863d8fc3a930..bb2c7db66322b6161b281ebba474775c4a359999 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
 +++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
-@@ -7606,7 +7606,7 @@ void WebGLRenderingContextBase::PrintGLErrorToConsole(const String& message) {
+@@ -7503,7 +7503,7 @@ void WebGLRenderingContextBase::PrintGLErrorToConsole(const String& message) {
  
  void WebGLRenderingContextBase::PrintWarningToConsole(const String& message) {
    blink::ExecutionContext* context = Host()->GetTopExecutionContext();
 -  if (context) {
 +  if (context && !context->IsContextDestroyed()) {
-     context->AddConsoleMessage(MakeGarbageCollected<ConsoleMessage>(
-         mojom::ConsoleMessageSource::kRendering,
-         mojom::ConsoleMessageLevel::kWarning, message));
+     context->AddConsoleMessage(
+         ConsoleMessage::Create(mojom::ConsoleMessageSource::kRendering,
+                                mojom::ConsoleMessageLevel::kWarning, message));
