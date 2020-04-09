@@ -9,3 +9,4 @@ do_not_export_private_v8_symbols_on_windows.patch
 include_string_in_v8_h.patch
 objects_fix_memory_leak_in_prototypeusers_add.patch
 fix_bug_in_receiver_maps_inference.patch
+make_createdynamicfunction_throw_if_disallowed.patch
