@@ -1,7 +1,7 @@
-From a0a48e0132bc04736a1ef116d89ae19eea01500d Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Miguel Casas <mcasas@chromium.org>
 Date: Thu, 5 Mar 2020 19:42:53 +0000
-Subject: [PATCH] MojoVideoEncodeAcceleratorService: handle potential later
+Subject: MojoVideoEncodeAcceleratorService: handle potential later
  Initialize()
 
 This CL fixes a potential Initialize()-after-Initialize() of the said
@@ -16,12 +16,9 @@ Auto-Submit: Miguel Casas <mcasas@chromium.org>
 Reviewed-by: danakj <danakj@chromium.org>
 Reviewed-by: Chrome Cunningham <chcunningham@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#747376}
----
- .../mojo/services/mojo_video_encode_accelerator_service.cc | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/media/mojo/services/mojo_video_encode_accelerator_service.cc b/media/mojo/services/mojo_video_encode_accelerator_service.cc
-index 50ade44981a1b..51d62ebbb2180 100644
+index 03d2d30914e1b5dfcebe0df8aaca3d314ac94d42..be881b0de4f968bd74aef68a052bbed37afa78c6 100644
 --- a/media/mojo/services/mojo_video_encode_accelerator_service.cc
 +++ b/media/mojo/services/mojo_video_encode_accelerator_service.cc
 @@ -48,11 +48,16 @@ void MojoVideoEncodeAcceleratorService::Initialize(
