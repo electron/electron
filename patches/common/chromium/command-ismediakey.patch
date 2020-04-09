@@ -100,7 +100,7 @@ index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..9232dda3fc82d9ad56fef96a25993121
    }
    return VKEY_UNKNOWN;
  }
-@@ -193,7 +200,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -193,7 +200,10 @@ CGEventRef MediaKeysListenerImpl::EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&
@@ -112,7 +112,7 @@ index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..9232dda3fc82d9ad56fef96a25993121
      return event;
    }
  
-@@ -224,6 +234,7 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -224,6 +234,7 @@ std::unique_ptr<MediaKeysListener> MediaKeysListener::Create(
    // For Mac OS 10.12.2 or later, we want to use MPRemoteCommandCenter for
    // getting media keys globally if there is a RemoteCommandCenterDelegate
    // available.
@@ -120,7 +120,7 @@ index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..9232dda3fc82d9ad56fef96a25993121
    if (@available(macOS 10.12.2, *)) {
      if (scope == Scope::kGlobal &&
          now_playing::RemoteCommandCenterDelegate::GetInstance()) {
-@@ -233,6 +244,7 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -233,6 +244,7 @@ std::unique_ptr<MediaKeysListener> MediaKeysListener::Create(
        return std::move(listener);
      }
    }
