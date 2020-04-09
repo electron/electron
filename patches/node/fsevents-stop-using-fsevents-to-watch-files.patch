@@ -1,7 +1,10 @@
-From 97b85e8b75b8f3df774b6e008dbaa143daa412b7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jameson Nash <vtjnash@gmail.com>
 Date: Sat, 7 Sep 2019 14:55:40 -0400
-Subject: [PATCH] fsevents: stop using fsevents to watch files
+Subject: fsevents: stop using fsevents to watch files
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Goes back to just using it to watch folders,
 but keeps the other logic changes around.
@@ -17,7 +20,7 @@ Reviewed-By: Ben Noordhuis <info@bnoordhuis.nl>
 Reviewed-By: Saúl Ibarra Corretgé <s@saghul.net>
 
 diff --git a/deps/uv/src/unix/kqueue.c b/deps/uv/src/unix/kqueue.c
-index c04e7a48..ad09f403 100644
+index c04e7a485cf992beec501144e04ff068c17b9494..ad09f4031318cafe08faed3f0a6373e2bb598672 100644
 --- a/deps/uv/src/unix/kqueue.c
 +++ b/deps/uv/src/unix/kqueue.c
 @@ -454,10 +454,26 @@ int uv_fs_event_start(uv_fs_event_t* handle,
@@ -102,7 +105,7 @@ index c04e7a48..ad09f403 100644
  #endif
  
 diff --git a/deps/uv/test/test-fs-event.c b/deps/uv/test/test-fs-event.c
-index ea34bd63..4b8bb1ef 100644
+index ea34bd63a70625c3e2c60d5a1bbb087c5f0bbb2e..4b8bb1ef03e54407cba8eef85179039632cc3f28 100644
 --- a/deps/uv/test/test-fs-event.c
 +++ b/deps/uv/test/test-fs-event.c
 @@ -656,6 +656,12 @@ TEST_IMPL(fs_event_watch_file_current_dir) {

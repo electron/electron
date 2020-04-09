@@ -6,10 +6,10 @@ Subject: Fix bug in receiver maps inference
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/2062404
 
 diff --git a/src/compiler/node-properties.cc b/src/compiler/node-properties.cc
-index f43a348bb2d5b803270e42f64a3c790c52a3581b..ab4ced69ab60d6078aeb27c3d8b97e87400687ce 100644
+index d6528c553a149cb7bcf1543b0e0c3b13d30622b2..92226565ea732d197e582f31d53d28a86236ed2f 100644
 --- a/src/compiler/node-properties.cc
 +++ b/src/compiler/node-properties.cc
-@@ -386,6 +386,7 @@ NodeProperties::InferReceiverMapsResult NodeProperties::InferReceiverMapsUnsafe(
+@@ -444,6 +444,7 @@ NodeProperties::InferReceiverMapsResult NodeProperties::InferReceiverMaps(
            // We reached the allocation of the {receiver}.
            return kNoReceiverMaps;
          }
