@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Toy <rtoy@chromium.org>
+Date: Mon, 2 Mar 2020 23:22:26 +0000
+Subject: Break connections before removing from active_source_handlers_.
+
+In DeferredTaskHandler::BreakConnections, we want to remove finished
+handlers and break the connection.  when a finished handler is removed
+from active_source_handlers_, it might be deleted, but we were still
+using that to create the connection.  Instead, break the connection
+first and then remove it.
+
+Manually ran test from the bug and it passes with this change.  Without
+this, it failed right away.
+
+Bug: 1057593
+Change-Id: I3c9346a6842f412100d608876adb268befb80470
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2083436
+Commit-Queue: Raymond Toy <rtoy@chromium.org>
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#746142}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
+index 6ecedccc14ed15b81e916f0e1ff8f635489dcecc..b4a376aa8f5cb06efcc71032ed089db46dadf902 100644
+--- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
+@@ -78,8 +78,10 @@ void DeferredTaskHandler::BreakConnections() {
+   wtf_size_t size = finished_source_handlers_.size();
+   if (size > 0) {
+     for (auto* finished : finished_source_handlers_) {
+-      active_source_handlers_.erase(finished);
++      // Break connection first and then remove from the list because that can
++      // cause the handler to be deleted.
+       finished->BreakConnectionWithLock();
++      active_source_handlers_.erase(finished);
+     }
+     finished_source_handlers_.clear();
+   }
