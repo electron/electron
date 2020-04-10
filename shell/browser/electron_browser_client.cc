@@ -1377,6 +1377,8 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     bool* disable_secure_dns,
     network::mojom::URLLoaderFactoryOverridePtr* factory_override) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  bool use_proxy = false;
+
   auto* web_request_api =
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
           browser_context);
@@ -1384,9 +1386,17 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
   // NOTE: Some unit test environments do not initialize
   // BrowserContextKeyedAPI factories for e.g. WebRequest.
   if (web_request_api) {
-    web_request_api->MaybeProxyURLLoaderFactory(
-        browser_context, frame_host, render_process_id, type,
-        std::move(navigation_id), factory_receiver, header_client);
+    bool use_proxy_for_web_request =
+        web_request_api->MaybeProxyURLLoaderFactory(
+            browser_context, frame_host, render_process_id, type, navigation_id,
+            factory_receiver, header_client);
+
+    if (bypass_redirect_checks)
+      *bypass_redirect_checks = use_proxy_for_web_request;
+    use_proxy |= use_proxy_for_web_request;
+
+    if (use_proxy)
+      return true;
   }
 #endif
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
