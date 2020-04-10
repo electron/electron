@@ -1,0 +1,10 @@
+{
+  "name": "chrome-webRequest",
+  "version": "1.0",
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "permissions": ["webRequest", "<all_urls>"],
+  "manifest_version": 2
+}
