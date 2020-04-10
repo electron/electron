@@ -61,7 +61,7 @@ index 893c45a5c71b4e55ea323ae60e11d12ddb099efd..db9a1ff0fe1a912db83692ab17c620cf
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index ae46f70ab3460edd1f9c743a5fde16fbb74b7530..09578ab306585d7e2312c4b192617995dad4624c 100644
+index 6ae324ea4ffd4cfaaf752f7878e2a70b5c256b0f..507f565898b15701e05224949bc6cf7360c275ba 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -1174,6 +1174,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
@@ -87,7 +87,7 @@ index ae46f70ab3460edd1f9c743a5fde16fbb74b7530..09578ab306585d7e2312c4b192617995
      PageVisibilityState visibility_state,
      bool initial_setting) {
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index fea221252efa1491ba3d689c1ce58d6897a5b8c2..961feea7acaeb03e975ee4a0522a074d619666f0 100644
+index 19921b25a7fff60fabcff4ff4c3fa392f3cb4bc7..9e725308b800c8f44d676c1adfa63689bc7fbe41 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
 @@ -404,6 +404,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,

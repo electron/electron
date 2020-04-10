@@ -20,7 +20,7 @@ index 472869202ff8a62d854c9ca39ca9f14e2f91e8cf..1be0ad4382c735b7dcb78715528148aa
  #include "content/common/text_input_state.h"
  #include "content/common/view_messages.h"
  #include "content/public/browser/browser_context.h"
-@@ -978,7 +979,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -978,7 +979,12 @@ gfx::Range RenderWidgetHostViewMac::ConvertCharacterRangeToCompositionRange(
  }
  
  WebContents* RenderWidgetHostViewMac::GetWebContents() {

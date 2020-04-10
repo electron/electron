@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 5b22d003b32cdeec8a5c9032606a435aeb3f482d..f912a0b9485d43b0fc7aa2f6c681167bef304232 100644
+index a59d8e78ce6dd5cbb3c5d55cecea8bb5a8de1991..8e6c86b7fbefb772efa302048d46da8cfead7a4f 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1266,6 +1266,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1267,6 +1267,24 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -220,7 +220,7 @@ index 294db724572266f54c9559bf5278920b819bef03..d2e28037a4005df4a4552440cb8486f5
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 99756fa84666ba626f830fecd060e8efb256aa5f..6e7dae3c346014a5dd57e789c3ad4f251c6773f2 100644
+index bb71c61a631573d8f3e4fb5d1aa8a7fcd9fad7e1..cda52523faa5dc969c995b2addc056e30a998cf0 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -233,8 +233,45 @@ class CONTENT_EXPORT ContentBrowserClient {
