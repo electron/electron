@@ -1393,9 +1393,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
 
     if (bypass_redirect_checks)
       *bypass_redirect_checks = use_proxy_for_web_request;
-    use_proxy |= use_proxy_for_web_request;
-
-    if (use_proxy)
+    if (use_proxy_for_web_request)
       return true;
   }
 #endif
