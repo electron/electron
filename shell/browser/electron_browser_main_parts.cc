@@ -495,6 +495,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
   node_debugger_->Stop();
+  node_env_.reset();
   js_env_->OnMessageLoopDestroying();
 
   fake_browser_process_->PostMainMessageLoopRun();

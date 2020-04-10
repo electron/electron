@@ -182,7 +182,7 @@ def zero_zip_date_time(fname):
 
 
 def _zero_zip_date_time(zip_):
-  def purify_extra_data(mm, offset, length):
+  def purify_extra_data(mm, offset, length, compressed_size=0):
     extra_header_struct = Struct("<HH")
     # 0. id
     # 1. length
@@ -194,6 +194,16 @@ def _zero_zip_date_time(zip_):
     UNIX_EXTRA_DATA = 0x7875
     # Unix extra data; UID / GID stuff, see
     # ftp://ftp.info-zip.org/pub/infozip/src/zip30.zip ./proginfo/extrafld.txt
+    ZIP64_EXTRA_HEADER = 0x0001
+    zip64_extra_struct = Struct("<HHQQ")
+    # ZIP64.
+    # When a ZIP64 extra field is present his 8byte length
+    # will override the 4byte length defined in canonical zips.
+    # This is in the form:
+    # - 0x0001 (header_id)
+    # - 0x0010 [16] (header_length)
+    # - ... (8byte uncompressed_length)
+    # - ... (8byte compressed_length)
     mlen = offset + length
 
     while offset < mlen:
@@ -205,15 +215,17 @@ def _zero_zip_date_time(zip_):
 
       if header_id in (EXTENDED_TIME_DATA, UNIX_EXTRA_DATA):
         values[0] = STRIPZIP_OPTION_HEADER
-        for i in xrange(2, len(values)):
+        for i in range(2, len(values)):
           values[i] = 0xff
         extra_struct.pack_into(mm, offset, *values)
-      elif header_id != STRIPZIP_OPTION_HEADER:
-        return False
+      if header_id == ZIP64_EXTRA_HEADER:
+        assert header_length == 16
+        values = list(zip64_extra_struct.unpack_from(mm, offset))
+        header_id, header_length, uncompressed_size, compressed_size = values
 
       offset += extra_header_struct.size + header_length
 
-    return True
+    return compressed_size
 
   FILE_HEADER_SIGNATURE = 0x04034b50
   CENDIR_HEADER_SIGNATURE = 0x02014b50
@@ -263,9 +275,10 @@ def _zero_zip_date_time(zip_):
     # reset last_mod_date
     values[5] = 0x21
     local_file_header_struct.pack_into(mm, offset, *values)
-    offset += local_file_header_struct.size + compressed_size + name_length + extra_field_length
+    offset += local_file_header_struct.size + name_length
     if extra_field_length != 0:
-      purify_extra_data(mm, offset - extra_field_length - compressed_size, extra_field_length)
+      compressed_size = purify_extra_data(mm, offset, extra_field_length, compressed_size)
+    offset += compressed_size + extra_field_length
 
   while offset < archive_size:
     if signature_struct.unpack_from(mm, offset) != (CENDIR_HEADER_SIGNATURE,):

@@ -48,7 +48,6 @@ dump_syms.patch
 command-ismediakey.patch
 tts.patch
 printing.patch
-verbose_generate_breakpad_symbols.patch
 support_mixed_sandbox_with_zygote.patch
 autofill_size_calculation.patch
 fix_disable_usage_of_abort_report_np_in_mas_builds.patch

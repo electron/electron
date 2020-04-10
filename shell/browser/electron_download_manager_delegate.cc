@@ -117,6 +117,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     settings.force_detached = offscreen;
 
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
     gin_helper::Promise<gin_helper::Dictionary> dialog_promise(isolate);
     auto dialog_callback = base::BindOnce(
         &ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone,

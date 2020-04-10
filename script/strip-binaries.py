@@ -22,7 +22,7 @@ def strip_binary(binary_path, target_cpu):
     strip = 'mips64el-redhat-linux-strip'
   else:
     strip = 'strip'
-  execute([strip, '--preserve-dates', binary_path])
+  execute([strip, '--discard-all', '--strip-debug', '--preserve-dates', binary_path])
 
 def main():
   args = parse_args()
