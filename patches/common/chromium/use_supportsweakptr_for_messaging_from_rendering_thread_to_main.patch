@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Wed, 4 Mar 2020 00:45:41 +0000
+Subject: Use SupportsWeakPtr for messaging from rendering thread to main
+ thread
+
+In cross-thread messaging, the associated execution context can be
+already gone when a posted task is performed sometime later in the task
+runner's queue.
+
+By using WeakPtr, the task runner will not perform a scheduled task
+in the queue when the target object is invalid.
+
+Test: Locally confirmed that the repro does not crash.
+Bug: 1057627
+Change-Id: I51737594c918f6a4924c9a7ffe30db3e8de9a683
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2082897
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#746613}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.cc b/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.cc
+index d158baccdc7ddbdf9c2deb0e9efb6699c6a248ec..fe3ec29512e79387b39a31a9f8744b9bed2cc2c3 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.cc
+@@ -259,7 +259,7 @@ void AudioScheduledSourceHandler::Finish() {
+   PostCrossThreadTask(
+       *task_runner_, FROM_HERE,
+       CrossThreadBindOnce(&AudioScheduledSourceHandler::NotifyEnded,
+-                          WrapRefCounted(this)));
++                          AsWeakPtr()));
+ }
+ 
+ void AudioScheduledSourceHandler::NotifyEnded() {
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.h b/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.h
+index 2fdb9bac867bee1ad79bf98ee5b963e86321becb..d526a776c4c243d4bc186497f729d29b3bd7ef09 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_scheduled_source_node.h
+@@ -30,6 +30,7 @@
+ #define THIRD_PARTY_BLINK_RENDERER_MODULES_WEBAUDIO_AUDIO_SCHEDULED_SOURCE_NODE_H_
+ 
+ #include <atomic>
++#include "base/memory/weak_ptr.h"
+ #include "third_party/blink/renderer/bindings/core/v8/active_script_wrappable.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_node.h"
+ 
+@@ -38,7 +39,9 @@ namespace blink {
+ class BaseAudioContext;
+ class AudioBus;
+ 
+-class AudioScheduledSourceHandler : public AudioHandler {
++class AudioScheduledSourceHandler
++    : public AudioHandler,
++      public base::SupportsWeakPtr<AudioScheduledSourceHandler> {
+  public:
+   // These are the possible states an AudioScheduledSourceNode can be in:
+   //
