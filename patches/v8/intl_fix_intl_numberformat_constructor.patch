@@ -1,0 +1,113 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Camillo Bruni <cbruni@chromium.org>
+Date: Tue, 3 Mar 2020 11:14:57 +0100
+Subject: Fix Intl.NumberFormat constructor
+
+Call the @@hasInstance trap only when required by the spec.
+
+Bug: chromium:1052647
+Change-Id: I7a0a3133c7b6280c6a3215e379bf02e9c22ffe55
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2082560
+Commit-Queue: Camillo Bruni <cbruni@chromium.org>
+Reviewed-by: Sathya Gunasekaran  <gsathya@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#66558}
+
+diff --git a/src/builtins/builtins-intl.cc b/src/builtins/builtins-intl.cc
+index ff8e96f4f512f04867dd93ab0fa1e34d087f3532..27c47c73967dd61f34002a92522d47da44484d02 100644
+--- a/src/builtins/builtins-intl.cc
++++ b/src/builtins/builtins-intl.cc
+@@ -269,13 +269,11 @@ Object LegacyFormatConstructor(BuiltinArguments args, Isolate* isolate,
+ 
+   // [[Construct]]
+   Handle<JSFunction> target = args.target();
+-
+   Handle<Object> locales = args.atOrUndefined(isolate, 1);
+   Handle<Object> options = args.atOrUndefined(isolate, 2);
+ 
+   // 2. Let format be ? OrdinaryCreateFromConstructor(newTarget,
+   // "%<T>Prototype%", ...).
+-
+   Handle<Map> map;
+   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+       isolate, map, JSFunction::GetDerivedMap(isolate, target, new_target));
+@@ -285,45 +283,42 @@ Object LegacyFormatConstructor(BuiltinArguments args, Isolate* isolate,
+   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, format,
+                                      T::New(isolate, map, locales, options));
+   // 4. Let this be the this value.
+-  Handle<Object> receiver = args.receiver();
+-
+-  // 5. If NewTarget is undefined and ? InstanceofOperator(this, %<T>%)
+-  // is true, then
+-  //
+-  // Look up the intrinsic value that has been stored on the context.
+-  // Call the instanceof function
+-  Handle<Object> is_instance_of_obj;
+-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+-      isolate, is_instance_of_obj,
+-      Object::InstanceOf(isolate, receiver, constructor));
+-
+-  // Get the boolean value of the result
+-  bool is_instance_of = is_instance_of_obj->BooleanValue(isolate);
+-
+-  if (args.new_target()->IsUndefined(isolate) && is_instance_of) {
+-    if (!receiver->IsJSReceiver()) {
+-      THROW_NEW_ERROR_RETURN_FAILURE(
+-          isolate,
+-          NewTypeError(MessageTemplate::kIncompatibleMethodReceiver,
+-                       isolate->factory()->NewStringFromAsciiChecked(method),
+-                       receiver));
++  if (args.new_target()->IsUndefined(isolate)) {
++    Handle<Object> receiver = args.receiver();
++
++    // 5. If NewTarget is undefined and ? InstanceofOperator(this, %<T>%)
++    // is true, then Look up the intrinsic value that has been stored on
++    // the context.
++    Handle<Object> is_instance_of_obj;
++    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
++        isolate, is_instance_of_obj,
++        Object::InstanceOf(isolate, receiver, constructor));
++
++    if (is_instance_of_obj->BooleanValue(isolate)) {
++      if (!receiver->IsJSReceiver()) {
++        THROW_NEW_ERROR_RETURN_FAILURE(
++            isolate,
++            NewTypeError(MessageTemplate::kIncompatibleMethodReceiver,
++                         isolate->factory()->NewStringFromAsciiChecked(method),
++                         receiver));
++      }
++      Handle<JSReceiver> rec = Handle<JSReceiver>::cast(receiver);
++      // a. Perform ? DefinePropertyOrThrow(this,
++      // %Intl%.[[FallbackSymbol]], PropertyDescriptor{ [[Value]]: format,
++      // [[Writable]]: false, [[Enumerable]]: false, [[Configurable]]: false }).
++      PropertyDescriptor desc;
++      desc.set_value(format);
++      desc.set_writable(false);
++      desc.set_enumerable(false);
++      desc.set_configurable(false);
++      Maybe<bool> success = JSReceiver::DefineOwnProperty(
++          isolate, rec, isolate->factory()->intl_fallback_symbol(), &desc,
++          Just(kThrowOnError));
++      MAYBE_RETURN(success, ReadOnlyRoots(isolate).exception());
++      CHECK(success.FromJust());
++      // b. b. Return this.
++      return *receiver;
+     }
+-    Handle<JSReceiver> rec = Handle<JSReceiver>::cast(receiver);
+-    // a. Perform ? DefinePropertyOrThrow(this,
+-    // %Intl%.[[FallbackSymbol]], PropertyDescriptor{ [[Value]]: format,
+-    // [[Writable]]: false, [[Enumerable]]: false, [[Configurable]]: false }).
+-    PropertyDescriptor desc;
+-    desc.set_value(format);
+-    desc.set_writable(false);
+-    desc.set_enumerable(false);
+-    desc.set_configurable(false);
+-    Maybe<bool> success = JSReceiver::DefineOwnProperty(
+-        isolate, rec, isolate->factory()->intl_fallback_symbol(), &desc,
+-        Just(kThrowOnError));
+-    MAYBE_RETURN(success, ReadOnlyRoots(isolate).exception());
+-    CHECK(success.FromJust());
+-    // b. b. Return this.
+-    return *receiver;
+   }
+   // 6. Return format.
+   return *format;
