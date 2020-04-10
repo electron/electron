@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Toy <rtoy@chromium.org>
+Date: Wed, 11 Dec 2019 00:33:00 +0000
+Subject: When suspending context, don't clear handlers
+
+AudioContext.suspend() would call StopRendering().  This stops the audio
+thread from pulling the graph (eventually) but it also clears out any
+handlers, including those associated with automatic pull nodes for any
+AnalyserNode that isn't connected to the destination.  When the context
+is resumed, the AnalyserNode isn't pulled anymore, so the output never
+changes.
+
+Add a SuspendRendering() method to handle AudioContext.suspend() which
+doesn't clear the handlers.  Then when the context is resumed,
+AnalyserNodes will get pulled again.  Then StopRendering() is used only
+for AudioContext.close() where it is ok to clear out the handlers since
+we can't resume a closed context.
+
+Bug: 1018499
+Change-Id: I4b4ccf688b37e6b81d310d2596cfff9603048876
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1903894
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Commit-Queue: Raymond Toy <rtoy@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#723609}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_context.cc b/third_party/blink/renderer/modules/webaudio/audio_context.cc
+index 990fe75f1ddd4ebf9a526a9e416d2ee865afca86..83a1ad5d891ebb5566b41068cc0dc18de3d40059 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_context.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_context.cc
+@@ -200,7 +200,7 @@ ScriptPromise AudioContext::suspendContext(ScriptState* script_state) {
+ 
+     // Stop rendering now.
+     if (destination())
+-      StopRendering();
++      SuspendRendering();
+ 
+     // Since we don't have any way of knowing when the hardware actually stops,
+     // we'll just resolve the promise now.
+@@ -350,11 +350,21 @@ void AudioContext::StopRendering() {
+ 
+   if (ContextState() == kRunning) {
+     destination()->GetAudioDestinationHandler().StopRendering();
+-    SetContextState(kSuspended);
++    SetContextState(kClosed);
+     GetDeferredTaskHandler().ClearHandlersToBeDeleted();
+   }
+ }
+ 
++void AudioContext::SuspendRendering() {
++  DCHECK(IsMainThread());
++  DCHECK(destination());
++
++  if (ContextState() == kRunning) {
++    destination()->GetAudioDestinationHandler().StopRendering();
++    SetContextState(kSuspended);
++  }
++}
++
+ double AudioContext::baseLatency() const {
+   DCHECK(IsMainThread());
+   DCHECK(destination());
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_context.h b/third_party/blink/renderer/modules/webaudio/audio_context.h
+index e0d4cf1aef21f06146b309ecd77b7e580aa8ae11..146e9e56086642edec99030a8a008accf0d408d9 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_context.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_context.h
+@@ -133,8 +133,14 @@ class MODULES_EXPORT AudioContext : public BaseAudioContext {
+   // Record the current autoplay metrics.
+   void RecordAutoplayMetrics();
+ 
++  // Called when the context is being closed to stop rendering audio and clean
++  // up handlers.
+   void StopRendering();
+ 
++  // Called when suspending the context to stop reundering audio, but don't
++  // clean up handlers because we expect to be resuming where we left off.
++  void SuspendRendering();
++
+   void DidClose();
+ 
+   // Called by the audio thread to handle Promises for resume() and suspend(),
