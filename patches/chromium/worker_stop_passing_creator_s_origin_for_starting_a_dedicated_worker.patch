@@ -53,7 +53,7 @@ index f9d3d6f5135f1b98220d6c7e21a9ae16797857a1..7ef518d069b9dbddb2bc74971bdde82b
  
  void PopulateDedicatedWorkerBinders(DedicatedWorkerHost* host,
 diff --git a/content/browser/worker_host/dedicated_worker_host.cc b/content/browser/worker_host/dedicated_worker_host.cc
-index c4287066bcae159f52f11a070da22250e6a6f76e..cb66f432829251c5cc52e0e6408688159511ab97 100644
+index c4287066bcae159f52f11a070da22250e6a6f76e..e58d497196d6bc25cc984f669bbf5e63587d8508 100644
 --- a/content/browser/worker_host/dedicated_worker_host.cc
 +++ b/content/browser/worker_host/dedicated_worker_host.cc
 @@ -39,12 +39,15 @@ DedicatedWorkerHost::DedicatedWorkerHost(
@@ -74,6 +74,15 @@ index c4287066bcae159f52f11a070da22250e6a6f76e..cb66f432829251c5cc52e0e640868815
        host_receiver_(this, std::move(host)) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    RegisterMojoInterfaces();
+@@ -66,7 +69,7 @@ void DedicatedWorkerHost::GetInterface(
+     return;
+ 
+   BindWorkerInterface(interface_name, std::move(interface_pipe),
+-                      worker_process_host, origin_);
++                      worker_process_host, creator_origin_);
+ }
+ 
+ void DedicatedWorkerHost::BindBrowserInterfaceBrokerReceiver(
 @@ -96,7 +99,6 @@ void DedicatedWorkerHost::LifecycleStateChanged(
  
  void DedicatedWorkerHost::StartScriptLoad(
@@ -204,6 +213,15 @@ index c4287066bcae159f52f11a070da22250e6a6f76e..cb66f432829251c5cc52e0e640868815
          std::move(outside_fetch_client_settings_object),
          std::move(blob_url_token), std::move(remote_client));
    }
+@@ -518,7 +509,7 @@ class DedicatedWorkerHostFactoryImpl final
+   const int ancestor_render_frame_id_;
+   const int creator_render_frame_id_;
+ 
+-  const url::Origin parent_context_origin_;
++  const url::Origin creator_origin_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(DedicatedWorkerHostFactoryImpl);
+ };
 @@ -529,12 +520,12 @@ void CreateDedicatedWorkerHostFactory(
      int creator_process_id,
      int ancestor_render_frame_id,
