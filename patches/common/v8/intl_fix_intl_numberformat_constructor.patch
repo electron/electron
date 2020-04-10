@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Camillo Bruni <cbruni@chromium.org>
 Date: Tue, 3 Mar 2020 11:14:57 +0100
-Subject: [intl] Fix Intl.NumberFormat constructor
+Subject: Fix Intl.NumberFormat constructor
 
 Call the @@hasInstance trap only when required by the spec.
 
