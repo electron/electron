@@ -178,7 +178,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
         res.end();
       } else if (req.url === '/jquery') {
         const html = await fs.promises.readFile(path.join(fixtures, 'pages', 'jquery.html'));
-        res.writeHeader(200, {"Content-Type": "text/html"});
+        res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Length': html.length });
         res.write(html);
         res.end();
       } else {

@@ -2,8 +2,8 @@
 
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    return {cancel: false};
+    return { cancel: false };
   },
-  {urls: ["<all_urls>"]},
-  ["blocking"]
+  { urls: ['<all_urls>'] },
+  ['blocking']
 );
