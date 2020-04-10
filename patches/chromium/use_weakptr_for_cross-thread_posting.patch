@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Thu, 27 Feb 2020 04:24:46 +0000
+Subject: Use WeakPtr for cross-thread posting
+
+{IIR,Biquad}FilterNodes check the state of the filter and notify the
+main thread when it goes bad. In this process, the associated context
+can be collected when a posted task is performed sometime later
+in the task runner's queue.
+
+By using WeakPtr, the task runner will not perform a scheduled task
+in the queue when the target object is invalid anymore.
+
+Test: Locally confirmed that the repro case does not crash after 30 min.
+Bug: 1055788
+Change-Id: Icdb3a7378d0345936b5b50e12ec2b187e58a611c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2074807
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#744936}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/biquad_filter_node.cc b/third_party/blink/renderer/modules/webaudio/biquad_filter_node.cc
+index c50a07436d88ee3044373e89c808b424a0df581e..77750224388bed71b7df12a561ae1575436a580b 100644
+--- a/third_party/blink/renderer/modules/webaudio/biquad_filter_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/biquad_filter_node.cc
+@@ -88,7 +88,7 @@ void BiquadFilterHandler::Process(uint32_t frames_to_process) {
+       PostCrossThreadTask(
+           *task_runner_, FROM_HERE,
+           CrossThreadBindOnce(&BiquadFilterHandler::NotifyBadState,
+-                              WrapRefCounted(this)));
++                              AsWeakPtr()));
+     }
+   }
+ }
+diff --git a/third_party/blink/renderer/modules/webaudio/biquad_filter_node.h b/third_party/blink/renderer/modules/webaudio/biquad_filter_node.h
+index 318e0d2edce3e1eef2c815ce7f419f9f279c1066..07c0c455ecbb69ac8e1306f0e6d3dbace3d8a61d 100644
+--- a/third_party/blink/renderer/modules/webaudio/biquad_filter_node.h
++++ b/third_party/blink/renderer/modules/webaudio/biquad_filter_node.h
+@@ -26,6 +26,7 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_MODULES_WEBAUDIO_BIQUAD_FILTER_NODE_H_
+ #define THIRD_PARTY_BLINK_RENDERER_MODULES_WEBAUDIO_BIQUAD_FILTER_NODE_H_
+ 
++#include "base/memory/weak_ptr.h"
+ #include "third_party/blink/renderer/core/typed_arrays/array_buffer_view_helpers.h"
+ #include "third_party/blink/renderer/core/typed_arrays/dom_typed_array.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_basic_processor_handler.h"
+@@ -38,7 +39,8 @@ class BaseAudioContext;
+ class AudioParam;
+ class BiquadFilterOptions;
+ 
+-class BiquadFilterHandler : public AudioBasicProcessorHandler {
++class BiquadFilterHandler : public AudioBasicProcessorHandler,
++                            public base::SupportsWeakPtr<BiquadFilterHandler> {
+  public:
+   static scoped_refptr<BiquadFilterHandler> Create(AudioNode&,
+                                                    float sample_rate,
+diff --git a/third_party/blink/renderer/modules/webaudio/iir_filter_node.cc b/third_party/blink/renderer/modules/webaudio/iir_filter_node.cc
+index be4a946ed022d6b2b642d3f7b728eb2a31a69a95..a0bf2c85c5b2d2bff82730ebd99455626ebe3022 100644
+--- a/third_party/blink/renderer/modules/webaudio/iir_filter_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/iir_filter_node.cc
+@@ -104,9 +104,9 @@ void IIRFilterHandler::Process(uint32_t frames_to_process) {
+     if (HasNonFiniteOutput()) {
+       did_warn_bad_filter_state_ = true;
+ 
+-      PostCrossThreadTask(*task_runner_, FROM_HERE,
+-                          CrossThreadBindOnce(&IIRFilterHandler::NotifyBadState,
+-                                              WrapRefCounted(this)));
++      PostCrossThreadTask(
++          *task_runner_, FROM_HERE,
++          CrossThreadBindOnce(&IIRFilterHandler::NotifyBadState, AsWeakPtr()));
+     }
+   }
+ }
+diff --git a/third_party/blink/renderer/modules/webaudio/iir_filter_node.h b/third_party/blink/renderer/modules/webaudio/iir_filter_node.h
+index 76266a88c15a9c1ba9f93ac98d60f292bfe7f0e1..cc2c09b6d9dde4725e3234893677d3f65a50ace2 100644
+--- a/third_party/blink/renderer/modules/webaudio/iir_filter_node.h
++++ b/third_party/blink/renderer/modules/webaudio/iir_filter_node.h
+@@ -5,6 +5,7 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_MODULES_WEBAUDIO_IIR_FILTER_NODE_H_
+ #define THIRD_PARTY_BLINK_RENDERER_MODULES_WEBAUDIO_IIR_FILTER_NODE_H_
+ 
++#include "base/memory/weak_ptr.h"
+ #include "base/single_thread_task_runner.h"
+ #include "third_party/blink/renderer/core/typed_arrays/array_buffer_view_helpers.h"
+ #include "third_party/blink/renderer/core/typed_arrays/dom_typed_array.h"
+@@ -18,7 +19,8 @@ class BaseAudioContext;
+ class ExceptionState;
+ class IIRFilterOptions;
+ 
+-class IIRFilterHandler : public AudioBasicProcessorHandler {
++class IIRFilterHandler : public AudioBasicProcessorHandler,
++                         public base::SupportsWeakPtr<IIRFilterHandler> {
+  public:
+   static scoped_refptr<IIRFilterHandler> Create(
+       AudioNode&,
