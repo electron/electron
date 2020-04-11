@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { app, session, BrowserWindow, ipcMain, WebContents, Extension, protocol } from 'electron/main';
+import { app, session, BrowserWindow, ipcMain, WebContents, Extension } from 'electron/main';
 import { closeAllWindows, closeWindow } from './window-helpers';
 import * as http from 'http';
 import { AddressInfo } from 'net';
@@ -15,7 +15,20 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   let server: http.Server;
   let url: string;
   before(async () => {
-    server = http.createServer((req, res) => res.end());
+    server = http.createServer(async (req, res) => {
+      if (req.url === '/serverRedirect') {
+        res.statusCode = 301;
+        res.setHeader('Location', 'http://' + req.rawHeaders[1]);
+        res.end();
+      } else if (req.url === '/jquery') {
+        const html = await fs.promises.readFile(path.join(fixtures, 'pages', 'jquery.html'));
+        res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Length': html.length });
+        res.write(html);
+        res.end();
+      } else {
+        res.end();
+      }
+    });
     await new Promise(resolve => server.listen(0, '127.0.0.1', () => {
       url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       resolve();
@@ -171,45 +184,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   });
 
   describe('chrome.webRequest', () => {
-    const server = http.createServer(async (req, res) => {
-      if (req.url === '/serverRedirect') {
-        res.statusCode = 301;
-        res.setHeader('Location', 'http://' + req.rawHeaders[1]);
-        res.end();
-      } else if (req.url === '/jquery') {
-        const html = await fs.promises.readFile(path.join(fixtures, 'pages', 'jquery.html'));
-        res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Length': html.length });
-        res.write(html);
-        res.end();
-      } else {
-        res.setHeader('Custom', ['Header']);
-        let content = req.url;
-        if (req.headers.accept === '*/*;test/header') {
-          content += 'header/received';
-        }
-        if (req.headers.origin === 'http://new-origin') {
-          content += 'new/origin';
-        }
-        res.end(content);
-      }
-    });
-    let defaultURL: string;
-
-    before((done) => {
-      protocol.registerStringProtocol('neworigin', (req, cb) => cb(''));
-      server.listen(1, '127.0.0.1', () => {
-        const port = (server.address() as AddressInfo).port;
-        defaultURL = `http://127.0.0.1:${port}/`;
-        done();
-      });
-    });
-
-    after(() => {
-      server.close();
-      protocol.unregisterProtocol('neworigin');
-    });
-
-    async function ajax (contents: WebContents, url: string, options = {}) {
+     async function ajax (contents: WebContents, url: string, options = {}) {
       return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
     }
 
@@ -217,10 +192,10 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       it('can cancel the request', async () => {
         const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-        await w.loadURL(`${defaultURL}jquery`);
+        await w.loadURL(`${url}jquery`);
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
 
-        await expect(ajax(w.webContents, defaultURL)).to.eventually.be.rejectedWith('404');
+        await expect(ajax(w.webContents, url)).to.eventually.be.rejectedWith('404');
       });
     });
 
@@ -228,7 +203,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       it('chrome.webRequest takes precedence over Electron webRequest', async () => {
         const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-        await w.loadURL(`${defaultURL}jquery`);
+        await w.loadURL(`${url}jquery`);
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
 
         customSession.webRequest.onBeforeRequest((details, callback) => {
@@ -237,7 +212,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
           });
         });
 
-        await expect(ajax(w.webContents, defaultURL)).to.eventually.be.rejectedWith('404');
+        await expect(ajax(w.webContents, url)).to.eventually.be.rejectedWith('404');
       });
     });
   });
