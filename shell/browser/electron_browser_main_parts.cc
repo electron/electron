@@ -64,14 +64,14 @@
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "chrome/browser/ui/gtk/gtk_ui.h"
-#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/base/x/x11_util_internal.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #include "ui/gfx/x/x11_types.h"
+#include "ui/gtk/gtk_ui.h"
 #include "ui/gtk/gtk_ui_delegate.h"
 #include "ui/gtk/gtk_ui_delegate_x11.h"
+#include "ui/gtk/gtk_util.h"
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
 
