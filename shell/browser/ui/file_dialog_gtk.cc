@@ -14,8 +14,8 @@
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "ui/base/glib/glib_signal.h"
+#include "ui/events/platform/x11/x11_event_source.h"
 #include "ui/gtk/gtk_util.h"
-#include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 namespace file_dialog {
 

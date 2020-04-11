@@ -13,9 +13,9 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
+#include "ui/events/platform/x11/x11_event_source.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gtk/gtk_util.h"
-#include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 #define ANSI_FOREGROUND_RED "\x1b[31m"
 #define ANSI_FOREGROUND_BLACK "\x1b[30m"
