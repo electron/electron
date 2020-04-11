@@ -192,7 +192,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       it('can cancel the request', async () => {
         const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-        await w.loadURL(`${url}jquery`);
+        await w.loadURL(`${url}/jquery`);
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
 
         await expect(ajax(w.webContents, url)).to.eventually.be.rejectedWith('404');
@@ -203,7 +203,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       it('chrome.webRequest takes precedence over Electron webRequest', async () => {
         const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-        await w.loadURL(`${url}jquery`);
+        await w.loadURL(`${url}/jquery`);
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
 
         customSession.webRequest.onBeforeRequest((details, callback) => {
