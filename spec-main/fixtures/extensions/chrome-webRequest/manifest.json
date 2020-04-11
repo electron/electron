@@ -3,8 +3,8 @@
   "version": "1.0",
   "background": {
     "scripts": ["background.js"],
-    "persistent": false
+    "persistent": true
   },
-  "permissions": ["webRequest", "<all_urls>"],
+  "permissions": ["webRequest", "webRequestBlocking", "<all_urls>"],
   "manifest_version": 2
 }
