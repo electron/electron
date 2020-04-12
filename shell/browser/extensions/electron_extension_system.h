@@ -84,6 +84,9 @@ class ElectronExtensionSystem : public ExtensionSystem {
                      InstallUpdateCallback install_update_callback) override;
   bool FinishDelayedInstallationIfReady(const std::string& extension_id,
                                         bool install_immediately) override;
+  void PerformActionBasedOnOmahaAttributes(
+      const std::string& extension_id,
+      const base::Value& attributes) override;
 
  private:
   void OnExtensionRegisteredWithRequestContexts(
