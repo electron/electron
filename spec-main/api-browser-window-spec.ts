@@ -2625,7 +2625,7 @@ describe('BrowserWindow module', () => {
       });
       w.webContents.once('did-finish-load', () => {
         w.webContents.once('did-finish-load', () => {
-          expect.fail('Reload was not prevented');
+          done(new Error('Reload was not prevented'));
         });
         w.reload();
       });
