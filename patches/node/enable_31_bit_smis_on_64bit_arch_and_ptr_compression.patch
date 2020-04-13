@@ -21,16 +21,16 @@ index 6ed509d81d14211f608495263f11a1d2cbc5013c..26a3b48dbfb4b066d86e4eaa73d870a4
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -152,6 +155,9 @@
+@@ -152,6 +152,9 @@
        ['OS=="mac"', {
          'clang%': 1,
        }],
 +      ['target_arch == "arm64" or target_arch == "x64"', {
 +        'v8_enable_pointer_compression': 1,
 +      }],
-     ],
-   },
- 
+       ['target_arch in "ppc64 s390x"', {
+         'v8_enable_backtrace': 1,
+       }],
 @@ -375,6 +381,12 @@
            }],
          ],
