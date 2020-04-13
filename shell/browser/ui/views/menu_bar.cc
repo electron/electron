@@ -18,7 +18,7 @@
 #include "ui/views/widget/widget.h"
 
 #if defined(USE_X11)
-#include "chrome/browser/ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"
 #endif
 
 #if defined(OS_WIN)

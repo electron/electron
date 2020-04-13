@@ -51,8 +51,8 @@ static_library("chrome") {
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
     "//chrome/browser/ssl/tls_deprecation_config.cc",
-    "//chrome/browser/ui/autofill/popup_view_common.cc",
-    "//chrome/browser/ui/autofill/popup_view_common.h",
+    "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc",
+    "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
     "//chrome/browser/win/chrome_process_finder.cc",
     "//chrome/browser/win/chrome_process_finder.h",
     "//extensions/browser/app_window/size_constraints.cc",
@@ -69,6 +69,7 @@ static_library("chrome") {
   deps = [
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//components/feature_engagement:buildflags",
+    "//components/optimization_guide/proto:optimization_guide_proto",
   ]
 
   if (is_linux) {

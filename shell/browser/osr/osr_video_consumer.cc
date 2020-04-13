@@ -126,6 +126,8 @@ void OffScreenVideoConsumer::OnFrameCaptured(
 
 void OffScreenVideoConsumer::OnStopped() {}
 
+void OffScreenVideoConsumer::OnLog(const std::string& message) {}
+
 bool OffScreenVideoConsumer::CheckContentRect(const gfx::Rect& content_rect) {
   gfx::Size view_size = view_->SizeInPixels();
   gfx::Size content_size = content_rect.size();

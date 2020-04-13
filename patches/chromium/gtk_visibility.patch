@@ -6,12 +6,12 @@ Subject: gtk_visibility.patch
 Allow electron to depend on GTK in the GN build.
 
 diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
-index 27cf4bb38f8d902927338e29e6e57c688eb77172..1f774f243324211f1e786bd78b857666661f69b6 100644
+index 9249f88e3234d0c11fe870169fc3fe8ce3c00ff1..7c4261f06c74f13d29b4cb2d2e3c047bf319b7f0 100644
 --- a/build/config/linux/gtk/BUILD.gn
 +++ b/build/config/linux/gtk/BUILD.gn
-@@ -25,6 +25,8 @@ group("gtk") {
-     # This is the only target in Chrome that should depend on GTK.
-     "//chrome/browser/ui/gtk:*",
+@@ -28,6 +28,8 @@ group("gtk") {
+     # This should probably be moved into //ui/gtk.
+     "//ui/ozone/platform/wayland",
  
 +    "//electron:*",
 +

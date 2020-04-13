@@ -70,7 +70,6 @@ class App : public ElectronBrowserClient::Delegate,
   base::FilePath GetAppPath() const;
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessDisconnected(base::ProcessId host_pid);
-  void PreMainMessageLoopRun();
 
  protected:
   explicit App(v8::Isolate* isolate);
@@ -88,6 +87,7 @@ class App : public ElectronBrowserClient::Delegate,
   void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
   void OnAccessibilitySupportChanged() override;
   void OnPreMainMessageLoopRun() override;
+  void OnPreCreateThreads() override;
 #if defined(OS_MACOSX)
   void OnWillContinueUserActivity(bool* prevent_default,
                                   const std::string& type) override;
@@ -239,6 +239,9 @@ class App : public ElectronBrowserClient::Delegate,
       std::unordered_map<base::ProcessId,
                          std::unique_ptr<electron::ProcessMetric>>;
   ProcessMetricMap app_metrics_;
+
+  bool disable_hw_acceleration_ = false;
+  bool disable_domain_blocking_for_3DAPIs_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

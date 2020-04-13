@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index ed5484e0b05ccfef76061427a8f88a72b6f9b7fe..e893b6aba90f61ae0d05532ca925a9ff7faf2195 100644
+index 95a901678c215220b9e88db768444d48e32f6dbd..841c809b0b50c8c34a9d9c972c511bd4fd57a7b0 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -101,6 +101,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -100,6 +100,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -33,7 +33,7 @@ index ed5484e0b05ccfef76061427a8f88a72b6f9b7fe..e893b6aba90f61ae0d05532ca925a9ff
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index a27d84cc640a5a2af25e8b4475a499eeb298f16a..de9ffade449dcc8652481ce98306fdd59962bfa2 100644
+index 8bde4796ebcf40f7f10c62f4005eabb84af9de04..913ab005e582b3d1ab0df8f88ac1df6245fce34e 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -216,10 +216,10 @@ index d47312d5f89939eab55cfa94bd3fbd41a4bd7d2a..da2f5e9fdc0fda37c82357a12f4fa28f
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index ea736817be4084f43ef5266e4a7aac3a8bdaa9d7..367baf4401edffdaaf66620cf17364aa2e9a5ca3 100644
+index d4bab5f58beaf7e9f3baae3024dbf69c4e248a41..63fd699b67225d9f67b78c575f5b90191a19d423 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -227,6 +227,7 @@
+@@ -228,6 +228,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -227,7 +227,7 @@ index ea736817be4084f43ef5266e4a7aac3a8bdaa9d7..367baf4401edffdaaf66620cf17364aa
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3183,6 +3184,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3211,6 +3212,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -236,10 +236,10 @@ index ea736817be4084f43ef5266e4a7aac3a8bdaa9d7..367baf4401edffdaaf66620cf17364aa
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 640945d6c239ee1c2d1beb190fdb92c600ee348c..c7143f9a91328a0a56038d58b50abd1aed9247fa 100644
+index 754621e31a6a07e52f9b4609c8263b2c1a17c246..95006fe1f4d1fefb51c2311d6323332d7c176fd4 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2681,6 +2681,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2673,6 +2673,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
