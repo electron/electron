@@ -185,7 +185,8 @@ describe('BrowserWindow module', () => {
       expect(content).to.equal('close');
     });
     it('should emit beforeunload event', async () => {
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      w.webContents.executeJavaScript('run()', true);
       const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
       e.returnValue = null;
     });
@@ -2590,7 +2591,8 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'));
     });
     it('returning false would prevent close', async () => {
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      w.webContents.executeJavaScript('run()', true);
       const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
       e.returnValue = null;
     });
