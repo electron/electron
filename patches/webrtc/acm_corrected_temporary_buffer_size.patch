@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Pedro Pontes <pepontes@microsoft.com>
+Date: Wed, 8 Apr 2020 23:15:08 +0200
+Subject: ACM: Corrected temporary buffer size
+
+    This CL corrects the temporary buffers size in the
+    pre-processing of the capture audio before encoding.
+
+    As part of this it removes the ACM-specific hardcoding
+    of the size and instead ensures that the size of the
+    temporary buffer matches that of the AudioFrame.
+
+    Backports: https://webrtc.googlesource.com/src/+/d82a02c837d33cdfd75121e40dcccd32515e42d6
+
+diff --git a/modules/audio_coding/acm2/audio_coding_module.cc b/modules/audio_coding/acm2/audio_coding_module.cc
+index 4911dfdd5360fcbae1c7a783c65d2258ff0b8e61..aecb20ac43ea2c1a7d44c2b1b037e1e4f22498c6 100644
+--- a/modules/audio_coding/acm2/audio_coding_module.cc
++++ b/modules/audio_coding/acm2/audio_coding_module.cc
+@@ -547,17 +547,22 @@ int AudioCodingModuleImpl::PreprocessToAddData(const AudioFrame& in_frame,
+ 
+   *ptr_out = &preprocess_frame_;
+   preprocess_frame_.num_channels_ = in_frame.num_channels_;
+-  int16_t audio[WEBRTC_10MS_PCM_AUDIO];
+-  const int16_t* src_ptr_audio = in_frame.data();
++  std::array<int16_t, AudioFrame::kMaxDataSizeSamples> audio;
++  const int16_t* src_ptr_audio;  
+   if (down_mix) {
+-    // If a resampling is required the output of a down-mix is written into a
++    // If a resampling is required, the output of a down-mix is written into a
+     // local buffer, otherwise, it will be written to the output frame.
+     int16_t* dest_ptr_audio =
+-        resample ? audio : preprocess_frame_.mutable_data();
+-    DownMix(in_frame, WEBRTC_10MS_PCM_AUDIO, dest_ptr_audio);
++        resample ? audio.data() : preprocess_frame_.mutable_data();
++    RTC_DCHECK_GE(audio.size(), preprocess_frame_.samples_per_channel_);
++    DownMix(in_frame, AudioFrame::kMaxDataSizeSamples, dest_ptr_audio);
+     preprocess_frame_.num_channels_ = 1;
+-    // Set the input of the resampler is the down-mixed signal.
+-    src_ptr_audio = audio;
++    
++    // Set the input of the resampler to the down-mixed signal.
++    src_ptr_audio = audio.data();
++  } else {
++    // Set the input of the resampler to the original data.
++    src_ptr_audio = in_frame.data();
+   }
+ 
+   preprocess_frame_.timestamp_ = expected_codec_ts_;
+diff --git a/modules/audio_coding/include/audio_coding_module.h b/modules/audio_coding/include/audio_coding_module.h
+index da8ffb5a799f1a444aa263d31ee87a9f00bdd35b..7c0226e4f2b2dfad12d7726467a678e1695d6cf3 100644
+--- a/modules/audio_coding/include/audio_coding_module.h
++++ b/modules/audio_coding/include/audio_coding_module.h
+@@ -32,8 +32,6 @@ class AudioEncoder;
+ class AudioFrame;
+ struct RTPHeader;
+ 
+-#define WEBRTC_10MS_PCM_AUDIO 960  // 16 bits super wideband 48 kHz
+-
+ // Callback class used for sending data ready to be packetized
+ class AudioPacketizationCallback {
+  public:
