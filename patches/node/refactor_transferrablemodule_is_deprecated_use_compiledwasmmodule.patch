@@ -7,7 +7,7 @@ Subject: refactor: TransferrableModule is deprecated, use CompiledWasmModule
 This will be upstreamed to nodejs/node
 
 diff --git a/src/node_messaging.cc b/src/node_messaging.cc
-index b0e7d15a8c40a6552969049c0c84628df3d54c8c..413cec135fcf00a9ed5ce4982484896b9c5272ff 100644
+index f55cb7ed9bd08cf85a8642e2fba6dbf9f6710337..39bcc1236ff7c6d90e268f7c55fa623cb5dfb956 100644
 --- a/src/node_messaging.cc
 +++ b/src/node_messaging.cc
 @@ -58,7 +58,7 @@ class DeserializerDelegate : public ValueDeserializer::Delegate {
@@ -56,7 +56,7 @@ index b0e7d15a8c40a6552969049c0c84628df3d54c8c..413cec135fcf00a9ed5ce4982484896b
  
    void Finish() {
 diff --git a/src/node_messaging.h b/src/node_messaging.h
-index 054521b0563c4256f65d6f01eeeb108e3a515d86..53c766da554452c635a3bdfb38b75c0492bbfb5e 100644
+index d64bf23e086d0596e745d838020740848b399859..468e276f83df05bcc570449f94d65a00a22dcd5d 100644
 --- a/src/node_messaging.h
 +++ b/src/node_messaging.h
 @@ -58,7 +58,7 @@ class Message : public MemoryRetainer {

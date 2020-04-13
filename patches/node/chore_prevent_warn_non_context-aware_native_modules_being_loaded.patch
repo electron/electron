@@ -23,10 +23,10 @@ index cef4e5086ca8160a7d715915f735963e369068b1..35ad9ee1a685177894bb5c13c58c16af
  
    // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 22912e7c89b4cba78315269c3e009bfca1ccec27..8d6fc381330867f40740c1e2e327a05cc4045785 100644
+index 8bb5dae46966541884dbad5bb9c3a3f790c56358..6bc051ca5b864945aedea7a6fa8cf23cb509f9e9 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1129,6 +1129,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1127,6 +1127,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.
@@ -70,7 +70,6 @@ index e5e8c107f6881d96e1d8a2b55fff425d5e29b0a4..6a7263736b5252e9ce36269a5be9c58d
    std::list<binding::DLib> loaded_addons_;
    v8::Isolate* const isolate_;
    IsolateData* const isolate_data_;
-
 diff --git a/src/node_binding.cc b/src/node_binding.cc
 index db60617cebee83ac09371aa1e2200280e29bd772..714f973a7e984fef2e705882a3f30d8a95c33653 100644
 --- a/src/node_binding.cc

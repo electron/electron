@@ -24,10 +24,10 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/env.cc b/src/env.cc
-index 3dbc56b7c56bee90b76ade6af610105d1e0e916e..2678de6f7dcab8efb1ea506ae9861e07df5544f1 100644
+index 2bdac964cb03cad4b9637c3cea56a8e5f650056f..4b1c72a5f67ab1882cbb61b4c52fc50e28aa5b25 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -385,6 +385,12 @@ Environment::Environment(IsolateData* isolate_data,
+@@ -384,6 +384,12 @@ Environment::Environment(IsolateData* isolate_data,
    // TODO(joyeecheung): deserialize when the snapshot covers the environment
    // properties.
    CreateProperties();
@@ -41,7 +41,7 @@ index 3dbc56b7c56bee90b76ade6af610105d1e0e916e..2678de6f7dcab8efb1ea506ae9861e07
  
  Environment::~Environment() {
 diff --git a/src/node.cc b/src/node.cc
-index 80916e5244aa36da1e3a0a91887ab134f14f8b3d..cc634682f5aedf8f92fd6d8a9e26dfcd6b7f8ee6 100644
+index fee485f86e17f1987e140aea874656e5048cdbfe..7dda6b39c37cdf96f59a34ca6bc75ea2c7fde060 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -27,6 +27,7 @@
@@ -52,7 +52,7 @@ index 80916e5244aa36da1e3a0a91887ab134f14f8b3d..cc634682f5aedf8f92fd6d8a9e26dfcd
  #include "node_internals.h"
  #include "node_main_instance.h"
  #include "node_metadata.h"
-@@ -131,6 +132,9 @@ using v8::Undefined;
+@@ -128,6 +129,9 @@ using v8::Undefined;
  using v8::V8;
  using v8::Value;
  
@@ -62,7 +62,7 @@ index 80916e5244aa36da1e3a0a91887ab134f14f8b3d..cc634682f5aedf8f92fd6d8a9e26dfcd
  namespace per_process {
  
  // node_revert.h
-@@ -362,6 +366,13 @@ MaybeLocal<Value> Environment::RunBootstrapping() {
+@@ -343,6 +347,13 @@ MaybeLocal<Value> Environment::RunBootstrapping() {
  
    CHECK(!has_run_bootstrapping_code());
  
@@ -76,7 +76,7 @@ index 80916e5244aa36da1e3a0a91887ab134f14f8b3d..cc634682f5aedf8f92fd6d8a9e26dfcd
    if (BootstrapInternalLoaders().IsEmpty()) {
      return MaybeLocal<Value>();
    }
-@@ -752,7 +763,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -726,7 +737,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -87,7 +87,7 @@ index 80916e5244aa36da1e3a0a91887ab134f14f8b3d..cc634682f5aedf8f92fd6d8a9e26dfcd
  
  #ifdef NODE_REPORT
    // Cache the original command line to be
-@@ -849,6 +862,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -762,6 +775,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      if (exit_code != 0) return exit_code;
    }
  #endif
@@ -96,7 +96,7 @@ index 80916e5244aa36da1e3a0a91887ab134f14f8b3d..cc634682f5aedf8f92fd6d8a9e26dfcd
  
    const int exit_code = ProcessGlobalArgs(argv,
                                            exec_argv,
-@@ -893,6 +908,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -806,6 +821,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    }
    per_process::metadata.versions.InitializeIntlVersions();
  #endif
@@ -105,10 +105,10 @@ index 80916e5244aa36da1e3a0a91887ab134f14f8b3d..cc634682f5aedf8f92fd6d8a9e26dfcd
    NativeModuleEnv::InitializeCodeCache();
  
 diff --git a/src/node.h b/src/node.h
-index aadb60ea557f43a0e1c942183fb14dc915248e59..9dc4c199ca8a9650473bc6d16238e55b3bfd6fd0 100644
+index 886216e2cb533e7337bc4f6816e2de796f64f81e..19d5eff164a543a38b4c77f99c2f15c30a226f77 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -203,6 +203,9 @@ namespace node {
+@@ -211,6 +211,9 @@ namespace node {
  
  class IsolateData;
  class Environment;
