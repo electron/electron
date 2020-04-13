@@ -510,6 +510,7 @@ source_set("electron_lib") {
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
     ]
 
+    sources += filenames.lib_sources_nss
     sources += [
       "shell/browser/ui/gtk_util.cc",
       "shell/browser/ui/gtk_util.h",

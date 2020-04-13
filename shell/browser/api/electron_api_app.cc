@@ -1081,12 +1081,13 @@ void App::ImportCertificate(gin_helper::ErrorThrower thrower,
                             net::CompletionOnceCallback callback) {
   if (!options.is_dict()) {
     thrower.ThrowTypeError("Expected options to be an object");
+    return;
   }
 
   auto browser_context = ElectronBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     CertificateManagerModel::Create(
-        browser_context.get(), nullptr /* Observer* observer */,
+        browser_context.get(),
         base::BindOnce(&App::OnCertificateManagerModelCreated,
                        base::Unretained(this), std::move(options),
                        std::move(callback)));
