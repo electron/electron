@@ -24,14 +24,14 @@ class ResourceContext;
 // manager dialog, and processes changes from the view.
 class CertificateManagerModel {
  public:
-  typedef base::Callback<void(std::unique_ptr<CertificateManagerModel>)>
-      CreationCallback;
+  using CreationCallback =
+      base::OnceCallback<void(std::unique_ptr<CertificateManagerModel>)>;
 
   // Creates a CertificateManagerModel. The model will be passed to the callback
   // when it is ready. The caller must ensure the model does not outlive the
   // |browser_context|.
   static void Create(content::BrowserContext* browser_context,
-                     const CreationCallback& callback);
+                     CreationCallback callback);
 
   ~CertificateManagerModel();
 
@@ -100,11 +100,11 @@ class CertificateManagerModel {
   // file for details.
   static void DidGetCertDBOnUIThread(net::NSSCertDatabase* cert_db,
                                      bool is_user_db_available,
-                                     const CreationCallback& callback);
-  static void DidGetCertDBOnIOThread(const CreationCallback& callback,
+                                     CreationCallback callback);
+  static void DidGetCertDBOnIOThread(CreationCallback callback,
                                      net::NSSCertDatabase* cert_db);
   static void GetCertDBOnIOThread(content::ResourceContext* context,
-                                  const CreationCallback& callback);
+                                  CreationCallback callback);
 
   net::NSSCertDatabase* cert_db_;
   // Whether the certificate database has a public slot associated with the
