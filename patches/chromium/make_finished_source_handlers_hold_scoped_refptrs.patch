@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Toy <rtoy@chromium.org>
+Date: Wed, 11 Mar 2020 20:23:49 +0000
+Subject: Make finished_source_handlers_ hold scoped_refptrs
+
+Previously, finished_source_handlers_ held raw pointers to
+AudioHandlers and assumed that active_source_handlers_ also had a
+copy.  But when the context goes away, active_source_handlers_ would
+be cleared, but not finished_source_handlers_, leaving pointers to
+deleted objects.
+
+So do two things:
+1. Change finished_source_handlers_ to hold scoped_refptrs to manage
+   lifetime of the objects
+2. Clear finished_source_handler_ in ClearHandlersToBeDeleted()
+
+Either of these fix the repro case, but let's do both.  Don't want to
+leaving dangling objects.
+
+Manually tested the repro case which no longer reproduces.
+
+Bug: 1059686
+Change-Id: I2f30c996e8589fa5c3890d32500c4bb4f3bc4286
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2098260
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Commit-Queue: Raymond Toy <rtoy@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#749302}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
+index b4a376aa8f5cb06efcc71032ed089db46dadf902..1cbae52a782e71773684af932f9fc5c554d0caf8 100644
+--- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.cc
+@@ -77,9 +77,7 @@ void DeferredTaskHandler::BreakConnections() {
+   // connection.
+   wtf_size_t size = finished_source_handlers_.size();
+   if (size > 0) {
+-    for (auto* finished : finished_source_handlers_) {
+-      // Break connection first and then remove from the list because that can
+-      // cause the handler to be deleted.
++    for (auto finished : finished_source_handlers_) {
+       finished->BreakConnectionWithLock();
+       active_source_handlers_.erase(finished);
+     }
+@@ -372,6 +370,7 @@ void DeferredTaskHandler::ClearHandlersToBeDeleted() {
+   rendering_orphan_handlers_.clear();
+   deletable_orphan_handlers_.clear();
+   automatic_pull_handlers_.clear();
++  finished_source_handlers_.clear();
+   active_source_handlers_.clear();
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
+index af384d0941da47bbe544be3c0ce5739ca4c384e1..5fbc449639c5c04c7ae85c9b65047a8e28bb2a2e 100644
+--- a/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
++++ b/third_party/blink/renderer/modules/webaudio/deferred_task_handler.h
+@@ -188,7 +188,7 @@ class MODULES_EXPORT DeferredTaskHandler final
+     return &active_source_handlers_;
+   }
+ 
+-  Vector<AudioHandler*>* GetFinishedSourceHandlers() {
++  Vector<scoped_refptr<AudioHandler>>* GetFinishedSourceHandlers() {
+     return &finished_source_handlers_;
+   }
+ 
+@@ -257,7 +257,7 @@ class MODULES_EXPORT DeferredTaskHandler final
+   // connection and elements here are removed from |active_source_handlers_|.
+   //
+   // This must be accessed only from the audio thread.
+-  Vector<AudioHandler*> finished_source_handlers_;
++  Vector<scoped_refptr<AudioHandler>> finished_source_handlers_;
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+ 

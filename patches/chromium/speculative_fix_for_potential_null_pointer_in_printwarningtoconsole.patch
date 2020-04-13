@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: shrekshao <shrekshao@google.com>
+Date: Fri, 4 Oct 2019 21:07:08 +0000
+Subject: Speculative fix for potential NULL pointer in PrintWarningToConsole
+
+Couldn't reproduce this clusterfuzz bug locally. But make a speculative
+fix attempt.
+
+Bug: 1008300
+Change-Id: Iab02f2b3997883ae05cccd1e1ea916a206952b60
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1838547
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Shrek Shao <shrekshao@google.com>
+Cr-Commit-Position: refs/heads/master@{#703036}
+
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+index 1a094f9a03bd589b0ae4968e7cd3ea2aa854f924..e14c25d63ac372cc7b0d72a94063863d8fc3a930 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
++++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+@@ -7502,9 +7502,12 @@ void WebGLRenderingContextBase::PrintGLErrorToConsole(const String& message) {
+ }
+ 
+ void WebGLRenderingContextBase::PrintWarningToConsole(const String& message) {
+-  Host()->GetTopExecutionContext()->AddConsoleMessage(
+-      ConsoleMessage::Create(mojom::ConsoleMessageSource::kRendering,
+-                             mojom::ConsoleMessageLevel::kWarning, message));
++  blink::ExecutionContext* context = Host()->GetTopExecutionContext();
++  if (context) {
++    context->AddConsoleMessage(
++        ConsoleMessage::Create(mojom::ConsoleMessageSource::kRendering,
++                               mojom::ConsoleMessageLevel::kWarning, message));
++  }
+ }
+ 
+ bool WebGLRenderingContextBase::ValidateFramebufferFuncParameters(
