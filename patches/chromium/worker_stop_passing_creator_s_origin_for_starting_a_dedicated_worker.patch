@@ -1,0 +1,453 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hiroki Nakagawa <nhiroki@chromium.org>
+Date: Mon, 9 Mar 2020 07:07:57 +0000
+Subject: Worker: Stop passing creator's origin for starting a dedicated worker
+
+This CL makes DedicatedWorkerHostFactoryImpl use its
+|parent_execution_origin_| (renamed to |creator_origin| by this CL) for
+starting a dedicated worker instead of an origin passed from a renderer
+process.
+
+This was not feasible before because |parent_execution_origin_| is
+provided from parent's |RenderFrameHostImpl::last_committed_origin_|
+that is set during navigation commit. Worker creation IPC from the
+renderer to browser could race with navigation commit, and could see the
+wrong last committed origin.
+
+Now this is feasible. This is because worker creation IPC is now tied
+with RenderFrameHostImpl's BrowserInterfaceBroker that is re-bound
+during navigation commit[*]. This ensures that worker creation requests
+issued before the navigation commit are discarded by the previous
+BrowserInterfaceBroker, and new requests via the new
+BrowserInterfaceBroker are scoped to the new last committed origin.
+
+[*] The call path between binding BrowserInterfaceBroker and updating
+the last committed origin is as follows. These are synchronously done.
+
+- RenderFrameHostImpl::DidCommitNavigation() re-binds the interface broker
+https://source.chromium.org/chromium/chromium/src/+/master:content/browser/frame_host/render_frame_host_impl.cc;l=7489;drc=d54ee0c3d25dfc644282b50c5f57e23b7ab4dda4?originalUrl=https:%2F%2Fcs.chromium.org%2F
+  -> RenderFrameHostImpl::DidCommitNavigationInternal()
+    -> NavigatorImpl::DidNavigate()
+      -> RenderFrameHostImpl::DidNavigate()
+        -> RenderFrameHostImpl::SetLastCommittedOrigin()
+
+Change-Id: Id69c3d66e50aa8cbb7fee520a1479b28970de1c6
+Bug: 906991, 1030909
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1971660
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Matt Falkenhagen <falken@chromium.org>
+Commit-Queue: Hiroki Nakagawa <nhiroki@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#748127}
+
+diff --git a/content/browser/browser_interface_binders.cc b/content/browser/browser_interface_binders.cc
+index f9d3d6f5135f1b98220d6c7e21a9ae16797857a1..7ef518d069b9dbddb2bc74971bdde82b58056f44 100644
+--- a/content/browser/browser_interface_binders.cc
++++ b/content/browser/browser_interface_binders.cc
+@@ -60,7 +60,7 @@ RenderFrameHost* GetContextForHost(RenderFrameHostImpl* host) {
+ 
+ // Dedicated workers
+ const url::Origin& GetContextForHost(DedicatedWorkerHost* host) {
+-  return host->GetOrigin();
++  return host->GetWorkerOrigin();
+ }
+ 
+ void PopulateDedicatedWorkerBinders(DedicatedWorkerHost* host,
+diff --git a/content/browser/worker_host/dedicated_worker_host.cc b/content/browser/worker_host/dedicated_worker_host.cc
+index c4287066bcae159f52f11a070da22250e6a6f76e..e58d497196d6bc25cc984f669bbf5e63587d8508 100644
+--- a/content/browser/worker_host/dedicated_worker_host.cc
++++ b/content/browser/worker_host/dedicated_worker_host.cc
+@@ -39,12 +39,15 @@ DedicatedWorkerHost::DedicatedWorkerHost(
+     int worker_process_id,
+     int ancestor_render_frame_id,
+     int creator_render_frame_id,
+-    const url::Origin& origin,
++    const url::Origin& creator_origin,
+     mojo::PendingReceiver<blink::mojom::DedicatedWorkerHost> host)
+     : worker_process_id_(worker_process_id),
+       ancestor_render_frame_id_(ancestor_render_frame_id),
+       creator_render_frame_id_(creator_render_frame_id),
+-      origin_(origin),
++      creator_origin_(creator_origin),
++      // TODO(https://crbug.com/1058759): Calculate the worker origin based on
++      // the worker script URL.
++      worker_origin_(creator_origin),
+       host_receiver_(this, std::move(host)) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   RegisterMojoInterfaces();
+@@ -66,7 +69,7 @@ void DedicatedWorkerHost::GetInterface(
+     return;
+ 
+   BindWorkerInterface(interface_name, std::move(interface_pipe),
+-                      worker_process_host, origin_);
++                      worker_process_host, creator_origin_);
+ }
+ 
+ void DedicatedWorkerHost::BindBrowserInterfaceBrokerReceiver(
+@@ -96,7 +99,6 @@ void DedicatedWorkerHost::LifecycleStateChanged(
+ 
+ void DedicatedWorkerHost::StartScriptLoad(
+     const GURL& script_url,
+-    const url::Origin& request_initiator_origin,
+     network::mojom::CredentialsMode credentials_mode,
+     blink::mojom::FetchClientSettingsObjectPtr
+         outside_fetch_client_settings_object,
+@@ -205,7 +207,7 @@ void DedicatedWorkerHost::StartScriptLoad(
+ 
+   WorkerScriptFetchInitiator::Start(
+       worker_process_id_, script_url, creator_render_frame_host,
+-      request_initiator_origin, network_isolation_key_, credentials_mode,
++      creator_origin_, network_isolation_key_, credentials_mode,
+       std::move(outside_fetch_client_settings_object), ResourceType::kWorker,
+       storage_partition_impl->GetServiceWorkerContext(),
+       service_worker_handle_.get(),
+@@ -323,7 +325,7 @@ DedicatedWorkerHost::CreateNetworkFactoryForSubresources(
+   GetContentClient()->browser()->WillCreateURLLoaderFactory(
+       storage_partition_impl->browser_context(),
+       /*frame=*/nullptr, worker_process_id_,
+-      ContentBrowserClient::URLLoaderFactoryType::kWorkerSubResource, origin_,
++      ContentBrowserClient::URLLoaderFactoryType::kWorkerSubResource, worker_origin_,
+       &default_factory_receiver, &default_header_client,
+       bypass_redirect_checks);
+ 
+@@ -331,7 +333,7 @@ DedicatedWorkerHost::CreateNetworkFactoryForSubresources(
+   // here.
+ 
+   worker_process_host->CreateURLLoaderFactory(
+-      origin_, ancestor_render_frame_host->cross_origin_embedder_policy(),
++      worker_origin_, ancestor_render_frame_host->cross_origin_embedder_policy(),
+       /*preferences=*/nullptr, network_isolation_key_,
+       std::move(default_header_client), std::move(default_factory_receiver));
+ 
+@@ -366,7 +368,7 @@ void DedicatedWorkerHost::CreateWebSocketConnector(
+   }
+   mojo::MakeSelfOwnedReceiver(
+       std::make_unique<WebSocketConnectorImpl>(
+-          worker_process_id_, ancestor_render_frame_id_, origin_),
++          worker_process_id_, ancestor_render_frame_id_, worker_origin_),
+       std::move(receiver));
+ }
+ 
+@@ -376,7 +378,7 @@ void DedicatedWorkerHost::CreateNestedDedicatedWorker(
+   CreateDedicatedWorkerHostFactory(worker_process_id_,
+                                    ancestor_render_frame_id_,
+                                    /*creator_render_frame_id=*/MSG_ROUTING_NONE,
+-                                   origin_, std::move(receiver));
++                                   worker_origin_, std::move(receiver));
+ }
+ 
+ void DedicatedWorkerHost::BindFileSystemManager(
+@@ -385,7 +387,7 @@ void DedicatedWorkerHost::BindFileSystemManager(
+   RenderProcessHost* worker_process_host = GetProcessHost();
+   if (!worker_process_host)
+     return;
+-  worker_process_host->BindFileSystemManager(GetOrigin(), std::move(receiver));
++  worker_process_host->BindFileSystemManager(worker_origin_, std::move(receiver));
+ }
+ 
+ void DedicatedWorkerHost::CreateIdleManager(
+@@ -426,17 +428,16 @@ class DedicatedWorkerHostFactoryImpl final
+   DedicatedWorkerHostFactoryImpl(int creator_process_id,
+                                  int ancestor_render_frame_id,
+                                  int creator_render_frame_id,
+-                                 const url::Origin& parent_context_origin)
++                                 const url::Origin& creator_origin)
+       : creator_process_id_(creator_process_id),
+         ancestor_render_frame_id_(ancestor_render_frame_id),
+         creator_render_frame_id_(creator_render_frame_id),
+-        parent_context_origin_(parent_context_origin) {
++        creator_origin_(creator_origin) {
+     DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   }
+ 
+   // blink::mojom::DedicatedWorkerHostFactory:
+   void CreateWorkerHost(
+-      const url::Origin& origin,
+       service_manager::mojom::InterfaceProviderRequest request,
+       mojo::PendingReceiver<blink::mojom::BrowserInterfaceBroker>
+           broker_receiver,
+@@ -448,13 +449,9 @@ class DedicatedWorkerHostFactoryImpl final
+       return;
+     }
+ 
+-    // TODO(crbug.com/729021): Once |parent_context_origin_| no longer races
+-    // with the request for |DedicatedWorkerHostFactory|, enforce that
+-    // the worker's origin either matches the origin of the creating context
+-    // (Document or DedicatedWorkerGlobalScope), or is unique.
+     auto host = std::make_unique<DedicatedWorkerHost>(
+         creator_process_id_, ancestor_render_frame_id_,
+-        creator_render_frame_id_, origin, std::move(host_receiver));
++        creator_render_frame_id_, creator_origin_, std::move(host_receiver));
+     host->BindBrowserInterfaceBrokerReceiver(std::move(broker_receiver));
+     mojo::MakeStrongBinding(std::move(host),
+                             FilterRendererExposedInterfaces(
+@@ -465,7 +462,6 @@ class DedicatedWorkerHostFactoryImpl final
+   // PlzDedicatedWorker:
+   void CreateWorkerHostAndStartScriptLoad(
+       const GURL& script_url,
+-      const url::Origin& request_initiator_origin,
+       network::mojom::CredentialsMode credentials_mode,
+       blink::mojom::FetchClientSettingsObjectPtr
+           outside_fetch_client_settings_object,
+@@ -482,14 +478,9 @@ class DedicatedWorkerHostFactoryImpl final
+ 
+     // Create a worker host that will start a new dedicated worker in the
+     // renderer process whose ID is |creator_process_id_|.
+-    //
+-    // TODO(crbug.com/729021): Once |parent_context_origin_| no longer races
+-    // with the request for |DedicatedWorkerHostFactory|, enforce that
+-    // the worker's origin either matches the origin of the creating context
+-    // (Document or DedicatedWorkerGlobalScope), or is unique.
+     auto host = std::make_unique<DedicatedWorkerHost>(
+         creator_process_id_, ancestor_render_frame_id_,
+-        creator_render_frame_id_, request_initiator_origin,
++        creator_render_frame_id_, creator_origin_,
+         std::move(host_receiver));
+     mojo::PendingRemote<blink::mojom::BrowserInterfaceBroker> broker;
+     host->BindBrowserInterfaceBrokerReceiver(
+@@ -507,7 +498,7 @@ class DedicatedWorkerHostFactoryImpl final
+     remote_client->OnWorkerHostCreated(std::move(interface_provider),
+                                        std::move(broker));
+     host_raw->StartScriptLoad(
+-        script_url, request_initiator_origin, credentials_mode,
++        script_url, credentials_mode,
+         std::move(outside_fetch_client_settings_object),
+         std::move(blob_url_token), std::move(remote_client));
+   }
+@@ -518,7 +509,7 @@ class DedicatedWorkerHostFactoryImpl final
+   const int ancestor_render_frame_id_;
+   const int creator_render_frame_id_;
+ 
+-  const url::Origin parent_context_origin_;
++  const url::Origin creator_origin_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(DedicatedWorkerHostFactoryImpl);
+ };
+@@ -529,12 +520,12 @@ void CreateDedicatedWorkerHostFactory(
+     int creator_process_id,
+     int ancestor_render_frame_id,
+     int creator_render_frame_id,
+-    const url::Origin& origin,
++    const url::Origin& creator_origin,
+     mojo::PendingReceiver<blink::mojom::DedicatedWorkerHostFactory> receiver) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   mojo::MakeSelfOwnedReceiver(std::make_unique<DedicatedWorkerHostFactoryImpl>(
+                                   creator_process_id, ancestor_render_frame_id,
+-                                  creator_render_frame_id, origin),
++                                  creator_render_frame_id, creator_origin),
+                               std::move(receiver));
+ }
+ 
+diff --git a/content/browser/worker_host/dedicated_worker_host.h b/content/browser/worker_host/dedicated_worker_host.h
+index 4e56abf3ad76671469082c9c1820cc971d8c3843..f159b04f1cacf5cc0c7ad0ec173ce5da1f73047b 100644
+--- a/content/browser/worker_host/dedicated_worker_host.h
++++ b/content/browser/worker_host/dedicated_worker_host.h
+@@ -35,7 +35,7 @@ void CreateDedicatedWorkerHostFactory(
+     int creator_process_id,
+     int ancestor_render_frame_id,
+     int creator_render_frame_id,
+-    const url::Origin& origin,
++    const url::Origin& creator_origin,
+     mojo::PendingReceiver<blink::mojom::DedicatedWorkerHostFactory> receiver);
+ 
+ // A host for a single dedicated worker. Its lifetime is managed by the
+@@ -49,7 +49,7 @@ class DedicatedWorkerHost final
+       int worker_process_id,
+       int ancestor_render_frame_id,
+       int creator_render_frame_id,
+-      const url::Origin& origin,
++      const url::Origin& creator_origin,
+       mojo::PendingReceiver<blink::mojom::DedicatedWorkerHost> host);
+   ~DedicatedWorkerHost() final;
+ 
+@@ -60,7 +60,7 @@ class DedicatedWorkerHost final
+   RenderProcessHost* GetProcessHost() {
+     return RenderProcessHost::FromID(worker_process_id_);
+   }
+-  const url::Origin& GetOrigin() { return origin_; }
++  const url::Origin& GetWorkerOrigin() { return worker_origin_; }
+ 
+   void BindFileSystemManager(
+       mojo::PendingReceiver<blink::mojom::FileSystemManager> receiver);
+@@ -82,7 +82,6 @@ class DedicatedWorkerHost final
+   // PlzDedicatedWorker:
+   void StartScriptLoad(
+       const GURL& script_url,
+-      const url::Origin& request_initiator_origin,
+       network::mojom::CredentialsMode credentials_mode,
+       blink::mojom::FetchClientSettingsObjectPtr
+           outside_fetch_client_settings_object,
+@@ -145,7 +144,12 @@ class DedicatedWorkerHost final
+   // MSG_ROUTING_NONE when this worker is nested.
+   const int creator_render_frame_id_;
+ 
+-  const url::Origin origin_;
++  // The origin of the frame or dedicated worker that starts this worker.
++  const url::Origin creator_origin_;
++
++  // The origin of this worker.
++  // https://html.spec.whatwg.org/C/#concept-settings-object-origin
++  const url::Origin worker_origin_;
+ 
+   // The network isolation key to be used for both the worker script and the
+   // worker's subresources.
+diff --git a/content/renderer/worker/dedicated_worker_host_factory_client.cc b/content/renderer/worker/dedicated_worker_host_factory_client.cc
+index 9272a5799b6a59a93b358398f85f6f4ba643e5c2..9571677bf94ec3b55fa9fa89bcabb14e006a29f5 100644
+--- a/content/renderer/worker/dedicated_worker_host_factory_client.cc
++++ b/content/renderer/worker/dedicated_worker_host_factory_client.cc
+@@ -17,7 +17,6 @@
+ #include "third_party/blink/public/mojom/service_worker/service_worker_provider.mojom.h"
+ #include "third_party/blink/public/mojom/worker/worker_main_script_load_params.mojom.h"
+ #include "third_party/blink/public/platform/web_dedicated_worker.h"
+-#include "third_party/blink/public/platform/web_security_origin.h"
+ #include "third_party/blink/public/platform/web_url.h"
+ 
+ namespace content {
+@@ -32,14 +31,13 @@ DedicatedWorkerHostFactoryClient::DedicatedWorkerHostFactoryClient(
+ 
+ DedicatedWorkerHostFactoryClient::~DedicatedWorkerHostFactoryClient() = default;
+ 
+-void DedicatedWorkerHostFactoryClient::CreateWorkerHostDeprecated(
+-    const blink::WebSecurityOrigin& script_origin) {
++void DedicatedWorkerHostFactoryClient::CreateWorkerHostDeprecated() {
+   DCHECK(!base::FeatureList::IsEnabled(blink::features::kPlzDedicatedWorker));
+   service_manager::mojom::InterfaceProviderPtr interface_provider_ptr;
+   mojo::PendingRemote<blink::mojom::BrowserInterfaceBroker>
+       browser_interface_broker;
+   factory_->CreateWorkerHost(
+-      script_origin, mojo::MakeRequest(&interface_provider_ptr),
++      mojo::MakeRequest(&interface_provider_ptr),
+       browser_interface_broker.InitWithNewPipeAndPassReceiver(),
+       remote_host_.BindNewPipeAndPassReceiver());
+   OnWorkerHostCreated(std::move(interface_provider_ptr),
+@@ -48,9 +46,7 @@ void DedicatedWorkerHostFactoryClient::CreateWorkerHostDeprecated(
+ 
+ void DedicatedWorkerHostFactoryClient::CreateWorkerHost(
+     const blink::WebURL& script_url,
+-    const blink::WebSecurityOrigin& script_origin,
+     network::mojom::CredentialsMode credentials_mode,
+-    const blink::WebSecurityOrigin& fetch_client_security_origin,
+     network::mojom::ReferrerPolicy fetch_client_referrer_policy,
+     const blink::WebURL& fetch_client_outgoing_referrer,
+     const blink::WebInsecureRequestPolicy fetch_client_insecure_request_policy,
+@@ -69,7 +65,7 @@ void DedicatedWorkerHostFactoryClient::CreateWorkerHost(
+           : blink::mojom::InsecureRequestsPolicy::kDoNotUpgrade;
+ 
+   factory_->CreateWorkerHostAndStartScriptLoad(
+-      script_url, script_origin, credentials_mode,
++      script_url, credentials_mode,
+       std::move(outside_fetch_client_settings_object),
+       mojo::PendingRemote<blink::mojom::BlobURLToken>(
+           std::move(blob_url_token), blink::mojom::BlobURLToken::Version_),
+diff --git a/content/renderer/worker/dedicated_worker_host_factory_client.h b/content/renderer/worker/dedicated_worker_host_factory_client.h
+index 9692cce45ac8369367cd4dbc5d75888512806294..a4f4ae4a9599b67f96f42814cc9f9cb2cdbeb016 100644
+--- a/content/renderer/worker/dedicated_worker_host_factory_client.h
++++ b/content/renderer/worker/dedicated_worker_host_factory_client.h
+@@ -42,13 +42,10 @@ class DedicatedWorkerHostFactoryClient final
+   ~DedicatedWorkerHostFactoryClient() override;
+ 
+   // Implements blink::WebDedicatedWorkerHostFactoryClient.
+-  void CreateWorkerHostDeprecated(
+-      const blink::WebSecurityOrigin& script_origin) override;
++  void CreateWorkerHostDeprecated() override;
+   void CreateWorkerHost(
+       const blink::WebURL& script_url,
+-      const blink::WebSecurityOrigin& script_origin,
+       network::mojom::CredentialsMode credentials_mode,
+-      const blink::WebSecurityOrigin& fetch_client_security_origin,
+       network::mojom::ReferrerPolicy fetch_client_referrer_policy,
+       const blink::WebURL& fetch_client_outgoing_referrer,
+       const blink::WebInsecureRequestPolicy
+diff --git a/third_party/blink/public/mojom/worker/dedicated_worker_host_factory.mojom b/third_party/blink/public/mojom/worker/dedicated_worker_host_factory.mojom
+index be2a63cc110461e14873992d8fa7f38b91261779..8a0dccfc5d88fbe87a2e99322784e645839ace4b 100644
+--- a/third_party/blink/public/mojom/worker/dedicated_worker_host_factory.mojom
++++ b/third_party/blink/public/mojom/worker/dedicated_worker_host_factory.mojom
+@@ -14,7 +14,6 @@ import "third_party/blink/public/mojom/worker/dedicated_worker_host.mojom";
+ import "third_party/blink/public/mojom/worker/worker_main_script_load_params.mojom";
+ import "third_party/blink/public/mojom/service_worker/controller_service_worker.mojom";
+ import "third_party/blink/public/mojom/service_worker/service_worker_provider.mojom";
+-import "url/mojom/origin.mojom";
+ import "url/mojom/url.mojom";
+ 
+ // The name of the InterfaceProviderSpec in service manifests used by the
+@@ -77,11 +76,7 @@ interface DedicatedWorkerHostFactory {
+   // and |browser_interface_broker| (which is expected to replace
+   // |worker_interface_provider|) to provide the worker access to
+   // mojo interfaces.
+-  // |origin| must either be
+-  // unique or match the origin of the creating context (Document or
+-  // DedicatedWorkerGlobalScope).
+   CreateWorkerHost(
+-      url.mojom.Origin origin,
+       // TODO(crbug.com/990845): remove when no longer used.
+       service_manager.mojom.InterfaceProvider& worker_interface_provider,
+       pending_receiver<blink.mojom.BrowserInterfaceBroker>
+@@ -95,14 +90,11 @@ interface DedicatedWorkerHostFactory {
+   // Creates a new DedicatedWorkerHost, and requests to start top-level worker
+   // script loading for |script_url| using |credentials_mode| and
+   // |outside_fetch_client_settings_object|.
+-  // |origin| must either be unique or match the origin of the creating context
+-  // (Document or DedicatedWorkerGlobalScope).
+   // |blob_url_token| should be non-null when |script_url| is a blob URL.
+   // |client| is used for notifying the renderer process of results of worker
+   // host creation and script loading.
+   CreateWorkerHostAndStartScriptLoad(
+       url.mojom.Url script_url,
+-      url.mojom.Origin origin,
+       network.mojom.CredentialsMode credentials_mode,
+       blink.mojom.FetchClientSettingsObject
+           outside_fetch_client_settings_object,
+diff --git a/third_party/blink/public/platform/web_dedicated_worker_host_factory_client.h b/third_party/blink/public/platform/web_dedicated_worker_host_factory_client.h
+index f0126764ebf29ed8071dff195a907b5a84ed0029..25f3e9474ecc07e4bb3522a2771b1ee65abe6b2c 100644
+--- a/third_party/blink/public/platform/web_dedicated_worker_host_factory_client.h
++++ b/third_party/blink/public/platform/web_dedicated_worker_host_factory_client.h
+@@ -18,7 +18,6 @@ class SingleThreadTaskRunner;
+ 
+ namespace blink {
+ 
+-class WebSecurityOrigin;
+ class WebURL;
+ class WebWorkerFetchContext;
+ 
+@@ -31,16 +30,13 @@ class WebDedicatedWorkerHostFactoryClient {
+   // Requests the creation of DedicatedWorkerHost in the browser process.
+   // For non-PlzDedicatedWorker. This will be removed once PlzDedicatedWorker is
+   // enabled by default.
+-  virtual void CreateWorkerHostDeprecated(
+-      const blink::WebSecurityOrigin& script_origin) = 0;
++  virtual void CreateWorkerHostDeprecated() = 0;
+   // For PlzDedicatedWorker.
+   // TODO(nhiroki): Pack |fetch_client_*| into some struct like
+   // WebFetchClientSettingsObject.
+   virtual void CreateWorkerHost(
+       const blink::WebURL& script_url,
+-      const blink::WebSecurityOrigin& script_origin,
+       network::mojom::CredentialsMode credentials_mode,
+-      const blink::WebSecurityOrigin& fetch_client_security_origin,
+       network::mojom::ReferrerPolicy fetch_client_referrer_policy,
+       const blink::WebURL& fetch_client_outgoing_referrer,
+       const blink::WebInsecureRequestPolicy
+diff --git a/third_party/blink/renderer/core/workers/dedicated_worker.cc b/third_party/blink/renderer/core/workers/dedicated_worker.cc
+index eabed31b6236b76307772d597a4d54504f3ac27c..08e9c16ac3f7ad9f33d0a87de02e6af3d497a4ec 100644
+--- a/third_party/blink/renderer/core/workers/dedicated_worker.cc
++++ b/third_party/blink/renderer/core/workers/dedicated_worker.cc
+@@ -243,10 +243,7 @@ void DedicatedWorker::Start() {
+ 
+     factory_client_->CreateWorkerHost(
+         script_request_url_,
+-        WebSecurityOrigin(GetExecutionContext()->GetSecurityOrigin()),
+         credentials_mode,
+-        WebSecurityOrigin(
+-            outside_fetch_client_settings_object_->GetSecurityOrigin()),
+         outside_fetch_client_settings_object_->GetReferrerPolicy(),
+         KURL(outside_fetch_client_settings_object_->GetOutgoingReferrer()),
+         outside_fetch_client_settings_object_->GetInsecureRequestsPolicy(),
+@@ -255,8 +252,7 @@ void DedicatedWorker::Start() {
+     return;
+   }
+ 
+-  factory_client_->CreateWorkerHostDeprecated(
+-      WebSecurityOrigin(GetExecutionContext()->GetSecurityOrigin()));
++  factory_client_->CreateWorkerHostDeprecated();
+ 
+   if (options_->type() == "classic") {
+     // Legacy code path (to be deprecated, see https://crbug.com/835717):
