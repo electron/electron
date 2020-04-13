@@ -91,14 +91,14 @@ class ObjectsRegistry {
 
   // Private: Saves the object into storage and assigns an ID for it.
   saveToStorage (object: any) {
-    let id: number = v8Util.getHiddenValue(object, 'atomId');
+    let id: number = v8Util.getHiddenValue(object, 'electronId');
     if (!id) {
       id = ++this.nextId;
       this.storage[id] = {
         count: 0,
         object: object
       };
-      v8Util.setHiddenValue(object, 'atomId', id);
+      v8Util.setHiddenValue(object, 'electronId', id);
     }
     return id;
   }
@@ -111,7 +111,7 @@ class ObjectsRegistry {
     }
     pointer.count -= 1;
     if (pointer.count === 0) {
-      v8Util.deleteHiddenValue(pointer.object, 'atomId');
+      v8Util.deleteHiddenValue(pointer.object, 'electronId');
       delete this.storage[id];
     }
   }
