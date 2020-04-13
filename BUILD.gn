@@ -1051,7 +1051,7 @@ if (is_mac) {
     if (is_win) {
       sources += [
         # TODO: we should be generating our .rc files more like how chrome does
-        "shell/browser/resources/win/atom.rc",
+        "shell/browser/resources/win/electron.rc",
         "shell/browser/resources/win/resource.h",
       ]
 

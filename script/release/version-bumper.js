@@ -125,9 +125,9 @@ async function commitVersionBump (version) {
   await GitProcess.exec(gitArgs, ELECTRON_DIR);
 }
 
-// updates atom.rc file with new semver values
+// updates electron.rc file with new semver values
 async function updateWinRC (components) {
-  const filePath = path.resolve(ELECTRON_DIR, 'shell', 'browser', 'resources', 'win', 'atom.rc');
+  const filePath = path.resolve(ELECTRON_DIR, 'shell', 'browser', 'resources', 'win', 'electron.rc');
   const data = await readFile(filePath, 'utf8');
   const arr = data.split('\n');
   arr.forEach((line, idx) => {
