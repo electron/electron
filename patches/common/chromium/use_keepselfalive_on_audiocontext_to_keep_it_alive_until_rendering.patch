@@ -1,8 +1,8 @@
-From 85f708fa7ab898c7ae678c0b8a270105be6bbb4e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
 Date: Tue, 18 Feb 2020 22:39:05 +0000
-Subject: [PATCH] Use KeepSelfAlive on AudioContext to keep it alive until
- rendering stops
+Subject: Use KeepSelfAlive on AudioContext to keep it alive until rendering
+ stops
 
 When an ExecutionContext is abruptly/unexpectedly destroyed (e.g.
 shutting down of document or iframe), an AudioContext can also
@@ -22,17 +22,12 @@ Reviewed-by: Raymond Toy <rtoy@chromium.org>
 Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
 Commit-Queue: Hongchan Choi <hongchan@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#742338}
----
- .../modules/webaudio/audio_context.cc         | 20 ++++++++++++++++---
- .../renderer/modules/webaudio/audio_context.h | 10 +++++++++-
- .../modules/webaudio/base_audio_context.h     |  2 +-
- 3 files changed, 27 insertions(+), 5 deletions(-)
 
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_context.cc b/third_party/blink/renderer/modules/webaudio/audio_context.cc
-index f3afb05c4d14d..8f982aad34ece 100644
+index 04a95ab9d0255b6be85215171bd6fbccc4413a5f..b09921b60b539044a443f49d802cc77dae87bfa2 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_context.cc
 +++ b/third_party/blink/renderer/modules/webaudio/audio_context.cc
-@@ -130,7 +130,8 @@ AudioContext::AudioContext(Document& document,
+@@ -125,7 +125,8 @@ AudioContext::AudioContext(Document& document,
                             const WebAudioLatencyHint& latency_hint,
                             base::Optional<float> sample_rate)
      : BaseAudioContext(&document, kRealtimeContext),
@@ -42,14 +37,7 @@ index f3afb05c4d14d..8f982aad34ece 100644
    destination_node_ =
        RealtimeAudioDestinationNode::Create(this, latency_hint, sample_rate);
  
-@@ -167,13 +168,14 @@ AudioContext::AudioContext(Document& document,
-           destination()->GetAudioDestinationHandler());
-   base_latency_ = destination_handler.GetFramesPerBuffer() /
-                   static_cast<double>(sampleRate());
-+
- }
- 
- void AudioContext::Uninitialize() {
+@@ -154,7 +155,7 @@ void AudioContext::Uninitialize() {
    DCHECK(IsMainThread());
    DCHECK_NE(g_hardware_context_count, 0u);
    --g_hardware_context_count;
@@ -58,7 +46,7 @@ index f3afb05c4d14d..8f982aad34ece 100644
    DidClose();
    RecordAutoplayMetrics();
    BaseAudioContext::Uninitialize();
-@@ -358,14 +360,26 @@ bool AudioContext::IsContextClosed() const {
+@@ -322,14 +323,26 @@ bool AudioContext::IsContextClosed() const {
    return close_resolver_ || BaseAudioContext::IsContextClosed();
  }
  
@@ -87,18 +75,18 @@ index f3afb05c4d14d..8f982aad34ece 100644
  }
  
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_context.h b/third_party/blink/renderer/modules/webaudio/audio_context.h
-index 0876e2fff25a5..10630b0c6a523 100644
+index 4ba47fadd6f791987520a425497715565fbdfea8..a05c83d230518ce8ae19e98bba257c3f22c299a4 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_context.h
 +++ b/third_party/blink/renderer/modules/webaudio/audio_context.h
-@@ -13,6 +13,7 @@
- #include "third_party/blink/renderer/core/html/media/autoplay_policy.h"
+@@ -12,6 +12,7 @@
+ #include "third_party/blink/renderer/modules/webaudio/audio_context_options.h"
  #include "third_party/blink/renderer/modules/webaudio/base_audio_context.h"
  #include "third_party/blink/renderer/platform/heap/handle.h"
 +#include "third_party/blink/renderer/platform/heap/self_keep_alive.h"
  
  namespace blink {
  
-@@ -133,8 +134,13 @@ class MODULES_EXPORT AudioContext : public BaseAudioContext {
+@@ -130,8 +131,13 @@ class MODULES_EXPORT AudioContext : public BaseAudioContext {
    // Record the current autoplay metrics.
    void RecordAutoplayMetrics();
  
@@ -113,7 +101,7 @@ index 0876e2fff25a5..10630b0c6a523 100644
    void StopRendering();
  
    // Called when suspending the context to stop reundering audio, but don't
-@@ -196,6 +202,8 @@ class MODULES_EXPORT AudioContext : public BaseAudioContext {
+@@ -190,6 +196,8 @@ class MODULES_EXPORT AudioContext : public BaseAudioContext {
    // determine audibility on render quantum boundaries, so counting quanta is
    // all that's needed.
    size_t total_audible_renders_ = 0;
@@ -123,10 +111,10 @@ index 0876e2fff25a5..10630b0c6a523 100644
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/modules/webaudio/base_audio_context.h b/third_party/blink/renderer/modules/webaudio/base_audio_context.h
-index a2ac5c243d8db..9951468a1c146 100644
+index 8351bd861e871e441b467c509d16f930e083f2a8..4bcdbd54c1ebda26d5b13ab503befd55d0a84c31 100644
 --- a/third_party/blink/renderer/modules/webaudio/base_audio_context.h
 +++ b/third_party/blink/renderer/modules/webaudio/base_audio_context.h
-@@ -282,7 +282,7 @@ class MODULES_EXPORT BaseAudioContext
+@@ -283,7 +283,7 @@ class MODULES_EXPORT BaseAudioContext
  
    DEFINE_ATTRIBUTE_EVENT_LISTENER(statechange, kStatechange)
  
