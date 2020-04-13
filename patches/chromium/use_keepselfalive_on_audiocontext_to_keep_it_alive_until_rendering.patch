@@ -1,0 +1,125 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Tue, 18 Feb 2020 22:39:05 +0000
+Subject: Use KeepSelfAlive on AudioContext to keep it alive until rendering
+ stops
+
+When an ExecutionContext is abruptly/unexpectedly destroyed (e.g.
+shutting down of document or iframe), an AudioContext can also
+go away. This type of shutdown can be problematic because the render
+thread still might be touching resources in the AudioContext allocated
+by the main thread.
+
+This CL introduces a self-referencing pointer to the AudioContext,
+and it is cleared after the underlying render thread is stopped. In
+that way, the destruction of AudioContext can be done safely.
+
+Test: Locally confirmed the repro case doesn't crash (UAP) after 1hr.
+Bug: 1043446
+Change-Id: I2e40b7d58ca9d647eed8a5971fc69dc87ee3d1fe
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2049912
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#742338}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_context.cc b/third_party/blink/renderer/modules/webaudio/audio_context.cc
+index 83a1ad5d891ebb5566b41068cc0dc18de3d40059..99dbfb89005270b1a13e988bbdea9b5bfedfe89a 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_context.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_context.cc
+@@ -132,7 +132,8 @@ AudioContext::AudioContext(Document& document,
+                            const WebAudioLatencyHint& latency_hint,
+                            base::Optional<float> sample_rate)
+     : BaseAudioContext(&document, kRealtimeContext),
+-      context_id_(g_context_id++) {
++      context_id_(g_context_id++),
++      keep_alive_(PERSISTENT_FROM_HERE, this) {
+   destination_node_ =
+       RealtimeAudioDestinationNode::Create(this, latency_hint, sample_rate);
+ 
+@@ -161,7 +162,7 @@ void AudioContext::Uninitialize() {
+   DCHECK(IsMainThread());
+   DCHECK_NE(g_hardware_context_count, 0u);
+   --g_hardware_context_count;
+-
++  StopRendering();
+   DidClose();
+   RecordAutoplayMetrics();
+   BaseAudioContext::Uninitialize();
+@@ -344,14 +345,26 @@ bool AudioContext::IsContextClosed() const {
+   return close_resolver_ || BaseAudioContext::IsContextClosed();
+ }
+ 
++void AudioContext::StartRendering() {
++  DCHECK(IsMainThread());
++
++  if (!keep_alive_)
++    keep_alive_ = this;
++  BaseAudioContext::StartRendering();
++}
++
+ void AudioContext::StopRendering() {
+   DCHECK(IsMainThread());
+   DCHECK(destination());
+ 
+-  if (ContextState() == kRunning) {
++  // It is okay to perform the following on a suspended AudioContext because
++  // this method gets called from ExecutionContext::ContextDestroyed() meaning
++  // the AudioContext is already unreachable from the user code.
++  if (ContextState() != kClosed) {
+     destination()->GetAudioDestinationHandler().StopRendering();
+     SetContextState(kClosed);
+     GetDeferredTaskHandler().ClearHandlersToBeDeleted();
++    keep_alive_.Clear();
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_context.h b/third_party/blink/renderer/modules/webaudio/audio_context.h
+index 146e9e56086642edec99030a8a008accf0d408d9..31730c152a3b3f0e743cf7231a92a51a4d7eed69 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_context.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_context.h
+@@ -13,6 +13,7 @@
+ #include "third_party/blink/renderer/modules/webaudio/audio_context_options.h"
+ #include "third_party/blink/renderer/modules/webaudio/base_audio_context.h"
+ #include "third_party/blink/renderer/platform/heap/handle.h"
++#include "third_party/blink/renderer/platform/heap/self_keep_alive.h"
+ 
+ namespace blink {
+ 
+@@ -133,8 +134,13 @@ class MODULES_EXPORT AudioContext : public BaseAudioContext {
+   // Record the current autoplay metrics.
+   void RecordAutoplayMetrics();
+ 
++  // Starts rendering via AudioDestinationNode. This sets the self-referencing
++  // pointer to this object.
++  void StartRendering() override;
++
+   // Called when the context is being closed to stop rendering audio and clean
+-  // up handlers.
++  // up handlers. This clears the self-referencing pointer, making this object
++  // available for the potential GC.
+   void StopRendering();
+ 
+   // Called when suspending the context to stop reundering audio, but don't
+@@ -193,6 +199,8 @@ class MODULES_EXPORT AudioContext : public BaseAudioContext {
+   // determine audibility on render quantum boundaries, so counting quanta is
+   // all that's needed.
+   size_t total_audible_renders_ = 0;
++
++  SelfKeepAlive<AudioContext> keep_alive_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webaudio/base_audio_context.h b/third_party/blink/renderer/modules/webaudio/base_audio_context.h
+index d5aadf7e58ea8a67df7d0a83e5ed5b9b1d7772bb..bb0b2335d848c6b5f1b1cb9ce24ad5adb8b331c5 100644
+--- a/third_party/blink/renderer/modules/webaudio/base_audio_context.h
++++ b/third_party/blink/renderer/modules/webaudio/base_audio_context.h
+@@ -282,7 +282,7 @@ class MODULES_EXPORT BaseAudioContext
+ 
+   DEFINE_ATTRIBUTE_EVENT_LISTENER(statechange, kStatechange)
+ 
+-  void StartRendering();
++  virtual void StartRendering();
+ 
+   void NotifyStateChange();
+ 
