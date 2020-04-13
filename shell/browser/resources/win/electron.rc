@@ -103,5 +103,5 @@ END
 // Icon
 //
 
-IDR_MAINFRAME           ICON                    "atom.ico"
+IDR_MAINFRAME           ICON                    "electron.ico"
 /////////////////////////////////////////////////////////////////////////////
