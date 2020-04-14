@@ -61,7 +61,9 @@ void CrashReporterLinux::Init(const std::string& product_name,
                               const std::string& submit_url,
                               const base::FilePath& crashes_dir,
                               bool upload_to_server,
-                              bool skip_system_crash_handler) {
+                              bool skip_system_crash_handler,
+                              bool rate_limit,
+                              bool compress) {
   EnableCrashDumping(crashes_dir);
 
   upload_url_ = submit_url;

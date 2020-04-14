@@ -52,12 +52,14 @@ void CrashReporter::Start(const std::string& product_name,
                           const base::FilePath& crashes_dir,
                           bool upload_to_server,
                           bool skip_system_crash_handler,
+                          bool rate_limit,
+                          bool compress,
                           const StringMap& extra_parameters) {
   is_initialized_ = true;
   SetUploadParameters(extra_parameters);
 
   Init(product_name, company_name, submit_url, crashes_dir, upload_to_server,
-       skip_system_crash_handler);
+       skip_system_crash_handler, rate_limit, compress);
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
@@ -105,7 +107,9 @@ void CrashReporter::Init(const std::string& product_name,
                          const std::string& submit_url,
                          const base::FilePath& crashes_dir,
                          bool auto_submit,
-                         bool skip_system_crash_handler) {}
+                         bool skip_system_crash_handler,
+                         bool rate_limit,
+                         bool compress) {}
 
 void CrashReporter::SetUploadParameters() {}
 
@@ -141,12 +145,20 @@ void CrashReporter::StartInstance(const gin_helper::Dictionary& options) {
   options.Get("crashesDirectory", &crashes_dir);
   StringMap extra_parameters;
   options.Get("extra", &extra_parameters);
+  bool rate_limit = false;
+  options.Get("rateLimit", &rate_limit);
+  bool compress = false;
+  options.Get("compress", &compress);
 
   extra_parameters["_productName"] = product_name;
   extra_parameters["_companyName"] = company_name;
 
-  reporter->Start(product_name, company_name, submit_url, crashes_dir, true,
-                  false, extra_parameters);
+  bool upload_to_server = true;
+  bool skip_system_crash_handler = false;
+
+  reporter->Start(product_name, company_name, submit_url, crashes_dir,
+                  upload_to_server, skip_system_crash_handler, rate_limit,
+                  compress, extra_parameters);
 }
 
 }  // namespace crash_reporter

@@ -33,7 +33,9 @@ class CrashReporterLinux : public CrashReporter {
             const std::string& submit_url,
             const base::FilePath& crashes_dir,
             bool upload_to_server,
-            bool skip_system_crash_handler) override;
+            bool skip_system_crash_handler,
+            bool rate_limit,
+            bool compress) override;
   void SetUploadToServer(bool upload_to_server) override;
   void SetUploadParameters() override;
   bool GetUploadToServer() override;
