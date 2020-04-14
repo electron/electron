@@ -9,5 +9,7 @@
 
   "src/electron/patches/common/icu":  "src/third_party/icu",
 
+  "src/electron/patches/common/webrtc": "src/third_party/webrtc",
+
   "src/electron/patches/node": "src/third_party/electron_node"
 }
