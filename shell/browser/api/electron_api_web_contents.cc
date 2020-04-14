@@ -663,6 +663,30 @@ void WebContents::WebContentsCreatedWithFullParams(
   tracker->body = params.body;
 }
 
+bool WebContents::IsWebContentsCreationOverridden(
+    content::SiteInstance* source_site_instance,
+    content::mojom::WindowContainerType window_container_type,
+    const GURL& opener_url,
+    const std::string& frame_name,
+    const GURL& target_url) {
+  if (Emit("-will-add-new-contents", target_url, frame_name)) {
+    return true;
+  }
+  return false;
+}
+
+content::WebContents* WebContents::CreateCustomWebContents(
+    content::RenderFrameHost* opener,
+    content::SiteInstance* source_site_instance,
+    bool is_new_browsing_instance,
+    const GURL& opener_url,
+    const std::string& frame_name,
+    const GURL& target_url,
+    const std::string& partition_id,
+    content::SessionStorageNamespace* session_storage_namespace) {
+  return nullptr;
+}
+
 void WebContents::AddNewContents(
     content::WebContents* source,
     std::unique_ptr<content::WebContents> new_contents,
