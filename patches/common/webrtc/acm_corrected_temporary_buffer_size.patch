@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Pedro Pontes <pepontes@microsoft.com>
+Date: Wed, 8 Apr 2020 20:45:25 +0200
+Subject: ACM: Corrected temporary buffer size
+
+This CL corrects the temporary buffers size in the
+pre-processing of the capture audio before encoding.
+
+As part of this it removes the ACM-specific hardcoding
+of the size and instead ensures that the size of the
+temporary buffer matches that of the AudioFrame.
+
+Backports: https://webrtc.googlesource.com/src/+/d82a02c837d33cdfd75121e40dcccd32515e42d6
+
+diff --git a/modules/audio_coding/acm2/audio_coding_module.cc b/modules/audio_coding/acm2/audio_coding_module.cc
+index 741cef9969754eabbaf5e283b7913705dd30fbe8..2dbfd9e496b0d67bd22bd01221451fddf1504545 100644
+--- a/modules/audio_coding/acm2/audio_coding_module.cc
++++ b/modules/audio_coding/acm2/audio_coding_module.cc
+@@ -148,7 +148,7 @@ class AudioCodingModuleImpl final : public AudioCodingModule {
+     size_t audio_channel;
+     // If a re-mix is required (up or down), this buffer will store a re-mixed
+     // version of the input.
+-    int16_t buffer[WEBRTC_10MS_PCM_AUDIO];
++    int16_t buffer[AudioFrame::kMaxDataSizeSamples];
+   };
+ 
+   // This member class writes values to the named UMA histogram, but only if
+@@ -480,10 +480,10 @@ int AudioCodingModuleImpl::Add10MsDataInternal(const AudioFrame& audio_frame,
+ 
+   if (!same_num_channels) {
+     if (ptr_frame->num_channels_ == 1) {
+-      if (UpMix(*ptr_frame, WEBRTC_10MS_PCM_AUDIO, input_data->buffer) < 0)
++      if (UpMix(*ptr_frame, AudioFrame::kMaxDataSizeSamples, input_data->buffer) < 0)
+         return -1;
+     } else {
+-      if (DownMix(*ptr_frame, WEBRTC_10MS_PCM_AUDIO, input_data->buffer) < 0)
++      if (DownMix(*ptr_frame, AudioFrame::kMaxDataSizeSamples, input_data->buffer) < 0)
+         return -1;
+     }
+   }
+@@ -558,18 +558,19 @@ int AudioCodingModuleImpl::PreprocessToAddData(const AudioFrame& in_frame,
+ 
+   *ptr_out = &preprocess_frame_;
+   preprocess_frame_.num_channels_ = in_frame.num_channels_;
+-  int16_t audio[WEBRTC_10MS_PCM_AUDIO];
+-  const int16_t* src_ptr_audio = in_frame.data();
++  std::array<int16_t, AudioFrame::kMaxDataSizeSamples> audio;
++  const int16_t* src_ptr_audio;
+   if (down_mix) {
+     // If a resampling is required the output of a down-mix is written into a
+     // local buffer, otherwise, it will be written to the output frame.
+     int16_t* dest_ptr_audio =
+-        resample ? audio : preprocess_frame_.mutable_data();
+-    if (DownMix(in_frame, WEBRTC_10MS_PCM_AUDIO, dest_ptr_audio) < 0)
++        resample ? audio.data() : preprocess_frame_.mutable_data();
++    RTC_DCHECK_GE(audio.size(), preprocess_frame_.samples_per_channel_);
++    if (DownMix(in_frame, AudioFrame::kMaxDataSizeSamples, dest_ptr_audio) < 0)
+       return -1;
+     preprocess_frame_.num_channels_ = 1;
+     // Set the input of the resampler is the down-mixed signal.
+-    src_ptr_audio = audio;
++    src_ptr_audio = audio.data();
+   }
+ 
+   preprocess_frame_.timestamp_ = expected_codec_ts_;
+diff --git a/modules/audio_coding/include/audio_coding_module.h b/modules/audio_coding/include/audio_coding_module.h
+index 61fa54130b01b812bf948e6005fd93350b57204d..d0441d139c4b4d60797e1c8e45ae7d5b4e766084 100644
+--- a/modules/audio_coding/include/audio_coding_module.h
++++ b/modules/audio_coding/include/audio_coding_module.h
+@@ -32,8 +32,6 @@ class AudioEncoder;
+ class AudioFrame;
+ struct RTPHeader;
+ 
+-#define WEBRTC_10MS_PCM_AUDIO 960  // 16 bits super wideband 48 kHz
+-
+ // Callback class used for sending data ready to be packetized
+ class AudioPacketizationCallback {
+  public:
