@@ -16,6 +16,7 @@ namespace api {
 
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          base::Optional<base::FilePath> custom_path) {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
       thrower.ThrowError("Path must be absolute");
