@@ -810,6 +810,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   network::ResourceRequest request = original_request;
 
   if (ShouldIgnoreConnectionsLimit(request)) {
+    request.priority = net::RequestPriority::MAXIMUM_PRIORITY;
     request.load_flags |= net::LOAD_IGNORE_LIMITS;
   }
 
