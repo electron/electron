@@ -1,0 +1,18 @@
+[req]
+default_bits = 4096
+encrypt_key = no
+default_md = 512
+distinguished_name = req_distinguished_name
+prompt = no
+
+[req_distinguished_name]
+C = CA
+ST = BC
+L = Vancouver
+O = ElectronJS
+OU = BuildAutomation
+CN = codesign.electronjs.org
+
+[extended]
+keyUsage         = critical,digitalSignature
+extendedKeyUsage = critical,codeSigning
