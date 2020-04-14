@@ -819,7 +819,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..6df1a603d5b2887e22e8e2863bb04c7128ab5eec
 --- /dev/null
 +++ b/deps/uvwasi/BUILD.gn
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,35 @@
 +config("uvwasi_config") {
 +  include_dirs = [ "include" ]
 +}
@@ -852,6 +852,7 @@ index 0000000000000000000000000000000000000000..6df1a603d5b2887e22e8e2863bb04c71
 +    "src/fd_table.c",
 +    "src/uv_mapping.c",
 +    "src/uvwasi.c",
++    "src/wasi_rights.c",
 +  ]
 +}
 diff --git a/deps/zlib/BUILD.gn b/deps/zlib/BUILD.gn
