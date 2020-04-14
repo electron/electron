@@ -133,7 +133,8 @@
       "git add filenames.auto.gni"
     ],
     "{*.patch,.patches}": [
-      "node script/lint.js --patches --only --"
+      "node script/lint.js --patches --only --",
+      "node script/check-patch-diff.js"
     ],
     "DEPS": [
       "node script/gen-hunspell-filenames.js"
