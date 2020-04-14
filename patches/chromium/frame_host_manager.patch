@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index dbfc24395349cfa40b5783590d60cc7e44b31205..499af1cdcf13cf57f97a0c28430cbe874c8ed7e7 100644
+index 83aa7b27e72072eecf3414fc8b8fecaf1e62c6a0..cac3fb80e0592154a2cf923689f8bfb30367fb33 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1257,6 +1257,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1267,6 +1267,24 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -71,7 +71,7 @@ index dbfc24395349cfa40b5783590d60cc7e44b31205..499af1cdcf13cf57f97a0c28430cbe87
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 50533c338dd75f606ba542813cfe724301ad6527..3a06ae9ad9d36fea4c055e610dac5b6d66d95e7b 100644
+index f76a633c85c8e53d99c1280d359b6ddcf6bcfbbc..f1d4a349a7d4648e5ac987b24cbe2fb541fa54b6 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2392,6 +2392,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -156,7 +156,7 @@ index 50533c338dd75f606ba542813cfe724301ad6527..3a06ae9ad9d36fea4c055e610dac5b6d
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2456,6 +2516,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2457,6 +2517,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
@@ -220,7 +220,7 @@ index 294db724572266f54c9559bf5278920b819bef03..d2e28037a4005df4a4552440cb8486f5
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index c9b26a69ff139d91dd0c5deb65017eed5b9fda12..959384005b1d3f73b9aca03db2999e8de09b0bdb 100644
+index bb71c61a631573d8f3e4fb5d1aa8a7fcd9fad7e1..cda52523faa5dc969c995b2addc056e30a998cf0 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -233,8 +233,45 @@ class CONTENT_EXPORT ContentBrowserClient {

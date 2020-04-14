@@ -8,10 +8,10 @@ patch works around that problem by using the implementations of those functions 
 found in the OpenSSL repo. I plan to upstream a version of this.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 3c2393a1c674250f7bd262ee5dbc30330c9f2a58..ac1b57efaebbef7da1bb38b587146edad81289db 100644
+index 5e00468aac8b9f9c5ef7ea2f1e3b62991bfde255..c22989e1dae04b05cda1163e1583213ef990ecab 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -5021,7 +5021,7 @@ static unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
+@@ -4481,7 +4481,7 @@ static unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
    if (base_id == EVP_PKEY_DSA) {
      DSA* dsa_key = EVP_PKEY_get0_DSA(pkey.get());
      // Both r and s are computed mod q, so their width is limited by that of q.
@@ -20,7 +20,7 @@ index 3c2393a1c674250f7bd262ee5dbc30330c9f2a58..ac1b57efaebbef7da1bb38b587146eda
    } else if (base_id == EVP_PKEY_EC) {
      EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
      const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
-@@ -5050,8 +5050,8 @@ static AllocatedBuffer ConvertSignatureToP1363(Environment* env,
+@@ -4510,8 +4510,8 @@ static AllocatedBuffer ConvertSignatureToP1363(Environment* env,
    AllocatedBuffer buf = env->AllocateManaged(2 * n);
    unsigned char* data = reinterpret_cast<unsigned char*>(buf.data());
  

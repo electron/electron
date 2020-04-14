@@ -236,9 +236,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
       keyEquivalent:@""]);
 
   // If the menu item has an icon, set it.
-  gfx::Image icon;
-  if (model->GetIconAt(index, &icon) && !icon.IsEmpty())
-    [item setImage:icon.ToNSImage()];
+  ui::ImageModel icon = model->GetIconAt(index);
+  if (icon.IsImage())
+    [item setImage:icon.GetImage().ToNSImage()];
 
   base::string16 toolTip = model->GetToolTipAt(index);
   [item setToolTip:base::SysUTF16ToNSString(toolTip)];

@@ -23,10 +23,10 @@ index cef4e5086ca8160a7d715915f735963e369068b1..35ad9ee1a685177894bb5c13c58c16af
  
    // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 22912e7c89b4cba78315269c3e009bfca1ccec27..8d6fc381330867f40740c1e2e327a05cc4045785 100644
+index 8bb5dae46966541884dbad5bb9c3a3f790c56358..6bc051ca5b864945aedea7a6fa8cf23cb509f9e9 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1129,6 +1129,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1127,6 +1127,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.
@@ -41,12 +41,12 @@ index 22912e7c89b4cba78315269c3e009bfca1ccec27..8d6fc381330867f40740c1e2e327a05c
          try {
            resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
 diff --git a/src/env.h b/src/env.h
-index 4e625f34741c0cf1cd175baf0189406140124ceb..aa40bdc3ccd963b8b6f48d52378801f88f87b733 100644
+index e5e8c107f6881d96e1d8a2b55fff425d5e29b0a4..6a7263736b5252e9ce36269a5be9c58dd031ee94 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -911,6 +911,15 @@ class Environment : public MemoryRetainer {
+@@ -878,6 +878,15 @@ class Environment : public MemoryRetainer {
                uint64_t thread_id = kNoThreadId);
-   ~Environment();
+   ~Environment() override;
  
 +  void ForceOnlyContextAwareNativeModules() {
 +    force_context_aware_ = true;
@@ -60,7 +60,7 @@ index 4e625f34741c0cf1cd175baf0189406140124ceb..aa40bdc3ccd963b8b6f48d52378801f8
    void InitializeLibuv(bool start_profiler_idle_notifier);
    inline const std::vector<std::string>& exec_argv();
    inline const std::vector<std::string>& argv();
-@@ -1280,6 +1289,9 @@ class Environment : public MemoryRetainer {
+@@ -1263,6 +1272,9 @@ class Environment : public MemoryRetainer {
    inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
                           const char* errmsg);
  

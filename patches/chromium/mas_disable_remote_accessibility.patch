@@ -117,7 +117,7 @@ index 0d8a8e14328be49407d35908bacadd92182dae31..86602419d16667ff002333f848abcd77
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index de6fb32e1ff930fbb1c778b59ba18402741c8b44..7d70d057e10ccf3301e810c8a0521d644c8e907f 100644
+index 6c8313f7e09be253528ca83727b78152a17229c8..f293a15c6145422707c22aeb5a254ad71a31900c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -231,8 +231,10 @@ RenderWidgetHostViewMac::~RenderWidgetHostViewMac() {
@@ -154,7 +154,7 @@ index de6fb32e1ff930fbb1c778b59ba18402741c8b44..7d70d057e10ccf3301e810c8a0521d64
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -1866,12 +1872,14 @@ void RenderWidgetHostViewMac::StopSpeaking() {
+@@ -1870,12 +1876,14 @@ void RenderWidgetHostViewMac::StopSpeaking() {
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
@@ -170,10 +170,10 @@ index de6fb32e1ff930fbb1c778b59ba18402741c8b44..7d70d057e10ccf3301e810c8a0521d64
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 33b8a3bb7fae6941f0aa7af47aa048ac4a932b8f..49a7edc01183813d7411494a60c8dc1569961368 100644
+index a4c47479dd8a39f467e5ea8ed3e2bb934e911973..46047665d20233d22b0c8c451a1ce375dcb2567e 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -299,6 +299,13 @@ jumbo_component("base") {
+@@ -305,6 +305,13 @@ jumbo_component("base") {
      ]
    }
  
@@ -208,10 +208,10 @@ index 2a58aebabb23443a2c11364af4988c573f3909ba..3424b6011e80e9c995519b6a8d652abd
 +
  #endif  // UI_BASE_COCOA_REMOTE_ACCESSIBILITY_API_H_
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 1c68117a8987463e810d0d1da5e7e598ce8fc3e1..ad29e87c00db0d34ee3a7d95469fb3fbb1aa76c2 100644
+index 06427b2009ceb2cecf39d783fd1c3477cd5e66f9..1a2cd7a0e52e6345472f29283dfe94be506a338a 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-@@ -27,7 +27,9 @@
+@@ -29,7 +29,9 @@
  #include "ui/views/window/dialog_observer.h"
  
  @class NativeWidgetMacNSWindow;
@@ -221,7 +221,7 @@ index 1c68117a8987463e810d0d1da5e7e598ce8fc3e1..ad29e87c00db0d34ee3a7d95469fb3fb
  @class NSView;
  
  namespace remote_cocoa {
-@@ -406,11 +408,13 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -408,11 +410,13 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    mojo::AssociatedRemote<remote_cocoa::mojom::NativeWidgetNSWindow>
        remote_ns_window_remote_;
  

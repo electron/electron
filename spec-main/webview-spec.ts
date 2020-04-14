@@ -4,7 +4,7 @@ import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { expect } from 'chai';
 
-async function loadWebView (w: WebContents, attributes: Record<string, string>): Promise<void> {
+async function loadWebView (w: WebContents, attributes: Record<string, string>, openDevTools: boolean = false): Promise<void> {
   await w.executeJavaScript(`
     new Promise((resolve, reject) => {
       const webview = new WebView()
@@ -12,6 +12,11 @@ async function loadWebView (w: WebContents, attributes: Record<string, string>):
         webview.setAttribute(k, v)
       }
       document.body.appendChild(webview)
+      webview.addEventListener('dom-ready', () => {
+        if (${openDevTools}) {
+          webview.openDevTools()
+        }
+      })
       webview.addEventListener('did-finish-load', () => {
         resolve()
       })
@@ -165,6 +170,10 @@ describe('<webview> tag', function () {
     await BrowserWindow.addDevToolsExtension(extensionPath);
 
     w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
+    loadWebView(w.webContents, {
+      nodeintegration: 'on',
+      src: `file://${path.join(__dirname, 'fixtures', 'blank.html')}`
+    }, true);
     let childWebContentsId = 0;
     app.once('web-contents-created', (e, webContents) => {
       childWebContentsId = webContents.id;

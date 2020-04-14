@@ -544,7 +544,6 @@ App::App(v8::Isolate* isolate) {
   static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
       ->set_delegate(this);
   Browser::Get()->AddObserver(this);
-  content::GpuDataManager::GetInstance()->AddObserver(this);
 
   base::ProcessId pid = base::GetCurrentProcId();
   auto process_metric = std::make_unique<electron::ProcessMetric>(
@@ -619,6 +618,21 @@ void App::OnPreMainMessageLoopRun() {
   content::BrowserChildProcessObserver::Add(this);
   if (process_singleton_) {
     process_singleton_->OnBrowserReady();
+  }
+}
+
+void App::OnPreCreateThreads() {
+  DCHECK(!content::GpuDataManager::Initialized());
+  content::GpuDataManager* manager = content::GpuDataManager::GetInstance();
+  manager->AddObserver(this);
+
+  if (disable_hw_acceleration_) {
+    manager->DisableHardwareAcceleration();
+  }
+
+  if (disable_domain_blocking_for_3DAPIs_) {
+    content::GpuDataManagerImpl::GetInstance()
+        ->DisableDomainBlockingFor3DAPIsForTesting();
   }
 }
 
@@ -1031,7 +1045,11 @@ void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
         "before app is ready");
     return;
   }
-  content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
+  if (content::GpuDataManager::Initialized()) {
+    content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
+  } else {
+    disable_hw_acceleration_ = true;
+  }
 }
 
 void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
@@ -1041,8 +1059,12 @@ void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
         "before app is ready");
     return;
   }
-  content::GpuDataManagerImpl::GetInstance()
-      ->DisableDomainBlockingFor3DAPIsForTesting();
+  if (content::GpuDataManager::Initialized()) {
+    content::GpuDataManagerImpl::GetInstance()
+        ->DisableDomainBlockingFor3DAPIsForTesting();
+  } else {
+    disable_domain_blocking_for_3DAPIs_ = true;
+  }
 }
 
 bool App::IsAccessibilitySupportEnabled() {

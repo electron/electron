@@ -62,7 +62,9 @@ void CrashReporterWin::Init(const std::string& product_name,
                             const std::string& submit_url,
                             const base::FilePath& crashes_dir,
                             bool upload_to_server,
-                            bool skip_system_crash_handler) {
+                            bool skip_system_crash_handler,
+                            bool rate_limit,
+                            bool compress) {
   // check whether crashpad has been initialized.
   // Only need to initialize once.
   if (simple_string_dictionary_)
@@ -71,10 +73,11 @@ void CrashReporterWin::Init(const std::string& product_name,
     base::FilePath handler_path;
     base::PathService::Get(base::FILE_EXE, &handler_path);
 
-    std::vector<std::string> args = {
-        "--no-rate-limit",
-        "--no-upload-gzip",  // not all servers accept gzip
-    };
+    std::vector<std::string> args;
+    if (!rate_limit)
+      args.emplace_back("--no-rate-limit");
+    if (!compress)
+      args.emplace_back("--no-upload-gzip");
     args.push_back(base::StringPrintf("--type=%s", kCrashpadProcess));
     args.push_back(
         base::StringPrintf("--%s=%s", kCrashesDirectoryKey,

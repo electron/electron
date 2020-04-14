@@ -30,7 +30,9 @@ class CrashReporterWin : public CrashReporterCrashpad {
             const std::string& submit_url,
             const base::FilePath& crashes_dir,
             bool upload_to_server,
-            bool skip_system_crash_handler) override;
+            bool skip_system_crash_handler,
+            bool rate_limit,
+            bool compress) override;
   void SetUploadParameters() override;
 
   crashpad::CrashpadClient& GetCrashpadClient();

@@ -209,6 +209,12 @@ bool ElectronExtensionSystem::FinishDelayedInstallationIfReady(
   return false;
 }
 
+void ElectronExtensionSystem::PerformActionBasedOnOmahaAttributes(
+    const std::string& extension_id,
+    const base::Value& attributes) {
+  NOTREACHED();
+}
+
 void ElectronExtensionSystem::OnExtensionRegisteredWithRequestContexts(
     scoped_refptr<Extension> extension) {
   ExtensionRegistry* registry = ExtensionRegistry::Get(browser_context_);
