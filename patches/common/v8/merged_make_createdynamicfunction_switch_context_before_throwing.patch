@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Tue, 31 Mar 2020 18:49:38 +0200
+Subject: Merged: Make CreateDynamicFunction switch context before throwing
+
+Revision: 093019ee1ab3a92de915c1f3a1a7a5a8c86e3a5d
+
+BUG=chromium:1065094,v8:10361
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=verwaest@chromium.org
+
+Change-Id: I19528a1bc6058e6596f34f73d13d9c249cc6c3a7
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2130127
+Commit-Queue: Georg Neis <neis@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.0@{#60}
+Cr-Branched-From: 69827db645fcece065bf16a795a4ec8d3a51057f-refs/heads/8.0.426@{#2}
+Cr-Branched-From: 2fe1552c5809d0dd92e81d36a5535cbb7c518800-refs/heads/master@{#65318}
+
+diff --git a/src/builtins/builtins-function.cc b/src/builtins/builtins-function.cc
+index 2ea97639b261ca2f32083ccb058231463b46037b..6cd6d187c8700d76f04090727e17018157e0969b 100644
+--- a/src/builtins/builtins-function.cc
++++ b/src/builtins/builtins-function.cc
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "src/api/api-inl.h"
+ #include "src/builtins/builtins-utils-inl.h"
+ #include "src/builtins/builtins.h"
+ #include "src/codegen/code-factory.h"
+@@ -31,6 +32,11 @@ MaybeHandle<Object> CreateDynamicFunction(Isolate* isolate,
+ 
+   if (!Builtins::AllowDynamicFunction(isolate, target, target_global_proxy)) {
+     isolate->CountUsage(v8::Isolate::kFunctionConstructorReturnedUndefined);
++    // TODO(verwaest): We would like to throw using the calling context instead
++    // of the entered context but we don't currently have access to that.
++    HandleScopeImplementer* impl = isolate->handle_scope_implementer();
++    SaveAndSwitchContext save(
++        isolate, impl->LastEnteredOrMicrotaskContext()->native_context());
+     THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kNoAccess), Object);
+   }
+ 

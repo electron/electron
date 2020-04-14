@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Mon, 30 Mar 2020 11:55:10 +0200
+Subject: Make CreateDynamicFunction throw if disallowed
+
+... instead of returning undefined.
+
+Bug: chromium:1065094
+Change-Id: I0b0397a8affd44b58e7f4777f32ba22bbd001ab1
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2124837
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#66902}
+
+diff --git a/src/builtins/builtins-function.cc b/src/builtins/builtins-function.cc
+index f9a356f94bf6f69a7f6e91225cfa9c10d49626ec..2ea97639b261ca2f32083ccb058231463b46037b 100644
+--- a/src/builtins/builtins-function.cc
++++ b/src/builtins/builtins-function.cc
+@@ -31,7 +31,7 @@ MaybeHandle<Object> CreateDynamicFunction(Isolate* isolate,
+ 
+   if (!Builtins::AllowDynamicFunction(isolate, target, target_global_proxy)) {
+     isolate->CountUsage(v8::Isolate::kFunctionConstructorReturnedUndefined);
+-    return isolate->factory()->undefined_value();
++    THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kNoAccess), Object);
+   }
+ 
+   // Build the source string.
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index b55e8d790c3e816a6befb52e522bc0009a6e9bc8..f096c3d1c37df477f1a4ff8ce8dc9c4ec7ce1ff7 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -224,6 +224,9 @@
+   # BUG(v8:6306).
+   'wasm/huge-memory': [SKIP],
+ 
++  # Needs to be adapted after changes to Function constructor. chromium:1065094
++  'cross-realm-filtering': [SKIP],
++
+   # Allocates a huge string and then flattens it, very slow in debug mode.
+   'regress/regress-752764': [PASS, ['mode == debug', SLOW]],
+ 
+diff --git a/test/mjsunit/regress-1065094.js b/test/mjsunit/regress-1065094.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..365e20285bb0505dec3f84c4df57db0525e7acc3
+--- /dev/null
++++ b/test/mjsunit/regress-1065094.js
+@@ -0,0 +1,19 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function f(fnConstructor) {
++    return Object.is(new fnConstructor(), undefined);
++}
++
++const realmIndex = Realm.createAllowCrossRealmAccess();
++const otherFunction = Realm.global(realmIndex).Function;
++Realm.detachGlobal(realmIndex);
++
++%PrepareFunctionForOptimization(f);
++assertFalse(f(Function));
++assertThrows(_ => f(otherFunction));
++%OptimizeFunctionOnNextCall(f);
++assertThrows(_ => f(otherFunction));

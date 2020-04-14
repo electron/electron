@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Turner <alexmt@chromium.org>
+Date: Fri, 20 Sep 2019 20:21:41 +0000
+Subject: Handle ERR_CACHE_RACE in DoDoneHeadersAddToEntryComplete
+
+Crashes have been observed in the wild that may be due to
+ERR_CACHE_RACE being sent to STATE_DONE_HEADERS_ADD_TO_ENTRY_COMPLETE.
+These crashes, however, cannot be reproduced and code investigation
+does not suggest how they might happen. If the crashes stop occurring
+following this change, we will be sure that this is the cause and will
+perform more analysis based on that understanding.
+
+Bug: 959194
+Change-Id: I01649ee31024b598e41c0beda7c7ed54980cb133
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1814843
+Commit-Queue: Alex Turner <alexmt@chromium.org>
+Reviewed-by: Shivani Sharma <shivanisha@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#698597}
+
+diff --git a/net/http/http_cache_transaction.cc b/net/http/http_cache_transaction.cc
+index d3795484f0bac2e6318632617f4e2f41bf1cf772..5fc048709e8001919cd5b5684d39ad4e3c6681fb 100644
+--- a/net/http/http_cache_transaction.cc
++++ b/net/http/http_cache_transaction.cc
+@@ -1481,8 +1481,15 @@ int HttpCache::Transaction::DoDoneHeadersAddToEntryComplete(int result) {
+   DCHECK(response_.headers);
+ 
+   cache_pending_ = false;
+-  entry_ = new_entry_;
+   done_headers_create_new_entry_ = false;
++
++  // Speculative fix for rare crash. crbug.com/959194
++  if (result == ERR_CACHE_RACE) {
++    TransitionToState(STATE_HEADERS_PHASE_CANNOT_PROCEED);
++    return OK;
++  }
++
++  entry_ = new_entry_;
+   DCHECK_NE(response_.headers->response_code(), 304);
+   DCHECK(cache_->CanTransactionWriteResponseHeaders(
+       entry_, this, partial_ != nullptr, false));
+@@ -2113,6 +2120,7 @@ int HttpCache::Transaction::DoHeadersPhaseCannotProceed(int result) {
+   SetRequest(net_log_);
+ 
+   entry_ = nullptr;
++  new_entry_ = nullptr;
+ 
+   // Bypass the cache for timeout scenario.
+   if (result == ERR_CACHE_LOCK_TIMEOUT)

@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Dominik=20Inf=C3=BChr?= <dinfuehr@chromium.org>
 Date: Fri, 13 Dec 2019 14:13:21 +0100
-Subject: [objects] Fix memory leak in PrototypeUsers::Add
+Subject: Fix memory leak in PrototypeUsers::Add
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
