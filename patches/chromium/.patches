@@ -11,7 +11,6 @@ dom_storage_limits.patch
 render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
 thread_capabilities.patch
-web_contents.patch
 webview_cross_drag.patch
 disable_user_gesture_requirement_for_beforeunload_dialogs.patch
 gin_enable_disable_v8_platform.patch
@@ -90,3 +89,5 @@ feat_add_support_for_overriding_the_base_spellchecker_download_url.patch
 gpu_notify_when_dxdiag_request_fails.patch
 feat_allow_embedders_to_add_observers_on_created_hunspell.patch
 fix_account_for_print_preview_disabled_when_printing_to_pdf.patch
+web_contents.patch
+ui_gtk_public_header.patch
