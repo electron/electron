@@ -61,7 +61,8 @@ async function main () {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: 'true',
-      ELECTRON_EAGER_ASAR_HOOK_FOR_TESTING: 'true'
+      ELECTRON_EAGER_ASAR_HOOK_FOR_TESTING: 'true',
+      NODE_SKIP_CRYPTO: 'true'
     },
     cwd: NODE_DIR,
     stdio: 'inherit'
