@@ -2609,6 +2609,7 @@ describe('BrowserWindow module', () => {
 
       await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
       {
+        await w.webContents.sendInputEvent({ type: 'mouseDown', clickCount: 1, x: 1, y: 1 });
         const p = emittedOnce(ipcMain, 'onbeforeunload');
         w.close();
         const [e] = await p;
@@ -2617,6 +2618,7 @@ describe('BrowserWindow module', () => {
 
       await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
       {
+        await w.webContents.sendInputEvent({ type: 'mouseDown', clickCount: 1, x: 1, y: 1 });
         const p = emittedOnce(ipcMain, 'onbeforeunload');
         w.close();
         const [e] = await p;
