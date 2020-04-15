@@ -9,20 +9,20 @@
     "frame name",
     "new-window",
     {
-      "top": "5",
-      "left": "10",
+      "top": 5,
+      "left": 10,
       "resizable": false,
       "x": 10,
       "y": 5,
       "title": "frame name",
-      "width": 800,
-      "height": 600,
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
+      "width": 800,
+      "height": 600,
       "show": false
     },
     [],
@@ -42,6 +42,10 @@
     "frame name",
     "new-window",
     {
+      "resizable": false,
+      "x": 0,
+      "y": 10,
+      "title": "frame name",
       "webPreferences": {
         "zoomFactor": "2",
         "nodeIntegration": false,
@@ -49,10 +53,6 @@
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "resizable": false,
-      "x": null,
-      "y": 10,
-      "title": "frame name",
       "width": 800,
       "height": 600,
       "show": false
@@ -75,11 +75,6 @@
     "new-window",
     {
       "backgroundColor": "gray",
-      "x": 100,
-      "y": 100,
-      "title": "frame name",
-      "width": 800,
-      "height": 600,
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
@@ -87,6 +82,11 @@
         "openerId": "placeholder-opener-id",
         "backgroundColor": "gray"
       },
+      "x": 100,
+      "y": 100,
+      "title": "frame name",
+      "width": 800,
+      "height": 600,
       "show": false
     },
     [],
@@ -109,14 +109,14 @@
       "x": 50,
       "y": 20,
       "title": "sup",
-      "width": 800,
-      "height": 600,
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
+      "width": 800,
+      "height": 600,
       "show": false
     },
     [],
@@ -136,20 +136,20 @@
     "frame name",
     "new-window",
     {
-      "show": "false",
-      "top": true,
-      "left": true,
-      "x": null,
-      "y": null,
+      "show": false,
+      "top": 1,
+      "left": 1,
+      "x": 1,
+      "y": 1,
       "title": "frame name",
-      "width": 800,
-      "height": 600,
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
-      }
+      },
+      "width": 800,
+      "height": 600
     },
     [],
     {

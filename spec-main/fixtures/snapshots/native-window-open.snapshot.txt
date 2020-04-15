@@ -13,11 +13,6 @@
       "width": 800,
       "height": 600,
       "webContents": "[WebContents]",
-      "top": "5",
-      "left": "10",
-      "resizable": false,
-      "x": 10,
-      "y": 5,
       "title": "frame name",
       "webPreferences": {
         "nativeWindowOpen": true,
@@ -27,6 +22,11 @@
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false
       },
+      "top": 5,
+      "left": 10,
+      "resizable": false,
+      "x": 10,
+      "y": 5,
       "backgroundColor": "blue",
       "focusable": false
     },
@@ -51,6 +51,7 @@
       "width": 800,
       "height": 600,
       "webContents": "[WebContents]",
+      "title": "frame name",
       "webPreferences": {
         "zoomFactor": "2",
         "nativeWindowOpen": true,
@@ -61,9 +62,8 @@
         "nodeIntegrationInSubFrames": false
       },
       "resizable": false,
-      "x": null,
+      "x": 0,
       "y": 10,
-      "title": "frame name",
       "backgroundColor": "blue",
       "focusable": false
     },
@@ -88,9 +88,6 @@
       "width": 800,
       "height": 600,
       "webContents": "[WebContents]",
-      "backgroundColor": "gray",
-      "x": 100,
-      "y": 100,
       "title": "frame name",
       "webPreferences": {
         "nativeWindowOpen": true,
@@ -100,6 +97,9 @@
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false
       },
+      "backgroundColor": "gray",
+      "x": 100,
+      "y": 100,
       "focusable": false
     },
     [],
@@ -123,8 +123,6 @@
       "width": 800,
       "height": 600,
       "webContents": "[WebContents]",
-      "x": 50,
-      "y": 20,
       "title": "sup",
       "webPreferences": {
         "nativeWindowOpen": true,
@@ -134,6 +132,8 @@
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false
       },
+      "x": 50,
+      "y": 20,
       "backgroundColor": "blue",
       "focusable": false
     },
@@ -154,14 +154,10 @@
     "frame name",
     "new-window",
     {
-      "show": "false",
+      "show": false,
       "width": 800,
       "height": 600,
       "webContents": "[WebContents]",
-      "top": true,
-      "left": true,
-      "x": null,
-      "y": null,
       "title": "frame name",
       "webPreferences": {
         "nativeWindowOpen": true,
@@ -171,6 +167,10 @@
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false
       },
+      "top": 1,
+      "left": 1,
+      "x": 1,
+      "y": 1,
       "backgroundColor": "blue",
       "focusable": false
     },
