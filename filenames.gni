@@ -581,7 +581,7 @@ filenames = {
     "shell/renderer/api/context_bridge/render_frame_function_store.h",
     "shell/renderer/api/electron_api_context_bridge.cc",
     "shell/renderer/api/electron_api_context_bridge.h",
-    "shell/renderer/api/electron_api_renderer_ipc.cc",
+    "shell/renderer/api/electron_api_ipc_renderer.cc",
     "shell/renderer/api/electron_api_spell_check_client.cc",
     "shell/renderer/api/electron_api_spell_check_client.h",
     "shell/renderer/api/electron_api_web_frame.cc",
