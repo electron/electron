@@ -16,10 +16,10 @@ https://github.com/electron/electron/pull/18483#discussion_r292703588
 https://github.com/electron/electron/pull/18483#issuecomment-501090683
 
 diff --git a/third_party/crashpad/crashpad/util/win/exception_handler_server.cc b/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
-index 2593ff2de0327c393c30cae9962a329c5e27b64e..e89b8ff675bed2fa65263ea451d40995e0b010b7 100644
+index c841f7bc5c3d9962ea24664f26c6867ded529c7b..13218a598bbd4b51cd9a045879ee20b0491f8146 100644
 --- a/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
 +++ b/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
-@@ -448,9 +448,16 @@ bool ExceptionHandlerServer::ServiceClientConnection(
+@@ -445,9 +445,16 @@ bool ExceptionHandlerServer::ServiceClientConnection(
      DWORD real_pid = 0;
      if (get_named_pipe_client_process_id(service_context.pipe(), &real_pid) &&
          message.registration.client_process_id != real_pid) {

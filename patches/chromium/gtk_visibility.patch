@@ -6,10 +6,10 @@ Subject: gtk_visibility.patch
 Allow electron to depend on GTK in the GN build.
 
 diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
-index 9249f88e3234d0c11fe870169fc3fe8ce3c00ff1..7c4261f06c74f13d29b4cb2d2e3c047bf319b7f0 100644
+index a73160222398b0beb02a8f2c7f2e2f05a1b6e339..5a9ca1ca4f96a2a106eab3d92224a67d1620134f 100644
 --- a/build/config/linux/gtk/BUILD.gn
 +++ b/build/config/linux/gtk/BUILD.gn
-@@ -28,6 +28,8 @@ group("gtk") {
+@@ -29,6 +29,8 @@ group("gtk") {
      # This should probably be moved into //ui/gtk.
      "//ui/ozone/platform/wayland",
  
