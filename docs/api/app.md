@@ -409,7 +409,8 @@ Returns:
 This event will be emitted inside the primary instance of your application
 when a second instance has been executed and calls `app.requestSingleInstanceLock()`.
 
-`argv` is an Array of the second instance's command line arguments,
+`argv` is an Array of the second instance's command line arguments, make sure the
+second instance starts at the same user or you won't recieve the arguments,
 and `workingDirectory` is its current working directory. Usually
 applications respond to this by making their primary window focused and
 non-minimized.
