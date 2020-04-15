@@ -2609,7 +2609,6 @@ describe('BrowserWindow module', () => {
 
       await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
       {
-        await w.webContents.sendInputEvent({ type: 'mouseDown', clickCount: 1, x: 1, y: 1 });
         const p = emittedOnce(ipcMain, 'onbeforeunload');
         w.close();
         const [e] = await p;
@@ -2617,8 +2616,27 @@ describe('BrowserWindow module', () => {
       }
 
       await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+
+      // Hi future test refactorer! I don't know what event this timeout allows
+      // to occur, but without it, this test becomes flaky at this point and
+      // sometimes the window gets closed even though a `beforeunload` handler
+      // has been installed. I looked for events being emitted by the
+      // `webContents` during this timeout period and found nothing, so it
+      // might be some sort of internal timeout being applied by the content/
+      // layer, or blink?
+      //
+      // In any case, this incantation reduces flakiness. I'm going to add a
+      // summoning circle for good measure.
+      //
+      //      🕯 🕯
+      //   🕯       🕯
+      // 🕯           🕯
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 🕯           🕯
+      //   🕯       🕯
+      //      🕯 🕯
+
       {
-        await w.webContents.sendInputEvent({ type: 'mouseDown', clickCount: 1, x: 1, y: 1 });
         const p = emittedOnce(ipcMain, 'onbeforeunload');
         w.close();
         const [e] = await p;
