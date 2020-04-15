@@ -7,16 +7,19 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..22d119036d12c396af935fe85ae18751e6d80562
+index 0000000000000000000000000000000000000000..2d8952a1d23af0ab4b3e5de0e56ec1e30c77dd71
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,360 @@
+@@ -0,0 +1,376 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
 +declare_args() {
 +  # Enable the V8 inspector protocol for use with node.
 +  node_enable_inspector = true
++
++  # Enable diagnostic reporting withing Node.js
++  node_report = true
 +
 +  # Build node with SSL support.
 +  # The variable is called "openssl" for parity with node's GYP build.
@@ -122,6 +125,11 @@ index 0000000000000000000000000000000000000000..22d119036d12c396af935fe85ae18751
 +    defines += [ "NODE_USE_V8_PLATFORM=1" ]
 +  } else {
 +    defines += [ "NODE_USE_V8_PLATFORM=0" ]
++  }
++  if (node_report) {
++    defines += [ "NODE_REPORT=1" ]
++  } else {
++    defines += [ "NODE_REPORT=0" ]
 +  }
 +}
 +
@@ -252,6 +260,14 @@ index 0000000000000000000000000000000000000000..22d119036d12c396af935fe85ae18751
 +  }
 +  if (is_mac) {
 +    libs += [ "CoreFoundation.framework" ]
++  }
++
++  if (node_report) {
++    sources += [
++      "src/node_report.cc",
++      "src/node_report_module.cc",
++      "src/node_report_utils.cc",
++    ]
 +  }
 +
 +  if (node_enable_inspector) {
