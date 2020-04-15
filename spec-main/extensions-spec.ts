@@ -296,7 +296,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       customSession.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
       const w = new BrowserWindow({ show: true, webPreferences: { session: customSession, nodeIntegration: true } });
-      await w.loadURL('data:text/html,hello');
+      await w.loadURL(url);
       w.webContents.openDevTools();
       showLastDevToolsPanel(w);
       await emittedOnce(ipcMain, 'winning');

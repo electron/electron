@@ -16,8 +16,8 @@
 #include "shell/common/application_info.h"
 
 #if defined(USE_X11)
-#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "shell/browser/linux/unity_service.h"
+#include "ui/gtk/gtk_util.h"
 #endif
 
 namespace electron {

@@ -7,10 +7,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1652925 removed colors
 needed in chromium but our autofill implementation uses them.  This patch can be removed if we refactor
 our autofill implementation to work like Chromium's.
 
-diff --git a/chrome/browser/ui/gtk/native_theme_gtk.cc b/chrome/browser/ui/gtk/native_theme_gtk.cc
-index 990e2f0539dea8a4f2b47df1cc93715901fc5a7d..84a67a0efb3deed4a273be0f939abef71543e4fa 100644
---- a/chrome/browser/ui/gtk/native_theme_gtk.cc
-+++ b/chrome/browser/ui/gtk/native_theme_gtk.cc
+diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
+index 352bc3d9fb59ea46829ff02f779b3372efadf8db..70a49a4b473bc03e92625c57383dc9fddd85de42 100644
+--- a/ui/gtk/native_theme_gtk.cc
++++ b/ui/gtk/native_theme_gtk.cc
 @@ -351,6 +351,27 @@ base::Optional<SkColor> SkColorFromColorId(
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
@@ -40,7 +40,7 @@ index 990e2f0539dea8a4f2b47df1cc93715901fc5a7d..84a67a0efb3deed4a273be0f939abef7
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index cbef81b92f2589937c67370335713e5e9de44532..e850e603101e54e33b96fcd2c67a9e33a6819302 100644
+index aac3821e6d977a8f80e4ded5b5944b43a7f200b1..83b3f97113244108c8648f21b646ef7262f282b5 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -43,7 +43,8 @@ base::Optional<SkColor> GetHighContrastColor(
@@ -68,7 +68,7 @@ index cbef81b92f2589937c67370335713e5e9de44532..e850e603101e54e33b96fcd2c67a9e33
      // FocusableBorder
      case NativeTheme::kColorId_FocusedBorderColor:
        return SkColorSetA(gfx::kGoogleBlue300, 0x4D);
-@@ -484,6 +493,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -487,6 +496,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return gfx::kGoogleGrey300;
  
@@ -87,7 +87,7 @@ index cbef81b92f2589937c67370335713e5e9de44532..e850e603101e54e33b96fcd2c67a9e33
      // Material spinner/throbber
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
-@@ -543,7 +564,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -549,7 +570,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
    }
  
    if (color_scheme == NativeTheme::ColorScheme::kDark) {

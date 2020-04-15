@@ -251,6 +251,7 @@ class Browser : public WindowListObserver {
   void OnAccessibilitySupportChanged();
 
   void PreMainMessageLoopRun();
+  void PreCreateThreads();
 
   // Stores the supplied |quit_closure|, to be run when the last Browser
   // instance is destroyed.

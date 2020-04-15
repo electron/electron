@@ -12,10 +12,10 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index ba01477a3deea383f538adfe519bc53154df3321..441010b3e5cbe70f49e8aece3120dc24bd41e43c 100644
+index db9780a6c0b679354a5f74b1f89e32a8ff9dd2e3..cc51d41f88a60ccb936b0608973b76ba84c2a47b 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
-@@ -147,6 +147,11 @@ bool GpuDataManagerImpl::Dx12VulkanRequested() const {
+@@ -161,6 +161,11 @@ bool GpuDataManagerImpl::Dx12VulkanRequested() const {
    return private_->Dx12VulkanRequested();
  }
  
@@ -28,10 +28,10 @@ index ba01477a3deea383f538adfe519bc53154df3321..441010b3e5cbe70f49e8aece3120dc24
    base::AutoLock auto_lock(lock_);
    private_->OnBrowserThreadsStarted();
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index c5515870a1dcf017b3477d890510a672e82e00e3..436a16a581f5d39bd64e0101d2c0e59d5f8a4dc6 100644
+index d5595c91f4d63362e575ad31070335ee344261fa..19c012313550cf9d9bf591a54e739fc34239e4dd 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
-@@ -87,6 +87,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
+@@ -90,6 +90,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
    void UpdateDxDiagNodeRequestStatus(bool request_continues);
    void UpdateDx12VulkanRequestStatus(bool request_continues);
    bool Dx12VulkanRequested() const;

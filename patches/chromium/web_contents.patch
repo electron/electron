@@ -9,10 +9,10 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1e0d0a28cfe2c25b186fac6eb2d02e96730c3934..552f4cf6e09855e9bc1ceecbdeb959dd85a1ce05 100644
+index 484e2325a618ea2e665544a625dfbb60ef6124da..5b4f85cfadac54fa81a357ebece6f9b274066a29 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2065,6 +2065,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2069,6 +2069,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    std::string unique_name;
    frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
  
@@ -25,7 +25,7 @@ index 1e0d0a28cfe2c25b186fac6eb2d02e96730c3934..552f4cf6e09855e9bc1ceecbdeb959dd
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -2075,6 +2081,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2079,6 +2085,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
      view_.reset(CreateWebContentsView(this, delegate,
                                        &render_view_host_delegate_view_));
    }
@@ -34,10 +34,10 @@ index 1e0d0a28cfe2c25b186fac6eb2d02e96730c3934..552f4cf6e09855e9bc1ceecbdeb959dd
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index cf98180740c4adaf0082e987e4b7fc482b11d348..376aaaebcb45b078c59f013437ac9baf7c9dd037 100644
+index b471bd1f78c610e56219962084ae66d5e2450738..ab498adcf576641c79f16fd1bf5376b7acaf9636 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -82,9 +82,12 @@ class BrowserPluginGuestDelegate;
+@@ -84,9 +84,12 @@ class BrowserPluginGuestDelegate;
  class InterstitialPage;
  class RenderFrameHost;
  class RenderViewHost;
@@ -50,7 +50,7 @@ index cf98180740c4adaf0082e987e4b7fc482b11d348..376aaaebcb45b078c59f013437ac9baf
  class WebUI;
  struct CustomContextMenuContext;
  struct DropData;
-@@ -209,6 +212,10 @@ class WebContents : public PageNavigator,
+@@ -211,6 +214,10 @@ class WebContents : public PageNavigator,
        kInitializeAndWarmupRendererProcess,
      } desired_renderer_state;
  
