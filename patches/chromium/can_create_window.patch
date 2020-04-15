@@ -21,10 +21,10 @@ index d3aa739956bf04de6ad0882f04d030e2901ab80d..04debb0b15a068d6216ccd7e5295a417
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a4a2c55e3e5d7d0b36f708cb2a5345dc80787c13..7dfc42c4ed02fd42f1b744bcccf69ce858f7372a 100644
+index b93b364cc24369589a61da02ebed82207e04d658..2076b318c689a3998ca19c8393810d53d1d986d2 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2945,9 +2945,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -2946,9 +2946,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -53,10 +53,10 @@ index ce836b666eaca4312b01dec1cb012bbcb23b9050..9009a8b7a23e170ab0fbf81a6d157e18
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 89f33b33f8c848040f3bc6e34282688efda9c4db..294db724572266f54c9559bf5278920b819bef03 100644
+index c49222a1c068b0d8b30dea2916aa2486586b15cf..aeff1a685fc22c2e8fe988856cb529028f102182 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -512,6 +512,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -510,6 +510,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -66,10 +66,10 @@ index 89f33b33f8c848040f3bc6e34282688efda9c4db..294db724572266f54c9559bf5278920b
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index dd059509f2565ddd08a5f8dcc1052a36bd7bb919..bb71c61a631573d8f3e4fb5d1aa8a7fcd9fad7e1 100644
+index 728f71d76c75dd3534bc58cd2a452666452b33d4..be343c7f4a9e412fbb7b43cc908b8bdcb12aa533 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -143,6 +143,7 @@ class NetworkService;
+@@ -142,6 +142,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -77,7 +77,7 @@ index dd059509f2565ddd08a5f8dcc1052a36bd7bb919..bb71c61a631573d8f3e4fb5d1aa8a7fc
  }  // namespace network
  
  namespace rappor {
-@@ -834,6 +835,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -833,6 +834,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
