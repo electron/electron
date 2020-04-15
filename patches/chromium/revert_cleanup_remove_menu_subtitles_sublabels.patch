@@ -19,7 +19,7 @@ index 273666e278b3c6d1ac1e203f51a6a701366cdf2f..e9ab80665fd54b13c4211016e1607dc6
    }
  }
 diff --git a/chrome/browser/status_icons/status_icon_menu_model.cc b/chrome/browser/status_icons/status_icon_menu_model.cc
-index 35d5182b293bcc5e013654f71e2366afef7f3e24..6deae7c286e9da72ab6a35d2e973da7fb32353d6 100644
+index bc3cb82154ab964d7ef28fdb90db17782eb74564..d4da1ad6447e0241433019e726edecc66ed76ad6 100644
 --- a/chrome/browser/status_icons/status_icon_menu_model.cc
 +++ b/chrome/browser/status_icons/status_icon_menu_model.cc
 @@ -20,6 +20,7 @@ struct StatusIconMenuModel::ItemState {
@@ -56,14 +56,14 @@ index 35d5182b293bcc5e013654f71e2366afef7f3e24..6deae7c286e9da72ab6a35d2e973da7f
 +  return base::string16();
 +}
 +
- bool StatusIconMenuModel::GetIconForCommandId(int command_id,
-                                               gfx::Image* image_skia) const {
+ ui::ImageModel StatusIconMenuModel::GetIconForCommandId(int command_id) const {
    auto iter = item_states_.find(command_id);
+   if (iter != item_states_.end() && !iter->second.icon.IsEmpty())
 diff --git a/chrome/browser/status_icons/status_icon_menu_model.h b/chrome/browser/status_icons/status_icon_menu_model.h
-index f40a33f7ce6ef9c9c538f44a86a404925eec32b5..556f531fcb66072828f3b5c2c07cd9d6a744ad53 100644
+index c69344ab9b4e1a4fb1293abf65a392d513099e4a..b6f90d0a6902848b18201d12b7441d874807eee9 100644
 --- a/chrome/browser/status_icons/status_icon_menu_model.h
 +++ b/chrome/browser/status_icons/status_icon_menu_model.h
-@@ -61,9 +61,11 @@ class StatusIconMenuModel
+@@ -62,9 +62,11 @@ class StatusIconMenuModel
  
    // Calling any of these "change" methods will mark the menu item as "dynamic"
    // (see menu_model.h:IsItemDynamicAt) which many platforms take as a cue to
@@ -76,19 +76,19 @@ index f40a33f7ce6ef9c9c538f44a86a404925eec32b5..556f531fcb66072828f3b5c2c07cd9d6
    void ChangeIconForCommandId(int command_id, const gfx::Image& icon);
  
    void AddObserver(Observer* observer);
-@@ -77,6 +79,7 @@ class StatusIconMenuModel
+@@ -78,6 +80,7 @@ class StatusIconMenuModel
                                    ui::Accelerator* accelerator) const override;
    bool IsItemForCommandIdDynamic(int command_id) const override;
    base::string16 GetLabelForCommandId(int command_id) const override;
 +  base::string16 GetSublabelForCommandId(int command_id) const override;
-   bool GetIconForCommandId(int command_id, gfx::Image* icon) const override;
+   ui::ImageModel GetIconForCommandId(int command_id) const override;
  
   protected:
 diff --git a/chrome/browser/status_icons/status_icon_menu_model_unittest.cc b/chrome/browser/status_icons/status_icon_menu_model_unittest.cc
-index a258d038da4a2bbfc6ec13c250781166235c1fbc..f6dbaa19cdb8938204c3452622589708c7bc3bb2 100644
+index 952714121ff7c5ffdcdb0d757450b53d926f2fc8..2c4de7bddc5d47ba4d0e528a98d4d1df65bc59f8 100644
 --- a/chrome/browser/status_icons/status_icon_menu_model_unittest.cc
 +++ b/chrome/browser/status_icons/status_icon_menu_model_unittest.cc
-@@ -90,6 +90,10 @@ TEST_F(StatusIconMenuModelTest, SetProperties) {
+@@ -86,6 +86,10 @@ TEST_F(StatusIconMenuModelTest, SetProperties) {
    menu_model()->ChangeLabelForCommandId(0, ASCIIToUTF16("label2"));
    EXPECT_EQ(ASCIIToUTF16("label2"), menu_model()->GetLabelForCommandId(0));
  
@@ -98,13 +98,13 @@ index a258d038da4a2bbfc6ec13c250781166235c1fbc..f6dbaa19cdb8938204c3452622589708
 +
    // Try setting icon image and changing it.
    menu_model()->ChangeIconForCommandId(1, test_image1);
-   EXPECT_TRUE(menu_model()->GetIconForCommandId(1, &image_arg));
-@@ -98,8 +102,9 @@ TEST_F(StatusIconMenuModelTest, SetProperties) {
+   image_arg = menu_model()->GetIconForCommandId(1);
+@@ -96,8 +100,9 @@ TEST_F(StatusIconMenuModelTest, SetProperties) {
    // Ensure changes to one menu item does not affect the other menu item.
    EXPECT_FALSE(menu_model()->GetAcceleratorForCommandId(1, &accel_arg));
    EXPECT_EQ(base::string16(), menu_model()->GetLabelForCommandId(1));
 +  EXPECT_EQ(base::string16(), menu_model()->GetSublabelForCommandId(0));
-   EXPECT_FALSE(menu_model()->GetIconForCommandId(0, &image_arg));
+   EXPECT_TRUE(menu_model()->GetIconForCommandId(0).IsEmpty());
  
 -  // Menu state should have changed 6 times in this test.
 -  EXPECT_EQ(6, changed_count());
@@ -197,7 +197,7 @@ index 887eee64e27f7437be2b308c1d74b0ea49efc745..340109357fb9840744f231d583722f36
    // is rendered to the right of the label and using the font GetLabelFontAt().
    virtual base::string16 GetMinorTextAt(int index) const;
 diff --git a/ui/base/models/simple_menu_model.cc b/ui/base/models/simple_menu_model.cc
-index 6f7faa95a656e28082c9741df7c00e402b589897..cec830de8e0953e211091ad17cc80a423c95453e 100644
+index 88053e9d501413d18b6a6ae36b76668431db7ee9..2af6fb77acbe97e7dd7f02f646a91f0fb27878ab 100644
 --- a/ui/base/models/simple_menu_model.cc
 +++ b/ui/base/models/simple_menu_model.cc
 @@ -49,6 +49,16 @@ base::string16 SimpleMenuModel::Delegate::GetLabelForCommandId(
@@ -214,10 +214,10 @@ index 6f7faa95a656e28082c9741df7c00e402b589897..cec830de8e0953e211091ad17cc80a42
 +  MenuItemsChanged();
 +}
 +
- bool SimpleMenuModel::Delegate::GetIconForCommandId(
-     int command_id, gfx::Image* image_skia) const {
-   return false;
-@@ -371,6 +381,12 @@ base::string16 SimpleMenuModel::GetLabelAt(int index) const {
+ ImageModel SimpleMenuModel::Delegate::GetIconForCommandId(
+     int command_id) const {
+   return ImageModel();
+@@ -364,6 +374,12 @@ base::string16 SimpleMenuModel::GetLabelAt(int index) const {
    return items_[ValidateItemIndex(index)].label;
  }
  
@@ -231,18 +231,18 @@ index 6f7faa95a656e28082c9741df7c00e402b589897..cec830de8e0953e211091ad17cc80a42
    return items_[ValidateItemIndex(index)].minor_text;
  }
 diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_model.h
-index a6ae50505af98383dc63ebb111c5a3724620913b..a3daaf80675a8267e3de14b8184b68fd541c59e8 100644
+index 2b06f3f4a03227ac7898fc3563ab04518d24a313..f7c42c8cea2d7e8198e1fb58dbb2beaf006bf4b0 100644
 --- a/ui/base/models/simple_menu_model.h
 +++ b/ui/base/models/simple_menu_model.h
-@@ -48,6 +48,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
-     // Some command ids have labels and icons that change over time.
-     virtual bool IsItemForCommandIdDynamic(int command_id) const;
+@@ -45,6 +45,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
      virtual base::string16 GetLabelForCommandId(int command_id) const;
+     // Gets the icon for the item with the specified id.
+     virtual ImageModel GetIconForCommandId(int command_id) const;
 +    virtual base::string16 GetSublabelForCommandId(int command_id) const;
-     // Gets the icon for the item with the specified id, returning true if there
-     // is an icon, false otherwise.
-     virtual bool GetIconForCommandId(int command_id,
-@@ -158,6 +159,9 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
+ 
+     // Performs the action associates with the specified command id.
+     // The passed |event_flags| are the flags from the event which issued this
+@@ -146,6 +147,9 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
    // Sets the label for the item at |index|.
    void SetLabel(int index, const base::string16& label);
  
@@ -252,7 +252,7 @@ index a6ae50505af98383dc63ebb111c5a3724620913b..a3daaf80675a8267e3de14b8184b68fd
    // Sets the minor text for the item at |index|.
    void SetMinorText(int index, const base::string16& minor_text);
  
-@@ -184,6 +188,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
+@@ -172,6 +176,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
    ui::MenuSeparatorType GetSeparatorTypeAt(int index) const override;
    int GetCommandIdAt(int index) const override;
    base::string16 GetLabelAt(int index) const override;
@@ -260,7 +260,7 @@ index a6ae50505af98383dc63ebb111c5a3724620913b..a3daaf80675a8267e3de14b8184b68fd
    base::string16 GetMinorTextAt(int index) const override;
    ImageModel GetMinorIconAt(int index) const override;
    bool IsItemDynamicAt(int index) const override;
-@@ -218,6 +223,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
+@@ -206,6 +211,7 @@ class UI_BASE_EXPORT SimpleMenuModel : public MenuModel {
      int command_id = 0;
      ItemType type = TYPE_COMMAND;
      base::string16 label;
