@@ -1,85 +1,115 @@
-'use strict';
+/**
+ * Utilities to parse comma-separated key value pairs used in browser APIs.
+ * For example: "x=100,y=200,width=500,height=500"
+ */
+import { BrowserWindowConstructorOptions } from 'electron';
 
-// parses a feature string that has the format used in window.open()
-// - `features` input string
-// - `emit` function(key, value) - called for each parsed KV
-function parseFeaturesString (features, emit) {
-  features = `${features}`.trim();
-  // split the string by ','
-  features.split(/\s*,\s*/).forEach((feature) => {
-    // expected form is either a key by itself or a key/value pair in the form of
-    // 'key=value'
-    let [key, value] = feature.split(/\s*=\s*/);
-    if (!key) return;
+type A = Required<BrowserWindowConstructorOptions>;
+type KeysOfTypeInteger = {
+  [K in keyof A]:
+    A[K] extends number ? K : never
+}[keyof A];
 
-    // interpret the value as a boolean, if possible
-    value = (value === 'yes' || value === '1') ? true : (value === 'no' || value === '0') ? false : value;
+// This could be an array of keys, but an object allows us to add a compile-time
+// check validating that we haven't added an integer property to
+// BrowserWindowConstructorOptions that this module doesn't know about.
+const keysOfTypeNumberCompileTimeCheck: { [K in KeysOfTypeInteger] : true } = {
+  x: true,
+  y: true,
+  width: true,
+  height: true,
+  minWidth: true,
+  maxWidth: true,
+  minHeight: true,
+  maxHeight: true,
+  opacity: true
+};
+// Note `top` / `left` are special cases from the browser which we later convert
+// to y / x.
+const keysOfTypeNumber = ['top', 'left', ...Object.keys(keysOfTypeNumberCompileTimeCheck)];
 
-    // emit the parsed pair
-    emit(key, value);
-  });
+/**
+ * Note that we only allow "0" and "1" boolean conversion when the type is known
+ * not to be an integer.
+ *
+ * The coercion of yes/no/1/0 represents best effort accordance with the spec:
+ * https://html.spec.whatwg.org/multipage/window-object.html#concept-window-open-features-parse-boolean
+ */
+type CoercedValue = string | number | boolean;
+function coerce (key: string, value: string): CoercedValue {
+  if (keysOfTypeNumber.includes(key)) {
+    return Number(value);
+  }
+
+  switch (value) {
+    case 'true':
+    case '1':
+    case 'yes':
+    case undefined:
+      return true;
+    case 'false':
+    case '0':
+    case 'no':
+      return false;
+    default:
+      return value;
+  }
 }
 
-function convertFeaturesString (features, frameName) {
-  const options = {};
+function parseCommaSeparatedKeyValue (source: string, useSoonToBeDeprecatedBehaviorForBareKeys: boolean) {
+  const bareKeys = [] as string[];
+  const parsed = source.split(',').reduce((map, keyValuePair) => {
+    const [key, value] = keyValuePair.split('=').map(str => str.trim());
 
-  const ints = ['x', 'y', 'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'zoomFactor'];
-  const webPreferences = ['zoomFactor', 'nodeIntegration', 'enableRemoteModule', 'preload', 'javascript', 'contextIsolation', 'webviewTag'];
-
-  // Used to store additional features
-  const additionalFeatures = [];
-
-  // Parse the features
-  parseFeaturesString(features, function (key, value) {
-    if (value === undefined) {
-      additionalFeatures.push(key);
-    } else {
-      // Don't allow webPreferences to be set since it must be an object
-      // that cannot be directly overridden
-      if (key === 'webPreferences') return;
-
-      if (webPreferences.includes(key)) {
-        if (options.webPreferences == null) {
-          options.webPreferences = {};
-        }
-        options.webPreferences[key] = value;
-      } else {
-        options[key] = value;
-      }
+    if (useSoonToBeDeprecatedBehaviorForBareKeys && value === undefined) {
+      bareKeys.push(key);
+      return map;
     }
+
+    map[key] = coerce(key, value);
+    return map;
+  }, {} as { [key: string]: any });
+
+  return { parsed, bareKeys };
+}
+
+export function parseWebViewWebPreferences (preferences: string) {
+  return parseCommaSeparatedKeyValue(preferences, false).parsed;
+}
+
+const allowedWebPreferences = ['zoomFactor', 'nodeIntegration', 'enableRemoteModule', 'preload', 'javascript', 'contextIsolation', 'webviewTag'];
+
+/**
+ * Parses a feature string that has the format used in window.open().
+ *
+ * `useSoonToBeDeprecatedBehaviorForBareKeys` — In the html spec, windowFeatures keys
+ * without values are interpreted as `true`. Previous versions of Electron did
+ * not respect this. In order to not break any applications, this will be
+ * flipped in the next major version.
+ */
+export function parseFeatures (
+  features: string,
+  useSoonToBeDeprecatedBehaviorForBareKeys: boolean = true
+): {
+  options: Omit<BrowserWindowConstructorOptions, 'webPreferences'> & { [key: string]: CoercedValue };
+  webPreferences: BrowserWindowConstructorOptions['webPreferences'];
+  additionalFeatures: string[];
+} {
+  const { parsed, bareKeys } = parseCommaSeparatedKeyValue(features, useSoonToBeDeprecatedBehaviorForBareKeys);
+
+  const webPreferences = {};
+  allowedWebPreferences.forEach((key) => {
+    if (parsed[key] === undefined) return;
+    (webPreferences as any)[key] = parsed[key];
+    delete parsed[key];
   });
 
-  if (options.left) {
-    if (options.x == null) {
-      options.x = options.left;
-    }
-  }
-  if (options.top) {
-    if (options.y == null) {
-      options.y = options.top;
-    }
-  }
-  if (options.title == null) {
-    options.title = frameName;
-  }
-  if (options.width == null) {
-    options.width = 800;
-  }
-  if (options.height == null) {
-    options.height = 600;
-  }
-
-  for (const name of ints) {
-    if (options[name] != null) {
-      options[name] = parseInt(options[name], 10);
-    }
-  }
+  if (parsed.left !== undefined) parsed.x = parsed.left;
+  if (parsed.top !== undefined) parsed.y = parsed.top;
 
   return {
-    options, additionalFeatures
+    options: parsed,
+    webPreferences,
+    additionalFeatures: bareKeys
   };
 }
-
-module.exports = {
-  parseFeaturesString, convertFeaturesString
-};
