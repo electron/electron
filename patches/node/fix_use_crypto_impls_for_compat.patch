@@ -3,12 +3,12 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Wed, 12 Feb 2020 15:08:04 -0800
 Subject: fix: use crypto impls for compat
 
-BoringSSL does not export DSA_get0_q, ECDSA_SIG_get0_r, or ECDSA_SIG_get0_s. This
-patch works around that problem by using the implementations of those functions as
-found in the OpenSSL repo. I plan to upstream a version of this.
+BoringSSL does not export DSA_get0_q. This patch works around that problem
+by using the implementations of those functions as found in the OpenSSL repo.
+I plan to try and upstream a version of this.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 5e00468aac8b9f9c5ef7ea2f1e3b62991bfde255..c22989e1dae04b05cda1163e1583213ef990ecab 100644
+index 5e00468aac8b9f9c5ef7ea2f1e3b62991bfde255..81a75049e51ee9e24f69361fca27ee858597c8e7 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -4481,7 +4481,7 @@ static unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
@@ -20,14 +20,3 @@ index 5e00468aac8b9f9c5ef7ea2f1e3b62991bfde255..c22989e1dae04b05cda1163e1583213e
    } else if (base_id == EVP_PKEY_EC) {
      EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
      const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
-@@ -4510,8 +4510,8 @@ static AllocatedBuffer ConvertSignatureToP1363(Environment* env,
-   AllocatedBuffer buf = env->AllocateManaged(2 * n);
-   unsigned char* data = reinterpret_cast<unsigned char*>(buf.data());
- 
--  const BIGNUM* r = ECDSA_SIG_get0_r(asn1_sig.get());
--  const BIGNUM* s = ECDSA_SIG_get0_s(asn1_sig.get());
-+  const BIGNUM* r = asn1_sig.get()->r;
-+  const BIGNUM* s = asn1_sig.get()->s;
-   CHECK_EQ(n, static_cast<unsigned int>(BN_bn2binpad(r, data, n)));
-   CHECK_EQ(n, static_cast<unsigned int>(BN_bn2binpad(s, data + n, n)));
- 
