@@ -388,19 +388,19 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     context_bridge::RenderFramePersistenceStore* store,
     int recursion_depth) {
   mate::Dictionary api(source_context->GetIsolate(), api_object);
-  mate::Dictionary proxy =
-      mate::Dictionary::CreateEmpty(destination_context->GetIsolate());
-  store->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
-  auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
-      source_context,
-      static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE | v8::SKIP_SYMBOLS),
-      v8::KeyConversionMode::kConvertToString);
-  if (maybe_keys.IsEmpty())
-    return v8::MaybeLocal<v8::Object>(proxy.GetHandle());
-  auto keys = maybe_keys.ToLocalChecked();
-
   v8::Context::Scope destination_context_scope(destination_context);
   {
+    mate::Dictionary proxy =
+        mate::Dictionary::CreateEmpty(destination_context->GetIsolate());
+    store->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
+    auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
+        source_context,
+        static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE | v8::SKIP_SYMBOLS),
+        v8::KeyConversionMode::kConvertToString);
+    if (maybe_keys.IsEmpty())
+      return v8::MaybeLocal<v8::Object>(proxy.GetHandle());
+    auto keys = maybe_keys.ToLocalChecked();
+
     uint32_t length = keys->Length();
     std::string key_str;
     for (uint32_t i = 0; i < length; i++) {
