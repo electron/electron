@@ -75,7 +75,8 @@ export function parseWebViewWebPreferences (preferences: string) {
   return parseCommaSeparatedKeyValue(preferences, false).parsed;
 }
 
-const allowedWebPreferences = ['zoomFactor', 'nodeIntegration', 'enableRemoteModule', 'preload', 'javascript', 'contextIsolation', 'webviewTag'];
+const allowedWebPreferences = ['zoomFactor', 'nodeIntegration', 'enableRemoteModule', 'preload', 'javascript', 'contextIsolation', 'webviewTag'] as const;
+type AllowedWebPreference = (typeof allowedWebPreferences)[number];
 
 /**
  * Parses a feature string that has the format used in window.open().
@@ -88,17 +89,13 @@ const allowedWebPreferences = ['zoomFactor', 'nodeIntegration', 'enableRemoteMod
 export function parseFeatures (
   features: string,
   useSoonToBeDeprecatedBehaviorForBareKeys: boolean = true
-): {
-  options: Omit<BrowserWindowConstructorOptions, 'webPreferences'> & { [key: string]: CoercedValue };
-  webPreferences: BrowserWindowConstructorOptions['webPreferences'];
-  additionalFeatures: string[];
-} {
+) {
   const { parsed, bareKeys } = parseCommaSeparatedKeyValue(features, useSoonToBeDeprecatedBehaviorForBareKeys);
 
-  const webPreferences = {};
+  const webPreferences: { [K in AllowedWebPreference]?: any } = {};
   allowedWebPreferences.forEach((key) => {
     if (parsed[key] === undefined) return;
-    (webPreferences as any)[key] = parsed[key];
+    webPreferences[key] = parsed[key];
     delete parsed[key];
   });
 
@@ -106,7 +103,7 @@ export function parseFeatures (
   if (parsed.top !== undefined) parsed.y = parsed.top;
 
   return {
-    options: parsed,
+    options: parsed as Omit<BrowserWindowConstructorOptions, 'webPreferences'> & { [key: string]: CoercedValue },
     webPreferences,
     additionalFeatures: bareKeys
   };

@@ -37,9 +37,7 @@ describe('new-window event', () => {
     }
   };
 
-  let testName : keyof typeof testConfig;
-  // eslint-disable-next-line guard-for-in
-  for (testName in testConfig) {
+  for (const testName of Object.keys(testConfig) as (keyof typeof testConfig)[]) {
     const { snapshotFileName, browserWindowOptions } = testConfig[testName];
 
     describe(`for ${testName} window opening`, () => {
