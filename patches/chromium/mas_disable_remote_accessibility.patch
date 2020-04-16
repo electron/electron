@@ -117,7 +117,7 @@ index 0d8a8e14328be49407d35908bacadd92182dae31..86602419d16667ff002333f848abcd77
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 6c8313f7e09be253528ca83727b78152a17229c8..f293a15c6145422707c22aeb5a254ad71a31900c 100644
+index 359c792b2586756b6e195eaa0b61e426edbe764d..878837a454336afe177c3113062a1e8c8fff9076 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -231,8 +231,10 @@ RenderWidgetHostViewMac::~RenderWidgetHostViewMac() {
