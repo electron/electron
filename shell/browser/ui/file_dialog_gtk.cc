@@ -204,6 +204,8 @@ class FileChooserDialog {
 
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
   gtk_widget_hide(dialog_);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
   if (save_promise_) {
     gin_helper::Dictionary dict =
         gin::Dictionary::CreateEmpty(save_promise_->isolate());

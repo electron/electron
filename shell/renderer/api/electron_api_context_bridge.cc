@@ -398,19 +398,19 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     context_bridge::ObjectCache* object_cache,
     int recursion_depth) {
   gin_helper::Dictionary api(source_context->GetIsolate(), api_object);
-  gin_helper::Dictionary proxy =
-      gin::Dictionary::CreateEmpty(destination_context->GetIsolate());
-  object_cache->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
-  auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
-      source_context,
-      static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE | v8::SKIP_SYMBOLS),
-      v8::KeyConversionMode::kConvertToString);
-  if (maybe_keys.IsEmpty())
-    return v8::MaybeLocal<v8::Object>(proxy.GetHandle());
-  auto keys = maybe_keys.ToLocalChecked();
-
   v8::Context::Scope destination_context_scope(destination_context);
   {
+    gin_helper::Dictionary proxy =
+        gin::Dictionary::CreateEmpty(destination_context->GetIsolate());
+    object_cache->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
+    auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
+        source_context,
+        static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE | v8::SKIP_SYMBOLS),
+        v8::KeyConversionMode::kConvertToString);
+    if (maybe_keys.IsEmpty())
+      return v8::MaybeLocal<v8::Object>(proxy.GetHandle());
+    auto keys = maybe_keys.ToLocalChecked();
+
     uint32_t length = keys->Length();
     std::string key_str;
     for (uint32_t i = 0; i < length; i++) {
