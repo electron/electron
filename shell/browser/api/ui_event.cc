@@ -18,6 +18,7 @@ constexpr int mouse_button_flags =
 
 v8::Local<v8::Object> CreateEventFromFlags(int flags) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
   const int is_mouse_click = static_cast<bool>(flags & mouse_button_flags);
   return gin::DataObjectBuilder(isolate)
       .Set("shiftKey", static_cast<bool>(flags & ui::EF_SHIFT_DOWN))
