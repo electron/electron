@@ -56,7 +56,7 @@ function coerce (key: string, value: string): CoercedValue {
   }
 }
 
-function parseCommaSeparatedKeyValue (source: string, useSoonToBeDeprecatedBehaviorForBareKeys: boolean) {
+export function parseCommaSeparatedKeyValue (source: string, useSoonToBeDeprecatedBehaviorForBareKeys: boolean) {
   const bareKeys = [] as string[];
   const parsed = source.split(',').reduce((map, keyValuePair) => {
     const [key, value] = keyValuePair.split('=').map(str => str.trim());
