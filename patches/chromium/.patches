@@ -12,7 +12,6 @@ render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
 thread_capabilities.patch
 webview_cross_drag.patch
-disable_user_gesture_requirement_for_beforeunload_dialogs.patch
 gin_enable_disable_v8_platform.patch
 blink-worker-enable-csp-in-file-scheme.patch
 disable-redraw-lock.patch

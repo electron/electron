@@ -54,14 +54,16 @@ describe('webContents module', () => {
 
     it('emits if beforeunload returns false', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      w.webContents.executeJavaScript('run()', true);
       await emittedOnce(w.webContents, 'will-prevent-unload');
     });
 
     it('supports calling preventDefault on will-prevent-unload events', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', event => event.preventDefault());
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      w.webContents.executeJavaScript('run()', true);
       await emittedOnce(w, 'closed');
     });
   });

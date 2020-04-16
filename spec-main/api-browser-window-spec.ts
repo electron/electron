@@ -185,7 +185,8 @@ describe('BrowserWindow module', () => {
       expect(content).to.equal('close');
     });
     it('should emit beforeunload event', async () => {
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      w.webContents.executeJavaScript('run()', true);
       const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
       e.returnValue = null;
     });
@@ -2590,7 +2591,8 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'));
     });
     it('returning false would prevent close', async () => {
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      w.webContents.executeJavaScript('run()', true);
       const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
       e.returnValue = null;
     });
@@ -2598,57 +2600,103 @@ describe('BrowserWindow module', () => {
       ipcMain.once('onbeforeunload', (e) => { e.returnValue = null; done(); });
       w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-empty-string.html'));
     });
-    it('emits for each close attempt', (done) => {
-      let beforeUnloadCount = 0;
-      ipcMain.on('onbeforeunload', (e) => {
+
+    it('emits for each close attempt', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+
+      const destroyListener = () => { expect.fail('Close was not prevented'); };
+      w.webContents.once('destroyed', destroyListener);
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      {
+        const p = emittedOnce(ipcMain, 'onbeforeunload');
+        w.close();
+        const [e] = await p;
         e.returnValue = null;
-        beforeUnloadCount += 1;
-        if (beforeUnloadCount < 3) {
-          w.close();
-        } else if (beforeUnloadCount === 3) {
-          done();
-        }
-      });
-      w.webContents.once('did-finish-load', () => { w.webContents.executeJavaScript('window.close()', true); });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      }
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+
+      // Hi future test refactorer! I don't know what event this timeout allows
+      // to occur, but without it, this test becomes flaky at this point and
+      // sometimes the window gets closed even though a `beforeunload` handler
+      // has been installed. I looked for events being emitted by the
+      // `webContents` during this timeout period and found nothing, so it
+      // might be some sort of internal timeout being applied by the content/
+      // layer, or blink?
+      //
+      // In any case, this incantation reduces flakiness. I'm going to add a
+      // summoning circle for good measure.
+      //
+      //      🕯 🕯
+      //   🕯       🕯
+      // 🕯           🕯
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 🕯           🕯
+      //   🕯       🕯
+      //      🕯 🕯
+
+      {
+        const p = emittedOnce(ipcMain, 'onbeforeunload');
+        w.close();
+        const [e] = await p;
+        e.returnValue = null;
+      }
+
+      w.webContents.removeListener('destroyed', destroyListener);
+      const p = emittedOnce(w.webContents, 'destroyed');
+      w.close();
+      await p;
     });
-    it('emits for each reload attempt', (done) => {
-      let beforeUnloadCount = 0;
-      ipcMain.on('onbeforeunload', (e) => {
+
+    it('emits for each reload attempt', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+
+      const navigationListener = () => { expect.fail('Reload was not prevented'); };
+      w.webContents.once('did-start-navigation', navigationListener);
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      w.reload();
+      {
+        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
         e.returnValue = null;
-        beforeUnloadCount += 1;
-        if (beforeUnloadCount < 3) {
-          w.reload();
-        } else if (beforeUnloadCount === 3) {
-          done();
-        }
-      });
-      w.webContents.once('did-finish-load', () => {
-        w.webContents.once('did-finish-load', () => {
-          expect.fail('Reload was not prevented');
-        });
-        w.reload();
-      });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      }
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      w.reload();
+      {
+        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
+        e.returnValue = null;
+      }
+
+      w.webContents.removeListener('did-start-navigation', navigationListener);
+      w.reload();
+      await emittedOnce(w.webContents, 'did-finish-load');
     });
-    it('emits for each navigation attempt', (done) => {
-      let beforeUnloadCount = 0;
-      ipcMain.on('onbeforeunload', (e) => {
+
+    it('emits for each navigation attempt', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+
+      const navigationListener = () => { expect.fail('Reload was not prevented'); };
+      w.webContents.once('did-start-navigation', navigationListener);
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      w.loadURL('about:blank');
+      {
+        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
         e.returnValue = null;
-        beforeUnloadCount += 1;
-        if (beforeUnloadCount < 3) {
-          w.loadURL('about:blank');
-        } else if (beforeUnloadCount === 3) {
-          done();
-        }
-      });
-      w.webContents.once('did-finish-load', () => {
-        w.webContents.once('did-finish-load', () => {
-          expect.fail('Navigation was not prevented');
-        });
-        w.loadURL('about:blank');
-      });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      }
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      w.loadURL('about:blank');
+      {
+        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
+        e.returnValue = null;
+      }
+
+      w.webContents.removeListener('did-start-navigation', navigationListener);
+      w.loadURL('about:blank');
+      await emittedOnce(w.webContents, 'did-finish-load');
     });
   });
 
