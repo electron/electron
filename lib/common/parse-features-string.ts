@@ -4,16 +4,16 @@
  */
 import { BrowserWindowConstructorOptions } from 'electron';
 
-type A = Required<BrowserWindowConstructorOptions>;
-type KeysOfTypeInteger = {
-  [K in keyof A]:
-    A[K] extends number ? K : never
-}[keyof A];
+type RequiredBrowserWindowConstructorOptions = Required<BrowserWindowConstructorOptions>;
+type IntegerBrowserWindowOptionKeys = {
+  [K in keyof RequiredBrowserWindowConstructorOptions]:
+    RequiredBrowserWindowConstructorOptions[K] extends number ? K : never
+}[keyof RequiredBrowserWindowConstructorOptions];
 
 // This could be an array of keys, but an object allows us to add a compile-time
 // check validating that we haven't added an integer property to
 // BrowserWindowConstructorOptions that this module doesn't know about.
-const keysOfTypeNumberCompileTimeCheck: { [K in KeysOfTypeInteger] : true } = {
+const keysOfTypeNumberCompileTimeCheck: { [K in IntegerBrowserWindowOptionKeys] : true } = {
   x: true,
   y: true,
   width: true,
