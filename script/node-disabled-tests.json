@@ -166,7 +166,6 @@
   "parallel/test-v8-flags",
   "parallel/test-v8-coverage",
   "parallel/test-vm-basic",
-  "parallel/test-vm-codegen",
   "parallel/test-vm-parse-abort-on-uncaught-exception",
   "parallel/test-vm-syntax-error-message",
   "parallel/test-warn-sigprof",
