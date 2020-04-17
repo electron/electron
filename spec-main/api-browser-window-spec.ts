@@ -1010,27 +1010,78 @@ describe('BrowserWindow module', () => {
       });
 
       ifdescribe(process.platform === 'win32')(`Fullscreen state`, () => {
-        it(`checks normal bounds when fullscreen'ed`, (done) => {
-          const bounds = w.getBounds();
-          w.once('enter-full-screen', () => {
-            expectBoundsEqual(w.getNormalBounds(), bounds);
-            done();
+        it('with properties', () => {
+          it('can be set with the fullscreen constructor option', () => {
+            w = new BrowserWindow({ fullscreen: true });
+            expect(w.fullScreen).to.be.true();
           });
-          w.show();
-          w.setFullScreen(true);
+
+          it('can be changed', () => {
+            w.fullScreen = false;
+            expect(w.fullScreen).to.be.false();
+            w.fullScreen = true;
+            expect(w.fullScreen).to.be.true();
+          });
+
+          it(`checks normal bounds when fullscreen'ed`, (done) => {
+            const bounds = w.getBounds();
+            w.once('enter-full-screen', () => {
+              expectBoundsEqual(w.getNormalBounds(), bounds);
+              done();
+            });
+            w.show();
+            w.fullScreen = true;
+          });
+
+          it(`checks normal bounds when unfullscreen'ed`, (done) => {
+            const bounds = w.getBounds();
+            w.once('enter-full-screen', () => {
+              w.fullScreen = false;
+            });
+            w.once('leave-full-screen', () => {
+              expectBoundsEqual(w.getNormalBounds(), bounds);
+              done();
+            });
+            w.show();
+            w.fullScreen = true;
+          });
         });
 
-        it(`checks normal bounds when unfullscreen'ed`, (done) => {
-          const bounds = w.getBounds();
-          w.once('enter-full-screen', () => {
+        it('with functions', () => {
+          it('can be set with the fullscreen constructor option', () => {
+            w = new BrowserWindow({ fullscreen: true });
+            expect(w.isFullScreen()).to.be.true();
+          });
+
+          it('can be changed', () => {
             w.setFullScreen(false);
+            expect(w.isFullScreen()).to.be.false();
+            w.setFullScreen(true);
+            expect(w.isFullScreen()).to.be.true();
           });
-          w.once('leave-full-screen', () => {
-            expectBoundsEqual(w.getNormalBounds(), bounds);
-            done();
+
+          it(`checks normal bounds when fullscreen'ed`, (done) => {
+            const bounds = w.getBounds();
+            w.once('enter-full-screen', () => {
+              expectBoundsEqual(w.getNormalBounds(), bounds);
+              done();
+            });
+            w.show();
+            w.setFullScreen(true);
           });
-          w.show();
-          w.setFullScreen(true);
+
+          it(`checks normal bounds when unfullscreen'ed`, (done) => {
+            const bounds = w.getBounds();
+            w.once('enter-full-screen', () => {
+              w.setFullScreen(false);
+            });
+            w.once('leave-full-screen', () => {
+              expectBoundsEqual(w.getNormalBounds(), bounds);
+              done();
+            });
+            w.show();
+            w.setFullScreen(true);
+          });
         });
       });
     });
