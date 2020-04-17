@@ -62,7 +62,7 @@ class CrashReporter {
                     bool skip_system_crash_handler,
                     bool rate_limit,
                     bool compress) = 0;
-  virtual void SetUploadParameters();
+  virtual void SetUploadParameters() = 0;
 
   StringMap upload_parameters_;
   std::string process_type_;
