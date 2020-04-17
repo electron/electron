@@ -85,6 +85,13 @@ void HostCleanupFinalizationGroupCallback(
   env->RegisterFinalizationGroupForCleanup(group);
 }
 
+bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
+                                     v8::Local<v8::String>) {
+  v8::Local<v8::Value> wasm_code_gen = context->GetEmbedderData(
+      node::ContextEmbedderIndex::kAllowWasmCodeGeneration);
+  return wasm_code_gen->IsUndefined() || wasm_code_gen->IsTrue();
+}
+
 }  // namespace
 
 namespace electron {
@@ -160,6 +167,9 @@ int NodeMain(int argc, char* argv[]) {
       // TODO(codebytere): we shouldn't have to call this - upstream?
       isolate->SetHostCleanupFinalizationGroupCallback(
           HostCleanupFinalizationGroupCallback);
+
+      isolate->SetAllowWasmCodeGenerationCallback(
+          AllowWasmCodeGenerationCallback);
 
       gin_helper::Dictionary process(isolate, env->process_object());
 #if defined(OS_WIN)
