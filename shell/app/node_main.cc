@@ -146,6 +146,10 @@ int NodeMain(int argc, char* argv[]) {
     JavascriptEnvironment gin_env(loop);
 
     v8::Isolate* isolate = gin_env.isolate();
+    // TODO(ckerr) and/or TODO(codebytere) use node::SetIsolateMiscHandlers()
+    node::IsolateSettings is;
+    isolate->SetMicrotasksPolicy(is.policy);
+
     v8::Isolate::Scope isolate_scope(isolate);
     v8::Locker locker(isolate);
     node::Environment* env = nullptr;

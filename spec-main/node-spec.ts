@@ -307,4 +307,17 @@ describe('node feature', () => {
     const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')]);
     expect(result.status).to.equal(0);
   });
+
+  it('handles Promise timeouts correctly', (done) => {
+    const scriptPath = path.join(fixtures, 'module', 'node-promise-timer.js');
+    const child = childProcess.spawn(process.execPath, [scriptPath], {
+      env: { ELECTRON_RUN_AS_NODE: 'true' }
+    });
+    emittedOnce(child, 'exit').then(([code, signal]) => {
+      expect(code).to.equal(0);
+      expect(signal).to.equal(null);
+      child.kill();
+      done();
+    });
+  });
 });
