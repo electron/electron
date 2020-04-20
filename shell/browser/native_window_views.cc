@@ -654,8 +654,8 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
   if (!::IsWindow(otherWindow))
     return false;
 
-  ::SetWindowPos(GetAcceleratedWidget(), GetWindow(otherWindow, GW_HWNDPREV),
-                 0, 0, 0, 0,
+  ::SetWindowPos(GetAcceleratedWidget(), GetWindow(otherWindow, GW_HWNDPREV), 0,
+                 0, 0, 0,
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #elif defined(USE_X11)
   if (!IsWindowValid(id.id))
