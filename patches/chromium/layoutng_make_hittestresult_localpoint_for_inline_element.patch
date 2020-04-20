@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yoshifumi Inoue <yosin@chromium.org>
 Date: Fri, 17 Apr 2020 09:22:24 +0000
-Subject: [LayoutNG] Make HitTestResult::LocalPoint() for inline element as
- same as legacy layout
+Subject: Make HitTestResult::LocalPoint() for inline element as same as legacy
+ layout
 
 This patch changes |NGBoxFragmentPainter::NodeAtPoint()| to set offset in
 containing block instead of offset in underlying element for inline element as
