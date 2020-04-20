@@ -757,6 +757,12 @@ if (is_mac) {
     outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
 
     public_deps = [ "//third_party/crashpad/crashpad/handler:crashpad_handler" ]
+
+    if (is_asan) {
+      # crashpad_handler requires the ASan runtime at its @executable_path.
+      sources += [ "$root_out_dir/libclang_rt.asan_osx_dynamic.dylib" ]
+      public_deps += [ "//build/config/sanitizers:copy_asan_runtime" ]
+    }
   }
 
   mac_framework_bundle("electron_framework") {
