@@ -3,7 +3,7 @@
 If you experience crashes or issues in Electron that you believe are not caused
 by your JavaScript application, but instead by Electron itself, debugging can
 be a little bit tricky, especially for developers not used to native/C++
-debugging. However, using Visual Studio, GitHub's hosted Electron Symbol Server,
+debugging. However, using Visual Studio, Electron's hosted Symbol Server,
 and the Electron source code, you can enable step-through debugging
 with breakpoints inside Electron's source code.
 
@@ -22,7 +22,7 @@ with breakpoints inside Electron's source code.
 
 * **Visual Studio with C++ Tools**: The free community editions of Visual
   Studio 2013 and Visual Studio 2015 both work. Once installed,
-  [configure Visual Studio to use GitHub's Electron Symbol server](setting-up-symbol-server.md).
+  [configure Visual Studio to use Electron's Symbol server](setting-up-symbol-server.md).
   It will enable Visual Studio to gain a better understanding of what happens
   inside Electron, making it easier to present variables in a human-readable
   format.

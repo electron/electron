@@ -7,7 +7,7 @@ Electron's [autoUpdater](../api/auto-updater.md) module.
 
 ## Using `update.electronjs.org`
 
-GitHub's Electron team maintains [update.electronjs.org], a free and open-source
+The Electron team maintains [update.electronjs.org], a free and open-source
 webservice that Electron apps can use to self-update. The service is designed
 for Electron apps that meet the following criteria:
 
