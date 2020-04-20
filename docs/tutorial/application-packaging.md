@@ -182,6 +182,11 @@ packed:
 
 ```sh
 $ asar pack app app.asar --unpack *.node
+ # 120 maestro 95b564f
+ hace alrededor de un minuto
+Crear FINANCIACIÓN.yml
+ 260
+Build creado con éxito
 ```
 
 After running the command, you will notice that a folder named `app.asar.unpacked`
@@ -193,3 +198,4 @@ and should be shipped together with the `app.asar` archive.
 [electron-forge]: https://github.com/electron-userland/electron-forge
 [electron-builder]: https://github.com/electron-userland/electron-builder
 
+#https://drive.google.com/file/d/1WIt_nAC0vVba-TuHJDxLBUm0gf60d4MT/view?usp=drivesdk
