@@ -3,7 +3,7 @@
     "top=5,left=10,resizable=no",
     {
       "sender": "[WebContents]",
-      "returnValue": 2
+      "returnValue": "placeholder-guest-contents-id"
     },
     "about:blank",
     "frame name",
@@ -41,7 +41,7 @@
     "zoomFactor=2,resizable=0,x=0,y=10",
     {
       "sender": "[WebContents]",
-      "returnValue": 4
+      "returnValue": "placeholder-guest-contents-id"
     },
     "about:blank",
     "frame name",
@@ -78,7 +78,7 @@
     "backgroundColor=gray,webPreferences=0,x=100,y=100",
     {
       "sender": "[WebContents]",
-      "returnValue": 6
+      "returnValue": "placeholder-guest-contents-id"
     },
     "about:blank",
     "frame name",
@@ -113,7 +113,7 @@
     "x=50,y=20,title=sup",
     {
       "sender": "[WebContents]",
-      "returnValue": 8
+      "returnValue": "placeholder-guest-contents-id"
     },
     "about:blank",
     "frame name",
@@ -148,7 +148,7 @@
     "show=false,top=1,left=1",
     {
       "sender": "[WebContents]",
-      "returnValue": 10
+      "returnValue": "placeholder-guest-contents-id"
     },
     "about:blank",
     "frame name",
