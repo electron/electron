@@ -69,10 +69,7 @@ void AddAdditionalDataForPdf(base::DictionaryValue* dict) {
   dict->SetKey("pdfAnnotationsEnabled",
                base::Value(base::FeatureList::IsEnabled(
                    chrome_pdf::features::kPDFAnnotations)));
-
-  // TODO(nornagon): enable printing once it works.
-  bool enable_printing = false;
-  dict->SetKey("printingEnabled", base::Value(enable_printing));
+  dict->SetKey("printingEnabled", base::Value(true));
 #endif  // BUILDFLAG(ENABLE_PDF)
 }
 
