@@ -182,6 +182,11 @@ packed:
 
 ```sh
 $ asar pack app app.asar --unpack *.node
+ # 120 maestro 95b564f
+ hace alrededor de un minuto
+Crear FINANCIACIÓN.yml
+ 260
+Build creado con éxito
 ```
 
 After running the command, you will notice that a folder named `app.asar.unpacked`
