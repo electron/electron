@@ -21,9 +21,7 @@ class CrashReporterMac : public CrashReporterCrashpad {
  public:
   static CrashReporterMac* GetInstance();
 
-  void Init(const std::string& product_name,
-            const std::string& company_name,
-            const std::string& submit_url,
+  void Init(const std::string& submit_url,
             const base::FilePath& crashes_dir,
             bool upload_to_server,
             bool skip_system_crash_handler,

@@ -34,9 +34,7 @@ class CrashReporter {
   static void StartInstance(const gin_helper::Dictionary& options);
 
   bool IsInitialized();
-  void Start(const std::string& product_name,
-             const std::string& company_name,
-             const std::string& submit_url,
+  void Start(const std::string& submit_url,
              const base::FilePath& crashes_dir,
              bool upload_to_server,
              bool skip_system_crash_handler,
@@ -47,26 +45,24 @@ class CrashReporter {
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
       const base::FilePath& crashes_dir);
 
-  virtual void SetUploadToServer(bool upload_to_server);
-  virtual bool GetUploadToServer();
+  virtual void SetUploadToServer(bool upload_to_server) = 0;
+  virtual bool GetUploadToServer() = 0;
   virtual void AddExtraParameter(const std::string& key,
-                                 const std::string& value);
-  virtual void RemoveExtraParameter(const std::string& key);
+                                 const std::string& value) = 0;
+  virtual void RemoveExtraParameter(const std::string& key) = 0;
   virtual std::map<std::string, std::string> GetParameters() const;
 
  protected:
   CrashReporter();
   virtual ~CrashReporter();
 
-  virtual void Init(const std::string& product_name,
-                    const std::string& company_name,
-                    const std::string& submit_url,
+  virtual void Init(const std::string& submit_url,
                     const base::FilePath& crashes_dir,
                     bool upload_to_server,
                     bool skip_system_crash_handler,
                     bool rate_limit,
-                    bool compress);
-  virtual void SetUploadParameters();
+                    bool compress) = 0;
+  virtual void SetUploadParameters() = 0;
 
   StringMap upload_parameters_;
   std::string process_type_;

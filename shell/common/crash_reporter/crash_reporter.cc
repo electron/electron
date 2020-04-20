@@ -46,9 +46,7 @@ bool CrashReporter::IsInitialized() {
   return is_initialized_;
 }
 
-void CrashReporter::Start(const std::string& product_name,
-                          const std::string& company_name,
-                          const std::string& submit_url,
+void CrashReporter::Start(const std::string& submit_url,
                           const base::FilePath& crashes_dir,
                           bool upload_to_server,
                           bool skip_system_crash_handler,
@@ -58,8 +56,8 @@ void CrashReporter::Start(const std::string& product_name,
   is_initialized_ = true;
   SetUploadParameters(extra_parameters);
 
-  Init(product_name, company_name, submit_url, crashes_dir, upload_to_server,
-       skip_system_crash_handler, rate_limit, compress);
+  Init(submit_url, crashes_dir, upload_to_server, skip_system_crash_handler,
+       rate_limit, compress);
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
@@ -71,12 +69,6 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
 
   // Setting platform dependent parameters.
   SetUploadParameters();
-}
-
-void CrashReporter::SetUploadToServer(const bool upload_to_server) {}
-
-bool CrashReporter::GetUploadToServer() {
-  return true;
 }
 
 std::vector<CrashReporter::UploadReportResult>
@@ -102,30 +94,33 @@ CrashReporter::GetUploadedReports(const base::FilePath& crashes_dir) {
   return result;
 }
 
-void CrashReporter::Init(const std::string& product_name,
-                         const std::string& company_name,
-                         const std::string& submit_url,
-                         const base::FilePath& crashes_dir,
-                         bool auto_submit,
-                         bool skip_system_crash_handler,
-                         bool rate_limit,
-                         bool compress) {}
-
-void CrashReporter::SetUploadParameters() {}
-
-void CrashReporter::AddExtraParameter(const std::string& key,
-                                      const std::string& value) {}
-
-void CrashReporter::RemoveExtraParameter(const std::string& key) {}
-
 std::map<std::string, std::string> CrashReporter::GetParameters() const {
   return upload_parameters_;
 }
 
 #if defined(OS_MACOSX) && defined(MAS_BUILD)
+class DummyCrashReporter : public CrashReporter {
+ public:
+  ~DummyCrashReporter() override {}
+
+  void SetUploadToServer(bool upload_to_server) override {}
+  bool GetUploadToServer() override { return false; }
+  void AddExtraParameter(const std::string& key,
+                         const std::string& value) override {}
+  void RemoveExtraParameter(const std::string& key) override {}
+
+  void Init(const std::string& submit_url,
+            const base::FilePath& crashes_dir,
+            bool upload_to_server,
+            bool skip_system_crash_handler,
+            bool rate_limit,
+            bool compress) override {}
+  void SetUploadParameters() override {}
+};
+
 // static
 CrashReporter* CrashReporter::GetInstance() {
-  static CrashReporter crash_reporter;
+  static DummyCrashReporter crash_reporter;
   return &crash_reporter;
 }
 #endif
@@ -156,9 +151,9 @@ void CrashReporter::StartInstance(const gin_helper::Dictionary& options) {
   bool upload_to_server = true;
   bool skip_system_crash_handler = false;
 
-  reporter->Start(product_name, company_name, submit_url, crashes_dir,
-                  upload_to_server, skip_system_crash_handler, rate_limit,
-                  compress, extra_parameters);
+  reporter->Start(submit_url, crashes_dir, upload_to_server,
+                  skip_system_crash_handler, rate_limit, compress,
+                  extra_parameters);
 }
 
 }  // namespace crash_reporter
