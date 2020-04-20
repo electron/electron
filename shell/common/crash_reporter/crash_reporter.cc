@@ -99,9 +99,28 @@ std::map<std::string, std::string> CrashReporter::GetParameters() const {
 }
 
 #if defined(OS_MACOSX) && defined(MAS_BUILD)
+class DummyCrashReporter : public CrashReporter {
+ public:
+  ~DummyCrashReporter() override {}
+
+  void SetUploadToServer(bool upload_to_server) override {}
+  bool GetUploadToServer() override {}
+  void AddExtraParameter(const std::string& key,
+                         const std::string& value) override {}
+  void RemoveExtraParameter(const std::string& key) override {}
+
+  void Init(const std::string& submit_url,
+            const base::FilePath& crashes_dir,
+            bool upload_to_server,
+            bool skip_system_crash_handler,
+            bool rate_limit,
+            bool compress) override {}
+  void SetUploadParameters() override {}
+};
+
 // static
 CrashReporter* CrashReporter::GetInstance() {
-  static CrashReporter crash_reporter;
+  static DummyCrashReporter crash_reporter;
   return &crash_reporter;
 }
 #endif

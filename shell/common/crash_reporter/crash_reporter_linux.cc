@@ -85,6 +85,12 @@ bool CrashReporterLinux::GetUploadToServer() {
   return upload_to_server_;
 }
 
+void CrashReporterLinux::AddExtraParameter(const std::string& key,
+                                           const std::string& value) {}
+
+void CrashReporterLinux::RemoveExtraParameter(const std::string& key) override {
+}
+
 void CrashReporterLinux::EnableCrashDumping(const base::FilePath& crashes_dir) {
   {
     base::ThreadRestrictions::ScopedAllowIO allow_io;

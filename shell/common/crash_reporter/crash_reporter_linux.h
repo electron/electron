@@ -37,6 +37,9 @@ class CrashReporterLinux : public CrashReporter {
   void SetUploadToServer(bool upload_to_server) override;
   void SetUploadParameters() override;
   bool GetUploadToServer() override;
+  void AddExtraParameter(const std::string& key,
+                         const std::string& value) override;
+  void RemoveExtraParameter(const std::string& key) override;
 
  private:
   friend struct base::DefaultSingletonTraits<CrashReporterLinux>;
