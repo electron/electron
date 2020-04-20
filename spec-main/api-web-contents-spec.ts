@@ -384,7 +384,7 @@ describe('webContents module', () => {
       const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
       w.webContents.openDevTools();
       await devToolsOpened;
-      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.devToolsWebContents.id);
+      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.devToolsWebContents!.id);
       const devToolsClosed = emittedOnce(w.webContents, 'devtools-closed');
       w.webContents.closeDevTools();
       await devToolsClosed;
@@ -468,7 +468,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.openDevTools();
       w.webContents.once('devtools-opened', () => {
-        expect(w.webContents.devToolsWebContents.getWebPreferences()).to.be.null();
+        expect(w.webContents.devToolsWebContents!.getWebPreferences()).to.be.null();
         done();
       });
     });
@@ -1656,11 +1656,11 @@ describe('webContents module', () => {
       const opened = emittedOnce(w.webContents, 'devtools-opened');
       w.webContents.openDevTools();
       await opened;
-      await emittedOnce(w.webContents.devToolsWebContents, 'did-finish-load');
-      w.webContents.devToolsWebContents.focus();
+      await emittedOnce(w.webContents.devToolsWebContents!, 'did-finish-load');
+      w.webContents.devToolsWebContents!.focus();
 
       // Focus an input field
-      await w.webContents.devToolsWebContents.executeJavaScript(`
+      await w.webContents.devToolsWebContents!.executeJavaScript(`
         const input = document.createElement('input')
         document.body.innerHTML = ''
         document.body.appendChild(input)
@@ -1670,7 +1670,7 @@ describe('webContents module', () => {
       // Write something to the clipboard
       clipboard.writeText('test value');
 
-      const pasted = w.webContents.devToolsWebContents.executeJavaScript(`new Promise(resolve => {
+      const pasted = w.webContents.devToolsWebContents!.executeJavaScript(`new Promise(resolve => {
         document.querySelector('input').addEventListener('paste', (e) => {
           resolve(e.target.value)
         })
