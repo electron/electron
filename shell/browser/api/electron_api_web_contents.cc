@@ -2299,7 +2299,8 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         // Chromium expects phase info in wheel events (and applies a
         // DCHECK to verify it). See: https://crbug.com/756524.
         mouse_wheel_event.phase = blink::WebMouseWheelEvent::kPhaseBegan;
-        mouse_wheel_event.dispatch_type = blink::WebInputEvent::kBlocking;
+        mouse_wheel_event.dispatch_type =
+            blink::WebInputEvent::DispatchType::kBlocking;
         rwh->ForwardWheelEvent(mouse_wheel_event);
 
         // Send a synthetic wheel event with phaseEnded to finish scrolling.
@@ -2308,7 +2309,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         mouse_wheel_event.delta_y = 0;
         mouse_wheel_event.phase = blink::WebMouseWheelEvent::kPhaseEnded;
         mouse_wheel_event.dispatch_type =
-            blink::WebInputEvent::kEventNonBlocking;
+            blink::WebInputEvent::DispatchType::kEventNonBlocking;
         rwh->ForwardWheelEvent(mouse_wheel_event);
       }
       return;
