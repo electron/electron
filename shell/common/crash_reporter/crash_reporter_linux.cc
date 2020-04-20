@@ -88,8 +88,7 @@ bool CrashReporterLinux::GetUploadToServer() {
 void CrashReporterLinux::AddExtraParameter(const std::string& key,
                                            const std::string& value) {}
 
-void CrashReporterLinux::RemoveExtraParameter(const std::string& key) override {
-}
+void CrashReporterLinux::RemoveExtraParameter(const std::string& key) {}
 
 void CrashReporterLinux::EnableCrashDumping(const base::FilePath& crashes_dir) {
   {

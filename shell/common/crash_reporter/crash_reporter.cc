@@ -104,7 +104,7 @@ class DummyCrashReporter : public CrashReporter {
   ~DummyCrashReporter() override {}
 
   void SetUploadToServer(bool upload_to_server) override {}
-  bool GetUploadToServer() override {}
+  bool GetUploadToServer() override { return false; }
   void AddExtraParameter(const std::string& key,
                          const std::string& value) override {}
   void RemoveExtraParameter(const std::string& key) override {}
