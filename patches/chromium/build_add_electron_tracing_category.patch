@@ -8,10 +8,10 @@ categories in use are known / declared.  This patch is required for us
 to introduce a new Electron category for Electron-specific tracing.
 
 diff --git a/base/trace_event/builtin_categories.h b/base/trace_event/builtin_categories.h
-index ac67c35bbcb0e8b73e2059c1dfd5b510235449c4..648c35ba8eae74e8264f6d0e2ac74785d31460ae 100644
+index e52d62b2c66c74e3876c68be92ed1c5c7b5ba43a..8da9bcc73e7b3fe6cb6d59656cfc523239642a96 100644
 --- a/base/trace_event/builtin_categories.h
 +++ b/base/trace_event/builtin_categories.h
-@@ -68,6 +68,7 @@
+@@ -74,6 +74,7 @@
    X("dwrite")                                                            \
    X("DXVA Decoding")                                                     \
    X("EarlyJava")                                                         \

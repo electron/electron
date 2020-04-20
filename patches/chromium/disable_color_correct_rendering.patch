@@ -216,7 +216,7 @@ index d47312d5f89939eab55cfa94bd3fbd41a4bd7d2a..da2f5e9fdc0fda37c82357a12f4fa28f
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 1106c583146c5903fa8dc3868bd99061dbb88538..66d328457ed16d461bde3f316d3aef8e41e5efe3 100644
+index 495e90285de38991e43425023aeaa8437254857b..ec383524faa4ddf738c915d309d660440a095cc7 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -228,6 +228,7 @@
@@ -236,7 +236,7 @@ index 1106c583146c5903fa8dc3868bd99061dbb88538..66d328457ed16d461bde3f316d3aef8e
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 754621e31a6a07e52f9b4609c8263b2c1a17c246..95006fe1f4d1fefb51c2311d6323332d7c176fd4 100644
+index 1f6ff811150998e2f307564e8aa1766056a9abbb..66bb6e241070965f42c6e9a2b8d24731acedd61e 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
 @@ -2673,6 +2673,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(

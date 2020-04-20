@@ -71,10 +71,10 @@ index a43d6d6aaaabbe7ec911ab725ba71ff6f1b36c10..ae3dffb5ba9791b9d46c5939c04d7877
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 6e8fdb4ebb0b99d8b36a18cef53c278c5053c9e6..03ebe91e06097d1055c52531bf41839143bbecfa 100644
+index 30d39b16e65dd1b099beb9f9e3cc72923fd6367d..18adc443deea3ab825c1541f9175c81e689b58f1 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2396,6 +2396,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2392,6 +2392,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -91,7 +91,7 @@ index 6e8fdb4ebb0b99d8b36a18cef53c278c5053c9e6..03ebe91e06097d1055c52531bf418391
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2415,10 +2425,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2411,10 +2421,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -156,7 +156,7 @@ index 6e8fdb4ebb0b99d8b36a18cef53c278c5053c9e6..03ebe91e06097d1055c52531bf418391
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2461,6 +2521,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2457,6 +2517,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
@@ -270,7 +270,7 @@ index be343c7f4a9e412fbb7b43cc908b8bdcb12aa533..0321dca8ba52be7d5e51f14e2f5cf942
    // implementations for the browser startup code. See comments in
    // browser_main_parts.h.
 diff --git a/content/public/browser/site_instance.h b/content/public/browser/site_instance.h
-index e3095f34c057ccf25b46beb809fbb88a440cc230..9d4472415d87455468cff86217e7489d39383e4e 100644
+index 0a5aec6455a9337f806a9376d83935b60891109b..b57294b1e19ce7a96aae05c23ab42190f35ae780 100644
 --- a/content/public/browser/site_instance.h
 +++ b/content/public/browser/site_instance.h
 @@ -121,6 +121,11 @@ class CONTENT_EXPORT SiteInstance : public base::RefCounted<SiteInstance> {

@@ -288,7 +288,7 @@ index 3d434244927aca5e5dbec8d7c1cd212c5c260c71..9d62c903bf08fa8cfa8c425d430c5e99
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index 40762a36024bc48dfe5259520161dc203197bfd0..e38aa442df858ce362645230f7642b2eb48262ce 100644
+index d105aae9c8b949d2fe910467dd9a5209229b3592..4ac32e0306d75533e3a091cb512aa8d8f44757e3 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -22,6 +22,7 @@
@@ -332,7 +332,7 @@ index 40762a36024bc48dfe5259520161dc203197bfd0..e38aa442df858ce362645230f7642b2e
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
 +#if 0
    if (!is_printing_enabled_.GetValue()) {
-     // Reply with NULL query.
+     // Reply with null query.
      OnGetDefaultPrintSettingsReply(nullptr, reply_msg);
      return;
    }
@@ -340,21 +340,22 @@ index 40762a36024bc48dfe5259520161dc203197bfd0..e38aa442df858ce362645230f7642b2e
    std::unique_ptr<PrinterQuery> printer_query = queue_->PopPrinterQuery(0);
    if (!printer_query) {
      printer_query =
-@@ -228,11 +234,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
+@@ -228,12 +234,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
  void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
                                                    base::Value job_settings,
                                                    IPC::Message* reply_msg) {
 +#if 0
    if (!is_printing_enabled_.GetValue()) {
-     // Reply with NULL query.
+     // Reply with null query.
      OnUpdatePrintSettingsReply(nullptr, reply_msg);
      return;
    }
+-
 +#endif
-   std::unique_ptr<PrinterQuery> printer_query =
-       queue_->PopPrinterQuery(document_cookie);
-   if (!printer_query) {
-@@ -258,7 +266,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+   if (!job_settings.is_dict() ||
+       !job_settings.FindIntKey(kSettingPrinterType)) {
+     // Reply with null query.
+@@ -266,7 +273,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
      std::unique_ptr<PrinterQuery> printer_query,
      IPC::Message* reply_msg) {
    PrintMsg_PrintPages_Params params;
@@ -365,7 +366,7 @@ index 40762a36024bc48dfe5259520161dc203197bfd0..e38aa442df858ce362645230f7642b2e
      params.Reset();
    } else {
      RenderParamsFromPrintSettings(printer_query->settings(), &params.params);
-@@ -296,7 +306,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -304,7 +313,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
  void PrintingMessageFilter::OnCheckForCancel(const PrintHostMsg_PreviewIds& ids,
                                               bool* cancel) {
