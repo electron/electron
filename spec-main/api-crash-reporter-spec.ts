@@ -339,7 +339,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
 
   describe('when not started', () => {
     it('does not prevent process from crashing', (done) => {
-      const appPath = path.join(__dirname, '..', 'fixtures', 'api', 'cookie-app');
+      const appPath = path.join(__dirname, '..', 'spec', 'fixtures', 'api', 'cookie-app');
       const appProcess = childProcess.spawn(process.execPath, [appPath]);
       appProcess.once('exit', () => {
         done();
