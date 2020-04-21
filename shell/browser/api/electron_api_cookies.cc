@@ -338,7 +338,7 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       content::BrowserContext::GetDefaultStoragePartition(browser_context_);
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
   manager->SetCanonicalCookie(
-      *canonical_cookie, url.scheme(), options,
+      *canonical_cookie, url, options,
       base::BindOnce(
           [](gin_helper::Promise<void> promise,
              net::CanonicalCookie::CookieInclusionStatus status) {

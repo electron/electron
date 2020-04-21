@@ -70,8 +70,8 @@
 #include "ui/gfx/x/x11_types.h"
 #include "ui/gtk/gtk_ui.h"
 #include "ui/gtk/gtk_ui_delegate.h"
-#include "ui/gtk/gtk_ui_delegate_x11.h"
 #include "ui/gtk/gtk_util.h"
+#include "ui/gtk/x/gtk_ui_delegate_x11.h"
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
 

@@ -9,7 +9,7 @@ that error. A crbug has been opened at https://bugs.chromium.org/p/chromium/issu
 and this patch will be removed when it has been resolved upstream.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 472869202ff8a62d854c9ca39ca9f14e2f91e8cf..1be0ad4382c735b7dcb78715528148aa2ad2d2c1 100644
+index 17e3fe40522e088057eaf01a290b658a0b6d1d01..a573ff0b42f344aade85f2c62ac5fbfb251f36ef 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -38,6 +38,7 @@

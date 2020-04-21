@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index bb72915a26e298bdb81009248fb3fb4df7bddab5..00d991ad0183ec0c82d23633c86a3c0d7a6e6754 100644
+index 67d7e8e69d8a9b8b34b82b83bdf688df4c17ed59..9f6b797ea0489fc87b33a36bbcaae84a2cbf05f3 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -671,7 +671,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -640,7 +640,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
    }
  #endif
  
@@ -32,7 +32,7 @@ index bb72915a26e298bdb81009248fb3fb4df7bddab5..00d991ad0183ec0c82d23633c86a3c0d
  
  #if !defined(OS_ANDROID)
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
-index d0a31f2406ee5c0dcc1f49e09177c914e8602132..a46deedb27c6509afaad40563bb2cbf49777fe68 100644
+index c00901a2a4ef59a63033c6669171ec9e3ffd2686..d637b79d9df82ad44b1eed8529024a21e0b3555b 100644
 --- a/content/common/url_schemes.cc
 +++ b/content/common/url_schemes.cc
 @@ -49,7 +49,7 @@ std::vector<std::string>& GetMutableServiceWorkerSchemes() {
@@ -44,7 +44,7 @@ index d0a31f2406ee5c0dcc1f49e09177c914e8602132..a46deedb27c6509afaad40563bb2cbf4
    // On Android and in tests, schemes may have been registered already.
    if (g_registered_url_schemes)
      return;
-@@ -104,7 +104,8 @@ void RegisterContentSchemes() {
+@@ -105,7 +105,8 @@ void RegisterContentSchemes() {
    // threadsafe so must be called when GURL isn't used on any other thread. This
    // is really easy to mess up, so we say that all calls to Add*Scheme in Chrome
    // must be inside this function.
@@ -68,10 +68,10 @@ index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f8
  // Re-initializes schemes for tests.
  CONTENT_EXPORT void ReRegisterContentSchemesForTests();
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index af1200a0f2e04c1582e527b609a2e89a97bb0f4c..7ab4cd4a1d8aefcb4bd90d68870f02f3edcff5a7 100644
+index 6c27d324e6235051875b88c4bc5bd362d3907f3c..06c17d6673d280fabf5b47244e7f7f7ab374f9a3 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
-@@ -40,6 +40,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
+@@ -37,6 +37,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
    return 0;
  }
  
