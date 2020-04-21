@@ -274,7 +274,7 @@ auto_filenames = {
     "lib/common/define-properties.ts",
     "lib/common/electron-binding-setup.ts",
     "lib/common/init.ts",
-    "lib/common/parse-features-string.js",
+    "lib/common/parse-features-string.ts",
     "lib/common/reset-search-paths.ts",
     "lib/common/type-utils.ts",
     "lib/common/web-view-methods.ts",
