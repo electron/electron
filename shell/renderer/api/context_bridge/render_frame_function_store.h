@@ -29,6 +29,8 @@ class RenderFrameFunctionStore final : public content::RenderFrameObserver {
 
   // RenderFrameObserver implementation.
   void OnDestruct() override;
+  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+                                int32_t world_id) override;
 
   size_t take_func_id() { return next_func_id_++; }
 
