@@ -807,6 +807,10 @@ hide it immediately.
 
 A `Boolean` property that determines whether the window is in simple (pre-Lion) fullscreen mode.
 
+#### `win.fullScreen`
+
+A `Boolean` property that determines whether the window is in fullscreen mode.
+
 #### `win.visibleOnAllWorkspaces`
 
 A `Boolean` property that determines whether the window is visible on all workspaces.
