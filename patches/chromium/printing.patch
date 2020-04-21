@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 0819194e335de3cc63ad72c4c4abf632694828ac..7ef12b4fd4dde87bf677dc6f4823ce4cb8fc187a 100644
+index 65065b781a0ae6e70c59d7c31d1410b4457fca49..04a13092de8e18f6a960f7b46be217bb4af34301 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,7 +21,6 @@
