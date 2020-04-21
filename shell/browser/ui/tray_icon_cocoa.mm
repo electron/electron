@@ -173,8 +173,16 @@
                                 useDefaultAccelerator:NO]);
     // Hacky way to mimic design of ordinary tray menu.
     [statusItem_ setMenu:[menuController menu]];
+    // -performClick: is a blocking call, which will run the task loop inside
+    // itself. This can potentially include running JS, which can result in
+    // this object being released. We take a temporary reference here to make
+    // sure we stay alive long enough to successfully return from this
+    // function.
+    // TODO(nornagon/codebytere): Avoid nesting task loops here.
+    [self retain];
     [[statusItem_ button] performClick:self];
     [statusItem_ setMenu:[menuController_ menu]];
+    [self release];
     return;
   }
 
