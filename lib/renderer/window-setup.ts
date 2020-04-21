@@ -5,6 +5,10 @@ import { internalContextBridge } from '@electron/internal/renderer/api/context-b
 const inMainWorld = internalContextBridge.isInMainWorld();
 const { contextIsolationEnabled } = internalContextBridge;
 
+// Should we inject APIs into this world, if ctx isolation is enabled then only inject in the isolated world
+// else inject everywhere
+const shouldInjectGivenContextIsolationIsMaybeEnabled = contextIsolationEnabled ? !inMainWorld : true;
+
 // This file implements the following APIs Directly:
 // - window.open()
 // - window.opener.blur()
@@ -184,14 +188,12 @@ class BrowserWindowProxy {
 export const windowSetup = (
   guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean, rendererProcessReuseEnabled: boolean
 ) => {
-  if (!process.sandboxed && guestInstanceId == null) {
+  if (!process.sandboxed && guestInstanceId == null && shouldInjectGivenContextIsolationIsMaybeEnabled) {
     // Override default window.close.
-    if (!contextIsolationEnabled || !inMainWorld) {
-      window.close = function () {
-        ipcRendererInternal.send('ELECTRON_BROWSER_WINDOW_CLOSE');
-      };
-      if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['close'], window.close);
-    }
+    window.close = function () {
+      ipcRendererInternal.send('ELECTRON_BROWSER_WINDOW_CLOSE');
+    };
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['close'], window.close);
   }
 
   if (!usesNativeWindowOpen) {
@@ -216,7 +218,7 @@ export const windowSetup = (
   }
 
   // But we do not support prompt().
-  if (!contextIsolationEnabled || !inMainWorld) {
+  if (shouldInjectGivenContextIsolationIsMaybeEnabled) {
     window.prompt = function () {
       throw new Error('prompt() is and will not be supported.');
     };
@@ -245,7 +247,7 @@ export const windowSetup = (
     });
   }
 
-  if (!process.sandboxed && !rendererProcessReuseEnabled && !(inMainWorld && contextIsolationEnabled)) {
+  if (!process.sandboxed && !rendererProcessReuseEnabled && shouldInjectGivenContextIsolationIsMaybeEnabled) {
     window.history.back = function () {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK');
     };
@@ -269,7 +271,7 @@ export const windowSetup = (
     if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['history', 'length'], getHistoryLength);
   }
 
-  if (guestInstanceId != null && !(inMainWorld && contextIsolationEnabled)) {
+  if (guestInstanceId != null && shouldInjectGivenContextIsolationIsMaybeEnabled) {
     // Webview `document.visibilityState` tracks window visibility (and ignores
     // the actual <webview> element visibility) for backwards compatibility.
     // See discussion in #9178.

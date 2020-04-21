@@ -27,5 +27,5 @@ export const internalContextBridge = {
   overrideGlobalPropertyFromIsolatedWorld: (keys: string[], getter: Function, setter?: Function) => {
     return binding._overrideGlobalPropertyFromIsolatedWorld(keys, getter, setter || null);
   },
-  isInMainWorld: () => binding._isCalledFromMainWorld({}) as boolean
+  isInMainWorld: () => binding._isCalledFromMainWorld() as boolean
 };

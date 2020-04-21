@@ -512,9 +512,9 @@ void OverrideGlobalMethodFromIsolatedWorld(
   const std::string final_key = key_path[key_path.size() - 1];
   gin_helper::Dictionary target_object = TraceKeyPath(global, key_path);
 
-  v8::Context::Scope main_context_scope(main_context);
-  context_bridge::ObjectCache object_cache;
   {
+    v8::Context::Scope main_context_scope(main_context);
+    context_bridge::ObjectCache object_cache;
     v8::MaybeLocal<v8::Value> maybe_proxy =
         PassValueToOtherContext(method->CreationContext(), main_context, method,
                                 store, &object_cache, 1);
@@ -547,9 +547,9 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
   v8::Local<v8::Object> target_object =
       TraceKeyPath(global, key_path).GetHandle();
 
-  v8::Context::Scope main_context_scope(main_context);
-  context_bridge::ObjectCache object_cache;
   {
+    v8::Context::Scope main_context_scope(main_context);
+    context_bridge::ObjectCache object_cache;
     v8::Local<v8::Value> getter_proxy;
     v8::Local<v8::Value> setter_proxy;
     if (!getter->IsNullOrUndefined()) {
@@ -568,18 +568,20 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     }
 
     v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
-    return IsTrue(target_object->DefineProperty(
+    bool success = IsTrue(target_object->DefineProperty(
         main_context, gin::StringToV8(args->isolate(), final_key), desc));
+    DCHECK(success);
+    return success;
   }
 }
 
-bool IsCalledFromMainWorld(v8::Local<v8::Object> sample) {
-  auto* render_frame = GetRenderFrame(sample);
+bool IsCalledFromMainWorld(v8::Isolate* isolate) {
+  auto* render_frame = GetRenderFrame(isolate->GetCurrentContext()->Global());
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  return sample->CreationContext() == main_context;
+  return isolate->GetCurrentContext() == main_context;
 }
 
 }  // namespace api
