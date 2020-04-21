@@ -851,13 +851,19 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       thrower.ThrowError("Path must be absolute");
       return;
     }
-    base::PathService::Override(DIR_APP_LOGS, custom_path.value());
+    {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      base::PathService::Override(DIR_APP_LOGS, custom_path.value());
+    }
   } else {
     base::FilePath path;
     if (base::PathService::Get(DIR_USER_DATA, &path)) {
       path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
       path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-      base::PathService::Override(DIR_APP_LOGS, path);
+      {
+        base::ThreadRestrictions::ScopedAllowIO allow_io;
+        base::PathService::Override(DIR_APP_LOGS, path);
+      }
     }
   }
 }
@@ -874,7 +880,6 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
     // If users try to get the logs path before setting a logs path,
     // set the path to a sensible default and then try to get it again
     if (!succeed && name == "logs") {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
       SetAppLogsPath(thrower, base::Optional<base::FilePath>());
       succeed = base::PathService::Get(key, &path);
     }
