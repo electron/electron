@@ -1,0 +1,98 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Mon, 20 Apr 2020 12:11:40 -0700
+Subject: Use context of then function for PromiseResolveThenableJob
+
+When a microtask is executed, we need to use an appropriate,
+non-detached Context for its execution. Currently with
+PromiseResolveThenableJobs [1], the Context used is always drawn from
+the realm of the Promise constructor being used. This may cause
+non-intuitive behavior, such as in the following case:
+
+  const DeadPromise = iframe.contentWindow.Promise;
+  const p = DeadPromise.resolve({
+    then() {
+      return { success: true };
+    }
+  });
+  p.then(result => { console.log(result); });
+
+  // Some time later, but synchronously...
+  iframe.src = "http://example.com"; // navigate away.
+  // DeadPromise's Context is detached state now.
+  // p never gets resolved, and its reaction handler never gets called.
+
+To fix this behavior, when PromiseResolveThenableJob is being queued up,
+the `then` method of the thenable should be used to determine the
+context of the resultant microtask. Doing so aligns with Firefox, and
+also with the latest HTML spec [2][3].
+
+diff --git a/src/builtins/builtins-promise-gen.cc b/src/builtins/builtins-promise-gen.cc
+index a1da55e0d931e32bd2eba5c1773efb2f3c2397e8..d761a394501b3d0edcc52ce8c03c51a8f4d783a6 100644
+--- a/src/builtins/builtins-promise-gen.cc
++++ b/src/builtins/builtins-promise-gen.cc
+@@ -1995,9 +1995,16 @@ TF_BUILTIN(ResolvePromise, PromiseBuiltinsAssembler) {
+   {
+     // 12. Perform EnqueueJob("PromiseJobs", PromiseResolveThenableJob,
+     //                        «promise, resolution, thenAction»).
++    // According to HTML, we use the context of the then function
++    // (|thenAction|) as the context of the microtask. See step 3 of HTML's
++    // EnqueueJob:
++    // https://html.spec.whatwg.org/C/#enqueuejob(queuename,-job,-arguments)
++    VARIABLE(var_then_context, MachineRepresentation::kTagged, native_context);
++    ExtractHandlerContext(var_then.value(), &var_then_context);
++    const TNode<NativeContext> native_then_context = LoadNativeContext(var_then_context.value());
+     Node* const task = AllocatePromiseResolveThenableJobTask(
+-        promise, var_then.value(), resolution, native_context);
+-    TailCallBuiltin(Builtins::kEnqueueMicrotask, native_context, task);
++        promise, var_then.value(), resolution, native_then_context);
++    TailCallBuiltin(Builtins::kEnqueueMicrotask, native_then_context, task);
+   }
+ 
+   BIND(&if_fulfill);
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index 58cf79b84feb11f2d337c1d0f30c321ac33ddfea..4cdae30dba4dcfe05cb2edf32ef897fe2c1d8679 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -5974,10 +5974,20 @@ MaybeHandle<Object> JSPromise::Resolve(Handle<JSPromise> promise,
+ 
+   // 12. Perform EnqueueJob("PromiseJobs", PromiseResolveThenableJob,
+   //                        «promise, resolution, thenAction»).
++
++  // According to HTML, we use the context of the then function (|thenAction|)
++  // as the context of the microtask. See step 3 of HTML's EnqueueJob:
++  // https://html.spec.whatwg.org/C/#enqueuejob(queuename,-job,-arguments)
++  Handle<NativeContext> then_context;
++  if (!JSReceiver::GetContextForMicrotask(Handle<JSReceiver>::cast(then_action))
++           .ToHandle(&then_context)) {
++    then_context = isolate->native_context();
++  }
++
+   Handle<PromiseResolveThenableJobTask> task =
+       isolate->factory()->NewPromiseResolveThenableJobTask(
+           promise, Handle<JSReceiver>::cast(then_action),
+-          Handle<JSReceiver>::cast(resolution), isolate->native_context());
++          Handle<JSReceiver>::cast(resolution), then_context);
+   if (isolate->debug()->is_active() && resolution->IsJSPromise()) {
+     // Mark the dependency of the new {promise} on the {resolution}.
+     Object::SetProperty(isolate, resolution,
+@@ -5985,8 +5995,7 @@ MaybeHandle<Object> JSPromise::Resolve(Handle<JSPromise> promise,
+                         promise)
+         .Check();
+   }
+-  MicrotaskQueue* microtask_queue =
+-      isolate->native_context()->microtask_queue();
++  MicrotaskQueue* microtask_queue = then_context->microtask_queue();
+   if (microtask_queue) microtask_queue->EnqueueMicrotask(*task);
+ 
+   // 13. Return undefined.
+@@ -6022,6 +6031,9 @@ Handle<Object> JSPromise::TriggerPromiseReactions(Isolate* isolate,
+     Handle<PromiseReaction> reaction = Handle<PromiseReaction>::cast(task);
+     reactions = handle(reaction->next(), isolate);
+ 
++    // According to HTML, we use the context of the appropriate handler as the
++    // context of the microtask. See step 3 of HTML's EnqueueJob:
++    // https://html.spec.whatwg.org/C/#enqueuejob(queuename,-job,-arguments)
+     Handle<NativeContext> handler_context;
+ 
+     Handle<HeapObject> primary_handler;
