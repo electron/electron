@@ -496,7 +496,7 @@ index 60e1149205750740ab5bde81029e7e3b370bd1ed..abfb772cd318b4cca3aed167a8808839
    // (https://crbug.com/811945)
    friend class ui::Compositor;
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index d36f62e6ee4166f0e27f6534c804430374bfa298..6575d7e6cafdca8cdc172e0f9912648570c1deeb 100644
+index d88fab3b7d0a968b2a5503e04a0812dc1edeaf28..4f66ac576ca495630cba4f82f0e5e0ebda434ddd 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
 @@ -74,12 +74,14 @@ interface DisplayPrivate {
@@ -606,7 +606,7 @@ index de00e766ba17532e10dcf5d0fd31fa344920a9f7..7aaedf83ad22dcc1d2dd39a31cf7e08b
    float scale_factor;
  };
 diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
-index 3f050fcf52ebb2dc2a5510d9489255ee22bfbcc8..61383dbed35dc72060a1e422fd68437fa4729ce3 100644
+index d6ec9ef087f00d4c8d7c495b7e57a1d9c3c8b3bb..1b1aafcf75e422b4c94bdc8da895488245cdf360 100644
 --- a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 +++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 @@ -52,6 +52,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(
