@@ -92,6 +92,16 @@ void RenderFramePersistenceStore::OnDestruct() {
   delete this;
 }
 
+void RenderFramePersistenceStore::WillReleaseScriptContext(
+    v8::Local<v8::Context> context,
+    int32_t world_id) {
+  base::EraseIf(functions_, [context](auto const& pair) {
+    v8::Local<v8::Context> func_owning_context =
+        std::get<1>(pair.second).Get(context->GetIsolate());
+    return func_owning_context == context;
+  });
+}
+
 void RenderFramePersistenceStore::CacheProxiedObject(
     v8::Local<v8::Value> from,
     v8::Local<v8::Value> proxy_value) {
