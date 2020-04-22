@@ -32,6 +32,7 @@
 #include "shell/browser/electron_gpu_client.h"
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
+#include "shell/common/crash_reporter/crash_reporter.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
@@ -278,6 +279,10 @@ void ElectronMainDelegate::PreSandboxStartup() {
   if (SubprocessNeedsResourceBundle(process_type)) {
     std::string locale = command_line->GetSwitchValueASCII(::switches::kLang);
     LoadResourceBundle(locale);
+  }
+
+  if (command_line->HasSwitch(switches::kEnableCrashReporter)) {
+    crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
   }
 
   // Only append arguments for browser process.

@@ -37,6 +37,7 @@
   V(electron_browser_auto_updater)       \
   V(electron_browser_browser_view)       \
   V(electron_browser_content_tracing)    \
+  V(electron_browser_crash_reporter)     \
   V(electron_browser_dialog)             \
   V(electron_browser_event)              \
   V(electron_browser_event_emitter)      \
@@ -52,15 +53,14 @@
   V(electron_browser_system_preferences) \
   V(electron_browser_top_level_window)   \
   V(electron_browser_tray)               \
+  V(electron_browser_view)               \
   V(electron_browser_web_contents)       \
   V(electron_browser_web_contents_view)  \
-  V(electron_browser_view)               \
   V(electron_browser_web_view_manager)   \
   V(electron_browser_window)             \
   V(electron_common_asar)                \
   V(electron_common_clipboard)           \
   V(electron_common_command_line)        \
-  V(electron_common_crash_reporter)      \
   V(electron_common_features)            \
   V(electron_common_native_image)        \
   V(electron_common_native_theme)        \
@@ -69,6 +69,7 @@
   V(electron_common_shell)               \
   V(electron_common_v8_util)             \
   V(electron_renderer_context_bridge)    \
+  V(electron_renderer_crash_reporter)    \
   V(electron_renderer_ipc)               \
   V(electron_renderer_web_frame)
 

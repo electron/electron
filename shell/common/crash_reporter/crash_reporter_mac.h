@@ -26,7 +26,9 @@ class CrashReporterMac : public CrashReporterCrashpad {
             bool upload_to_server,
             bool skip_system_crash_handler,
             bool rate_limit,
-            bool compress) override;
+            bool compress,
+            const StringMap& global_extra_parameters) override;
+  void InitInChild() override;
   void SetUploadParameters() override;
 
  private:

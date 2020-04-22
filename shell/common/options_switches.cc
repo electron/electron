@@ -242,6 +242,7 @@ const char kWebviewTag[] = "webview-tag";
 const char kDisableElectronSiteInstanceOverrides[] =
     "disable-electron-site-instance-overrides";
 const char kEnableNodeLeakageInRenderers[] = "enable-node-leakage-in-renderers";
+const char kEnableCrashReporter[] = "enable-crash-reporter";
 
 // Command switch passed to renderer process to control nodeIntegration.
 const char kNodeIntegrationInWorker[] = "node-integration-in-worker";

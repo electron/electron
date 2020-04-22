@@ -89,6 +89,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
+#include "shell/common/crash_reporter/crash_reporter.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -693,6 +694,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
             switches::kDisableElectronSiteInstanceOverrides);
       }
     }
+  }
+
+  if (crash_reporter::CrashReporter::GetInstance()->IsInitialized()) {
+    command_line->AppendSwitch(switches::kEnableCrashReporter);
   }
 }
 

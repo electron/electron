@@ -24,14 +24,18 @@ namespace crash_reporter {
 const char kCrashpadProcess[] = "crash-handler";
 const char kCrashesDirectoryKey[] = "crashes-directory";
 
-CrashReporter::CrashReporter() {
+namespace {
+bool IsRunningAsNode() {
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  bool run_as_node = base::Environment::Create()->HasVar(electron::kRunAsNode);
+  return base::Environment::Create()->HasVar(electron::kRunAsNode);
 #else
-  bool run_as_node = false;
+  return false;
 #endif
+}
+}  // namespace
 
-  if (run_as_node) {
+CrashReporter::CrashReporter() {
+  if (IsRunningAsNode()) {
     process_type_ = "node";
   } else {
     auto* cmd = base::CommandLine::ForCurrentProcess();
@@ -52,12 +56,17 @@ void CrashReporter::Start(const std::string& submit_url,
                           bool skip_system_crash_handler,
                           bool rate_limit,
                           bool compress,
+                          const StringMap& global_extra_parameters,
                           const StringMap& extra_parameters) {
   is_initialized_ = true;
   SetUploadParameters(extra_parameters);
 
   Init(submit_url, crashes_dir, upload_to_server, skip_system_crash_handler,
-       rate_limit, compress);
+       rate_limit, compress, global_extra_parameters);
+}
+
+void CrashReporter::InitializeInChildProcess() {
+  InitInChild();
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
@@ -120,12 +129,15 @@ class DummyCrashReporter : public CrashReporter {
 
 // static
 CrashReporter* CrashReporter::GetInstance() {
-  static DummyCrashReporter crash_reporter;
-  return &crash_reporter;
+  static base::NoDestructor<DummyCrashReporter> crash_reporter;
+  return &*crash_reporter;
 }
 #endif
 
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
 void CrashReporter::StartInstance(const gin_helper::Dictionary& options) {
+  CHECK(IsRunningAsNode());
+
   auto* reporter = GetInstance();
   if (!reporter)
     return;
@@ -151,9 +163,12 @@ void CrashReporter::StartInstance(const gin_helper::Dictionary& options) {
   bool upload_to_server = true;
   bool skip_system_crash_handler = false;
 
+  StringMap global_extra_parameters;
+
   reporter->Start(submit_url, crashes_dir, upload_to_server,
                   skip_system_crash_handler, rate_limit, compress,
-                  extra_parameters);
+                  global_extra_parameters, extra_parameters);
 }
+#endif  // BUILDFLAG(ENABLE_RUN_AS_NODE)
 
 }  // namespace crash_reporter

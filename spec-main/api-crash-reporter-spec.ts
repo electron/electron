@@ -5,8 +5,7 @@ import * as Busboy from 'busboy';
 import * as path from 'path';
 import { ifdescribe, ifit } from './spec-helpers';
 import * as temp from 'temp';
-import { app } from 'electron/main';
-import { crashReporter } from 'electron/common';
+import { app, crashReporter } from 'electron/main';
 import { AddressInfo } from 'net';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
@@ -30,13 +29,14 @@ type CrashInfo = {
   ver: string
   process_type: string // eslint-disable-line camelcase
   platform: string
-  extra1: string
-  extra2: string
-  extra3: undefined
   _productName: string
-  _companyName: string
   _version: string
   upload_file_minidump: Buffer // eslint-disable-line camelcase
+  mainProcessSpecific: 'mps' | undefined
+  rendererSpecific: 'rs' | undefined
+  globalParam: 'globalValue' | undefined
+  addedThenRemoved: 'to-be-removed' | undefined
+  longParam: string | undefined
 }
 
 function checkCrash (expectedProcessType: string, fields: CrashInfo) {
@@ -45,16 +45,9 @@ function checkCrash (expectedProcessType: string, fields: CrashInfo) {
   expect(String(fields.process_type)).to.equal(expectedProcessType);
   expect(String(fields.platform)).to.equal(process.platform);
   expect(String(fields._productName)).to.equal('Zombies');
-  expect(String(fields._companyName)).to.equal('Umbrella Corporation');
   expect(String(fields._version)).to.equal(app.getVersion());
   expect(fields.upload_file_minidump).to.be.an.instanceOf(Buffer);
   expect(fields.upload_file_minidump.length).to.be.greaterThan(0);
-}
-
-function checkCrashExtra (fields: CrashInfo) {
-  expect(String(fields.extra1)).to.equal('extra1');
-  expect(String(fields.extra2)).to.equal('extra2');
-  expect(fields.extra3).to.be.undefined();
 }
 
 const startRemoteControlApp = async () => {
@@ -188,6 +181,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
     runCrashApp('renderer', port);
     const crash = await waitForCrash();
     checkCrash('renderer', crash);
+    expect(crash.mainProcessSpecific).to.be.undefined();
   });
 
   it('should send minidump when sandboxed renderer crashes', async () => {
@@ -195,17 +189,17 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
     runCrashApp('sandboxed-renderer', port);
     const crash = await waitForCrash();
     checkCrash('renderer', crash);
-    checkCrashExtra(crash);
+    expect(crash.mainProcessSpecific).to.be.undefined();
   });
 
-  it('should send minidump with updated parameters when renderer crashes', async () => {
+  it('should send minidump with renderer-specific parameters when renderer crashes', async () => {
     const { port, waitForCrash } = await startServer();
     runCrashApp('renderer', port, ['--set-extra-parameters-in-renderer']);
     const crash = await waitForCrash();
     checkCrash('renderer', crash);
-    expect(crash.extra1).to.be.undefined();
-    expect(crash.extra2).to.equal('extra2');
-    expect(crash.extra3).to.equal('added');
+    expect(crash.mainProcessSpecific).to.be.undefined();
+    expect(crash.rendererSpecific).to.equal('rs');
+    expect(crash.addedThenRemoved).to.be.undefined();
   });
 
   it('should send minidump with updated parameters when sandboxed renderer crashes', async () => {
@@ -213,9 +207,9 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
     runCrashApp('sandboxed-renderer', port, ['--set-extra-parameters-in-renderer']);
     const crash = await waitForCrash();
     checkCrash('renderer', crash);
-    expect(crash.extra1).to.be.undefined();
-    expect(crash.extra2).to.equal('extra2');
-    expect(crash.extra3).to.equal('added');
+    expect(crash.mainProcessSpecific).to.be.undefined();
+    expect(crash.rendererSpecific).to.equal('rs');
+    expect(crash.addedThenRemoved).to.be.undefined();
   });
 
   it('should send minidump when main process crashes', async () => {
@@ -223,7 +217,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
     runCrashApp('main', port);
     const crash = await waitForCrash();
     checkCrash('browser', crash);
-    checkCrashExtra(crash);
+    expect(crash.mainProcessSpecific).to.equal('mps')
   });
 
   it('should send minidump when a node process crashes', async () => {
@@ -231,10 +225,41 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
     runCrashApp('node', port);
     const crash = await waitForCrash();
     checkCrash('node', crash);
-    checkCrashExtra(crash);
+    expect(crash.mainProcessSpecific).to.be.undefined();
+    expect(crash.rendererSpecific).to.be.undefined();
   });
 
-  // TODO(jeremy): re-enable on woa
+  it('should be able to send extra values longer than 64 characters', async () => {
+    const { port, waitForCrash } = await startServer();
+    runCrashApp('long-extra', port);
+    const crash = await waitForCrash();
+    const longString = '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef-and-a-few-more';
+    expect(crash.longParam).to.equal(longString);
+  });
+
+  describe('globalExtra', () => {
+    it('should be sent with main process dumps', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('main', port, ['--add-global-param=globalParam:globalValue']);
+      const crash = await waitForCrash();
+      expect(crash.globalParam).to.equal('globalValue')
+    })
+
+    it('should be sent with renderer process dumps', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('renderer', port, ['--add-global-param=globalParam:globalValue']);
+      const crash = await waitForCrash();
+      expect(crash.globalParam).to.equal('globalValue')
+    })
+
+    it('should be sent with sandboxed renderer process dumps', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('sandboxed-renderer', port, ['--add-global-param=globalParam:globalValue']);
+      const crash = await waitForCrash();
+      expect(crash.globalParam).to.equal('globalValue')
+    })
+  })
+
   ifit(!isWindowsOnArm)('should not send a minidump when uploadToServer is false', async () => {
     const { port, getCrashes } = await startServer();
     const crashesDir = path.join(app.getPath('temp'), 'Zombies Crashes');
@@ -248,16 +273,10 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
   });
 
   describe('start() option validation', () => {
-    it('requires that the companyName option be specified', () => {
-      expect(() => {
-        crashReporter.start({ companyName: 'dummy' } as any);
-      }).to.throw('submitURL is a required option to crashReporter.start');
-    });
-
     it('requires that the submitURL option be specified', () => {
       expect(() => {
-        crashReporter.start({ submitURL: 'dummy' } as any);
-      }).to.throw('companyName is a required option to crashReporter.start');
+        crashReporter.start({} as any);
+      }).to.throw('submitURL is a required option to crashReporter.start');
     });
 
     it('can be called twice', async () => {
@@ -340,7 +359,13 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
   describe('Parameters', () => {
     it('returns all of the current parameters', async () => {
       const { remoteEval } = await startRemoteControlApp();
-      await remoteEval(`require('electron').crashReporter.start({companyName: "Umbrella Corporation", submitURL: "http://127.0.0.1", extra: {"extra1": "hi"}})`);
+      await remoteEval(`(${function () {
+        require('electron').crashReporter.start({
+          companyName: "Umbrella Corporation",
+          submitURL: "http://127.0.0.1",
+          extra: { "extra1": "hi" }
+        });
+      }})()`)
       const parameters = await remoteEval(`require('electron').crashReporter.getParameters()`);
       expect(parameters).to.be.an('object');
       expect(parameters.extra1).to.equal('hi');

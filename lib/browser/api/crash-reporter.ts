@@ -1,47 +1,49 @@
-'use strict';
+import { app } from 'electron';
 
 const binding = process.electronBinding('crash_reporter');
 
+const getTempDirectory = function () {
+  try {
+    return app.getPath('temp');
+  } catch {
+    // Delibrately lazy-load the os module, this file is on the hot path when
+    // booting Electron and os takes between 5 - 8ms to load and we do not need
+    // it yet.
+    return require('os').tmpdir();
+  }
+};
+
 class CrashReporter {
-  constructor () {
-    this.productName = null;
-    this.crashesDirectory = null;
-  }
+  _crashesDirectory: string | null = null;
 
-  init (options) {
-    throw new Error('Not implemented');
-  }
-
-  start (options) {
-    if (options == null) options = {};
-
+  start (options: Electron.CrashReporterStartOptions) {
     const {
-      productName,
+      productName = app.name,
       companyName,
       extra = {},
+      globalExtra = {},
       ignoreSystemCrashHandler = false,
       submitURL,
       uploadToServer = true,
       rateLimit = false,
       compress = false
-    } = options;
+    } = options || {};
 
-    if (companyName == null) throw new Error('companyName is a required option to crashReporter.start');
     if (submitURL == null) throw new Error('submitURL is a required option to crashReporter.start');
 
-    const ret = this.init({
-      submitURL,
-      productName
-    });
+    this._crashesDirectory = require('path').join(getTempDirectory(), `${productName} Crashes`);
+    const appVersion = app.getVersion();
 
-    this.productName = ret.productName;
-    this.crashesDirectory = ret.crashesDirectory;
+    if (companyName && extra._companyName == null) extra._companyName = companyName;
 
-    if (extra._productName == null) extra._productName = ret.productName;
-    if (extra._companyName == null) extra._companyName = companyName;
-    if (extra._version == null) extra._version = ret.appVersion;
+    const extraGlobal = {
+      _productName: productName,
+      _version: appVersion,
+      ...globalExtra,
+    }
 
-    binding.start(submitURL, ret.crashesDirectory, uploadToServer, ignoreSystemCrashHandler, rateLimit, compress, extra);
+    binding.start(submitURL, this._crashesDirectory, uploadToServer,
+      ignoreSystemCrashHandler, rateLimit, compress, extraGlobal, extra);
   }
 
   getLastCrashReport () {
@@ -55,7 +57,7 @@ class CrashReporter {
     return (reports.length > 0) ? reports[0] : null;
   }
 
-  getUploadedReports () {
+  getUploadedReports (): Electron.CrashReport[] {
     const crashDir = this.getCrashesDirectory();
     if (!crashDir) {
       throw new Error('crashReporter has not been started');
@@ -65,7 +67,7 @@ class CrashReporter {
   }
 
   getCrashesDirectory () {
-    return this.crashesDirectory;
+    return this._crashesDirectory;
   }
 
   getUploadToServer () {
@@ -76,7 +78,7 @@ class CrashReporter {
     }
   }
 
-  setUploadToServer (uploadToServer) {
+  setUploadToServer (uploadToServer: boolean) {
     if (process.type === 'browser') {
       return binding.setUploadToServer(uploadToServer);
     } else {
@@ -84,11 +86,11 @@ class CrashReporter {
     }
   }
 
-  addExtraParameter (key, value) {
+  addExtraParameter (key: string, value: string) {
     binding.addExtraParameter(key, value);
   }
 
-  removeExtraParameter (key) {
+  removeExtraParameter (key: string) {
     binding.removeExtraParameter(key);
   }
 
@@ -97,4 +99,4 @@ class CrashReporter {
   }
 }
 
-module.exports = CrashReporter;
+export default new CrashReporter();

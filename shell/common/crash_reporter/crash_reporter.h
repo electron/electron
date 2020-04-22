@@ -12,6 +12,7 @@
 
 #include "base/files/file_path.h"
 #include "base/macros.h"
+#include "electron/buildflags/buildflags.h"
 
 namespace gin_helper {
 class Dictionary;
@@ -28,10 +29,13 @@ class CrashReporter {
   typedef std::pair<int, std::string> UploadReportResult;  // upload-date, id
 
   static CrashReporter* GetInstance();
+
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
   // FIXME(zcbenz): We should not do V8 in this file, this method should only
   // accept C++ struct as parameter, and atom_api_crash_reporter.cc is
   // responsible for parsing the parameter from JavaScript.
   static void StartInstance(const gin_helper::Dictionary& options);
+#endif  // BUILDFLAG(ENABLE_RUN_AS_NODE)
 
   bool IsInitialized();
   void Start(const std::string& submit_url,
@@ -40,7 +44,9 @@ class CrashReporter {
              bool skip_system_crash_handler,
              bool rate_limit,
              bool compress,
+             const StringMap& global_extra_parameters,
              const StringMap& extra_parameters);
+  void InitializeInChildProcess();
 
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
       const base::FilePath& crashes_dir);
@@ -56,12 +62,14 @@ class CrashReporter {
   CrashReporter();
   virtual ~CrashReporter();
 
+  virtual void InitInChild() = 0;
   virtual void Init(const std::string& submit_url,
                     const base::FilePath& crashes_dir,
                     bool upload_to_server,
                     bool skip_system_crash_handler,
                     bool rate_limit,
-                    bool compress) = 0;
+                    bool compress,
+                    const StringMap& global_extra_parameters) = 0;
   virtual void SetUploadParameters() = 0;
 
   StringMap upload_parameters_;
