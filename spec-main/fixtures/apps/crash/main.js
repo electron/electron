@@ -60,9 +60,8 @@ app.whenReady().then(() => {
   } else if (crashType === 'node') {
     const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`);
     const version = app.getVersion();
-    const crashPath = path.join(__dirname, '..', '..', 'module', 'crash.js');
-    const port = new URL(url).port;
-    const child = childProcess.fork(crashPath, [port.toString(), version, crashesDir], { silent: true });
+    const crashPath = path.join(__dirname, 'node-crash.js');
+    const child = childProcess.fork(crashPath, [url, version, crashesDir], { silent: true });
     child.on('exit', () => process.exit(0));
   } else {
     console.error(`Unrecognized crash type: '${crashType}'`);

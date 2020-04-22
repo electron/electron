@@ -2,7 +2,7 @@ process.crashReporter.start({
   productName: 'Zombies',
   companyName: 'Umbrella Corporation',
   crashesDirectory: process.argv[4],
-  submitURL: `http://127.0.0.1:${process.argv[2]}`,
+  submitURL: process.argv[2],
   ignoreSystemCrashHandler: true,
   extra: {
     extra1: 'extra1',
