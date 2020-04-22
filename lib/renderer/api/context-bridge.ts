@@ -18,3 +18,14 @@ const contextBridge = {
 if (!binding._debugGCMaps) delete contextBridge.debugGC;
 
 export default contextBridge;
+
+export const internalContextBridge = {
+  contextIsolationEnabled,
+  overrideGlobalMethodFromIsolatedWorld: (keys: string[], method: Function) => {
+    return binding._overrideGlobalMethodFromIsolatedWorld(keys, method);
+  },
+  overrideGlobalPropertyFromIsolatedWorld: (keys: string[], getter: Function, setter?: Function) => {
+    return binding._overrideGlobalPropertyFromIsolatedWorld(keys, getter, setter || null);
+  },
+  isInMainWorld: () => binding._isCalledFromMainWorld() as boolean
+};
