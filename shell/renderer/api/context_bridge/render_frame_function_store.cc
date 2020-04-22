@@ -32,6 +32,16 @@ void RenderFrameFunctionStore::OnDestruct() {
   delete this;
 }
 
+void RenderFrameFunctionStore::WillReleaseScriptContext(
+    v8::Local<v8::Context> context,
+    int32_t world_id) {
+  base::EraseIf(functions_, [context](auto const& pair) {
+    v8::Local<v8::Context> func_owning_context =
+        std::get<1>(pair.second).Get(context->GetIsolate());
+    return func_owning_context == context;
+  });
+}
+
 }  // namespace context_bridge
 
 }  // namespace api
