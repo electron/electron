@@ -90,7 +90,7 @@ app.whenReady().then(() => {
 
   walker.on('end', () => {
     testFiles.sort();
-    sortToEnd(testFiles, f => f.includes('crash-reporter')).forEach((file) => {
+    testFiles.forEach((file) => {
       if (!argv.files || argv.files.includes(path.relative(baseElectronDir, file))) {
         mocha.addFile(file);
       }
@@ -116,9 +116,4 @@ function partition (xs, f) {
   const falses = [];
   xs.forEach(x => (f(x) ? trues : falses).push(x));
   return [trues, falses];
-}
-
-function sortToEnd (xs, f) {
-  const [end, beginning] = partition(xs, f);
-  return beginning.concat(end);
 }

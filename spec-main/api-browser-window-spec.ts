@@ -1995,7 +1995,7 @@ describe('BrowserWindow module', () => {
         }
       }
 
-      const preload = path.join(fixtures, 'module', 'preload-sandbox.js');
+      const preload = path.join(path.resolve(__dirname, 'fixtures'), 'module', 'preload-sandbox.js');
 
       let server: http.Server = null as unknown as http.Server;
       let serverUrl: string = null as unknown as string;
