@@ -346,16 +346,19 @@ describe('contextBridge', () => {
               getFunction: () => () => 123
             });
           });
-          expect((await getGCInfo()).functionCount).to.equal(2);
+          await callWithBindings(async (root: any) => {
+            root.GCRunner.run();
+          });
+          const baseValue = (await getGCInfo()).functionCount;
           await callWithBindings(async (root: any) => {
             root.x = [root.example.getFunction()];
           });
-          expect((await getGCInfo()).functionCount).to.equal(3);
+          expect((await getGCInfo()).functionCount).to.equal(baseValue + 1);
           await callWithBindings(async (root: any) => {
             root.x = [];
             root.GCRunner.run();
           });
-          expect((await getGCInfo()).functionCount).to.equal(2);
+          expect((await getGCInfo()).functionCount).to.equal(baseValue);
         });
       }
 
@@ -369,14 +372,14 @@ describe('contextBridge', () => {
             require('electron').ipcRenderer.send('window-ready-for-tasking');
           });
           const loadPromise = emittedOnce(ipcMain, 'window-ready-for-tasking');
-          expect((await getGCInfo()).functionCount).to.equal(1);
+          const baseValue = (await getGCInfo()).functionCount;
           await callWithBindings((root: any) => {
             root.location.reload();
           });
           await loadPromise;
           // If this is ever "2" it means we leaked the exposed function and
           // therefore the entire context after a reload
-          expect((await getGCInfo()).functionCount).to.equal(1);
+          expect((await getGCInfo()).functionCount).to.equal(baseValue);
         });
       }
 
