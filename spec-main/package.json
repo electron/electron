@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "devDependencies": {
     "@types/ws": "^7.2.0",
+    "busboy": "^0.3.1",
     "echo": "file:fixtures/native-addon/echo",
     "q": "^1.5.1",
     "ws": "^7.2.1"

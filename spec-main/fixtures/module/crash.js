@@ -3,6 +3,7 @@ process.crashReporter.start({
   companyName: 'Umbrella Corporation',
   crashesDirectory: process.argv[4],
   submitURL: `http://127.0.0.1:${process.argv[2]}`,
+  ignoreSystemCrashHandler: true,
   extra: {
     extra1: 'extra1',
     extra2: 'extra2',
