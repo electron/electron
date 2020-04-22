@@ -100,10 +100,10 @@ index 8927df5bbd218cf3dc400930a9894103780a58f6..76f912f90958e3532e203d7d28a2751f
  TEST_F(HitTestingTest, OcclusionHitTest) {
    SetBodyInnerHTML(R"HTML(
 diff --git a/third_party/blink/renderer/core/layout/ng/inline/ng_inline_cursor.cc b/third_party/blink/renderer/core/layout/ng/inline/ng_inline_cursor.cc
-index deee88b999df15150546fe23fe1a90a1d651a69a..abc391f152c509963ead262460323f8579df4d49 100644
+index bb39e1b44f13f27ec93045d7568147044ace6b41..23aeaff74d65cfd9f269d22747e36e39d82bfefe 100644
 --- a/third_party/blink/renderer/core/layout/ng/inline/ng_inline_cursor.cc
 +++ b/third_party/blink/renderer/core/layout/ng/inline/ng_inline_cursor.cc
-@@ -818,6 +818,25 @@ PositionWithAffinity NGInlineCursor::PositionForPointInInlineBox(
+@@ -819,6 +819,25 @@ PositionWithAffinity NGInlineCursor::PositionForPointInInlineBox(
      }
    }
  
@@ -130,10 +130,10 @@ index deee88b999df15150546fe23fe1a90a1d651a69a..abc391f152c509963ead262460323f85
  }
  
 diff --git a/third_party/blink/renderer/core/paint/ng/ng_box_fragment_painter.cc b/third_party/blink/renderer/core/paint/ng/ng_box_fragment_painter.cc
-index 043e361924d993fb711951a45edbb2b690b757f0..1f2db82194572337acd767de97a808d475717672 100644
+index e8ff0f43f2f97c740d3ec744c858c2097d0085b2..da66f973636c75fb511d2cf795cc592a802a5cee 100644
 --- a/third_party/blink/renderer/core/paint/ng/ng_box_fragment_painter.cc
 +++ b/third_party/blink/renderer/core/paint/ng/ng_box_fragment_painter.cc
-@@ -1722,9 +1722,25 @@ bool NGBoxFragmentPainter::NodeAtPoint(const HitTestContext& hit_test,
+@@ -1713,9 +1713,25 @@ bool NGBoxFragmentPainter::NodeAtPoint(const HitTestContext& hit_test,
      if (fragment.IsInlineBox())
        bounds_rect = PhysicalRect(PixelSnappedIntRect(bounds_rect));
      if (hit_test.location.Intersects(bounds_rect)) {
