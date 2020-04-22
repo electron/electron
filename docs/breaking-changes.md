@@ -40,6 +40,12 @@ const w = new BrowserWindow({
 We [recommend moving away from the remote
 module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-70d69500f31).
 
+### Default Changed: `nativeWindowOpen` defaults to `true`
+
+In Electron 10 the `nativeWindowOpen` webPreference will default to `true`.  This changes
+the provider of the `window.open` API to use Chromiums logic instead of Electrons.  This
+flag will be removed in a future Electron version.
+
 ## Planned Breaking API Changes (9.0)
 
 ### Default Changed: Loading non-context-aware native modules in the renderer process is disabled by default

@@ -124,7 +124,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
-  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
+  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, true);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
