@@ -1,0 +1,194 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshifumi Inoue <yosin@chromium.org>
+Date: Fri, 17 Apr 2020 09:22:24 +0000
+Subject: Make HitTestResult::LocalPoint() for inline element as same as legacy
+ layout
+
+This patch changes |NGBoxFragmentPainter::NodeAtPoint()| to set offset in
+containing block instead of offset in underlying element for inline element as
+legacy layout to make hit testing on inline element with ::after pseudo class
+with adapting |PositionForPoint()|.
+
+The document[1] contains investigation notes of this CL.
+
+[1] https://bit.ly/2REZ7P9 Hit Test with ::after
+
+Bug: 1043471
+Change-Id: I81ada0ccd7bff31a84ce4746785ea83eb175937c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2151775
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Auto-Submit: Yoshifumi Inoue <yosin@chromium.org>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#759982}
+
+diff --git a/third_party/blink/renderer/core/layout/hit_testing_test.cc b/third_party/blink/renderer/core/layout/hit_testing_test.cc
+index 8927df5bbd218cf3dc400930a9894103780a58f6..76f912f90958e3532e203d7d28a2751f2cb5317d 100644
+--- a/third_party/blink/renderer/core/layout/hit_testing_test.cc
++++ b/third_party/blink/renderer/core/layout/hit_testing_test.cc
+@@ -3,11 +3,72 @@
+ // found in the LICENSE file.
+ 
+ #include "third_party/blink/renderer/core/css/css_property_names.h"
++#include "third_party/blink/renderer/core/editing/text_affinity.h"
+ #include "third_party/blink/renderer/core/testing/core_unit_test_helper.h"
+ 
+ namespace blink {
+ 
+-class HitTestingTest : public RenderingTest {};
++class HitTestingTest : public RenderingTest {
++ protected:
++  bool LayoutNGEnabled() const {
++    return RuntimeEnabledFeatures::LayoutNGEnabled();
++  }
++
++  PositionWithAffinity HitTest(const PhysicalOffset offset) {
++    const HitTestRequest hit_request(HitTestRequest::kActive);
++    const HitTestLocation hit_location(offset);
++    HitTestResult hit_result(hit_request, hit_location);
++    if (!GetLayoutView().HitTest(hit_location, hit_result))
++      return PositionWithAffinity();
++    // Simulate |PositionWithAffinityOfHitTestResult()| in
++    // "selection_controller.cc"
++    LayoutObject* const layout_object =
++        hit_result.InnerPossiblyPseudoNode()->GetLayoutObject();
++    if (!layout_object)
++      return PositionWithAffinity();
++    return layout_object->PositionForPoint(hit_result.LocalPoint());
++  }
++};
++
++// http://crbug.com/1043471
++TEST_F(HitTestingTest, PseudoElementAfter) {
++  LoadAhem();
++  InsertStyleElement(
++      "body { margin: 0px; font: 10px/10px Ahem; }"
++      "#cd::after { content: 'XYZ'; margin-left: 100px; }");
++  SetBodyInnerHTML("<div id=ab>ab<span id=cd>cd</span></div>");
++  const auto& text_ab = *To<Text>(GetElementById("ab")->firstChild());
++  const auto& text_cd = *To<Text>(GetElementById("cd")->lastChild());
++
++  EXPECT_EQ(PositionWithAffinity(Position(text_ab, 0)),
++            HitTest(PhysicalOffset(5, 5)));
++  // Because of hit testing at "b", position should be |kDownstream|.
++  EXPECT_EQ(PositionWithAffinity(Position(text_ab, 1),
++                                 LayoutNGEnabled() ? TextAffinity::kDownstream
++                                                   : TextAffinity::kUpstream),
++            HitTest(PhysicalOffset(15, 5)));
++  EXPECT_EQ(PositionWithAffinity(Position(text_cd, 0)),
++            HitTest(PhysicalOffset(25, 5)));
++  // Because of hit testing at "d", position should be |kDownstream|.
++  EXPECT_EQ(PositionWithAffinity(Position(text_cd, 1),
++                                 LayoutNGEnabled() ? TextAffinity::kDownstream
++                                                   : TextAffinity::kUpstream),
++            HitTest(PhysicalOffset(35, 5)));
++  // Because of hit testing at right of <span cd>, result position should be
++  // |kUpstream|.
++  EXPECT_EQ(PositionWithAffinity(Position(text_cd, 2),
++                                 LayoutNGEnabled() ? TextAffinity::kUpstream
++                                                   : TextAffinity::kDownstream),
++            HitTest(PhysicalOffset(45, 5)));
++  EXPECT_EQ(PositionWithAffinity(Position(text_cd, 2),
++                                 LayoutNGEnabled() ? TextAffinity::kUpstream
++                                                   : TextAffinity::kDownstream),
++            HitTest(PhysicalOffset(55, 5)));
++  EXPECT_EQ(PositionWithAffinity(Position(text_cd, 2),
++                                 LayoutNGEnabled() ? TextAffinity::kUpstream
++                                                   : TextAffinity::kDownstream),
++            HitTest(PhysicalOffset(65, 5)));
++}
+ 
+ TEST_F(HitTestingTest, OcclusionHitTest) {
+   SetBodyInnerHTML(R"HTML(
+diff --git a/third_party/blink/renderer/core/layout/ng/inline/ng_inline_cursor.cc b/third_party/blink/renderer/core/layout/ng/inline/ng_inline_cursor.cc
+index bb39e1b44f13f27ec93045d7568147044ace6b41..23aeaff74d65cfd9f269d22747e36e39d82bfefe 100644
+--- a/third_party/blink/renderer/core/layout/ng/inline/ng_inline_cursor.cc
++++ b/third_party/blink/renderer/core/layout/ng/inline/ng_inline_cursor.cc
+@@ -819,6 +819,25 @@ PositionWithAffinity NGInlineCursor::PositionForPointInInlineBox(
+     }
+   }
+ 
++  if (container->Type() == NGFragmentItem::kLine) {
++    // There are no inline items to hit in this line box, e.g. <span> with
++    // size and border. We try in lines before |this| line in the block.
++    // See editing/selection/last-empty-inline.html
++    NGInlineCursor cursor;
++    cursor.MoveTo(*this);
++    const PhysicalOffset point_in_line =
++        point - Current().OffsetInContainerBlock();
++    for (;;) {
++      cursor.MoveToPreviousLine();
++      if (!cursor)
++        break;
++      const PhysicalOffset adjusted_point =
++          point_in_line + cursor.Current().OffsetInContainerBlock();
++      if (auto position = cursor.PositionForPointInInlineBox(adjusted_point))
++        return position;
++    }
++  }
++
+   return PositionWithAffinity();
+ }
+ 
+diff --git a/third_party/blink/renderer/core/paint/ng/ng_box_fragment_painter.cc b/third_party/blink/renderer/core/paint/ng/ng_box_fragment_painter.cc
+index e8ff0f43f2f97c740d3ec744c858c2097d0085b2..da66f973636c75fb511d2cf795cc592a802a5cee 100644
+--- a/third_party/blink/renderer/core/paint/ng/ng_box_fragment_painter.cc
++++ b/third_party/blink/renderer/core/paint/ng/ng_box_fragment_painter.cc
+@@ -1713,9 +1713,25 @@ bool NGBoxFragmentPainter::NodeAtPoint(const HitTestContext& hit_test,
+     if (fragment.IsInlineBox())
+       bounds_rect = PhysicalRect(PixelSnappedIntRect(bounds_rect));
+     if (hit_test.location.Intersects(bounds_rect)) {
+-      if (hit_test.AddNodeToResult(fragment.NodeForHitTest(), bounds_rect,
+-                                   physical_offset))
+-        return true;
++      // We set offset in container block instead of offset in |fragment| like
++      // |NGBoxFragmentPainter::HitTestTextFragment()|.
++      // See http://crbug.com/1043471
++      if (box_item_ && box_item_->IsInlineBox()) {
++        if (hit_test.AddNodeToResult(
++                fragment.NodeForHitTest(), bounds_rect,
++                physical_offset - box_item_->OffsetInContainerBlock()))
++          return true;
++      } else if (paint_fragment_ &&
++                 paint_fragment_->PhysicalFragment().IsInline()) {
++        if (hit_test.AddNodeToResult(
++                fragment.NodeForHitTest(), bounds_rect,
++                physical_offset - paint_fragment_->OffsetInContainerBlock()))
++          return true;
++      } else {
++        if (hit_test.AddNodeToResult(fragment.NodeForHitTest(), bounds_rect,
++                                     physical_offset))
++          return true;
++      }
+     }
+   }
+ 
+diff --git a/third_party/blink/renderer/core/paint/ng/ng_paint_fragment.cc b/third_party/blink/renderer/core/paint/ng/ng_paint_fragment.cc
+index 9cd79dd07b2098fbf7efe7d85b3a63b0382ff1c2..bec5324a026e679965873afe387236a0b5e60f85 100644
+--- a/third_party/blink/renderer/core/paint/ng/ng_paint_fragment.cc
++++ b/third_party/blink/renderer/core/paint/ng/ng_paint_fragment.cc
+@@ -1039,6 +1039,25 @@ PositionWithAffinity NGPaintFragment::PositionForPointInInlineLevelBox(
+       return child_position.value();
+   }
+ 
++  if (PhysicalFragment().IsLineBox()) {
++    // There are no inline items to hit in this line box, e.g. <span> with
++    // size and border. We try in lines before |this| line in the block.
++    // See editing/selection/last-empty-inline.html
++    NGInlineCursor cursor(*Parent());
++    cursor.MoveTo(*this);
++    const PhysicalOffset point_in_line = point - OffsetInContainerBlock();
++    for (;;) {
++      cursor.MoveToPreviousLine();
++      if (!cursor)
++        break;
++      const NGPaintFragment& line = *cursor.CurrentPaintFragment();
++      const PhysicalOffset adjusted_point =
++          point_in_line + line.OffsetInContainerBlock();
++      if (auto position = line.PositionForPointInInlineLevelBox(adjusted_point))
++        return position;
++    }
++  }
++
+   return PositionWithAffinity();
+ }
+ 
