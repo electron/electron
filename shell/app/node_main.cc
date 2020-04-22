@@ -146,7 +146,11 @@ int NodeMain(int argc, char* argv[]) {
       // This needs to be called before the inspector is initialized.
       env->InitializeDiagnostics();
 
-      node::SetIsolateUpForNode(isolate);
+      // We do not want to set the error level.
+      node::IsolateSettings is;
+      is.flags = ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
+
+      node::SetIsolateUpForNode(isolate, is);
 
       gin_helper::Dictionary process(isolate, env->process_object());
 #if defined(OS_WIN)
