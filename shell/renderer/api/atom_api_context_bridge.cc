@@ -488,6 +488,106 @@ void ExposeAPIInMainWorld(const std::string& key,
   }
 }
 
+gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
+                                    const std::vector<std::string>& key_path) {
+  gin_helper::Dictionary current = start;
+  for (size_t i = 0; i < key_path.size() - 1; i++) {
+    CHECK(current.Get(key_path[i], &current));
+  }
+  return current;
+}
+
+void OverrideGlobalMethodFromIsolatedWorld(
+    const std::vector<std::string>& key_path,
+    v8::Local<v8::Function> method) {
+  if (key_path.size() == 0)
+    return;
+
+  auto* render_frame = GetRenderFrame(method);
+  CHECK(render_frame);
+  context_bridge::RenderFrameFunctionStore* store =
+      GetOrCreateStore(render_frame);
+  auto* frame = render_frame->GetWebFrame();
+  CHECK(frame);
+  v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
+  gin_helper::Dictionary global(main_context->GetIsolate(),
+                                main_context->Global());
+
+  const std::string final_key = key_path[key_path.size() - 1];
+  gin_helper::Dictionary target_object = TraceKeyPath(global, key_path);
+
+  {
+    v8::Context::Scope main_context_scope(main_context);
+    context_bridge::ObjectCache object_cache;
+    v8::MaybeLocal<v8::Value> maybe_proxy =
+        PassValueToOtherContext(method->CreationContext(), main_context, method,
+                                store, &object_cache, 1);
+    DCHECK(!maybe_proxy.IsEmpty());
+    auto proxy = maybe_proxy.ToLocalChecked();
+
+    target_object.Set(final_key, proxy);
+  }
+}
+
+bool OverrideGlobalPropertyFromIsolatedWorld(
+    const std::vector<std::string>& key_path,
+    v8::Local<v8::Object> getter,
+    v8::Local<v8::Value> setter,
+    gin_helper::Arguments* args) {
+  if (key_path.size() == 0)
+    return false;
+
+  auto* render_frame = GetRenderFrame(getter);
+  CHECK(render_frame);
+  context_bridge::RenderFrameFunctionStore* store =
+      GetOrCreateStore(render_frame);
+  auto* frame = render_frame->GetWebFrame();
+  CHECK(frame);
+  v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
+  gin_helper::Dictionary global(main_context->GetIsolate(),
+                                main_context->Global());
+
+  const std::string final_key = key_path[key_path.size() - 1];
+  v8::Local<v8::Object> target_object =
+      TraceKeyPath(global, key_path).GetHandle();
+
+  {
+    v8::Context::Scope main_context_scope(main_context);
+    context_bridge::ObjectCache object_cache;
+    v8::Local<v8::Value> getter_proxy;
+    v8::Local<v8::Value> setter_proxy;
+    if (!getter->IsNullOrUndefined()) {
+      v8::MaybeLocal<v8::Value> maybe_getter_proxy =
+          PassValueToOtherContext(getter->CreationContext(), main_context,
+                                  getter, store, &object_cache, 1);
+      DCHECK(!maybe_getter_proxy.IsEmpty());
+      getter_proxy = maybe_getter_proxy.ToLocalChecked();
+    }
+    if (!setter->IsNullOrUndefined() && setter->IsObject()) {
+      v8::MaybeLocal<v8::Value> maybe_setter_proxy =
+          PassValueToOtherContext(getter->CreationContext(), main_context,
+                                  setter, store, &object_cache, 1);
+      DCHECK(!maybe_setter_proxy.IsEmpty());
+      setter_proxy = maybe_setter_proxy.ToLocalChecked();
+    }
+
+    v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
+    bool success = IsTrue(target_object->DefineProperty(
+        main_context, gin::StringToV8(args->isolate(), final_key), desc));
+    DCHECK(success);
+    return success;
+  }
+}
+
+bool IsCalledFromMainWorld(v8::Isolate* isolate) {
+  auto* render_frame = GetRenderFrame(isolate->GetCurrentContext()->Global());
+  CHECK(render_frame);
+  auto* frame = render_frame->GetWebFrame();
+  CHECK(frame);
+  v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
+  return isolate->GetCurrentContext() == main_context;
+}
+
 }  // namespace api
 
 }  // namespace electron
@@ -501,6 +601,12 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("exposeAPIInMainWorld", &electron::api::ExposeAPIInMainWorld);
+  dict.SetMethod("_overrideGlobalMethodFromIsolatedWorld",
+                 &electron::api::OverrideGlobalMethodFromIsolatedWorld);
+  dict.SetMethod("_overrideGlobalPropertyFromIsolatedWorld",
+                 &electron::api::OverrideGlobalPropertyFromIsolatedWorld);
+  dict.SetMethod("_isCalledFromMainWorld",
+                 &electron::api::IsCalledFromMainWorld);
 #ifdef DCHECK_IS_ON
   dict.SetMethod("_debugGCMaps", &electron::api::DebugGC);
 #endif

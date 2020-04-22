@@ -1,11 +1,15 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
+import { internalContextBridge } from '@electron/internal/renderer/api/context-bridge';
 
-// This file implements the following APIs:
-// - window.history.back()
-// - window.history.forward()
-// - window.history.go()
-// - window.history.length
+const inMainWorld = internalContextBridge.isInMainWorld();
+const { contextIsolationEnabled } = internalContextBridge;
+
+// Should we inject APIs into this world, if ctx isolation is enabled then only inject in the isolated world
+// else inject everywhere
+const shouldInjectGivenContextIsolationIsMaybeEnabled = contextIsolationEnabled ? !inMainWorld : true;
+
+// This file implements the following APIs Directly:
 // - window.open()
 // - window.opener.blur()
 // - window.opener.close()
@@ -14,6 +18,12 @@ import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-inte
 // - window.opener.location
 // - window.opener.print()
 // - window.opener.postMessage()
+
+// And the following APIs over the ctx bridge:
+// - window.history.back()
+// - window.history.forward()
+// - window.history.go()
+// - window.history.length
 // - window.prompt()
 // - document.hidden
 // - document.visibilityState
@@ -177,14 +187,16 @@ class BrowserWindowProxy {
 export const windowSetup = (
   guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
 ) => {
-  if (!process.sandboxed && guestInstanceId == null) {
+  if (!process.sandboxed && guestInstanceId == null && shouldInjectGivenContextIsolationIsMaybeEnabled) {
     // Override default window.close.
     window.close = function () {
       ipcRendererInternal.sendSync('ELECTRON_BROWSER_WINDOW_CLOSE');
     };
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['close'], window.close);
   }
 
   if (!usesNativeWindowOpen) {
+    // TODO(MarshallOfSound): Make compatible with ctx isolation without hole-punch
     // Make the browser window or guest view emit "new-window" event.
     (window as any).open = function (url?: string, frameName?: string, features?: string) {
       if (url != null && url !== '') {
@@ -200,15 +212,20 @@ export const windowSetup = (
   }
 
   if (openerId != null) {
+    // TODO(MarshallOfSound): Make compatible with ctx isolation without hole-punch
     window.opener = getOrCreateProxy(openerId);
   }
 
   // But we do not support prompt().
-  window.prompt = function () {
-    throw new Error('prompt() is and will not be supported.');
-  };
+  if (shouldInjectGivenContextIsolationIsMaybeEnabled) {
+    window.prompt = function () {
+      throw new Error('prompt() is and will not be supported.');
+    };
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['prompt'], window.prompt);
+  }
 
   if (!usesNativeWindowOpen || openerId != null) {
+    // TODO(MarshallOfSound): Make compatible with ctx isolation without hole-punch
     ipcRendererInternal.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
       _event, sourceId: number, message: any, sourceOrigin: string
     ) {
@@ -229,27 +246,31 @@ export const windowSetup = (
     });
   }
 
-  if (!process.sandboxed) {
+  if (!process.sandboxed && shouldInjectGivenContextIsolationIsMaybeEnabled) {
     window.history.back = function () {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK');
     };
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['history', 'back'], window.history.back);
 
     window.history.forward = function () {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD');
     };
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['history', 'forward'], window.history.forward);
 
     window.history.go = function (offset: number) {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', +offset);
     };
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['history', 'go'], window.history.go);
 
+    const getHistoryLength = () => ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH');
     Object.defineProperty(window.history, 'length', {
-      get: function () {
-        return ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH');
-      }
+      get: getHistoryLength,
+      set () {}
     });
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['history', 'length'], getHistoryLength);
   }
 
-  if (guestInstanceId != null) {
+  if (guestInstanceId != null && shouldInjectGivenContextIsolationIsMaybeEnabled) {
     // Webview `document.visibilityState` tracks window visibility (and ignores
     // the actual <webview> element visibility) for backwards compatibility.
     // See discussion in #9178.
@@ -268,16 +289,16 @@ export const windowSetup = (
     });
 
     // Make document.hidden and document.visibilityState return the correct value.
+    const getDocumentHidden = () => cachedVisibilityState !== 'visible';
     Object.defineProperty(document, 'hidden', {
-      get: function () {
-        return cachedVisibilityState !== 'visible';
-      }
+      get: getDocumentHidden
     });
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['document', 'hidden'], getDocumentHidden);
 
+    const getDocumentVisibilityState = () => cachedVisibilityState;
     Object.defineProperty(document, 'visibilityState', {
-      get: function () {
-        return cachedVisibilityState;
-      }
+      get: getDocumentVisibilityState
     });
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['document', 'visibilityState'], getDocumentVisibilityState);
   }
 };

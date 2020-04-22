@@ -378,19 +378,23 @@ describe('contextBridge', () => {
             require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', (contextBridge as any).debugGC()))
             contextBridge.exposeInMainWorld('example', {
               getFunction: () => () => 123
-            })
-          })
-          expect((await getGCInfo()).functionCount).to.equal(2)
+            });
+          });
           await callWithBindings(async (root: any) => {
-            root.x = [root.example.getFunction()]
-          })
-          expect((await getGCInfo()).functionCount).to.equal(3)
+            root.GCRunner.run();
+          });
+          const baseValue = (await getGCInfo()).functionCount;
           await callWithBindings(async (root: any) => {
             root.x = []
-            root.GCRunner.run()
-          })
-          expect((await getGCInfo()).functionCount).to.equal(2)
-        })
+            root.x = [root.example.getFunction()];
+          });
+          expect((await getGCInfo()).functionCount).to.equal(baseValue + 1);
+          await callWithBindings(async (root: any) => {
+            root.x = [];
+            root.GCRunner.run();
+          });
+          expect((await getGCInfo()).functionCount).to.equal(baseValue);
+        });
 
         it('should release the global hold on objects sent across contexts when the object proxy is de-reffed', async () => {
           await makeBindingWindow(() => {
@@ -526,19 +530,19 @@ describe('contextBridge', () => {
             require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', (contextBridge as any).debugGC()))
             contextBridge.exposeInMainWorld('example', {
               getFunction: () => () => 123
-            })
-            require('electron').ipcRenderer.send('window-ready-for-tasking')
-          })
-          const loadPromise = emittedOnce(ipcMain, 'window-ready-for-tasking')
-          expect((await getGCInfo()).functionCount).to.equal(1)
+            });
+            require('electron').ipcRenderer.send('window-ready-for-tasking');
+          });
+          const loadPromise = emittedOnce(ipcMain, 'window-ready-for-tasking');
+          const baseValue = (await getGCInfo()).functionCount;
           await callWithBindings((root: any) => {
             root.location.reload()
           })
           await loadPromise
           // If this is ever "2" it means we leaked the exposed function and
           // therefore the entire context after a reload
-          expect((await getGCInfo()).functionCount).to.equal(1)
-        })
+          expect((await getGCInfo()).functionCount).to.equal(baseValue);
+        });
       }
 
       it('it should not let you overwrite existing exposed things', async () => {
