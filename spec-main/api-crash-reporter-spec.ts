@@ -158,10 +158,17 @@ function runCrashApp (crashType: string, port: number, extraArgs: Array<string> 
 }
 
 function waitForNewFileInDir (dir: string): Promise<string[]> {
-  const initialFiles = fs.readdirSync(dir);
+  function readdirIfPresent (dir: string): string[] {
+    try {
+      return fs.readdirSync(dir);
+    } catch (e) {
+      return [];
+    }
+  }
+  const initialFiles = readdirIfPresent(dir);
   return new Promise(resolve => {
     const ivl = setInterval(() => {
-      const newCrashFiles = fs.readdirSync(dir).filter(f => !initialFiles.includes(f));
+      const newCrashFiles = readdirIfPresent(dir).filter(f => !initialFiles.includes(f));
       if (newCrashFiles.length) {
         clearInterval(ivl);
         resolve(newCrashFiles);
