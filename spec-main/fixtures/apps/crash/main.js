@@ -68,3 +68,5 @@ app.whenReady().then(() => {
     process.exit(1);
   }
 });
+
+setTimeout(() => app.exit(), 30000);
