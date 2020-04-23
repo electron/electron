@@ -281,9 +281,9 @@ void ElectronMainDelegate::PreSandboxStartup() {
     LoadResourceBundle(locale);
   }
 
-  if (command_line->HasSwitch(switches::kEnableCrashReporter)) {
-    crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
-  }
+  // NB. this just sets up crashpad keys, it doesn't launch crashpad if it's
+  // not already started.
+  crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
 
   // Only append arguments for browser process.
   if (!IsBrowserProcess(command_line))

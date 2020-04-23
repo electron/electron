@@ -109,6 +109,8 @@ void RemoveExtraParameter(const std::string& key) {
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
+  crash_reporter::CrashReporter::InitializeInChildProcess();
+
   int exit_code = 1;
   {
     // Feed gin::PerIsolateData with a task runner.
@@ -181,10 +183,8 @@ int NodeMain(int argc, char* argv[]) {
 #endif
       process.SetMethod("crash", &ElectronBindings::Crash);
 
-      // Setup process.crashReporter.start in child node processes
+      // Setup process.crashReporter in child node processes
       gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
-      reporter.SetMethod("start",
-                         &crash_reporter::CrashReporter::StartInstance);
 
 #if !defined(OS_LINUX)
       reporter.SetMethod("addExtraParameter", &AddExtraParameter);

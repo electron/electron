@@ -2,7 +2,7 @@
 
 > Submit crash reports to a remote server.
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
 
 The following is an example of setting up Electron to automatically submit
 crash reports to a remote server:
@@ -64,7 +64,7 @@ The `crashReporter` module has the following methods:
   * `extra` Record<String, String> (optional) - Extra string key/value
     annotations that will be sent along with crash reports that are generated
     in the main process. Only string values are supported. Crashes generated in
-    child processes will not contain these extra parameters. To add extra
+    child processes will not contain these extra
     parameters to crash reports generated from child processes, call
     [`addExtraParameter`](#crashreporteraddextraparameterkey-value) from the
     child process.
@@ -75,9 +75,6 @@ The `crashReporter` module has the following methods:
     the process-specific extra parameters, then the global one will take
     precedence. By default, `productName` and the app version are included, as
     well as the Electron version.
-  * `crashesDirectory` String (optional) - Directory to store the crash reports
-    temporarily. Only used when the crash reporter is started in a node child
-    process via `process.crashReporter.start`.
 
 This method must be called before using any other `crashReporter` APIs. Once
 initialized this way, the crashpad handler collects crashes from all
@@ -92,15 +89,10 @@ by the crash reporter.
 **Note:** You can test out the crash reporter by generating a crash using
 `process.crash()`.
 
-**Note:** Child processes created via the `child_process` module will not
-be tracked by the crash reporter automatically. To collect crash reports from
-such processes, you must call `process.crashReporter.start` from the child
-process. Pass the same options as above along with an additional one called
-`crashesDirectory` that should point to a directory to store the crash reports
-temporarily.
-
 **Note:** If you need to send additional/updated `extra` parameters after your
 first call `start` you can call `addExtraParameter`.
+
+**Note:** This method must be called from the main process.
 
 ### `crashReporter.getLastCrashReport()`
 
@@ -109,6 +101,8 @@ last crash report. Only crash reports that have been uploaded will be returned;
 even if a crash report is present on disk it will not be returned until it is
 uploaded. In the case that there are no uploaded reports, `null` is returned.
 
+**Note:** This method must be called from the main process.
+
 ### `crashReporter.getUploadedReports()`
 
 Returns [`CrashReport[]`](structures/crash-report.md):
@@ -116,10 +110,14 @@ Returns [`CrashReport[]`](structures/crash-report.md):
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
 
+**Note:** This method must be called from the main process.
+
 ### `crashReporter.getUploadToServer()`
 
 Returns `Boolean` - Whether reports should be submitted to the server. Set through
 the `start` method or `setUploadToServer`.
+
+**Note:** This method must be called from the main process.
 
 ### `crashReporter.setUploadToServer(uploadToServer)`
 
@@ -127,6 +125,14 @@ the `start` method or `setUploadToServer`.
 
 This would normally be controlled by user preferences. This has no effect if
 called before `start` is called.
+
+**Note:** This method must be called from the main process.
+
+### `crashReporter.getCrashesDirectory()`
+
+Returns `String` - The directory where crashes are temporarily stored before being uploaded.
+
+**Note:** This method must be called from the main process.
 
 ### `crashReporter.addExtraParameter(key, value)`
 
@@ -154,10 +160,6 @@ will not include this parameter.
 ### `crashReporter.getParameters()`
 
 Returns `Object` - The current 'extra' parameters of the crash reporter.
-
-### `crashReporter.getCrashesDirectory()`
-
-Returns `String` - The directory where crashes are temporarily stored before being uploaded.
 
 ## Crash Report Payload
 
