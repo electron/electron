@@ -259,11 +259,18 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
       expect(crash.globalParam).to.equal('globalValue');
     });
 
-    it('should be overridden by extra', async () => {
+    it('should not be overridden by extra in main process', async () => {
       const { port, waitForCrash } = await startServer();
-      runCrashApp('main', port, ['--add-global-param=mainProcessSpecific:overridden']);
+      runCrashApp('main', port, ['--add-global-param=mainProcessSpecific:global']);
       const crash = await waitForCrash();
-      expect(crash.mainProcessSpecific).to.equal('overridden');
+      expect(crash.mainProcessSpecific).to.equal('global');
+    });
+
+    it('should not be overridden by extra in renderer process', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('main', port, ['--add-global-param=rendererSpecific:global']);
+      const crash = await waitForCrash();
+      expect(crash.rendererSpecific).to.equal('global');
     });
   });
 

@@ -71,8 +71,10 @@ The `crashReporter` module has the following methods:
   * `globalExtra` Record<String, String> (optional) - Extra string key/value
     annotations that will be sent along with any crash reports generated in any
     process. These annotations cannot be changed once the crash reporter has
-    been started. By default, `productName` and the app version are included,
-    as well as the Electron version.
+    been started. If a key is present in both the global extra parameters and
+    the process-specific extra parameters, then the global one will take
+    precedence. By default, `productName` and the app version are included, as
+    well as the Electron version.
   * `crashesDirectory` String (optional) - Directory to store the crash reports
     temporarily. Only used when the crash reporter is started in a node child
     process via `process.crashReporter.start`.
