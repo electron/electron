@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe, ifit } from './spec-helpers';
 import * as temp from 'temp';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
@@ -13,6 +13,8 @@ import * as fs from 'fs';
 import * as v8 from 'v8';
 
 temp.track();
+
+const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 
 const afterTest: ((() => void) | (() => Promise<void>))[] = [];
 async function cleanup () {
@@ -232,7 +234,8 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
     checkCrashExtra(crash);
   });
 
-  it('should not send a minidump when uploadToServer is false', async () => {
+  // TODO(jeremy): re-enable on woa
+  ifit(!isWindowsOnArm)('should not send a minidump when uploadToServer is false', async () => {
     const { port, getCrashes } = await startServer();
     const crashesDir = path.join(app.getPath('temp'), 'Zombies Crashes');
     const completedCrashesDir = path.join(crashesDir, 'completed');
@@ -284,7 +287,8 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
     });
   });
 
-  describe('getLastCrashReport', () => {
+  // TODO(jeremy): re-enable on woa
+  ifdescribe(!isWindowsOnArm)('getLastCrashReport', () => {
     it('returns the last uploaded report', async () => {
       const { remoteEval } = await startRemoteControlApp();
       const { port, waitForCrash } = await startServer();
