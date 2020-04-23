@@ -101,7 +101,7 @@ require('@electron/internal/browser/rpc-server');
 
 // Load the guest view manager.
 require('@electron/internal/browser/guest-view-manager');
-require('@electron/internal/browser/guest-window-manager');
+require('@electron/internal/browser/guest-window-proxy');
 
 // Now we try to load app's package.json.
 let packagePath = null;

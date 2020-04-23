@@ -229,6 +229,7 @@ auto_filenames = {
     "lib/browser/devtools.ts",
     "lib/browser/guest-view-manager.js",
     "lib/browser/guest-window-manager.ts",
+    "lib/browser/guest-window-proxy.ts",
     "lib/browser/init.ts",
     "lib/browser/ipc-main-impl.ts",
     "lib/browser/ipc-main-internal-utils.ts",
