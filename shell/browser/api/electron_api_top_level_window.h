@@ -166,7 +166,7 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited();
   void SetIgnoreMouseEvents(bool ignore, gin_helper::Arguments* args);
-  void SetContentProtection(bool enable);
+  void SetContentProtection(bool enable, const std::string& sourceId);
   void SetFocusable(bool focusable);
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void RemoveMenu();

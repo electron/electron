@@ -674,8 +674,8 @@ void TopLevelWindow::SetIgnoreMouseEvents(bool ignore,
   return window_->SetIgnoreMouseEvents(ignore, forward);
 }
 
-void TopLevelWindow::SetContentProtection(bool enable) {
-  return window_->SetContentProtection(enable);
+void TopLevelWindow::SetContentProtection(bool enable, const std::string& sourceId) {
+  return window_->SetContentProtection(enable, sourceId);
 }
 
 void TopLevelWindow::SetFocusable(bool focusable) {

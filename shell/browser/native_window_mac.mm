@@ -1230,7 +1230,14 @@ void NativeWindowMac::SetIgnoreMouseEvents(bool ignore, bool forward) {
   }
 }
 
-void NativeWindowMac::SetContentProtection(bool enable) {
+void NativeWindowMac::SetContentProtection(bool enable, const std::string& sourceId) {
+  const content::DesktopMediaID id = content::DesktopMediaID::Parse(sourceId);
+  if (id.type != content::DesktopMediaID::TYPE_WINDOW)
+    return false;
+
+  // Check if the window source is valid.
+  const CGWindowID window_id = id.id;
+  webrtc::DesktopCapturer::SetExcludedWindow(window_id);
   [window_
       setSharingType:enable ? NSWindowSharingNone : NSWindowSharingReadOnly];
 }

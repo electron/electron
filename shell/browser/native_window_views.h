@@ -107,7 +107,7 @@ class NativeWindowViews : public NativeWindow,
   void SetOpacity(const double opacity) override;
   double GetOpacity() override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
-  void SetContentProtection(bool enable) override;
+  void SetContentProtection(bool enable, const std::string& sourceId) override;
   void SetFocusable(bool focusable) override;
   void SetMenu(ElectronMenuModel* menu_model) override;
   void AddBrowserView(NativeBrowserView* browser_view) override;

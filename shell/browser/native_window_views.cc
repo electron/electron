@@ -964,7 +964,7 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 #endif
 }
 
-void NativeWindowViews::SetContentProtection(bool enable) {
+void NativeWindowViews::SetContentProtection(bool enable, const std::string& sourceId) {
 #if defined(OS_WIN)
   DWORD affinity = enable ? WDA_MONITOR : WDA_NONE;
   ::SetWindowDisplayAffinity(GetAcceleratedWidget(), affinity);

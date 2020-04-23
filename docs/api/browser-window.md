@@ -1686,9 +1686,10 @@ All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
 events.
 
-#### `win.setContentProtection(enable)` _macOS_ _Windows_
+#### `win.setContentProtection(enable, sourceId)` _macOS_ _Windows_
 
 * `enable` Boolean
+* `sourceId` String - Window id in the format of DesktopCapturerSource's id. For example "window:1869:0".
 
 Prevents the window contents from being captured by other apps.
 
