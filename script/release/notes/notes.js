@@ -263,14 +263,14 @@ const getLocalCommitHashes = async (dir, ref) => {
 
 /*
  * possible properties:
- * breakingChange, email, hash, issueNumber, originalSubject, parentHashes,
+ * breakingChange, hash, issueNumber, originalSubject,
  * pr { owner, repo, number, branch }, revertHash, subject, type
  */
 const getLocalCommitDetails = async (module, point1, point2) => {
   const { owner, repo, dir } = module;
 
   const fieldSep = '||';
-  const format = ['%H', '%P', '%aE', '%B'].join(fieldSep);
+  const format = ['%H', '%B'].join(fieldSep);
   const args = ['log', '-z', '--cherry-pick', '--right-only', '--first-parent', `--format=${format}`, `${point1}..${point2}`];
   const commits = (await runGit(dir, args)).split('\0').map(field => field.trim());
   const details = [];
@@ -278,14 +278,8 @@ const getLocalCommitDetails = async (module, point1, point2) => {
     if (!commit) {
       continue;
     }
-    const [hash, parentHashes, email, commitMessage] = commit.split(fieldSep, 4).map(field => field.trim());
-    details.push(parseCommitMessage(commitMessage, owner, repo, {
-      email,
-      hash,
-      owner,
-      repo,
-      parentHashes: parentHashes.split()
-    }));
+    const [hash, commitMessage] = commit.split(fieldSep, 2).map(field => field.trim());
+    details.push(parseCommitMessage(commitMessage, owner, repo, { hash, owner, repo }));
   }
   return details;
 };
