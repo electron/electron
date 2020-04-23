@@ -4,14 +4,11 @@ import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
 import { ifdescribe, ifit } from './spec-helpers';
-import * as temp from 'temp';
 import { app, crashReporter } from 'electron/main';
 import { AddressInfo } from 'net';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as v8 from 'v8';
-
-temp.track();
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 
