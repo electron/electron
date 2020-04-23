@@ -160,7 +160,7 @@ index dbf366ff78e1f4b2828ae3ccd8c0a08345942736..b7c83cceb2297eddcb345e75a95b7744
    std::unique_ptr<NetworkServiceNetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 8e760d55a3c7beacc1abaf6b6f59a366e7b56afa..8f41fe5e397cd6b6cd22bebd1616e4e2f8890004 100644
+index dc36e4eb72889ca9810a057e4d746399e1845b7f..cff8a36b7703df31d0823efb2549f57d7c6c6907 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -84,6 +84,7 @@ class DomainReliabilityMonitor;
@@ -171,7 +171,7 @@ index 8e760d55a3c7beacc1abaf6b6f59a366e7b56afa..8f41fe5e397cd6b6cd22bebd1616e4e2
  class CookieManager;
  class ExpectCTReporter;
  class HostResolver;
-@@ -183,6 +184,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -187,6 +188,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -180,7 +180,7 @@ index 8e760d55a3c7beacc1abaf6b6f59a366e7b56afa..8f41fe5e397cd6b6cd22bebd1616e4e2
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -653,6 +656,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -657,6 +660,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::unique_ptr<network::NSSTempCertsCacheChromeOS> nss_temp_certs_cache_;
  #endif
  
@@ -190,7 +190,7 @@ index 8e760d55a3c7beacc1abaf6b6f59a366e7b56afa..8f41fe5e397cd6b6cd22bebd1616e4e2
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherURLRequest> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e23f01e7081b1c536e22e39b4249d8f14fb00bde..2e233c945b16559c6e7a7c784043aadaea09ac2a 100644
+index 2774beb622cb44057cb45c07dd917d99bb6fc54f..e834a5f9a4b6c698ad20e3b9cdc99e871e4035df 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -161,6 +161,17 @@ struct HttpAuthStaticNetworkContextParams {
@@ -211,7 +211,7 @@ index e23f01e7081b1c536e22e39b4249d8f14fb00bde..2e233c945b16559c6e7a7c784043aada
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -826,6 +837,9 @@ interface NetworkContext {
+@@ -831,6 +842,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

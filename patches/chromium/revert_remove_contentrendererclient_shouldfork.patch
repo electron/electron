@@ -9,10 +9,10 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index a513a74fa4f5f022b5fb269560953c3f0dd6a6d5..4569b87200227a889c10dfc4f4c337eab5b46950 100644
+index ea39afcf03ce42a242ee14567a41b448a39324c3..6c710642bfd6da7cdf882c8a53b0a268c5f1544f 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1288,6 +1288,25 @@ bool ChromeContentRendererClient::AllowPopup() {
+@@ -1293,6 +1293,25 @@ bool ChromeContentRendererClient::AllowPopup() {
  #endif
  }
  
@@ -92,42 +92,30 @@ index bb990768e528ae66b340402084e9785eb1deb132..5e73a1cc9d3c35e7e69ac4ae1cbe7c20
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |attach_same_site_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 0a0a4838efb2ed06875f07befaaf4e59f43b0500..b2d5e9d4bb138ba1c00ef0118a96e705431fe5a8 100644
+index 84438b3183cd9f5a4d0f677880e4c3fb96281bb7..b0dfd8086377d14620746c722915cc41d92bc7d6 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5678,14 +5678,33 @@ void RenderFrameImpl::BeginNavigation(
-   // See http://crbug.com/93517.
-   GURL old_url(frame_->GetDocumentLoader()->GetUrl());
- 
-+  bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
-+                    (enabled_bindings_ & kWebUIBindingsPolicyMask);
+@@ -5691,6 +5691,23 @@ void RenderFrameImpl::BeginNavigation(
+     // we can do a per-frame check here rather than a process-wide check.
+     bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
+                        (enabled_bindings_ & kWebUIBindingsPolicyMask);
 +
-+  if (!should_fork && url.SchemeIs(url::kFileScheme)) {
-+    // Fork non-file to file opens (see https://crbug.com/1031119).  Note that
-+    // this may fork unnecessarily if another tab (hosting a file or not)
-+    // targeted this one before its initial navigation, but that shouldn't
-+    // cause a problem.
-+    should_fork = !old_url.SchemeIs(url::kFileScheme);
-+  }
++    if (!should_fork && url.SchemeIs(url::kFileScheme)) {
++      // Fork non-file to file opens (see https://crbug.com/1031119).  Note that
++      // this may fork unnecessarily if another tab (hosting a file or not)
++      // targeted this one before its initial navigation, but that shouldn't
++      // cause a problem.
++      should_fork = !old_url.SchemeIs(url::kFileScheme);
++    }
 +
-+  if (!should_fork) {
-+    // Give the embedder a chance.
-+    bool is_initial_navigation = render_view_->history_list_length_ == 0;
-+    should_fork = GetContentClient()->renderer()->ShouldFork(
-+        frame_, url, info->url_request.HttpMethod().Utf8(),
-+        is_initial_navigation, false /* is_redirect */);
-+  }
++    if (!should_fork) {
++      // Give the embedder a chance.
++      bool is_initial_navigation = render_view_->history_list_length_ == 0;
++      should_fork = GetContentClient()->renderer()->ShouldFork(
++          frame_, url, info->url_request.HttpMethod().Utf8(),
++          is_initial_navigation, false /* is_redirect */);
++    }
 +
-   // All navigations from DevTools URLs must be handled by the browser
-   // process (see also DevToolsSanityTest.TestDevToolsExternalNavigation and
-   // https://crbug.com/180555).
-   //
-   // TODO(lukasza): https://crbug.com/883549: Remove the remaining call to
-   // OpenURL below.
--  if (!url.is_empty() && !url.SchemeIs(url::kAboutScheme) &&
--      old_url.SchemeIs(kChromeDevToolsScheme)) {
-+  if (should_fork || (!url.is_empty() && !url.SchemeIs(url::kAboutScheme) &&
-+      old_url.SchemeIs(kChromeDevToolsScheme))) {
-     OpenURL(std::move(info));
-     return;  // Suppress the load here.
-   }
+     if (should_fork) {
+       OpenURL(std::move(info));
+       return;  // Suppress the load here.

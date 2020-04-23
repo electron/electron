@@ -42,7 +42,7 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 88e25ff60fb916152e48be9fe126b05fcd0ce638..f09be5f2cc2554a7ce7fc951dae1182e96050fa2 100644
+index 38f5ab2f17586cc46ba9654ca1cbaf54e45ee525..fb642e30369056727809ae710ec745ac3623a267 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1284,6 +1284,24 @@ void NavigationRequest::BeginNavigation() {

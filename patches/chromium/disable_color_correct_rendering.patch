@@ -236,7 +236,7 @@ index 495e90285de38991e43425023aeaa8437254857b..ec383524faa4ddf738c915d309d66044
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 71190ccf7c375a76ea5d42c7bd54e5deb31fb19a..034f595be5ec9bf99e61b297747cf30837221bab 100644
+index ef30bb971b8052c9c24cf3c293dc7f48615b031f..a8238638497e4aa7cae954cd5607832fde83681e 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
 @@ -2587,6 +2587,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
