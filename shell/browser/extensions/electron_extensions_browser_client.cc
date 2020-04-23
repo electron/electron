@@ -45,6 +45,7 @@
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_extensions_api_client.h"
 #include "shell/browser/extensions/electron_extensions_browser_api_provider.h"
+#include "shell/browser/extensions/electron_kiosk_delegate.h"
 #include "shell/browser/extensions/electron_navigation_ui_data.h"
 #include "shell/browser/extensions/electron_process_manager_delegate.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -346,7 +347,9 @@ ElectronExtensionsBrowserClient::GetExtensionWebContentsObserver(
 }
 
 extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {
-  return nullptr;
+  if (!kiosk_delegate_)
+    kiosk_delegate_.reset(new ElectronKioskDelegate());
+  return kiosk_delegate_.get();
 }
 
 bool ElectronExtensionsBrowserClient::IsLockScreenContext(

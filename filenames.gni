@@ -651,6 +651,8 @@ filenames = {
     "shell/browser/extensions/electron_extensions_browser_api_provider.h",
     "shell/browser/extensions/electron_extensions_browser_client.cc",
     "shell/browser/extensions/electron_extensions_browser_client.h",
+    "shell/browser/extensions/electron_kiosk_delegate.cc",
+    "shell/browser/extensions/electron_kiosk_delegate.h",
     "shell/browser/extensions/electron_messaging_delegate.cc",
     "shell/browser/extensions/electron_messaging_delegate.h",
     "shell/browser/extensions/electron_navigation_ui_data.cc",
