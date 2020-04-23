@@ -430,11 +430,10 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
         v8::Context::Scope source_context_scope(source_context);
         auto maybe_desc = api.GetHandle()->GetOwnPropertyDescriptor(
             source_context, v8::Local<v8::Name>::Cast(key));
-        if (maybe_desc.IsEmpty())
+        v8::Local<v8::Value> desc_value;
+        if (!maybe_desc.ToLocal(&desc_value) || !desc_value->IsObject())
           continue;
-        gin_helper::Dictionary desc(
-            api.isolate(),
-            v8::Local<v8::Object>::Cast(maybe_desc.ToLocalChecked()));
+        gin_helper::Dictionary desc(api.isolate(), desc_value.As<v8::Object>());
         if (desc.Has("get") || desc.Has("set")) {
           v8::Local<v8::Value> getter;
           v8::Local<v8::Value> setter;
@@ -446,22 +445,18 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
             v8::Local<v8::Value> getter_proxy;
             v8::Local<v8::Value> setter_proxy;
             if (!getter.IsEmpty()) {
-              v8::MaybeLocal<v8::Value> maybe_getter_proxy =
-                  PassValueToOtherContext(source_context, destination_context,
-                                          getter, store, object_cache, false,
-                                          1);
-              if (maybe_getter_proxy.IsEmpty())
+              if (!PassValueToOtherContext(source_context, destination_context,
+                                           getter, store, object_cache, false,
+                                           1)
+                       .ToLocal(&getter_proxy))
                 continue;
-              getter_proxy = maybe_getter_proxy.ToLocalChecked();
             }
             if (!setter.IsEmpty()) {
-              v8::MaybeLocal<v8::Value> maybe_setter_proxy =
-                  PassValueToOtherContext(source_context, destination_context,
-                                          setter, store, object_cache, false,
-                                          1);
-              if (maybe_setter_proxy.IsEmpty())
+              if (!PassValueToOtherContext(source_context, destination_context,
+                                           setter, store, object_cache, false,
+                                           1)
+                       .ToLocal(&setter_proxy))
                 continue;
-              setter_proxy = maybe_setter_proxy.ToLocalChecked();
             }
 
             v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
