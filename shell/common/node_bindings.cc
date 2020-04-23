@@ -411,7 +411,8 @@ node::Environment* NodeBindings::CreateEnvironment(
   }
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
-    // This policy ensures microtask checkpoints are explicitly invoked.
+    // This policy requires that microtask checkpoints be explicitly invoked.
+    // Node.js requires this.
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
   } else {
     // Match Blink's behavior by allowing microtasks invocation to be controlled
