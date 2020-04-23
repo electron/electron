@@ -103,7 +103,7 @@ export function parseFeatures (
   if (parsed.top !== undefined) parsed.y = parsed.top;
 
   return {
-    options: parsed as Omit<BrowserWindowConstructorOptions, 'webPreferences'> & { [key: string]: CoercedValue },
+    options: parsed as Omit<BrowserWindowConstructorOptions, 'webPreferences'>,
     webPreferences,
     additionalFeatures: bareKeys
   };

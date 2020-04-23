@@ -61,6 +61,10 @@ declare namespace Electron {
     code: string
   }
 
+  interface BrowserWindowConstructorOptionsInternal extends Electron.BrowserWindowConstructorOptions {
+    webContents?: WebContentsInternal,
+  }
+
   interface ContentScript {
     js: Array<InjectionBase>;
     css: Array<InjectionBase>;

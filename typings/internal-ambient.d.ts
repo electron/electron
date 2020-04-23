@@ -1,5 +1,5 @@
-declare var internalBinding: any;
-declare var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
+let var internalBinding: any;
+let var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
 
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
@@ -121,7 +121,7 @@ declare namespace NodeJS {
   }
 }
 
-declare module NodeJS  {
+declare module NodeJS {
   interface Global {
     require: NodeRequire;
     module: NodeModule;
