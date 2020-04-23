@@ -217,7 +217,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
     runCrashApp('main', port);
     const crash = await waitForCrash();
     checkCrash('browser', crash);
-    expect(crash.mainProcessSpecific).to.equal('mps')
+    expect(crash.mainProcessSpecific).to.equal('mps');
   });
 
   it('should send minidump when a node process crashes', async () => {
@@ -242,23 +242,30 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
       const { port, waitForCrash } = await startServer();
       runCrashApp('main', port, ['--add-global-param=globalParam:globalValue']);
       const crash = await waitForCrash();
-      expect(crash.globalParam).to.equal('globalValue')
-    })
+      expect(crash.globalParam).to.equal('globalValue');
+    });
 
     it('should be sent with renderer process dumps', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('renderer', port, ['--add-global-param=globalParam:globalValue']);
       const crash = await waitForCrash();
-      expect(crash.globalParam).to.equal('globalValue')
-    })
+      expect(crash.globalParam).to.equal('globalValue');
+    });
 
     it('should be sent with sandboxed renderer process dumps', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('sandboxed-renderer', port, ['--add-global-param=globalParam:globalValue']);
       const crash = await waitForCrash();
-      expect(crash.globalParam).to.equal('globalValue')
-    })
-  })
+      expect(crash.globalParam).to.equal('globalValue');
+    });
+
+    it('should be overridden by extra', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('main', port, ['--add-global-param=mainProcessSpecific:overridden']);
+      const crash = await waitForCrash();
+      expect(crash.mainProcessSpecific).to.equal('overridden');
+    });
+  });
 
   ifit(!isWindowsOnArm)('should not send a minidump when uploadToServer is false', async () => {
     const { port, getCrashes } = await startServer();
@@ -361,11 +368,11 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
       const { remoteEval } = await startRemoteControlApp();
       await remoteEval(`(${function () {
         require('electron').crashReporter.start({
-          companyName: "Umbrella Corporation",
-          submitURL: "http://127.0.0.1",
-          extra: { "extra1": "hi" }
+          companyName: 'Umbrella Corporation',
+          submitURL: 'http://127.0.0.1',
+          extra: { 'extra1': 'hi' }
         });
-      }})()`)
+      }})()`);
       const parameters = await remoteEval(`require('electron').crashReporter.getParameters()`);
       expect(parameters).to.be.an('object');
       expect(parameters.extra1).to.equal('hi');

@@ -34,13 +34,13 @@ class CrashReporter {
     this._crashesDirectory = require('path').join(getTempDirectory(), `${productName} Crashes`);
     const appVersion = app.getVersion();
 
-    if (companyName && extra._companyName == null) extra._companyName = companyName;
+    if (companyName && globalExtra._companyName == null) globalExtra._companyName = companyName;
 
     const extraGlobal = {
       _productName: productName,
       _version: appVersion,
-      ...globalExtra,
-    }
+      ...globalExtra
+    };
 
     binding.start(submitURL, this._crashesDirectory, uploadToServer,
       ignoreSystemCrashHandler, rateLimit, compress, extraGlobal, extra);
