@@ -118,10 +118,10 @@ index 6e3455921f5a1b81fe8a43d44beecfbd9aa93dc1..d3e521f1291a2f90963199cadba02ae3
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/modules/webaudio/base_audio_context.h b/third_party/blink/renderer/modules/webaudio/base_audio_context.h
-index a99b2dddad44416d8761335f1111c441be79c486..051890e2742344d3ed2c8b6ae3b0c384eef252a0 100644
+index d6e4fe5e25ffbaa5273a7aa6d4042cc474ba1c06..af0a27d0cb49faa34de540df5c25ae4f1d6f8734 100644
 --- a/third_party/blink/renderer/modules/webaudio/base_audio_context.h
 +++ b/third_party/blink/renderer/modules/webaudio/base_audio_context.h
-@@ -285,7 +285,7 @@ class MODULES_EXPORT BaseAudioContext
+@@ -282,7 +282,7 @@ class MODULES_EXPORT BaseAudioContext
  
    DEFINE_ATTRIBUTE_EVENT_LISTENER(statechange, kStatechange)
  
