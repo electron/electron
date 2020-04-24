@@ -13,6 +13,7 @@
 #include "base/macros.h"
 #include "build/build_config.h"
 #include "extensions/browser/extensions_browser_client.h"
+#include "extensions/browser/kiosk/kiosk_delegate.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
 
@@ -139,6 +140,8 @@ class ElectronExtensionsBrowserClient
 
   // The extension cache used for download and installation.
   std::unique_ptr<extensions::ExtensionCache> extension_cache_;
+
+  std::unique_ptr<extensions::KioskDelegate> kiosk_delegate_;
 
   std::unique_ptr<extensions::ElectronComponentExtensionResourceManager>
       resource_manager_;

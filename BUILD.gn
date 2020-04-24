@@ -376,7 +376,7 @@ source_set("electron_lib") {
   public_deps = [
     "//base",
     "//base:i18n",
-    "//content/public/app:both",
+    "//content/public/app",
   ]
 
   include_dirs = [

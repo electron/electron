@@ -455,7 +455,7 @@ index 2bb30e5318b6b48c2e6d4b1f64a6a36c68f963d1..9e805f27a9d7d1c0aa68cdf9f48895c0
    waiting_on_draw_ack_ = true;
  
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 24a753ace9900e31b6e6800b5b33b19def09fb2d..2e8b76a960910a0a17bb261d9a4ecd91d7209ee6 100644
+index ffb3a04236be821e7ba1c7370258eb0610497c8e..5fd16e51508dc3227798a7166226ff5d01dcd921 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -404,8 +404,13 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -496,7 +496,7 @@ index 60e1149205750740ab5bde81029e7e3b370bd1ed..abfb772cd318b4cca3aed167a8808839
    // (https://crbug.com/811945)
    friend class ui::Compositor;
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index d36f62e6ee4166f0e27f6534c804430374bfa298..6575d7e6cafdca8cdc172e0f9912648570c1deeb 100644
+index d88fab3b7d0a968b2a5503e04a0812dc1edeaf28..4f66ac576ca495630cba4f82f0e5e0ebda434ddd 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
 @@ -74,12 +74,14 @@ interface DisplayPrivate {
@@ -606,7 +606,7 @@ index de00e766ba17532e10dcf5d0fd31fa344920a9f7..7aaedf83ad22dcc1d2dd39a31cf7e08b
    float scale_factor;
  };
 diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
-index 3f050fcf52ebb2dc2a5510d9489255ee22bfbcc8..61383dbed35dc72060a1e422fd68437fa4729ce3 100644
+index d6ec9ef087f00d4c8d7c495b7e57a1d9c3c8b3bb..1b1aafcf75e422b4c94bdc8da895488245cdf360 100644
 --- a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 +++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 @@ -52,6 +52,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(

@@ -6,7 +6,7 @@ Subject: Revert "Cleanup: Remove Menu Subtitles/Sublabels"
 This reverts commit 27a7b3648684204ccb16ede5cf3947579bd6c222.
 
 diff --git a/chrome/browser/renderer_context_menu/mock_render_view_context_menu.cc b/chrome/browser/renderer_context_menu/mock_render_view_context_menu.cc
-index 273666e278b3c6d1ac1e203f51a6a701366cdf2f..e9ab80665fd54b13c4211016e1607dc6cc5d53c2 100644
+index 7b4531d031e6ba365fc4db35e9b68658f00f79fd..a7ef23c0d6623136531696928778bd0801726aa0 100644
 --- a/chrome/browser/renderer_context_menu/mock_render_view_context_menu.cc
 +++ b/chrome/browser/renderer_context_menu/mock_render_view_context_menu.cc
 @@ -157,7 +157,7 @@ void MockRenderViewContextMenu::AppendSubMenuItems(ui::MenuModel* model) {

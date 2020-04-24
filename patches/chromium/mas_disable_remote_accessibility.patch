@@ -64,7 +64,7 @@ index 2ee45cb069ec5d78d9c7a3f61fdd1d444a590f41..badc4323b910f8e3957583e05af30347
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // crrev/c/1236675. The ordering of unassociated layers relative to NSView
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index a8e5c8888cb7ea8a85de7c8e8c613cc2b3c5be15..d01468fe77703b2812865b0198b84b0b645283c4 100644
+index 82696053ce7cd1d47c9034899a76555af716f4ba..0ed7a32fa839b449aaacc2338f59f6ff17814891 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 @@ -66,8 +66,10 @@ class RenderWidgetHostNSViewBridgeOwner
@@ -90,7 +90,7 @@ index a8e5c8888cb7ea8a85de7c8e8c613cc2b3c5be15..d01468fe77703b2812865b0198b84b0b
    DISALLOW_COPY_AND_ASSIGN(RenderWidgetHostNSViewBridgeOwner);
  };
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 0d8a8e14328be49407d35908bacadd92182dae31..86602419d16667ff002333f848abcd77322c1045 100644
+index c610426ad9b91505da7b529015fc19a27d5ee170..2858e299ab9788a17e006c1093f01803c223fb1b 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -46,7 +46,9 @@ class ScopedPasswordInputEnabler;
@@ -103,7 +103,7 @@ index 0d8a8e14328be49407d35908bacadd92182dae31..86602419d16667ff002333f848abcd77
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -618,10 +620,12 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -619,10 +621,12 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -117,7 +117,7 @@ index 0d8a8e14328be49407d35908bacadd92182dae31..86602419d16667ff002333f848abcd77
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 359c792b2586756b6e195eaa0b61e426edbe764d..878837a454336afe177c3113062a1e8c8fff9076 100644
+index c56fb05c579f3c95a132ee00a2ed83bf2cb85268..385b0dbeb7cbfb31ad0726051dc2e8fb4d7b16b2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -231,8 +231,10 @@ RenderWidgetHostViewMac::~RenderWidgetHostViewMac() {
@@ -131,7 +131,7 @@ index 359c792b2586756b6e195eaa0b61e426edbe764d..878837a454336afe177c3113062a1e8c
  
    // Disconnect from the previous bridge (this will have the effect of
    // destroying the associated bridge), and close the receiver (to allow it
-@@ -1348,8 +1350,10 @@ RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessible() {
+@@ -1350,8 +1352,10 @@ RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessible() {
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -142,7 +142,7 @@ index 359c792b2586756b6e195eaa0b61e426edbe764d..878837a454336afe177c3113062a1e8c
    return [GetInProcessNSView() window];
  }
  
-@@ -1381,9 +1385,11 @@ id RenderWidgetHostViewMac::GetFocusedBrowserAccessibilityElement() {
+@@ -1383,9 +1387,11 @@ id RenderWidgetHostViewMac::GetFocusedBrowserAccessibilityElement() {
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -154,7 +154,7 @@ index 359c792b2586756b6e195eaa0b61e426edbe764d..878837a454336afe177c3113062a1e8c
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -1870,12 +1876,14 @@ void RenderWidgetHostViewMac::StopSpeaking() {
+@@ -1872,12 +1878,14 @@ void RenderWidgetHostViewMac::StopSpeaking() {
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
