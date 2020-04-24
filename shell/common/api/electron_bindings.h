@@ -14,7 +14,7 @@
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
 #include "shell/common/gin_helper/promise.h"
-#include "uv.h"  // NOLINT(build/include)
+#include "uv.h"  // NOLINT(build/include_directory)
 
 namespace gin_helper {
 class Arguments;
