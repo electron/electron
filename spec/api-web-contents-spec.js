@@ -577,6 +577,28 @@ describe('webContents module', () => {
     });
   });
 
+  describe('text zoom api', () => {
+    it('set text zoom factor in webcontents', (done) => {
+      const preload = path.join(fixtures, 'module', 'preload-contents-zoomtext.js');
+      w.destroy();
+      w = new BrowserWindow({
+        show: true,
+        webPreferences: {
+          preload
+        }
+      });
+      ipcMain.on('textZoomFactor', (event, textZoomFactor) => {
+        expect(textZoomFactor).to.eq(2);
+        done();
+      });
+      ipcMain.on('ready', event => {
+        w.webContents.setTextZoomFactor(2);
+        event.reply('getTextZoomFactor');
+      });
+      w.loadURL('about:blank');
+    });
+  });
+
   describe('zoom api', () => {
     const zoomScheme = remote.getGlobal('zoomScheme');
     const hostZoomMap = {
