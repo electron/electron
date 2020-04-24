@@ -9,7 +9,7 @@
 
 #include "base/macros.h"
 #include "gin/public/isolate_holder.h"
-#include "uv.h"  // NOLINT(build/include)
+#include "uv.h"  // NOLINT(build/include_directory)
 
 namespace node {
 class Environment;
