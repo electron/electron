@@ -305,10 +305,27 @@ void SetZoomFactor(gin_helper::ErrorThrower thrower,
   SetZoomLevel(thrower, window, blink::PageZoomFactorToZoomLevel(factor));
 }
 
+void SetTextZoomFactor(mate::Arguments* args,
+                       v8::Local<v8::Value> window,
+                       double factor) {
+  if (factor < std::numeric_limits<double>::epsilon()) {
+    args->ThrowError("'textZoomFactor' must be a double greater than 0.0");
+    return;
+  }
+
+  blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
+  web_frame->View()->SetTextZoomFactor(factor);
+}
+
 double GetZoomFactor(gin_helper::ErrorThrower thrower,
                      v8::Local<v8::Value> window) {
   double zoom_level = GetZoomLevel(thrower, window);
   return blink::PageZoomLevelToZoomFactor(zoom_level);
+}
+
+double GetTextZoomFactor(v8::Local<v8::Value> window) {
+  blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
+  return web_frame->View()->TextZoomFactor();
 }
 
 void SetVisualZoomLevelLimits(gin_helper::ErrorThrower thrower,
@@ -746,6 +763,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("getZoomLevel", &GetZoomLevel);
   dict.SetMethod("setZoomFactor", &SetZoomFactor);
   dict.SetMethod("getZoomFactor", &GetZoomFactor);
+  dict.SetMethod("setTextZoomFactor", &SetTextZoomFactor);
+  dict.SetMethod("getTextZoomFactor", &GetTextZoomFactor);
   dict.SetMethod("setVisualZoomLevelLimits", &SetVisualZoomLevelLimits);
   dict.SetMethod("allowGuestViewElementDefinition",
                  &AllowGuestViewElementDefinition);

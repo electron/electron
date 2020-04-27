@@ -1084,6 +1084,15 @@ The factor must be greater than 0.0.
 
 Returns `Number` - the current zoom factor.
 
+#### `contents.setTextZoomFactor(factor)`
+
+* `factor` Double - Text Zoom factor; default is 1.0.
+
+Changes the text zoom factor to the specified factor. Text Zoom factor is only
+text zoom percent divided by 100, so 300% = 3.0.
+
+The factor must be greater than 0.0.
+
 #### `contents.setZoomLevel(level)`
 
 * `level` Number - Zoom level.

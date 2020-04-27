@@ -196,6 +196,22 @@ describe('<webview> tag', function () {
     expect(tabId).to.equal(childWebContentsId);
   });
 
+  describe('text zoom behavior', () => {
+    it('enable text zoom in webview', async () => {
+      const w = new BrowserWindow({
+        show: true,
+        webPreferences: {
+          webviewTag: true
+        }
+      });
+      const initalTextZoomEventPromise = emittedOnce(ipcMain, 'initalTextZoomFactor');
+      w.loadFile(path.join(fixtures, 'pages', 'webview-text-zoom-factor.html'));
+
+      const [, initalTextZoom] = await initalTextZoomEventPromise;
+      expect(initalTextZoom).to.equal(2);
+    });
+  });
+
   describe('zoom behavior', () => {
     const zoomScheme = standardScheme;
     const webviewSession = session.fromPartition('webview-temp');
