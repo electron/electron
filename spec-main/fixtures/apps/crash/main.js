@@ -16,7 +16,7 @@ crashReporter.start({
   submitURL: url,
   ignoreSystemCrashHandler: true,
   extra: {
-    mainProcessSpecific: 'mps',
+    mainProcessSpecific: 'mps'
   },
   globalExtra: addGlobalParam[0] ? { [addGlobalParam[0]]: addGlobalParam[1] } : {}
 });
