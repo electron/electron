@@ -23,7 +23,7 @@
 #include "ui/base/resource/resource_bundle.h"
 #include "url/url_constants.h"
 // In SHARED_INTERMEDIATE_DIR.
-#include "widevine_cdm_version.h"  // NOLINT(build/include)
+#include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
 #include "base/native_library.h"
