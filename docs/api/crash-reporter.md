@@ -92,7 +92,7 @@ by the crash reporter.
 **Note:** If you need to send additional/updated `extra` parameters after your
 first call `start` you can call `addExtraParameter`.
 
-**Note:** This method must be called from the main process.
+**Note:** Calling this method from the renderer process is deprecated.
 
 ### `crashReporter.getLastCrashReport()`
 
@@ -101,7 +101,7 @@ last crash report. Only crash reports that have been uploaded will be returned;
 even if a crash report is present on disk it will not be returned until it is
 uploaded. In the case that there are no uploaded reports, `null` is returned.
 
-**Note:** This method must be called from the main process.
+**Note:** Calling this method from the renderer process is deprecated.
 
 ### `crashReporter.getUploadedReports()`
 
@@ -110,14 +110,14 @@ Returns [`CrashReport[]`](structures/crash-report.md):
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
 
-**Note:** This method must be called from the main process.
+**Note:** Calling this method from the renderer process is deprecated.
 
 ### `crashReporter.getUploadToServer()`
 
 Returns `Boolean` - Whether reports should be submitted to the server. Set through
 the `start` method or `setUploadToServer`.
 
-**Note:** This method must be called from the main process.
+**Note:** Calling this method from the renderer process is deprecated.
 
 ### `crashReporter.setUploadToServer(uploadToServer)`
 
@@ -126,13 +126,13 @@ the `start` method or `setUploadToServer`.
 This would normally be controlled by user preferences. This has no effect if
 called before `start` is called.
 
-**Note:** This method must be called from the main process.
+**Note:** Calling this method from the renderer process is deprecated.
 
 ### `crashReporter.getCrashesDirectory()`
 
 Returns `String` - The directory where crashes are temporarily stored before being uploaded.
 
-**Note:** This method must be called from the main process.
+**Note:** Calling this method from the renderer process is deprecated.
 
 ### `crashReporter.addExtraParameter(key, value)`
 
