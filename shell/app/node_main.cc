@@ -108,6 +108,10 @@ int NodeMain(int argc, char* argv[]) {
     crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
 #endif
 
+    // We do not want to double-set the error level and promise rejection
+    // callback.
+    node::g_standalone_mode = false;
+
     // Explicitly register electron's builtin modules.
     NodeBindings::RegisterBuiltinModules();
 
@@ -146,10 +150,7 @@ int NodeMain(int argc, char* argv[]) {
       // This needs to be called before the inspector is initialized.
       env->InitializeDiagnostics();
 
-      // We do not want to set the error level.
       node::IsolateSettings is;
-      is.flags = ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
-
       node::SetIsolateUpForNode(isolate, is);
 
       gin_helper::Dictionary process(isolate, env->process_object());
