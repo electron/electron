@@ -186,10 +186,10 @@ index 6b13bae8def62d9a26d68ac8396b4bf6f7439c1a..d92b5a5855c0cebf94922a31f686e15e
  
    DISALLOW_COPY_AND_ASSIGN(PepperFlashBrowserHost);
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
-index 2e51425cb66f25f240ad7f4a052bcf6eb76f2062..240fa299b1160ebb2f9b20c7361405c9b84d5d2f 100644
+index 7c8c292d6d422139be89632dcb6a9d44106b3ac9..276d2fa32b25984e50eb5422e60a650fcb67fb71 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
-@@ -20,6 +20,7 @@
+@@ -21,6 +21,7 @@
  #include "content/public/browser/child_process_security_policy.h"
  #include "content/public/browser/render_frame_host.h"
  #include "content/public/common/pepper_plugin_info.h"
@@ -197,7 +197,7 @@ index 2e51425cb66f25f240ad7f4a052bcf6eb76f2062..240fa299b1160ebb2f9b20c7361405c9
  #include "ppapi/c/pp_errors.h"
  #include "ppapi/host/dispatch_host_message.h"
  #include "ppapi/host/host_message_context.h"
-@@ -127,7 +128,9 @@ PepperFlashDRMHost::PepperFlashDRMHost(BrowserPpapiHost* host,
+@@ -128,7 +129,9 @@ PepperFlashDRMHost::PepperFlashDRMHost(BrowserPpapiHost* host,
    content::ChildProcessSecurityPolicy::GetInstance()->GrantReadFile(
        render_process_id, voucher_file);
  
@@ -207,7 +207,7 @@ index 2e51425cb66f25f240ad7f4a052bcf6eb76f2062..240fa299b1160ebb2f9b20c7361405c9
    monitor_finder_ = new MonitorFinder(render_process_id, render_frame_id);
    monitor_finder_->GetMonitor();
  }
-@@ -150,12 +153,18 @@ int32_t PepperFlashDRMHost::OnResourceMessageReceived(
+@@ -151,12 +154,18 @@ int32_t PepperFlashDRMHost::OnResourceMessageReceived(
  
  int32_t PepperFlashDRMHost::OnHostMsgGetDeviceID(
      ppapi::host::HostMessageContext* context) {
@@ -227,7 +227,7 @@ index 2e51425cb66f25f240ad7f4a052bcf6eb76f2062..240fa299b1160ebb2f9b20c7361405c9
  }
  
  int32_t PepperFlashDRMHost::OnHostMsgGetHmonitor(
-@@ -184,6 +193,7 @@ int32_t PepperFlashDRMHost::OnHostMsgMonitorIsExternal(
+@@ -185,6 +194,7 @@ int32_t PepperFlashDRMHost::OnHostMsgMonitorIsExternal(
    return PP_OK;
  }
  
@@ -235,7 +235,7 @@ index 2e51425cb66f25f240ad7f4a052bcf6eb76f2062..240fa299b1160ebb2f9b20c7361405c9
  void PepperFlashDRMHost::GotDeviceID(
      ppapi::host::ReplyMessageContext reply_context,
      const std::string& id,
-@@ -196,3 +206,4 @@ void PepperFlashDRMHost::GotDeviceID(
+@@ -197,3 +207,4 @@ void PepperFlashDRMHost::GotDeviceID(
    host()->SendReply(reply_context,
                      PpapiPluginMsg_FlashDRM_GetDeviceIDReply(id));
  }
@@ -412,7 +412,7 @@ index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec
    DISALLOW_COPY_AND_ASSIGN(PepperIsolatedFileSystemMessageFilter);
  };
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index d63e90b6c5079ab3237c4bad3d5e63ce2f99c657..ec8c1e7cfbaec3e0876325e6b9ebb01581988bee 100644
+index 375ca0233a74ef6a6e91102947ce0b63585d48ff..1c4bb268c5bd21126551414b1864d495a07844b6 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 @@ -10,8 +10,13 @@
