@@ -313,7 +313,7 @@ export const windowSetup = (
     };
     if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'go'], window.history.go);
 
-    const getHistoryLength = () => ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH') + 104;
+    const getHistoryLength = () => ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH');
     Object.defineProperty(window.history, 'length', {
       get: getHistoryLength,
       set () {}
