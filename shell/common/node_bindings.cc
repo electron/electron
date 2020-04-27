@@ -219,6 +219,23 @@ void SetNodeOptions(base::Environment* env) {
   }
 }
 
+void HostCleanupFinalizationGroupCallback(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::FinalizationGroup> group) {
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (env == nullptr) {
+    return;
+  }
+  env->RegisterFinalizationGroupForCleanup(group);
+}
+
+bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
+                                     v8::Local<v8::String>) {
+  v8::Local<v8::Value> wasm_code_gen = context->GetEmbedderData(
+      node::ContextEmbedderIndex::kAllowWasmCodeGeneration);
+  return wasm_code_gen->IsUndefined() || wasm_code_gen->IsTrue();
+}
+
 }  // namespace
 
 namespace electron {
@@ -394,14 +411,33 @@ node::Environment* NodeBindings::CreateEnvironment(
   }
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
-    // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
-    // so instead call it here to match expected node behavior
+    // This policy requires that microtask checkpoints be explicitly invoked.
+    // Node.js requires this.
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
   } else {
-    // Node uses the deprecated SetAutorunMicrotasks(false) mode, we should
-    // switch to use the scoped policy to match blink's behavior.
+    // Match Blink's behavior by allowing microtasks invocation to be controlled
+    // by MicrotasksScope objects.
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
   }
+
+  // This needs to be called before the inspector is initialized.
+  env->InitializeDiagnostics();
+
+  // Ensure that WeakRefs work properly by specifying the callback to be called
+  // when FinalizationRegistries are ready to be cleaned up and require
+  // FinalizationGroup::Cleanup() to be called in a future task.
+  context->GetIsolate()->SetHostCleanupFinalizationGroupCallback(
+      HostCleanupFinalizationGroupCallback);
+
+  // Set the callback to invoke to check if wasm code generation should be
+  // allowed.
+  context->GetIsolate()->SetAllowWasmCodeGenerationCallback(
+      AllowWasmCodeGenerationCallback);
+
+  // Generate more detailed source positions to code objects. This results in
+  // better results when mapping profiling samples to script source.
+  v8::CpuProfiler::UseDetailedSourcePositionsForProfiling(
+      context->GetIsolate());
 
   gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);

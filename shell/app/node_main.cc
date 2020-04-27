@@ -164,7 +164,7 @@ int NodeMain(int argc, char* argv[]) {
                                     exec_argc, exec_argv);
       CHECK_NE(nullptr, env);
 
-      // TODO(codebytere): we shouldn't have to call this - upstream?
+      // This needs to be called before the inspector is initialized.
       env->InitializeDiagnostics();
 
       // This is needed in order to enable v8 host weakref hooks.
