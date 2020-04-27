@@ -80,9 +80,9 @@ Next, construct the URL of the update server and tell
 
 ```javascript
 const server = 'https://your-deployment-url.com'
-const feed = `${server}/update/${process.platform}/${app.getVersion()}`
+const url = `${server}/update/${process.platform}/${app.getVersion()}`
 
-autoUpdater.setFeedURL(feed)
+autoUpdater.setFeedURL({ url })
 ```
 
 As the final step, check for updates. The example below will check every minute:
