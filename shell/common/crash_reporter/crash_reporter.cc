@@ -125,7 +125,7 @@ class DummyCrashReporter : public CrashReporter {
             bool rate_limit,
             bool compress,
             const StringMap& global_extra_parameters) override {}
-  void InitInChild() {}
+  void InitInChild() override {}
   void SetUploadParameters() override {}
 };
 
