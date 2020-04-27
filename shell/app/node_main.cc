@@ -109,7 +109,7 @@ void RemoveExtraParameter(const std::string& key) {
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
-  crash_reporter::CrashReporter::InitializeInChildProcess();
+  crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
 
   int exit_code = 1;
   {
