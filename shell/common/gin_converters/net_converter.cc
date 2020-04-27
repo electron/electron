@@ -186,7 +186,7 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     }
     std::string value;
     gin::ConvertFromV8(isolate, localStrVal, &value);
-    out->AddHeader(key + ": " + value);
+    out->AddHeader(key, value);
     return true;
   };
 
