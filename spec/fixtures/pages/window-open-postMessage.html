@@ -5,7 +5,7 @@
     window.opener.postMessage(JSON.stringify({
       origin: e.origin,
       data: e.data,
-      sourceEqualsOpener: e.source === window.opener
+      sourceEqualsOpener: e.source.location.href === window.opener.location.href
     }), '*');
   });
   window.opener.postMessage("ready", "*")
