@@ -633,6 +633,16 @@ bool IsCalledFromMainWorld(v8::Isolate* isolate) {
   return isolate->GetCurrentContext() == main_context;
 }
 
+bool IsCalledFromIsolatedWorld(v8::Isolate* isolate) {
+  auto* render_frame = GetRenderFrame(isolate->GetCurrentContext()->Global());
+  CHECK(render_frame);
+  auto* frame = render_frame->GetWebFrame();
+  CHECK(frame);
+  v8::Local<v8::Context> isolated_context =
+      frame->WorldScriptContext(isolate, World::ISOLATED_WORLD);
+  return isolate->GetCurrentContext() == isolated_context;
+}
+
 }  // namespace api
 
 }  // namespace electron
@@ -652,6 +662,8 @@ void Initialize(v8::Local<v8::Object> exports,
                  &electron::api::OverrideGlobalPropertyFromIsolatedWorld);
   dict.SetMethod("_isCalledFromMainWorld",
                  &electron::api::IsCalledFromMainWorld);
+  dict.SetMethod("_isCalledFromIsolatedWorld",
+                 &electron::api::IsCalledFromIsolatedWorld);
 #ifdef DCHECK_IS_ON
   dict.SetMethod("_debugGCMaps", &electron::api::DebugGC);
 #endif

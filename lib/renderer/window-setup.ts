@@ -2,7 +2,8 @@ import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-in
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import { internalContextBridge } from '@electron/internal/renderer/api/context-bridge';
 
-const { contextIsolationEnabled } = internalContextBridge;
+const { contextIsolationEnabled, isInIsolatedWorld } = internalContextBridge;
+const shouldUseContextBridge = contextIsolationEnabled && isInIsolatedWorld();
 
 // This file implements the following APIs over the ctx bridge:
 // - window.open()
@@ -244,7 +245,7 @@ export const windowSetup = (
     window.close = function () {
       ipcRendererInternal.sendSync('ELECTRON_BROWSER_WINDOW_CLOSE');
     };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['close'], window.close);
+    if (shouldUseContextBridge) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['close'], window.close);
   }
 
   if (!usesNativeWindowOpen) {
@@ -261,19 +262,19 @@ export const windowSetup = (
         return null;
       }
     };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['open'], window.open);
+    if (shouldUseContextBridge) internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['open'], window.open);
   }
 
   if (openerId != null) {
     window.opener = getOrCreateProxy(openerId);
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['opener'], window.opener);
+    if (shouldUseContextBridge) internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['opener'], window.opener);
   }
 
   // But we do not support prompt().
   window.prompt = function () {
     throw new Error('prompt() is and will not be supported.');
   };
-  if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['prompt'], window.prompt);
+  if (shouldUseContextBridge) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['prompt'], window.prompt);
 
   if (!usesNativeWindowOpen || openerId != null) {
     ipcRendererInternal.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
@@ -300,24 +301,25 @@ export const windowSetup = (
     window.history.back = function () {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK');
     };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'back'], window.history.back);
+    if (shouldUseContextBridge) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'back'], window.history.back);
 
     window.history.forward = function () {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD');
     };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'forward'], window.history.forward);
+    if (shouldUseContextBridge) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'forward'], window.history.forward);
 
     window.history.go = function (offset: number) {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', +offset);
     };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'go'], window.history.go);
+    if (shouldUseContextBridge) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'go'], window.history.go);
 
     const getHistoryLength = () => ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH');
     Object.defineProperty(window.history, 'length', {
       get: getHistoryLength,
       set () {}
     });
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['history', 'length'], getHistoryLength);
+    // TODO(MarshallOfSound): Fix so that the internal context bridge can override a non-configurable property
+    // if (shouldUseContextBridge) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['history', 'length'], getHistoryLength);
   }
 
   if (guestInstanceId != null) {
@@ -343,12 +345,12 @@ export const windowSetup = (
     Object.defineProperty(document, 'hidden', {
       get: getDocumentHidden
     });
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['document', 'hidden'], getDocumentHidden);
+    if (shouldUseContextBridge) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['document', 'hidden'], getDocumentHidden);
 
     const getDocumentVisibilityState = () => cachedVisibilityState;
     Object.defineProperty(document, 'visibilityState', {
       get: getDocumentVisibilityState
     });
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['document', 'visibilityState'], getDocumentVisibilityState);
+    if (shouldUseContextBridge) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['document', 'visibilityState'], getDocumentVisibilityState);
   }
 };
