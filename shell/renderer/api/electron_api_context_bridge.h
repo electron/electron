@@ -23,6 +23,7 @@ class RenderFrameFunctionStore;
 v8::Local<v8::Value> ProxyFunctionWrapper(
     context_bridge::RenderFrameFunctionStore* store,
     size_t func_id,
+    bool support_dynamic_properties,
     gin_helper::Arguments* args);
 
 v8::MaybeLocal<v8::Object> CreateProxyForAPI(
@@ -31,6 +32,7 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Context>& target_context,
     context_bridge::RenderFrameFunctionStore* store,
     context_bridge::ObjectCache* object_cache,
+    bool support_dynamic_properties,
     int recursion_depth);
 
 }  // namespace api

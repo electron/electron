@@ -21,8 +21,11 @@ export default contextBridge;
 
 export const internalContextBridge = {
   contextIsolationEnabled,
-  overrideGlobalMethodFromIsolatedWorld: (keys: string[], method: Function) => {
-    return binding._overrideGlobalMethodFromIsolatedWorld(keys, method);
+  overrideGlobalValueFromIsolatedWorld: (keys: string[], value: any) => {
+    return binding._overrideGlobalValueFromIsolatedWorld(keys, value, false);
+  },
+  overrideGlobalValueWithDynamicPropsFromIsolatedWorld: (keys: string[], value: any) => {
+    return binding._overrideGlobalValueFromIsolatedWorld(keys, value, true);
   },
   overrideGlobalPropertyFromIsolatedWorld: (keys: string[], getter: Function, setter?: Function) => {
     return binding._overrideGlobalPropertyFromIsolatedWorld(keys, getter, setter || null);
