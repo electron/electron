@@ -239,17 +239,22 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/extensions/chrome_url_request_util.cc",
       "//chrome/browser/extensions/chrome_url_request_util.h",
-      "//chrome/browser/pdf/pdf_extension_util.cc",
-      "//chrome/browser/pdf/pdf_extension_util.h",
       "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc",
       "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.h",
       "//chrome/renderer/extensions/extension_hooks_delegate.cc",
       "//chrome/renderer/extensions/extension_hooks_delegate.h",
       "//chrome/renderer/extensions/tabs_hooks_delegate.cc",
       "//chrome/renderer/extensions/tabs_hooks_delegate.h",
-      "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
-      "//chrome/renderer/pepper/chrome_pdf_print_client.h",
     ]
+
+    if (enable_pdf_viewer) {
+      sources += [
+        "//chrome/browser/pdf/pdf_extension_util.cc",
+        "//chrome/browser/pdf/pdf_extension_util.h",
+        "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
+        "//chrome/renderer/pepper/chrome_pdf_print_client.h",
+      ]
+    }
   }
 }
 
@@ -268,12 +273,14 @@ source_set("plugins") {
     "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h",
   ]
   deps += [
-    "//components/pdf/browser",
     "//media:media_buildflags",
     "//ppapi/buildflags",
     "//ppapi/proxy:ipc",
     "//services/device/public/mojom",
   ]
+  if (enable_pdf_viewer) {
+    deps += [ "//components/pdf/browser" ]
+  }
   if (enable_pepper_flash) {
     sources += [
       "//chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc",
@@ -319,9 +326,11 @@ source_set("plugins") {
       "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
       "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
     ]
+    if (enable_pdf_viewer) {
+      deps += [ "//components/pdf/renderer" ]
+    }
   }
   deps += [
-    "//components/pdf/renderer",
     "//components/strings",
     "//media:media_buildflags",
     "//ppapi/host",
