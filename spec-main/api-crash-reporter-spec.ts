@@ -4,7 +4,8 @@ import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
 import { ifdescribe, ifit } from './spec-helpers';
-import { app, crashReporter } from 'electron/main';
+import { app } from 'electron/main';
+import { crashReporter } from 'electron/common';
 import { AddressInfo } from 'net';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
@@ -80,8 +81,11 @@ const startRemoteControlApp = async () => {
       req.end();
     });
   }
+  function remotely (script: Function, ...args: any[]): Promise<any> {
+    return remoteEval(`(${script})(...${JSON.stringify(args)})`);
+  }
   afterTest.push(() => { appProcess.kill('SIGINT'); });
-  return { remoteEval };
+  return { remoteEval, remotely };
 };
 
 const startServer = async () => {
@@ -291,18 +295,22 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
     });
 
     it('can be called twice', async () => {
-      const { remoteEval } = await startRemoteControlApp();
-
-      await remoteEval(`require('electron').crashReporter.start({companyName: "Umbrella Corporation", submitURL: "http://127.0.0.1"})`);
-      await remoteEval(`require('electron').crashReporter.start({companyName: "Umbrella Corporation", submitURL: "http://127.0.0.1"})`);
+      const { remotely } = await startRemoteControlApp();
+      await expect(remotely(() => {
+        const { crashReporter } = require('electron');
+        crashReporter.start({ submitURL: 'http://127.0.0.1' });
+        crashReporter.start({ submitURL: 'http://127.0.0.1' });
+      })).to.be.fulfilled();
     });
   });
 
   describe('getCrashesDirectory', () => {
     it('correctly returns the directory', async () => {
-      const { remoteEval } = await startRemoteControlApp();
-      await remoteEval(`require('electron').crashReporter.start({companyName: "Umbrella Corporation", submitURL: "http://127.0.0.1"})`);
-      const crashesDir = await remoteEval(`require('electron').crashReporter.getCrashesDirectory()`);
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => {
+        require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' });
+      });
+      const crashesDir = await remotely(() => require('electron').crashReporter.getCrashesDirectory());
       const dir = path.join(app.getPath('temp'), 'remote-control Crashes');
       expect(crashesDir).to.equal(dir);
     });
@@ -310,9 +318,11 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
 
   describe('getUploadedReports', () => {
     it('returns an array of reports', async () => {
-      const { remoteEval } = await startRemoteControlApp();
-      await remoteEval(`require('electron').crashReporter.start({companyName: "Umbrella Corporation", submitURL: "http://127.0.0.1"})`);
-      const reports = await remoteEval(`require('electron').crashReporter.getUploadedReports()`);
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => {
+        require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' });
+      });
+      const reports = await remotely(() => require('electron').crashReporter.getUploadedReports());
       expect(reports).to.be.an('array');
     });
   });
@@ -320,7 +330,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
   // TODO(jeremy): re-enable on woa
   ifdescribe(!isWindowsOnArm)('getLastCrashReport', () => {
     it('returns the last uploaded report', async () => {
-      const { remoteEval } = await startRemoteControlApp();
+      const { remotely } = await startRemoteControlApp();
       const { port, waitForCrash } = await startServer();
 
       // 0. clear the crash reports directory.
@@ -330,12 +340,22 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
       } catch (e) { /* ignore */ }
 
       // 1. start the crash reporter.
-      await remoteEval(`require('electron').crashReporter.start({companyName: "Umbrella Corporation", submitURL: "http://127.0.0.1:${port}", ignoreSystemCrashHandler: true})`);
-      // 2. generate a crash.
-      remoteEval(`(function() { const {BrowserWindow} = require('electron'); const bw = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}}); bw.loadURL('about:blank'); bw.webContents.executeJavaScript('process.crash()') })()`);
+      await remotely((port: number) => {
+        require('electron').crashReporter.start({
+          submitURL: `http://127.0.0.1:${port}`,
+          ignoreSystemCrashHandler: true
+        });
+      }, [port]);
+      // 2. generate a crash in the renderer.
+      remotely(() => {
+        const { BrowserWindow } = require('electron');
+        const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        bw.loadURL('about:blank');
+        bw.webContents.executeJavaScript('process.crash()');
+      });
       await waitForCrash();
       // 3. get the crash from getLastCrashReport.
-      const firstReport = await remoteEval(`require('electron').crashReporter.getLastCrashReport()`);
+      const firstReport = await remotely(() => require('electron').crashReporter.getLastCrashReport());
       expect(firstReport).to.not.be.null();
       expect(firstReport.date).to.be.an.instanceOf(Date);
     });
@@ -343,58 +363,60 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.
 
   describe('getUploadToServer()', () => {
     it('returns true when uploadToServer is set to true (by default)', async () => {
-      const { remoteEval } = await startRemoteControlApp();
+      const { remotely } = await startRemoteControlApp();
 
-      await remoteEval(`require('electron').crashReporter.start({companyName: "Umbrella Corporation", submitURL: "http://127.0.0.1"})`);
-      const uploadToServer = await remoteEval(`require('electron').crashReporter.getUploadToServer()`);
+      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' }); });
+      const uploadToServer = await remotely(() => require('electron').crashReporter.getUploadToServer());
       expect(uploadToServer).to.be.true();
     });
 
     it('returns false when uploadToServer is set to false in init', async () => {
-      const { remoteEval } = await startRemoteControlApp();
-      await remoteEval(`require('electron').crashReporter.start({companyName: "Umbrella Corporation", submitURL: "http://127.0.0.1", uploadToServer: false})`);
-      const uploadToServer = await remoteEval(`require('electron').crashReporter.getUploadToServer()`);
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false }); });
+      const uploadToServer = await remotely(() => require('electron').crashReporter.getUploadToServer());
       expect(uploadToServer).to.be.false();
     });
 
     it('is updated by setUploadToServer', async () => {
-      const { remoteEval } = await startRemoteControlApp();
-      await remoteEval(`require('electron').crashReporter.start({companyName: "Umbrella Corporation", submitURL: "http://127.0.0.1"})`);
-      await remoteEval(`require('electron').crashReporter.setUploadToServer(false)`);
-      expect(await remoteEval(`require('electron').crashReporter.getUploadToServer()`)).to.be.false();
-      await remoteEval(`require('electron').crashReporter.setUploadToServer(true)`);
-      expect(await remoteEval(`require('electron').crashReporter.getUploadToServer()`)).to.be.true();
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' }); });
+      await remotely(() => { require('electron').crashReporter.setUploadToServer(false); });
+      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.false();
+      await remotely(() => { require('electron').crashReporter.setUploadToServer(true); });
+      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.true();
     });
   });
 
   describe('Parameters', () => {
     it('returns all of the current parameters', async () => {
-      const { remoteEval } = await startRemoteControlApp();
-      await remoteEval(`(${function () {
+      const { remotely } = await startRemoteControlApp();
+      await remotely(function () {
         require('electron').crashReporter.start({
-          companyName: 'Umbrella Corporation',
           submitURL: 'http://127.0.0.1',
           extra: { 'extra1': 'hi' }
         });
-      }})()`);
-      const parameters = await remoteEval(`require('electron').crashReporter.getParameters()`);
+      });
+      const parameters = await remotely(() => require('electron').crashReporter.getParameters());
       expect(parameters).to.be.an('object');
       expect(parameters.extra1).to.equal('hi');
     });
 
     it('adds and removes parameters', async () => {
-      const { remoteEval } = await startRemoteControlApp();
-      await remoteEval(`require('electron').crashReporter.start({companyName: "Umbrella Corporation", submitURL: "http://127.0.0.1"})`);
-      await remoteEval(`require('electron').crashReporter.addExtraParameter('hello', 'world')`);
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => {
+        require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' });
+        require('electron').crashReporter.addExtraParameter('hello', 'world');
+      });
       {
-        const parameters = await remoteEval(`require('electron').crashReporter.getParameters()`);
+        const parameters = await remotely(() => require('electron').crashReporter.getParameters());
         expect(parameters).to.have.property('hello');
         expect(parameters.hello).to.equal('world');
       }
 
+      await remotely(() => { require('electron').crashReporter.removeExtraParameter('hello'); });
+
       {
-        await remoteEval(`require('electron').crashReporter.removeExtraParameter('hello')`);
-        const parameters = await remoteEval(`require('electron').crashReporter.getParameters()`);
+        const parameters = await remotely(() => require('electron').crashReporter.getParameters());
         expect(parameters).not.to.have.property('hello');
       }
     });

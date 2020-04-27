@@ -6,12 +6,14 @@ const server = http.createServer((req, res) => {
   req.on('data', chunk => { chunks.push(chunk); });
   req.on('end', () => {
     const js = Buffer.concat(chunks).toString('utf8');
-    try {
-      const result = eval(js); // eslint-disable-line no-eval
-      res.end(v8.serialize({ result }));
-    } catch (e) {
-      res.end(v8.serialize({ error: e.stack }));
-    }
+    (async () => {
+      try {
+        const result = await Promise.resolve(eval(js)); // eslint-disable-line no-eval
+        res.end(v8.serialize({ result }));
+      } catch (e) {
+        res.end(v8.serialize({ error: e.stack }));
+      }
+    })();
   });
 }).listen(0, '127.0.0.1', () => {
   process.stdout.write(`Listening: ${server.address().port}\n`);
