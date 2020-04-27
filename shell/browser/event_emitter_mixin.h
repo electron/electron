@@ -39,6 +39,7 @@ class EventEmitterMixin {
                        v8::Local<v8::Object> custom_event,
                        Args&&... args) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
