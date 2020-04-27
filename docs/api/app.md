@@ -414,6 +414,8 @@ and `workingDirectory` is its current working directory. Usually
 applications respond to this by making their primary window focused and
 non-minimized.
 
+**Note:** If the second instance is started by a different user than the first, the `argv` array will not include the arguments.
+
 This event is guaranteed to be emitted after the `ready` event of `app`
 gets emitted.
 
