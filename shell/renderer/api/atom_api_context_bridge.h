@@ -25,6 +25,7 @@ namespace api {
 v8::Local<v8::Value> ProxyFunctionWrapper(
     context_bridge::RenderFramePersistenceStore* store,
     size_t func_id,
+    bool support_dynamic_properties,
     mate::Arguments* args);
 
 v8::MaybeLocal<v8::Object> CreateProxyForAPI(
@@ -32,6 +33,7 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Context>& source_context,
     const v8::Local<v8::Context>& target_context,
     context_bridge::RenderFramePersistenceStore* store,
+    bool support_dynamic_properties,
     int recursion_depth);
 
 }  // namespace api

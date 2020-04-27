@@ -2,14 +2,9 @@ import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-in
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import { internalContextBridge } from '@electron/internal/renderer/api/context-bridge';
 
-const inMainWorld = internalContextBridge.isInMainWorld();
 const { contextIsolationEnabled } = internalContextBridge;
 
-// Should we inject APIs into this world, if ctx isolation is enabled then only inject in the isolated world
-// else inject everywhere
-const shouldInjectGivenContextIsolationIsMaybeEnabled = contextIsolationEnabled ? !inMainWorld : true;
-
-// This file implements the following APIs Directly:
+// This file implements the following APIs over the ctx bridge:
 // - window.open()
 // - window.opener.blur()
 // - window.opener.close()
@@ -17,9 +12,8 @@ const shouldInjectGivenContextIsolationIsMaybeEnabled = contextIsolationEnabled 
 // - window.opener.focus()
 // - window.opener.location
 // - window.opener.print()
+// - window.opener.closed
 // - window.opener.postMessage()
-
-// And the following APIs over the ctx bridge:
 // - window.history.back()
 // - window.history.forward()
 // - window.history.go()
@@ -40,13 +34,13 @@ const toString = (value: any) => {
 
 const windowProxies: Record<number, BrowserWindowProxy> = {};
 
-const getOrCreateProxy = (guestId: number) => {
+const getOrCreateProxy = (guestId: number): SafelyBoundBrowserWindowProxy => {
   let proxy = windowProxies[guestId];
   if (proxy == null) {
     proxy = new BrowserWindowProxy(guestId);
     windowProxies[guestId] = proxy;
   }
-  return proxy;
+  return proxy.getSafe();
 };
 
 const removeProxy = (guestId: number) => {
@@ -74,6 +68,8 @@ class LocationProxy {
    */
   private static ProxyProperty<T> (target: LocationProxy, propertyKey: LocationProperties) {
     Object.defineProperty(target, propertyKey, {
+      enumerable: true,
+      configurable: true,
       get: function (this: LocationProxy): T | string {
         const guestURL = this.getGuestURL();
         const value = guestURL ? guestURL[propertyKey] : '';
@@ -90,6 +86,30 @@ class LocationProxy {
         }
       }
     });
+  }
+
+  public getSafe = () => {
+    const that = this;
+    return {
+      get href () { return that.href; },
+      set href (newValue) { that.href = newValue; },
+      get hash () { return that.hash; },
+      set hash (newValue) { that.hash = newValue; },
+      get host () { return that.host; },
+      set host (newValue) { that.host = newValue; },
+      get hostname () { return that.hostname; },
+      set hostname (newValue) { that.hostname = newValue; },
+      get origin () { return that.origin; },
+      set origin (newValue) { that.origin = newValue; },
+      get pathname () { return that.pathname; },
+      set pathname (newValue) { that.pathname = newValue; },
+      get port () { return that.port; },
+      set port (newValue) { that.port = newValue; },
+      get protocol () { return that.protocol; },
+      set protocol (newValue) { that.protocol = newValue; },
+      get search () { return that.search; },
+      set search (newValue) { that.search = newValue; }
+    };
   }
 
   constructor (guestId: number) {
@@ -124,6 +144,17 @@ class LocationProxy {
   }
 }
 
+interface SafelyBoundBrowserWindowProxy {
+  location: WindowProxy['location'];
+  blur: WindowProxy['blur'];
+  close: WindowProxy['close'];
+  eval: typeof eval; // eslint-disable-line no-eval
+  focus: WindowProxy['focus'];
+  print: WindowProxy['print'];
+  postMessage: WindowProxy['postMessage'];
+  closed: boolean;
+}
+
 class BrowserWindowProxy {
   public closed: boolean = false
 
@@ -134,7 +165,7 @@ class BrowserWindowProxy {
   // so for now, we'll have to make do with an "any" in the mix.
   // https://github.com/Microsoft/TypeScript/issues/2521
   public get location (): LocationProxy | any {
-    return this._location;
+    return this._location.getSafe();
   }
   public set location (url: string | any) {
     url = resolveURL(url, this.location.href);
@@ -151,27 +182,48 @@ class BrowserWindowProxy {
     });
   }
 
-  public close () {
+  public getSafe = (): SafelyBoundBrowserWindowProxy => {
+    const that = this;
+    return {
+      postMessage: this.postMessage,
+      blur: this.blur,
+      close: this.close,
+      focus: this.focus,
+      print: this.print,
+      eval: this.eval,
+      get location () {
+        return that.location;
+      },
+      set location (url: string | any) {
+        that.location = url;
+      },
+      get closed () {
+        return that.closed;
+      }
+    };
+  }
+
+  public close = () => {
     this._invokeWindowMethod('destroy');
   }
 
-  public focus () {
+  public focus = () => {
     this._invokeWindowMethod('focus');
   }
 
-  public blur () {
+  public blur = () => {
     this._invokeWindowMethod('blur');
   }
 
-  public print () {
+  public print = () => {
     this._invokeWebContentsMethod('print');
   }
 
-  public postMessage (message: any, targetOrigin: string) {
+  public postMessage = (message: any, targetOrigin: string) => {
     ipcRendererUtils.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin);
   }
 
-  public eval (code: string) {
+  public eval = (code: string) => {
     this._invokeWebContentsMethod('executeJavaScript', code);
   }
 
@@ -187,12 +239,12 @@ class BrowserWindowProxy {
 export const windowSetup = (
   guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
 ) => {
-  if (!process.sandboxed && guestInstanceId == null && shouldInjectGivenContextIsolationIsMaybeEnabled) {
+  if (!process.sandboxed && guestInstanceId == null) {
     // Override default window.close.
     window.close = function () {
       ipcRendererInternal.sendSync('ELECTRON_BROWSER_WINDOW_CLOSE');
     };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['close'], window.close);
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['close'], window.close);
   }
 
   if (!usesNativeWindowOpen) {
@@ -209,23 +261,21 @@ export const windowSetup = (
         return null;
       }
     };
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['open'], window.open);
   }
 
   if (openerId != null) {
-    // TODO(MarshallOfSound): Make compatible with ctx isolation without hole-punch
     window.opener = getOrCreateProxy(openerId);
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['opener'], window.opener);
   }
 
   // But we do not support prompt().
-  if (shouldInjectGivenContextIsolationIsMaybeEnabled) {
-    window.prompt = function () {
-      throw new Error('prompt() is and will not be supported.');
-    };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['prompt'], window.prompt);
-  }
+  window.prompt = function () {
+    throw new Error('prompt() is and will not be supported.');
+  };
+  if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['prompt'], window.prompt);
 
   if (!usesNativeWindowOpen || openerId != null) {
-    // TODO(MarshallOfSound): Make compatible with ctx isolation without hole-punch
     ipcRendererInternal.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
       _event, sourceId: number, message: any, sourceOrigin: string
     ) {
@@ -246,21 +296,21 @@ export const windowSetup = (
     });
   }
 
-  if (!process.sandboxed && shouldInjectGivenContextIsolationIsMaybeEnabled) {
+  if (!process.sandboxed) {
     window.history.back = function () {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK');
     };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['history', 'back'], window.history.back);
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'back'], window.history.back);
 
     window.history.forward = function () {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD');
     };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['history', 'forward'], window.history.forward);
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'forward'], window.history.forward);
 
     window.history.go = function (offset: number) {
       ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', +offset);
     };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalMethodFromIsolatedWorld(['history', 'go'], window.history.go);
+    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'go'], window.history.go);
 
     const getHistoryLength = () => ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH');
     Object.defineProperty(window.history, 'length', {
@@ -270,7 +320,7 @@ export const windowSetup = (
     if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['history', 'length'], getHistoryLength);
   }
 
-  if (guestInstanceId != null && shouldInjectGivenContextIsolationIsMaybeEnabled) {
+  if (guestInstanceId != null) {
     // Webview `document.visibilityState` tracks window visibility (and ignores
     // the actual <webview> element visibility) for backwards compatibility.
     // See discussion in #9178.
