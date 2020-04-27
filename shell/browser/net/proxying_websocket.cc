@@ -375,24 +375,19 @@ void ProxyingWebSocket::OnHeadersReceivedComplete(int error_code) {
     ContinueToCompleted();
 }
 
-void ProxyingWebSocket::OnAuthRequiredComplete(
-    extensions::ExtensionWebRequestEventRouter::AuthRequiredResponse rv) {
+void ProxyingWebSocket::OnAuthRequiredComplete(AuthRequiredResponse rv) {
   CHECK(auth_required_callback_);
   ResumeIncomingMethodCallProcessing();
   switch (rv) {
-    case extensions::ExtensionWebRequestEventRouter::AuthRequiredResponse::
-        AUTH_REQUIRED_RESPONSE_NO_ACTION:
-    case extensions::ExtensionWebRequestEventRouter::AuthRequiredResponse::
-        AUTH_REQUIRED_RESPONSE_CANCEL_AUTH:
+    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION:
+    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_CANCEL_AUTH:
       std::move(auth_required_callback_).Run(base::nullopt);
       break;
 
-    case extensions::ExtensionWebRequestEventRouter::AuthRequiredResponse::
-        AUTH_REQUIRED_RESPONSE_SET_AUTH:
+    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_SET_AUTH:
       std::move(auth_required_callback_).Run(auth_credentials_);
       break;
-    case extensions::ExtensionWebRequestEventRouter::AuthRequiredResponse::
-        AUTH_REQUIRED_RESPONSE_IO_PENDING:
+    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING:
       NOTREACHED();
       break;
   }
@@ -410,8 +405,7 @@ void ProxyingWebSocket::OnHeadersReceivedCompleteForAuth(
 
   auto continuation = base::BindRepeating(
       &ProxyingWebSocket::OnAuthRequiredComplete, weak_factory_.GetWeakPtr());
-  auto auth_rv = extensions::ExtensionWebRequestEventRouter::
-      AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING;
+  auto auth_rv = AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING;
   PauseIncomingMethodCallProcessing();
 
   OnAuthRequiredComplete(auth_rv);
