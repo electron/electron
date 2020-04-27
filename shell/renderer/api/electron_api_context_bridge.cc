@@ -436,7 +436,7 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
         v8::Local<v8::Value> desc_value;
         if (!maybe_desc.ToLocal(&desc_value) || !desc_value->IsObject())
           continue;
-        gin_helper::Dictionary desc(api.isolate(), desc_value.As<v8::Object>());
+        mate::Dictionary desc(api.isolate(), desc_value.As<v8::Object>());
         if (desc.Has("get") || desc.Has("set")) {
           v8::Local<v8::Value> getter;
           v8::Local<v8::Value> setter;
@@ -534,9 +534,9 @@ void ExposeAPIInMainWorld(const std::string& key,
   }
 }
 
-gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
-                                    const std::vector<std::string>& key_path) {
-  gin_helper::Dictionary current = start;
+mate::Dictionary TraceKeyPath(const mate::Dictionary& start,
+                              const std::vector<std::string>& key_path) {
+  mate::Dictionary current = start;
   for (size_t i = 0; i < key_path.size() - 1; i++) {
     CHECK(current.Get(key_path[i], &current));
   }
@@ -557,11 +557,10 @@ void OverrideGlobalValueFromIsolatedWorld(
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  gin_helper::Dictionary global(main_context->GetIsolate(),
-                                main_context->Global());
+  mate::Dictionary global(main_context->GetIsolate(), main_context->Global());
 
   const std::string final_key = key_path[key_path.size() - 1];
-  gin_helper::Dictionary target_object = TraceKeyPath(global, key_path);
+  mate::Dictionary target_object = TraceKeyPath(global, key_path);
 
   {
     v8::Context::Scope main_context_scope(main_context);
@@ -580,7 +579,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> getter,
     v8::Local<v8::Value> setter,
-    gin_helper::Arguments* args) {
+    mate::Arguments* args) {
   if (key_path.size() == 0)
     return false;
 
@@ -591,8 +590,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  gin_helper::Dictionary global(main_context->GetIsolate(),
-                                main_context->Global());
+  mate::Dictionary global(main_context->GetIsolate(), main_context->Global());
 
   const std::string final_key = key_path[key_path.size() - 1];
   v8::Local<v8::Object> target_object =
@@ -619,7 +617,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     }
 
     v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
-    bool success = IsTrue(target_object->DefineProperty(
+    bool success = mate::internal::IsTrue(target_object->DefineProperty(
         main_context, gin::StringToV8(args->isolate(), final_key), desc));
     DCHECK(success);
     return success;
