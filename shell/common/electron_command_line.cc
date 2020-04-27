@@ -5,7 +5,7 @@
 #include "shell/common/electron_command_line.h"
 
 #include "base/command_line.h"
-#include "uv.h"  // NOLINT(build/include)
+#include "uv.h"  // NOLINT(build/include_directory)
 
 namespace electron {
 
