@@ -90,7 +90,7 @@ index bb990768e528ae66b340402084e9785eb1deb132..5e73a1cc9d3c35e7e69ac4ae1cbe7c20
 +
    // Notifies the embedder that the given frame is requesting the resource at
    // |url|. If the function returns a valid |new_url|, the request must be
-   // updated to use it. The |attach_same_site_cookies| output parameter
+   // updated to use it. The |force_ignore_site_for_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
 index 84438b3183cd9f5a4d0f677880e4c3fb96281bb7..b0dfd8086377d14620746c722915cc41d92bc7d6 100644
 --- a/content/renderer/render_frame_impl.cc
