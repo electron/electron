@@ -29,17 +29,6 @@
 #include "shell/common/crash_reporter/crash_reporter_win.h"
 #endif
 
-namespace {
-
-bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
-                                     v8::Local<v8::String>) {
-  v8::Local<v8::Value> wasm_code_gen = context->GetEmbedderData(
-      node::ContextEmbedderIndex::kAllowWasmCodeGeneration);
-  return wasm_code_gen->IsUndefined() || wasm_code_gen->IsTrue();
-}
-
-}  // namespace
-
 namespace electron {
 
 #if !defined(OS_LINUX)
@@ -72,6 +61,10 @@ int NodeMain(int argc, char* argv[]) {
     crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
 #endif
 
+    // We do not want to double-set the error level and promise rejection
+    // callback.
+    node::g_standalone_mode = false;
+
     // Explicitly register electron's builtin modules.
     NodeBindings::RegisterBuiltinModules();
 
@@ -89,7 +82,6 @@ int NodeMain(int argc, char* argv[]) {
     JavascriptEnvironment gin_env(loop);
 
     v8::Isolate* isolate = gin_env.isolate();
-    isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
 
     node::IsolateData* isolate_data =
         node::CreateIsolateData(isolate, loop, gin_env.platform());
@@ -112,8 +104,8 @@ int NodeMain(int argc, char* argv[]) {
 
     gin_helper::Dictionary process(isolate, env->process_object());
 
-    isolate->SetAllowWasmCodeGenerationCallback(
-        AllowWasmCodeGenerationCallback);
+    node::IsolateSettings is;
+    node::SetIsolateUpForNode(isolate, is);
 
 #if defined(OS_WIN)
     process.SetMethod("log", &ElectronBindings::Log);

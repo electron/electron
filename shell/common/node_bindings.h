@@ -26,11 +26,7 @@ namespace electron {
 
 class NodeBindings {
  public:
-  enum class BrowserEnvironment {
-    BROWSER,
-    RENDERER,
-    WORKER,
-  };
+  enum class BrowserEnvironment { BROWSER, RENDERER, WORKER };
 
   static NodeBindings* Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinModules();
