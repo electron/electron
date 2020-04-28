@@ -70,13 +70,6 @@ describe('chromium feature', () => {
   });
 
   describe('window.open', () => {
-    it('returns a BrowserWindowProxy object', () => {
-      const b = window.open('about:blank', '', 'show=no');
-      expect(b.closed).to.be.false();
-      expect(b.constructor.name).to.equal('BrowserWindowProxy');
-      b.close();
-    });
-
     it('accepts "nodeIntegration" as feature', (done) => {
       let b = null;
       listener = (event) => {
@@ -203,8 +196,8 @@ describe('chromium feature', () => {
       let b = null;
       listener = (event) => {
         window.removeEventListener('message', listener);
+        expect(event.source).to.deep.equal(b);
         b.close();
-        expect(event.source).to.equal(b);
         expect(event.origin).to.equal('file://');
         done();
       };

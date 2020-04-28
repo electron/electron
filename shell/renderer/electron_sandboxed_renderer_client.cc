@@ -237,6 +237,10 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
 void ElectronSandboxedRendererClient::SetupMainWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
+  // We only need to run the isolated bundle if webview is enabled
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kWebviewTag))
+    return;
+
   // Setup window overrides in the main world context
   // Wrap the bundle into a function that receives the isolatedWorld as
   // an argument.
