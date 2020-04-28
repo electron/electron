@@ -12,28 +12,44 @@
 
 #include "base/macros.h"
 #include "breakpad/src/common/simple_string_dictionary.h"
+#include "components/crash/core/common/crash_key_internal.h"
 
 namespace crash_reporter {
 
-typedef google_breakpad::NonAllocatingMap<256, 256, 64> CrashKeyStorage;
+// The size of the iovec used to transfer crash data from a child back to the
+// browser.
+#if !defined(ADDRESS_SANITIZER)
+const size_t kCrashIovSize = 6;
+#else
+// Additional field to pass the AddressSanitizer log to the crash handler.
+const size_t kCrashIovSize = 7;
+#endif
 
 // BreakpadInfo describes a crash report.
 // The minidump information can either be contained in a file descriptor (fd) or
 // in a file (whose path is in filename).
 struct BreakpadInfo {
-  int fd;                       // File descriptor to the Breakpad dump data.
-  const char* filename;         // Path to the Breakpad dump data.
-  const char* distro;           // Linux distro string.
-  unsigned distro_length;       // Length of |distro|.
-  bool upload;                  // Whether to upload or save crash dump.
-  uint64_t process_start_time;  // Uptime of the crashing process.
-  size_t oom_size;              // Amount of memory requested if OOM.
-  uint64_t pid;                 // PID where applicable.
-  const char* upload_url;       // URL to upload the minidump.
-  CrashKeyStorage* crash_keys;
+  int fd;                // File descriptor to the Breakpad dump data.
+  const char* filename;  // Path to the Breakpad dump data.
+#if defined(ADDRESS_SANITIZER)
+  const char* log_filename;     // Path to the ASan log file.
+  const char* asan_report_str;  // ASan report.
+  unsigned asan_report_length;  // Length of |asan_report_length|.
+#endif
+  const char* process_type;      // Process type, e.g. "renderer".
+  unsigned process_type_length;  // Length of |process_type|.
+  const char* distro;            // Linux distro string.
+  unsigned distro_length;        // Length of |distro|.
+  bool upload;                   // Whether to upload or save crash dump.
+  uint64_t process_start_time;   // Uptime of the crashing process.
+  size_t oom_size;               // Amount of memory requested if OOM.
+  uint64_t pid;                  // PID where applicable.
+  crash_reporter::internal::TransitionalCrashKeyStorage* crash_keys;
 };
 
 void HandleCrashDump(const BreakpadInfo& info);
+
+void SetUploadURL(const char* url);
 
 size_t WriteLog(const char* buf, size_t nbytes);
 size_t WriteNewline();

@@ -173,8 +173,7 @@ function waitForNewFileInDir (dir: string): Promise<string[]> {
   });
 }
 
-// TODO(alexeykuzmin): [Ch66] This test fails on Linux. Fix it and enable back.
-ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.platform !== 'linux')('crashReporter module', function () {
+ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
   afterEach(cleanup);
 
   it('should send minidump when renderer crashes', async () => {

@@ -58,6 +58,8 @@ class CrashReporter {
   virtual void RemoveExtraParameter(const std::string& key) = 0;
   virtual std::map<std::string, std::string> GetParameters() const;
 
+  virtual base::FilePath GetCrashesDirectory() = 0;
+
  protected:
   CrashReporter();
   virtual ~CrashReporter();

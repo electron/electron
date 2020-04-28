@@ -89,6 +89,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
+#include "shell/common/crash_reporter/crash_reporter.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -163,6 +164,7 @@
 #endif
 
 using content::BrowserThread;
+using crash_reporter::CrashReporter;
 
 namespace electron {
 
@@ -262,6 +264,71 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
   return registry->enabled_extensions().GetByID(effective_url.host());
 }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
+    const std::string& process_type) {
+  base::FilePath dumps_path;
+  base::PathService::Get(chrome::DIR_CRASH_DUMPS, &dumps_path);
+  {
+    ANNOTATE_SCOPED_MEMORY_LEAK;
+    bool upload = !getenv(env_vars::kHeadless);
+    breakpad::CrashHandlerHostLinux* crash_handler =
+        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, upload);
+    crash_handler->StartUploaderThread();
+    return crash_handler;
+  }
+}
+
+int GetCrashSignalFD(const base::CommandLine& command_line) {
+  if (crash_reporter::IsCrashpadEnabled()) {
+    int fd;
+    pid_t pid;
+    return crash_reporter::GetHandlerSocket(&fd, &pid) ? fd : -1;
+  }
+
+  // Extensions have the same process type as renderers.
+  if (command_line.HasSwitch(extensions::switches::kExtensionProcess)) {
+    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
+    if (!crash_handler)
+      crash_handler = CreateCrashHandlerHost("extension");
+    return crash_handler->GetDeathSignalSocket();
+  }
+
+  std::string process_type =
+      command_line.GetSwitchValueASCII(switches::kProcessType);
+
+  if (process_type == switches::kRendererProcess) {
+    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
+    if (!crash_handler)
+      crash_handler = CreateCrashHandlerHost(process_type);
+    return crash_handler->GetDeathSignalSocket();
+  }
+
+  if (process_type == switches::kPpapiPluginProcess) {
+    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
+    if (!crash_handler)
+      crash_handler = CreateCrashHandlerHost(process_type);
+    return crash_handler->GetDeathSignalSocket();
+  }
+
+  if (process_type == switches::kGpuProcess) {
+    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
+    if (!crash_handler)
+      crash_handler = CreateCrashHandlerHost(process_type);
+    return crash_handler->GetDeathSignalSocket();
+  }
+
+  if (process_type == switches::kUtilityProcess) {
+    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
+    if (!crash_handler)
+      crash_handler = CreateCrashHandlerHost(process_type);
+    return crash_handler->GetDeathSignalSocket();
+  }
+
+  return -1;
+}
+#endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
 
 }  // namespace
 
@@ -645,6 +712,12 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
+
+  auto* crash_reporter = CrashReporter::GetInstance();
+  if (crash_reporter->IsInitialized()) {
+    command_line->AppendSwitchPath("crashes-dir",
+                                   crash_reporter->GetCrashesDirectory());
+  }
 
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
@@ -1526,6 +1599,18 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
                                                 extension);
 #endif
 }
+
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+void ElectronBrowserClient::GetAdditionalMappedFilesForChildProcess(
+    const base::CommandLine& command_line,
+    int child_process_id,
+    PosixFileDescriptorInfo* mappings) {
+  int crash_signal_fd = GetCrashSignalFD(command_line);
+  if (crash_signal_fd >= 0) {
+    mappings->Share(service_manager::kCrashDumpSignal, crash_signal_fd);
+  }
+}
+#endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
 
 std::unique_ptr<content::LoginDelegate>
 ElectronBrowserClient::CreateLoginDelegate(

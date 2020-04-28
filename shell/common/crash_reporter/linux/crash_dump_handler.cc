@@ -23,15 +23,13 @@
 // where we either a) know the call cannot fail, or b) there is nothing we
 // can do when a call fails, we mark the return code as ignored. This avoids
 // spurious compiler warnings.
-#define IGNORE_RET(x) \
-  do {                \
-    if (x)            \
-      ;               \
-  } while (0)
+#define IGNORE_RET(x) ignore_result(x)
 
 namespace crash_reporter {
 
 namespace {
+
+char g_upload_url[512] = {0};
 
 // String buffer size to use to convert a uint64_t to string.
 const size_t kUint64StringSize = 21;
@@ -349,7 +347,7 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
 
   static const char kWgetBinary[] = "/usr/bin/wget";
   const char* args[] = {
-      kWgetBinary,    header,  post_file, info.upload_url,
+      kWgetBinary,    header,  post_file, g_upload_url,
       "--timeout=60",  // Set a timeout so we don't hang forever.
       "--tries=1",     // Don't retry if the upload fails.
       "--quiet",       // Be silent.
@@ -456,6 +454,10 @@ void HandleCrashReportId(const char* buf,
 }
 
 }  // namespace
+
+void SetUploadURL(const char* url) {
+  strncpy(g_upload_url, url, sizeof(g_upload_url));
+}
 
 char g_crash_log_path[256];
 
@@ -650,6 +652,8 @@ void HandleCrashDump(const BreakpadInfo& info) {
   }
 
   if (info.crash_keys) {
+    using CrashKeyStorage =
+        crash_reporter::internal::TransitionalCrashKeyStorage;
     CrashKeyStorage::Iterator crash_key_iterator(*info.crash_keys);
     const CrashKeyStorage::Entry* entry;
     while ((entry = crash_key_iterator.Next())) {

@@ -33,13 +33,17 @@ class CrashReporterLinux : public CrashReporter {
             bool upload_to_server,
             bool skip_system_crash_handler,
             bool rate_limit,
-            bool compress) override;
+            bool compress,
+            const StringMap& global_extra) override;
+  void InitInChild() override;
   void SetUploadToServer(bool upload_to_server) override;
   void SetUploadParameters() override;
   bool GetUploadToServer() override;
   void AddExtraParameter(const std::string& key,
                          const std::string& value) override;
   void RemoveExtraParameter(const std::string& key) override;
+
+  base::FilePath GetCrashesDirectory() override;
 
  private:
   friend struct base::DefaultSingletonTraits<CrashReporterLinux>;
@@ -48,18 +52,20 @@ class CrashReporterLinux : public CrashReporter {
   ~CrashReporterLinux() override;
 
   void EnableCrashDumping(const base::FilePath& crashes_dir);
+  void EnableNonBrowserCrashDumping();
 
   static bool CrashDone(const google_breakpad::MinidumpDescriptor& minidump,
                         void* context,
                         const bool succeeded);
 
   std::unique_ptr<google_breakpad::ExceptionHandler> breakpad_;
+  using CrashKeyStorage = crash_reporter::internal::TransitionalCrashKeyStorage;
   std::unique_ptr<CrashKeyStorage> crash_keys_;
 
-  uint64_t process_start_time_ = 0;
   pid_t pid_ = 0;
-  std::string upload_url_;
   bool upload_to_server_ = true;
+
+  base::FilePath crashes_dir_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterLinux);
 };
