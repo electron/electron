@@ -1071,8 +1071,22 @@ describe('chromium features', () => {
         contents.loadURL(origin);
         const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
         expect(error).to.equal(securityError);
-        const result = await contents.executeJavaScript('(() => { window.indexedDB.open("random"); return true; })();');
-        expect(result).to.not.be.null();
+        const dbName = 'random';
+        const result = await contents.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            try {
+              let req = window.indexedDB.open('${dbName}');
+              req.onsuccess = (event) => { 
+                let db = req.result;
+                resolve(db.name);
+              }
+              req.onerror = (event) => { resolve(event.target.code); }
+            } catch (e) {
+              resolve(e.message);
+            }
+          });
+        `);
+        expect(result).to.equal(dbName);
       });
 
       it('child webContents can override when the embedder has allowed websql', async () => {
