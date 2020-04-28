@@ -818,6 +818,26 @@ describe('webContents module', () => {
       expect(w.webContents.audioMuted).to.be.false();
     });
   });
+  describe('text zoom api', () => {
+    it('set text zoom factor in webcontents', (done) => {
+      const preload = path.join(fixturesPath, 'module', 'preload-contents-zoomtext.js');
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload
+        }
+      });
+      ipcMain.on('textZoomFactor', (event, textZoomFactor) => {
+        expect(textZoomFactor).to.eq(2);
+        done();
+      });
+      ipcMain.on('ready', (event) => {
+        w.webContents.setTextZoomFactor(2);
+        event.reply('getTextZoomFactor');
+      });
+      w.loadURL('about:blank');
+    });
+  });
 
   describe('zoom api', () => {
     const scheme = (global as any).standardScheme;

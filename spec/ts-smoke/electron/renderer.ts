@@ -53,6 +53,9 @@ remote.getCurrentWindow().capturePage().then(buf => {
 webFrame.setZoomFactor(2)
 console.log(webFrame.getZoomFactor())
 
+webFrame.setTextZoomFactor(2)
+console.log(webFrame.getTextZoomFactor())
+
 webFrame.setZoomLevel(200)
 console.log(webFrame.getZoomLevel())
 
