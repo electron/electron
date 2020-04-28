@@ -6,43 +6,69 @@
 #include <string>
 
 #include "base/bind.h"
+#include "base/command_line.h"
+#include "components/crash/core/app/crashpad.h"
+#include "content/public/common/content_switches.h"
+#include "gin/arguments.h"
 #include "gin/data_object_builder.h"
-#include "shell/common/crash_reporter/crash_reporter.h"
+#include "services/service_manager/embedder/switches.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 
-#include "shell/common/node_includes.h"
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#include "components/crash/core/app/breakpad_linux.h"
+#include "v8/include/v8-wasm-trap-handler-posix.h"
+#include "v8/include/v8.h"
+#endif
 
-using crash_reporter::CrashReporter;
+#include "shell/common/node_includes.h"
 
 namespace gin {
 
+/*
 template <>
 struct Converter<CrashReporter::UploadReportResult> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const CrashReporter::UploadReportResult& reports) {
-    return gin::DataObjectBuilder(isolate)
-        .Set("date",
-             v8::Date::New(isolate->GetCurrentContext(), reports.first * 1000.0)
-                 .ToLocalChecked())
-        .Set("id", reports.second)
-        .Build();
-  }
+static v8::Local<v8::Value> ToV8(
+    v8::Isolate* isolate,
+    const CrashReporter::UploadReportResult& reports) {
+  return gin::DataObjectBuilder(isolate)
+      .Set("date",
+           v8::Date::New(isolate->GetCurrentContext(), reports.first * 1000.0)
+               .ToLocalChecked())
+      .Set("id", reports.second)
+      .Build();
+}
 };
+*/
 
 }  // namespace gin
 
 namespace {
 
+void Start(const std::string& submit_url, gin::Arguments* args) {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  if (process_type != service_manager::switches::kZygoteProcess) {
+    if (crash_reporter::IsCrashpadEnabled()) {
+      crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+      // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
+    } else {
+      breakpad::SetUploadURL(submit_url);
+      breakpad::InitCrashReporter(process_type);
+    }
+  }
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  auto reporter = base::Unretained(CrashReporter::GetInstance());
+  // auto reporter = base::Unretained(CrashReporter::GetInstance());
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("start", base::BindRepeating(&CrashReporter::Start, reporter));
+  dict.SetMethod("start", base::BindRepeating(&Start));
+  /*
   dict.SetMethod(
       "addExtraParameter",
       base::BindRepeating(&CrashReporter::AddExtraParameter, reporter));
@@ -60,6 +86,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod(
       "getUploadToServer",
       base::BindRepeating(&CrashReporter::GetUploadToServer, reporter));
+      */
 }
 
 }  // namespace

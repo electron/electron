@@ -3,12 +3,9 @@
 // found in the LICENSE file.
 
 #include "base/bind.h"
-#include "shell/common/crash_reporter/crash_reporter.h"
 #include "shell/common/gin_helper/dictionary.h"
 
 #include "shell/common/node_includes.h"
-
-using crash_reporter::CrashReporter;
 
 namespace {
 
@@ -16,8 +13,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  auto reporter = base::Unretained(CrashReporter::GetInstance());
+  // auto reporter = base::Unretained(CrashReporter::GetInstance());
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  /*
   dict.SetMethod(
       "addExtraParameter",
       base::BindRepeating(&CrashReporter::AddExtraParameter, reporter));
@@ -26,6 +24,7 @@ void Initialize(v8::Local<v8::Object> exports,
       base::BindRepeating(&CrashReporter::RemoveExtraParameter, reporter));
   dict.SetMethod("getParameters",
                  base::BindRepeating(&CrashReporter::GetParameters, reporter));
+                 */
 }
 
 }  // namespace

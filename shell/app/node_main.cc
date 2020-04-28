@@ -24,14 +24,9 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/node_debugger.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/crash_reporter/crash_reporter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
-
-#if defined(_WIN64)
-#include "shell/common/crash_reporter/crash_reporter_win.h"
-#endif
 
 namespace {
 
@@ -98,18 +93,19 @@ namespace electron {
 
 #if !defined(OS_LINUX)
 void AddExtraParameter(const std::string& key, const std::string& value) {
-  crash_reporter::CrashReporter::GetInstance()->AddExtraParameter(key, value);
+  // crash_reporter::CrashReporter::GetInstance()->AddExtraParameter(key,
+  // value);
 }
 
 void RemoveExtraParameter(const std::string& key) {
-  crash_reporter::CrashReporter::GetInstance()->RemoveExtraParameter(key);
+  // crash_reporter::CrashReporter::GetInstance()->RemoveExtraParameter(key);
 }
 #endif
 
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
-  crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
+  // crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
 
   int exit_code = 1;
   {
@@ -125,7 +121,7 @@ int NodeMain(int argc, char* argv[]) {
     base::FeatureList::SetInstance(std::move(feature_list));
 
 #if defined(_WIN64)
-    crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
+    // crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
 #endif
 
     // Explicitly register electron's builtin modules.

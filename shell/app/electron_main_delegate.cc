@@ -20,6 +20,9 @@
 #include "base/path_service.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
+#include "components/crash/core/app/crashpad.h"
+#include "components/crash/core/common/crash_key.h"
+#include "components/crash/core/common/crash_keys.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
@@ -28,11 +31,11 @@
 #include "services/service_manager/sandbox/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_content_client.h"
+#include "shell/app/electron_crash_reporter_client.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_gpu_client.h"
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
-#include "shell/common/crash_reporter/crash_reporter.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
@@ -47,9 +50,12 @@
 
 #if defined(OS_WIN)
 #include "base/win/win_util.h"
-#if defined(_WIN64)
-#include "shell/common/crash_reporter/crash_reporter_win.h"
 #endif
+
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#include "components/crash/core/app/breakpad_linux.h"
+#include "v8/include/v8-wasm-trap-handler-posix.h"
+#include "v8/include/v8.h"
 #endif
 
 namespace electron {
@@ -273,12 +279,35 @@ void ElectronMainDelegate::PreSandboxStartup() {
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
+  crash_reporter::InitializeCrashKeys();
+
   // Initialize ResourceBundle which handles files loaded from external
   // sources. The language should have been passed in to us from the
   // browser process as a command line flag.
   if (SubprocessNeedsResourceBundle(process_type)) {
     std::string locale = command_line->GetSwitchValueASCII(::switches::kLang);
     LoadResourceBundle(locale);
+  }
+
+  /*
+  // NB. this just sets up crashpad keys, it doesn't launch crashpad if it's
+  // not already started.
+  crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
+  */
+#if defined(OS_POSIX)
+  ElectronCrashReporterClient::Create();
+#endif
+  if (process_type != service_manager::switches::kZygoteProcess &&
+      !process_type.empty()) {
+    LOG(INFO) << "Here we are in a " << process_type
+              << ", initializing the crash reporter";
+    if (crash_reporter::IsCrashpadEnabled()) {
+      crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+      // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
+    } else {
+      breakpad::SetUploadURL("http://127.0.0.1:3232");
+      breakpad::InitCrashReporter(process_type);
+    }
   }
 
   if (IsBrowserProcess(command_line)) {
@@ -291,10 +320,6 @@ void ElectronMainDelegate::PreSandboxStartup() {
     // Enable AVFoundation.
     command_line->AppendSwitch("enable-avfoundation");
 #endif
-  } else {
-    // NB. this just sets up crashpad keys, it doesn't launch crashpad if it's
-    // not already started.
-    crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
   }
 }
 
@@ -353,6 +378,25 @@ bool ElectronMainDelegate::ShouldCreateFeatureList() {
 
 bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
   return false;
+}
+
+void ElectronMainDelegate::ZygoteForked() {
+  // Needs to be called after we have chrome::DIR_USER_DATA.  BrowserMain sets
+  // this up for the browser process in a different manner.
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  if (crash_reporter::IsCrashpadEnabled()) {
+    crash_reporter::InitializeCrashpad(false, process_type);
+    // crash_reporter::SetFirstChanceExceptionHandler(
+    // v8::TryHandleWebAssemblyTrapPosix);
+  } else {
+    breakpad::InitCrashReporter(process_type);
+  }
+
+  // Reset the command line for the newly spawned process.
+  // crash_keys::SetCrashKeysFromCommandLine(*command_line);
 }
 
 }  // namespace electron

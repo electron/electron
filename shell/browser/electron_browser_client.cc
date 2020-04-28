@@ -11,6 +11,7 @@
 #include <memory>
 #include <utility>
 
+#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
@@ -24,6 +25,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
@@ -37,6 +39,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/site_instance.h"
+#include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/service_names.mojom.h"
@@ -47,6 +50,7 @@
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/common/constants.h"
+#include "extensions/common/switches.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/buildflags/buildflags.h"
@@ -89,7 +93,6 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
-#include "shell/common/crash_reporter/crash_reporter.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -163,8 +166,15 @@
 #include "content/public/common/child_process_host.h"
 #endif
 
+#if defined(OS_LINUX)
+#include "base/debug/leak_annotations.h"
+#include "components/crash/content/browser/crash_handler_host_linux.h"
+#include "components/crash/core/app/breakpad_linux.h"
+#include "components/crash/core/app/crash_switches.h"
+#include "components/crash/core/app/crashpad.h"
+#endif
+
 using content::BrowserThread;
-using crash_reporter::CrashReporter;
 
 namespace electron {
 
@@ -272,9 +282,8 @@ breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
   base::PathService::Get(chrome::DIR_CRASH_DUMPS, &dumps_path);
   {
     ANNOTATE_SCOPED_MEMORY_LEAK;
-    bool upload = !getenv(env_vars::kHeadless);
     breakpad::CrashHandlerHostLinux* crash_handler =
-        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, upload);
+        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, true);
     crash_handler->StartUploaderThread();
     return crash_handler;
   }
@@ -296,30 +305,30 @@ int GetCrashSignalFD(const base::CommandLine& command_line) {
   }
 
   std::string process_type =
-      command_line.GetSwitchValueASCII(switches::kProcessType);
+      command_line.GetSwitchValueASCII(::switches::kProcessType);
 
-  if (process_type == switches::kRendererProcess) {
+  if (process_type == ::switches::kRendererProcess) {
     static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
     if (!crash_handler)
       crash_handler = CreateCrashHandlerHost(process_type);
     return crash_handler->GetDeathSignalSocket();
   }
 
-  if (process_type == switches::kPpapiPluginProcess) {
+  if (process_type == ::switches::kPpapiPluginProcess) {
     static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
     if (!crash_handler)
       crash_handler = CreateCrashHandlerHost(process_type);
     return crash_handler->GetDeathSignalSocket();
   }
 
-  if (process_type == switches::kGpuProcess) {
+  if (process_type == ::switches::kGpuProcess) {
     static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
     if (!crash_handler)
       crash_handler = CreateCrashHandlerHost(process_type);
     return crash_handler->GetDeathSignalSocket();
   }
 
-  if (process_type == switches::kUtilityProcess) {
+  if (process_type == ::switches::kUtilityProcess) {
     static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
     if (!crash_handler)
       crash_handler = CreateCrashHandlerHost(process_type);
@@ -713,11 +722,37 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
+  /*
   auto* crash_reporter = CrashReporter::GetInstance();
   if (crash_reporter->IsInitialized()) {
     command_line->AppendSwitchPath("crashes-dir",
                                    crash_reporter->GetCrashesDirectory());
   }
+  */
+#if defined(OS_POSIX)
+  bool enable_crash_reporter = false;
+  if (crash_reporter::IsCrashpadEnabled()) {
+    command_line->AppendSwitch(crash_reporter::kEnableCrashpad);
+    enable_crash_reporter = true;
+
+    int fd;
+    pid_t pid;
+    if (crash_reporter::GetHandlerSocket(&fd, &pid)) {
+      command_line->AppendSwitchASCII(
+          crash_reporter::switches::kCrashpadHandlerPid,
+          base::NumberToString(pid));
+    }
+  } else {
+    enable_crash_reporter = breakpad::IsCrashReporterEnabled();
+  }
+  if (enable_crash_reporter) {
+    std::string switch_value;
+    switch_value.push_back(',');
+    switch_value.append("idk");  //(chrome::GetChannelName());
+    command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
+                                    switch_value);
+  }
+#endif
 
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
@@ -1600,17 +1635,17 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
 #endif
 }
 
-#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#if defined(OS_LINUX)
 void ElectronBrowserClient::GetAdditionalMappedFilesForChildProcess(
     const base::CommandLine& command_line,
     int child_process_id,
-    PosixFileDescriptorInfo* mappings) {
+    content::PosixFileDescriptorInfo* mappings) {
   int crash_signal_fd = GetCrashSignalFD(command_line);
   if (crash_signal_fd >= 0) {
     mappings->Share(service_manager::kCrashDumpSignal, crash_signal_fd);
   }
 }
-#endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
+#endif
 
 std::unique_ptr<content::LoginDelegate>
 ElectronBrowserClient::CreateLoginDelegate(
