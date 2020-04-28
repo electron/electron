@@ -281,21 +281,21 @@ void ElectronMainDelegate::PreSandboxStartup() {
     LoadResourceBundle(locale);
   }
 
-  // NB. this just sets up crashpad keys, it doesn't launch crashpad if it's
-  // not already started.
-  crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
+  if (IsBrowserProcess(command_line)) {
+    // Only append arguments for browser process.
 
-  // Only append arguments for browser process.
-  if (!IsBrowserProcess(command_line))
-    return;
-
-  // Allow file:// URIs to read other file:// URIs by default.
-  command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
+    // Allow file:// URIs to read other file:// URIs by default.
+    command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
 
 #if defined(OS_MACOSX)
-  // Enable AVFoundation.
-  command_line->AppendSwitch("enable-avfoundation");
+    // Enable AVFoundation.
+    command_line->AppendSwitch("enable-avfoundation");
 #endif
+  } else {
+    // NB. this just sets up crashpad keys, it doesn't launch crashpad if it's
+    // not already started.
+    crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
+  }
 }
 
 void ElectronMainDelegate::PreCreateMainMessageLoop() {

@@ -96,6 +96,7 @@ void CrashReporterMac::Init(const std::string& submit_url,
 }
 
 void CrashReporterMac::InitInChild() {
+  DCHECK_NE(process_type_, "");
   if (simple_string_dictionary_)
     return;
 
