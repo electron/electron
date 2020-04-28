@@ -74,24 +74,6 @@ void SetNodeCliFlags() {
   ProcessGlobalArgs(&args, nullptr, &errors, node::kDisallowedInEnvironment);
 }
 
-// TODO(codebytere): expose this from Node.js itself?
-void HostCleanupFinalizationGroupCallback(
-    v8::Local<v8::Context> context,
-    v8::Local<v8::FinalizationGroup> group) {
-  node::Environment* env = node::Environment::GetCurrent(context);
-  if (env == nullptr) {
-    return;
-  }
-  env->RegisterFinalizationGroupForCleanup(group);
-}
-
-bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
-                                     v8::Local<v8::String>) {
-  v8::Local<v8::Value> wasm_code_gen = context->GetEmbedderData(
-      node::ContextEmbedderIndex::kAllowWasmCodeGeneration);
-  return wasm_code_gen->IsUndefined() || wasm_code_gen->IsTrue();
-}
-
 }  // namespace
 
 namespace electron {
@@ -126,6 +108,10 @@ int NodeMain(int argc, char* argv[]) {
     crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
 #endif
 
+    // We do not want to double-set the error level and promise rejection
+    // callback.
+    node::g_standalone_mode = false;
+
     // Explicitly register electron's builtin modules.
     NodeBindings::RegisterBuiltinModules();
 
@@ -146,9 +132,6 @@ int NodeMain(int argc, char* argv[]) {
     JavascriptEnvironment gin_env(loop);
 
     v8::Isolate* isolate = gin_env.isolate();
-    // TODO(ckerr) and/or TODO(codebytere) use node::SetIsolateMiscHandlers()
-    node::IsolateSettings is;
-    isolate->SetMicrotasksPolicy(is.policy);
 
     v8::Isolate::Scope isolate_scope(isolate);
     v8::Locker locker(isolate);
@@ -167,13 +150,8 @@ int NodeMain(int argc, char* argv[]) {
       // This needs to be called before the inspector is initialized.
       env->InitializeDiagnostics();
 
-      // This is needed in order to enable v8 host weakref hooks.
-      // TODO(codebytere): we shouldn't have to call this - upstream?
-      isolate->SetHostCleanupFinalizationGroupCallback(
-          HostCleanupFinalizationGroupCallback);
-
-      isolate->SetAllowWasmCodeGenerationCallback(
-          AllowWasmCodeGenerationCallback);
+      node::IsolateSettings is;
+      node::SetIsolateUpForNode(isolate, is);
 
       gin_helper::Dictionary process(isolate, env->process_object());
 #if defined(OS_WIN)
