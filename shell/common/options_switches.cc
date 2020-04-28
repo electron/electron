@@ -182,6 +182,8 @@ const char kSpellcheck[] = "spellcheck";
 const char kEnableRemoteModule[] = "enableRemoteModule";
 #endif
 
+const char kEnableWebSQL[] = "enableWebSQL";
+
 }  // namespace options
 
 namespace switches {
@@ -249,6 +251,10 @@ const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
 // Command switch passed to renderer process to control whether node
 // environments will be created in sub-frames.
 const char kNodeIntegrationInSubFrames[] = "node-integration-in-subframes";
+
+// Command switch passed to render process to control whether WebSQL api
+// is allowed.
+const char kEnableWebSQL[] = "enable-websql";
 
 // Widevine options
 // Path to Widevine CDM binaries.
