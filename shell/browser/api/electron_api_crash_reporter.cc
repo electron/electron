@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "shell/browser/api/electron_api_crash_reporter.h"
+
 #include <map>
 #include <string>
 
@@ -14,6 +16,7 @@
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "services/service_manager/embedder/switches.h"
+#include "shell/common/crash_keys.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -48,28 +51,41 @@ static v8::Local<v8::Value> ToV8(
 
 namespace {
 
-using SwitchesCrashKeys = std::deque<crash_reporter::CrashKeyString<64>>;
-SwitchesCrashKeys& GetSwitchesCrashKeys() {
-  static base::NoDestructor<SwitchesCrashKeys> switches_keys;
-  return *switches_keys;
+std::map<std::string, std::string>& GetGlobalCrashKeysMutable() {
+  static base::NoDestructor<std::map<std::string, std::string>>
+      global_crash_keys;
+  return *global_crash_keys;
 }
 
-void SetCrashKey(std::string key, std::string value) {
-  static base::NoDestructor<std::deque<std::string>> crash_keys_names;
+}  // namespace
 
-  auto iter =
-      std::find(crash_keys_names->begin(), crash_keys_names->end(), key);
-  if (iter == crash_keys_names->end()) {
-    crash_keys_names->emplace_back(key);
-    GetSwitchesCrashKeys().emplace_back(crash_keys_names->back().c_str());
-    iter = crash_keys_names->end() - 1;
-  }
-  GetSwitchesCrashKeys()[iter - crash_keys_names->begin()].Set(value);
+namespace electron {
+
+namespace api {
+
+namespace crash_reporter {
+
+bool IsCrashReporterEnabled() {
+  return true;  // TODO
 }
+
+#if defined(OS_LINUX)
+const std::map<std::string, std::string>& GetGlobalCrashKeys() {
+  return GetGlobalCrashKeysMutable();
+}
+#endif
+
+}  // namespace crash_reporter
+
+}  // namespace api
+
+}  // namespace electron
+
+namespace {
 
 void SetCrashKeysFromMap(const std::map<std::string, std::string>& extra) {
   for (const auto& pair : extra) {
-    SetCrashKey(pair.first, pair.second);
+    electron::crash_keys::SetCrashKey(pair.first, pair.second);
   }
 }
 
@@ -80,20 +96,22 @@ void Start(const std::string& submit_url,
            bool rate_limit,
            bool compress,
            const std::map<std::string, std::string>& extra_global,
-           const std::map<std::string, std::string> extra) {
+           const std::map<std::string, std::string>& extra) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
-  if (process_type != service_manager::switches::kZygoteProcess) {
-    if (crash_reporter::IsCrashpadEnabled()) {
-      crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
-      // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
-    } else {
-      breakpad::SetUploadURL(submit_url);
-      SetCrashKeysFromMap(extra);
-      SetCrashKeysFromMap(extra_global);
-      breakpad::InitCrashReporter(process_type);
+  if (crash_reporter::IsCrashpadEnabled()) {
+    crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+    // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
+  } else {
+    breakpad::SetUploadURL(submit_url);
+    auto& global_crash_keys = GetGlobalCrashKeysMutable();
+    for (const auto& pair : extra_global) {
+      global_crash_keys[pair.first] = pair.second;
     }
+    SetCrashKeysFromMap(extra);
+    SetCrashKeysFromMap(extra_global);
+    breakpad::InitCrashReporter(process_type);
   }
 }
 

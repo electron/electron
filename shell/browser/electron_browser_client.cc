@@ -62,6 +62,7 @@
 #include "services/service_manager/public/cpp/binder_map.h"
 #include "shell/app/manifests.h"
 #include "shell/browser/api/electron_api_app.h"
+#include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -722,14 +723,11 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
-  /*
-  auto* crash_reporter = CrashReporter::GetInstance();
-  if (crash_reporter->IsInitialized()) {
-    command_line->AppendSwitchPath("crashes-dir",
-                                   crash_reporter->GetCrashesDirectory());
-  }
-  */
 #if defined(OS_POSIX)
+  // TODO: should this be linux-only..?
+  // TODO: only when crash reporter is enabled
+  // TODO: this doesn't work for sandboxed renderers spawned via zygote.
+  //       need to hook ZygoteForked mayb?
   bool enable_crash_reporter = false;
   if (crash_reporter::IsCrashpadEnabled()) {
     command_line->AppendSwitch(crash_reporter::kEnableCrashpad);
@@ -746,11 +744,17 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     enable_crash_reporter = breakpad::IsCrashReporterEnabled();
   }
   if (enable_crash_reporter) {
+    command_line->AppendSwitch(::switches::kEnableCrashReporter);
     std::string switch_value;
-    switch_value.push_back(',');
-    switch_value.append("idk");  //(chrome::GetChannelName());
-    command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
-                                    switch_value);
+    for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
+      if (!switch_value.empty())
+        switch_value += ",";
+      switch_value += pair.first;
+      switch_value += "=";
+      switch_value += pair.second;
+    }
+    LOG(INFO) << "switch_value = " << switch_value;
+    command_line->AppendSwitchASCII("global-crash-keys", switch_value);
   }
 #endif
 

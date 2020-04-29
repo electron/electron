@@ -76,7 +76,7 @@ void ElectronCrashReporterClient::GetProductNameAndVersion(
   GetProductNameAndVersion(&c_product_name, &c_version);
   *product_name = c_product_name;
   *version = c_version;
-  *channel = "idk";  // TODO chrome::GetChannelName();
+  *channel = "";
 }
 
 base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
@@ -97,43 +97,21 @@ bool ElectronCrashReporterClient::GetCrashMetricsLocation(
 #endif  // OS_MACOSX || OS_LINUX
 
 bool ElectronCrashReporterClient::IsRunningUnattended() {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  return false;  // env->HasVar(env_vars::kHeadless);
+  return false;
 }
 
 bool ElectronCrashReporterClient::GetCollectStatsConsent() {
   return true;
-  /*
-#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-  bool is_official_chrome_build = true;
-#else
-  bool is_official_chrome_build = false;
-#endif
-
-  if (!is_official_chrome_build) {
-    VLOG(1) << "GetCollectStatsConsent(): is_official_chrome_build is false "
-            << "so returning false";
-    return false;
-  }
-  bool settings_consent = true;
-  VLOG(1) << "GetCollectStatsConsent(): settings_consent: " << settings_consent
-          << " so returning that";
-  return settings_consent;
-  */
 }
 
 #if defined(OS_LINUX)
 bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
-  // TODO(jperaza): Turn this on less frequently for stable channels when
-  // Crashpad is always enabled on Linux. Consider combining with the
-  // macOS implementation.
-  return true;
+  return false;
 }
 #endif  // OS_LINUX
 
 bool ElectronCrashReporterClient::EnableBreakpadForProcess(
     const std::string& process_type) {
-  LOG(INFO) << "ECRC::EBFP " << process_type;
   return process_type == switches::kRendererProcess ||
          process_type == switches::kPpapiPluginProcess ||
          process_type == service_manager::switches::kZygoteProcess ||

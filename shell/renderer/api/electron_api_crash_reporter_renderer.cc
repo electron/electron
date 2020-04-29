@@ -3,25 +3,29 @@
 // found in the LICENSE file.
 
 #include "base/bind.h"
+#include "shell/common/crash_keys.h"
 #include "shell/common/gin_helper/dictionary.h"
-
 #include "shell/common/node_includes.h"
 
 namespace {
+
+void AddExtraParameter(const std::string& key, const std::string& value) {
+  electron::crash_keys::SetCrashKey(key, value);
+}
+
+void RemoveExtraParameter(const std::string& key) {
+  electron::crash_keys::ClearCrashKey(key);
+}
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  // auto reporter = base::Unretained(CrashReporter::GetInstance());
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  dict.SetMethod("addExtraParameter", base::BindRepeating(&AddExtraParameter));
+  dict.SetMethod("removeExtraParameter",
+                 base::BindRepeating(&RemoveExtraParameter));
   /*
-  dict.SetMethod(
-      "addExtraParameter",
-      base::BindRepeating(&CrashReporter::AddExtraParameter, reporter));
-  dict.SetMethod(
-      "removeExtraParameter",
-      base::BindRepeating(&CrashReporter::RemoveExtraParameter, reporter));
   dict.SetMethod("getParameters",
                  base::BindRepeating(&CrashReporter::GetParameters, reporter));
                  */

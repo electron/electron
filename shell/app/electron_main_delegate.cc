@@ -18,6 +18,7 @@
 #include "base/logging.h"
 #include "base/mac/bundle_locations.h"
 #include "base/path_service.h"
+#include "base/strings/string_split.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
 #include "components/crash/core/app/crashpad.h"
@@ -32,10 +33,12 @@
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/app/electron_crash_reporter_client.h"
+#include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_gpu_client.h"
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
+#include "shell/common/crash_keys.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
@@ -289,28 +292,48 @@ void ElectronMainDelegate::PreSandboxStartup() {
     LoadResourceBundle(locale);
   }
 
-  /*
-  // NB. this just sets up crashpad keys, it doesn't launch crashpad if it's
-  // not already started.
-  crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
-  */
 #if defined(OS_POSIX)
   ElectronCrashReporterClient::Create();
 #endif
+
+#if defined(OS_LINUX)
   if (process_type != service_manager::switches::kZygoteProcess &&
       !process_type.empty()) {
-    LOG(INFO) << "Here we are in a " << process_type
-              << ", initializing the crash reporter";
     if (crash_reporter::IsCrashpadEnabled()) {
       crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
       // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
     } else {
-      breakpad::SetUploadURL("http://127.0.0.1:3232");
       breakpad::InitCrashReporter(process_type);
+      LOG(INFO) << "Init crash reporter in child of type " << process_type;
+      crash_keys::SetCrashKeysFromCommandLine(*command_line);
+      /*
+      if (command_line->HasSwitch("crash-key-product-name")) {
+        LOG(INFO) << "Product name " <<
+      command_line->GetSwitchValueASCII("crash-key-product-name"); static
+      crash_reporter::CrashKeyString<32> product_name_key("_productName");
+        product_name_key.Set(command_line->GetSwitchValueASCII("crash-key-product-name"));
+      }
+      if (command_line->HasSwitch("crash-key-version")) {
+        static crash_reporter::CrashKeyString<32> version_key("_version");
+        version_key.Set(command_line->GetSwitchValueASCII("crash-key-version"));
+      }
+      */
     }
   }
-  static crash_reporter::CrashKeyString<16> platform_key("platform");
+#endif
+
+  // TODO(nornagon): this is redundant with the 'plat' key that
+  // //components/crash already includes. Remove it.
+  static crash_reporter::CrashKeyString<8> platform_key("platform");
+#if defined(OS_WIN)
+  platform_key.Set("win32");
+#elif defined(OS_MACOSX)
+  platform_key.Set("darwin");
+#elif defined(OS_LINUX)
   platform_key.Set("linux");
+#else
+  platform_key.Set("unknown");
+#endif
 
   if (IsBrowserProcess(command_line)) {
     // Only append arguments for browser process.
@@ -399,6 +422,7 @@ void ElectronMainDelegate::ZygoteForked() {
 
   // Reset the command line for the newly spawned process.
   // crash_keys::SetCrashKeysFromCommandLine(*command_line);
+  crash_keys::SetCrashKeysFromCommandLine(*command_line);
 }
 
 }  // namespace electron
