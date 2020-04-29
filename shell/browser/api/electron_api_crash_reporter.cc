@@ -57,6 +57,8 @@ std::map<std::string, std::string>& GetGlobalCrashKeysMutable() {
   return *global_crash_keys;
 }
 
+bool g_crash_reporter_initialized = false;
+
 }  // namespace
 
 namespace electron {
@@ -66,7 +68,7 @@ namespace api {
 namespace crash_reporter {
 
 bool IsCrashReporterEnabled() {
-  return true;  // TODO
+  return g_crash_reporter_initialized;
 }
 
 #if defined(OS_LINUX)
@@ -97,6 +99,9 @@ void Start(const std::string& submit_url,
            bool compress,
            const std::map<std::string, std::string>& extra_global,
            const std::map<std::string, std::string>& extra) {
+  if (g_crash_reporter_initialized)
+    return;
+  g_crash_reporter_initialized = true;
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
