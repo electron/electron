@@ -78,6 +78,7 @@ int NodeMain(int argc, char* argv[]) {
 
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
+    gin_env.isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
 
     node::IsolateData* isolate_data =
         node::CreateIsolateData(gin_env.isolate(), loop, gin_env.platform());
