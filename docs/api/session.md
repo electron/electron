@@ -349,7 +349,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 * `handler` Function | null
   * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
   * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
-    'pointerLock', 'fullscreen', 'openExternal'.
+    'pointerLock', 'fullscreen', 'openExternal', 'mediaKeySystem', 'clipboard', 'clipboardSanitized'.
   * `callback` Function
     * `permissionGranted` Boolean - Allow or deny the permission.
   * `details` Object - Some properties are only available on certain permission types.

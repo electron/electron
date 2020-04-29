@@ -188,6 +188,10 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "mediaKeySystem");
     case content::PermissionType::MIDI:
       return StringToV8(isolate, "midi");
+    case content::PermissionType::CLIPBOARD_READ_WRITE:
+      return StringToV8(isolate, "clipboard");
+    case content::PermissionType::CLIPBOARD_SANITIZED_WRITE:
+      return StringToV8(isolate, "clipboardSanitized");
     default:
       break;
   }
