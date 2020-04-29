@@ -203,9 +203,10 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
              v8::Global<v8::Context> global_destination_context,
              context_bridge::RenderFramePersistenceStore* store,
              v8::Local<v8::Value> result) {
-            auto val = PassValueToOtherContext(
-                global_source_context.Get(isolate),
-                global_destination_context.Get(isolate), result, store, false, 0);
+            auto val =
+                PassValueToOtherContext(global_source_context.Get(isolate),
+                                        global_destination_context.Get(isolate),
+                                        result, store, false, 0);
             if (!val.IsEmpty())
               proxied_promise->Resolve(val.ToLocalChecked());
             delete proxied_promise;
@@ -221,9 +222,10 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
              v8::Global<v8::Context> global_destination_context,
              context_bridge::RenderFramePersistenceStore* store,
              v8::Local<v8::Value> result) {
-            auto val = PassValueToOtherContext(
-                global_source_context.Get(isolate),
-                global_destination_context.Get(isolate), result, store, false, 0);
+            auto val =
+                PassValueToOtherContext(global_source_context.Get(isolate),
+                                        global_destination_context.Get(isolate),
+                                        result, store, false, 0);
             if (!val.IsEmpty())
               proxied_promise->Reject(val.ToLocalChecked());
             delete proxied_promise;
@@ -287,9 +289,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   // Proxy all objects
   if (IsPlainObject(value)) {
     auto object_value = v8::Local<v8::Object>::Cast(value);
-    auto passed_value =
-        CreateProxyForAPI(object_value, source_context, destination_context,
-                          store, support_dynamic_properties, recursion_depth + 1);
+    auto passed_value = CreateProxyForAPI(
+        object_value, source_context, destination_context, store,
+        support_dynamic_properties, recursion_depth + 1);
     if (passed_value.IsEmpty())
       return v8::MaybeLocal<v8::Value>();
     return v8::MaybeLocal<v8::Value>(passed_value.ToLocalChecked());
@@ -336,8 +338,9 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
     args->GetRemaining(&original_args);
 
     for (auto value : original_args) {
-      auto arg = PassValueToOtherContext(calling_context, func_owning_context,
-                                         value, store, support_dynamic_properties, 0);
+      auto arg =
+          PassValueToOtherContext(calling_context, func_owning_context, value,
+                                  store, support_dynamic_properties, 0);
       if (arg.IsEmpty())
         return v8::Undefined(args->isolate());
       proxied_args.push_back(arg.ToLocalChecked());
@@ -375,9 +378,9 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
     if (maybe_return_value.IsEmpty())
       return v8::Undefined(args->isolate());
 
-    auto ret =
-        PassValueToOtherContext(func_owning_context, calling_context,
-                                maybe_return_value.ToLocalChecked(), store, support_dynamic_properties, 0);
+    auto ret = PassValueToOtherContext(func_owning_context, calling_context,
+                                       maybe_return_value.ToLocalChecked(),
+                                       store, support_dynamic_properties, 0);
     if (ret.IsEmpty())
       return v8::Undefined(args->isolate());
     return ret.ToLocalChecked();
@@ -434,15 +437,13 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
             v8::Local<v8::Value> setter_proxy;
             if (!getter.IsEmpty()) {
               if (!PassValueToOtherContext(source_context, destination_context,
-                                           getter, store, false,
-                                           1)
+                                           getter, store, false, 1)
                        .ToLocal(&getter_proxy))
                 continue;
             }
             if (!setter.IsEmpty()) {
               if (!PassValueToOtherContext(source_context, destination_context,
-                                           setter, store, false,
-                                           1)
+                                           setter, store, false, 1)
                        .ToLocal(&setter_proxy))
                 continue;
             }
@@ -459,9 +460,9 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
       if (!api.Get(key_str, &value))
         continue;
 
-      auto passed_value =
-          PassValueToOtherContext(source_context, destination_context, value,
-                                  store, support_dynamic_properties, recursion_depth + 1);
+      auto passed_value = PassValueToOtherContext(
+          source_context, destination_context, value, store,
+          support_dynamic_properties, recursion_depth + 1);
       if (passed_value.IsEmpty())
         return v8::MaybeLocal<v8::Object>();
       proxy.Set(key_str, passed_value.ToLocalChecked());
@@ -521,8 +522,8 @@ void ExposeAPIInMainWorld(const std::string& key,
 
   v8::Context::Scope main_context_scope(main_context);
   {
-    v8::MaybeLocal<v8::Object> maybe_proxy =
-        CreateProxyForAPI(api_object, isolated_context, main_context, store, false, 0);
+    v8::MaybeLocal<v8::Object> maybe_proxy = CreateProxyForAPI(
+        api_object, isolated_context, main_context, store, false, 0);
     if (maybe_proxy.IsEmpty())
       return;
     auto proxy = maybe_proxy.ToLocalChecked();
@@ -551,7 +552,7 @@ void OverrideGlobalValueFromIsolatedWorld(
 
   auto* render_frame = GetRenderFrame(value);
   CHECK(render_frame);
-  context_bridge::RenderFrameFunctionStore* store =
+  context_bridge::RenderFramePersistenceStore* store =
       GetOrCreateStore(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
@@ -563,9 +564,9 @@ void OverrideGlobalValueFromIsolatedWorld(
 
   {
     v8::Context::Scope main_context_scope(main_context);
-    v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
-        value->CreationContext(), main_context, value, store,
-        support_dynamic_properties, 1);
+    v8::MaybeLocal<v8::Value> maybe_proxy =
+        PassValueToOtherContext(value->CreationContext(), main_context, value,
+                                store, support_dynamic_properties, 1);
     DCHECK(!maybe_proxy.IsEmpty());
     auto proxy = maybe_proxy.ToLocalChecked();
 
@@ -583,7 +584,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
 
   auto* render_frame = GetRenderFrame(getter);
   CHECK(render_frame);
-  context_bridge::RenderFrameFunctionStore* store =
+  context_bridge::RenderFramePersistenceStore* store =
       GetOrCreateStore(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
@@ -599,16 +600,14 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     v8::Local<v8::Value> getter_proxy;
     v8::Local<v8::Value> setter_proxy;
     if (!getter->IsNullOrUndefined()) {
-      v8::MaybeLocal<v8::Value> maybe_getter_proxy =
-          PassValueToOtherContext(getter->CreationContext(), main_context,
-                                  getter, store, false, 1);
+      v8::MaybeLocal<v8::Value> maybe_getter_proxy = PassValueToOtherContext(
+          getter->CreationContext(), main_context, getter, store, false, 1);
       DCHECK(!maybe_getter_proxy.IsEmpty());
       getter_proxy = maybe_getter_proxy.ToLocalChecked();
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
-      v8::MaybeLocal<v8::Value> maybe_setter_proxy =
-          PassValueToOtherContext(getter->CreationContext(), main_context,
-                                  setter, store, false, 1);
+      v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
+          getter->CreationContext(), main_context, setter, store, false, 1);
       DCHECK(!maybe_setter_proxy.IsEmpty());
       setter_proxy = maybe_setter_proxy.ToLocalChecked();
     }
