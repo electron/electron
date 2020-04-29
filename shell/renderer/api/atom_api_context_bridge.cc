@@ -434,14 +434,14 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
             v8::Local<v8::Value> setter_proxy;
             if (!getter.IsEmpty()) {
               if (!PassValueToOtherContext(source_context, destination_context,
-                                           getter, store, object_cache, false,
+                                           getter, store, false,
                                            1)
                        .ToLocal(&getter_proxy))
                 continue;
             }
             if (!setter.IsEmpty()) {
               if (!PassValueToOtherContext(source_context, destination_context,
-                                           setter, store, object_cache, false,
+                                           setter, store, false,
                                            1)
                        .ToLocal(&setter_proxy))
                 continue;
@@ -563,9 +563,8 @@ void OverrideGlobalValueFromIsolatedWorld(
 
   {
     v8::Context::Scope main_context_scope(main_context);
-    context_bridge::ObjectCache object_cache;
     v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
-        value->CreationContext(), main_context, value, store, &object_cache,
+        value->CreationContext(), main_context, value, store,
         support_dynamic_properties, 1);
     DCHECK(!maybe_proxy.IsEmpty());
     auto proxy = maybe_proxy.ToLocalChecked();
@@ -597,20 +596,19 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
 
   {
     v8::Context::Scope main_context_scope(main_context);
-    context_bridge::ObjectCache object_cache;
     v8::Local<v8::Value> getter_proxy;
     v8::Local<v8::Value> setter_proxy;
     if (!getter->IsNullOrUndefined()) {
       v8::MaybeLocal<v8::Value> maybe_getter_proxy =
           PassValueToOtherContext(getter->CreationContext(), main_context,
-                                  getter, store, &object_cache, false, 1);
+                                  getter, store, false, 1);
       DCHECK(!maybe_getter_proxy.IsEmpty());
       getter_proxy = maybe_getter_proxy.ToLocalChecked();
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
       v8::MaybeLocal<v8::Value> maybe_setter_proxy =
           PassValueToOtherContext(getter->CreationContext(), main_context,
-                                  setter, store, &object_cache, false, 1);
+                                  setter, store, false, 1);
       DCHECK(!maybe_setter_proxy.IsEmpty());
       setter_proxy = maybe_setter_proxy.ToLocalChecked();
     }
