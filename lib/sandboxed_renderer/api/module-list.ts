@@ -6,6 +6,10 @@ export const moduleList: ElectronInternal.ModuleEntry[] = [
     loader: () => require('@electron/internal/renderer/api/context-bridge')
   },
   {
+    name: 'crashReporter',
+    loader: () => require('@electron/internal/renderer/api/crash-reporter')
+  },
+  {
     name: 'ipcRenderer',
     loader: () => require('@electron/internal/renderer/api/ipc-renderer')
   },
@@ -16,10 +20,6 @@ export const moduleList: ElectronInternal.ModuleEntry[] = [
   {
     name: 'webFrame',
     loader: () => require('@electron/internal/renderer/api/web-frame')
-  },
-  {
-    name: 'crashReporter',
-    loader: () => require('@electron/internal/renderer/api/crash-reporter')
   },
   // The internal modules, invisible unless you know their names.
   {

@@ -6,8 +6,8 @@ const enableRemoteModule = v8Util.getHiddenValue<boolean>(global, 'enableRemoteM
 // Renderer side modules, please sort alphabetically.
 export const rendererModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'contextBridge', loader: () => require('./context-bridge') },
-  { name: 'ipcRenderer', loader: () => require('./ipc-renderer') },
   { name: 'crashReporter', loader: () => require('./crash-reporter') },
+  { name: 'ipcRenderer', loader: () => require('./ipc-renderer') },
   { name: 'webFrame', loader: () => require('./web-frame') }
 ];
 
