@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Wed, 29 Apr 2020 13:36:00 -0700
+Subject: Never let a non-zero-size pixel snap to zero size
+
+The logic for LayoutUnit::SnapSizeToPixel maps the size to
+the closest pixel align edge given a location. When a size of
+width less than 1 happens to straddle a pixel aligned edge this
+forces the size to zero.
+
+Force the size to always be non-zero if the input size is non-zero,
+and change PhysicalRect to use the LayoutRect snapping to get
+correct cull rects.
+
+Bug: 793785
+Change-Id: Ia4c30d10c389fb4677006441aac9ee380a7c2f41
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1948057
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Reviewed-by: Xianzhu Wang <wangxianzhu@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#726516}
+
+diff --git a/third_party/blink/renderer/platform/geometry/layout_unit.h b/third_party/blink/renderer/platform/geometry/layout_unit.h
+index eaaff017795237c83b9eb06e8cb70f8598ec5664..8ffe3e11501c005edb233130b231c33e6e79000b 100644
+--- a/third_party/blink/renderer/platform/geometry/layout_unit.h
++++ b/third_party/blink/renderer/platform/geometry/layout_unit.h
+@@ -723,7 +723,12 @@ inline float& operator/=(float& a, const LayoutUnit& b) {
+ 
+ inline int SnapSizeToPixel(LayoutUnit size, LayoutUnit location) {
+   LayoutUnit fraction = location.Fraction();
+-  return (fraction + size).Round() - fraction.Round();
++  int result = (fraction + size).Round() - fraction.Round();
++  if (UNLIKELY(result == 0 &&
++               std::abs(size.ToFloat()) > LayoutUnit::Epsilon() * 4)) {
++    return size > 0 ? 1 : -1;
++  }
++  return result;
+ }
+ 
+ inline int RoundToInt(LayoutUnit value) {
+diff --git a/third_party/blink/renderer/platform/geometry/layout_unit_test.cc b/third_party/blink/renderer/platform/geometry/layout_unit_test.cc
+index db1fa1f610f195eb7933ab044c26c3b2bae84120..05d4a2f762ede01f712470363ed118f7b37925a4 100644
+--- a/third_party/blink/renderer/platform/geometry/layout_unit_test.cc
++++ b/third_party/blink/renderer/platform/geometry/layout_unit_test.cc
+@@ -155,8 +155,20 @@ TEST(LayoutUnitTest, LayoutUnitSnapSizeToPixel) {
+   EXPECT_EQ(1, SnapSizeToPixel(LayoutUnit(1.5), LayoutUnit(0.99)));
+   EXPECT_EQ(2, SnapSizeToPixel(LayoutUnit(1.5), LayoutUnit(1)));
+ 
+-  EXPECT_EQ(0, SnapSizeToPixel(LayoutUnit(0.5), LayoutUnit(1.5)));
+-  EXPECT_EQ(0, SnapSizeToPixel(LayoutUnit(0.99), LayoutUnit(1.5)));
++  // 0.046875 is 3/64, lower than 4 * LayoutUnit::Epsilon()
++  EXPECT_EQ(0, SnapSizeToPixel(LayoutUnit(0.046875), LayoutUnit(0)));
++  // 0.078125 is 5/64, higher than 4 * LayoutUnit::Epsilon()
++  EXPECT_EQ(1, SnapSizeToPixel(LayoutUnit(0.078125), LayoutUnit(0)));
++
++  // Negative versions
++  EXPECT_EQ(0, SnapSizeToPixel(LayoutUnit(-0.046875), LayoutUnit(0)));
++  EXPECT_EQ(-1, SnapSizeToPixel(LayoutUnit(-0.078125), LayoutUnit(0)));
++
++  // The next 2 would snap to zero but for the requirement that we not snap
++  // sizes greater than 4 * LayoutUnit::Epsilon() to 0.
++  EXPECT_EQ(1, SnapSizeToPixel(LayoutUnit(0.5), LayoutUnit(1.5)));
++  EXPECT_EQ(1, SnapSizeToPixel(LayoutUnit(0.99), LayoutUnit(1.5)));
++
+   EXPECT_EQ(1, SnapSizeToPixel(LayoutUnit(1.0), LayoutUnit(1.5)));
+   EXPECT_EQ(1, SnapSizeToPixel(LayoutUnit(1.49), LayoutUnit(1.5)));
+   EXPECT_EQ(1, SnapSizeToPixel(LayoutUnit(1.5), LayoutUnit(1.5)));
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-sizing/thin-element-render-ref.html b/third_party/blink/web_tests/external/wpt/css/css-sizing/thin-element-render-ref.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..0d5851d5544f9692d0761dc92c23b6b2b546b4d3
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-sizing/thin-element-render-ref.html
+@@ -0,0 +1,31 @@
++<!DOCTYPE html>
++<title>Reference: Thin elements should paint even at small size</title>
++<link rel="author" title="Stephen Chenney" href="mailto:schenney@chromium.org">
++<html>
++  <head>
++    <style>
++        .disappearing-border {
++            height:1px;
++            width:100%;
++            border-top:1px solid black;
++        }
++
++        .disappearing-box {
++          height:1px;
++          width:100%;
++          background-color: black;
++        }
++
++        body {
++            margin: 0px;
++            padding: 0px;
++            box-sizing: border-box;
++        }
++    </style>
++</head>
++<body>
++    <div class="disappearing-border"></div>
++    <div style="height:6.5px;"></div>
++    <div class="disappearing-box"></div>
++</body>
++</html>
+\ No newline at end of file
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-sizing/thin-element-render.html b/third_party/blink/web_tests/external/wpt/css/css-sizing/thin-element-render.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..fa587360a6d2625c8f02cd7f0eba54b3bb09a1f1
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-sizing/thin-element-render.html
+@@ -0,0 +1,33 @@
++<!DOCTYPE html>
++<title>Thin elements should still paint even at small size.</title>
++<link rel="author" title="Stephen Chenney" href="mailto:schenney@chromium.org">
++<link rel="help" href="https://drafts.csswg.org/css-sizing-3/#width-height-keywords">
++<link rel="match" href="thin-element-render-ref.html">
++<html>
++  <head>
++    <style>
++      .disappearing-border {
++        height:0.25px;
++        width:100%;
++        border-top: 0.25px solid black;
++      }
++
++      .disappearing-box {
++        height:0.25px;
++        width:100%;
++        background-color: black;
++      }
++
++      body {
++        margin: 0px;
++        padding: 0px;
++        box-sizing: border-box;
++      }
++    </style>
++</head>
++<body>
++    <div class="disappearing-border"></div>
++    <div style="height:8px;"></div>
++    <div class="disappearing-box"></div>
++</body>
++</html>
+\ No newline at end of file
