@@ -18,7 +18,7 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/services/print_compositor/print_compositor_impl.h"
-#include "components/services/print_compositor/public/mojom/print_compositor.mojom.h"
+#include "components/services/print_compositor/public/mojom/print_compositor.mojom.h"  // nogncheck
 
 #if defined(OS_WIN)
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
