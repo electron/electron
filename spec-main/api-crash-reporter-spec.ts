@@ -52,6 +52,9 @@ function checkCrash (expectedProcessType: string, fields: CrashInfo) {
 const startRemoteControlApp = async () => {
   const appPath = path.join(__dirname, 'fixtures', 'apps', 'remote-control');
   const appProcess = childProcess.spawn(process.execPath, [appPath]);
+  appProcess.stderr.on('data', d => {
+    process.stderr.write(d);
+  });
   const port = await new Promise<number>(resolve => {
     appProcess.stdout.on('data', d => {
       const m = /Listening: (\d+)/.exec(d.toString());
