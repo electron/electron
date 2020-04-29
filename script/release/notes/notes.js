@@ -22,12 +22,11 @@ const CACHE_DIR = path.resolve(__dirname, '.cache');
 const NO_NOTES = 'No notes';
 const FOLLOW_REPOS = ['electron/electron', 'electron/node'];
 
-const breakTypes = new Set(['breaking-change']);
 const docTypes = new Set(['doc', 'docs']);
 const featTypes = new Set(['feat', 'feature']);
 const fixTypes = new Set(['fix']);
 const otherTypes = new Set(['spec', 'build', 'test', 'chore', 'deps', 'refactor', 'tools', 'vendor', 'perf', 'style', 'ci']);
-const knownTypes = new Set([...breakTypes.keys(), ...docTypes.keys(), ...featTypes.keys(), ...fixTypes.keys(), ...otherTypes.keys()]);
+const knownTypes = new Set([...docTypes.keys(), ...featTypes.keys(), ...fixTypes.keys(), ...otherTypes.keys()]);
 
 /**
 ***
@@ -45,7 +44,7 @@ class GHKey {
 /*
 class Commit {
   body? string;
-  breakingChange? boolean = false;
+  isBreakingChange? boolean = false;
   hash: string;
   issueNumber? number;
   note? string;
@@ -146,7 +145,7 @@ const getNoteFromBody = body => {
  * 'Fixes #3333' -- sets issueNumber
  * 'Merge pull request #99999 from ${branchname}' -- sets pr
  * 'This reverts commit ${sha}' -- sets revertHash
- * line starting with 'BREAKING CHANGE' in body -- sets breakingChange
+ * line starting with 'BREAKING CHANGE' in body -- sets isBreakingChange
  * 'Backport of #99999' -- sets pr
  */
 const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
@@ -215,7 +214,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
     .split(/\r?\n/) // split into lines
     .map(line => line.trim())
     .some(line => line.startsWith('BREAKING CHANGE'))) {
-    commit.semanticType = 'breaking-change';
+    commit.isBreakingChange = true;
   }
 
   // Check for a reversion commit
@@ -234,7 +233,7 @@ const getLocalCommitHashes = async (dir, ref) => {
 
 /*
  * possible properties:
- * breakingChange, hash, issueNumber,
+ * isBreakingChange, hash, issueNumber,
  * pr { owner, repo, number, branch }, revertHash, subject, semanticType
  */
 const getLocalCommitDetails = async (module, point1, point2) => {
@@ -439,12 +438,9 @@ const getNotes = async (fromRef, toRef, newVersion) => {
 
       // try to pull a release note from the pull comment
       const prParsed = parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, prKey.owner, prKey.repo);
-      if (!commit.note) {
-        commit.note = prParsed.note;
-      }
-      if (!commit.semanticType || prParsed.semanticType === 'breaking-change') {
-        commit.semanticType = prParsed.semanticType;
-      }
+      commit.isBreakingChange = commit.isBreakingChange || prParsed.isBreakingChange;
+      commit.note = commit.note || prParsed.note;
+      commit.semanticType = commit.semanticType || prParsed.semanticType;
       prSubject = prSubject || prParsed.subject;
 
       prKey = prParsed.prKey && (prParsed.prKey.number !== prKey.number) ? prParsed.prKey : null;
@@ -510,10 +506,10 @@ const getNotes = async (fromRef, toRef, newVersion) => {
 
   pool.commits.forEach(commit => {
     const str = commit.semanticType;
-    if (!str) {
-      notes.unknown.push(commit);
-    } else if (breakTypes.has(str)) {
+    if (commit.isBreakingChange) {
       notes.breaking.push(commit);
+    } else if (!str) {
+      notes.unknown.push(commit);
     } else if (docTypes.has(str)) {
       notes.docs.push(commit);
     } else if (featTypes.has(str)) {
