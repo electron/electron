@@ -25,7 +25,8 @@ async function cleanup () {
 type CrashInfo = {
   prod: string
   ver: string
-  process_type: string // eslint-disable-line camelcase
+  // process_type: string // eslint-disable-line camelcase
+  ptype: string
   platform: string
   _productName: string
   _version: string
@@ -40,7 +41,7 @@ type CrashInfo = {
 function checkCrash (expectedProcessType: string, fields: CrashInfo) {
   expect(String(fields.prod)).to.equal('Electron');
   expect(String(fields.ver)).to.equal(process.versions.electron);
-  expect(String(fields.process_type)).to.equal(expectedProcessType);
+  expect(String(fields.ptype)).to.equal(expectedProcessType);
   expect(String(fields.platform)).to.equal(process.platform);
   expect(String(fields._productName)).to.equal('Zombies');
   expect(String(fields._version)).to.equal(app.getVersion());

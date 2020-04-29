@@ -309,6 +309,8 @@ void ElectronMainDelegate::PreSandboxStartup() {
       breakpad::InitCrashReporter(process_type);
     }
   }
+  static crash_reporter::CrashKeyString<16> platform_key("platform");
+  platform_key.Set("linux");
 
   if (IsBrowserProcess(command_line)) {
     // Only append arguments for browser process.

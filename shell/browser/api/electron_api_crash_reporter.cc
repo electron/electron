@@ -7,7 +7,9 @@
 
 #include "base/bind.h"
 #include "base/command_line.h"
+#include "base/no_destructor.h"
 #include "components/crash/core/app/crashpad.h"
+#include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
@@ -46,7 +48,39 @@ static v8::Local<v8::Value> ToV8(
 
 namespace {
 
-void Start(const std::string& submit_url, gin::Arguments* args) {
+using SwitchesCrashKeys = std::deque<crash_reporter::CrashKeyString<64>>;
+SwitchesCrashKeys& GetSwitchesCrashKeys() {
+  static base::NoDestructor<SwitchesCrashKeys> switches_keys;
+  return *switches_keys;
+}
+
+void SetCrashKey(std::string key, std::string value) {
+  static base::NoDestructor<std::deque<std::string>> crash_keys_names;
+
+  auto iter =
+      std::find(crash_keys_names->begin(), crash_keys_names->end(), key);
+  if (iter == crash_keys_names->end()) {
+    crash_keys_names->emplace_back(key);
+    GetSwitchesCrashKeys().emplace_back(crash_keys_names->back().c_str());
+    iter = crash_keys_names->end() - 1;
+  }
+  GetSwitchesCrashKeys()[iter - crash_keys_names->begin()].Set(value);
+}
+
+void SetCrashKeysFromMap(const std::map<std::string, std::string>& extra) {
+  for (const auto& pair : extra) {
+    SetCrashKey(pair.first, pair.second);
+  }
+}
+
+void Start(const std::string& submit_url,
+           const std::string& crashes_directory,
+           bool upload_to_server,
+           bool ignore_system_crash_handler,
+           bool rate_limit,
+           bool compress,
+           const std::map<std::string, std::string>& extra_global,
+           const std::map<std::string, std::string> extra) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
@@ -56,6 +90,8 @@ void Start(const std::string& submit_url, gin::Arguments* args) {
       // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
     } else {
       breakpad::SetUploadURL(submit_url);
+      SetCrashKeysFromMap(extra);
+      SetCrashKeysFromMap(extra_global);
       breakpad::InitCrashReporter(process_type);
     }
   }
