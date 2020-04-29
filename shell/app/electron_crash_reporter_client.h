@@ -19,6 +19,9 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
  public:
   static void Create();
 
+  static ElectronCrashReporterClient* Get();
+  void SetCollectStatsConsent(bool upload_allowed);
+
   // crash_reporter::CrashReporterClient implementation.
 #if !defined(OS_MACOSX)
   void SetCrashReporterClientIdFromGUID(
@@ -56,6 +59,8 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
 
  private:
   friend class base::NoDestructor<ElectronCrashReporterClient>;
+
+  bool collect_stats_consent_ = false;
 
   ElectronCrashReporterClient();
   ~ElectronCrashReporterClient() override;

@@ -159,6 +159,7 @@ function runCrashApp (crashType: string, port: number, extraArgs: Array<string> 
   ]);
 }
 
+/*
 function waitForNewFileInDir (dir: string): Promise<string[]> {
   function readdirIfPresent (dir: string): string[] {
     try {
@@ -178,6 +179,7 @@ function waitForNewFileInDir (dir: string): Promise<string[]> {
     }, 1000);
   });
 }
+   */
 
 ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
   afterEach(cleanup);
@@ -280,14 +282,12 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     });
   });
 
+  // TODO(nornagon): also test crashing main / sandboxed renderers.
   ifit(!isWindowsOnArm)('should not send a minidump when uploadToServer is false', async () => {
-    const { port, getCrashes } = await startServer();
-    const crashesDir = path.join(app.getPath('temp'), 'Zombies Crashes');
-    const completedCrashesDir = path.join(crashesDir, 'completed');
-    const crashAppeared = waitForNewFileInDir(completedCrashesDir);
+    const { port, waitForCrash, getCrashes } = await startServer();
+    waitForCrash().then(() => expect.fail('expected not to receive a dump'));
     await runCrashApp('renderer', port, ['--no-upload']);
-    await crashAppeared;
-    // wait a sec in case crashpad is about to upload a crash
+    // wait a sec in case the crash reporter is about to upload a crash
     await new Promise(resolve => setTimeout(resolve, 1000));
     expect(getCrashes()).to.have.length(0);
   });

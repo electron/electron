@@ -22,6 +22,7 @@
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "services/service_manager/embedder/switches.h"
+#include "shell/app/electron_crash_reporter_client.h"
 #include "shell/common/crash_keys.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -119,6 +120,14 @@ void SetCrashKeysFromMap(const std::map<std::string, std::string>& extra) {
   }
 }
 
+void SetUploadToServer(bool upload) {
+  ElectronCrashReporterClient::Get()->SetCollectStatsConsent(upload);
+}
+
+bool GetUploadToServer() {
+  return ElectronCrashReporterClient::Get()->GetCollectStatsConsent();
+}
+
 void Start(const std::string& submit_url,
            const std::string& crashes_directory,
            bool upload_to_server,
@@ -130,6 +139,7 @@ void Start(const std::string& submit_url,
   if (g_crash_reporter_initialized)
     return;
   g_crash_reporter_initialized = true;
+  SetUploadToServer(upload_to_server);
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
@@ -152,7 +162,6 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  // auto reporter = base::Unretained(CrashReporter::GetInstance());
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("start", base::BindRepeating(&Start));
   dict.SetMethod("addExtraParameter",
@@ -165,14 +174,8 @@ void Initialize(v8::Local<v8::Object> exports,
                  */
   dict.SetMethod("getUploadedReports",
                  base::BindRepeating(&GetUploadedReports));
-  /*
-  dict.SetMethod(
-      "setUploadToServer",
-      base::BindRepeating(&CrashReporter::SetUploadToServer, reporter));
-  dict.SetMethod(
-      "getUploadToServer",
-      base::BindRepeating(&CrashReporter::GetUploadToServer, reporter));
-      */
+  dict.SetMethod("setUploadToServer", base::BindRepeating(&SetUploadToServer));
+  dict.SetMethod("getUploadToServer", base::BindRepeating(&GetUploadToServer));
 }
 
 }  // namespace

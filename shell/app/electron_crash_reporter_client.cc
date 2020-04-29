@@ -27,9 +27,18 @@
 #include "base/debug/dump_without_crashing.h"
 #endif
 
-void ElectronCrashReporterClient::Create() {
+namespace {
+
+ElectronCrashReporterClient* Instance() {
   static base::NoDestructor<ElectronCrashReporterClient> crash_client;
-  crash_reporter::SetCrashReporterClient(crash_client.get());
+  return crash_client.get();
+}
+
+}  // namespace
+
+// static
+void ElectronCrashReporterClient::Create() {
+  crash_reporter::SetCrashReporterClient(Instance());
 
   // By setting the BREAKPAD_DUMP_LOCATION environment variable, an alternate
   // location to write crash dumps can be set.
@@ -43,6 +52,15 @@ void ElectronCrashReporterClient::Create() {
   if (!crash_dumps_dir_path.empty()) {
     base::PathService::Override(chrome::DIR_CRASH_DUMPS, crash_dumps_dir_path);
   }
+}
+
+// static
+ElectronCrashReporterClient* ElectronCrashReporterClient::Get() {
+  return Instance();
+}
+
+void ElectronCrashReporterClient::SetCollectStatsConsent(bool upload_allowed) {
+  collect_stats_consent_ = upload_allowed;
 }
 
 ElectronCrashReporterClient::ElectronCrashReporterClient() {}
@@ -100,7 +118,7 @@ bool ElectronCrashReporterClient::IsRunningUnattended() {
 }
 
 bool ElectronCrashReporterClient::GetCollectStatsConsent() {
-  return true;
+  return collect_stats_consent_;
 }
 
 #if defined(OS_LINUX)
