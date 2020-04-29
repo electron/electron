@@ -51,8 +51,8 @@ class Commit {
   note? string;
   prKey? GHKey;
   revertHash? string;
+  semanticType? string;
   subject? string;
-  type? string;
 }
 */
 
@@ -141,7 +141,7 @@ const getNoteFromBody = body => {
 /**
  * Looks for our project's conventions in the commit message:
  *
- * 'semantic: some description' -- sets type, subject
+ * 'semantic: some description' -- sets semanticType, subject
  * 'some description (#99999)' -- sets subject, pr
  * 'Fixes #3333' -- sets issueNumber
  * 'Merge pull request #99999 from ${branchname}' -- sets pr
@@ -175,9 +175,9 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
 
   // if the subject begins with 'word:', treat it as a semantic commit
   if ((match = subject.match(/^(\w+):\s(.*)$/))) {
-    const type = match[1].toLocaleLowerCase();
-    if (knownTypes.has(type)) {
-      commit.type = type;
+    const semanticType = match[1].toLocaleLowerCase();
+    if (knownTypes.has(semanticType)) {
+      commit.semanticType = semanticType;
       subject = match[2];
     }
   }
@@ -198,9 +198,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   // https://help.github.com/articles/closing-issues-using-keywords/
   if ((match = subject.match(/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/))) {
     commit.issueNumber = parseInt(match[1]);
-    if (!commit.type) {
-      commit.type = 'fix';
-    }
+    commit.semanticType = commit.semanticType || 'fix';
   }
 
   // look for 'fixes' in markdown; e.g. 'Fixes [#8952](https://github.com/electron/electron/issues/8952)'
@@ -209,9 +207,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
     if (commit.prKey && commit.prKey.number === commit.issueNumber) {
       delete commit.prKey;
     }
-    if (!commit.type) {
-      commit.type = 'fix';
-    }
+    commit.semanticType = commit.semanticType || 'fix';
   }
 
   // https://www.conventionalcommits.org/en
@@ -219,7 +215,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
     .split(/\r?\n/) // split into lines
     .map(line => line.trim())
     .some(line => line.startsWith('BREAKING CHANGE'))) {
-    commit.type = 'breaking-change';
+    commit.semanticType = 'breaking-change';
   }
 
   // Check for a reversion commit
@@ -239,7 +235,7 @@ const getLocalCommitHashes = async (dir, ref) => {
 /*
  * possible properties:
  * breakingChange, hash, issueNumber,
- * pr { owner, repo, number, branch }, revertHash, subject, type
+ * pr { owner, repo, number, branch }, revertHash, subject, semanticType
  */
 const getLocalCommitDetails = async (module, point1, point2) => {
   const { owner, repo, dir } = module;
@@ -432,7 +428,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
       }
 
       // if we already have all the data we need, stop scraping the PRs
-      if (commit.note && commit.type && prSubject) {
+      if (commit.note && commit.semanticType && prSubject) {
         break;
       }
 
@@ -446,8 +442,8 @@ const getNotes = async (fromRef, toRef, newVersion) => {
       if (!commit.note) {
         commit.note = prParsed.note;
       }
-      if (!commit.type || prParsed.type === 'breaking-change') {
-        commit.type = prParsed.type;
+      if (!commit.semanticType || prParsed.semanticType === 'breaking-change') {
+        commit.semanticType = prParsed.semanticType;
       }
       prSubject = prSubject || prParsed.subject;
 
@@ -513,7 +509,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   };
 
   pool.commits.forEach(commit => {
-    const str = commit.type;
+    const str = commit.semanticType;
     if (!str) {
       notes.unknown.push(commit);
     } else if (breakTypes.has(str)) {
