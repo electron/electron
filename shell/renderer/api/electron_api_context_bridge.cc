@@ -196,8 +196,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     // Make the promise a shared_ptr so that when the original promise is
     // freed the proxy promise is correctly freed as well instead of being
     // left dangling
-    std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>>
-        proxied_promise(new gin_helper::Promise<v8::Local<v8::Value>>(
+    std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> proxied_promise(
+        new gin_helper::Promise<v8::Local<v8::Value>>(
             destination_context->GetIsolate()));
     v8::Local<v8::Promise> proxied_promise_handle =
         proxied_promise->GetHandle();
@@ -210,12 +210,11 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     global_then_destination_context.SetWeak();
     auto then_cb = base::BindOnce(
         [](std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>>
-                proxied_promise,
-            v8::Isolate* isolate,
-            v8::Global<v8::Context> global_source_context,
-            v8::Global<v8::Context> global_destination_context,
-            context_bridge::RenderFrameFunctionStore* store,
-            v8::Local<v8::Value> result) {
+               proxied_promise,
+           v8::Isolate* isolate, v8::Global<v8::Context> global_source_context,
+           v8::Global<v8::Context> global_destination_context,
+           context_bridge::RenderFrameFunctionStore* store,
+           v8::Local<v8::Value> result) {
           if (global_source_context.IsEmpty() ||
               global_destination_context.IsEmpty())
             return;
@@ -239,12 +238,11 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     global_catch_destination_context.SetWeak();
     auto catch_cb = base::BindOnce(
         [](std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>>
-                proxied_promise,
-            v8::Isolate* isolate,
-            v8::Global<v8::Context> global_source_context,
-            v8::Global<v8::Context> global_destination_context,
-            context_bridge::RenderFrameFunctionStore* store,
-            v8::Local<v8::Value> result) {
+               proxied_promise,
+           v8::Isolate* isolate, v8::Global<v8::Context> global_source_context,
+           v8::Global<v8::Context> global_destination_context,
+           context_bridge::RenderFrameFunctionStore* store,
+           v8::Local<v8::Value> result) {
           if (global_source_context.IsEmpty() ||
               global_destination_context.IsEmpty())
             return;

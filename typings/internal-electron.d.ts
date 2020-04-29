@@ -19,6 +19,17 @@ declare namespace Electron {
     setAppPath(path: string | null): void;
   }
 
+  interface ContextBridge {
+    debugGC(): { functionCount: number }
+    internalContextBridge: {
+      contextIsolationEnabled: boolean;
+      overrideGlobalValueFromIsolatedWorld(keys: string[], value: any): void;
+      overrideGlobalValueWithDynamicPropsFromIsolatedWorld(keys: string[], value: any): void;
+      overrideGlobalPropertyFromIsolatedWorld(keys: string[], getter: Function, setter?: Function): void;
+      isInMainWorld(): boolean;
+    }
+  }
+
   interface WebContents {
     _getURL(): string;
     getOwnerBrowserWindow(): Electron.BrowserWindow;
