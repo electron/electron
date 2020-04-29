@@ -511,8 +511,6 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   return notes;
 };
 
-// FIXME: Chromium commit messages don't have this info anymore...
-// Might be better to find another way to add Chromium/Node/V8 version into relnotes
 const removeSupercededChromiumUpdates = (commits) => {
   const chromiumRegex = /^Updated Chromium to \d+\.\d+\.\d+\.\d+/;
   const updates = commits.filter(commit => (commit.note || commit.subject).match(chromiumRegex));
