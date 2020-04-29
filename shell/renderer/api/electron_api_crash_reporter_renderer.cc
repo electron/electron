@@ -9,22 +9,15 @@
 
 namespace {
 
-void AddExtraParameter(const std::string& key, const std::string& value) {
-  electron::crash_keys::SetCrashKey(key, value);
-}
-
-void RemoveExtraParameter(const std::string& key) {
-  electron::crash_keys::ClearCrashKey(key);
-}
-
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("addExtraParameter", base::BindRepeating(&AddExtraParameter));
+  dict.SetMethod("addExtraParameter",
+                 base::BindRepeating(&electron::crash_keys::SetCrashKey));
   dict.SetMethod("removeExtraParameter",
-                 base::BindRepeating(&RemoveExtraParameter));
+                 base::BindRepeating(&electron::crash_keys::ClearCrashKey));
   /*
   dict.SetMethod("getParameters",
                  base::BindRepeating(&CrashReporter::GetParameters, reporter));

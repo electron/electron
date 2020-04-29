@@ -753,7 +753,6 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       switch_value += "=";
       switch_value += pair.second;
     }
-    LOG(INFO) << "switch_value = " << switch_value;
     command_line->AppendSwitchASCII("global-crash-keys", switch_value);
   }
 #endif

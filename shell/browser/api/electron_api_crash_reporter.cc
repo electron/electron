@@ -10,8 +10,14 @@
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/no_destructor.h"
+#include "base/path_service.h"
+#include "base/threading/thread_restrictions.h"
+#include "chrome/browser/crash_upload_list/crash_upload_list_crashpad.h"
+#include "chrome/common/chrome_paths.h"
 #include "components/crash/core/app/crashpad.h"
 #include "components/crash/core/common/crash_key.h"
+#include "components/upload_list/crash_upload_list.h"
+#include "components/upload_list/text_log_upload_list.h"
 #include "content/public/common/content_switches.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
@@ -20,34 +26,13 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/node_includes.h"
 
 #if defined(OS_POSIX) && !defined(OS_MACOSX)
 #include "components/crash/core/app/breakpad_linux.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
 #endif
-
-#include "shell/common/node_includes.h"
-
-namespace gin {
-
-/*
-template <>
-struct Converter<CrashReporter::UploadReportResult> {
-static v8::Local<v8::Value> ToV8(
-    v8::Isolate* isolate,
-    const CrashReporter::UploadReportResult& reports) {
-  return gin::DataObjectBuilder(isolate)
-      .Set("date",
-           v8::Date::New(isolate->GetCurrentContext(), reports.first * 1000.0)
-               .ToLocalChecked())
-      .Set("id", reports.second)
-      .Build();
-}
-};
-*/
-
-}  // namespace gin
 
 namespace {
 
@@ -84,6 +69,52 @@ const std::map<std::string, std::string>& GetGlobalCrashKeys() {
 }  // namespace electron
 
 namespace {
+
+typedef std::pair<int, std::string> UploadReportResult;  // upload-date, id
+
+scoped_refptr<UploadList> CreateCrashUploadList() {
+#if defined(OS_MACOSX) || defined(OS_WIN)
+  return new CrashUploadListCrashpad();
+#else
+
+  if (crash_reporter::IsCrashpadEnabled()) {
+    return new CrashUploadListCrashpad();
+  }
+
+  base::FilePath crash_dir_path;
+  base::PathService::Get(chrome::DIR_CRASH_DUMPS, &crash_dir_path);
+  base::FilePath upload_log_path =
+      crash_dir_path.AppendASCII(CrashUploadList::kReporterLogFilename);
+  return new TextLogUploadList(upload_log_path);
+#endif  // defined(OS_MACOSX) || defined(OS_WIN)
+}
+
+void GetUploadedReports(
+    base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
+  auto list = CreateCrashUploadList();
+  list->Load(base::BindOnce(
+      [](scoped_refptr<UploadList> list,
+         base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
+        std::vector<UploadList::UploadInfo> uploads;
+        list->GetUploads(100, &uploads);
+        v8::Isolate* isolate = v8::Isolate::GetCurrent();
+        v8::HandleScope scope(isolate);
+        std::vector<v8::Local<v8::Object>> result;
+        for (const auto& upload : uploads) {
+          result.push_back(
+              gin::DataObjectBuilder(isolate)
+                  .Set("date",
+                       v8::Date::New(isolate->GetCurrentContext(),
+                                     upload.upload_time.ToDoubleT() * 1000.0)
+                           .ToLocalChecked())
+                  .Set("id", upload.upload_id)
+                  .Build());
+        }
+        v8::Local<v8::Value> v8_result = gin::ConvertToV8(isolate, result);
+        std::move(callback).Run(v8_result);
+      },
+      list, std::move(callback)));
+}
 
 void SetCrashKeysFromMap(const std::map<std::string, std::string>& extra) {
   for (const auto& pair : extra) {
@@ -127,18 +158,17 @@ void Initialize(v8::Local<v8::Object> exports,
   // auto reporter = base::Unretained(CrashReporter::GetInstance());
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("start", base::BindRepeating(&Start));
+  dict.SetMethod("addExtraParameter",
+                 base::BindRepeating(&electron::crash_keys::SetCrashKey));
+  dict.SetMethod("removeExtraParameter",
+                 base::BindRepeating(&electron::crash_keys::ClearCrashKey));
   /*
-  dict.SetMethod(
-      "addExtraParameter",
-      base::BindRepeating(&CrashReporter::AddExtraParameter, reporter));
-  dict.SetMethod(
-      "removeExtraParameter",
-      base::BindRepeating(&CrashReporter::RemoveExtraParameter, reporter));
   dict.SetMethod("getParameters",
                  base::BindRepeating(&CrashReporter::GetParameters, reporter));
-  dict.SetMethod(
-      "getUploadedReports",
-      base::BindRepeating(&CrashReporter::GetUploadedReports, reporter));
+                 */
+  dict.SetMethod("getUploadedReports",
+                 base::BindRepeating(&GetUploadedReports));
+  /*
   dict.SetMethod(
       "setUploadToServer",
       base::BindRepeating(&CrashReporter::SetUploadToServer, reporter));

@@ -46,8 +46,8 @@ class CrashReporter {
       ignoreSystemCrashHandler, rateLimit, compress, extraGlobal, extra);
   }
 
-  getLastCrashReport () {
-    const reports = this.getUploadedReports()
+  async getLastCrashReport () {
+    const reports = (await this.getUploadedReports())
       .sort((a, b) => {
         const ats = (a && a.date) ? new Date(a.date).getTime() : 0;
         const bts = (b && b.date) ? new Date(b.date).getTime() : 0;
@@ -57,13 +57,8 @@ class CrashReporter {
     return (reports.length > 0) ? reports[0] : null;
   }
 
-  getUploadedReports (): Electron.CrashReport[] {
-    const crashDir = this.getCrashesDirectory();
-    if (!crashDir) {
-      throw new Error('crashReporter has not been started');
-    }
-
-    return binding.getUploadedReports(crashDir);
+  getUploadedReports (): Promise<Electron.CrashReport[]> {
+    return new Promise(resolve => binding.getUploadedReports(resolve));
   }
 
   getCrashesDirectory () {

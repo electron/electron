@@ -121,7 +121,9 @@ const startServer = async () => {
       fields[fieldname] = val;
     });
     busboy.on('finish', () => {
-      const reportId = 'abc-123-def-456-abc-789-abc-123-abcd';
+      // const reportId = 'abc-123-def-456-abc-789-abc-123-abcd';
+      // breakpad id must be 16 hex digits.
+      const reportId = Math.random().toString(16).split('.')[1].padStart(16, '0');
       res.end(reportId, async () => {
         req.socket.destroy();
         emitter.emit('crash', { ...fields, ...files });

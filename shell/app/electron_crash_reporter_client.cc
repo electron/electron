@@ -20,7 +20,6 @@
 #include "services/service_manager/embedder/switches.h"
 
 #if defined(OS_POSIX) && !defined(OS_MACOSX)
-#include "components/upload_list/crash_upload_list.h"
 #include "components/version_info/version_info_values.h"
 #endif
 
