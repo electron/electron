@@ -102,7 +102,7 @@ describe('Menu module', function () {
     it('throws when an non-array is passed as a template', () => {
       expect(() => {
         Menu.buildFromTemplate('hello' as any);
-      }).to.throw(/Invalid template for Menu: Menu template must be an non-empty array/);
+      }).to.throw(/Invalid template for Menu: Menu template must be an array/);
     });
 
     describe('Menu sorting and building', () => {
