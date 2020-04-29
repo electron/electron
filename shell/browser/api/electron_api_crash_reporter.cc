@@ -25,6 +25,7 @@
 #include "shell/common/crash_keys.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 
@@ -101,14 +102,10 @@ void GetUploadedReports(
         v8::HandleScope scope(isolate);
         std::vector<v8::Local<v8::Object>> result;
         for (const auto& upload : uploads) {
-          result.push_back(
-              gin::DataObjectBuilder(isolate)
-                  .Set("date",
-                       v8::Date::New(isolate->GetCurrentContext(),
-                                     upload.upload_time.ToDoubleT() * 1000.0)
-                           .ToLocalChecked())
-                  .Set("id", upload.upload_id)
-                  .Build());
+          result.push_back(gin::DataObjectBuilder(isolate)
+                               .Set("date", upload.upload_time)
+                               .Set("id", upload.upload_id)
+                               .Build());
         }
         v8::Local<v8::Value> v8_result = gin::ConvertToV8(isolate, result);
         std::move(callback).Run(v8_result);

@@ -497,6 +497,8 @@ filenames = {
     "shell/common/gin_converters/net_converter.cc",
     "shell/common/gin_converters/net_converter.h",
     "shell/common/gin_converters/std_converter.h",
+    "shell/common/gin_converters/time_converter.cc",
+    "shell/common/gin_converters/time_converter.h",
     "shell/common/gin_converters/value_converter.cc",
     "shell/common/gin_converters/value_converter.h",
     "shell/common/gin_helper/arguments.cc",
