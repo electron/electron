@@ -49,7 +49,6 @@ class Commit {
   hash: string;
   issueNumber? number;
   note? string;
-  originalSubject? string;
   prKey? GHKey;
   revertHash? string;
   subject? string;
@@ -160,10 +159,6 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
     subject = subject.slice(0, pos).trim();
   }
 
-  if (!commit.originalSubject) {
-    commit.originalSubject = subject;
-  }
-
   if (body) {
     commit.body = body;
 
@@ -243,7 +238,7 @@ const getLocalCommitHashes = async (dir, ref) => {
 
 /*
  * possible properties:
- * breakingChange, hash, issueNumber, originalSubject,
+ * breakingChange, hash, issueNumber,
  * pr { owner, repo, number, branch }, revertHash, subject, type
  */
 const getLocalCommitDetails = async (module, point1, point2) => {
