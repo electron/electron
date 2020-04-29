@@ -20,7 +20,3 @@ angle_enable_vulkan_validation_layers = false
 dawn_enable_vulkan_validation_layers = false
 
 is_cfi = false
-
-enable_osr = true
-
-enable_electron_extensions = true
