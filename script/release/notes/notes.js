@@ -41,19 +41,34 @@ class GHKey {
   }
 }
 
-/*
 class Commit {
-  body? string;
-  isBreakingChange? boolean = false;
-  hash: string;
-  issueNumber? number;
-  note? string;
-  prKey? GHKey;
-  revertHash? string;
-  semanticType? string;
-  subject? string;
+  constructor (hash, owner, repo) {
+    this.hash = hash; // string
+    this.owner = owner; // string
+    this.repo = repo; // string
+
+    this.body = null; // string
+    this.isBreakingChange = false;
+    this.issueNumber = null; // number
+    this.note = null; // string
+    this.prKeys = new Set(); // GHKey
+    this.revertHash = null; // string
+    this.semanticType = null; // string
+    this.subject = null; // string
+  }
 }
-*/
+
+class Pool {
+  constructor () {
+    this.commits = []; // Array<Commit>
+    this.processedHashes = new Set();
+    this.pulls = {}; // GHKey.number => octokit pull object
+  }
+}
+
+/**
+***
+**/
 
 const runGit = async (dir, args) => {
   const response = await GitProcess.exec(args, dir);
@@ -148,7 +163,9 @@ const getNoteFromBody = body => {
  * line starting with 'BREAKING CHANGE' in body -- sets isBreakingChange
  * 'Backport of #99999' -- sets pr
  */
-const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
+const parseCommitMessage = (commitMessage, commit) => {
+  const { owner, repo } = commit;
+
   // split commitMessage into subject & body
   let subject = commitMessage;
   let body = '';
@@ -168,7 +185,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   // if the subject ends in ' (#dddd)', treat it as a pull request id
   let match;
   if ((match = subject.match(/^(.*)\s\(#(\d+)\)$/))) {
-    commit.prKey = new GHKey(owner, repo, parseInt(match[2]));
+    commit.prKeys.add(new GHKey(owner, repo, parseInt(match[2])));
     subject = match[1];
   }
 
@@ -182,30 +199,21 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   }
 
   // Check for GitHub commit message that indicates a PR
-  if (!commit.prKey && ((match = subject.match(/^Merge pull request #(\d+) from (.*)$/)))) {
-    commit.prKey = new GHKey(owner, repo, parseInt(match[1]));
+  if ((match = subject.match(/^Merge pull request #(\d+) from (.*)$/))) {
+    commit.prKeys.add(new GHKey(owner, repo, parseInt(match[1])));
   }
 
   // Check for a comment that indicates a PR
   const backportPattern = /(?:^|\n)(?:manual |manually )?backport.*(?:#(\d+)|\/pull\/(\d+))/im;
-  if (!commit.prKey && ((match = commitMessage.match(backportPattern)))) {
+  if ((match = commitMessage.match(backportPattern))) {
     // This might be the first or second capture group depending on if it's a link or not.
     const backportNumber = match[1] ? parseInt(match[1], 10) : parseInt(match[2], 10);
-    commit.prKey = new GHKey(owner, repo, backportNumber);
+    commit.prKeys.add(new GHKey(owner, repo, backportNumber));
   }
 
   // https://help.github.com/articles/closing-issues-using-keywords/
-  if ((match = subject.match(/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/))) {
+  if ((match = body.match(/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/i))) {
     commit.issueNumber = parseInt(match[1]);
-    commit.semanticType = commit.semanticType || 'fix';
-  }
-
-  // look for 'fixes' in markdown; e.g. 'Fixes [#8952](https://github.com/electron/electron/issues/8952)'
-  if (!commit.issueNumber && ((match = commitMessage.match(/Fixes \[#(\d+)\]\(https:\/\/github.com\/(\w+)\/(\w+)\/issues\/(\d+)\)/)))) {
-    commit.issueNumber = parseInt(match[1]);
-    if (commit.prKey && commit.prKey.number === commit.issueNumber) {
-      delete commit.prKey;
-    }
     commit.semanticType = commit.semanticType || 'fix';
   }
 
@@ -226,32 +234,31 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   return commit;
 };
 
+const parsePullText = (pull, commit) => parseCommitMessage(`${pull.data.title}\n\n${pull.data.body}`, commit);
+
 const getLocalCommitHashes = async (dir, ref) => {
   const args = ['log', '-z', '--format=%H', ref];
   return (await runGit(dir, args)).split('\0').map(hash => hash.trim());
 };
 
-/*
- * possible properties:
- * isBreakingChange, hash, issueNumber,
- * pr { owner, repo, number, branch }, revertHash, subject, semanticType
- */
-const getLocalCommitDetails = async (module, point1, point2) => {
+// return an array of Commits
+const getLocalCommits = async (module, point1, point2) => {
   const { owner, repo, dir } = module;
 
   const fieldSep = '||';
   const format = ['%H', '%B'].join(fieldSep);
   const args = ['log', '-z', '--cherry-pick', '--right-only', '--first-parent', `--format=${format}`, `${point1}..${point2}`];
-  const commits = (await runGit(dir, args)).split('\0').map(field => field.trim());
-  const details = [];
-  for (const commit of commits) {
-    if (!commit) {
+  const logs = (await runGit(dir, args)).split('\0').map(field => field.trim());
+
+  const commits = [];
+  for (const log of logs) {
+    if (!log) {
       continue;
     }
-    const [hash, commitMessage] = commit.split(fieldSep, 2).map(field => field.trim());
-    details.push(parseCommitMessage(commitMessage, owner, repo, { hash, owner, repo }));
+    const [hash, message] = log.split(fieldSep, 2).map(field => field.trim());
+    commits.push(parseCommitMessage(message, new Commit(hash, owner, repo)));
   }
-  return details;
+  return commits;
 };
 
 const checkCache = async (name, operation) => {
@@ -259,6 +266,7 @@ const checkCache = async (name, operation) => {
   if (fs.existsSync(filename)) {
     return JSON.parse(fs.readFileSync(filename, 'utf8'));
   }
+  process.stdout.write('.');
   const response = await operation();
   if (response) {
     fs.writeFileSync(filename, JSON.stringify(response));
@@ -297,10 +305,24 @@ const getComments = async (ghKey) => {
 
 const addRepoToPool = async (pool, repo, from, to) => {
   const commonAncestor = await getCommonAncestor(repo.dir, from, to);
+
+  // add the commits
   const oldHashes = await getLocalCommitHashes(repo.dir, from);
   oldHashes.forEach(hash => { pool.processedHashes.add(hash); });
-  const commits = await getLocalCommitDetails(repo, commonAncestor, to);
+  const commits = await getLocalCommits(repo, commonAncestor, to);
   pool.commits.push(...commits);
+
+  // add the pulls
+  for (const commit of commits) {
+    let prKey;
+    for (prKey of commit.prKeys.values()) {
+      const pull = await getPullRequest(prKey);
+      if (!pull || !pull.data) break; // couldn't get it
+      if (pool.pulls[prKey.number]) break; // already have it
+      pool.pulls[prKey.number] = pull;
+      parsePullText(pull, commit);
+    }
+  }
 };
 
 /***
@@ -366,6 +388,26 @@ const shouldIncludeMultibranchChanges = (version) => {
   return show;
 };
 
+function getOldestMajorBranchOfPull (pull) {
+  return pull.data.labels
+    .map(label => label.name.match(/merged\/(\d+)-(\d+)-x/) || label.name.match(/merged\/(\d+)-x-y/))
+    .filter(label => !!label)
+    .map(label => parseInt(label[1]))
+    .filter(major => !!major)
+    .sort()
+    .shift();
+}
+
+function getOldestMajorBranchOfCommit (commit, pool) {
+  return [ ...commit.prKeys.values() ]
+    .map(prKey => pool.pulls[prKey.number])
+    .filter(pull => !!pull)
+    .map(pull => getOldestMajorBranchOfPull(pull))
+    .filter(major => !!major)
+    .sort()
+    .shift();
+}
+
 /***
 ****  Main
 ***/
@@ -375,10 +417,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     fs.mkdirSync(CACHE_DIR);
   }
 
-  const pool = {
-    processedHashes: new Set(),
-    commits: []
-  };
+  const pool = new Pool();
 
   // get the electron/electron commits
   const electron = { owner: 'electron', repo: 'electron', dir: ELECTRON_VERSION };
@@ -415,40 +454,16 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     pool.processedHashes.add(revertHash);
   }
 
-  // scrape PRs for release note 'Notes:' comments
+  // ensure the commit has a note
   for (const commit of pool.commits) {
-    let { prKey } = commit;
-
-    let prSubject;
-    while (prKey && !commit.note) {
-      const note = await getNoteFromClerk(prKey);
-      if (note) {
-        commit.note = note;
-      }
-
-      // if we already have all the data we need, stop scraping the PRs
-      if (commit.note && commit.semanticType && prSubject) {
+    for (const prKey of commit.prKeys.values()) {
+      commit.note = commit.note || await getNoteFromClerk(prKey);
+      if (commit.note) {
         break;
       }
-
-      const prData = await getPullRequest(prKey);
-      if (!prData || !prData.data) {
-        break;
-      }
-
-      // try to pull a release note from the pull comment
-      const prParsed = parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, prKey.owner, prKey.repo);
-      commit.isBreakingChange = commit.isBreakingChange || prParsed.isBreakingChange;
-      commit.note = commit.note || prParsed.note;
-      commit.semanticType = commit.semanticType || prParsed.semanticType;
-      prSubject = prSubject || prParsed.subject;
-
-      prKey = prParsed.prKey && (prParsed.prKey.number !== prKey.number) ? prParsed.prKey : null;
     }
-
-    // if we still don't have a note, it's because someone missed a 'Notes:
-    // comment in a PR somewhere... use the PR subject as a fallback.
-    commit.note = commit.note || prSubject;
+    // use a fallback note in case someone missed a 'Notes' comment
+    commit.note = commit.note || commit.subject;
   }
 
   // remove non-user-facing commits
@@ -457,39 +472,9 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)));
 
   if (!shouldIncludeMultibranchChanges(newVersion)) {
-    // load all the prDatas
-    await Promise.all(
-      pool.commits.map(commit => (async () => {
-        if (commit.prKey) {
-          const prData = await getPullRequest(commit.prKey);
-          if (prData) {
-            commit.prData = prData;
-          }
-        }
-      })())
-    );
-
-    // remove items that already landed in a previous major/minor series
+    const currentMajor = semver.parse(newVersion).major;
     pool.commits = pool.commits
-      .filter(commit => {
-        if (!commit.prData) {
-          return true;
-        }
-        const reducer = (accumulator, current) => {
-          if (!semver.valid(accumulator)) { return current; }
-          if (!semver.valid(current)) { return accumulator; }
-          return semver.lt(accumulator, current) ? accumulator : current;
-        };
-        const earliestRelease = commit.prData.data.labels
-          .map(label => label.name.match(/merged\/(\d+)-(\d+)-x/))
-          .filter(label => !!label)
-          .map(label => `${label[1]}.${label[2]}.0`)
-          .reduce(reducer, null);
-        if (!semver.valid(earliestRelease)) {
-          return true;
-        }
-        return semver.diff(earliestRelease, newVersion).includes('patch');
-      });
+      .filter(commit => getOldestMajorBranchOfCommit(commit, pool) >= currentMajor);
   }
 
   pool.commits = removeSupercededChromiumUpdates(pool.commits);
@@ -526,6 +511,8 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   return notes;
 };
 
+// FIXME: Chromium commit messages don't have this info anymore...
+// Might be better to find another way to add Chromium/Node/V8 version into relnotes
 const removeSupercededChromiumUpdates = (commits) => {
   const chromiumRegex = /^Updated Chromium to \d+\.\d+\.\d+\.\d+/;
   const updates = commits.filter(commit => (commit.note || commit.subject).match(chromiumRegex));
@@ -533,8 +520,8 @@ const removeSupercededChromiumUpdates = (commits) => {
 
   // keep the newest update.
   if (updates.length) {
-    updates.sort((a, b) => a.prKey.number - b.prKey.number);
-    keepers.push(updates.pop());
+    const compare = (a, b) => (a.note || a.subject).localeCompare(b.note || b.subject);
+    keepers.push(updates.sort(compare).pop());
   }
 
   return keepers;
@@ -546,19 +533,21 @@ const removeSupercededChromiumUpdates = (commits) => {
 
 const renderLink = (commit, explicitLinks) => {
   let link;
-  if (commit.prKey) {
-    const { owner, repo, number } = commit.prKey;
-    const url = `https://github.com/${owner}/${repo}/pull/${number}`;
-    const text = owner === 'electron' && repo === 'electron'
-      ? `#${number}`
-      : `${owner}/${repo}#${number}`;
-    link = explicitLinks ? `[${text}](${url})` : text;
-  } else {
-    const { owner, repo, hash } = commit;
+  const { owner, repo } = commit;
+  const keyIt = commit.prKeys.values().next();
+  if (keyIt.done) /* no PRs */ {
+    const { hash } = commit;
     const url = `https://github.com/${owner}/${repo}/commit/${hash}`;
     const text = owner === 'electron' && repo === 'electron'
       ? `${hash.slice(0, 8)}`
       : `${owner}/${repo}@${hash.slice(0, 8)}`;
+    link = explicitLinks ? `[${text}](${url})` : text;
+  } else {
+    const { number } = keyIt.value;
+    const url = `https://github.com/${owner}/${repo}/pull/${number}`;
+    const text = owner === 'electron' && repo === 'electron'
+      ? `#${number}`
+      : `${owner}/${repo}#${number}`;
     link = explicitLinks ? `[${text}](${url})` : text;
   }
   return link;
