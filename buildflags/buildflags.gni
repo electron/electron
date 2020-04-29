@@ -32,7 +32,7 @@ declare_args() {
   enable_pepper_flash = true
 
   # Enable Chrome extensions support.
-  enable_electron_extensions = false
+  enable_electron_extensions = true
 
   # Enable Spellchecker support
   enable_builtin_spellchecker = true
