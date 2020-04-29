@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Wed, 29 Apr 2020 16:28:16 -0700
+Subject: breakpad: allow setting upload url
+
+//components/crash hardcodes a Google server as its crash report upload
+target. This adds a method for overriding the upload URL.
+
+This should be expanded to apply to crashpad and windows/linux, &
+subsequently upstreamed.
+
+diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
+index 192b0a7f137f311abb6a991f997e11f5eba52256..fd012e06a77c27421dd995ac464858161537900c 100644
+--- a/components/crash/core/app/breakpad_linux.cc
++++ b/components/crash/core/app/breakpad_linux.cc
+@@ -103,7 +103,8 @@ namespace {
+ // while we do have functions to deal with uint64_t's.
+ uint64_t g_crash_loop_before_time = 0;
+ #else
+-const char kUploadURL[] = "https://clients2.google.com/cr/report";
++const char kDefaultUploadURL[] = "https://clients2.google.com/cr/report";
++const char* g_upload_url = kDefaultUploadURL;
+ #endif
+ 
+ bool g_is_crash_reporter_enabled = false;
+@@ -1404,7 +1405,7 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+     header_content_encoding,
+     header_content_type,
+     post_file,
+-    kUploadURL,
++    g_upload_url,
+     "--timeout=10",  // Set a timeout so we don't hang forever.
+     "--tries=1",     // Don't retry if the upload fails.
+     "-O",  // Output reply to the file descriptor path.
+@@ -2088,6 +2089,12 @@ void SetChannelCrashKey(const std::string& channel) {
+   channel_key.Set(channel);
+ }
+ 
++void SetUploadURL(const std::string& url) {
++  const size_t url_len = url.size() + 1;
++  g_upload_url = new char[url_len];
++  strncpy(const_cast<char*>(g_upload_url), url.c_str(), url_len);
++}
++
+ #if defined(OS_ANDROID)
+ void InitNonBrowserCrashReporterForAndroid(const std::string& process_type) {
+   SanitizationInfo sanitization_info;
+diff --git a/components/crash/core/app/breakpad_linux.h b/components/crash/core/app/breakpad_linux.h
+index 9ea80370a842c541a11f9dac8af6d54eb6b257fb..0596c2bb08c74601bf52e52e5cc67db448601d1e 100644
+--- a/components/crash/core/app/breakpad_linux.h
++++ b/components/crash/core/app/breakpad_linux.h
+@@ -20,6 +20,8 @@ extern void InitCrashReporter(const std::string& process_type);
+ // Sets the product/distribution channel crash key.
+ void SetChannelCrashKey(const std::string& channel);
+ 
++void SetUploadURL(const std::string& url);
++
+ #if defined(OS_ANDROID)
+ extern void InitCrashKeysForTesting();
+ 
