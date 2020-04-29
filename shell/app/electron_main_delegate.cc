@@ -304,20 +304,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
       // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
     } else {
       breakpad::InitCrashReporter(process_type);
-      LOG(INFO) << "Init crash reporter in child of type " << process_type;
       crash_keys::SetCrashKeysFromCommandLine(*command_line);
-      /*
-      if (command_line->HasSwitch("crash-key-product-name")) {
-        LOG(INFO) << "Product name " <<
-      command_line->GetSwitchValueASCII("crash-key-product-name"); static
-      crash_reporter::CrashKeyString<32> product_name_key("_productName");
-        product_name_key.Set(command_line->GetSwitchValueASCII("crash-key-product-name"));
-      }
-      if (command_line->HasSwitch("crash-key-version")) {
-        static crash_reporter::CrashKeyString<32> version_key("_version");
-        version_key.Set(command_line->GetSwitchValueASCII("crash-key-version"));
-      }
-      */
     }
   }
 #endif
