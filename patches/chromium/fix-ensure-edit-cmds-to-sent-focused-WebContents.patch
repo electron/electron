@@ -1,26 +1,15 @@
-From 92c229a7129cb7cd2b4bd71a8cf03f69d774e11a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Thu, 30 Apr 2020 13:39:46 -0500
-Subject: [PATCH] fix: ensure edit cmds to sent focused WebContents
+Subject: fix: ensure edit cmds to sent focused WebContents
 
 Fixes an issue whereby some edit commands were not being
 sent to the focused WebContents. This fixes the issue by
 adding the malfunctioning commands to RenderFrameHostDelegate
 and then calling them that way.
----
- .../frame_host/interstitial_page_impl.cc      | 24 +++++++++++++++++++
- .../frame_host/interstitial_page_impl.h       |  3 +++
- .../render_widget_host_delegate.h             |  3 +++
- .../render_widget_host_unittest.cc            |  3 +++
- .../render_widget_host_view_mac.mm            | 18 +++++++-------
- ...st_view_mac_editcommand_helper_unittest.mm |  3 +++
- .../text_input_client_mac_unittest.mm         |  3 +++
- .../test/mock_render_widget_host_delegate.cc  |  6 +++++
- .../test/mock_render_widget_host_delegate.h   |  3 +++
- 9 files changed, 57 insertions(+), 9 deletions(-)
 
 diff --git a/content/browser/frame_host/interstitial_page_impl.cc b/content/browser/frame_host/interstitial_page_impl.cc
-index 72f9b6d58234..7fecac21ea36 100644
+index 72f9b6d582345736d1b0b05f52925e8e036cf131..7fecac21ea36670a20bc2b317cfe11eb5e0b2524 100644
 --- a/content/browser/frame_host/interstitial_page_impl.cc
 +++ b/content/browser/frame_host/interstitial_page_impl.cc
 @@ -451,6 +451,22 @@ void InterstitialPageImpl::ExecuteEditCommand(
@@ -62,7 +51,7 @@ index 72f9b6d58234..7fecac21ea36 100644
    auto* input_handler = GetFocusedFrameInputHandler();
    if (!input_handler)
 diff --git a/content/browser/frame_host/interstitial_page_impl.h b/content/browser/frame_host/interstitial_page_impl.h
-index e645cd751280..095ae4dffb1f 100644
+index e645cd75128085e15c1213df206847dd02fb5a83..095ae4dffb1f576a8ceefd2a4ab9f8f93473e460 100644
 --- a/content/browser/frame_host/interstitial_page_impl.h
 +++ b/content/browser/frame_host/interstitial_page_impl.h
 @@ -119,9 +119,12 @@ class CONTENT_EXPORT InterstitialPageImpl : public InterstitialPage,
@@ -79,7 +68,7 @@ index e645cd751280..095ae4dffb1f 100644
    RenderFrameHostDelegate* CreateNewWindow(
        RenderFrameHost* opener,
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 234baaefaa36..ef04420a733e 100644
+index 234baaefaa36a2a64f7c365462c44807b0a1eabb..ef04420a733ef3d2bdc7d50af1d149db337494a4 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -148,9 +148,12 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
@@ -96,7 +85,7 @@ index 234baaefaa36..ef04420a733e 100644
  
    // Requests the renderer to move the selection extent to a new position.
 diff --git a/content/browser/renderer_host/render_widget_host_unittest.cc b/content/browser/renderer_host/render_widget_host_unittest.cc
-index 5697455918f9..f5a7fdaa2187 100644
+index 5697455918f9aa2f4225eba1a5566950e34ec410..f5a7fdaa218742249cde04c73bcab43de0d83eed 100644
 --- a/content/browser/renderer_host/render_widget_host_unittest.cc
 +++ b/content/browser/renderer_host/render_widget_host_unittest.cc
 @@ -426,9 +426,12 @@ class MockRenderWidgetHostDelegate : public RenderWidgetHostDelegate {
@@ -113,7 +102,7 @@ index 5697455918f9..f5a7fdaa2187 100644
  
   private:
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 472869202ff8..17e3fe40522e 100644
+index 472869202ff8a62d854c9ca39ca9f14e2f91e8cf..17e3fe40522e088057eaf01a290b658a0b6d1d01 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -1799,15 +1799,15 @@ void RenderWidgetHostViewMac::ExecuteEditCommand(const std::string& command) {
@@ -152,7 +141,7 @@ index 472869202ff8..17e3fe40522e 100644
  
  void RenderWidgetHostViewMac::SelectAll() {
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper_unittest.mm b/content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper_unittest.mm
-index 760e47e9edd7..2b0f1135e584 100644
+index 760e47e9edd7b92b7bc6074f6da9c76048be8f28..2b0f1135e584852048081629eb6297e4e1fcc574 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper_unittest.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper_unittest.mm
 @@ -91,9 +91,12 @@ class RenderWidgetHostDelegateEditCommandCounter
@@ -169,7 +158,7 @@ index 760e47e9edd7..2b0f1135e584 100644
  };
  
 diff --git a/content/browser/renderer_host/text_input_client_mac_unittest.mm b/content/browser/renderer_host/text_input_client_mac_unittest.mm
-index 158e0507af74..e7b8109cdc78 100644
+index 158e0507af7433e16c47227e7519b12e14554f1b..e7b8109cdc78e76d737bd0c067f8d33e0c171117 100644
 --- a/content/browser/renderer_host/text_input_client_mac_unittest.mm
 +++ b/content/browser/renderer_host/text_input_client_mac_unittest.mm
 @@ -40,9 +40,12 @@ class MockRenderWidgetHostDelegate : public RenderWidgetHostDelegate {
@@ -186,7 +175,7 @@ index 158e0507af74..e7b8109cdc78 100644
  };
  
 diff --git a/content/test/mock_render_widget_host_delegate.cc b/content/test/mock_render_widget_host_delegate.cc
-index 8e7922a2e83b..4aa08a55c036 100644
+index 8e7922a2e83b1272e93fbd7c8c5323ad7ed9c3a7..4aa08a55c036569e39d4d02254b347d8470462af 100644
 --- a/content/test/mock_render_widget_host_delegate.cc
 +++ b/content/test/mock_render_widget_host_delegate.cc
 @@ -31,12 +31,18 @@ void MockRenderWidgetHostDelegate::ExecuteEditCommand(
@@ -209,7 +198,7 @@ index 8e7922a2e83b..4aa08a55c036 100644
  
  void MockRenderWidgetHostDelegate::CreateInputEventRouter() {
 diff --git a/content/test/mock_render_widget_host_delegate.h b/content/test/mock_render_widget_host_delegate.h
-index 5cdc010273f0..16273c2ec761 100644
+index 5cdc010273f0bd03419c14046ee6cb8603a29dbf..16273c2ec761668249277a0be77aa429bcba1aef 100644
 --- a/content/test/mock_render_widget_host_delegate.h
 +++ b/content/test/mock_render_widget_host_delegate.h
 @@ -42,9 +42,12 @@ class MockRenderWidgetHostDelegate : public RenderWidgetHostDelegate {
@@ -225,6 +214,3 @@ index 5cdc010273f0..16273c2ec761 100644
    void SelectAll() override;
    RenderWidgetHostInputEventRouter* GetInputEventRouter() override;
    RenderWidgetHostImpl* GetFocusedRenderWidgetHost(
--- 
-2.26.2
-
