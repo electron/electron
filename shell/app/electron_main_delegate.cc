@@ -296,6 +296,13 @@ void ElectronMainDelegate::PreSandboxStartup() {
   ElectronCrashReporterClient::Create();
 #endif
 
+#if defined(OS_MACOSX)
+  // In the main process, we wait for JS to call crashReporter.start() before
+  // initializing crashpad.
+  if (!process_type.empty())
+    crash_reporter::InitializeCrashpad(false, process_type);
+#endif
+
 #if defined(OS_LINUX)
   if (process_type != service_manager::switches::kZygoteProcess &&
       !process_type.empty()) {

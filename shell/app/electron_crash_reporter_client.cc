@@ -67,6 +67,19 @@ void ElectronCrashReporterClient::SetUploadUrl(const std::string& url) {
   upload_url_ = url;
 }
 
+void ElectronCrashReporterClient::SetShouldRateLimit(bool rate_limit) {
+  rate_limit_ = rate_limit;
+}
+
+void ElectronCrashReporterClient::SetShouldCompressUploads(bool compress) {
+  compress_uploads_ = compress;
+}
+
+void ElectronCrashReporterClient::SetGlobalAnnotations(
+    const std::map<std::string, std::string>& annotations) {
+  global_annotations_ = annotations;
+}
+
 ElectronCrashReporterClient::ElectronCrashReporterClient() {}
 
 ElectronCrashReporterClient::~ElectronCrashReporterClient() {}
@@ -131,6 +144,21 @@ bool ElectronCrashReporterClient::ReportingIsEnforcedByPolicy(
   return false;
 }
 #endif
+
+bool ElectronCrashReporterClient::GetShouldRateLimit() {
+  return rate_limit_;
+}
+
+bool ElectronCrashReporterClient::GetShouldCompressUploads() {
+  return compress_uploads_;
+}
+
+void ElectronCrashReporterClient::GetProcessSimpleAnnotations(
+    std::map<std::string, std::string>* annotations) {
+  *annotations = global_annotations_;
+  (*annotations)["prod"] = ELECTRON_PRODUCT_NAME;
+  (*annotations)["ver"] = ELECTRON_VERSION_STRING;
+}
 
 #if defined(OS_LINUX) || defined(OS_MACOSX)
 bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {

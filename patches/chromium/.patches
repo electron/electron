@@ -92,3 +92,4 @@ web_contents.patch
 ui_gtk_public_header.patch
 breakpad_allow_setting_upload_url.patch
 breakpad_disable_upload_compression.patch
+crashpad_allow_setting_more_options.patch

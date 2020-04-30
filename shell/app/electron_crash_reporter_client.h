@@ -22,6 +22,10 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   static ElectronCrashReporterClient* Get();
   void SetCollectStatsConsent(bool upload_allowed);
   void SetUploadUrl(const std::string& url);
+  void SetShouldRateLimit(bool rate_limit);
+  void SetShouldCompressUploads(bool compress_uploads);
+  void SetGlobalAnnotations(
+      const std::map<std::string, std::string>& annotations);
 
   // crash_reporter::CrashReporterClient implementation.
 #if !defined(OS_MACOSX)
@@ -48,6 +52,12 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
 
   bool GetCollectStatsConsent() override;
 
+  bool GetShouldRateLimit() override;
+  bool GetShouldCompressUploads() override;
+
+  void GetProcessSimpleAnnotations(
+      std::map<std::string, std::string>* annotations) override;
+
 #if defined(OS_MACOSX)
   bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled) override;
 #endif
@@ -65,8 +75,11 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
  private:
   friend class base::NoDestructor<ElectronCrashReporterClient>;
 
-  bool collect_stats_consent_ = false;
   std::string upload_url_;
+  bool collect_stats_consent_;
+  bool rate_limit_ = false;
+  bool compress_uploads_ = false;
+  std::map<std::string, std::string> global_annotations_;
 
   ElectronCrashReporterClient();
   ~ElectronCrashReporterClient() override;

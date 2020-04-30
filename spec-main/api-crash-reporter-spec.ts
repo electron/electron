@@ -39,12 +39,12 @@ type CrashInfo = {
 }
 
 function checkCrash (expectedProcessType: string, fields: CrashInfo) {
-  expect(String(fields.prod)).to.equal('Electron');
-  expect(String(fields.ver)).to.equal(process.versions.electron);
-  expect(String(fields.ptype)).to.equal(expectedProcessType);
-  expect(String(fields.platform)).to.equal(process.platform);
-  expect(String(fields._productName)).to.equal('Zombies');
-  expect(String(fields._version)).to.equal(app.getVersion());
+  expect(String(fields.prod)).to.equal('Electron', 'prod');
+  expect(String(fields.ver)).to.equal(process.versions.electron, 'ver');
+  expect(String(fields.ptype)).to.equal(expectedProcessType, 'ptype');
+  expect(String(fields.platform)).to.equal(process.platform, 'platform');
+  expect(String(fields._productName)).to.equal('Zombies', '_productName');
+  expect(String(fields._version)).to.equal(app.getVersion(), '_version');
   expect(fields.upload_file_minidump).to.be.an.instanceOf(Buffer);
   expect(fields.upload_file_minidump.length).to.be.greaterThan(0);
 }

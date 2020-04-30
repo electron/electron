@@ -137,6 +137,9 @@ void Start(const std::string& submit_url,
     return;
   g_crash_reporter_initialized = true;
   SetUploadToServer(upload_to_server);
+  ElectronCrashReporterClient::Get()->SetShouldRateLimit(rate_limit);
+  ElectronCrashReporterClient::Get()->SetShouldCompressUploads(compress);
+  ElectronCrashReporterClient::Get()->SetGlobalAnnotations(extra_global);
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
@@ -158,6 +161,8 @@ void Start(const std::string& submit_url,
   }
 #elif defined(OS_MACOSX)
   ElectronCrashReporterClient::Get()->SetUploadUrl(submit_url);
+  for (const auto& pair : extra)
+    electron::crash_keys::SetCrashKey(pair.first, pair.second);
   crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
   if (ignore_system_crash_handler) {
     crashpad::CrashpadInfo::GetCrashpadInfo()
