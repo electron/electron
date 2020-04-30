@@ -5,7 +5,7 @@ Subject: fix: expose tracing::Agent and use tracing::TracingController instead
  of v8::TracingController
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 48c45b6e5e3eb996599ba235c1057756dcd910f3..4b8c64a88fe2b8b30c746bc3c49d75565a83762d 100644
+index 1df70cf6a6d44dfe61bbf346494c3d361e9aa448..68ccef87356755a8a99283d55bf5492831a46ce0 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -331,6 +331,10 @@ MultiIsolatePlatform* GetMainThreadMultiIsolatePlatform() {
