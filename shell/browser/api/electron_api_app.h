@@ -160,6 +160,8 @@ class App : public ElectronBrowserClient::Delegate,
 
   void SetAppLogsPath(gin_helper::ErrorThrower thrower,
                       base::Optional<base::FilePath> custom_path);
+  void SetRecentPath(gin_helper::ErrorThrower thrower,
+                     base::Optional<base::FilePath> custom_path);
 
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(gin_helper::ErrorThrower thrower,

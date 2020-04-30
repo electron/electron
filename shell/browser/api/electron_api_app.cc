@@ -54,6 +54,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/platform_util.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
@@ -425,6 +426,10 @@ int GetPathConstant(const std::string& name) {
     return chrome::DIR_USER_PICTURES;
   else if (name == "videos")
     return chrome::DIR_USER_VIDEOS;
+#if defined(OS_WIN)
+  else if (name == "recent")
+    return electron::DIR_RECENT;
+#endif
   else if (name == "pepperFlashSystemPlugin")
     return chrome::FILE_PEPPER_FLASH_SYSTEM_PLUGIN;
   else
@@ -871,6 +876,30 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
 }
 #endif
 
+#if defined(OS_WIN)
+void App::SetRecentPath(gin_helper::ErrorThrower thrower,
+                        base::Optional<base::FilePath> custom_path) {
+  if (custom_path.has_value()) {
+    if (!custom_path->IsAbsolute()) {
+      thrower.ThrowError("Path must be absolute");
+      return;
+    }
+    {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      base::PathService::Override(DIR_RECENT, custom_path.value());
+    }
+  } else {
+    base::FilePath path;
+    if (platform_util::GetFolderPath(DIR_RECENT, &path)) {
+      {
+        base::ThreadRestrictions::ScopedAllowIO allow_io;
+        base::PathService::Override(DIR_RECENT, path);
+      }
+    }
+  }
+}
+#endif
+
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
   bool succeed = false;
@@ -885,6 +914,14 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
       SetAppLogsPath(thrower, base::Optional<base::FilePath>());
       succeed = base::PathService::Get(key, &path);
     }
+
+#if defined(OS_WIN)
+    // If we get the "recent" path before setting it, set it
+    if (!succeed && name == "recent") {
+      SetRecentPath(thrower, base::Optional<base::FilePath>());
+      succeed = base::PathService::Get(key, &path);
+    }
+#endif
   }
 
   if (!succeed)

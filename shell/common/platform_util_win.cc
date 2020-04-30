@@ -32,6 +32,7 @@
 #include "base/win/windows_version.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "shell/browser/electron_paths.h"
 #include "ui/base/win/shell.h"
 #include "url/gurl.h"
 
@@ -390,6 +391,25 @@ bool MoveItemToTrash(const base::FilePath& path, bool delete_on_fail) {
   // the DeleteFileProgressSink to check for Recycle Bin.
   return SUCCEEDED(pfo->DeleteItem(delete_item.Get(), delete_sink.Get())) &&
          SUCCEEDED(pfo->PerformOperations());
+}
+
+bool GetFolderPath(int key, base::FilePath* result) {
+  wchar_t system_buffer[MAX_PATH];
+  system_buffer[0] = 0;
+
+  base::FilePath cur;
+  switch (key) {
+    case electron::DIR_RECENT:
+      if (FAILED(SHGetFolderPath(NULL, CSIDL_RECENT, NULL, SHGFP_TYPE_CURRENT,
+                                 system_buffer))) {
+        return false;
+      }
+      cur = base::FilePath(system_buffer);
+      break;
+  }
+
+  *result = cur;
+  return true;
 }
 
 void Beep() {
