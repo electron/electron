@@ -29,6 +29,7 @@
 #include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "third_party/crashpad/crashpad/client/crashpad_info.h"
 
 #if defined(OS_POSIX) && !defined(OS_MACOSX)
 #include "components/crash/core/app/breakpad_linux.h"
@@ -38,11 +39,13 @@
 
 namespace {
 
+#if defined(OS_LINUX)
 std::map<std::string, std::string>& GetGlobalCrashKeysMutable() {
   static base::NoDestructor<std::map<std::string, std::string>>
       global_crash_keys;
   return *global_crash_keys;
 }
+#endif  // defined(OS_LINUX)
 
 bool g_crash_reporter_initialized = false;
 
@@ -114,12 +117,6 @@ void GetUploadedReports(
       list, std::move(callback)));
 }
 
-void SetCrashKeysFromMap(const std::map<std::string, std::string>& extra) {
-  for (const auto& pair : extra) {
-    electron::crash_keys::SetCrashKey(pair.first, pair.second);
-  }
-}
-
 void SetUploadToServer(bool upload) {
   ElectronCrashReporterClient::Get()->SetCollectStatsConsent(upload);
 }
@@ -143,6 +140,7 @@ void Start(const std::string& submit_url,
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
+#if defined(OS_LINUX)
   if (crash_reporter::IsCrashpadEnabled()) {
     crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
     // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
@@ -152,10 +150,20 @@ void Start(const std::string& submit_url,
     for (const auto& pair : extra_global) {
       global_crash_keys[pair.first] = pair.second;
     }
-    SetCrashKeysFromMap(extra);
-    SetCrashKeysFromMap(extra_global);
+    for (const auto& pair : extra)
+      electron::crash_keys::SetCrashKey(pair.first, pair.second);
+    for (const auto& pair : extra_global)
+      electron::crash_keys::SetCrashKey(pair.first, pair.second);
     breakpad::InitCrashReporter(process_type);
   }
+#elif defined(OS_MACOSX)
+  ElectronCrashReporterClient::Get()->SetUploadUrl(submit_url);
+  crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+  if (ignore_system_crash_handler) {
+    crashpad::CrashpadInfo::GetCrashpadInfo()
+        ->set_system_crash_reporter_forwarding(crashpad::TriState::kDisabled);
+  }
+#endif
 }
 
 void Initialize(v8::Local<v8::Object> exports,

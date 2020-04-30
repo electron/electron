@@ -392,6 +392,7 @@ bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
   return false;
 }
 
+#if defined(OS_LINUX)
 void ElectronMainDelegate::ZygoteForked() {
   // Needs to be called after we have chrome::DIR_USER_DATA.  BrowserMain sets
   // this up for the browser process in a different manner.
@@ -411,5 +412,6 @@ void ElectronMainDelegate::ZygoteForked() {
   // crash_keys::SetCrashKeysFromCommandLine(*command_line);
   crash_keys::SetCrashKeysFromCommandLine(*command_line);
 }
+#endif  // defined(OS_LINUX)
 
 }  // namespace electron

@@ -21,6 +21,7 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
 
   static ElectronCrashReporterClient* Get();
   void SetCollectStatsConsent(bool upload_allowed);
+  void SetUploadUrl(const std::string& url);
 
   // crash_reporter::CrashReporterClient implementation.
 #if !defined(OS_MACOSX)
@@ -57,10 +58,15 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
 
   bool EnableBreakpadForProcess(const std::string& process_type) override;
 
+#if defined(OS_MACOSX)
+  void GetUploadUrl(std::string* url) override;
+#endif
+
  private:
   friend class base::NoDestructor<ElectronCrashReporterClient>;
 
   bool collect_stats_consent_ = false;
+  std::string upload_url_;
 
   ElectronCrashReporterClient();
   ~ElectronCrashReporterClient() override;

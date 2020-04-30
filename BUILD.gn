@@ -471,6 +471,7 @@ source_set("electron_lib") {
     deps += [
       "//components/remote_cocoa/app_shim",
       "//content/common:mac_helpers",
+      "//third_party/crashpad/crashpad/client",
       "//ui/accelerated_widget_mac",
     ]
 
@@ -516,7 +517,6 @@ source_set("electron_lib") {
       "//build/config/linux/gtk",
       "//dbus",
       "//device/bluetooth",
-      "//third_party/breakpad:client",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
       "//ui/gtk",
@@ -530,7 +530,6 @@ source_set("electron_lib") {
       ]
     }
     configs += [ ":gio_unix" ]
-    include_dirs += [ "//third_party/breakpad" ]
     configs += [ "//build/config/linux:x11" ]
     defines += [
       # Disable warnings for g_settings_list_schemas.
@@ -761,11 +760,11 @@ if (is_mac) {
   }
 
   bundle_data("electron_crashpad_helper") {
-    sources = [ "$root_out_dir/crashpad_handler" ]
+    sources = [ "$root_out_dir/chrome_crashpad_handler" ]
 
-    outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
+    outputs = [ "{{bundle_contents_dir}}/Helpers/{{source_file_part}}" ]
 
-    public_deps = [ "//third_party/crashpad/crashpad/handler:crashpad_handler" ]
+    public_deps = [ "//components/crash/core/app:chrome_crashpad_handler" ]
 
     if (is_asan) {
       # crashpad_handler requires the ASan runtime at its @executable_path.
@@ -780,6 +779,7 @@ if (is_mac) {
     framework_contents = [
       "Resources",
       "Libraries",
+      "Helpers",
     ]
     public_deps = [
       ":electron_framework_libraries",

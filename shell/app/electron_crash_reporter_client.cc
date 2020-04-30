@@ -63,6 +63,10 @@ void ElectronCrashReporterClient::SetCollectStatsConsent(bool upload_allowed) {
   collect_stats_consent_ = upload_allowed;
 }
 
+void ElectronCrashReporterClient::SetUploadUrl(const std::string& url) {
+  upload_url_ = url;
+}
+
 ElectronCrashReporterClient::ElectronCrashReporterClient() {}
 
 ElectronCrashReporterClient::~ElectronCrashReporterClient() {}
@@ -121,11 +125,24 @@ bool ElectronCrashReporterClient::GetCollectStatsConsent() {
   return collect_stats_consent_;
 }
 
-#if defined(OS_LINUX)
+#if defined(OS_MACOSX)
+bool ElectronCrashReporterClient::ReportingIsEnforcedByPolicy(
+    bool* breakpad_enabled) {
+  return false;
+}
+#endif
+
+#if defined(OS_LINUX) || defined(OS_MACOSX)
 bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
   return false;
 }
 #endif  // OS_LINUX
+
+#if defined(OS_MACOSX)
+void ElectronCrashReporterClient::GetUploadUrl(std::string* url) {
+  *url = upload_url_;
+}
+#endif
 
 bool ElectronCrashReporterClient::EnableBreakpadForProcess(
     const std::string& process_type) {

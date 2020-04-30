@@ -726,11 +726,8 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
-#if defined(OS_POSIX)
-  // TODO: should this be linux-only..?
-  // TODO: only when crash reporter is enabled
-  // TODO: this doesn't work for sandboxed renderers spawned via zygote.
-  //       need to hook ZygoteForked mayb?
+#if defined(OS_LINUX)
+  // TODO: only when crash reporter is enabled in main process
   bool enable_crash_reporter = false;
   if (crash_reporter::IsCrashpadEnabled()) {
     command_line->AppendSwitch(crash_reporter::kEnableCrashpad);
@@ -756,6 +753,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       switch_value += "=";
       switch_value += pair.second;
     }
+    // TODO: make global-crash-keys a constant
     command_line->AppendSwitchASCII("global-crash-keys", switch_value);
   }
 #endif
