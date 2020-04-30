@@ -5,6 +5,7 @@
 #ifndef SHELL_COMMON_CRASH_KEYS_H_
 #define SHELL_COMMON_CRASH_KEYS_H_
 
+#include <map>
 #include <string>
 
 namespace base {
@@ -17,6 +18,7 @@ namespace crash_keys {
 
 void SetCrashKey(const std::string& key, const std::string& value);
 void ClearCrashKey(const std::string& key);
+void GetCrashKeys(std::map<std::string, std::string>* keys);
 
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line);
 

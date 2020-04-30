@@ -25,30 +25,42 @@ ExtraCrashKeys& GetExtraCrashKeys() {
 }
 
 std::deque<std::string>& GetExtraCrashKeyNames() {
-  static base::NoDestructor<std::deque<std::string>> crash_keys_names;
-  return *crash_keys_names;
+  static base::NoDestructor<std::deque<std::string>> crash_key_names;
+  return *crash_key_names;
 }
 
 }  // namespace
 
 void SetCrashKey(const std::string& key, const std::string& value) {
-  auto& crash_keys_names = GetExtraCrashKeyNames();
+  auto& crash_key_names = GetExtraCrashKeyNames();
 
-  auto iter = std::find(crash_keys_names.begin(), crash_keys_names.end(), key);
-  if (iter == crash_keys_names.end()) {
-    crash_keys_names.emplace_back(key);
-    GetExtraCrashKeys().emplace_back(crash_keys_names.back().c_str());
-    iter = crash_keys_names.end() - 1;
+  auto iter = std::find(crash_key_names.begin(), crash_key_names.end(), key);
+  if (iter == crash_key_names.end()) {
+    crash_key_names.emplace_back(key);
+    GetExtraCrashKeys().emplace_back(crash_key_names.back().c_str());
+    iter = crash_key_names.end() - 1;
   }
-  GetExtraCrashKeys()[iter - crash_keys_names.begin()].Set(value);
+  GetExtraCrashKeys()[iter - crash_key_names.begin()].Set(value);
 }
 
 void ClearCrashKey(const std::string& key) {
-  auto& crash_keys_names = GetExtraCrashKeyNames();
+  const auto& crash_key_names = GetExtraCrashKeyNames();
 
-  auto iter = std::find(crash_keys_names.begin(), crash_keys_names.end(), key);
-  if (iter != crash_keys_names.end()) {
-    GetExtraCrashKeys()[iter - crash_keys_names.begin()].Clear();
+  auto iter = std::find(crash_key_names.begin(), crash_key_names.end(), key);
+  if (iter != crash_key_names.end()) {
+    GetExtraCrashKeys()[iter - crash_key_names.begin()].Clear();
+  }
+}
+
+void GetCrashKeys(std::map<std::string, std::string>* keys) {
+  const auto& crash_key_names = GetExtraCrashKeyNames();
+  const auto& crash_keys = GetExtraCrashKeys();
+  int i = 0;
+  for (const auto& key : crash_key_names) {
+    const auto& value = crash_keys[i++];
+    if (value.is_set()) {
+      keys->emplace(key, value.value());
+    }
   }
 }
 

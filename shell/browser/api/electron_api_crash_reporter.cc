@@ -125,6 +125,12 @@ bool GetUploadToServer() {
   return ElectronCrashReporterClient::Get()->GetCollectStatsConsent();
 }
 
+v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
+  std::map<std::string, std::string> keys;
+  electron::crash_keys::GetCrashKeys(&keys);
+  return gin::ConvertToV8(isolate, keys);
+}
+
 void Start(const std::string& submit_url,
            const std::string& crashes_directory,
            bool upload_to_server,
@@ -181,10 +187,7 @@ void Initialize(v8::Local<v8::Object> exports,
                  base::BindRepeating(&electron::crash_keys::SetCrashKey));
   dict.SetMethod("removeExtraParameter",
                  base::BindRepeating(&electron::crash_keys::ClearCrashKey));
-  /*
-  dict.SetMethod("getParameters",
-                 base::BindRepeating(&CrashReporter::GetParameters, reporter));
-                 */
+  dict.SetMethod("getParameters", base::BindRepeating(&GetParameters));
   dict.SetMethod("getUploadedReports",
                  base::BindRepeating(&GetUploadedReports));
   dict.SetMethod("setUploadToServer", base::BindRepeating(&SetUploadToServer));
