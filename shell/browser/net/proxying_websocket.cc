@@ -147,7 +147,7 @@ void ProxyingWebSocket::OnConnectionEstablished(
           handshake_response_->status_code,
           handshake_response_->status_text.c_str()));
   for (const auto& header : handshake_response_->headers)
-    response_->headers->AddHeader(header->name + ": " + header->value);
+    response_->headers->AddHeader(header->name, header->value);
 
   ContinueToHeadersReceived();
 }

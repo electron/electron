@@ -9,8 +9,6 @@ namespace electron {
 const char kBrowserForward[] = "browser-forward";
 const char kBrowserBackward[] = "browser-backward";
 
-const char kCORSHeader[] = "Access-Control-Allow-Origin: *";
-
 const char kSHA1Certificate[] = "SHA-1 Certificate";
 const char kSHA1MajorDescription[] =
     "The certificate for this site expires in 2017 or later, "
