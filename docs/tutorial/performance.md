@@ -42,7 +42,7 @@ improve performance.
 
 To learn more about how to profile your app's code, familiarize yourself with
 the Chrome Developer Tools. For advanced analysis looking at multiple processes
-at once, consider the [Chrome Tracing] tool.
+at once, consider the [Chrome Tracing](https://www.chromium.org/developers/how-tos/trace-event-profiling-tool) tool.
 
 ### Recommended Reading
 
