@@ -127,7 +127,9 @@ bool GetUploadToServer() {
 
 v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
   std::map<std::string, std::string> keys;
+#if !defined(OS_LINUX)
   electron::crash_keys::GetCrashKeys(&keys);
+#endif
   return gin::ConvertToV8(isolate, keys);
 }
 

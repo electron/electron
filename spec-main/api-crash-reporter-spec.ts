@@ -319,6 +319,9 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       const dir = path.join(app.getPath('temp'), 'remote-control Crashes');
       expect(crashesDir).to.equal(dir);
     });
+
+    it('stores crashes in the crash directory');
+    // TODO
   });
 
   describe('getUploadedReports', () => {

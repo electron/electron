@@ -41,7 +41,7 @@ index e778f68af30f8c071d1360d06b553cc957160c5b..269c327064f0e6b46bf26ddc70816fd3
    return false;
  }
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index 9cc78fc2584061d26fd1e83b3ebf5ada0a12c138..fe5d3ee8528838674c1b40124c6cd3446ffbebf4 100644
+index 9cc78fc2584061d26fd1e83b3ebf5ada0a12c138..d3d17d6e3a27019e51940cc9644c21a85323db22 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -5,6 +5,7 @@
@@ -69,13 +69,11 @@ index 9cc78fc2584061d26fd1e83b3ebf5ada0a12c138..fe5d3ee8528838674c1b40124c6cd344
  #if defined(OS_ANDROID)
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
-@@ -194,6 +205,10 @@ class CrashReporterClient {
+@@ -194,6 +205,8 @@ class CrashReporterClient {
        bool* sanitize_stacks);
  #endif
  
-+#if defined(OS_MACOSX)
 +  virtual void GetUploadUrl(std::string* url);
-+#endif
 +
    // This method should return true to configure a crash reporter capable of
    // monitoring itself for its own crashes to do so, even if self-monitoring

@@ -52,6 +52,7 @@ void ClearCrashKey(const std::string& key) {
   }
 }
 
+#if !defined(OS_LINUX)
 void GetCrashKeys(std::map<std::string, std::string>* keys) {
   const auto& crash_key_names = GetExtraCrashKeyNames();
   const auto& crash_keys = GetExtraCrashKeys();
@@ -63,6 +64,7 @@ void GetCrashKeys(std::map<std::string, std::string>* keys) {
     }
   }
 }
+#endif
 
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line) {
   if (command_line.HasSwitch("global-crash-keys")) {
