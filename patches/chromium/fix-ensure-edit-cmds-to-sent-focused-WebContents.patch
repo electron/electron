@@ -1,0 +1,216 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 30 Apr 2020 13:39:46 -0500
+Subject: fix: ensure edit cmds to sent focused WebContents
+
+Fixes an issue whereby some edit commands were not being
+sent to the focused WebContents. This fixes the issue by
+adding the malfunctioning commands to RenderFrameHostDelegate
+and then calling them that way.
+
+diff --git a/content/browser/frame_host/interstitial_page_impl.cc b/content/browser/frame_host/interstitial_page_impl.cc
+index 72f9b6d582345736d1b0b05f52925e8e036cf131..7fecac21ea36670a20bc2b317cfe11eb5e0b2524 100644
+--- a/content/browser/frame_host/interstitial_page_impl.cc
++++ b/content/browser/frame_host/interstitial_page_impl.cc
+@@ -451,6 +451,22 @@ void InterstitialPageImpl::ExecuteEditCommand(
+   input_handler->ExecuteEditCommand(command, value);
+ }
+ 
++void InterstitialPageImpl::Undo() {
++  auto* input_handler = GetFocusedFrameInputHandler();
++  if (!input_handler)
++    return;
++  input_handler->Undo();
++  RecordAction(base::UserMetricsAction("Undo"));
++}
++
++void InterstitialPageImpl::Redo() {
++  auto* input_handler = GetFocusedFrameInputHandler();
++  if (!input_handler)
++    return;
++  input_handler->Redo();
++  RecordAction(base::UserMetricsAction("Redo"));
++}
++
+ void InterstitialPageImpl::Copy() {
+   auto* input_handler = GetFocusedFrameInputHandler();
+   if (!input_handler)
+@@ -467,6 +483,14 @@ void InterstitialPageImpl::Paste() {
+   RecordAction(base::UserMetricsAction("Paste"));
+ }
+ 
++void InterstitialPageImpl::PasteAndMatchStyle() {
++  auto* input_handler = GetFocusedFrameInputHandler();
++  if (!input_handler)
++    return;
++  input_handler->PasteAndMatchStyle();
++  RecordAction(base::UserMetricsAction("PasteAndMatchStyle"));
++}
++
+ void InterstitialPageImpl::SelectAll() {
+   auto* input_handler = GetFocusedFrameInputHandler();
+   if (!input_handler)
+diff --git a/content/browser/frame_host/interstitial_page_impl.h b/content/browser/frame_host/interstitial_page_impl.h
+index e645cd75128085e15c1213df206847dd02fb5a83..095ae4dffb1f576a8ceefd2a4ab9f8f93473e460 100644
+--- a/content/browser/frame_host/interstitial_page_impl.h
++++ b/content/browser/frame_host/interstitial_page_impl.h
+@@ -119,9 +119,12 @@ class CONTENT_EXPORT InterstitialPageImpl : public InterstitialPage,
+   ui::AXMode GetAccessibilityMode() override;
+   void ExecuteEditCommand(const std::string& command,
+                           const base::Optional<base::string16>& value) override;
++  void Undo() override;
++  void Redo() override;
+   void Cut() override;
+   void Copy() override;
+   void Paste() override;
++  void PasteAndMatchStyle() override;
+   void SelectAll() override;
+   RenderFrameHostDelegate* CreateNewWindow(
+       RenderFrameHost* opener,
+diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
+index 234baaefaa36a2a64f7c365462c44807b0a1eabb..ef04420a733ef3d2bdc7d50af1d149db337494a4 100644
+--- a/content/browser/renderer_host/render_widget_host_delegate.h
++++ b/content/browser/renderer_host/render_widget_host_delegate.h
+@@ -148,9 +148,12 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+   virtual void ExecuteEditCommand(
+       const std::string& command,
+       const base::Optional<base::string16>& value) = 0;
++  virtual void Undo() = 0;
++  virtual void Redo() = 0;
+   virtual void Cut() = 0;
+   virtual void Copy() = 0;
+   virtual void Paste() = 0;
++  virtual void PasteAndMatchStyle() = 0;
+   virtual void SelectAll() = 0;
+ 
+   // Requests the renderer to move the selection extent to a new position.
+diff --git a/content/browser/renderer_host/render_widget_host_unittest.cc b/content/browser/renderer_host/render_widget_host_unittest.cc
+index 5697455918f9aa2f4225eba1a5566950e34ec410..f5a7fdaa218742249cde04c73bcab43de0d83eed 100644
+--- a/content/browser/renderer_host/render_widget_host_unittest.cc
++++ b/content/browser/renderer_host/render_widget_host_unittest.cc
+@@ -426,9 +426,12 @@ class MockRenderWidgetHostDelegate : public RenderWidgetHostDelegate {
+       const std::string& command,
+       const base::Optional<base::string16>& value) override {}
+ 
++  void Undo() override {}
++  void Redo() override {}
+   void Cut() override {}
+   void Copy() override {}
+   void Paste() override {}
++  void PasteAndMatchStyle() override {}
+   void SelectAll() override {}
+ 
+  private:
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
+index 472869202ff8a62d854c9ca39ca9f14e2f91e8cf..17e3fe40522e088057eaf01a290b658a0b6d1d01 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac.mm
++++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
+@@ -1799,15 +1799,15 @@ void RenderWidgetHostViewMac::ExecuteEditCommand(const std::string& command) {
+ }
+ 
+ void RenderWidgetHostViewMac::Undo() {
+-  WebContents* web_contents = GetWebContents();
+-  if (web_contents)
+-    web_contents->Undo();
++  if (auto* delegate = GetFocusedRenderWidgetHostDelegate()) {
++    delegate->Undo();
++  }
+ }
+ 
+ void RenderWidgetHostViewMac::Redo() {
+-  WebContents* web_contents = GetWebContents();
+-  if (web_contents)
+-    web_contents->Redo();
++  if (auto* delegate = GetFocusedRenderWidgetHostDelegate()) {
++    delegate->Redo();
++  }
+ }
+ 
+ void RenderWidgetHostViewMac::Cut() {
+@@ -1835,9 +1835,9 @@ void RenderWidgetHostViewMac::Paste() {
+ }
+ 
+ void RenderWidgetHostViewMac::PasteAndMatchStyle() {
+-  WebContents* web_contents = GetWebContents();
+-  if (web_contents)
+-    web_contents->PasteAndMatchStyle();
++  if (auto* delegate = GetFocusedRenderWidgetHostDelegate()) {
++    delegate->PasteAndMatchStyle();
++  }
+ }
+ 
+ void RenderWidgetHostViewMac::SelectAll() {
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper_unittest.mm b/content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper_unittest.mm
+index 760e47e9edd7b92b7bc6074f6da9c76048be8f28..2b0f1135e584852048081629eb6297e4e1fcc574 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper_unittest.mm
++++ b/content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper_unittest.mm
+@@ -91,9 +91,12 @@ class RenderWidgetHostDelegateEditCommandCounter
+       const base::Optional<base::string16>& value) override {
+     edit_command_message_count_++;
+   }
++  void Undo() override {}
++  void Redo() override {}
+   void Cut() override {}
+   void Copy() override {}
+   void Paste() override {}
++  void PasteAndMatchStyle() override {}
+   void SelectAll() override {}
+ };
+ 
+diff --git a/content/browser/renderer_host/text_input_client_mac_unittest.mm b/content/browser/renderer_host/text_input_client_mac_unittest.mm
+index 158e0507af7433e16c47227e7519b12e14554f1b..e7b8109cdc78e76d737bd0c067f8d33e0c171117 100644
+--- a/content/browser/renderer_host/text_input_client_mac_unittest.mm
++++ b/content/browser/renderer_host/text_input_client_mac_unittest.mm
+@@ -40,9 +40,12 @@ class MockRenderWidgetHostDelegate : public RenderWidgetHostDelegate {
+   void ExecuteEditCommand(
+       const std::string& command,
+       const base::Optional<base::string16>& value) override {}
++  void Undo() override {}
++  void Redo() override {}
+   void Cut() override {}
+   void Copy() override {}
+   void Paste() override {}
++  void PasteAndMatchStyle() override {}
+   void SelectAll() override {}
+ };
+ 
+diff --git a/content/test/mock_render_widget_host_delegate.cc b/content/test/mock_render_widget_host_delegate.cc
+index 8e7922a2e83b1272e93fbd7c8c5323ad7ed9c3a7..4aa08a55c036569e39d4d02254b347d8470462af 100644
+--- a/content/test/mock_render_widget_host_delegate.cc
++++ b/content/test/mock_render_widget_host_delegate.cc
+@@ -31,12 +31,18 @@ void MockRenderWidgetHostDelegate::ExecuteEditCommand(
+     const std::string& command,
+     const base::Optional<base::string16>& value) {}
+ 
++void MockRenderWidgetHostDelegate::Undo() {}
++
++void MockRenderWidgetHostDelegate::Redo() {}
++
+ void MockRenderWidgetHostDelegate::Cut() {}
+ 
+ void MockRenderWidgetHostDelegate::Copy() {}
+ 
+ void MockRenderWidgetHostDelegate::Paste() {}
+ 
++void MockRenderWidgetHostDelegate::PasteAndMatchStyle() {}
++
+ void MockRenderWidgetHostDelegate::SelectAll() {}
+ 
+ void MockRenderWidgetHostDelegate::CreateInputEventRouter() {
+diff --git a/content/test/mock_render_widget_host_delegate.h b/content/test/mock_render_widget_host_delegate.h
+index 5cdc010273f0bd03419c14046ee6cb8603a29dbf..16273c2ec761668249277a0be77aa429bcba1aef 100644
+--- a/content/test/mock_render_widget_host_delegate.h
++++ b/content/test/mock_render_widget_host_delegate.h
+@@ -42,9 +42,12 @@ class MockRenderWidgetHostDelegate : public RenderWidgetHostDelegate {
+       const NativeWebKeyboardEvent& event) override;
+   void ExecuteEditCommand(const std::string& command,
+                           const base::Optional<base::string16>& value) override;
++  void Undo() override;
++  void Redo() override;
+   void Cut() override;
+   void Copy() override;
+   void Paste() override;
++  void PasteAndMatchStyle() override;
+   void SelectAll() override;
+   RenderWidgetHostInputEventRouter* GetInputEventRouter() override;
+   RenderWidgetHostImpl* GetFocusedRenderWidgetHost(

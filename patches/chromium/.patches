@@ -92,3 +92,4 @@ fix_account_for_print_preview_disabled_when_printing_to_pdf.patch
 web_contents.patch
 ui_gtk_public_header.patch
 layoutng_make_hittestresult_localpoint_for_inline_element.patch
+fix-ensure-edit-cmds-to-sent-focused-WebContents.patch
