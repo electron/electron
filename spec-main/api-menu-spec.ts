@@ -83,14 +83,27 @@ describe('Menu module', function () {
 
     it('does throw exception for object without role, label, or type attribute', () => {
       expect(() => {
-        Menu.buildFromTemplate([{ 'visible': true }])
-      }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/)
-    })
+        Menu.buildFromTemplate([{ visible: true }]);
+      }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/);
+    });
+
     it('does throw exception for undefined', () => {
       expect(() => {
         Menu.buildFromTemplate([undefined as any])
       }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/)
     })
+
+    it('throws when an empty array is passed as a template', () => {
+      expect(() => {
+        Menu.buildFromTemplate([]);
+      }).to.throw(/Invalid template for Menu: Menu template must be an non-empty array/);
+    });
+
+    it('throws when an non-array is passed as a template', () => {
+      expect(() => {
+        Menu.buildFromTemplate('hello' as any);
+      }).to.throw(/Invalid template for Menu: Menu template must be an array/);
+    });
 
     describe('Menu sorting and building', () => {
       describe('sorts groups', () => {
