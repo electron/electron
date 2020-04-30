@@ -24,10 +24,10 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/env.cc b/src/env.cc
-index 2bdac964cb03cad4b9637c3cea56a8e5f650056f..4b1c72a5f67ab1882cbb61b4c52fc50e28aa5b25 100644
+index ec50d8841ac1e360411a87b3bfc1454969696582..65e4bda890461f691036005252db7e61865d2493 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -384,6 +384,12 @@ Environment::Environment(IsolateData* isolate_data,
+@@ -383,6 +383,12 @@ Environment::Environment(IsolateData* isolate_data,
    // TODO(joyeecheung): deserialize when the snapshot covers the environment
    // properties.
    CreateProperties();

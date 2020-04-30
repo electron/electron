@@ -9,10 +9,10 @@ this has to be done after the upgrade to the Node.js v8.7.0.  in the very beginn
 to a native Node.js implementation of the function.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index ad82a7ab05e253a5e93a61bcaf4066cdb29017ea..d66e8dfce3dd34ecfd6aa67dfacf2282a2de893e 100644
+index 2a92651dd6c5a98990b0f9e996b97c3e73095d50..33f52a3c168840ea88da0e032069136e8a690830 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -141,6 +141,8 @@ function enrichCJSError(err) {
+@@ -145,6 +145,8 @@ function enrichCJSError(err) {
  }
  
  function stat(filename) {

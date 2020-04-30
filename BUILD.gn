@@ -139,15 +139,6 @@ webpack_build("electron_isolated_renderer_bundle") {
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
-webpack_build("electron_content_script_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.content_script_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.content_script.js"
-  out_file = "$target_gen_dir/js2c/content_script_bundle.js"
-}
-
 copy("electron_js2c_copy") {
   sources = [
     "lib/common/asar.js",
@@ -159,7 +150,6 @@ copy("electron_js2c_copy") {
 action("electron_js2c") {
   deps = [
     ":electron_browser_bundle",
-    ":electron_content_script_bundle",
     ":electron_isolated_renderer_bundle",
     ":electron_js2c_copy",
     ":electron_renderer_bundle",
@@ -169,7 +159,6 @@ action("electron_js2c") {
 
   webpack_sources = [
     "$target_gen_dir/js2c/browser_init.js",
-    "$target_gen_dir/js2c/content_script_bundle.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",

@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 29 Apr 2020 13:58:38 -0700
+Subject: fix: window c-ares incompatibilities
+
+Fixes LPCWSTR conversion incompatibilities introduced by a Node.js upgrade to
+c-ares v1.16.0 in https://github.com/nodejs/node/pull/32246. I've opened an issue for this
+on the c-ares repo as well as an upstream PR at https://github.com/c-ares/c-ares/pull/328.
+
+diff --git a/deps/cares/src/ares_getaddrinfo.c b/deps/cares/src/ares_getaddrinfo.c
+index 8265e4afc20f6043260efe003c3c890db4fa8b73..11e565aa2e9c8a1ee1f86c153ee6371568cc9bb4 100644
+--- a/deps/cares/src/ares_getaddrinfo.c
++++ b/deps/cares/src/ares_getaddrinfo.c
+@@ -456,18 +456,18 @@ static int file_lookup(struct host_query *hquery)
+           char tmp[MAX_PATH];
+           HKEY hkeyHosts;
+ 
+-          if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
++          if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
+                            &hkeyHosts) == ERROR_SUCCESS)
+             {
+               DWORD dwLength = MAX_PATH;
+-              RegQueryValueEx(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
++              RegQueryValueExA(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
+                               &dwLength);
+-              ExpandEnvironmentStrings(tmp, PATH_HOSTS, MAX_PATH);
++              ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
+               RegCloseKey(hkeyHosts);
+             }
+         }
+       else if (platform == WIN_9X)
+-        GetWindowsDirectory(PATH_HOSTS, MAX_PATH);
++        GetWindowsDirectoryA(PATH_HOSTS, MAX_PATH);
+       else
+         return ARES_ENOTFOUND;
+ 

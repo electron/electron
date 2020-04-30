@@ -8,10 +8,10 @@ node modules will have different (wrong) ideas about how v8 structs are laid
 out in memory on 64-bit machines, and will summarily fail to work.
 
 diff --git a/common.gypi b/common.gypi
-index 87f5a3bd3b741d58e956cad4599012a11d46ba29..23958d5535819fd9d1a14868aea3cc39762a102f 100644
+index 71b20b28d923c39f047bf57e05558879c9d002ec..0a10a734d48e0b45b0ed4502927616e46633dafb 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -75,6 +75,9 @@
+@@ -71,6 +71,9 @@
      # TODO(refack): make v8-perfetto happen
      'v8_use_perfetto': 0,
  
@@ -21,7 +21,7 @@ index 87f5a3bd3b741d58e956cad4599012a11d46ba29..23958d5535819fd9d1a14868aea3cc39
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -152,6 +155,9 @@
+@@ -148,6 +151,9 @@
        ['OS=="mac"', {
          'clang%': 1,
        }],
@@ -31,7 +31,7 @@ index 87f5a3bd3b741d58e956cad4599012a11d46ba29..23958d5535819fd9d1a14868aea3cc39
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
        }],
-@@ -378,6 +384,12 @@
+@@ -374,6 +380,12 @@
            }],
          ],
        }],
