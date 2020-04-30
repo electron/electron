@@ -24,10 +24,6 @@ const main = async () => {
       config: 'webpack.config.isolated_renderer.js'
     },
     {
-      name: 'content_script_bundle_deps',
-      config: 'webpack.config.content_script.js'
-    },
-    {
       name: 'browser_bundle_deps',
       config: 'webpack.config.browser.js'
     },

@@ -160,11 +160,7 @@ require('@electron/internal/browser/devtools');
 const features = process.electronBinding('features');
 
 // Load the chrome extension support.
-if (features.isExtensionsEnabled()) {
-  require('@electron/internal/browser/chrome-extension-shim');
-} else {
-  require('@electron/internal/browser/chrome-extension');
-}
+require('@electron/internal/browser/chrome-extension-shim');
 
 if (features.isRemoteModuleEnabled()) {
   require('@electron/internal/browser/remote/server');
