@@ -4,6 +4,7 @@
 
 #include "shell/renderer/api/electron_api_context_bridge.h"
 
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -197,18 +198,32 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Context::Scope destination_scope(destination_context);
     {
       auto source_promise = v8::Local<v8::Promise>::Cast(value);
-      auto* proxied_promise = new util::Promise<v8::Local<v8::Value>>(
-          destination_context->GetIsolate());
+      // Make the promise a shared_ptr so that when the original promise is
+      // freed the proxy promise is correctly freed as well instead of being
+      // left dangling
+      std::shared_ptr<util::Promise<v8::Local<v8::Value>>> proxied_promise(
+          new util::Promise<v8::Local<v8::Value>>(
+              destination_context->GetIsolate()));
       v8::Local<v8::Promise> proxied_promise_handle =
           proxied_promise->GetHandle();
 
+      v8::Global<v8::Context> global_then_source_context(
+          source_context->GetIsolate(), source_context);
+      v8::Global<v8::Context> global_then_destination_context(
+          destination_context->GetIsolate(), destination_context);
+      global_then_source_context.SetWeak();
+      global_then_destination_context.SetWeak();
       auto then_cb = base::BindOnce(
-          [](util::Promise<v8::Local<v8::Value>>* proxied_promise,
+          [](std::shared_ptr<util::Promise<v8::Local<v8::Value>>>
+                 proxied_promise,
              v8::Isolate* isolate,
              v8::Global<v8::Context> global_source_context,
              v8::Global<v8::Context> global_destination_context,
              context_bridge::RenderFrameFunctionStore* store,
              v8::Local<v8::Value> result) {
+            if (global_source_context.IsEmpty() ||
+                global_destination_context.IsEmpty())
+              return;
             context_bridge::ObjectCache object_cache;
             auto val =
                 PassValueToOtherContext(global_source_context.Get(isolate),
@@ -216,20 +231,28 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                                         result, store, &object_cache, false, 0);
             if (!val.IsEmpty())
               proxied_promise->Resolve(val.ToLocalChecked());
-            delete proxied_promise;
           },
           proxied_promise, destination_context->GetIsolate(),
-          v8::Global<v8::Context>(source_context->GetIsolate(), source_context),
-          v8::Global<v8::Context>(destination_context->GetIsolate(),
-                                  destination_context),
-          store);
+          std::move(global_then_source_context),
+          std::move(global_then_destination_context), store);
+
+      v8::Global<v8::Context> global_catch_source_context(
+          source_context->GetIsolate(), source_context);
+      v8::Global<v8::Context> global_catch_destination_context(
+          destination_context->GetIsolate(), destination_context);
+      global_catch_source_context.SetWeak();
+      global_catch_destination_context.SetWeak();
       auto catch_cb = base::BindOnce(
-          [](util::Promise<v8::Local<v8::Value>>* proxied_promise,
+          [](std::shared_ptr<util::Promise<v8::Local<v8::Value>>>
+                 proxied_promise,
              v8::Isolate* isolate,
              v8::Global<v8::Context> global_source_context,
              v8::Global<v8::Context> global_destination_context,
              context_bridge::RenderFrameFunctionStore* store,
              v8::Local<v8::Value> result) {
+            if (global_source_context.IsEmpty() ||
+                global_destination_context.IsEmpty())
+              return;
             context_bridge::ObjectCache object_cache;
             auto val =
                 PassValueToOtherContext(global_source_context.Get(isolate),
@@ -237,13 +260,10 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                                         result, store, &object_cache, false, 0);
             if (!val.IsEmpty())
               proxied_promise->Reject(val.ToLocalChecked());
-            delete proxied_promise;
           },
           proxied_promise, destination_context->GetIsolate(),
-          v8::Global<v8::Context>(source_context->GetIsolate(), source_context),
-          v8::Global<v8::Context>(destination_context->GetIsolate(),
-                                  destination_context),
-          store);
+          std::move(global_catch_source_context),
+          std::move(global_catch_destination_context), store);
 
       ignore_result(source_promise->Then(
           source_context,
@@ -371,7 +391,8 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
             !mate::ConvertFromV8(args->isolate(), message->Get(),
                                  &error_message)) {
           error_message =
-              "An unknown exception occurred in the isolated context, an error "
+              "An unknown exception occurred in the isolated context, an "
+              "error "
               "occurred but a valid exception was not thrown.";
         }
       }
