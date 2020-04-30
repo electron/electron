@@ -16,14 +16,17 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "components/crash/core/app/crashpad.h"
 #include "electron/electron_version.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
+#include "shell/app/electron_crash_reporter_client.h"
 #include "shell/app/uv_task_runner.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/node_debugger.h"
 #include "shell/common/api/electron_bindings.h"
+#include "shell/common/crash_keys.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -87,7 +90,15 @@ void RemoveExtraParameter(const std::string& key) {
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
-  // crash_reporter::CrashReporter::GetInstance()->InitializeInChildProcess();
+#if defined(OS_POSIX)
+  ElectronCrashReporterClient::Create();
+#endif
+
+#if defined(OS_MACOSX)
+  crash_reporter::InitializeCrashpad(false, "node");
+#endif
+
+  crash_keys::SetPlatformCrashKey();
 
   int exit_code = 1;
   {

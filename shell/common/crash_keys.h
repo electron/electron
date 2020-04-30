@@ -21,6 +21,7 @@ void ClearCrashKey(const std::string& key);
 void GetCrashKeys(std::map<std::string, std::string>* keys);
 
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line);
+void SetPlatformCrashKey();
 
 }  // namespace crash_keys
 

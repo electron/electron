@@ -316,18 +316,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
   }
 #endif
 
-  // TODO(nornagon): this is redundant with the 'plat' key that
-  // //components/crash already includes. Remove it.
-  static crash_reporter::CrashKeyString<8> platform_key("platform");
-#if defined(OS_WIN)
-  platform_key.Set("win32");
-#elif defined(OS_MACOSX)
-  platform_key.Set("darwin");
-#elif defined(OS_LINUX)
-  platform_key.Set("linux");
-#else
-  platform_key.Set("unknown");
-#endif
+  crash_keys::SetPlatformCrashKey();
 
   if (IsBrowserProcess(command_line)) {
     // Only append arguments for browser process.
