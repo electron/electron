@@ -215,7 +215,9 @@ int NodeMain(int argc, char* argv[]) {
 
       // Setup process.crashReporter in child node processes
       gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
+#if defined(OS_LINUX)
       reporter.SetMethod("start", &CrashReporterStart);
+#endif
 
 #if !defined(OS_LINUX)
       reporter.SetMethod("addExtraParameter", &AddExtraParameter);
