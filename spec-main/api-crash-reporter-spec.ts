@@ -457,10 +457,19 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
           const bw = new BrowserWindow({ show: false, webPreferences: { sandbox: true, preload } });
           bw.loadURL('about:blank');
         }, preloadPath);
+      } else if (processType === 'node') {
+        const crashScriptPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');
+        return remotely((crashScriptPath: string) => {
+          const { app } = require('electron');
+          const childProcess = require('child_process');
+          const version = app.getVersion();
+          const url = 'http://127.0.0.1';
+          childProcess.fork(crashScriptPath, [url, version], { silent: true });
+        }, crashScriptPath);
       }
     }
 
-    for (const crashingProcess of ['main', 'renderer', 'sandboxed-renderer']) {
+    for (const crashingProcess of ['main', 'renderer', 'sandboxed-renderer', 'node']) {
       describe(`when ${crashingProcess} crashes`, () => {
         it('stores crashes in the crash dump directory when uploadToServer: false', async () => {
           const { remotely } = await startRemoteControlApp();
