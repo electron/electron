@@ -25,11 +25,11 @@ Or use a 3rd party hosted solution:
 * [Sentry](https://docs.sentry.io/clients/electron)
 * [BugSplat](https://www.bugsplat.com/docs/platforms/electron)
 
-Crash reports are saved locally in an application-specific temp directory folder.
-For a `productName` of `YourName`, crash reports will be stored in a folder
-named `YourName Crashes` inside the temp directory. You can customize this temp
-directory location for your app by calling the `app.setPath('temp', '/my/custom/temp')`
-API before starting the crash reporter.
+Crash reports are stored temporarily before being uploaded in a directory
+underneath the app's user data directory (called 'Crashpad' on Windows and Mac,
+or 'Crash Reports' on Linux). You can override this directory by calling
+`app.setPath('crashDumps', '/path/to/crashes')` before starting the crash
+reporter.
 
 On Windows and macOS, Electron uses
 [crashpad](https://chromium.googlesource.com/crashpad/crashpad/+/master/README.md)
@@ -128,11 +128,11 @@ called before `start` is called.
 
 **Note:** Calling this method from the renderer process is deprecated.
 
-### `crashReporter.getCrashesDirectory()`
+### `crashReporter.getCrashesDirectory()` _Deprecated_
 
 Returns `String` - The directory where crashes are temporarily stored before being uploaded.
 
-**Note:** Calling this method from the renderer process is deprecated.
+**Note:** This method is deprecated, use `app.getPath('crashDumps')` instead.
 
 ### `crashReporter.addExtraParameter(key, value)`
 

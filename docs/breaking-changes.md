@@ -34,6 +34,18 @@ See [#23265](https://github.com/electron/electron/pull/23265) for more details.
 
 ## Planned Breaking API Changes (10.0)
 
+### Deprecated: `crashReporter.getCrashesDirectory()`
+
+The `crashReporter.getCrashesDirectory` method has been deprecated. Usage
+should be replaced by `app.getPath('crashDumps')`.
+
+```js
+// Deprecated in Electron 10
+crashReporter.getCrashesDirectory()
+// Replace with
+app.getPath('crashDumps')
+```
+
 ### Deprecated: `crashReporter` methods in the renderer process
 
 Calling the following `crashReporter` methods from the renderer process is
