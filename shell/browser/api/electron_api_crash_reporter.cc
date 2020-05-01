@@ -67,6 +67,54 @@ const std::map<std::string, std::string>& GetGlobalCrashKeys() {
 }
 #endif
 
+void Start(const std::string& submit_url,
+           const base::FilePath& crashes_directory,
+           bool upload_to_server,
+           bool ignore_system_crash_handler,
+           bool rate_limit,
+           bool compress,
+           const std::map<std::string, std::string>& extra_global,
+           const std::map<std::string, std::string>& extra,
+           bool is_node_process) {
+  if (g_crash_reporter_initialized)
+    return;
+  g_crash_reporter_initialized = true;
+  ElectronCrashReporterClient::Get()->SetUploadUrl(submit_url);
+  ElectronCrashReporterClient::Get()->SetCollectStatsConsent(upload_to_server);
+  ElectronCrashReporterClient::Get()->SetShouldRateLimit(rate_limit);
+  ElectronCrashReporterClient::Get()->SetShouldCompressUploads(compress);
+  ElectronCrashReporterClient::Get()->SetGlobalAnnotations(extra_global);
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      is_node_process
+          ? "node"
+          : command_line->GetSwitchValueASCII(::switches::kProcessType);
+#if defined(OS_LINUX)
+  if (::crash_reporter::IsCrashpadEnabled()) {
+    ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+    // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
+  } else {
+    auto& global_crash_keys = GetGlobalCrashKeysMutable();
+    for (const auto& pair : extra_global) {
+      global_crash_keys[pair.first] = pair.second;
+    }
+    for (const auto& pair : extra)
+      electron::crash_keys::SetCrashKey(pair.first, pair.second);
+    for (const auto& pair : extra_global)
+      electron::crash_keys::SetCrashKey(pair.first, pair.second);
+    breakpad::InitCrashReporter(process_type);
+  }
+#elif defined(OS_MACOSX)
+  for (const auto& pair : extra)
+    electron::crash_keys::SetCrashKey(pair.first, pair.second);
+  ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+  if (ignore_system_crash_handler) {
+    crashpad::CrashpadInfo::GetCrashpadInfo()
+        ->set_system_crash_reporter_forwarding(crashpad::TriState::kDisabled);
+  }
+#endif
+}
+
 }  // namespace crash_reporter
 
 }  // namespace api
@@ -133,67 +181,18 @@ v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
   return gin::ConvertToV8(isolate, keys);
 }
 
-void Start(const std::string& submit_url,
-           const std::string& crashes_directory,
-           bool upload_to_server,
-           bool ignore_system_crash_handler,
-           bool rate_limit,
-           bool compress,
-           const std::map<std::string, std::string>& extra_global,
-           const std::map<std::string, std::string>& extra) {
-  if (g_crash_reporter_initialized)
-    return;
-  g_crash_reporter_initialized = true;
-  SetUploadToServer(upload_to_server);
-  ElectronCrashReporterClient::Get()->SetShouldRateLimit(rate_limit);
-  ElectronCrashReporterClient::Get()->SetShouldCompressUploads(compress);
-  ElectronCrashReporterClient::Get()->SetGlobalAnnotations(extra_global);
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  std::string process_type =
-      command_line->GetSwitchValueASCII(::switches::kProcessType);
-#if defined(OS_LINUX)
-  if (crash_reporter::IsCrashpadEnabled()) {
-    crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
-    // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
-  } else {
-    breakpad::SetUploadURL(submit_url);
-    auto& global_crash_keys = GetGlobalCrashKeysMutable();
-    for (const auto& pair : extra_global) {
-      global_crash_keys[pair.first] = pair.second;
-    }
-    for (const auto& pair : extra)
-      electron::crash_keys::SetCrashKey(pair.first, pair.second);
-    for (const auto& pair : extra_global)
-      electron::crash_keys::SetCrashKey(pair.first, pair.second);
-    breakpad::InitCrashReporter(process_type);
-  }
-#elif defined(OS_MACOSX)
-  ElectronCrashReporterClient::Get()->SetUploadUrl(submit_url);
-  for (const auto& pair : extra)
-    electron::crash_keys::SetCrashKey(pair.first, pair.second);
-  crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
-  if (ignore_system_crash_handler) {
-    crashpad::CrashpadInfo::GetCrashpadInfo()
-        ->set_system_crash_reporter_forwarding(crashpad::TriState::kDisabled);
-  }
-#endif
-}
-
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("start", base::BindRepeating(&Start));
-  dict.SetMethod("addExtraParameter",
-                 base::BindRepeating(&electron::crash_keys::SetCrashKey));
-  dict.SetMethod("removeExtraParameter",
-                 base::BindRepeating(&electron::crash_keys::ClearCrashKey));
-  dict.SetMethod("getParameters", base::BindRepeating(&GetParameters));
-  dict.SetMethod("getUploadedReports",
-                 base::BindRepeating(&GetUploadedReports));
-  dict.SetMethod("setUploadToServer", base::BindRepeating(&SetUploadToServer));
-  dict.SetMethod("getUploadToServer", base::BindRepeating(&GetUploadToServer));
+  dict.SetMethod("start", &electron::api::crash_reporter::Start);
+  dict.SetMethod("addExtraParameter", &electron::crash_keys::SetCrashKey);
+  dict.SetMethod("removeExtraParameter", &electron::crash_keys::ClearCrashKey);
+  dict.SetMethod("getParameters", &GetParameters);
+  dict.SetMethod("getUploadedReports", &GetUploadedReports);
+  dict.SetMethod("setUploadToServer", &SetUploadToServer);
+  dict.SetMethod("getUploadToServer", &GetUploadToServer);
 }
 
 }  // namespace

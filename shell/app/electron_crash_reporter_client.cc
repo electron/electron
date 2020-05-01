@@ -166,11 +166,9 @@ bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
 }
 #endif  // OS_LINUX
 
-#if defined(OS_MACOSX)
 void ElectronCrashReporterClient::GetUploadUrl(std::string* url) {
   *url = upload_url_;
 }
-#endif
 
 bool ElectronCrashReporterClient::EnableBreakpadForProcess(
     const std::string& process_type) {
@@ -178,5 +176,5 @@ bool ElectronCrashReporterClient::EnableBreakpadForProcess(
          process_type == switches::kPpapiPluginProcess ||
          process_type == service_manager::switches::kZygoteProcess ||
          process_type == switches::kGpuProcess ||
-         process_type == switches::kUtilityProcess;
+         process_type == switches::kUtilityProcess || process_type == "node";
 }

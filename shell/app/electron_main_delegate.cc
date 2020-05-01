@@ -405,7 +405,6 @@ void ElectronMainDelegate::ZygoteForked() {
   }
 
   // Reset the command line for the newly spawned process.
-  // crash_keys::SetCrashKeysFromCommandLine(*command_line);
   crash_keys::SetCrashKeysFromCommandLine(*command_line);
 }
 #endif  // defined(OS_LINUX)

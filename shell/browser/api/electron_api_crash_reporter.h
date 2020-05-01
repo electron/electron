@@ -7,6 +7,7 @@
 
 #include <map>
 #include <string>
+#include "base/files/file_path.h"
 
 namespace electron {
 
@@ -19,6 +20,17 @@ bool IsCrashReporterEnabled();
 #if defined(OS_LINUX)
 const std::map<std::string, std::string>& GetGlobalCrashKeys();
 #endif
+
+// JS bindings API; exposed publicly because it's also called from node_main.cc
+void Start(const std::string& submit_url,
+           const base::FilePath& crashes_directory,
+           bool upload_to_server,
+           bool ignore_system_crash_handler,
+           bool rate_limit,
+           bool compress,
+           const std::map<std::string, std::string>& extra_global,
+           const std::map<std::string, std::string>& extra,
+           bool is_node_process);
 
 }  // namespace crash_reporter
 

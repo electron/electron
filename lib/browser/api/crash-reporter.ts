@@ -52,7 +52,7 @@ class CrashReporter {
     };
 
     binding.start(submitURL, this._crashesDirectory, uploadToServer,
-      ignoreSystemCrashHandler, rateLimit, compress, extraGlobal, extra);
+      ignoreSystemCrashHandler, rateLimit, compress, extraGlobal, extra, false);
   }
 
   async getLastCrashReport () {

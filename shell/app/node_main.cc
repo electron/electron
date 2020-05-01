@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/strings/string_util.h"
@@ -17,12 +18,14 @@
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "components/crash/core/app/crashpad.h"
+#include "content/public/common/content_switches.h"
 #include "electron/electron_version.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/app/uv_task_runner.h"
+#include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/node_debugger.h"
 #include "shell/common/api/electron_bindings.h"
@@ -30,6 +33,10 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+
+#if defined(OS_LINUX)
+#include "components/crash/core/app/breakpad_linux.h"
+#endif
 
 namespace {
 
@@ -76,6 +83,30 @@ void SetNodeCliFlags() {
 
 namespace electron {
 
+#if defined(OS_LINUX)
+void CrashReporterStart(gin_helper::Dictionary options) {
+  std::string submit_url;
+  base::FilePath crashes_directory;
+  ElectronCrashReporterClient::Get()->GetCrashDumpLocation(&crashes_directory);
+  bool upload_to_server = true;
+  bool ignore_system_crash_handler = false;
+  bool rate_limit = false;
+  bool compress = false;
+  std::map<std::string, std::string> extra_global;
+  std::map<std::string, std::string> extra;
+  options.Get("submitURL", &submit_url);
+  options.Get("uploadToServer", &upload_to_server);
+  options.Get("ignoreSystemCrashHandler", &ignore_system_crash_handler);
+  options.Get("rateLimit", &rate_limit);
+  options.Get("compress", &compress);
+  options.Get("extra", &extra);
+  options.Get("globalExtra", &extra_global);
+  api::crash_reporter::Start(submit_url, crashes_directory, upload_to_server,
+                             ignore_system_crash_handler, rate_limit, compress,
+                             extra_global, extra, true);
+}
+#endif
+
 #if !defined(OS_LINUX)
 void AddExtraParameter(const std::string& key, const std::string& value) {
   // crash_reporter::CrashReporter::GetInstance()->AddExtraParameter(key,
@@ -96,6 +127,20 @@ int NodeMain(int argc, char* argv[]) {
 
 #if defined(OS_MACOSX)
   crash_reporter::InitializeCrashpad(false, "node");
+#endif
+
+#if defined(OS_LINUX)
+  if (crash_reporter::IsCrashpadEnabled()) {
+    crash_reporter::InitializeCrashpad(false, "node");
+    // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
+  } /*else {
+  //base::GlobalDescriptors* g_fds = base::GlobalDescriptors::GetInstance();
+  //g_fds->Set(service_manager::kCrashDumpSignal,
+  service_manager::kCrashDumpSignal + base::GlobalDescriptors::kBaseDescriptor);
+    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kEnableCrashReporter);
+    breakpad::InitCrashReporter("node");
+  }
+  */
 #endif
 
   crash_keys::SetPlatformCrashKey();
@@ -170,6 +215,7 @@ int NodeMain(int argc, char* argv[]) {
 
       // Setup process.crashReporter in child node processes
       gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
+      reporter.SetMethod("start", &CrashReporterStart);
 
 #if !defined(OS_LINUX)
       reporter.SetMethod("addExtraParameter", &AddExtraParameter);

@@ -10,10 +10,10 @@ upload. In order to maintain that behavior, this disables compression in
 Ideally, this would be made configurable.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index fd012e06a77c27421dd995ac464858161537900c..8acc7b2d470194ce4f47dec7b6583a96071fc89b 100644
+index 6d074a8a28781f967d884c94830d4026e641eff5..aa8be6f7f0d4c28c744949939584fe5675ccae8b 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
-@@ -1326,6 +1326,7 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+@@ -1333,6 +1333,7 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
  
  #else  // defined(OS_CHROMEOS)
  
@@ -21,7 +21,7 @@ index fd012e06a77c27421dd995ac464858161537900c..8acc7b2d470194ce4f47dec7b6583a96
    // Compress |dumpfile| with gzip.
    const pid_t gzip_child = sys_fork();
    if (gzip_child < 0) {
-@@ -1369,13 +1370,16 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+@@ -1376,13 +1377,16 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
      WriteLog(msg, sizeof(msg) - 1);
      sys__exit(1);
    }
@@ -38,7 +38,7 @@ index fd012e06a77c27421dd995ac464858161537900c..8acc7b2d470194ce4f47dec7b6583a96
    static const char header_msg[] =
        "--header=Content-Type: multipart/form-data; boundary=";
    const size_t header_content_type_size =
-@@ -1402,7 +1406,7 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+@@ -1409,7 +1413,7 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
    static const char kWgetBinary[] = "/usr/bin/wget";
    const char* args[] = {
      kWgetBinary,

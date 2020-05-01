@@ -1,13 +1,56 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <jeremya@chromium.org>
 Date: Thu, 30 Apr 2020 10:08:06 -0700
-Subject: crashpad: allow setting more options
+Subject: crash: allow setting more options
 
 This allows the client of //components/crash to set upload url,
 rate-limiting, compression and global annotations.
 
 This should be upstreamed.
 
+diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
+index 192b0a7f137f311abb6a991f997e11f5eba52256..6d074a8a28781f967d884c94830d4026e641eff5 100644
+--- a/components/crash/core/app/breakpad_linux.cc
++++ b/components/crash/core/app/breakpad_linux.cc
+@@ -103,9 +103,17 @@ namespace {
+ // while we do have functions to deal with uint64_t's.
+ uint64_t g_crash_loop_before_time = 0;
+ #else
+-const char kUploadURL[] = "https://clients2.google.com/cr/report";
++const char kDefaultUploadURL[] = "https://clients2.google.com/cr/report";
++const char* g_upload_url = kDefaultUploadURL;
+ #endif
+ 
++void SetUploadURL(const std::string& url) {
++  const size_t url_len = url.size() + 1;
++  g_upload_url = new char[url_len];
++  strncpy(const_cast<char*>(g_upload_url), url.c_str(), url_len);
++}
++
++bool g_is_node = false;
+ bool g_is_crash_reporter_enabled = false;
+ uint64_t g_process_start_time = 0;
+ pid_t g_pid = 0;
+@@ -1404,7 +1412,7 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+     header_content_encoding,
+     header_content_type,
+     post_file,
+-    kUploadURL,
++    g_upload_url,
+     "--timeout=10",  // Set a timeout so we don't hang forever.
+     "--tries=1",     // Don't retry if the upload fails.
+     "-O",  // Output reply to the file descriptor path.
+@@ -2037,6 +2045,10 @@ void InitCrashReporter(const std::string& process_type) {
+ #endif
+       process_type.empty();
+ 
++  std::string upload_url;
++  GetCrashReporterClient()->GetUploadUrl(&upload_url);
++  SetUploadURL(upload_url);
++
+   if (is_browser_process) {
+     bool enable_breakpad = GetCrashReporterClient()->GetCollectStatsConsent() ||
+                            GetCrashReporterClient()->IsRunningUnattended();
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
 index e778f68af30f8c071d1360d06b553cc957160c5b..269c327064f0e6b46bf26ddc70816fd3373bd36c 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
