@@ -86,8 +86,6 @@ namespace electron {
 #if defined(OS_LINUX)
 void CrashReporterStart(gin_helper::Dictionary options) {
   std::string submit_url;
-  base::FilePath crashes_directory;
-  ElectronCrashReporterClient::Get()->GetCrashDumpLocation(&crashes_directory);
   bool upload_to_server = true;
   bool ignore_system_crash_handler = false;
   bool rate_limit = false;
@@ -101,7 +99,7 @@ void CrashReporterStart(gin_helper::Dictionary options) {
   options.Get("compress", &compress);
   options.Get("extra", &extra);
   options.Get("globalExtra", &extra_global);
-  api::crash_reporter::Start(submit_url, crashes_directory, upload_to_server,
+  api::crash_reporter::Start(submit_url, upload_to_server,
                              ignore_system_crash_handler, rate_limit, compress,
                              extra_global, extra, true);
 }

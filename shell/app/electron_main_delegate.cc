@@ -15,6 +15,7 @@
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/mac/bundle_locations.h"
 #include "base/path_service.h"
@@ -108,6 +109,46 @@ void InvalidParameterHandler(const wchar_t*,
 
 }  // namespace
 
+// TODO(nornagon): move path provider overriding to its own file in
+// shell/common
+namespace electron {
+
+bool GetDefaultCrashDumpsPath(base::FilePath* path) {
+  base::FilePath cur;
+  if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+    return false;
+#if defined(OS_MACOSX) || defined(OS_WIN)
+  cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
+#else
+  cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
+#endif
+  // TODO(bauerb): http://crbug.com/259796
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  if (!base::PathExists(cur) && !base::CreateDirectory(cur))
+    return false;
+  *path = cur;
+  return true;
+}
+
+bool ElectronPathProvider(int key, base::FilePath* path) {
+  if (key == chrome::DIR_CRASH_DUMPS) {
+    return GetDefaultCrashDumpsPath(path);
+  }
+  return false;
+}
+
+void RegisterPathProvider() {
+  // This lies about the path IDs so we can "collide" with chrome path keys and
+  // preempt chrome's own provider. The key range is only used in debug builds
+  // to check for overlaps.
+  const int kElectronPathProviderKeyLie = 123123;
+  base::PathService::RegisterProvider(ElectronPathProvider,
+                                      kElectronPathProviderKeyLie,
+                                      kElectronPathProviderKeyLie + 1);
+}
+
+}  // namespace electron
+
 void LoadResourceBundle(const std::string& locale) {
   const bool initialized = ui::ResourceBundle::HasSharedInstance();
   if (initialized)
@@ -195,6 +236,10 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
       tracing::TracingSamplerProfiler::CreateOnMainThread();
 
   chrome::RegisterPathProvider();
+  // Registering our own path provider _after_ the chrome path provider allows
+  // us to insert our own overrides.
+  electron::RegisterPathProvider();
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   ContentSettingsPattern::SetNonWildcardDomainNonPortSchemes(
       kNonWildcardDomainNonPortSchemes, kNonWildcardDomainNonPortSchemesSize);
@@ -294,20 +339,20 @@ void ElectronMainDelegate::PreSandboxStartup() {
     LoadResourceBundle(locale);
   }
 
-#if defined(OS_POSIX) && !defined(MAS_BUILD)
-  ElectronCrashReporterClient::Create();
-#endif
-
 #if defined(OS_MACOSX) && !defined(MAS_BUILD)
   // In the main process, we wait for JS to call crashReporter.start() before
-  // initializing crashpad.
-  if (!process_type.empty())
+  // initializing crashpad. If we're in the renderer, we want to initialize it
+  // immediately at boot.
+  if (!process_type.empty()) {
+    ElectronCrashReporterClient::Create();
     crash_reporter::InitializeCrashpad(false, process_type);
+  }
 #endif
 
 #if defined(OS_LINUX)
   if (process_type != service_manager::switches::kZygoteProcess &&
       !process_type.empty()) {
+    ElectronCrashReporterClient::Create();
     if (crash_reporter::IsCrashpadEnabled()) {
       crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
       // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);

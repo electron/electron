@@ -68,7 +68,6 @@ const std::map<std::string, std::string>& GetGlobalCrashKeys() {
 #endif
 
 void Start(const std::string& submit_url,
-           const base::FilePath& crashes_directory,
            bool upload_to_server,
            bool ignore_system_crash_handler,
            bool rate_limit,
@@ -80,6 +79,7 @@ void Start(const std::string& submit_url,
   if (g_crash_reporter_initialized)
     return;
   g_crash_reporter_initialized = true;
+  ElectronCrashReporterClient::Create();
   ElectronCrashReporterClient::Get()->SetUploadUrl(submit_url);
   ElectronCrashReporterClient::Get()->SetCollectStatsConsent(upload_to_server);
   ElectronCrashReporterClient::Get()->SetShouldRateLimit(rate_limit);

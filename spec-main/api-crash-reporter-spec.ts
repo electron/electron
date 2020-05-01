@@ -10,6 +10,7 @@ import { AddressInfo } from 'net';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as v8 from 'v8';
+import * as uuid from 'uuid';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 
@@ -159,7 +160,6 @@ function runCrashApp (crashType: string, port: number, extraArgs: Array<string> 
   ]);
 }
 
-/*
 function waitForNewFileInDir (dir: string): Promise<string[]> {
   function readdirIfPresent (dir: string): string[] {
     try {
@@ -179,7 +179,6 @@ function waitForNewFileInDir (dir: string): Promise<string[]> {
     }, 1000);
   });
 }
-   */
 
 ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
   afterEach(cleanup);
@@ -428,6 +427,74 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         expect(parameters).not.to.have.property('hello');
       }
     });
+  });
+
+  describe('crash dumps directory', () => {
+    it('is set by default', () => {
+      expect(app.getPath('crashDumps')).to.be.a('string');
+    });
+
+    it('is inside the user data dir', () => {
+      expect(app.getPath('crashDumps')).to.include(app.getPath('userData'));
+    });
+
+    function crash (processType: string, remotely: Function) {
+      if (processType === 'main') {
+        return remotely(() => {
+          setTimeout(() => { process.crash(); });
+        });
+      } else if (processType === 'renderer') {
+        return remotely(() => {
+          const { BrowserWindow } = require('electron');
+          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+          bw.loadURL('about:blank');
+          bw.webContents.executeJavaScript('process.crash()');
+        });
+      } else if (processType === 'sandboxed-renderer') {
+        const preloadPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'sandbox-preload.js');
+        return remotely((preload: string) => {
+          const { BrowserWindow } = require('electron');
+          const bw = new BrowserWindow({ show: false, webPreferences: { sandbox: true, preload } });
+          bw.loadURL('about:blank');
+        }, preloadPath);
+      }
+    }
+
+    for (const crashingProcess of ['main', 'renderer', 'sandboxed-renderer']) {
+      describe(`when ${crashingProcess} crashes`, () => {
+        it('stores crashes in the crash dump directory when uploadToServer: false', async () => {
+          const { remotely } = await startRemoteControlApp();
+          const crashesDir = await remotely(() => {
+            const { crashReporter } = require('electron');
+            crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
+            return crashReporter.getCrashesDirectory();
+          });
+          const newFileAppeared = waitForNewFileInDir(path.join(crashesDir, 'completed'));
+          crash(crashingProcess, remotely);
+          const newFiles = await newFileAppeared;
+          expect(newFiles).to.have.length(1);
+          expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+        });
+
+        it('respects an overridden cash dump directory', async () => {
+          const { remotely } = await startRemoteControlApp();
+          const crashesDir = path.join(app.getPath('temp'), uuid.v4());
+          const remoteCrashesDir = await remotely((crashesDir: string) => {
+            const { crashReporter, app } = require('electron');
+            app.setPath('crashDumps', crashesDir);
+            crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
+            return crashReporter.getCrashesDirectory();
+          }, crashesDir);
+          expect(remoteCrashesDir).to.equal(crashesDir);
+
+          const newFileAppeared = waitForNewFileInDir(path.join(crashesDir, 'completed'));
+          crash(crashingProcess, remotely);
+          const newFiles = await newFileAppeared;
+          expect(newFiles).to.have.length(1);
+          expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+        });
+      });
+    }
   });
 
   describe('when not started', () => {

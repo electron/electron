@@ -23,7 +23,6 @@ const std::map<std::string, std::string>& GetGlobalCrashKeys();
 
 // JS bindings API; exposed publicly because it's also called from node_main.cc
 void Start(const std::string& submit_url,
-           const base::FilePath& crashes_directory,
            bool upload_to_server,
            bool ignore_system_crash_handler,
            bool rate_limit,
