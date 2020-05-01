@@ -449,10 +449,6 @@ source_set("electron_lib") {
   }
 
   if (is_linux) {
-    #    sources += [
-    #      "//chrome/app/chrome_crash_reporter_client.cc",
-    #      "//chrome/app/chrome_crash_reporter_client.h",
-    #    ]
     deps += [ "//components/crash/content/browser" ]
   }
 
