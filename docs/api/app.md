@@ -608,6 +608,7 @@ Returns `String` - The current application directory.
   * `music` Directory for a user's music.
   * `pictures` Directory for a user's pictures.
   * `videos` Directory for a user's videos.
+  * `recent` Directory for the user's recent files (Windows only).
   * `logs` Directory for your app's log folder.
   * `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
   * `crashDumps` Directory where crash dumps are stored.
