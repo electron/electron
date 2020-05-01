@@ -1,5 +1,6 @@
 import { webFrame, IpcMessageEvent } from 'electron';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
+import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
 import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
 
@@ -105,8 +106,13 @@ export function attachGuest (
   ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_ATTACH_GUEST', embedderFrameId, elementInstanceId, guestInstanceId, params);
 }
 
+export function detachGuest (guestInstanceId: number) {
+  return ipcRendererUtils.invokeSync('ELECTRON_GUEST_VIEW_MANAGER_DETACH_GUEST', guestInstanceId);
+}
+
 export const guestViewInternalModule = {
   deregisterEvents,
   createGuest,
-  attachGuest
+  attachGuest,
+  detachGuest
 };
