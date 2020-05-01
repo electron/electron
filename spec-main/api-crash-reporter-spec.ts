@@ -308,21 +308,6 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     });
   });
 
-  describe('getCrashesDirectory', () => {
-    it('correctly returns the directory', async () => {
-      const { remotely } = await startRemoteControlApp();
-      await remotely(() => {
-        require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' });
-      });
-      const crashesDir = await remotely(() => require('electron').crashReporter.getCrashesDirectory());
-      const dir = path.join(app.getPath('temp'), 'remote-control Crashes');
-      expect(crashesDir).to.equal(dir);
-    });
-
-    it('stores crashes in the crash directory');
-    // TODO
-  });
-
   describe('getUploadedReports', () => {
     it('returns an array of reports', async () => {
       const { remotely } = await startRemoteControlApp();
@@ -436,6 +421,10 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
 
     it('is inside the user data dir', () => {
       expect(app.getPath('crashDumps')).to.include(app.getPath('userData'));
+    });
+
+    it('matches getCrashesDirectory', async () => {
+      expect(app.getPath('crashDumps')).to.equal(require('electron').crashReporter.getCrashesDirectory());
     });
 
     function crash (processType: string, remotely: Function) {
