@@ -54,6 +54,7 @@ auto_filenames = {
     "docs/api/structures",
     "docs/api/synopsis.md",
     "docs/api/system-preferences.md",
+    "docs/api/top-level-window.md",
     "docs/api/touch-bar-button.md",
     "docs/api/touch-bar-color-picker.md",
     "docs/api/touch-bar-group.md",

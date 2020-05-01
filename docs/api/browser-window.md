@@ -133,7 +133,7 @@ Process: [Main](../glossary.md#main-process)
 
 `BrowserWindow` is an [EventEmitter][event-emitter].
 
-It creates a new `BrowserWindow` with native properties as set by the `options`.
+`BrowserWindow` inherits from [`TopLevelWindow`](./top-level-window.md).
 
 ### `new BrowserWindow([options])`
 
@@ -385,6 +385,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       visible to users.
     * `spellcheck` Boolean (optional) - Whether to enable the builtin spellchecker.
       Default is `true`.
+
+Creates a new `BrowserWindow` with native properties as set by the `options`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

@@ -143,6 +143,7 @@ These individual tutorials expand on topics discussed in the guide above.
 * [screen](api/screen.md)
 * [session](api/session.md)
 * [systemPreferences](api/system-preferences.md)
+* [TopLevelWindow](api/top-level-window.md)
 * [TouchBar](api/touch-bar.md)
 * [Tray](api/tray.md)
 * [webContents](api/web-contents.md)
