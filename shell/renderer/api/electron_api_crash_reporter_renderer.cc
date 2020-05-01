@@ -9,6 +9,14 @@
 
 namespace {
 
+v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
+  std::map<std::string, std::string> keys;
+#if !defined(OS_LINUX) && !defined(MAS_BUILD)
+  electron::crash_keys::GetCrashKeys(&keys);
+#endif
+  return gin::ConvertToV8(isolate, keys);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -16,11 +24,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("addExtraParameter", &electron::crash_keys::SetCrashKey);
   dict.SetMethod("removeExtraParameter", &electron::crash_keys::ClearCrashKey);
-  // TODO: implement getParameters in renderer (& write a test)
-  /*
-  dict.SetMethod("getParameters",
-                 base::BindRepeating(&CrashReporter::GetParameters, reporter));
-                 */
+  dict.SetMethod("getParameters", &GetParameters);
 }
 
 }  // namespace

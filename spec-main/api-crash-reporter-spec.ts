@@ -379,10 +379,10 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     });
   });
 
-  describe('Parameters', () => {
+  describe('getParameters', () => {
     it('returns all of the current parameters', async () => {
       const { remotely } = await startRemoteControlApp();
-      await remotely(function () {
+      await remotely(() => {
         require('electron').crashReporter.start({
           submitURL: 'http://127.0.0.1',
           extra: { 'extra1': 'hi' }
@@ -411,6 +411,19 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         const parameters = await remotely(() => require('electron').crashReporter.getParameters());
         expect(parameters).not.to.have.property('hello');
       }
+    });
+
+    it('can be called in the renderer', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const rendererParameters = await remotely(async () => {
+        const { crashReporter, BrowserWindow } = require('electron');
+        crashReporter.start({ submitURL: 'http://' });
+        const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        bw.loadURL('about:blank');
+        await bw.webContents.executeJavaScript(`require('electron').crashReporter.addExtraParameter('hello', 'world')`);
+        return bw.webContents.executeJavaScript(`require('electron').crashReporter.getParameters()`);
+      });
+      expect(rendererParameters).to.deep.equal({ hello: 'world' });
     });
   });
 
