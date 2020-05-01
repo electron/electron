@@ -121,11 +121,11 @@ void RemoveExtraParameter(const std::string& key) {
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
-#if defined(OS_POSIX)
+#if !defined(MAS_BUILD)
   ElectronCrashReporterClient::Create();
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MACOSX) && !defined(MAS_BUILD)
   crash_reporter::InitializeCrashpad(false, "node");
 #endif
 
@@ -143,7 +143,9 @@ int NodeMain(int argc, char* argv[]) {
   */
 #endif
 
+#if !defined(MAS_BUILD)
   crash_keys::SetPlatformCrashKey();
+#endif
 
   int exit_code = 1;
   {

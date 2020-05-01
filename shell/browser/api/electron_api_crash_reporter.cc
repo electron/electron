@@ -76,6 +76,7 @@ void Start(const std::string& submit_url,
            const std::map<std::string, std::string>& extra_global,
            const std::map<std::string, std::string>& extra,
            bool is_node_process) {
+#if !defined(MAS_BUILD)
   if (g_crash_reporter_initialized)
     return;
   g_crash_reporter_initialized = true;
@@ -113,6 +114,7 @@ void Start(const std::string& submit_url,
         ->set_system_crash_reporter_forwarding(crashpad::TriState::kDisabled);
   }
 #endif
+#endif
 }
 
 }  // namespace crash_reporter
@@ -123,8 +125,12 @@ void Start(const std::string& submit_url,
 
 namespace {
 
-typedef std::pair<int, std::string> UploadReportResult;  // upload-date, id
-
+#if defined(MAS_BUILD)
+void GetUploadedReports(
+    base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
+  std::move(callback).Run(v8::Array::New(v8::Isolate::GetCurrent()));
+}
+#else
 scoped_refptr<UploadList> CreateCrashUploadList() {
 #if defined(OS_MACOSX) || defined(OS_WIN)
   return new CrashUploadListCrashpad();
@@ -164,18 +170,25 @@ void GetUploadedReports(
       },
       list, std::move(callback)));
 }
+#endif
 
 void SetUploadToServer(bool upload) {
+#if !defined(MAS_BUILD)
   ElectronCrashReporterClient::Get()->SetCollectStatsConsent(upload);
+#endif
 }
 
 bool GetUploadToServer() {
+#if defined(MAS_BUILD)
+  return false;
+#else
   return ElectronCrashReporterClient::Get()->GetCollectStatsConsent();
+#endif
 }
 
 v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
   std::map<std::string, std::string> keys;
-#if !defined(OS_LINUX)
+#if !defined(OS_LINUX) && !defined(MAS_BUILD)
   electron::crash_keys::GetCrashKeys(&keys);
 #endif
   return gin::ConvertToV8(isolate, keys);

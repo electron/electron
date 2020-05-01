@@ -282,7 +282,9 @@ void ElectronMainDelegate::PreSandboxStartup() {
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
+#if !defined(MAS_BUILD)
   crash_reporter::InitializeCrashKeys();
+#endif
 
   // Initialize ResourceBundle which handles files loaded from external
   // sources. The language should have been passed in to us from the
@@ -292,11 +294,11 @@ void ElectronMainDelegate::PreSandboxStartup() {
     LoadResourceBundle(locale);
   }
 
-#if defined(OS_POSIX)
+#if defined(OS_POSIX) && !defined(MAS_BUILD)
   ElectronCrashReporterClient::Create();
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MACOSX) && !defined(MAS_BUILD)
   // In the main process, we wait for JS to call crashReporter.start() before
   // initializing crashpad.
   if (!process_type.empty())
@@ -316,7 +318,9 @@ void ElectronMainDelegate::PreSandboxStartup() {
   }
 #endif
 
+#if !defined(MAS_BUILD)
   crash_keys::SetPlatformCrashKey();
+#endif
 
   if (IsBrowserProcess(command_line)) {
     // Only append arguments for browser process.

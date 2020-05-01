@@ -483,7 +483,6 @@ source_set("electron_lib") {
     if (is_mas_build) {
       sources += [ "shell/browser/api/electron_api_app_mas.mm" ]
       sources -= [ "shell/browser/auto_updater_mac.mm" ]
-      deps -= [ "//components/crash/core/app" ]
       defines += [ "MAS_BUILD" ]
     } else {
       libs += [
