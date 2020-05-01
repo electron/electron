@@ -441,6 +441,7 @@ bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
 void ElectronMainDelegate::ZygoteForked() {
   // Needs to be called after we have chrome::DIR_USER_DATA.  BrowserMain sets
   // this up for the browser process in a different manner.
+  ElectronCrashReporterClient::Create();
   const base::CommandLine* command_line =
       base::CommandLine::ForCurrentProcess();
   std::string process_type =
