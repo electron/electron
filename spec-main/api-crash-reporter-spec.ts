@@ -425,6 +425,20 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       });
       expect(rendererParameters).to.deep.equal({ hello: 'world' });
     });
+
+    it('can be called in a node child process', async () => {
+      function slurp (stream: NodeJS.ReadableStream): Promise<string> {
+        return new Promise((resolve, reject) => {
+          const chunks: Buffer[] = [];
+          stream.on('data', chunk => { chunks.push(chunk); });
+          stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+          stream.on('error', e => reject(e));
+        });
+      }
+      const child = childProcess.fork(path.join(__dirname, 'fixtures', 'module', 'print-crash-parameters.js'), [], { silent: true });
+      const output = await slurp(child.stdout!);
+      expect(JSON.parse(output)).to.deep.equal({ hello: 'world' });
+    });
   });
 
   describe('crash dumps directory', () => {

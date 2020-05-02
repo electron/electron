@@ -105,16 +105,13 @@ void CrashReporterStart(gin_helper::Dictionary options) {
 }
 #endif
 
-#if !defined(OS_LINUX)
-void AddExtraParameter(const std::string& key, const std::string& value) {
-  // crash_reporter::CrashReporter::GetInstance()->AddExtraParameter(key,
-  // value);
-}
-
-void RemoveExtraParameter(const std::string& key) {
-  // crash_reporter::CrashReporter::GetInstance()->RemoveExtraParameter(key);
-}
+v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
+  std::map<std::string, std::string> keys;
+#if !defined(OS_LINUX) && !defined(MAS_BUILD)
+  electron::crash_keys::GetCrashKeys(&keys);
 #endif
+  return gin::ConvertToV8(isolate, keys);
+}
 
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
@@ -131,14 +128,7 @@ int NodeMain(int argc, char* argv[]) {
   if (crash_reporter::IsCrashpadEnabled()) {
     crash_reporter::InitializeCrashpad(false, "node");
     // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
-  } /*else {
-  //base::GlobalDescriptors* g_fds = base::GlobalDescriptors::GetInstance();
-  //g_fds->Set(service_manager::kCrashDumpSignal,
-  service_manager::kCrashDumpSignal + base::GlobalDescriptors::kBaseDescriptor);
-    base::CommandLine::ForCurrentProcess()->AppendSwitch(switches::kEnableCrashReporter);
-    breakpad::InitCrashReporter("node");
   }
-  */
 #endif
 
 #if !defined(MAS_BUILD)
@@ -219,10 +209,11 @@ int NodeMain(int argc, char* argv[]) {
       reporter.SetMethod("start", &CrashReporterStart);
 #endif
 
-#if !defined(OS_LINUX)
-      reporter.SetMethod("addExtraParameter", &AddExtraParameter);
-      reporter.SetMethod("removeExtraParameter", &RemoveExtraParameter);
-#endif
+      reporter.SetMethod("getParameters", &GetParameters);
+      reporter.SetMethod("addExtraParameter",
+                         &electron::crash_keys::SetCrashKey);
+      reporter.SetMethod("removeExtraParameter",
+                         &electron::crash_keys::ClearCrashKey);
 
       process.Set("crashReporter", reporter);
 
