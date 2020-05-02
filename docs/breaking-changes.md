@@ -34,6 +34,20 @@ See [#23265](https://github.com/electron/electron/pull/23265) for more details.
 
 ## Planned Breaking API Changes (10.0)
 
+### Deprecated: `companyName` argument to `crashReporter.start()`
+
+The `companyName` argument to `crashReporter.start()`, which was previously
+required, is now optional, and further, is deprecated. To get the same
+behavior in a non-deprecated way, you can pass a `companyName` value in
+`globalExtra`.
+
+```js
+// Deprecated in Electron 10
+crashReporter.start({ companyName: 'Umbrella Corporation' })
+// Replace with
+crashReporter.start({ globalExtra: { _companyName: 'Umbrella Corporation' } })
+```
+
 ### Deprecated: `crashReporter.getCrashesDirectory()`
 
 The `crashReporter.getCrashesDirectory` method has been deprecated. Usage
