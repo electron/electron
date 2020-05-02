@@ -148,27 +148,27 @@ scoped_refptr<UploadList> CreateCrashUploadList() {
 #endif  // defined(OS_MACOSX) || defined(OS_WIN)
 }
 
-void GetUploadedReports(
-    base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
+v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
   auto list = CreateCrashUploadList();
-  list->Load(base::BindOnce(
-      [](scoped_refptr<UploadList> list,
-         base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
-        std::vector<UploadList::UploadInfo> uploads;
-        list->GetUploads(100, &uploads);
-        v8::Isolate* isolate = v8::Isolate::GetCurrent();
-        v8::HandleScope scope(isolate);
-        std::vector<v8::Local<v8::Object>> result;
-        for (const auto& upload : uploads) {
-          result.push_back(gin::DataObjectBuilder(isolate)
-                               .Set("date", upload.upload_time)
-                               .Set("id", upload.upload_id)
-                               .Build());
-        }
-        v8::Local<v8::Value> v8_result = gin::ConvertToV8(isolate, result);
-        std::move(callback).Run(v8_result);
-      },
-      list, std::move(callback)));
+  // TODO(nornagon): switch to using Load() instead of LoadSync() once the
+  // synchronous version of getUploadedReports is deprecated so we can remove
+  // our patch.
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    list->LoadSync();
+  }
+  std::vector<UploadList::UploadInfo> uploads;
+  constexpr size_t kMaxUploadReportsToList = std::numeric_limits<size_t>::max();
+  list->GetUploads(kMaxUploadReportsToList, &uploads);
+  std::vector<v8::Local<v8::Object>> result;
+  for (const auto& upload : uploads) {
+    result.push_back(gin::DataObjectBuilder(isolate)
+                         .Set("date", upload.upload_time)
+                         .Set("id", upload.upload_id)
+                         .Build());
+  }
+  v8::Local<v8::Value> v8_result = gin::ConvertToV8(isolate, result);
+  return v8_result;
 }
 #endif
 

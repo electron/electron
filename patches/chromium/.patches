@@ -92,3 +92,4 @@ ui_gtk_public_header.patch
 crash_allow_setting_more_options.patch
 breakpad_disable_upload_compression.patch
 breakpad_treat_node_processes_as_browser_processes.patch
+upload_list_add_loadsync_method.patch
