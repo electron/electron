@@ -11,6 +11,7 @@
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_restrictions.h"
 #include "build/build_config.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/crash/core/common/crash_keys.h"
@@ -50,6 +51,7 @@ void ElectronCrashReporterClient::Create() {
         base::FilePath::FromUTF8Unsafe(alternate_crash_dump_location);
   }
   if (!crash_dumps_dir_path.empty()) {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
     base::PathService::Override(chrome::DIR_CRASH_DUMPS, crash_dumps_dir_path);
   }
 }
