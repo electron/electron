@@ -327,7 +327,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       const { port, waitForCrash } = await startServer();
 
       // 0. clear the crash reports directory.
-      const dir = path.join(app.getPath('temp'), 'remote-control Crashes');
+      const dir = await remotely(() => require('electron').app.getPath('crashDumps'));
       try {
         fs.rmdirSync(dir, { recursive: true });
       } catch (e) { /* ignore */ }
