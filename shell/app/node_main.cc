@@ -132,6 +132,8 @@ int NodeMain(int argc, char* argv[]) {
 #endif
 
 #if !defined(MAS_BUILD)
+  crash_keys::SetCrashKeysFromCommandLine(
+      *base::CommandLine::ForCurrentProcess());
   crash_keys::SetPlatformCrashKey();
 #endif
 

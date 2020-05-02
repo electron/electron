@@ -358,12 +358,12 @@ void ElectronMainDelegate::PreSandboxStartup() {
       // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
     } else {
       breakpad::InitCrashReporter(process_type);
-      crash_keys::SetCrashKeysFromCommandLine(*command_line);
     }
   }
 #endif
 
 #if !defined(MAS_BUILD)
+  crash_keys::SetCrashKeysFromCommandLine(*command_line);
   crash_keys::SetPlatformCrashKey();
 #endif
 

@@ -80,15 +80,19 @@ bool IsRunningAsNode() {
 }  // namespace
 
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line) {
-  if (command_line.HasSwitch("global-crash-keys")) {
-    std::vector<std::pair<std::string, std::string>> global_crash_keys;
-    base::SplitStringIntoKeyValuePairs(
-        command_line.GetSwitchValueASCII("global-crash-keys"), '=', ',',
-        &global_crash_keys);
-    for (const auto& pair : global_crash_keys) {
-      SetCrashKey(pair.first, pair.second);
+#if defined(OS_LINUX)
+  if (!crash_reporter::IsCrashpadEnabled()) {
+    if (command_line.HasSwitch("global-crash-keys")) {
+      std::vector<std::pair<std::string, std::string>> global_crash_keys;
+      base::SplitStringIntoKeyValuePairs(
+          command_line.GetSwitchValueASCII("global-crash-keys"), '=', ',',
+          &global_crash_keys);
+      for (const auto& pair : global_crash_keys) {
+        SetCrashKey(pair.first, pair.second);
+      }
     }
   }
+#endif
 
   // NB. this is redundant with the 'ptype' key that //components/crash
   // reports; it's present for backwards compatibility.
