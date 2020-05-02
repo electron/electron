@@ -8,9 +8,12 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/environment.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_split.h"
 #include "components/crash/core/common/crash_key.h"
+#include "content/public/common/content_switches.h"
+#include "shell/common/electron_constants.h"
 
 namespace electron {
 
@@ -66,6 +69,16 @@ void GetCrashKeys(std::map<std::string, std::string>* keys) {
 }
 #endif
 
+namespace {
+bool IsRunningAsNode() {
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
+  return base::Environment::Create()->HasVar(electron::kRunAsNode);
+#else
+  return false;
+#endif
+}
+}  // namespace
+
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line) {
   if (command_line.HasSwitch("global-crash-keys")) {
     std::vector<std::pair<std::string, std::string>> global_crash_keys;
@@ -74,6 +87,21 @@ void SetCrashKeysFromCommandLine(const base::CommandLine& command_line) {
         &global_crash_keys);
     for (const auto& pair : global_crash_keys) {
       SetCrashKey(pair.first, pair.second);
+    }
+  }
+
+  // NB. this is redundant with the 'ptype' key that //components/crash
+  // reports; it's present for backwards compatibility.
+  static crash_reporter::CrashKeyString<16> process_type_key("process_type");
+  if (IsRunningAsNode()) {
+    process_type_key.Set("node");
+  } else {
+    std::string process_type =
+        command_line.GetSwitchValueASCII(switches::kProcessType);
+    if (process_type.empty()) {
+      process_type_key.Set("browser");
+    } else {
+      process_type_key.Set(process_type);
     }
   }
 }
