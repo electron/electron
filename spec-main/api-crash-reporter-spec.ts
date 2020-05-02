@@ -394,7 +394,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       expect(parameters.extra1).to.equal('hi');
     });
 
-    it('adds and removes parameters', async () => {
+    it('reflects added and removed parameters', async () => {
       const { remotely } = await startRemoteControlApp();
       await remotely(() => {
         require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' });
