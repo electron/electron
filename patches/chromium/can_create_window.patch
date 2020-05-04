@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index baee2af78cd679e458c336786326957b6ea32440..5aa26ca8eb3d5128cc217950fe8bba27b44c26b6 100644
+index 8df8ccde5d0204e7610cf817989faaee39ed83d2..58c8bf94003ccad48edf7ffa49a3bcfb2c67f5e2 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4363,6 +4363,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4480,6 +4480,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index baee2af78cd679e458c336786326957b6ea32440..5aa26ca8eb3d5128cc217950fe8bba27
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6883f29361bab9a78ba93da92e7bd234f62e2f8f..6a18c7085f102d475bd36925106e86c56812accc 100644
+index ca920c1104e42366f1f6a3076b192b172723ac44..b58ed4357cc9c6fbbc8f0024fe4cd2ed9fdd3dc4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2962,9 +2962,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -2981,9 +2981,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -38,10 +38,10 @@ index 6883f29361bab9a78ba93da92e7bd234f62e2f8f..6a18c7085f102d475bd36925106e86c5
  
    for (auto& observer : observers_) {
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index ce836b666eaca4312b01dec1cb012bbcb23b9050..9009a8b7a23e170ab0fbf81a6d157e18fa4e1769 100644
+index 7b03ce2796edba55e17cb02254d7f6e66efdfa9b..972fea09de4647d96af82acabfdc1dc5a2393a88 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -305,6 +305,10 @@ struct CreateNewWindowParams {
+@@ -317,6 +317,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
@@ -53,10 +53,10 @@ index ce836b666eaca4312b01dec1cb012bbcb23b9050..9009a8b7a23e170ab0fbf81a6d157e18
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 5990228237b99f382ba235a4bc59068ab12168de..c9fc489ded15dc3cfcdd71c86707e6e86a7e6ba3 100644
+index 0f8b1561d7c6fd8c1abb89dceaacd6f140a82e37..95b8691b881b2960f00e05aac6436437d99b8b4d 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -508,6 +508,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -509,6 +509,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -66,10 +66,10 @@ index 5990228237b99f382ba235a4bc59068ab12168de..c9fc489ded15dc3cfcdd71c86707e6e8
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 7c7a70b95873ed089e311cc0917ad32d8e465a4e..2d8d316f948fbc25fd4b1aa899b38ba2607e24a1 100644
+index e72e70a3b0b4e954bc6079b41d88e5e2b5d7ab31..6fa5df1a29385cc693f96b3dcbe93c4effeea04a 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -144,6 +144,7 @@ class NetworkService;
+@@ -143,6 +143,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -77,7 +77,7 @@ index 7c7a70b95873ed089e311cc0917ad32d8e465a4e..2d8d316f948fbc25fd4b1aa899b38ba2
  }  // namespace network
  
  namespace rappor {
-@@ -831,6 +832,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -830,6 +831,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -87,7 +87,7 @@ index 7c7a70b95873ed089e311cc0917ad32d8e465a4e..2d8d316f948fbc25fd4b1aa899b38ba2
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 17281521f8109279fe68e11abc2fcec41cfdf9c0..83b951dcf55b54661c8f855a8e10984d262c91b2 100644
+index 6017278cc0fa8d029477e7ef46a9c0cacae438be..18161c8f836134e470333381a16425e3347ea867 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -26,6 +26,17 @@ namespace content {
@@ -109,7 +109,7 @@ index 17281521f8109279fe68e11abc2fcec41cfdf9c0..83b951dcf55b54661c8f855a8e10984d
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index d10b0f458416044f0b5eaeac4160ac26a2857d94..4e3a846a3825216e1a77e17fd8e03331c6fb927b 100644
+index 7757c7720406aa9915a2a413b939be968c3cd988..7b329848850638941a7d8564dfe3786ae6f489ff 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@
@@ -119,8 +119,8 @@ index d10b0f458416044f0b5eaeac4160ac26a2857d94..4e3a846a3825216e1a77e17fd8e03331
 +#include "content/common/frame.mojom.h"
  #include "content/public/browser/bluetooth_chooser.h"
  #include "content/public/browser/bluetooth_scanning_prompt.h"
- #include "content/public/browser/invalidate_type.h"
-@@ -327,6 +328,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+ #include "content/public/browser/eye_dropper.h"
+@@ -331,6 +332,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const std::string& partition_id,
        SessionStorageNamespace* session_storage_namespace);
  
@@ -135,7 +135,7 @@ index d10b0f458416044f0b5eaeac4160ac26a2857d94..4e3a846a3825216e1a77e17fd8e03331
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 2a33016a5e54bbabfa8c534b954f6c72822ca70d..ea7084056f13c60bcc3ba8bd4991a924b6153ee2 100644
+index 2e31effffaaae08b854be71f3b7a017a067f33b1..8a84afc0f9016b3e77b5557c262db183de29f4b2 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -68,6 +68,7 @@
@@ -158,10 +158,10 @@ index 2a33016a5e54bbabfa8c534b954f6c72822ca70d..ea7084056f13c60bcc3ba8bd4991a924
    // moved on send.
    bool is_background_tab =
 diff --git a/content/shell/browser/web_test/web_test_content_browser_client.cc b/content/shell/browser/web_test/web_test_content_browser_client.cc
-index a10476afec548da09e44c1ea565c0ca7c9f902db..2b9d7fe3f57fa50036e8fc2e33daaae94ccbdcda 100644
+index d4c4c35289bcf82c13a010a95d0baff3f1c73f89..0295a263a2b7affb748c25ce6085d896be6f78b1 100644
 --- a/content/shell/browser/web_test/web_test_content_browser_client.cc
 +++ b/content/shell/browser/web_test/web_test_content_browser_client.cc
-@@ -395,6 +395,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -397,6 +397,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -171,10 +171,10 @@ index a10476afec548da09e44c1ea565c0ca7c9f902db..2b9d7fe3f57fa50036e8fc2e33daaae9
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/shell/browser/web_test/web_test_content_browser_client.h b/content/shell/browser/web_test/web_test_content_browser_client.h
-index b59e7c255d90996dec1f02170ffa4e1d3ec2a0c6..56db656bd2b19ca2ae90ace6c813a719a6266217 100644
+index d7478d20b7a61b125ea297a6ebfd6d4b01dc05fb..87787854d13ad98dd556455d9116029f3ee27b71 100644
 --- a/content/shell/browser/web_test/web_test_content_browser_client.h
 +++ b/content/shell/browser/web_test/web_test_content_browser_client.h
-@@ -78,6 +78,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
+@@ -77,6 +77,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
                         const std::string& frame_name,
                         WindowOpenDisposition disposition,
                         const blink::mojom::WindowFeatures& features,
@@ -206,10 +206,10 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 8029e46e91697d6a8c1349519d2c6e68bfb443a5..4b75b3e28938e092bc575117bc6ed5c7607baf74 100644
+index afe3284565ba14aa6cc05823d11a3003786c64e1..a22fe43dd1e668e83559b5ac0e71bfb1a580415a 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -1768,6 +1768,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -1870,6 +1870,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    }
  
    WebWindowFeatures window_features = GetWindowFeaturesFromString(features);

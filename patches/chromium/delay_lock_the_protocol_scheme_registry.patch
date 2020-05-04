@@ -19,7 +19,7 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 67d7e8e69d8a9b8b34b82b83bdf688df4c17ed59..9f6b797ea0489fc87b33a36bbcaae84a2cbf05f3 100644
+index dc1d60f3b00bf69433e1e02a310a0428b1a2401f..443a6b056af6f76dc5e660d302ed9091f5a11e1c 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -640,7 +640,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
@@ -68,7 +68,7 @@ index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f8
  // Re-initializes schemes for tests.
  CONTENT_EXPORT void ReRegisterContentSchemesForTests();
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 6c27d324e6235051875b88c4bc5bd362d3907f3c..06c17d6673d280fabf5b47244e7f7f7ab374f9a3 100644
+index ed5b0e2c0b4d453560ee9e2e4a55780b409eeea9..46e29dca5d13691bcf9494c0f90b68d6219a75ef 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -37,6 +37,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {

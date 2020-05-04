@@ -42,10 +42,10 @@ index 2840d54ef157f962a21ae6c2a32f07bbe4db250a..3061e1ad6dea4a75e4cee889a4015a39
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 670f290aca43887460a4e8cfb5e2c805d78a6d8b..f564f13aac6dbd5881a351a7aaa5a02314c826a7 100644
+index d96b3382b89909a7a76e898482e1e0fa1c6687ac..4bdc8e182446417b898864c219bc215201ce380a 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -43,7 +43,8 @@ base::Optional<SkColor> GetHighContrastColor(
+@@ -44,7 +44,8 @@ base::Optional<SkColor> GetHighContrastColor(
    }
  }
  
@@ -55,7 +55,7 @@ index 670f290aca43887460a4e8cfb5e2c805d78a6d8b..f564f13aac6dbd5881a351a7aaa5a023
    switch (color_id) {
      // Dialogs
      case NativeTheme::kColorId_WindowBackground:
-@@ -58,6 +59,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
+@@ -59,6 +60,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
      case NativeTheme::kColorId_BubbleFooterBackground:
        return SkColorSetRGB(0x32, 0x36, 0x39);
  
@@ -70,7 +70,7 @@ index 670f290aca43887460a4e8cfb5e2c805d78a6d8b..f564f13aac6dbd5881a351a7aaa5a023
      // FocusableBorder
      case NativeTheme::kColorId_FocusedBorderColor:
        return SkColorSetA(gfx::kGoogleBlue300, 0x4D);
-@@ -506,6 +515,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -511,6 +520,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return gfx::kGoogleGrey300;
  
@@ -89,7 +89,7 @@ index 670f290aca43887460a4e8cfb5e2c805d78a6d8b..f564f13aac6dbd5881a351a7aaa5a023
      // Material spinner/throbber
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
-@@ -572,7 +593,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -577,7 +598,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
    }
  
    if (color_scheme == NativeTheme::ColorScheme::kDark) {
@@ -99,7 +99,7 @@ index 670f290aca43887460a4e8cfb5e2c805d78a6d8b..f564f13aac6dbd5881a351a7aaa5a023
        return color.value();
    }
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 0e729134b4bdfbba9e688794ff83d0273f70ce75..65c7b9c09bf974ef9721e37ad8d2e1cabbf287ad 100644
+index 3184ba2666a325180dadc87357456bdd4a8f2295..3d4e3842663ae738a5582d608d30b87197f2b0ef 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
 @@ -134,6 +134,11 @@

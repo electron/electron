@@ -12,7 +12,7 @@ diff --git a/chrome/browser/extensions/global_shortcut_listener_mac.mm b/chrome/
 index befe726af9c10b1563a7fc0bb77cc55f65943d5c..bac51f33f35f96fe4ecc764cf5ca887176642f74 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_mac.mm
 +++ b/chrome/browser/extensions/global_shortcut_listener_mac.mm
-@@ -39,7 +39,7 @@ GlobalShortcutListenerMac::GlobalShortcutListenerMac()
+@@ -39,7 +39,7 @@
    // global MediaKeysListener to receive media keys.
    if (!content::MediaKeysListenerManager::IsMediaKeysListenerManagerEnabled()) {
      media_keys_listener_ = ui::MediaKeysListener::Create(
