@@ -278,7 +278,7 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
 }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
-#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#if defined(OS_LINUX)
 breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
     const std::string& process_type) {
   base::FilePath dumps_path;
@@ -334,7 +334,7 @@ int GetCrashSignalFD(const base::CommandLine& command_line) {
 
   return -1;
 }
-#endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
+#endif  // defined(OS_LINUX)
 
 }  // namespace
 
