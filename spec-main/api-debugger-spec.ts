@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as http from 'http';
 import * as path from 'path';
 import { AddressInfo } from 'net';
-import { BrowserWindow } from 'electron';
+import { BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 

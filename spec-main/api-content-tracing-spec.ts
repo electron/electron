@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron';
+import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ifdescribe } from './spec-helpers';

@@ -2,8 +2,9 @@ import { expect } from 'chai';
 import * as http from 'http';
 import * as qs from 'querystring';
 import * as path from 'path';
+import * as url from 'url';
 import * as WebSocket from 'ws';
-import { ipcMain, protocol, session, WebContents, webContents } from 'electron';
+import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
 import { AddressInfo } from 'net';
 import { emittedOnce } from './events-helpers';
 
@@ -133,11 +134,24 @@ describe('webRequest module', () => {
       await ajax(defaultURL + 'serverRedirect');
       await ajax(defaultURL + 'serverRedirect');
     });
+
+    it('works with file:// protocol', async () => {
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        callback({ cancel: true });
+      });
+      const fileURL = url.format({
+        pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      });
+      await expect(ajax(fileURL)).to.eventually.be.rejectedWith('404');
+    });
   });
 
   describe('webRequest.onBeforeSendHeaders', () => {
     afterEach(() => {
       ses.webRequest.onBeforeSendHeaders(null);
+      ses.webRequest.onSendHeaders(null);
     });
 
     it('receives details object', async () => {
@@ -191,6 +205,26 @@ describe('webRequest module', () => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders);
       });
       await ajax(defaultURL);
+    });
+
+    it('works with file:// protocol', async () => {
+      const requestHeaders = {
+        Test: 'header'
+      };
+      let onSendHeadersCalled = false;
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        callback({ requestHeaders: requestHeaders });
+      });
+      ses.webRequest.onSendHeaders((details) => {
+        expect(details.requestHeaders).to.deep.equal(requestHeaders);
+        onSendHeadersCalled = true;
+      });
+      await ajax(url.format({
+        pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      }));
+      expect(onSendHeadersCalled).to.be.true();
     });
   });
 

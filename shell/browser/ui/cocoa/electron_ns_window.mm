@@ -207,11 +207,17 @@ bool ScopedDisableResize::disable_resize_ = false;
 
   // If we're in simple fullscreen mode and trying to exit it
   // we need to ensure we exit it properly to prevent a crash
-  // with NSWindowStyleMaskTitled mode
-  if (is_simple_fs || always_simple_fs)
+  // with NSWindowStyleMaskTitled mode.
+  if (is_simple_fs || always_simple_fs) {
     shell_->SetSimpleFullScreen(!is_simple_fs);
-  else
+  } else {
+    bool maximizable = shell_->IsMaximizable();
     [super toggleFullScreen:sender];
+
+    // Exiting fullscreen causes Cocoa to redraw the NSWindow, which resets
+    // the enabled state for NSWindowZoomButton. We need to persist it.
+    shell_->SetMaximizable(maximizable);
+  }
 }
 
 - (void)performMiniaturize:(id)sender {

@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Anonymous <anonymous@electronjs.org>
-Date: Thu, 20 Sep 2018 17:46:53 -0700
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 10 Apr 2020 15:14:49 -0700
 Subject: web_contents.patch
 
 This allows overriding the RenderViewHostDelegateView of a WebContents, which
@@ -9,10 +9,10 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b57520fe4254335fd31bb86673d30e79c0656d51..6f2e0c12e7b4a2928346f6690c2e8a072822124b 100644
+index bcd52490b3ea333c521cf0ab63206a66889cf939..86c1791f8b41bca7e7d011d7445fd320637ce7ce 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2066,6 +2066,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2090,6 +2090,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    std::string unique_name;
    frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
  
@@ -25,7 +25,7 @@ index b57520fe4254335fd31bb86673d30e79c0656d51..6f2e0c12e7b4a2928346f6690c2e8a07
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -2076,6 +2082,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2100,6 +2106,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
      view_.reset(CreateWebContentsView(this, delegate,
                                        &render_view_host_delegate_view_));
    }
@@ -34,10 +34,10 @@ index b57520fe4254335fd31bb86673d30e79c0656d51..6f2e0c12e7b4a2928346f6690c2e8a07
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index cf98180740c4adaf0082e987e4b7fc482b11d348..376aaaebcb45b078c59f013437ac9baf7c9dd037 100644
+index 2d2bf71795b4610a18aa39f3e17bc6b0cd54238a..963c2a47c2fd48a411d389588dc35e349d673619 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -82,9 +82,12 @@ class BrowserPluginGuestDelegate;
+@@ -83,9 +83,12 @@ class BrowserPluginGuestDelegate;
  class InterstitialPage;
  class RenderFrameHost;
  class RenderViewHost;
@@ -50,14 +50,14 @@ index cf98180740c4adaf0082e987e4b7fc482b11d348..376aaaebcb45b078c59f013437ac9baf
  class WebUI;
  struct CustomContextMenuContext;
  struct DropData;
-@@ -209,6 +212,10 @@ class WebContents : public PageNavigator,
-       kInitializeAndWarmupRendererProcess,
-     } desired_renderer_state;
+@@ -213,6 +216,10 @@ class WebContents : public PageNavigator,
+     // Sandboxing flags set on the new WebContents.
+     network::mojom::WebSandboxFlags starting_sandbox_flags;
  
 +    // Optionally specify the view and delegate view.
 +    content::WebContentsView* view = nullptr;
 +    content::RenderViewHostDelegateView* delegate_view = nullptr;
 +
-     // Sandboxing flags set on the new WebContents.
-     blink::mojom::WebSandboxFlags starting_sandbox_flags;
- 
+     // Value used to set the last time the WebContents was made active, this is
+     // the value that'll be returned by GetLastActiveTime(). If this is left
+     // default initialized then the value is not passed on to the WebContents

@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
-index f950552abbe9e9a0002156b596438fe9aa4f01b9..23931899eb58432fd8eabf4d681d2294a88fd97d 100644
+index 16b7768fab7a43cf6ddf089fd9590bd333a766e3..b41519865e6babc829085880aadaaaea7e086e45 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
 +++ b/content/browser/frame_host/navigation_controller_impl.cc
-@@ -1250,8 +1250,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1262,8 +1262,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -33,7 +33,7 @@ index f950552abbe9e9a0002156b596438fe9aa4f01b9..23931899eb58432fd8eabf4d681d2294
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1506,7 +1508,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+@@ -1518,7 +1520,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
      new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
    }
  
@@ -46,10 +46,10 @@ index f950552abbe9e9a0002156b596438fe9aa4f01b9..23931899eb58432fd8eabf4d681d2294
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 23681d4192ac329a68822dbcdb06369f34e5e28a..a6f07372bdc576ad8d2cce0b04ffe2adc9ab37ad 100644
+index 4362daa04e89ca8f47c5e07e998fc9f1ad4f4c5b..9ecdb2e13235396aee11ae1be7e539f8e932e3f6 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -767,10 +767,10 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
+@@ -776,10 +776,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {
  
  void ClipboardWin::WriteToClipboard(ClipboardFormatType format, HANDLE handle) {
    UINT cf_format = format.ToFormatEtc().cfFormat;

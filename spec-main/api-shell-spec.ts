@@ -1,4 +1,5 @@
-import { BrowserWindow, shell } from 'electron';
+import { BrowserWindow } from 'electron/main';
+import { shell } from 'electron/common';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import * as http from 'http';

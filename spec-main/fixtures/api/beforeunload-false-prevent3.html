@@ -1,16 +1,16 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  // Only prevent unload on the first three window closes
-  var unloadPreventedCount = 0;
-  window.onbeforeunload = function() {
-    setTimeout(function() {
-      require('electron').ipcRenderer.sendSync('onbeforeunload')
-    }, 0);
-    if (unloadPreventedCount < 3) {
-      unloadPreventedCount++;
+  function preventNextBeforeUnload() {
+    window.addEventListener('beforeunload', function handler(e) {
+      e.preventDefault();
+      e.returnValue = '';
+      window.removeEventListener('beforeunload', handler)
+      setTimeout(function() {
+        require('electron').ipcRenderer.sendSync('onbeforeunload')
+      }, 0);
       return false;
-    }
+    })
   }
 </script>
 </body>

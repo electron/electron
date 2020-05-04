@@ -1,0 +1,184 @@
+[
+  [
+    "top=5,left=10,resizable=no",
+    {
+      "sender": "[WebContents]",
+      "returnValue": "placeholder-guest-contents-id"
+    },
+    "about:blank",
+    "frame name",
+    "new-window",
+    {
+      "show": true,
+      "width": 800,
+      "height": 600,
+      "webContents": "[WebContents]",
+      "title": "frame name",
+      "webPreferences": {
+        "nativeWindowOpen": true,
+        "sandbox": true,
+        "backgroundColor": "blue",
+        "nodeIntegration": false,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false
+      },
+      "top": 5,
+      "left": 10,
+      "resizable": false,
+      "x": 10,
+      "y": 5,
+      "backgroundColor": "blue",
+      "focusable": false
+    },
+    [],
+    {
+      "url": "",
+      "policy": "no-referrer-when-downgrade"
+    },
+    null
+  ],
+  [
+    "zoomFactor=2,resizable=0,x=0,y=10",
+    {
+      "sender": "[WebContents]",
+      "returnValue": "placeholder-guest-contents-id"
+    },
+    "about:blank",
+    "frame name",
+    "new-window",
+    {
+      "show": true,
+      "width": 800,
+      "height": 600,
+      "webContents": "[WebContents]",
+      "title": "frame name",
+      "webPreferences": {
+        "zoomFactor": "2",
+        "nativeWindowOpen": true,
+        "sandbox": true,
+        "backgroundColor": "blue",
+        "nodeIntegration": false,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false
+      },
+      "resizable": false,
+      "x": 0,
+      "y": 10,
+      "backgroundColor": "blue",
+      "focusable": false
+    },
+    [],
+    {
+      "url": "",
+      "policy": "no-referrer-when-downgrade"
+    },
+    null
+  ],
+  [
+    "backgroundColor=gray,webPreferences=0,x=100,y=100",
+    {
+      "sender": "[WebContents]",
+      "returnValue": "placeholder-guest-contents-id"
+    },
+    "about:blank",
+    "frame name",
+    "new-window",
+    {
+      "show": true,
+      "width": 800,
+      "height": 600,
+      "webContents": "[WebContents]",
+      "title": "frame name",
+      "webPreferences": {
+        "nativeWindowOpen": true,
+        "sandbox": true,
+        "backgroundColor": "gray",
+        "nodeIntegration": false,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false
+      },
+      "backgroundColor": "gray",
+      "x": 100,
+      "y": 100,
+      "focusable": false
+    },
+    [],
+    {
+      "url": "",
+      "policy": "no-referrer-when-downgrade"
+    },
+    null
+  ],
+  [
+    "x=50,y=20,title=sup",
+    {
+      "sender": "[WebContents]",
+      "returnValue": "placeholder-guest-contents-id"
+    },
+    "about:blank",
+    "frame name",
+    "new-window",
+    {
+      "show": true,
+      "width": 800,
+      "height": 600,
+      "webContents": "[WebContents]",
+      "title": "sup",
+      "webPreferences": {
+        "nativeWindowOpen": true,
+        "sandbox": true,
+        "backgroundColor": "blue",
+        "nodeIntegration": false,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false
+      },
+      "x": 50,
+      "y": 20,
+      "backgroundColor": "blue",
+      "focusable": false
+    },
+    [],
+    {
+      "url": "",
+      "policy": "no-referrer-when-downgrade"
+    },
+    null
+  ],
+  [
+    "show=false,top=1,left=1",
+    {
+      "sender": "[WebContents]",
+      "returnValue": "placeholder-guest-contents-id"
+    },
+    "about:blank",
+    "frame name",
+    "new-window",
+    {
+      "show": false,
+      "width": 800,
+      "height": 600,
+      "webContents": "[WebContents]",
+      "title": "frame name",
+      "webPreferences": {
+        "nativeWindowOpen": true,
+        "sandbox": true,
+        "backgroundColor": "blue",
+        "nodeIntegration": false,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false
+      },
+      "top": 1,
+      "left": 1,
+      "x": 1,
+      "y": 1,
+      "backgroundColor": "blue",
+      "focusable": false
+    },
+    [],
+    {
+      "url": "",
+      "policy": "no-referrer-when-downgrade"
+    },
+    null
+  ]
+]

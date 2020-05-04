@@ -100,7 +100,6 @@ void DevToolsManagerDelegate::Inspect(content::DevToolsAgentHost* agent_host) {}
 
 void DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHostClientChannel* channel,
-    const std::string& method,
     base::span<const uint8_t> message,
     NotHandledCallback callback) {
   std::move(callback).Run(message);

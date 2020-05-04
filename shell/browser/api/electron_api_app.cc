@@ -497,14 +497,19 @@ void OnClientCertificateSelected(
 }
 
 #if defined(USE_NSS_CERTS)
-int ImportIntoCertStore(CertificateManagerModel* model,
-                        const base::DictionaryValue& options) {
+int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   std::string file_data, cert_path;
   base::string16 password;
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
-  options.GetString("certificate", &cert_path);
-  options.GetString("password", &password);
+
+  std::string* cert_path_ptr = options.FindStringKey("certificate");
+  if (cert_path_ptr)
+    cert_path = *cert_path_ptr;
+
+  std::string* pwd = options.FindStringKey("password");
+  if (pwd)
+    password = base::UTF8ToUTF16(*pwd);
 
   if (!cert_path.empty()) {
     if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
@@ -539,7 +544,6 @@ App::App(v8::Isolate* isolate) {
   static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
       ->set_delegate(this);
   Browser::Get()->AddObserver(this);
-  content::GpuDataManager::GetInstance()->AddObserver(this);
 
   base::ProcessId pid = base::GetCurrentProcId();
   auto process_metric = std::make_unique<electron::ProcessMetric>(
@@ -614,6 +618,21 @@ void App::OnPreMainMessageLoopRun() {
   content::BrowserChildProcessObserver::Add(this);
   if (process_singleton_) {
     process_singleton_->OnBrowserReady();
+  }
+}
+
+void App::OnPreCreateThreads() {
+  DCHECK(!content::GpuDataManager::Initialized());
+  content::GpuDataManager* manager = content::GpuDataManager::GetInstance();
+  manager->AddObserver(this);
+
+  if (disable_hw_acceleration_) {
+    manager->DisableHardwareAcceleration();
+  }
+
+  if (disable_domain_blocking_for_3DAPIs_) {
+    content::GpuDataManagerImpl::GetInstance()
+        ->DisableDomainBlockingFor3DAPIsForTesting();
   }
 }
 
@@ -833,11 +852,16 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       return;
     }
     logs_path = custom_path.value();
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
+    }
   } else {
     AtomPaths::GetDefault(DIR_APP_LOGS, &logs_path);
-  }
+      {
+        base::ThreadRestrictions::ScopedAllowIO allow_io;
+    }
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::PathService::Override(DIR_APP_LOGS, logs_path);
+  }
 }
 
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
@@ -849,7 +873,6 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
   if (key >= 0) {
     succeed = base::PathService::Get(key, &path);
     if (succeed && (name == "logs")) {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
       base::CreateDirectoryAndGetError(path, nullptr);
     }
   }
@@ -1018,7 +1041,11 @@ void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
         "before app is ready");
     return;
   }
-  content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
+  if (content::GpuDataManager::Initialized()) {
+    content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
+  } else {
+    disable_hw_acceleration_ = true;
+  }
 }
 
 void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
@@ -1028,8 +1055,12 @@ void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
         "before app is ready");
     return;
   }
-  content::GpuDataManagerImpl::GetInstance()
-      ->DisableDomainBlockingFor3DAPIsForTesting();
+  if (content::GpuDataManager::Initialized()) {
+    content::GpuDataManagerImpl::GetInstance()
+        ->DisableDomainBlockingFor3DAPIsForTesting();
+  } else {
+    disable_domain_blocking_for_3DAPIs_ = true;
+  }
 }
 
 bool App::IsAccessibilitySupportEnabled() {
@@ -1063,31 +1094,36 @@ Browser::LoginItemSettings App::GetLoginItemSettings(
 }
 
 #if defined(USE_NSS_CERTS)
-void App::ImportCertificate(const base::DictionaryValue& options,
-                            net::CompletionRepeatingCallback callback) {
-  auto browser_context = ElectronBrowserContext::From("", false);
-  if (!certificate_manager_model_) {
-    auto copy = base::DictionaryValue::From(
-        base::Value::ToUniquePtrValue(options.Clone()));
-    CertificateManagerModel::Create(
-        browser_context.get(),
-        base::BindRepeating(&App::OnCertificateManagerModelCreated,
-                            base::Unretained(this), base::Passed(&copy),
-                            callback));
+void App::ImportCertificate(gin_helper::ErrorThrower thrower,
+                            base::Value options,
+                            net::CompletionOnceCallback callback) {
+  if (!options.is_dict()) {
+    thrower.ThrowTypeError("Expected options to be an object");
     return;
   }
 
-  int rv = ImportIntoCertStore(certificate_manager_model_.get(), options);
+  auto browser_context = ElectronBrowserContext::From("", false);
+  if (!certificate_manager_model_) {
+    CertificateManagerModel::Create(
+        browser_context.get(),
+        base::BindOnce(&App::OnCertificateManagerModelCreated,
+                       base::Unretained(this), std::move(options),
+                       std::move(callback)));
+    return;
+  }
+
+  int rv =
+      ImportIntoCertStore(certificate_manager_model_.get(), std::move(options));
   std::move(callback).Run(rv);
 }
 
 void App::OnCertificateManagerModelCreated(
-    std::unique_ptr<base::DictionaryValue> options,
+    base::Value options,
     net::CompletionOnceCallback callback,
     std::unique_ptr<CertificateManagerModel> model) {
   certificate_manager_model_ = std::move(model);
   int rv =
-      ImportIntoCertStore(certificate_manager_model_.get(), *(options.get()));
+      ImportIntoCertStore(certificate_manager_model_.get(), std::move(options));
   std::move(callback).Run(rv);
 }
 #endif

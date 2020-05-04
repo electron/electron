@@ -4,7 +4,7 @@ import * as https from 'https';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ChildProcess from 'child_process';
-import { session, BrowserWindow, net, ipcMain, Session } from 'electron';
+import { session, BrowserWindow, net, ipcMain, Session } from 'electron/main';
 import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './window-helpers';
@@ -114,6 +114,24 @@ describe('session module', () => {
       const c = (await cookies.get({ url }))[0];
       expect(c.name).to.be.empty();
       expect(c.value).to.equal(value);
+    });
+
+    for (const sameSite of <const>['unspecified', 'no_restriction', 'lax', 'strict']) {
+      it(`sets cookies with samesite=${sameSite}`, async () => {
+        const { cookies } = session.defaultSession;
+        const value = 'hithere';
+        await cookies.set({ url, value, sameSite });
+        const c = (await cookies.get({ url }))[0];
+        expect(c.name).to.be.empty();
+        expect(c.value).to.equal(value);
+        expect(c.sameSite).to.equal(sameSite);
+      });
+    }
+
+    it(`fails to set cookies with samesite=garbage`, async () => {
+      const { cookies } = session.defaultSession;
+      const value = 'hithere';
+      await expect(cookies.set({ url, value, sameSite: 'garbage' as any })).to.eventually.be.rejectedWith('Failed to convert \'garbage\' to an appropriate cookie same site value');
     });
 
     it('gets cookies without url', async () => {
@@ -293,7 +311,7 @@ describe('session module', () => {
       const { item, itemUrl, itemFilename } = await downloadPrevented;
       expect(itemUrl).to.equal(url);
       expect(itemFilename).to.equal('mockFile.txt');
-      expect(() => item.getURL()).to.throw('Object has been destroyed');
+      expect(() => item.getURL()).to.throw('DownloadItem used after being destroyed');
     });
   });
 

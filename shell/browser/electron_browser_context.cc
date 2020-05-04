@@ -122,8 +122,6 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                 .Append(base::FilePath::FromUTF8Unsafe(
                     MakePartitionName(partition)));
 
-  content::BrowserContext::Initialize(this, path_);
-
   BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
 
   // Initialize Pref Registry.

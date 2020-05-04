@@ -22,12 +22,12 @@ CrashReporterMac::CrashReporterMac() {}
 
 CrashReporterMac::~CrashReporterMac() {}
 
-void CrashReporterMac::Init(const std::string& product_name,
-                            const std::string& company_name,
-                            const std::string& submit_url,
+void CrashReporterMac::Init(const std::string& submit_url,
                             const base::FilePath& crashes_dir,
                             bool upload_to_server,
-                            bool skip_system_crash_handler) {
+                            bool skip_system_crash_handler,
+                            bool rate_limit,
+                            bool compress) {
   // check whether crashpad has been initialized.
   // Only need to initialize once.
   if (simple_string_dictionary_)
@@ -39,10 +39,11 @@ void CrashReporterMac::Init(const std::string& product_name,
       base::FilePath handler_path =
           framework_bundle_path.Append("Resources").Append("crashpad_handler");
 
-      std::vector<std::string> args = {
-          "--no-rate-limit",
-          "--no-upload-gzip",  // not all servers accept gzip
-      };
+      std::vector<std::string> args;
+      if (!rate_limit)
+        args.emplace_back("--no-rate-limit");
+      if (!compress)
+        args.emplace_back("--no-upload-gzip");
 
       crashpad::CrashpadClient crashpad_client;
       crashpad_client.StartHandler(handler_path, crashes_dir, crashes_dir,

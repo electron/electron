@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { systemPreferences } from 'electron';
+import { systemPreferences } from 'electron/main';
 import { ifdescribe } from './spec-helpers';
 
 describe('systemPreferences module', () => {
@@ -111,7 +111,7 @@ describe('systemPreferences module', () => {
 
     it('throws when type is not valid', () => {
       expect(() => {
-        systemPreferences.setUserDefault(KEY, 'abc', 'foo');
+        systemPreferences.setUserDefault(KEY, 'abc' as any, 'foo');
       }).to.throw('Invalid type: abc');
     });
   });

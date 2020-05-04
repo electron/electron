@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <andy@slack-corp.com>
+Date: Thu, 2 Apr 2020 15:05:00 -0700
+Subject: fix: account for print preview disabled when printing to pdf
+
+Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2068936
+
+Avoid an optimization introduced in the above CL. In my limited
+understanding, it seems like we slightly misuse the print preview API
+and this is fallout from using it in a way the code doesn't expect.
+
+diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
+index 5d829b6ef0c02d0f230c9581377fe3b5941d9b42..776ca12f4509d317ff10461efbad8b7a09bd3afd 100644
+--- a/components/printing/renderer/print_render_frame_helper.cc
++++ b/components/printing/renderer/print_render_frame_helper.cc
+@@ -1475,6 +1475,7 @@ PrintRenderFrameHelper::CreatePreviewDocument() {
+   const std::vector<int>& pages = print_pages_params_->pages;
+ 
+   bool require_document_metafile =
++      !g_is_preview_enabled ||
+       print_renderer_ ||
+       print_params.printed_doc_type != SkiaDocumentType::MSKP;
+   if (!print_preview_context_.CreatePreviewDocument(

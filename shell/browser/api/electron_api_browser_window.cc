@@ -12,12 +12,12 @@
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
-#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -32,8 +32,6 @@ namespace api {
 BrowserWindow::BrowserWindow(gin::Arguments* args,
                              const gin_helper::Dictionary& options)
     : TopLevelWindow(args->isolate(), options), weak_factory_(this) {
-  gin::Handle<class WebContents> web_contents;
-
   // Use options.webPreferences in WebContents.
   v8::Isolate* isolate = args->isolate();
   gin_helper::Dictionary web_preferences =
@@ -60,23 +58,20 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, show);
   }
 
-  if (options.Get("webContents", &web_contents) && !web_contents.IsEmpty()) {
-    // Set webPreferences from options if using an existing webContents.
-    // These preferences will be used when the webContent launches new
-    // render processes.
-    auto* existing_preferences =
-        WebContentsPreferences::From(web_contents->web_contents());
-    base::DictionaryValue web_preferences_dict;
-    if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
-                           &web_preferences_dict)) {
-      existing_preferences->Clear();
-      existing_preferences->Merge(web_preferences_dict);
-    }
-  } else {
-    // Creates the WebContents used by BrowserWindow.
-    web_contents = WebContents::Create(isolate, web_preferences);
+  // Copy the webContents option to webPreferences. This is only used internally
+  // to implement nativeWindowOpen option.
+  if (options.Get("webContents", &value)) {
+    web_preferences.SetHidden("webContents", value);
   }
 
+  // Creates the WebContentsView.
+  gin::Handle<WebContentsView> web_contents_view =
+      WebContentsView::Create(isolate, web_preferences);
+  DCHECK(web_contents_view.get());
+
+  // Save a reference of the WebContents.
+  gin::Handle<WebContents> web_contents =
+      web_contents_view->GetWebContents(isolate);
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents->GetWeakPtr();
   api_web_contents_->AddObserver(this);
@@ -94,6 +89,9 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     host->GetWidget()->AddInputEventObserver(this);
 
   InitWithArgs(args);
+
+  // Install the content view after TopLevelWindow's JS code is initialized.
+  SetContentView(gin::CreateHandle<View>(isolate, web_contents_view.get()));
 
 #if defined(OS_MACOSX)
   OverrideNSWindowContentView(web_contents->managed_web_contents());

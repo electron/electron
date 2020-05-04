@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as url from 'url';
 
-import { BrowserWindow, WebPreferences } from 'electron';
+import { BrowserWindow, WebPreferences } from 'electron/main';
 
 import { closeWindow } from './window-helpers';
 import { AddressInfo } from 'net';

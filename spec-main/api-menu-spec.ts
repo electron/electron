@@ -1,7 +1,7 @@
 import * as cp from 'child_process';
 import * as path from 'path';
 import { expect } from 'chai';
-import { BrowserWindow, Menu, MenuItem } from 'electron';
+import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
 import { emittedOnce } from './events-helpers';
 import { ifit } from './spec-helpers';
@@ -86,10 +86,23 @@ describe('Menu module', function () {
         Menu.buildFromTemplate([{ visible: true }]);
       }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/);
     });
+
     it('does throw exception for undefined', () => {
       expect(() => {
         Menu.buildFromTemplate([undefined as any]);
       }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/);
+    });
+
+    it('throws when an empty array is passed as a template', () => {
+      expect(() => {
+        Menu.buildFromTemplate([]);
+      }).to.throw(/Invalid template for Menu: Menu template must be an non-empty array/);
+    });
+
+    it('throws when an non-array is passed as a template', () => {
+      expect(() => {
+        Menu.buildFromTemplate('hello' as any);
+      }).to.throw(/Invalid template for Menu: Menu template must be an array/);
     });
 
     describe('Menu sorting and building', () => {

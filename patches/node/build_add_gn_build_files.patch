@@ -7,16 +7,19 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e4aab62b85e6ea1eac68cc21056081b4ff4bd1d6
+index 0000000000000000000000000000000000000000..2d8952a1d23af0ab4b3e5de0e56ec1e30c77dd71
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,358 @@
+@@ -0,0 +1,376 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
 +declare_args() {
 +  # Enable the V8 inspector protocol for use with node.
 +  node_enable_inspector = true
++
++  # Enable diagnostic reporting withing Node.js
++  node_report = true
 +
 +  # Build node with SSL support.
 +  # The variable is called "openssl" for parity with node's GYP build.
@@ -122,6 +125,11 @@ index 0000000000000000000000000000000000000000..e4aab62b85e6ea1eac68cc21056081b4
 +    defines += [ "NODE_USE_V8_PLATFORM=1" ]
 +  } else {
 +    defines += [ "NODE_USE_V8_PLATFORM=0" ]
++  }
++  if (node_report) {
++    defines += [ "NODE_REPORT=1" ]
++  } else {
++    defines += [ "NODE_REPORT=0" ]
 +  }
 +}
 +
@@ -254,6 +262,14 @@ index 0000000000000000000000000000000000000000..e4aab62b85e6ea1eac68cc21056081b4
 +    libs += [ "CoreFoundation.framework" ]
 +  }
 +
++  if (node_report) {
++    sources += [
++      "src/node_report.cc",
++      "src/node_report_module.cc",
++      "src/node_report_utils.cc",
++    ]
++  }
++
 +  if (node_enable_inspector) {
 +    sources += [
 +      "src/inspector_agent.cc",
@@ -275,6 +291,8 @@ index 0000000000000000000000000000000000000000..e4aab62b85e6ea1eac68cc21056081b4
 +    sources += [
 +      "src/node_crypto.cc",
 +      "src/node_crypto.h",
++      "src/node_crypto_common.cc", 
++      "src/node_crypto_common.h",
 +      "src/node_crypto_bio.cc",
 +      "src/node_crypto_bio.h",
 +      "src/node_crypto_clienthello-inl.h",
@@ -371,10 +389,10 @@ index 0000000000000000000000000000000000000000..e4aab62b85e6ea1eac68cc21056081b4
 +}
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..0b7737ca061ae6a12647f5d7bf0c2d1bc7d5bdd9
+index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b260fefc4
 --- /dev/null
 +++ b/deps/cares/BUILD.gn
-@@ -0,0 +1,126 @@
+@@ -0,0 +1,131 @@
 +config("cares_config") {
 +  include_dirs = [ "include" ]
 +}
@@ -400,6 +418,7 @@ index 0000000000000000000000000000000000000000..0b7737ca061ae6a12647f5d7bf0c2d1b
 +    "src/ares__close_sockets.c",
 +    "src/ares__get_hostent.c",
 +    "src/ares__read_line.c",
++    "src/ares__readaddrinfo.c",
 +    "src/ares__timeval.c",
 +    "src/ares_android.c",
 +    "src/ares_cancel.c",
@@ -413,7 +432,9 @@ index 0000000000000000000000000000000000000000..0b7737ca061ae6a12647f5d7bf0c2d1b
 +    "src/ares_fds.c",
 +    "src/ares_free_hostent.c",
 +    "src/ares_free_string.c",
++    "src/ares_freeaddrinfo.c",
 +    "src/ares_getenv.h",
++    "src/ares_getaddrinfo.c",
 +    "src/ares_gethostbyaddr.c",
 +    "src/ares_gethostbyname.c",
 +    "src/ares_getnameinfo.c",
@@ -431,6 +452,7 @@ index 0000000000000000000000000000000000000000..0b7737ca061ae6a12647f5d7bf0c2d1b
 +    "src/ares_nowarn.c",
 +    "src/ares_nowarn.h",
 +    "src/ares_options.c",
++    "src/ares__parse_into_addrinfo.c",
 +    "src/ares_parse_a_reply.c",
 +    "src/ares_parse_aaaa_reply.c",
 +    "src/ares_parse_mx_reply.c",
@@ -447,6 +469,7 @@ index 0000000000000000000000000000000000000000..0b7737ca061ae6a12647f5d7bf0c2d1b
 +    "src/ares_search.c",
 +    "src/ares_send.c",
 +    "src/ares_setup.h",
++    "src/ares__sortaddrinfo.c",
 +    "src/ares_strcasecmp.c",
 +    "src/ares_strcasecmp.h",
 +    "src/ares_strdup.c",
@@ -545,12 +568,13 @@ index 0000000000000000000000000000000000000000..da9e2b42dccacc1ed9b00202c1ff73eb
 +}
 diff --git a/deps/llhttp/BUILD.gn b/deps/llhttp/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e34e241e6733b19bf1b5762ad1307af0eba383f6
+index 0000000000000000000000000000000000000000..ce15bc57093caa1bd84ea77e7438e892fb916427
 --- /dev/null
 +++ b/deps/llhttp/BUILD.gn
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,14 @@
 +config("llhttp_config") {
 +  include_dirs = [ "include" ]
++  cflags = [ "-Wno-unreachable-code" ]
 +}
 +
 +static_library("llhttp") {
@@ -616,10 +640,10 @@ index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..510d86194ed71d78b2c89c7a77422afc0ef614ad
+index 0000000000000000000000000000000000000000..67116f2070bb9200aace81afdf0b1e7a6e4fd0c0
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,191 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -664,6 +688,7 @@ index 0000000000000000000000000000000000000000..510d86194ed71d78b2c89c7a77422afc
 +    "-Wno-switch",
 +    "-Wno-unused-function",
 +    "-Wno-unused-variable",
++    "-Wno-unreachable-code",
 +  ]
 +
 +  libs = []
@@ -812,10 +837,10 @@ index 0000000000000000000000000000000000000000..510d86194ed71d78b2c89c7a77422afc
 +}
 diff --git a/deps/uvwasi/BUILD.gn b/deps/uvwasi/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e9beace20f25e270dd80509bd6d5871b140d5b79
+index 0000000000000000000000000000000000000000..6df1a603d5b2887e22e8e2863bb04c7128ab5eec
 --- /dev/null
 +++ b/deps/uvwasi/BUILD.gn
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,35 @@
 +config("uvwasi_config") {
 +  include_dirs = [ "include" ]
 +}
@@ -848,6 +873,7 @@ index 0000000000000000000000000000000000000000..e9beace20f25e270dd80509bd6d5871b
 +    "src/fd_table.c",
 +    "src/uv_mapping.c",
 +    "src/uvwasi.c",
++    "src/wasi_rights.c",
 +  ]
 +}
 diff --git a/deps/zlib/BUILD.gn b/deps/zlib/BUILD.gn
@@ -916,10 +942,10 @@ index 0000000000000000000000000000000000000000..f13b471d17128468bed06e66bd03a2ea
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..d325cdc5ca7a323834c6962fa43d2c9ff38a5728
+index 0000000000000000000000000000000000000000..13c7354ae7e8fe0bca3ba4c03b0e59f0d06b1558
 --- /dev/null
 +++ b/filenames.json
-@@ -0,0 +1,460 @@
+@@ -0,0 +1,498 @@
 +// This file is automatically generated by generate_gn_filenames_json.py
 +// DO NOT EDIT
 +{
@@ -937,8 +963,41 @@ index 0000000000000000000000000000000000000000..d325cdc5ca7a323834c6962fa43d2c9f
 +      ]
 +    },
 +    {
++      "dest_dir": "include/node//cppgc/",
++      "files": [
++        "//v8/include/cppgc/allocation.h",
++        "//v8/include/cppgc/garbage-collected.h",
++        "//v8/include/cppgc/heap.h",
++        "//v8/include/cppgc/liveness-broker.h",
++        "//v8/include/cppgc/macros.h",
++        "//v8/include/cppgc/member.h",
++        "//v8/include/cppgc/persistent.h",
++        "//v8/include/cppgc/platform.h",
++        "//v8/include/cppgc/prefinalizer.h",
++        "//v8/include/cppgc/source-location.h",
++        "//v8/include/cppgc/trace-trait.h",
++        "//v8/include/cppgc/type-traits.h",
++        "//v8/include/cppgc/visitor.h"
++      ]
++    },
++    {
++      "dest_dir": "include/node//cppgc/internal/",
++      "files": [
++        "//v8/include/cppgc/internal/accessors.h",
++        "//v8/include/cppgc/internal/api-constants.h",
++        "//v8/include/cppgc/internal/compiler-specific.h",
++        "//v8/include/cppgc/internal/finalizer-trait.h",
++        "//v8/include/cppgc/internal/gc-info.h",
++        "//v8/include/cppgc/internal/logging.h",
++        "//v8/include/cppgc/internal/persistent-node.h",
++        "//v8/include/cppgc/internal/pointer-policies.h",
++        "//v8/include/cppgc/internal/prefinalizer-handler.h"
++      ]
++    },
++    {
 +      "dest_dir": "include/node//",
 +      "files": [
++        "//v8/include/v8-fast-api-calls.h",
 +        "//v8/include/v8-internal.h",
 +        "//v8/include/v8-platform.h",
 +        "//v8/include/v8-profiler.h",
@@ -988,6 +1047,7 @@ index 0000000000000000000000000000000000000000..d325cdc5ca7a323834c6962fa43d2c9f
 +    }
 +  ],
 +  "library_files": [
++    "lib/internal/bootstrap/environment.js",
 +    "lib/internal/bootstrap/loaders.js",
 +    "lib/internal/bootstrap/node.js",
 +    "lib/internal/bootstrap/pre_execution.js",
@@ -997,6 +1057,7 @@ index 0000000000000000000000000000000000000000..d325cdc5ca7a323834c6962fa43d2c9f
 +    "lib/internal/bootstrap/switches/is_not_main_thread.js",
 +    "lib/internal/per_context/primordials.js",
 +    "lib/internal/per_context/domexception.js",
++    "lib/internal/per_context/messageport.js",
 +    "lib/async_hooks.js",
 +    "lib/assert.js",
 +    "lib/buffer.js",
@@ -1098,6 +1159,7 @@ index 0000000000000000000000000000000000000000..d325cdc5ca7a323834c6962fa43d2c9f
 +    "lib/internal/fs/utils.js",
 +    "lib/internal/fs/watchers.js",
 +    "lib/internal/http.js",
++    "lib/internal/histogram.js",
 +    "lib/internal/idna.js",
 +    "lib/internal/inspector_async_hook.js",
 +    "lib/internal/js_stream_socket.js",
@@ -1220,6 +1282,7 @@ index 0000000000000000000000000000000000000000..d325cdc5ca7a323834c6962fa43d2c9f
 +    "src/fs_event_wrap.cc",
 +    "src/handle_wrap.cc",
 +    "src/heap_utils.cc",
++    "src/histogram.cc",
 +    "src/js_native_api.h",
 +    "src/js_native_api_types.h",
 +    "src/js_native_api_v8.cc",
@@ -1300,6 +1363,7 @@ index 0000000000000000000000000000000000000000..d325cdc5ca7a323834c6962fa43d2c9f
 +    "src/connect_wrap.h",
 +    "src/connection_wrap.h",
 +    "src/debug_utils.h",
++    "src/debug_utils-inl.h",
 +    "src/env.h",
 +    "src/env-inl.h",
 +    "src/handle_wrap.h",
@@ -1586,7 +1650,7 @@ index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 88831ab19d72014f3e92c80516dc6c9d76e16158..01377c95b74879e74ca476eda6899e69597b9d89 100644
+index 958519fbe4a83293f5c7bfabb310d3f15d319922..935ead39a1148c22f8c778df750e0c24ceafe909 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@

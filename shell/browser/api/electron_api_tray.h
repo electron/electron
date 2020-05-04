@@ -12,6 +12,7 @@
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
 #include "shell/common/gin_converters/guid_converter.h"
@@ -99,7 +100,7 @@ class Tray : public gin::Wrappable<Tray>,
                       v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();
 
-  bool CheckDestroyed();
+  bool CheckAlive();
 
   v8::Global<v8::Value> menu_;
   std::unique_ptr<TrayIcon> tray_icon_;

@@ -9,7 +9,7 @@ Refs https://github.com/nodejs/node/pull/26960.
 Upstreamed at https://boringssl-review.googlesource.com/c/boringssl/+/38524.
 
 diff --git a/include/openssl/evp.h b/include/openssl/evp.h
-index 19baa64ddba84c3dd59e65aef77d1ebbf49e43df..37217c49f7e05eb25562023bf356fdadae1bc66f 100644
+index fe6c8b6adb3ec1259f1d66d7b77da3577cbaf2dc..d15cbdc394fbd0944314375115e38380462d17f4 100644
 --- a/include/openssl/evp.h
 +++ b/include/openssl/evp.h
 @@ -723,6 +723,18 @@ OPENSSL_EXPORT int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int padding);

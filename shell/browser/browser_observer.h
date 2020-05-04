@@ -55,6 +55,11 @@ class BrowserObserver : public base::CheckedObserver {
   // The app message loop is ready
   virtual void OnPreMainMessageLoopRun() {}
 
+  // Called just before app threads are created, this is where first access
+  // to in-process GpuDataManager should be made.
+  // Refer https://chromium-review.googlesource.com/c/chromium/src/+/2134864
+  virtual void OnPreCreateThreads() {}
+
 #if defined(OS_MACOSX)
   // The browser wants to report that an user activity will resume. (macOS only)
   virtual void OnWillContinueUserActivity(bool* prevent_default,

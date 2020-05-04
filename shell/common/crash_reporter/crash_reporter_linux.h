@@ -28,15 +28,18 @@ class CrashReporterLinux : public CrashReporter {
  public:
   static CrashReporterLinux* GetInstance();
 
-  void Init(const std::string& product_name,
-            const std::string& company_name,
-            const std::string& submit_url,
+  void Init(const std::string& submit_url,
             const base::FilePath& crashes_dir,
             bool upload_to_server,
-            bool skip_system_crash_handler) override;
+            bool skip_system_crash_handler,
+            bool rate_limit,
+            bool compress) override;
   void SetUploadToServer(bool upload_to_server) override;
   void SetUploadParameters() override;
   bool GetUploadToServer() override;
+  void AddExtraParameter(const std::string& key,
+                         const std::string& value) override;
+  void RemoveExtraParameter(const std::string& key) override;
 
  private:
   friend struct base::DefaultSingletonTraits<CrashReporterLinux>;

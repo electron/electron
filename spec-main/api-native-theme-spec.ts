@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { nativeTheme, systemPreferences, BrowserWindow } from 'electron';
+import { nativeTheme, systemPreferences, BrowserWindow } from 'electron/main';
 import * as os from 'os';
 import * as path from 'path';
 import * as semver from 'semver';

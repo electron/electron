@@ -20,6 +20,10 @@
 #include "shell/common/node_includes.h"
 #include "tracing/trace_event.h"
 
+namespace {
+v8::Isolate* g_isolate;
+}
+
 namespace electron {
 
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
@@ -46,6 +50,7 @@ JavascriptEnvironment::~JavascriptEnvironment() {
     context_.Get(isolate_)->Exit();
   }
   isolate_->Exit();
+  g_isolate = nullptr;
 }
 
 v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
@@ -73,8 +78,15 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
+  g_isolate = isolate;
 
   return isolate;
+}
+
+// static
+v8::Isolate* JavascriptEnvironment::GetIsolate() {
+  CHECK(g_isolate);
+  return g_isolate;
 }
 
 void JavascriptEnvironment::OnMessageLoopCreated() {

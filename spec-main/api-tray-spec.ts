@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import { Menu, Tray, nativeImage } from 'electron';
+import { Menu, Tray } from 'electron/main';
+import { nativeImage } from 'electron/common';
 import { ifdescribe, ifit } from './spec-helpers';
 import * as path from 'path';
 

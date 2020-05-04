@@ -10,6 +10,18 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list_observer.h"
 
+namespace {
+template <typename T>
+std::vector<base::WeakPtr<T>> ConvertToWeakPtrVector(std::vector<T*> raw_ptrs) {
+  std::vector<base::WeakPtr<T>> converted_to_weak;
+  converted_to_weak.reserve(raw_ptrs.size());
+  for (auto* raw_ptr : raw_ptrs) {
+    converted_to_weak.push_back(raw_ptr->GetWeakPtr());
+  }
+  return converted_to_weak;
+}
+}  // namespace
+
 namespace electron {
 
 // static
@@ -80,20 +92,26 @@ void WindowList::RemoveObserver(WindowListObserver* observer) {
 
 // static
 void WindowList::CloseAllWindows() {
-  WindowVector windows = GetInstance()->windows_;
+  std::vector<base::WeakPtr<NativeWindow>> weak_windows =
+      ConvertToWeakPtrVector(GetInstance()->windows_);
 #if defined(OS_MACOSX)
-  std::reverse(windows.begin(), windows.end());
+  std::reverse(weak_windows.begin(), weak_windows.end());
 #endif
-  for (auto* const& window : windows)
-    if (!window->IsClosed())
+  for (const auto& window : weak_windows) {
+    if (window && !window->IsClosed())
       window->Close();
+  }
 }
 
 // static
 void WindowList::DestroyAllWindows() {
-  WindowVector windows = GetInstance()->windows_;
-  for (auto* const& window : windows)
-    window->CloseImmediately();  // e.g. Destroy()
+  std::vector<base::WeakPtr<NativeWindow>> weak_windows =
+      ConvertToWeakPtrVector(GetInstance()->windows_);
+
+  for (const auto& window : weak_windows) {
+    if (window)
+      window->CloseImmediately();
+  }
 }
 
 WindowList::WindowList() = default;

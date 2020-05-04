@@ -225,6 +225,12 @@ void Browser::PreMainMessageLoopRun() {
   }
 }
 
+void Browser::PreCreateThreads() {
+  for (BrowserObserver& observer : observers_) {
+    observer.OnPreCreateThreads();
+  }
+}
+
 void Browser::SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure) {
   if (is_shutdown_)
     RunQuitClosure(std::move(quit_closure));

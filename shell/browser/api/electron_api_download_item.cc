@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_download_item.h"
 
 #include <map>
+#include <memory>
 
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -53,16 +54,41 @@ namespace api {
 
 namespace {
 
-std::map<uint32_t, v8::Global<v8::Value>> g_download_item_objects;
+// Ordinarily base::SupportsUserData only supports strong links, where the
+// thing to which the user data is attached owns the user data. But we can't
+// make the api::DownloadItem owned by the DownloadItem, since it's owned by
+// V8. So this makes a weak link. The lifetimes of download::DownloadItem and
+// api::DownloadItem are fully independent, and either one may be destroyed
+// before the other.
+struct UserDataLink : base::SupportsUserData::Data {
+  explicit UserDataLink(base::WeakPtr<DownloadItem> item)
+      : download_item(item) {}
+
+  base::WeakPtr<DownloadItem> download_item;
+};
+
+const void* kElectronApiDownloadItemKey = &kElectronApiDownloadItemKey;
 
 }  // namespace
+
+gin::WrapperInfo DownloadItem::kWrapperInfo = {gin::kEmbedderNativeGin};
+
+// static
+DownloadItem* DownloadItem::FromDownloadItem(
+    download::DownloadItem* download_item) {
+  // ^- say that 7 times fast in a row
+  UserDataLink* data = static_cast<UserDataLink*>(
+      download_item->GetUserData(kElectronApiDownloadItemKey));
+  return data ? data->download_item.get() : nullptr;
+}
 
 DownloadItem::DownloadItem(v8::Isolate* isolate,
                            download::DownloadItem* download_item)
     : download_item_(download_item) {
   download_item_->AddObserver(this);
-  Init(isolate);
-  AttachAsUserData(download_item);
+  download_item_->SetUserData(
+      kElectronApiDownloadItemKey,
+      std::make_unique<UserDataLink>(weak_factory_.GetWeakPtr()));
 }
 
 DownloadItem::~DownloadItem() {
@@ -71,17 +97,23 @@ DownloadItem::~DownloadItem() {
     download_item_->RemoveObserver(this);
     download_item_->Remove();
   }
+}
 
-  // Remove from the global map.
-  g_download_item_objects.erase(weak_map_id());
+bool DownloadItem::CheckAlive() const {
+  if (!download_item_) {
+    gin_helper::ErrorThrower(v8::Isolate::GetCurrent())
+        .ThrowError("DownloadItem used after being destroyed");
+    return false;
+  }
+  return true;
 }
 
 void DownloadItem::OnDownloadUpdated(download::DownloadItem* item) {
+  if (!CheckAlive())
+    return;
   if (download_item_->IsDone()) {
     Emit("done", item->GetState());
-    // Destroy the item once item is downloaded.
-    base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE,
-                                                  GetDestroyClosure());
+    Unpin();
   } else {
     Emit("updated", item->GetState());
   }
@@ -89,47 +121,66 @@ void DownloadItem::OnDownloadUpdated(download::DownloadItem* item) {
 
 void DownloadItem::OnDownloadDestroyed(download::DownloadItem* download_item) {
   download_item_ = nullptr;
-  // Destroy the native class immediately when downloadItem is destroyed.
-  delete this;
+  Unpin();
 }
 
 void DownloadItem::Pause() {
+  if (!CheckAlive())
+    return;
   download_item_->Pause();
 }
 
 bool DownloadItem::IsPaused() const {
+  if (!CheckAlive())
+    return false;
   return download_item_->IsPaused();
 }
 
 void DownloadItem::Resume() {
+  if (!CheckAlive())
+    return;
   download_item_->Resume(true /* user_gesture */);
 }
 
 bool DownloadItem::CanResume() const {
+  if (!CheckAlive())
+    return false;
   return download_item_->CanResume();
 }
 
 void DownloadItem::Cancel() {
+  if (!CheckAlive())
+    return;
   download_item_->Cancel(true);
 }
 
 int64_t DownloadItem::GetReceivedBytes() const {
+  if (!CheckAlive())
+    return 0;
   return download_item_->GetReceivedBytes();
 }
 
 int64_t DownloadItem::GetTotalBytes() const {
+  if (!CheckAlive())
+    return 0;
   return download_item_->GetTotalBytes();
 }
 
 std::string DownloadItem::GetMimeType() const {
+  if (!CheckAlive())
+    return "";
   return download_item_->GetMimeType();
 }
 
 bool DownloadItem::HasUserGesture() const {
+  if (!CheckAlive())
+    return false;
   return download_item_->HasUserGesture();
 }
 
 std::string DownloadItem::GetFilename() const {
+  if (!CheckAlive())
+    return "";
   return base::UTF16ToUTF8(
       net::GenerateFileName(GetURL(), GetContentDisposition(), std::string(),
                             download_item_->GetSuggestedFilename(),
@@ -138,22 +189,32 @@ std::string DownloadItem::GetFilename() const {
 }
 
 std::string DownloadItem::GetContentDisposition() const {
+  if (!CheckAlive())
+    return "";
   return download_item_->GetContentDisposition();
 }
 
 const GURL& DownloadItem::GetURL() const {
+  if (!CheckAlive())
+    return GURL::EmptyGURL();
   return download_item_->GetURL();
 }
 
-const std::vector<GURL>& DownloadItem::GetURLChain() const {
-  return download_item_->GetUrlChain();
+v8::Local<v8::Value> DownloadItem::GetURLChain(v8::Isolate* isolate) const {
+  if (!CheckAlive())
+    return v8::Local<v8::Value>();
+  return gin::ConvertToV8(isolate, download_item_->GetUrlChain());
 }
 
 download::DownloadItem::DownloadState DownloadItem::GetState() const {
+  if (!CheckAlive())
+    return download::DownloadItem::IN_PROGRESS;
   return download_item_->GetState();
 }
 
 bool DownloadItem::IsDone() const {
+  if (!CheckAlive())
+    return false;
   return download_item_->IsDone();
 }
 
@@ -175,23 +236,28 @@ void DownloadItem::SetSaveDialogOptions(
 }
 
 std::string DownloadItem::GetLastModifiedTime() const {
+  if (!CheckAlive())
+    return "";
   return download_item_->GetLastModifiedTime();
 }
 
 std::string DownloadItem::GetETag() const {
+  if (!CheckAlive())
+    return "";
   return download_item_->GetETag();
 }
 
 double DownloadItem::GetStartTime() const {
+  if (!CheckAlive())
+    return 0;
   return download_item_->GetStartTime().ToDoubleT();
 }
 
 // static
-void DownloadItem::BuildPrototype(v8::Isolate* isolate,
-                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "DownloadItem"));
-  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::EventEmitterMixin<DownloadItem>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("pause", &DownloadItem::Pause)
       .SetMethod("isPaused", &DownloadItem::IsPaused)
       .SetMethod("resume", &DownloadItem::Resume)
@@ -218,38 +284,25 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getStartTime", &DownloadItem::GetStartTime);
 }
 
+const char* DownloadItem::GetTypeName() {
+  return "DownloadItem";
+}
+
 // static
-gin::Handle<DownloadItem> DownloadItem::Create(v8::Isolate* isolate,
-                                               download::DownloadItem* item) {
-  auto* existing = TrackableObject::FromWrappedClass(isolate, item);
+gin::Handle<DownloadItem> DownloadItem::FromOrCreate(
+    v8::Isolate* isolate,
+    download::DownloadItem* item) {
+  DownloadItem* existing = FromDownloadItem(item);
   if (existing)
-    return gin::CreateHandle(isolate, static_cast<DownloadItem*>(existing));
+    return gin::CreateHandle(isolate, existing);
 
   auto handle = gin::CreateHandle(isolate, new DownloadItem(isolate, item));
 
-  // Reference this object in case it got garbage collected.
-  g_download_item_objects[handle->weak_map_id()] =
-      v8::Global<v8::Value>(isolate, handle.ToV8());
+  handle->Pin(isolate);
+
   return handle;
 }
 
 }  // namespace api
 
 }  // namespace electron
-
-namespace {
-
-void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context,
-                void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary(isolate, exports)
-      .Set("DownloadItem", electron::api::DownloadItem::GetConstructor(isolate)
-                               ->GetFunction(context)
-                               .ToLocalChecked());
-}
-
-}  // namespace
-
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_download_item, Initialize)

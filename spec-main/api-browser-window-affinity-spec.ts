@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import * as path from 'path';
 
-import { ipcMain, BrowserWindow, WebPreferences, app } from 'electron';
+import { ipcMain, BrowserWindow, WebPreferences, app } from 'electron/main';
 import { closeWindow } from './window-helpers';
 
 describe('BrowserWindow with affinity module', () => {

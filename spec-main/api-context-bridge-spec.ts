@@ -1,17 +1,34 @@
-import { contextBridge, BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron/main';
+import { contextBridge } from 'electron/renderer';
 import { expect } from 'chai';
 import * as fs from 'fs-extra';
+import * as http from 'http';
 import * as os from 'os';
 import * as path from 'path';
 
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
+import { AddressInfo } from 'net';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
 
 describe('contextBridge', () => {
   let w: BrowserWindow;
   let dir: string;
+  let server: http.Server;
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('');
+    });
+    await new Promise(resolve => server.listen(0, resolve));
+  });
+
+  after(async () => {
+    if (server) await new Promise(resolve => server.close(resolve));
+    server = null as any;
+  });
 
   afterEach(async () => {
     await closeWindow(w);
@@ -45,10 +62,10 @@ describe('contextBridge', () => {
   const generateTests = (useSandbox: boolean) => {
     describe(`with sandbox=${useSandbox}`, () => {
       const makeBindingWindow = async (bindingCreator: Function) => {
-        const preloadContent = `const electron_1 = require('electron');
+        const preloadContent = `const renderer_1 = require('electron');
         ${useSandbox ? '' : `require('v8').setFlagsFromString('--expose_gc');
         const gc=require('vm').runInNewContext('gc');
-        electron_1.contextBridge.exposeInMainWorld('GCRunner', {
+        renderer_1.contextBridge.exposeInMainWorld('GCRunner', {
           run: () => gc()
         });`}
         (${bindingCreator.toString()})();`;
@@ -64,7 +81,7 @@ describe('contextBridge', () => {
             preload: path.resolve(tmpDir, 'preload.js')
           }
         });
-        await w.loadFile(path.resolve(fixturesPath, 'empty.html'));
+        await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
       };
 
       const callWithBindings = (fn: Function) =>
@@ -329,16 +346,40 @@ describe('contextBridge', () => {
               getFunction: () => () => 123
             });
           });
-          expect((await getGCInfo()).functionCount).to.equal(2);
+          await callWithBindings(async (root: any) => {
+            root.GCRunner.run();
+          });
+          const baseValue = (await getGCInfo()).functionCount;
           await callWithBindings(async (root: any) => {
             root.x = [root.example.getFunction()];
           });
-          expect((await getGCInfo()).functionCount).to.equal(3);
+          expect((await getGCInfo()).functionCount).to.equal(baseValue + 1);
           await callWithBindings(async (root: any) => {
             root.x = [];
             root.GCRunner.run();
           });
-          expect((await getGCInfo()).functionCount).to.equal(2);
+          expect((await getGCInfo()).functionCount).to.equal(baseValue);
+        });
+      }
+
+      if (useSandbox) {
+        it('should not leak the global hold on methods sent across contexts when reloading a sandboxed renderer', async () => {
+          await makeBindingWindow(() => {
+            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', (contextBridge as any).debugGC()));
+            contextBridge.exposeInMainWorld('example', {
+              getFunction: () => () => 123
+            });
+            require('electron').ipcRenderer.send('window-ready-for-tasking');
+          });
+          const loadPromise = emittedOnce(ipcMain, 'window-ready-for-tasking');
+          const baseValue = (await getGCInfo()).functionCount;
+          await callWithBindings((root: any) => {
+            root.location.reload();
+          });
+          await loadPromise;
+          // If this is ever "2" it means we leaked the exposed function and
+          // therefore the entire context after a reload
+          expect((await getGCInfo()).functionCount).to.equal(baseValue);
         });
       }
 
@@ -421,6 +462,7 @@ describe('contextBridge', () => {
             string: 'string',
             boolean: true,
             arr: [123, 'string', true, ['foo']],
+            getObject: () => ({ thing: 123 }),
             getNumber: () => 123,
             getString: () => 'string',
             getBoolean: () => true,
@@ -454,6 +496,7 @@ describe('contextBridge', () => {
             [example.arr[3][0], String],
             [example.getNumber, Function],
             [example.getNumber(), Number],
+            [example.getObject(), Object],
             [example.getString(), String],
             [example.getBoolean(), Boolean],
             [example.getArr(), Array],

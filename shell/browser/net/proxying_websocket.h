@@ -12,7 +12,7 @@
 
 #include "base/optional.h"
 #include "components/keyed_service/core/keyed_service_shutdown_notifier.h"
-#include "extensions/browser/api/web_request/web_request_api.h"
+#include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -37,6 +37,21 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
  public:
   using WebSocketFactory = content::ContentBrowserClient::WebSocketFactory;
 
+  // AuthRequiredResponse indicates how an OnAuthRequired call is handled.
+  enum class AuthRequiredResponse {
+    // No credenitals were provided.
+    AUTH_REQUIRED_RESPONSE_NO_ACTION,
+    // AuthCredentials is filled in with a username and password, which should
+    // be used in a response to the provided auth challenge.
+    AUTH_REQUIRED_RESPONSE_SET_AUTH,
+    // The request should be canceled.
+    AUTH_REQUIRED_RESPONSE_CANCEL_AUTH,
+    // The action will be decided asynchronously. |callback| will be invoked
+    // when the decision is made, and one of the other AuthRequiredResponse
+    // values will be passed in with the same semantics as described above.
+    AUTH_REQUIRED_RESPONSE_IO_PENDING,
+  };
+
   ProxyingWebSocket(
       WebRequestAPI* web_request_api,
       WebSocketFactory factory,
@@ -59,7 +74,8 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       mojo::PendingRemote<network::mojom::WebSocket> websocket,
       mojo::PendingReceiver<network::mojom::WebSocketClient> client_receiver,
       network::mojom::WebSocketHandshakeResponsePtr response,
-      mojo::ScopedDataPipeConsumerHandle readable) override;
+      mojo::ScopedDataPipeConsumerHandle readable,
+      mojo::ScopedDataPipeProducerHandle writable) override;
 
   // network::mojom::AuthenticationHandler method:
   void OnAuthRequired(const net::AuthChallengeInfo& auth_info,
@@ -99,8 +115,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   void ContinueToStartRequest(int error_code);
   void OnHeadersReceivedComplete(int error_code);
   void ContinueToHeadersReceived();
-  void OnAuthRequiredComplete(
-      extensions::ExtensionWebRequestEventRouter::AuthRequiredResponse rv);
+  void OnAuthRequiredComplete(AuthRequiredResponse rv);
   void OnHeadersReceivedCompleteForAuth(const net::AuthChallengeInfo& auth_info,
                                         int rv);
   void ContinueToCompleted();
@@ -149,6 +164,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   mojo::PendingReceiver<network::mojom::WebSocketClient> client_receiver_;
   network::mojom::WebSocketHandshakeResponsePtr handshake_response_ = nullptr;
   mojo::ScopedDataPipeConsumerHandle readable_;
+  mojo::ScopedDataPipeProducerHandle writable_;
 
   extensions::WebRequestInfo info_;
 

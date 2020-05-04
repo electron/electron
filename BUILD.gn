@@ -3,6 +3,7 @@ import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
+import("//extensions/buildflags/buildflags.gni")
 import("//pdf/features.gni")
 import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
@@ -56,6 +57,17 @@ electron_mac_bundle_id = branding.mac_bundle_id
 if (is_mas_build) {
   assert(is_mac,
          "It doesn't make sense to build a MAS build on a non-mac platform")
+}
+
+if (enable_pdf_viewer) {
+  assert(enable_pdf, "PDF viewer support requires enable_pdf=true")
+  assert(enable_electron_extensions,
+         "PDF viewer support requires enable_electron_extensions=true")
+}
+
+if (enable_electron_extensions) {
+  assert(enable_extensions,
+         "Chrome extension support requires enable_extensions=true")
 }
 
 config("branding") {
@@ -127,15 +139,6 @@ webpack_build("electron_isolated_renderer_bundle") {
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
-webpack_build("electron_content_script_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.content_script_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.content_script.js"
-  out_file = "$target_gen_dir/js2c/content_script_bundle.js"
-}
-
 copy("electron_js2c_copy") {
   sources = [
     "lib/common/asar.js",
@@ -147,7 +150,6 @@ copy("electron_js2c_copy") {
 action("electron_js2c") {
   deps = [
     ":electron_browser_bundle",
-    ":electron_content_script_bundle",
     ":electron_isolated_renderer_bundle",
     ":electron_js2c_copy",
     ":electron_renderer_bundle",
@@ -157,7 +159,6 @@ action("electron_js2c") {
 
   webpack_sources = [
     "$target_gen_dir/js2c/browser_init.js",
-    "$target_gen_dir/js2c/content_script_bundle.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
@@ -224,7 +225,6 @@ grit("resources") {
   ]
 
   # Mojo manifest overlays are generated.
-  source_is_generated = true
   grit_flags = [
     "-E",
     "target_gen_dir=" + rebase_path(target_gen_dir, root_build_dir),
@@ -331,7 +331,9 @@ source_set("electron_lib") {
     "//components/network_hints/common:mojo_bindings",
     "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
+    "//components/pref_registry",
     "//components/prefs",
+    "//components/user_prefs",
     "//components/viz/host",
     "//components/viz/service",
     "//content/public/browser",
@@ -377,7 +379,7 @@ source_set("electron_lib") {
   public_deps = [
     "//base",
     "//base:i18n",
-    "//content/public/app:both",
+    "//content/public/app",
   ]
 
   include_dirs = [
@@ -494,15 +496,21 @@ source_set("electron_lib") {
     deps += [
       ":libnotify_loader",
       "//build/config/linux/gtk",
-      "//chrome/browser/ui/gtk",
       "//dbus",
       "//device/bluetooth",
       "//third_party/breakpad:client",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
+      "//ui/gtk",
       "//ui/views/controls/webview",
       "//ui/wm",
     ]
+    if (use_x11) {
+      deps += [
+        "//ui/gfx/x",
+        "//ui/gtk/x",
+      ]
+    }
     configs += [ ":gio_unix" ]
     include_dirs += [ "//third_party/breakpad" ]
     configs += [ "//build/config/linux:x11" ]
@@ -617,15 +625,6 @@ source_set("electron_lib") {
     deps += [ "//components/printing/common:mojo_interfaces" ]
   }
 
-  deps += [
-    "//components/pref_registry",
-    "//components/user_prefs",
-    "//extensions/browser",
-    "//extensions/browser:core_api_provider",
-    "//extensions/common",
-    "//extensions/common:core_api_provider",
-    "//extensions/renderer",
-  ]
   if (enable_electron_extensions) {
     sources += filenames.lib_sources_extensions
     deps += [
@@ -634,6 +633,11 @@ source_set("electron_lib") {
       "shell/common/extensions/api:extensions_features",
       "//chrome/browser/resources:component_extension_resources",
       "//components/zoom",
+      "//extensions/browser",
+      "//extensions/browser:core_api_provider",
+      "//extensions/common",
+      "//extensions/common:core_api_provider",
+      "//extensions/renderer",
     ]
   }
 
@@ -714,7 +718,6 @@ if (is_mac) {
       sources = [
         "$root_out_dir/egl_intermediates/libEGL.dylib",
         "$root_out_dir/egl_intermediates/libGLESv2.dylib",
-        "$root_out_dir/egl_intermediates/libvulkan.dylib",
       ]
       outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
       public_deps = [ "//ui/gl:angle_library_copy" ]
@@ -753,6 +756,12 @@ if (is_mac) {
     outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
 
     public_deps = [ "//third_party/crashpad/crashpad/handler:crashpad_handler" ]
+
+    if (is_asan) {
+      # crashpad_handler requires the ASan runtime at its @executable_path.
+      sources += [ "$root_out_dir/libclang_rt.asan_osx_dynamic.dylib" ]
+      public_deps += [ "//build/config/sanitizers:copy_asan_runtime" ]
+    }
   }
 
   mac_framework_bundle("electron_framework") {
@@ -1053,7 +1062,7 @@ if (is_mac) {
     if (is_win) {
       sources += [
         # TODO: we should be generating our .rc files more like how chrome does
-        "shell/browser/resources/win/atom.rc",
+        "shell/browser/resources/win/electron.rc",
         "shell/browser/resources/win/resource.h",
       ]
 
@@ -1080,7 +1089,7 @@ if (is_mac) {
       # See https://github.com/nodejs/node-gyp/commit/52ceec3a6d15de3a8f385f43dbe5ecf5456ad07a
       ldflags += [ "/DEF:" + rebase_path("build/electron.def", root_build_dir) ]
       inputs = [
-        "shell/browser/resources/win/atom.ico",
+        "shell/browser/resources/win/electron.ico",
         "build/electron.def",
       ]
     }

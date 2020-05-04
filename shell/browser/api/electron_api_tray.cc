@@ -93,14 +93,20 @@ gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
 void Tray::OnClicked(const gfx::Rect& bounds,
                      const gfx::Point& location,
                      int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("click", CreateEventFromFlags(modifiers), bounds, location);
 }
 
 void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("double-click", CreateEventFromFlags(modifiers), bounds);
 }
 
 void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("right-click", CreateEventFromFlags(modifiers), bounds);
 }
 
@@ -129,22 +135,32 @@ void Tray::OnDropText(const std::string& text) {
 }
 
 void Tray::OnMouseEntered(const gfx::Point& location, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("mouse-enter", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseExited(const gfx::Point& location, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("mouse-leave", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseMoved(const gfx::Point& location, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("mouse-move", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseUp(const gfx::Point& location, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("mouse-up", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseDown(const gfx::Point& location, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("mouse-down", CreateEventFromFlags(modifiers), location);
 }
 
@@ -170,7 +186,7 @@ bool Tray::IsDestroyed() {
 }
 
 void Tray::SetImage(gin::Handle<NativeImage> image) {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
 #if defined(OS_WIN)
   tray_icon_->SetImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
@@ -180,7 +196,7 @@ void Tray::SetImage(gin::Handle<NativeImage> image) {
 }
 
 void Tray::SetPressedImage(gin::Handle<NativeImage> image) {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
 #if defined(OS_WIN)
   tray_icon_->SetPressedImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
@@ -190,13 +206,13 @@ void Tray::SetPressedImage(gin::Handle<NativeImage> image) {
 }
 
 void Tray::SetToolTip(const std::string& tool_tip) {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   tray_icon_->SetToolTip(tool_tip);
 }
 
 void Tray::SetTitle(const std::string& title) {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
 #if defined(OS_MACOSX)
   tray_icon_->SetTitle(title);
@@ -204,7 +220,7 @@ void Tray::SetTitle(const std::string& title) {
 }
 
 std::string Tray::GetTitle() {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return std::string();
 #if defined(OS_MACOSX)
   return tray_icon_->GetTitle();
@@ -214,7 +230,7 @@ std::string Tray::GetTitle() {
 }
 
 void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
 #if defined(OS_MACOSX)
   tray_icon_->SetIgnoreDoubleClickEvents(ignore);
@@ -222,7 +238,7 @@ void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
 }
 
 bool Tray::GetIgnoreDoubleClickEvents() {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return false;
 #if defined(OS_MACOSX)
   return tray_icon_->GetIgnoreDoubleClickEvents();
@@ -233,7 +249,7 @@ bool Tray::GetIgnoreDoubleClickEvents() {
 
 void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
                           const gin_helper::Dictionary& options) {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   TrayIcon::BalloonOptions balloon_options;
 
@@ -263,19 +279,19 @@ void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
 }
 
 void Tray::RemoveBalloon() {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   tray_icon_->RemoveBalloon();
 }
 
 void Tray::Focus() {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   tray_icon_->Focus();
 }
 
 void Tray::PopUpContextMenu(gin::Arguments* args) {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   gin::Handle<Menu> menu;
   gfx::Point pos;
@@ -298,14 +314,14 @@ void Tray::PopUpContextMenu(gin::Arguments* args) {
 }
 
 void Tray::CloseContextMenu() {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   tray_icon_->CloseContextMenu();
 }
 
 void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
                           v8::Local<v8::Value> arg) {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return;
   gin::Handle<Menu> menu;
   if (arg->IsNull()) {
@@ -320,12 +336,12 @@ void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
 }
 
 gfx::Rect Tray::GetBounds() {
-  if (!CheckDestroyed())
+  if (!CheckAlive())
     return gfx::Rect();
   return tray_icon_->GetBounds();
 }
 
-bool Tray::CheckDestroyed() {
+bool Tray::CheckAlive() {
   if (!tray_icon_) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::Locker locker(isolate);

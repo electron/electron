@@ -4,7 +4,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
 import * as ChildProcess from 'child_process';
-import { BrowserWindow, ipcMain, webContents, session, WebContents, app, clipboard } from 'electron';
+import { BrowserWindow, ipcMain, webContents, session, WebContents, app } from 'electron/main';
+import { clipboard } from 'electron/common';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
@@ -53,14 +54,16 @@ describe('webContents module', () => {
 
     it('emits if beforeunload returns false', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      w.webContents.executeJavaScript('run()', true);
       await emittedOnce(w.webContents, 'will-prevent-unload');
     });
 
     it('supports calling preventDefault on will-prevent-unload events', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', event => event.preventDefault());
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      w.webContents.executeJavaScript('run()', true);
       await emittedOnce(w, 'closed');
     });
   });
@@ -381,7 +384,7 @@ describe('webContents module', () => {
       const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
       w.webContents.openDevTools();
       await devToolsOpened;
-      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.devToolsWebContents.id);
+      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.devToolsWebContents!.id);
       const devToolsClosed = emittedOnce(w.webContents, 'devtools-closed');
       w.webContents.closeDevTools();
       await devToolsClosed;
@@ -465,7 +468,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.openDevTools();
       w.webContents.once('devtools-opened', () => {
-        expect(w.webContents.devToolsWebContents.getWebPreferences()).to.be.null();
+        expect(w.webContents.devToolsWebContents!.getWebPreferences()).to.be.null();
         done();
       });
     });
@@ -1653,11 +1656,11 @@ describe('webContents module', () => {
       const opened = emittedOnce(w.webContents, 'devtools-opened');
       w.webContents.openDevTools();
       await opened;
-      await emittedOnce(w.webContents.devToolsWebContents, 'did-finish-load');
-      w.webContents.devToolsWebContents.focus();
+      await emittedOnce(w.webContents.devToolsWebContents!, 'did-finish-load');
+      w.webContents.devToolsWebContents!.focus();
 
       // Focus an input field
-      await w.webContents.devToolsWebContents.executeJavaScript(`
+      await w.webContents.devToolsWebContents!.executeJavaScript(`
         const input = document.createElement('input')
         document.body.innerHTML = ''
         document.body.appendChild(input)
@@ -1667,7 +1670,7 @@ describe('webContents module', () => {
       // Write something to the clipboard
       clipboard.writeText('test value');
 
-      const pasted = w.webContents.devToolsWebContents.executeJavaScript(`new Promise(resolve => {
+      const pasted = w.webContents.devToolsWebContents!.executeJavaScript(`new Promise(resolve => {
         document.querySelector('input').addEventListener('paste', (e) => {
           resolve(e.target.value)
         })
@@ -1827,5 +1830,27 @@ describe('webContents module', () => {
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
     });
+  });
+
+  it('emits a cancelable event before creating a child webcontents', async () => {
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        sandbox: true
+      }
+    });
+    w.webContents.on('-will-add-new-contents' as any, (event: any, url: any) => {
+      expect(url).to.equal('about:blank');
+      event.preventDefault();
+    });
+    let wasCalled = false;
+    w.webContents.on('new-window' as any, () => {
+      wasCalled = true;
+    });
+    await w.loadURL('about:blank');
+    await w.webContents.executeJavaScript(`window.open('about:blank')`);
+    await new Promise((resolve) => { process.nextTick(resolve); });
+    expect(wasCalled).to.equal(false);
+    await closeAllWindows();
   });
 });

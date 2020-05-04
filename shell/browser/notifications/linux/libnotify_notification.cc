@@ -12,12 +12,12 @@
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/ui/gtk_util.h"
 #include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/gtk/gtk_util.h"
 
 namespace electron {
 

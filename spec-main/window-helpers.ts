@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BrowserWindow } from 'electron';
+import { BrowserWindow } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 
 async function ensureWindowIsClosed (window: BrowserWindow | null) {

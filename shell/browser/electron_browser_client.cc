@@ -91,6 +91,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "third_party/blink/public/common/loader/url_loader_throttle.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
@@ -115,7 +116,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PEPPER_FLASH)
-#include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
+#include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"  // nogncheck
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
@@ -140,6 +141,7 @@
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/guest_view/extensions_guest_view_message_filter.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/browser/info_map.h"
@@ -453,6 +455,7 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
     return;
 
   auto* browser_context = host->GetBrowserContext();
+  ALLOW_UNUSED_LOCAL(browser_context);
 
 #if BUILDFLAG(ENABLE_PRINTING)
   host->AddFilter(
@@ -1176,7 +1179,8 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
           context, false /* we don't support extensions::WebViewGuest */));
 #endif
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
-  protocol_registry->RegisterURLLoaderFactories(factories);
+  protocol_registry->RegisterURLLoaderFactories(
+      URLLoaderFactoryType::kNavigation, factories);
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1236,7 +1240,8 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
 
   if (web_contents) {
     ProtocolRegistry::FromBrowserContext(web_contents->GetBrowserContext())
-        ->RegisterURLLoaderFactories(factories);
+        ->RegisterURLLoaderFactories(URLLoaderFactoryType::kDocumentSubResource,
+                                     factories);
   }
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,

@@ -5,7 +5,7 @@ import * as os from 'os';
 import * as qs from 'querystring';
 import * as http from 'http';
 import { AddressInfo } from 'net';
-import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron';
+import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
 import { emittedOnce } from './events-helpers';
 import { ifit, ifdescribe } from './spec-helpers';
@@ -185,7 +185,8 @@ describe('BrowserWindow module', () => {
       expect(content).to.equal('close');
     });
     it('should emit beforeunload event', async () => {
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      w.webContents.executeJavaScript('run()', true);
       const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
       e.returnValue = null;
     });
@@ -959,6 +960,7 @@ describe('BrowserWindow module', () => {
           w.setPosition(pos[0], pos[1]);
         });
       });
+
       ifdescribe(process.platform !== 'linux')('Maximized state', () => {
         it('checks normal bounds when maximized', (done) => {
           const bounds = w.getBounds();
@@ -982,6 +984,7 @@ describe('BrowserWindow module', () => {
           w.maximize();
         });
       });
+
       ifdescribe(process.platform !== 'linux')('Minimized state', () => {
         it('checks normal bounds when minimized', (done) => {
           const bounds = w.getBounds();
@@ -1005,27 +1008,80 @@ describe('BrowserWindow module', () => {
           w.minimize();
         });
       });
-      ifdescribe(process.platform === 'win32')('Fullscreen state', () => {
-        it('checks normal bounds when fullscreen\'ed', (done) => {
-          const bounds = w.getBounds();
-          w.once('enter-full-screen', () => {
-            expectBoundsEqual(w.getNormalBounds(), bounds);
-            done();
+
+      ifdescribe(process.platform === 'win32')(`Fullscreen state`, () => {
+        it('with properties', () => {
+          it('can be set with the fullscreen constructor option', () => {
+            w = new BrowserWindow({ fullscreen: true });
+            expect(w.fullScreen).to.be.true();
           });
-          w.show();
-          w.setFullScreen(true);
+
+          it('can be changed', () => {
+            w.fullScreen = false;
+            expect(w.fullScreen).to.be.false();
+            w.fullScreen = true;
+            expect(w.fullScreen).to.be.true();
+          });
+
+          it(`checks normal bounds when fullscreen'ed`, (done) => {
+            const bounds = w.getBounds();
+            w.once('enter-full-screen', () => {
+              expectBoundsEqual(w.getNormalBounds(), bounds);
+              done();
+            });
+            w.show();
+            w.fullScreen = true;
+          });
+
+          it(`checks normal bounds when unfullscreen'ed`, (done) => {
+            const bounds = w.getBounds();
+            w.once('enter-full-screen', () => {
+              w.fullScreen = false;
+            });
+            w.once('leave-full-screen', () => {
+              expectBoundsEqual(w.getNormalBounds(), bounds);
+              done();
+            });
+            w.show();
+            w.fullScreen = true;
+          });
         });
-        it('checks normal bounds when unfullscreen\'ed', (done) => {
-          const bounds = w.getBounds();
-          w.once('enter-full-screen', () => {
+
+        it('with functions', () => {
+          it('can be set with the fullscreen constructor option', () => {
+            w = new BrowserWindow({ fullscreen: true });
+            expect(w.isFullScreen()).to.be.true();
+          });
+
+          it('can be changed', () => {
             w.setFullScreen(false);
+            expect(w.isFullScreen()).to.be.false();
+            w.setFullScreen(true);
+            expect(w.isFullScreen()).to.be.true();
           });
-          w.once('leave-full-screen', () => {
-            expectBoundsEqual(w.getNormalBounds(), bounds);
-            done();
+
+          it(`checks normal bounds when fullscreen'ed`, (done) => {
+            const bounds = w.getBounds();
+            w.once('enter-full-screen', () => {
+              expectBoundsEqual(w.getNormalBounds(), bounds);
+              done();
+            });
+            w.show();
+            w.setFullScreen(true);
           });
-          w.show();
-          w.setFullScreen(true);
+
+          it(`checks normal bounds when unfullscreen'ed`, (done) => {
+            const bounds = w.getBounds();
+            w.once('enter-full-screen', () => {
+              w.setFullScreen(false);
+            });
+            w.once('leave-full-screen', () => {
+              expectBoundsEqual(w.getNormalBounds(), bounds);
+              done();
+            });
+            w.show();
+            w.setFullScreen(true);
+          });
         });
       });
     });
@@ -1939,7 +1995,7 @@ describe('BrowserWindow module', () => {
         }
       }
 
-      const preload = path.join(fixtures, 'module', 'preload-sandbox.js');
+      const preload = path.join(path.resolve(__dirname, 'fixtures'), 'module', 'preload-sandbox.js');
 
       let server: http.Server = null as unknown as http.Server;
       let serverUrl: string = null as unknown as string;
@@ -2586,7 +2642,8 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'));
     });
     it('returning false would prevent close', async () => {
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      w.webContents.executeJavaScript('run()', true);
       const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
       e.returnValue = null;
     });
@@ -2594,57 +2651,103 @@ describe('BrowserWindow module', () => {
       ipcMain.once('onbeforeunload', (e) => { e.returnValue = null; done(); });
       w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-empty-string.html'));
     });
-    it('emits for each close attempt', (done) => {
-      let beforeUnloadCount = 0;
-      ipcMain.on('onbeforeunload', (e) => {
+
+    it('emits for each close attempt', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+
+      const destroyListener = () => { expect.fail('Close was not prevented'); };
+      w.webContents.once('destroyed', destroyListener);
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      {
+        const p = emittedOnce(ipcMain, 'onbeforeunload');
+        w.close();
+        const [e] = await p;
         e.returnValue = null;
-        beforeUnloadCount += 1;
-        if (beforeUnloadCount < 3) {
-          w.close();
-        } else if (beforeUnloadCount === 3) {
-          done();
-        }
-      });
-      w.webContents.once('did-finish-load', () => { w.webContents.executeJavaScript('window.close()', true); });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      }
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+
+      // Hi future test refactorer! I don't know what event this timeout allows
+      // to occur, but without it, this test becomes flaky at this point and
+      // sometimes the window gets closed even though a `beforeunload` handler
+      // has been installed. I looked for events being emitted by the
+      // `webContents` during this timeout period and found nothing, so it
+      // might be some sort of internal timeout being applied by the content/
+      // layer, or blink?
+      //
+      // In any case, this incantation reduces flakiness. I'm going to add a
+      // summoning circle for good measure.
+      //
+      //      🕯 🕯
+      //   🕯       🕯
+      // 🕯           🕯
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 🕯           🕯
+      //   🕯       🕯
+      //      🕯 🕯
+
+      {
+        const p = emittedOnce(ipcMain, 'onbeforeunload');
+        w.close();
+        const [e] = await p;
+        e.returnValue = null;
+      }
+
+      w.webContents.removeListener('destroyed', destroyListener);
+      const p = emittedOnce(w.webContents, 'destroyed');
+      w.close();
+      await p;
     });
-    it('emits for each reload attempt', (done) => {
-      let beforeUnloadCount = 0;
-      ipcMain.on('onbeforeunload', (e) => {
+
+    it('emits for each reload attempt', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+
+      const navigationListener = () => { expect.fail('Reload was not prevented'); };
+      w.webContents.once('did-start-navigation', navigationListener);
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      w.reload();
+      {
+        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
         e.returnValue = null;
-        beforeUnloadCount += 1;
-        if (beforeUnloadCount < 3) {
-          w.reload();
-        } else if (beforeUnloadCount === 3) {
-          done();
-        }
-      });
-      w.webContents.once('did-finish-load', () => {
-        w.webContents.once('did-finish-load', () => {
-          expect.fail('Reload was not prevented');
-        });
-        w.reload();
-      });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      }
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      w.reload();
+      {
+        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
+        e.returnValue = null;
+      }
+
+      w.webContents.removeListener('did-start-navigation', navigationListener);
+      w.reload();
+      await emittedOnce(w.webContents, 'did-finish-load');
     });
-    it('emits for each navigation attempt', (done) => {
-      let beforeUnloadCount = 0;
-      ipcMain.on('onbeforeunload', (e) => {
+
+    it('emits for each navigation attempt', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+
+      const navigationListener = () => { expect.fail('Reload was not prevented'); };
+      w.webContents.once('did-start-navigation', navigationListener);
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      w.loadURL('about:blank');
+      {
+        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
         e.returnValue = null;
-        beforeUnloadCount += 1;
-        if (beforeUnloadCount < 3) {
-          w.loadURL('about:blank');
-        } else if (beforeUnloadCount === 3) {
-          done();
-        }
-      });
-      w.webContents.once('did-finish-load', () => {
-        w.webContents.once('did-finish-load', () => {
-          expect.fail('Navigation was not prevented');
-        });
-        w.loadURL('about:blank');
-      });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      }
+
+      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      w.loadURL('about:blank');
+      {
+        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
+        e.returnValue = null;
+      }
+
+      w.webContents.removeListener('did-start-navigation', navigationListener);
+      w.loadURL('about:blank');
+      await emittedOnce(w.webContents, 'did-finish-load');
     });
   });
 
@@ -3437,6 +3540,96 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('visibleOnAllWorkspaces state', () => {
+      it('with properties', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.visibleOnAllWorkspaces).to.be.false();
+          w.visibleOnAllWorkspaces = true;
+          expect(w.visibleOnAllWorkspaces).to.be.true();
+        });
+      });
+
+      it('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.isVisibleOnAllWorkspaces()).to.be.false();
+          w.setVisibleOnAllWorkspaces(true);
+          expect(w.isVisibleOnAllWorkspaces()).to.be.true();
+        });
+      });
+    });
+
+    ifdescribe(process.platform === 'darwin')('documentEdited state', () => {
+      it('with properties', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.documentEdited).to.be.false();
+          w.documentEdited = true;
+          expect(w.documentEdited).to.be.true();
+        });
+      });
+
+      it('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.isDocumentEdited()).to.be.false();
+          w.setDocumentEdited(true);
+          expect(w.isDocumentEdited()).to.be.true();
+        });
+      });
+    });
+
+    ifdescribe(process.platform === 'darwin')('representedFilename', () => {
+      it('with properties', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.representedFilename).to.eql('');
+          w.representedFilename = 'a name';
+          expect(w.representedFilename).to.eql('a name');
+        });
+      });
+
+      it('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.getRepresentedFilename()).to.eql('');
+          w.setRepresentedFilename('a name');
+          expect(w.getRepresentedFilename()).to.eql('a name');
+        });
+      });
+    });
+
+    describe('native window title', () => {
+      it('with properties', () => {
+        it('can be set with title constructor option', () => {
+          const w = new BrowserWindow({ show: false, title: 'mYtItLe' });
+          expect(w.title).to.eql('mYtItLe');
+        });
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.title).to.eql('Electron Test Main');
+          w.title = 'NEW TITLE';
+          expect(w.title).to.eql('NEW TITLE');
+        });
+      });
+
+      it('with functions', () => {
+        it('can be set with minimizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, title: 'mYtItLe' });
+          expect(w.getTitle()).to.eql('mYtItLe');
+        });
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.getTitle()).to.eql('Electron Test Main');
+          w.setTitle('NEW TITLE');
+          expect(w.getTitle()).to.eql('NEW TITLE');
+        });
+      });
+    });
+
     describe('minimizable state', () => {
       it('with properties', () => {
         it('can be set with minimizable constructor option', () => {
@@ -3569,23 +3762,31 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform === 'darwin')('fullscreenable state', () => {
-      it('with properties', () => {
-        it('can be set with fullscreenable constructor option', () => {
-          const w = new BrowserWindow({ show: false, fullscreenable: false });
-          expect(w.fullScreenable).to.be.false('fullScreenable');
-        });
-
+    ifdescribe(process.platform !== 'darwin')('menuBarVisible state', () => {
+      describe('with properties', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
-          expect(w.fullScreenable).to.be.true('fullScreenable');
-          w.fullScreenable = false;
-          expect(w.fullScreenable).to.be.false('fullScreenable');
-          w.fullScreenable = true;
-          expect(w.fullScreenable).to.be.true('fullScreenable');
+          expect(w.menuBarVisible).to.be.true();
+          w.menuBarVisible = false;
+          expect(w.menuBarVisible).to.be.false();
+          w.menuBarVisible = true;
+          expect(w.menuBarVisible).to.be.true();
         });
       });
 
+      describe('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+          w.setMenuBarVisibility(false);
+          expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+          w.setMenuBarVisibility(true);
+          expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+        });
+      });
+    });
+
+    ifdescribe(process.platform === 'darwin')('fullscreenable state', () => {
       it('with functions', () => {
         it('can be set with fullscreenable constructor option', () => {
           const w = new BrowserWindow({ show: false, fullscreenable: false });
@@ -3607,18 +3808,46 @@ describe('BrowserWindow module', () => {
     const tick = () => new Promise(resolve => setTimeout(resolve));
 
     ifdescribe(process.platform === 'darwin')('kiosk state', () => {
-      it('can be changed with setKiosk method', (done) => {
-        const w = new BrowserWindow();
-        w.once('enter-full-screen', async () => {
-          await tick();
-          w.setKiosk(false);
-          expect(w.isKiosk()).to.be.false('isKiosk');
+      it('with properties', () => {
+        it('can be set with a constructor property', () => {
+          const w = new BrowserWindow({ kiosk: true });
+          expect(w.kiosk).to.be.true();
         });
-        w.once('leave-full-screen', () => {
-          done();
+
+        it('can be changed ', (done) => {
+          const w = new BrowserWindow();
+          w.once('enter-full-screen', async () => {
+            await tick();
+            w.kiosk = false;
+            expect(w.kiosk).to.be.false();
+          });
+          w.once('leave-full-screen', () => {
+            done();
+          });
+          w.kiosk = true;
+          expect(w.kiosk).to.be.true();
         });
-        w.setKiosk(true);
-        expect(w.isKiosk()).to.be.true('isKiosk');
+      });
+
+      it('with functions', () => {
+        it('can be set with a constructor property', () => {
+          const w = new BrowserWindow({ kiosk: true });
+          expect(w.isKiosk()).to.be.true();
+        });
+
+        it('can be changed ', (done) => {
+          const w = new BrowserWindow();
+          w.once('enter-full-screen', async () => {
+            await tick();
+            w.setKiosk(false);
+            expect(w.isKiosk()).to.be.false('isKiosk');
+          });
+          w.once('leave-full-screen', () => {
+            done();
+          });
+          w.setKiosk(true);
+          expect(w.isKiosk()).to.be.true('isKiosk');
+        });
       });
     });
 
@@ -3653,9 +3882,19 @@ describe('BrowserWindow module', () => {
         w.setFullScreen(true);
       });
 
-      it('does not crash when exiting simpleFullScreen', (done) => {
+      it('does not crash when exiting simpleFullScreen (properties)', (done) => {
         const w = new BrowserWindow();
         w.setSimpleFullScreen(true);
+
+        setTimeout(() => {
+          w.setFullScreen(!w.isFullScreen());
+          done();
+        }, 1000);
+      });
+
+      it('does not crash when exiting simpleFullScreen (functions)', (done) => {
+        const w = new BrowserWindow();
+        w.simpleFullScreen = true;
 
         setTimeout(() => {
           w.setFullScreen(!w.isFullScreen());
@@ -3717,27 +3956,53 @@ describe('BrowserWindow module', () => {
     });
 
     describe('hasShadow state', () => {
-      it('returns a boolean on all platforms', () => {
-        const w = new BrowserWindow({ show: false });
-        const hasShadow = w.hasShadow();
-        expect(hasShadow).to.be.a('boolean');
+      it('with properties', () => {
+        it('returns a boolean on all platforms', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.shadow).to.be.a('boolean');
+        });
+
+        // On Windows there's no shadow by default & it can't be changed dynamically.
+        it('can be changed with hasShadow option', () => {
+          const hasShadow = process.platform !== 'darwin';
+          const w = new BrowserWindow({ show: false, hasShadow });
+          expect(w.shadow).to.equal(hasShadow);
+        });
+
+        it('can be changed with setHasShadow method', () => {
+          const w = new BrowserWindow({ show: false });
+          w.shadow = false;
+          expect(w.shadow).to.be.false('hasShadow');
+          w.shadow = true;
+          expect(w.shadow).to.be.true('hasShadow');
+          w.shadow = false;
+          expect(w.shadow).to.be.false('hasShadow');
+        });
       });
 
-      // On Windows there's no shadow by default & it can't be changed dynamically.
-      it('can be changed with hasShadow option', () => {
-        const hasShadow = process.platform !== 'darwin';
-        const w = new BrowserWindow({ show: false, hasShadow });
-        expect(w.hasShadow()).to.equal(hasShadow);
-      });
+      describe('with functions', () => {
+        it('returns a boolean on all platforms', () => {
+          const w = new BrowserWindow({ show: false });
+          const hasShadow = w.hasShadow();
+          expect(hasShadow).to.be.a('boolean');
+        });
 
-      it('can be changed with setHasShadow method', () => {
-        const w = new BrowserWindow({ show: false });
-        w.setHasShadow(false);
-        expect(w.hasShadow()).to.be.false('hasShadow');
-        w.setHasShadow(true);
-        expect(w.hasShadow()).to.be.true('hasShadow');
-        w.setHasShadow(false);
-        expect(w.hasShadow()).to.be.false('hasShadow');
+        // On Windows there's no shadow by default & it can't be changed dynamically.
+        it('can be changed with hasShadow option', () => {
+          const hasShadow = process.platform !== 'darwin';
+          const w = new BrowserWindow({ show: false, hasShadow });
+          expect(w.hasShadow()).to.equal(hasShadow);
+        });
+
+        it('can be changed with setHasShadow method', () => {
+          const w = new BrowserWindow({ show: false });
+          w.setHasShadow(false);
+          expect(w.hasShadow()).to.be.false('hasShadow');
+          w.setHasShadow(true);
+          expect(w.hasShadow()).to.be.true('hasShadow');
+          w.setHasShadow(false);
+          expect(w.hasShadow()).to.be.false('hasShadow');
+        });
       });
     });
   });

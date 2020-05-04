@@ -30,10 +30,10 @@ void NodeDebugger::Start() {
   // DebugOptions will already have been set by ProcessGlobalArgs,
   // so just pull the ones from there to pass to the InspectorAgent
   const auto debug_options = env_->options()->debug_options();
-  if (inspector->Start(
-          "" /* path */, debug_options,
-          std::make_shared<node::HostPort>(debug_options.host_port),
-          true /* is_main */))
+  if (inspector->Start("" /* path */, debug_options,
+                       std::make_shared<node::ExclusiveAccess<node::HostPort>>(
+                           debug_options.host_port),
+                       true /* is_main */))
     DCHECK(env_->inspector_agent()->IsListening());
 }
 

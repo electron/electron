@@ -292,11 +292,12 @@ int WebRequest::OnHeadersReceived(
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
+  const std::string& status_line =
+      original_response_headers ? original_response_headers->GetStatusLine()
+                                : std::string();
   return HandleResponseEvent(
       kOnHeadersReceived, info, std::move(callback),
-      std::make_pair(override_response_headers,
-                     original_response_headers->GetStatusLine()),
-      request);
+      std::make_pair(override_response_headers, status_line), request);
 }
 
 void WebRequest::OnSendHeaders(extensions::WebRequestInfo* info,

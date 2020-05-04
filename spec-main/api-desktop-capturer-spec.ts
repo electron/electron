@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import { desktopCapturer, screen, BrowserWindow, SourcesOptions } from 'electron';
+import { screen, BrowserWindow, SourcesOptions } from 'electron/main';
+import { desktopCapturer } from 'electron/renderer';
 import { emittedOnce } from './events-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import { closeAllWindows } from './window-helpers';

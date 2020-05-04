@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as cp from 'child_process';
-import { BrowserWindow, BrowserWindowConstructorOptions, ipcMain } from 'electron';
+import { BrowserWindow, BrowserWindowConstructorOptions, ipcMain } from 'electron/main';
 import * as path from 'path';
 
 import { emittedOnce } from './events-helpers';

@@ -294,7 +294,7 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
 
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  auto handle = DownloadItem::Create(isolate(), item);
+  auto handle = DownloadItem::FromOrCreate(isolate(), item);
   if (item->GetState() == download::DownloadItem::INTERRUPTED)
     handle->SetSavePath(item->GetTargetFilePath());
   content::WebContents* web_contents =
@@ -641,7 +641,7 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
   }
   auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
-  download_manager->GetDelegate()->GetNextId(base::BindRepeating(
+  download_manager->GetNextId(base::BindRepeating(
       &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
 }

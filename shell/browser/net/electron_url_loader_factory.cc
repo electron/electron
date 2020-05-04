@@ -112,13 +112,13 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   if (dict.Get("headers", &headers)) {
     for (const auto& iter : headers.DictItems()) {
       if (iter.second.is_string()) {
-        // key: value
-        head->headers->AddHeader(iter.first + ": " + iter.second.GetString());
+        // key, value
+        head->headers->AddHeader(iter.first, iter.second.GetString());
       } else if (iter.second.is_list()) {
         // key: [values...]
         for (const auto& item : iter.second.GetList()) {
           if (item.is_string())
-            head->headers->AddHeader(iter.first + ": " + item.GetString());
+            head->headers->AddHeader(iter.first, item.GetString());
         }
       } else {
         continue;
@@ -135,7 +135,7 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   // Setting |head->mime_type| does not automatically set the "content-type"
   // header in NetworkService.
   if (has_mime_type && !has_content_type)
-    head->headers->AddHeader("content-type: " + head->mime_type);
+    head->headers->AddHeader("content-type", head->mime_type);
   return head;
 }
 
@@ -376,7 +376,8 @@ void ElectronURLLoaderFactory::StartLoadingFile(
     return;
   }
 
-  head->headers->AddHeader(kCORSHeader);
+  // Add header to ignore CORS.
+  head->headers->AddHeader("Access-Control-Allow-Origin", "*");
   asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
                             head->headers);
 }
@@ -484,7 +485,9 @@ void ElectronURLLoaderFactory::SendContents(
     std::string data) {
   mojo::Remote<network::mojom::URLLoaderClient> client_remote(
       std::move(client));
-  head->headers->AddHeader(kCORSHeader);
+
+  // Add header to ignore CORS.
+  head->headers->AddHeader("Access-Control-Allow-Origin", "*");
   client_remote->OnReceiveResponse(std::move(head));
 
   // Code bellow follows the pattern of data_url_loader_factory.cc.

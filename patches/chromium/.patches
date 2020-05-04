@@ -11,9 +11,7 @@ dom_storage_limits.patch
 render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
 thread_capabilities.patch
-web_contents.patch
 webview_cross_drag.patch
-disable_user_gesture_requirement_for_beforeunload_dialogs.patch
 gin_enable_disable_v8_platform.patch
 blink-worker-enable-csp-in-file-scheme.patch
 disable-redraw-lock.patch
@@ -48,9 +46,7 @@ dump_syms.patch
 command-ismediakey.patch
 tts.patch
 printing.patch
-verbose_generate_breakpad_symbols.patch
 support_mixed_sandbox_with_zygote.patch
-autofill_size_calculation.patch
 fix_disable_usage_of_abort_report_np_in_mas_builds.patch
 fix_disable_usage_of_pthread_fchdir_np_and_pthread_chdir_np_in_mas.patch
 fix_disable_usage_of_setapplicationisdaemon_and.patch
@@ -58,7 +54,6 @@ unsandboxed_ppapi_processes_skip_zygote.patch
 patch_the_ensure_gn_version_py_script_to_work_on_mac_ci.patch
 build_add_electron_tracing_category.patch
 worker_context_will_destroy.patch
-fix_breakpad_symbol_generation_on_linux_arm.patch
 frame_host_manager.patch
 crashpad_pid_check.patch
 preconnect_feature.patch
@@ -72,7 +67,6 @@ allow_new_privileges_in_unsandboxed_child_processes.patch
 expose_setuseragent_on_networkcontext.patch
 feat_add_set_theme_source_to_allow_apps_to.patch
 revert_cleanup_remove_menu_subtitles_sublabels.patch
-export_fetchapi_mojo_traits_to_fix_component_build.patch
 add_webmessageportconverter_entangleandinjectmessageportchannel.patch
 revert_remove_contentrendererclient_shouldfork.patch
 ignore_rc_check.patch
@@ -93,4 +87,6 @@ delay_lock_the_protocol_scheme_registry.patch
 gpu_notify_when_dxdiag_request_fails.patch
 feat_allow_embedders_to_add_observers_on_created_hunspell.patch
 feat_add_onclose_to_messageport.patch
-gin_allow_passing_an_objecttemplate_to_objecttemplatebuilder.patch
+fix_account_for_print_preview_disabled_when_printing_to_pdf.patch
+web_contents.patch
+ui_gtk_public_header.patch

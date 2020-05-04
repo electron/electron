@@ -12,7 +12,7 @@ import {
 import * as fs from 'fs'
 
 // In renderer process (web page).
-// https://github.com/atom/electron/blob/master/docs/api/ipc-renderer.md
+// https://github.com/electron/electron/blob/master/docs/api/ipc-renderer.md
 console.log(ipcRenderer.sendSync('synchronous-message', 'ping')) // prints "pong"
 
 ipcRenderer.on('asynchronous-reply', (event, arg: any) => {
@@ -23,7 +23,7 @@ ipcRenderer.on('asynchronous-reply', (event, arg: any) => {
 ipcRenderer.send('asynchronous-message', 'ping')
 
 // remote
-// https://github.com/atom/electron/blob/master/docs/api/remote.md
+// https://github.com/electron/electron/blob/master/docs/api/remote.md
 
 const BrowserWindow = remote.BrowserWindow
 const win = new BrowserWindow({ width: 800, height: 600 })
@@ -48,7 +48,7 @@ remote.getCurrentWindow().capturePage().then(buf => {
 })
 
 // web-frame
-// https://github.com/atom/electron/blob/master/docs/api/web-frame.md
+// https://github.com/electron/electron/blob/master/docs/api/web-frame.md
 
 webFrame.setZoomFactor(2)
 console.log(webFrame.getZoomFactor())
@@ -79,7 +79,7 @@ console.log(webFrame.getResourceUsage())
 webFrame.clearCache()
 
 // clipboard
-// https://github.com/atom/electron/blob/master/docs/api/clipboard.md
+// https://github.com/electron/electron/blob/master/docs/api/clipboard.md
 
 clipboard.writeText('Example String')
 clipboard.writeText('Example String', 'selection')
@@ -95,7 +95,7 @@ clipboard.write({
 })
 
 // crash-reporter
-// https://github.com/atom/electron/blob/master/docs/api/crash-reporter.md
+// https://github.com/electron/electron/blob/master/docs/api/crash-reporter.md
 
 crashReporter.start({
   productName: 'YourName',
@@ -105,7 +105,7 @@ crashReporter.start({
 })
 
 // desktopCapturer
-// https://github.com/atom/electron/blob/master/docs/api/desktop-capturer.md
+// https://github.com/electron/electron/blob/master/docs/api/desktop-capturer.md
 
 const desktopCapturer = require('electron').desktopCapturer
 
@@ -139,7 +139,7 @@ function getUserMediaError (error: Error) {
 }
 
 // File object
-// https://github.com/atom/electron/blob/master/docs/api/file-object.md
+// https://github.com/electron/electron/blob/master/docs/api/file-object.md
 
 /*
 <div id="holder">
@@ -165,7 +165,7 @@ holder.ondrop = function (e) {
 }
 
 // nativeImage
-// https://github.com/atom/electron/blob/master/docs/api/native-image.md
+// https://github.com/electron/electron/blob/master/docs/api/native-image.md
 
 const Tray = remote.Tray
 const appIcon2 = new Tray('/Users/somebody/images/icon.png')
@@ -185,7 +185,7 @@ process.once('loaded', function () {
 })
 
 // screen
-// https://github.com/atom/electron/blob/master/docs/api/screen.md
+// https://github.com/electron/electron/blob/master/docs/api/screen.md
 
 const app = remote.app
 
@@ -215,12 +215,12 @@ app.whenReady().then(() => {
 })
 
 // shell
-// https://github.com/atom/electron/blob/master/docs/api/shell.md
+// https://github.com/electron/electron/blob/master/docs/api/shell.md
 
 shell.openExternal('https://github.com').then(() => {})
 
 // <webview>
-// https://github.com/atom/electron/blob/master/docs/api/web-view-tag.md
+// https://github.com/electron/electron/blob/master/docs/api/web-view-tag.md
 
 const webview = document.createElement('webview')
 webview.loadURL('https://github.com')

@@ -810,6 +810,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   network::ResourceRequest request = original_request;
 
   if (ShouldIgnoreConnectionsLimit(request)) {
+    request.priority = net::RequestPriority::MAXIMUM_PRIORITY;
     request.load_flags |= net::LOAD_IGNORE_LIMITS;
   }
 
@@ -825,8 +826,11 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     return;
   }
 
-  // Intercept file:// protocol to support asar archives.
-  if (request.url.SchemeIsFile()) {
+  // The loader of ServiceWorker forbids loading scripts from file:// URLs, and
+  // Chromium does not provide a way to override this behavior. So in order to
+  // make ServiceWorker work with file:// URLs, we have to intercept its
+  // requests here.
+  if (IsForServiceWorkerScript() && request.url.SchemeIsFile()) {
     asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
                               new net::HttpResponseHeaders(""));
     return;

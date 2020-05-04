@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 10 Apr 2020 17:47:18 -0700
+Subject: ui_gtk_public_header.patch
+
+Allow electron to depend on //ui/gtk/gtk_util.h
+
+diff --git a/ui/gtk/BUILD.gn b/ui/gtk/BUILD.gn
+index be7a538b84318339c61d25e61a196222cfbf848a..8c8ac2559e44b1d00e29f5ba6f95ae6c40bd8296 100644
+--- a/ui/gtk/BUILD.gn
++++ b/ui/gtk/BUILD.gn
+@@ -22,13 +22,15 @@ component("gtk_ui_delegate") {
+ }
+ 
+ jumbo_component("gtk") {
+-  public = [ "gtk_ui.h" ]
++  public = [ 
++    "gtk_ui.h",
++    "gtk_util.h",
++  ]
+   sources = [
+     "gtk_key_bindings_handler.cc",
+     "gtk_key_bindings_handler.h",
+     "gtk_ui.cc",
+     "gtk_util.cc",
+-    "gtk_util.h",
+     "input_method_context_impl_gtk.cc",
+     "input_method_context_impl_gtk.h",
+     "native_theme_gtk.cc",

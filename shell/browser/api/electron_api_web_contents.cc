@@ -392,7 +392,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents),
       type_(Type::REMOTE),
       weak_factory_(this) {
-  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
+  web_contents->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
+                                         GetBrowserContext()->GetUserAgent()),
                                      false);
   Init(isolate);
   AttachAsUserData(web_contents);
@@ -570,7 +571,8 @@ void WebContents::InitWithSessionAndOptions(
       &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
-  web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
+  web_contents()->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
+                                           GetBrowserContext()->GetUserAgent()),
                                        false);
 
   if (IsGuest()) {
@@ -661,6 +663,30 @@ void WebContents::WebContentsCreatedWithFullParams(
   tracker->referrer = params.referrer.To<content::Referrer>();
   tracker->raw_features = params.raw_features;
   tracker->body = params.body;
+}
+
+bool WebContents::IsWebContentsCreationOverridden(
+    content::SiteInstance* source_site_instance,
+    content::mojom::WindowContainerType window_container_type,
+    const GURL& opener_url,
+    const std::string& frame_name,
+    const GURL& target_url) {
+  if (Emit("-will-add-new-contents", target_url, frame_name)) {
+    return true;
+  }
+  return false;
+}
+
+content::WebContents* WebContents::CreateCustomWebContents(
+    content::RenderFrameHost* opener,
+    content::SiteInstance* source_site_instance,
+    bool is_new_browsing_instance,
+    const GURL& opener_url,
+    const std::string& frame_name,
+    const GURL& target_url,
+    const std::string& partition_id,
+    content::SessionStorageNamespace* session_storage_namespace) {
+  return nullptr;
 }
 
 void WebContents::AddNewContents(
@@ -1467,7 +1493,8 @@ void WebContents::LoadURL(const GURL& url,
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
-    web_contents()->SetUserAgentOverride(user_agent, false);
+    web_contents()->SetUserAgentOverride(
+        blink::UserAgentOverride::UserAgentOnly(user_agent), false);
 
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
@@ -1599,11 +1626,12 @@ bool WebContents::IsCrashed() const {
 
 void WebContents::SetUserAgent(const std::string& user_agent,
                                gin_helper::Arguments* args) {
-  web_contents()->SetUserAgentOverride(user_agent, false);
+  web_contents()->SetUserAgentOverride(
+      blink::UserAgentOverride::UserAgentOnly(user_agent), false);
 }
 
 std::string WebContents::GetUserAgent() {
-  return web_contents()->GetUserAgentOverride();
+  return web_contents()->GetUserAgentOverride().ua_string_override;
 }
 
 v8::Local<v8::Promise> WebContents::SavePage(
@@ -1953,7 +1981,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
 
   // We don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
-  settings.SetIntKey(printing::kSettingPrinterType, printing::kLocalPrinter);
+  settings.SetIntKey(printing::kSettingPrinterType,
+                     static_cast<int>(printing::PrinterType::kLocal));
   settings.SetBoolKey(printing::kSettingShouldPrintSelectionOnly, false);
   settings.SetBoolKey(printing::kSettingRasterizePdf, false);
 
@@ -2270,7 +2299,8 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         // Chromium expects phase info in wheel events (and applies a
         // DCHECK to verify it). See: https://crbug.com/756524.
         mouse_wheel_event.phase = blink::WebMouseWheelEvent::kPhaseBegan;
-        mouse_wheel_event.dispatch_type = blink::WebInputEvent::kBlocking;
+        mouse_wheel_event.dispatch_type =
+            blink::WebInputEvent::DispatchType::kBlocking;
         rwh->ForwardWheelEvent(mouse_wheel_event);
 
         // Send a synthetic wheel event with phaseEnded to finish scrolling.
@@ -2279,7 +2309,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         mouse_wheel_event.delta_y = 0;
         mouse_wheel_event.phase = blink::WebMouseWheelEvent::kPhaseEnded;
         mouse_wheel_event.dispatch_type =
-            blink::WebInputEvent::kEventNonBlocking;
+            blink::WebInputEvent::DispatchType::kEventNonBlocking;
         rwh->ForwardWheelEvent(mouse_wheel_event);
       }
       return;

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { net, session, ClientRequest, BrowserWindow } from 'electron';
+import { net, session, ClientRequest, BrowserWindow } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
 import { AddressInfo, Socket } from 'net';
@@ -582,7 +582,8 @@ describe('net module', () => {
         path: '/',
         secure: false,
         httpOnly: false,
-        session: true
+        session: true,
+        sameSite: 'unspecified'
       });
     });
 
@@ -616,7 +617,8 @@ describe('net module', () => {
           path: '/',
           secure: false,
           httpOnly: false,
-          session: true
+          session: true,
+          sameSite: mode.toLowerCase()
         });
         const urlRequest2 = net.request({
           url: serverUrl,

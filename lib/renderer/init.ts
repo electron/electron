@@ -53,7 +53,6 @@ v8Util.setHiddenValue(global, 'ipcNative', {
 
 // Use electron module after everything is ready.
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
-const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils');
 const { webFrameInit } = require('@electron/internal/renderer/web-frame-init');
 webFrameInit();
 
@@ -100,10 +99,6 @@ switch (window.location.protocol) {
     break;
   }
   case 'chrome-extension:': {
-    // Inject the chrome.* APIs that chrome extensions require
-    if (!process.electronBinding('features').isExtensionsEnabled()) {
-      require('@electron/internal/renderer/chrome-api').injectTo(window.location.hostname, window);
-    }
     break;
   }
   case 'chrome:':
@@ -112,12 +107,6 @@ switch (window.location.protocol) {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup');
     windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen, rendererProcessReuseEnabled);
-
-    // Inject content scripts.
-    if (!process.electronBinding('features').isExtensionsEnabled()) {
-      const contentScripts = ipcRendererUtils.invokeSync('ELECTRON_GET_CONTENT_SCRIPTS') as Electron.ContentScriptEntry[];
-      require('@electron/internal/renderer/content-scripts-injector')(contentScripts);
-    }
   }
 }
 

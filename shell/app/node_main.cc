@@ -74,17 +74,6 @@ void SetNodeCliFlags() {
   ProcessGlobalArgs(&args, nullptr, &errors, node::kDisallowedInEnvironment);
 }
 
-// TODO(codebytere): expose this from Node.js itself?
-void HostCleanupFinalizationGroupCallback(
-    v8::Local<v8::Context> context,
-    v8::Local<v8::FinalizationGroup> group) {
-  node::Environment* env = node::Environment::GetCurrent(context);
-  if (env == nullptr) {
-    return;
-  }
-  env->RegisterFinalizationGroupForCleanup(group);
-}
-
 }  // namespace
 
 namespace electron {
@@ -119,6 +108,10 @@ int NodeMain(int argc, char* argv[]) {
     crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
 #endif
 
+    // We do not want to double-set the error level and promise rejection
+    // callback.
+    node::g_standalone_mode = false;
+
     // Explicitly register electron's builtin modules.
     NodeBindings::RegisterBuiltinModules();
 
@@ -139,6 +132,7 @@ int NodeMain(int argc, char* argv[]) {
     JavascriptEnvironment gin_env(loop);
 
     v8::Isolate* isolate = gin_env.isolate();
+
     v8::Isolate::Scope isolate_scope(isolate);
     v8::Locker locker(isolate);
     node::Environment* env = nullptr;
@@ -153,13 +147,11 @@ int NodeMain(int argc, char* argv[]) {
                                     exec_argc, exec_argv);
       CHECK_NE(nullptr, env);
 
-      // TODO(codebytere): we shouldn't have to call this - upstream?
+      // This needs to be called before the inspector is initialized.
       env->InitializeDiagnostics();
 
-      // This is needed in order to enable v8 host weakref hooks.
-      // TODO(codebytere): we shouldn't have to call this - upstream?
-      isolate->SetHostCleanupFinalizationGroupCallback(
-          HostCleanupFinalizationGroupCallback);
+      node::IsolateSettings is;
+      node::SetIsolateUpForNode(isolate, is);
 
       gin_helper::Dictionary process(isolate, env->process_object());
 #if defined(OS_WIN)

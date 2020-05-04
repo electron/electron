@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron';
+import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import * as https from 'https';
@@ -653,6 +653,34 @@ describe('chromium features', () => {
       w.webContents.executeJavaScript('{ b = window.open(\'\', \'__proto__\'); null }');
       const [, window] = await emittedOnce(app, 'browser-window-created');
       expect(window.getTitle()).to.equal('__proto__');
+    });
+
+    it('denies custom open when nativeWindowOpen: true', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: false,
+          nodeIntegration: true,
+          nativeWindowOpen: true
+        }
+      });
+      w.loadURL('about:blank');
+
+      const previousListeners = process.listeners('uncaughtException');
+      process.removeAllListeners('uncaughtException');
+      try {
+        const uncaughtException = new Promise<Error>(resolve => {
+          process.once('uncaughtException', resolve);
+        });
+        expect(await w.webContents.executeJavaScript(`(${function () {
+          const ipc = process.electronBinding('ipc').ipc;
+          return ipc.sendSync(true, 'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', ['', '', ''])[0];
+        }})()`)).to.be.null();
+        const exception = await uncaughtException;
+        expect(exception.message).to.match(/denied: expected native window\.open/);
+      } finally {
+        previousListeners.forEach(l => process.on('uncaughtException', l));
+      }
     });
   });
 

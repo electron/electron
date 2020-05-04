@@ -269,6 +269,7 @@ Shows a message box, it will block the process until the message box is closed.
 It returns the index of the clicked button.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
+If `browserWindow` is not shown dialog will not be attached to it. In such case It will be displayed as independed window.
 
 ### `dialog.showMessageBox([browserWindow, ]options)`
 

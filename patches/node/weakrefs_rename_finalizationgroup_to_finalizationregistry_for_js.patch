@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Sun, 1 Mar 2020 13:59:57 -0800
-Subject: [weakrefs] Rename FinalizationGroup to FinalizationRegistry for JS
+Subject: Rename FinalizationGroup to FinalizationRegistry for JS
 
 https://chromium-review.googlesource.com/c/v8/v8/+/2071236
 

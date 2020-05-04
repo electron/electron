@@ -48,6 +48,11 @@ The `crashReporter` module has the following methods:
   * `productName` String (optional) - Defaults to `app.name`.
   * `uploadToServer` Boolean (optional) - Whether crash reports should be sent to the server. Default is `true`.
   * `ignoreSystemCrashHandler` Boolean (optional) - Default is `false`.
+  * `rateLimit` Boolean (optional) _macOS_ _Windows_ - If true, limit the
+    number of crashes uploaded to 1/hour. Default is `false`.
+  * `compress` Boolean (optional) _macOS_ _Windows_ - If true, crash reports
+    will be compressed and uploaded with `Content-Encoding: gzip`. Not all
+    collection servers support compressed payloads. Default is `false`.
   * `extra` Record<String, String> (optional) - An object you can define that will be sent along with the
     report. Only string properties are sent correctly. Nested objects are not
     supported. When using Windows, the property names and values must be fewer than 64 characters.

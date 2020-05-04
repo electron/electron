@@ -9,7 +9,7 @@
 
 #include "base/macros.h"
 #include "gin/public/isolate_holder.h"
-#include "uv.h"  // NOLINT(build/include)
+#include "uv.h"  // NOLINT(build/include_directory)
 
 namespace node {
 class Environment;
@@ -33,6 +33,8 @@ class JavascriptEnvironment {
   v8::Local<v8::Context> context() const {
     return v8::Local<v8::Context>::New(isolate_, context_);
   }
+
+  static v8::Isolate* GetIsolate();
 
  private:
   v8::Isolate* Initialize(uv_loop_t* event_loop);
