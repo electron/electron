@@ -17,11 +17,11 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_main_parts.h"
-#include "shell/browser/electron_paths.h"
 #include "shell/browser/login_handler.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/gin_helper/arguments.h"
 
 namespace electron {
