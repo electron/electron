@@ -187,10 +187,14 @@ describe('chromium feature', () => {
     });
   });
 
-  describe('navigator.languages', (done) => {
-    it('should return the system locale only', () => {
+  describe('navigator.languages', () => {
+    it('should return the system locale only', async () => {
       const appLocale = app.getLocale();
-      expect(navigator.languages).to.deep.equal([appLocale]);
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const languages = await w.webContents.executeJavaScript('navigator.languages');
+      expect(languages.length).to.be.greaterThan(0);
+      expect(languages).to.contain(appLocale);
     });
   });
 
