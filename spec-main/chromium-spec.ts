@@ -351,7 +351,9 @@ describe('chromium features', () => {
       const appLocale = app.getLocale()
       const w = new BrowserWindow({ show: false })
       await w.loadURL('about:blank')
-      const languages = await w.webContents.executeJavaScript(`navigator.languages`)
+      const languages = await w.webContents.executeJavaScript('navigator.languages')
+      expect(languages.length).to.be.greaterThan(0);
+      expect(languages).to.contain(appLocale);
       expect(languages).to.deep.equal([appLocale])
     })
   })
