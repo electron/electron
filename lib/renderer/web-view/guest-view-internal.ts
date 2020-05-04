@@ -110,9 +110,14 @@ export function attachGuest (
   invoke('ELECTRON_GUEST_VIEW_MANAGER_ATTACH_GUEST', embedderFrameId, elementInstanceId, guestInstanceId, params);
 }
 
+export function detachGuest (guestInstanceId: number) {
+  return invokeSync('ELECTRON_GUEST_VIEW_MANAGER_DETACH_GUEST', guestInstanceId);
+}
+
 export const guestViewInternalModule = {
   deregisterEvents,
   createGuest,
   createGuestSync,
-  attachGuest
+  attachGuest,
+  detachGuest
 };
