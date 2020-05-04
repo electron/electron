@@ -683,10 +683,16 @@ void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
       gin::V8ToString(isolate, object->GetConstructorName()) == "Menu" &&
       gin::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
     menu_.Reset(isolate, menu.ToV8());
-    window_->SetMenu(menu->model());
+
+    // We only want to update the menu if the menu has a non-zero item count,
+    // or we risk crashes.
+    if (menu->model()->GetItemCount() == 0) {
+      RemoveMenu();
+    } else {
+      window_->SetMenu(menu->model());
+    }
   } else if (value->IsNull()) {
-    menu_.Reset();
-    window_->SetMenu(nullptr);
+    RemoveMenu();
   } else {
     isolate->ThrowException(
         v8::Exception::TypeError(gin::StringToV8(isolate, "Invalid Menu")));
