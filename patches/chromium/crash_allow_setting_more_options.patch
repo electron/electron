@@ -9,50 +9,59 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 192b0a7f137f311abb6a991f997e11f5eba52256..6d074a8a28781f967d884c94830d4026e641eff5 100644
+index 192b0a7f137f311abb6a991f997e11f5eba52256..eaf614ea01f631ff1413c46887205199b8af45f2 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
-@@ -103,9 +103,17 @@ namespace {
+@@ -103,9 +103,18 @@ namespace {
  // while we do have functions to deal with uint64_t's.
  uint64_t g_crash_loop_before_time = 0;
  #else
 -const char kUploadURL[] = "https://clients2.google.com/cr/report";
 +const char kDefaultUploadURL[] = "https://clients2.google.com/cr/report";
-+const char* g_upload_url = kDefaultUploadURL;
++char* g_upload_url = nullptr;
  #endif
  
 +void SetUploadURL(const std::string& url) {
 +  const size_t url_len = url.size() + 1;
++  DCHECK(!g_upload_url);
 +  g_upload_url = new char[url_len];
-+  strncpy(const_cast<char*>(g_upload_url), url.c_str(), url_len);
++  strncpy(g_upload_url, url.c_str(), url_len);
 +}
 +
 +bool g_is_node = false;
  bool g_is_crash_reporter_enabled = false;
  uint64_t g_process_start_time = 0;
  pid_t g_pid = 0;
-@@ -1404,7 +1412,7 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+@@ -1398,13 +1407,15 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+   char* status_fd_path =
+       StringFromPrefixAndUint("/dev/fd/", upload_status_fd, allocator);
+ 
++  char* upload_url = g_upload_url ? g_upload_url : kDefaultUploadURL;
++
+   static const char kWgetBinary[] = "/usr/bin/wget";
+   const char* args[] = {
+     kWgetBinary,
      header_content_encoding,
      header_content_type,
      post_file,
 -    kUploadURL,
-+    g_upload_url,
++    upload_url,
      "--timeout=10",  // Set a timeout so we don't hang forever.
      "--tries=1",     // Don't retry if the upload fails.
      "-O",  // Output reply to the file descriptor path.
-@@ -2037,6 +2045,10 @@ void InitCrashReporter(const std::string& process_type) {
+@@ -2037,6 +2048,10 @@ void InitCrashReporter(const std::string& process_type) {
  #endif
        process_type.empty();
  
 +  std::string upload_url;
-+  GetCrashReporterClient()->GetUploadUrl(&upload_url);
-+  SetUploadURL(upload_url);
++  if (GetCrashReporterClient()->GetUploadUrl(&upload_url))
++    SetUploadURL(upload_url);
 +
    if (is_browser_process) {
      bool enable_breakpad = GetCrashReporterClient()->GetCollectStatsConsent() ||
                             GetCrashReporterClient()->IsRunningUnattended();
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index e778f68af30f8c071d1360d06b553cc957160c5b..269c327064f0e6b46bf26ddc70816fd3373bd36c 100644
+index e778f68af30f8c071d1360d06b553cc957160c5b..b7f6ca60ef9c2367989d39e1268bf9f9a517951c 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
 @@ -148,6 +148,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
@@ -73,18 +82,19 @@ index e778f68af30f8c071d1360d06b553cc957160c5b..269c327064f0e6b46bf26ddc70816fd3
  #if defined(OS_ANDROID)
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
-@@ -196,6 +207,9 @@ void CrashReporterClient::GetSanitizationInformation(
+@@ -196,6 +207,10 @@ void CrashReporterClient::GetSanitizationInformation(
  }
  #endif
  
-+void CrashReporterClient::GetUploadUrl(std::string* url) {
++bool CrashReporterClient::GetUploadUrl(std::string* url) {
++  return false;
 +}
 +
  bool CrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
    return false;
  }
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index 9cc78fc2584061d26fd1e83b3ebf5ada0a12c138..d3d17d6e3a27019e51940cc9644c21a85323db22 100644
+index 9cc78fc2584061d26fd1e83b3ebf5ada0a12c138..aa63d7b95c37e4a143283450798b8bd500dc17a1 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -5,6 +5,7 @@
@@ -95,7 +105,7 @@ index 9cc78fc2584061d26fd1e83b3ebf5ada0a12c138..d3d17d6e3a27019e51940cc9644c21a8
  #include <string>
  
  #include "base/strings/string16.h"
-@@ -153,6 +154,16 @@ class CrashReporterClient {
+@@ -153,6 +154,19 @@ class CrashReporterClient {
    // that case, |breakpad_enabled| is set to the value enforced by policies.
    virtual bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled);
  
@@ -107,16 +117,20 @@ index 9cc78fc2584061d26fd1e83b3ebf5ada0a12c138..d3d17d6e3a27019e51940cc9644c21a8
 +  // reports will be uploaded uncompressed.
 +  virtual bool GetShouldCompressUploads();
 +
-+  virtual void GetProcessSimpleAnnotations(std::map<std::string, std::string>* annotations);
++  // Allows the client to add or edit global annotations passed to the crashpad
++  // handler.
++  virtual void GetProcessSimpleAnnotations(
++      std::map<std::string, std::string>* annotations);
 +
  #if defined(OS_ANDROID)
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
-@@ -194,6 +205,8 @@ class CrashReporterClient {
+@@ -194,6 +208,9 @@ class CrashReporterClient {
        bool* sanitize_stacks);
  #endif
  
-+  virtual void GetUploadUrl(std::string* url);
++  // Override the default upload url. Returns true if overridden.
++  virtual bool GetUploadUrl(std::string* url);
 +
    // This method should return true to configure a crash reporter capable of
    // monitoring itself for its own crashes to do so, even if self-monitoring

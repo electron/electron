@@ -30,6 +30,8 @@ enum {
   DIR_APP_DATA,  // Application Data directory under the user profile.
 #endif
 
+  DIR_CRASH_DUMPS,  // c.f. chrome::DIR_CRASH_DUMPS
+
   PATH_END,  // End of new paths. Those that follow redirect to base::DIR_*
 
 #if !defined(OS_LINUX)

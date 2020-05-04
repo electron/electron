@@ -40,6 +40,7 @@
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
 #include "shell/common/crash_keys.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
@@ -115,7 +116,7 @@ namespace electron {
 
 bool GetDefaultCrashDumpsPath(base::FilePath* path) {
   base::FilePath cur;
-  if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+  if (!base::PathService::Get(DIR_USER_DATA, &cur))
     return false;
 #if defined(OS_MACOSX) || defined(OS_WIN)
   cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
@@ -131,20 +132,15 @@ bool GetDefaultCrashDumpsPath(base::FilePath* path) {
 }
 
 bool ElectronPathProvider(int key, base::FilePath* path) {
-  if (key == chrome::DIR_CRASH_DUMPS) {
+  if (key == DIR_CRASH_DUMPS) {
     return GetDefaultCrashDumpsPath(path);
   }
   return false;
 }
 
 void RegisterPathProvider() {
-  // This lies about the path IDs so we can "collide" with chrome path keys and
-  // preempt chrome's own provider. The key range is only used in debug builds
-  // to check for overlaps.
-  const int kElectronPathProviderKeyLie = 123123;
-  base::PathService::RegisterProvider(ElectronPathProvider,
-                                      kElectronPathProviderKeyLie,
-                                      kElectronPathProviderKeyLie + 1);
+  base::PathService::RegisterProvider(ElectronPathProvider, PATH_START,
+                                      PATH_END);
 }
 
 }  // namespace electron
@@ -186,7 +182,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   logging::LoggingSettings settings;
 #if defined(OS_WIN)
 #if defined(_WIN64)
-  crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
+  // crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
 #endif
 
   // On Windows the terminal returns immediately, so we add a new line to
@@ -434,7 +430,7 @@ bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
 
 #if defined(OS_LINUX)
 void ElectronMainDelegate::ZygoteForked() {
-  // Needs to be called after we have chrome::DIR_USER_DATA.  BrowserMain sets
+  // Needs to be called after we have DIR_USER_DATA.  BrowserMain sets
   // this up for the browser process in a different manner.
   ElectronCrashReporterClient::Create();
   const base::CommandLine* command_line =

@@ -282,7 +282,7 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
 breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
     const std::string& process_type) {
   base::FilePath dumps_path;
-  base::PathService::Get(chrome::DIR_CRASH_DUMPS, &dumps_path);
+  base::PathService::Get(electron::DIR_CRASH_DUMPS, &dumps_path);
   {
     ANNOTATE_SCOPED_MEMORY_LEAK;
     breakpad::CrashHandlerHostLinux* crash_handler =

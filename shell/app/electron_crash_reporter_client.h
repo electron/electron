@@ -68,7 +68,7 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
 
   bool EnableBreakpadForProcess(const std::string& process_type) override;
 
-  void GetUploadUrl(std::string* url) override;
+  bool GetUploadUrl(std::string* url) override;
 
  private:
   friend class base::NoDestructor<ElectronCrashReporterClient>;

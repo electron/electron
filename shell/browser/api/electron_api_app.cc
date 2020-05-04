@@ -403,6 +403,8 @@ int GetPathConstant(const std::string& name) {
     return DIR_USER_CACHE;
   else if (name == "logs")
     return DIR_APP_LOGS;
+  else if (name == "crashDumps")
+    return DIR_CRASH_DUMPS;
   else if (name == "home")
     return base::DIR_HOME;
   else if (name == "temp")
@@ -425,8 +427,6 @@ int GetPathConstant(const std::string& name) {
     return chrome::DIR_USER_VIDEOS;
   else if (name == "pepperFlashSystemPlugin")
     return chrome::FILE_PEPPER_FLASH_SYSTEM_PLUGIN;
-  else if (name == "crashDumps")
-    return chrome::DIR_CRASH_DUMPS;
   else
     return -1;
 }

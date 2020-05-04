@@ -19,6 +19,7 @@
 #include "content/public/common/content_switches.h"
 #include "electron/electron_version.h"
 #include "services/service_manager/embedder/switches.h"
+#include "shell/common/electron_paths.h"
 
 #if defined(OS_POSIX) && !defined(OS_MACOSX)
 #include "components/version_info/version_info_values.h"
@@ -52,7 +53,8 @@ void ElectronCrashReporterClient::Create() {
   }
   if (!crash_dumps_dir_path.empty()) {
     base::ThreadRestrictions::ScopedAllowIO allow_io;
-    base::PathService::Override(chrome::DIR_CRASH_DUMPS, crash_dumps_dir_path);
+    base::PathService::Override(electron::DIR_CRASH_DUMPS,
+                                crash_dumps_dir_path);
   }
 }
 
@@ -122,7 +124,7 @@ base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
 
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
     base::FilePath* crash_dir) {
-  return base::PathService::Get(chrome::DIR_CRASH_DUMPS, crash_dir);
+  return base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
 }
 
 #if defined(OS_MACOSX) || defined(OS_LINUX)
@@ -168,8 +170,9 @@ bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
 }
 #endif  // OS_LINUX
 
-void ElectronCrashReporterClient::GetUploadUrl(std::string* url) {
+bool ElectronCrashReporterClient::GetUploadUrl(std::string* url) {
   *url = upload_url_;
+  return true;
 }
 
 bool ElectronCrashReporterClient::EnableBreakpadForProcess(
