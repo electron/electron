@@ -53,6 +53,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "chrome/renderer/pepper/chrome_pdf_print_client.h"
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
@@ -68,7 +69,6 @@
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/renderer/pepper/chrome_pdf_print_client.h"
 #include "content/public/common/webplugininfo.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extensions_client.h"
@@ -162,10 +162,12 @@ void RendererClientBase::RenderThreadStarted() {
   extensions_renderer_client_.reset(new ElectronExtensionsRendererClient);
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
+  thread->AddObserver(extensions_renderer_client_->GetDispatcher());
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Enables printing from Chrome PDF viewer.
   pdf::PepperPDFHost::SetPrintClient(new ChromePDFPrintClient());
-
-  thread->AddObserver(extensions_renderer_client_->GetDispatcher());
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -374,7 +376,7 @@ bool RendererClientBase::IsPluginHandledExternally(
     const blink::WebElement& plugin_element,
     const GURL& original_url,
     const std::string& mime_type) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) && BUILDFLAG(ENABLE_PLUGINS)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   DCHECK(plugin_element.HasHTMLTagName("object") ||
          plugin_element.HasHTMLTagName("embed"));
   // TODO(nornagon): this info should be shared with the data in
