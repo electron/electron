@@ -852,16 +852,11 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       return;
     }
     logs_path = custom_path.value();
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
-    }
   } else {
     AtomPaths::GetDefault(DIR_APP_LOGS, &logs_path);
-      {
-        base::ThreadRestrictions::ScopedAllowIO allow_io;
-    }
+  }
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::PathService::Override(DIR_APP_LOGS, logs_path);
-  }
 }
 
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
@@ -873,6 +868,7 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
   if (key >= 0) {
     succeed = base::PathService::Get(key, &path);
     if (succeed && (name == "logs")) {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
       base::CreateDirectoryAndGetError(path, nullptr);
     }
   }
