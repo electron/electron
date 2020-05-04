@@ -86,7 +86,7 @@ ElectronCrashReporterClient::ElectronCrashReporterClient() {}
 
 ElectronCrashReporterClient::~ElectronCrashReporterClient() {}
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MACOSX) && !defined(OS_WIN)
 void ElectronCrashReporterClient::SetCrashReporterClientIdFromGUID(
     const std::string& client_guid) {
   crash_keys::SetMetricsClientIdFromGUID(client_guid);

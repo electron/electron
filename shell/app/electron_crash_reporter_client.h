@@ -28,7 +28,7 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
       const std::map<std::string, std::string>& annotations);
 
   // crash_reporter::CrashReporterClient implementation.
-#if !defined(OS_MACOSX)
+#if !defined(OS_MACOSX) && !defined(OS_WIN)
   void SetCrashReporterClientIdFromGUID(
       const std::string& client_guid) override;
 #endif
