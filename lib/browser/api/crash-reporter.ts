@@ -32,14 +32,14 @@ class CrashReporter {
       }
     }
 
-    const extraGlobal = {
+    const globalExtraAmended = {
       _productName: productName,
       _version: appVersion,
       ...globalExtra
     };
 
     binding.start(submitURL, uploadToServer,
-      ignoreSystemCrashHandler, rateLimit, compress, extraGlobal, extra, false);
+      ignoreSystemCrashHandler, rateLimit, compress, globalExtraAmended, extra, false);
   }
 
   getLastCrashReport () {

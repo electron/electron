@@ -27,7 +27,7 @@ void Start(const std::string& submit_url,
            bool ignore_system_crash_handler,
            bool rate_limit,
            bool compress,
-           const std::map<std::string, std::string>& extra_global,
+           const std::map<std::string, std::string>& global_extra,
            const std::map<std::string, std::string>& extra,
            bool is_node_process);
 

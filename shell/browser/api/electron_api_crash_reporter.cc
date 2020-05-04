@@ -72,7 +72,7 @@ void Start(const std::string& submit_url,
            bool ignore_system_crash_handler,
            bool rate_limit,
            bool compress,
-           const std::map<std::string, std::string>& extra_global,
+           const std::map<std::string, std::string>& global_extra,
            const std::map<std::string, std::string>& extra,
            bool is_node_process) {
 #if !defined(MAS_BUILD)
@@ -84,7 +84,7 @@ void Start(const std::string& submit_url,
   ElectronCrashReporterClient::Get()->SetCollectStatsConsent(upload_to_server);
   ElectronCrashReporterClient::Get()->SetShouldRateLimit(rate_limit);
   ElectronCrashReporterClient::Get()->SetShouldCompressUploads(compress);
-  ElectronCrashReporterClient::Get()->SetGlobalAnnotations(extra_global);
+  ElectronCrashReporterClient::Get()->SetGlobalAnnotations(global_extra);
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type =
       is_node_process
@@ -96,12 +96,12 @@ void Start(const std::string& submit_url,
     // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
   } else {
     auto& global_crash_keys = GetGlobalCrashKeysMutable();
-    for (const auto& pair : extra_global) {
+    for (const auto& pair : global_extra) {
       global_crash_keys[pair.first] = pair.second;
     }
     for (const auto& pair : extra)
       electron::crash_keys::SetCrashKey(pair.first, pair.second);
-    for (const auto& pair : extra_global)
+    for (const auto& pair : global_extra)
       electron::crash_keys::SetCrashKey(pair.first, pair.second);
     breakpad::InitCrashReporter(process_type);
   }

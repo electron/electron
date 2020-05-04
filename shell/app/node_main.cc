@@ -90,7 +90,7 @@ void CrashReporterStart(gin_helper::Dictionary options) {
   bool ignore_system_crash_handler = false;
   bool rate_limit = false;
   bool compress = false;
-  std::map<std::string, std::string> extra_global;
+  std::map<std::string, std::string> global_extra;
   std::map<std::string, std::string> extra;
   options.Get("submitURL", &submit_url);
   options.Get("uploadToServer", &upload_to_server);
@@ -98,10 +98,10 @@ void CrashReporterStart(gin_helper::Dictionary options) {
   options.Get("rateLimit", &rate_limit);
   options.Get("compress", &compress);
   options.Get("extra", &extra);
-  options.Get("globalExtra", &extra_global);
+  options.Get("globalExtra", &global_extra);
   api::crash_reporter::Start(submit_url, upload_to_server,
                              ignore_system_crash_handler, rate_limit, compress,
-                             extra_global, extra, true);
+                             global_extra, extra, true);
 }
 #endif
 
