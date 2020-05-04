@@ -77,7 +77,6 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/language_util.h"
 #include "shell/common/mouse_util.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
@@ -96,16 +95,10 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
-<<<<<<< HEAD
+#include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "third_party/blink/public/platform/web_cursor_info.h"
 #include "third_party/blink/public/platform/web_input_event.h"
-=======
-#include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
-#include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
-#include "ui/base/cursor/cursor.h"
-#include "ui/base/mojom/cursor_type.mojom-shared.h"
->>>>>>> f176d2494... fix: respect system language preferences on Win/macOS (#23247)
-    #include "ui/display/screen.h"
+#include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
 #if BUILDFLAG(ENABLE_OSR)
@@ -124,6 +117,7 @@
 #endif
 
 #if defined(OS_LINUX) || defined(OS_WIN)
+#include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/gfx/font_render_params.h"
 #endif
 
@@ -131,194 +125,194 @@
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
-    namespace mate {
+namespace mate {
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  template <>
-  struct Converter<printing::PrinterBasicInfo> {
-    static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                     const printing::PrinterBasicInfo& val) {
-      gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-      dict.Set("name", val.printer_name);
-      dict.Set("description", val.printer_description);
-      dict.Set("status", val.printer_status);
-      dict.Set("isDefault", val.is_default ? true : false);
-      dict.Set("options", val.options);
-      return dict.GetHandle();
-    }
-  };
+template <>
+struct Converter<printing::PrinterBasicInfo> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const printing::PrinterBasicInfo& val) {
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.Set("name", val.printer_name);
+    dict.Set("description", val.printer_description);
+    dict.Set("status", val.printer_status);
+    dict.Set("isDefault", val.is_default ? true : false);
+    dict.Set("options", val.options);
+    return dict.GetHandle();
+  }
+};
 
-  template <>
-  struct Converter<printing::MarginType> {
-    static bool FromV8(v8::Isolate* isolate,
-                       v8::Local<v8::Value> val,
-                       printing::MarginType* out) {
-      std::string type;
-      if (ConvertFromV8(isolate, val, &type)) {
-        if (type == "default") {
-          *out = printing::DEFAULT_MARGINS;
-          return true;
-        }
-        if (type == "none") {
-          *out = printing::NO_MARGINS;
-          return true;
-        }
-        if (type == "printableArea") {
-          *out = printing::PRINTABLE_AREA_MARGINS;
-          return true;
-        }
-        if (type == "custom") {
-          *out = printing::CUSTOM_MARGINS;
-          return true;
-        }
+template <>
+struct Converter<printing::MarginType> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     printing::MarginType* out) {
+    std::string type;
+    if (ConvertFromV8(isolate, val, &type)) {
+      if (type == "default") {
+        *out = printing::DEFAULT_MARGINS;
+        return true;
       }
-      return false;
+      if (type == "none") {
+        *out = printing::NO_MARGINS;
+        return true;
+      }
+      if (type == "printableArea") {
+        *out = printing::PRINTABLE_AREA_MARGINS;
+        return true;
+      }
+      if (type == "custom") {
+        *out = printing::CUSTOM_MARGINS;
+        return true;
+      }
     }
-  };
+    return false;
+  }
+};
 
-  template <>
-  struct Converter<printing::DuplexMode> {
-    static bool FromV8(v8::Isolate* isolate,
-                       v8::Local<v8::Value> val,
-                       printing::DuplexMode* out) {
-      std::string mode;
-      if (ConvertFromV8(isolate, val, &mode)) {
-        if (mode == "simplex") {
-          *out = printing::SIMPLEX;
-          return true;
-        }
-        if (mode == "longEdge") {
-          *out = printing::LONG_EDGE;
-          return true;
-        }
-        if (mode == "shortEdge") {
-          *out = printing::SHORT_EDGE;
-          return true;
-        }
+template <>
+struct Converter<printing::DuplexMode> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     printing::DuplexMode* out) {
+    std::string mode;
+    if (ConvertFromV8(isolate, val, &mode)) {
+      if (mode == "simplex") {
+        *out = printing::SIMPLEX;
+        return true;
       }
-      return false;
+      if (mode == "longEdge") {
+        *out = printing::LONG_EDGE;
+        return true;
+      }
+      if (mode == "shortEdge") {
+        *out = printing::SHORT_EDGE;
+        return true;
+      }
     }
-  };
+    return false;
+  }
+};
 
 #endif
 
-  template <>
-  struct Converter<WindowOpenDisposition> {
-    static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                     WindowOpenDisposition val) {
-      std::string disposition = "other";
-      switch (val) {
-        case WindowOpenDisposition::CURRENT_TAB:
-          disposition = "default";
-          break;
-        case WindowOpenDisposition::NEW_FOREGROUND_TAB:
-          disposition = "foreground-tab";
-          break;
-        case WindowOpenDisposition::NEW_BACKGROUND_TAB:
-          disposition = "background-tab";
-          break;
-        case WindowOpenDisposition::NEW_POPUP:
-        case WindowOpenDisposition::NEW_WINDOW:
-          disposition = "new-window";
-          break;
-        case WindowOpenDisposition::SAVE_TO_DISK:
-          disposition = "save-to-disk";
-          break;
-        default:
-          break;
-      }
-      return mate::ConvertToV8(isolate, disposition);
+template <>
+struct Converter<WindowOpenDisposition> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   WindowOpenDisposition val) {
+    std::string disposition = "other";
+    switch (val) {
+      case WindowOpenDisposition::CURRENT_TAB:
+        disposition = "default";
+        break;
+      case WindowOpenDisposition::NEW_FOREGROUND_TAB:
+        disposition = "foreground-tab";
+        break;
+      case WindowOpenDisposition::NEW_BACKGROUND_TAB:
+        disposition = "background-tab";
+        break;
+      case WindowOpenDisposition::NEW_POPUP:
+      case WindowOpenDisposition::NEW_WINDOW:
+        disposition = "new-window";
+        break;
+      case WindowOpenDisposition::SAVE_TO_DISK:
+        disposition = "save-to-disk";
+        break;
+      default:
+        break;
     }
-  };
+    return mate::ConvertToV8(isolate, disposition);
+  }
+};
 
-  template <>
-  struct Converter<content::SavePageType> {
-    static bool FromV8(v8::Isolate* isolate,
-                       v8::Local<v8::Value> val,
-                       content::SavePageType* out) {
-      std::string save_type;
-      if (!ConvertFromV8(isolate, val, &save_type))
-        return false;
-      save_type = base::ToLowerASCII(save_type);
-      if (save_type == "htmlonly") {
-        *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
-      } else if (save_type == "htmlcomplete") {
-        *out = content::SAVE_PAGE_TYPE_AS_COMPLETE_HTML;
-      } else if (save_type == "mhtml") {
-        *out = content::SAVE_PAGE_TYPE_AS_MHTML;
-      } else {
-        return false;
-      }
-      return true;
+template <>
+struct Converter<content::SavePageType> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     content::SavePageType* out) {
+    std::string save_type;
+    if (!ConvertFromV8(isolate, val, &save_type))
+      return false;
+    save_type = base::ToLowerASCII(save_type);
+    if (save_type == "htmlonly") {
+      *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
+    } else if (save_type == "htmlcomplete") {
+      *out = content::SAVE_PAGE_TYPE_AS_COMPLETE_HTML;
+    } else if (save_type == "mhtml") {
+      *out = content::SAVE_PAGE_TYPE_AS_MHTML;
+    } else {
+      return false;
     }
-  };
+    return true;
+  }
+};
 
-  template <>
-  struct Converter<electron::api::WebContents::Type> {
-    static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                     electron::api::WebContents::Type val) {
-      using Type = electron::api::WebContents::Type;
-      std::string type;
-      switch (val) {
-        case Type::BACKGROUND_PAGE:
-          type = "backgroundPage";
-          break;
-        case Type::BROWSER_WINDOW:
-          type = "window";
-          break;
-        case Type::BROWSER_VIEW:
-          type = "browserView";
-          break;
-        case Type::REMOTE:
-          type = "remote";
-          break;
-        case Type::WEB_VIEW:
-          type = "webview";
-          break;
-        case Type::OFF_SCREEN:
-          type = "offscreen";
-          break;
-        default:
-          break;
-      }
-      return mate::ConvertToV8(isolate, type);
+template <>
+struct Converter<electron::api::WebContents::Type> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::api::WebContents::Type val) {
+    using Type = electron::api::WebContents::Type;
+    std::string type;
+    switch (val) {
+      case Type::BACKGROUND_PAGE:
+        type = "backgroundPage";
+        break;
+      case Type::BROWSER_WINDOW:
+        type = "window";
+        break;
+      case Type::BROWSER_VIEW:
+        type = "browserView";
+        break;
+      case Type::REMOTE:
+        type = "remote";
+        break;
+      case Type::WEB_VIEW:
+        type = "webview";
+        break;
+      case Type::OFF_SCREEN:
+        type = "offscreen";
+        break;
+      default:
+        break;
     }
+    return mate::ConvertToV8(isolate, type);
+  }
 
-    static bool FromV8(v8::Isolate* isolate,
-                       v8::Local<v8::Value> val,
-                       electron::api::WebContents::Type* out) {
-      using Type = electron::api::WebContents::Type;
-      std::string type;
-      if (!ConvertFromV8(isolate, val, &type))
-        return false;
-      if (type == "backgroundPage") {
-        *out = Type::BACKGROUND_PAGE;
-      } else if (type == "browserView") {
-        *out = Type::BROWSER_VIEW;
-      } else if (type == "webview") {
-        *out = Type::WEB_VIEW;
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::WebContents::Type* out) {
+    using Type = electron::api::WebContents::Type;
+    std::string type;
+    if (!ConvertFromV8(isolate, val, &type))
+      return false;
+    if (type == "backgroundPage") {
+      *out = Type::BACKGROUND_PAGE;
+    } else if (type == "browserView") {
+      *out = Type::BROWSER_VIEW;
+    } else if (type == "webview") {
+      *out = Type::WEB_VIEW;
 #if BUILDFLAG(ENABLE_OSR)
-      } else if (type == "offscreen") {
-        *out = Type::OFF_SCREEN;
+    } else if (type == "offscreen") {
+      *out = Type::OFF_SCREEN;
 #endif
-      } else {
-        return false;
-      }
-      return true;
+    } else {
+      return false;
     }
-  };
+    return true;
+  }
+};
 
-  template <>
-  struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
-    static v8::Local<v8::Value> ToV8(
-        v8::Isolate* isolate,
-        const scoped_refptr<content::DevToolsAgentHost>& val) {
-      mate::Dictionary dict(isolate, v8::Object::New(isolate));
-      dict.Set("id", val->GetId());
-      dict.Set("url", val->GetURL().spec());
-      return dict.GetHandle();
-    }
-  };
+template <>
+struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const scoped_refptr<content::DevToolsAgentHost>& val) {
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("id", val->GetId());
+    dict.Set("url", val->GetURL().spec());
+    return dict.GetHandle();
+  }
+};
 
 }  // namespace mate
 
@@ -529,17 +523,19 @@ void WebContents::InitWithSessionAndOptions(
 
   auto* prefs = web_contents()->GetMutableRendererPrefs();
 
-  // Collect preferred languages from OS and browser process. accept_languages
-  // effects HTTP header, navigator.languages, and CJK fallback font selection.
+  // Collect preferred languages from OS and browser process.
+  // accept_languages effects HTTP header, navigator.languages,
+  // and CJK fallback font selection.
   //
-  // Note that an application locale set to the browser process might be
-  // different with the one set to the preference list.
-  // (e.g. overridden with --lang)
+  // Note that an application locale set to the browser
+  // process might be different with the one set to the preference
+  // list. (e.g. overridden with --lang)
   std::string accept_languages =
       g_browser_process->GetApplicationLocale() + ",";
   for (auto const& language : electron::GetPreferredLanguages()) {
-    if (language == g_browser_process->GetApplicationLocale())
+    if (language == g_browser_process->GetApplicationLocale()) {
       continue;
+    }
     accept_languages += language + ",";
   }
   accept_languages.pop_back();
