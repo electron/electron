@@ -91,20 +91,15 @@ void Start(const std::string& submit_url,
           ? "node"
           : command_line->GetSwitchValueASCII(::switches::kProcessType);
 #if defined(OS_LINUX)
-  if (::crash_reporter::IsCrashpadEnabled()) {
-    ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
-    // crash_reporter::SetFirstChanceExceptionHandler(v8::TryHandleWebAssemblyTrapPosix);
-  } else {
-    auto& global_crash_keys = GetGlobalCrashKeysMutable();
-    for (const auto& pair : global_extra) {
-      global_crash_keys[pair.first] = pair.second;
-    }
-    for (const auto& pair : extra)
-      electron::crash_keys::SetCrashKey(pair.first, pair.second);
-    for (const auto& pair : global_extra)
-      electron::crash_keys::SetCrashKey(pair.first, pair.second);
-    breakpad::InitCrashReporter(process_type);
+  auto& global_crash_keys = GetGlobalCrashKeysMutable();
+  for (const auto& pair : global_extra) {
+    global_crash_keys[pair.first] = pair.second;
   }
+  for (const auto& pair : extra)
+    electron::crash_keys::SetCrashKey(pair.first, pair.second);
+  for (const auto& pair : global_extra)
+    electron::crash_keys::SetCrashKey(pair.first, pair.second);
+  breakpad::InitCrashReporter(process_type);
 #elif defined(OS_MACOSX)
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
@@ -135,11 +130,6 @@ scoped_refptr<UploadList> CreateCrashUploadList() {
 #if defined(OS_MACOSX) || defined(OS_WIN)
   return new CrashUploadListCrashpad();
 #else
-
-  if (crash_reporter::IsCrashpadEnabled()) {
-    return new CrashUploadListCrashpad();
-  }
-
   base::FilePath crash_dir_path;
   base::PathService::Get(chrome::DIR_CRASH_DUMPS, &crash_dir_path);
   base::FilePath upload_log_path =

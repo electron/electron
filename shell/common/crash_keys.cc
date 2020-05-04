@@ -81,15 +81,13 @@ bool IsRunningAsNode() {
 
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line) {
 #if defined(OS_LINUX)
-  if (!crash_reporter::IsCrashpadEnabled()) {
-    if (command_line.HasSwitch("global-crash-keys")) {
-      std::vector<std::pair<std::string, std::string>> global_crash_keys;
-      base::SplitStringIntoKeyValuePairs(
-          command_line.GetSwitchValueASCII("global-crash-keys"), '=', ',',
-          &global_crash_keys);
-      for (const auto& pair : global_crash_keys) {
-        SetCrashKey(pair.first, pair.second);
-      }
+  if (command_line.HasSwitch("global-crash-keys")) {
+    std::vector<std::pair<std::string, std::string>> global_crash_keys;
+    base::SplitStringIntoKeyValuePairs(
+        command_line.GetSwitchValueASCII("global-crash-keys"), '=', ',',
+        &global_crash_keys);
+    for (const auto& pair : global_crash_keys) {
+      SetCrashKey(pair.first, pair.second);
     }
   }
 #endif
