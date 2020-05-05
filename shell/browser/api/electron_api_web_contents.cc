@@ -77,6 +77,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/language_util.h"
 #include "shell/common/mouse_util.h"
 #include "shell/common/native_mate_converters/blink_converter.h"
 #include "shell/common/native_mate_converters/content_converter.h"
@@ -520,7 +521,24 @@ void WebContents::InitWithSessionAndOptions(
   managed_web_contents()->GetView()->SetDelegate(this);
 
   auto* prefs = web_contents()->GetMutableRendererPrefs();
-  prefs->accept_languages = g_browser_process->GetApplicationLocale();
+
+  // Collect preferred languages from OS and browser process.
+  // accept_languages effects HTTP header, navigator.languages,
+  // and CJK fallback font selection.
+  //
+  // Note that an application locale set to the browser
+  // process might be different with the one set to the preference
+  // list. (e.g. overridden with --lang)
+  std::string accept_languages =
+      g_browser_process->GetApplicationLocale() + ",";
+  for (auto const& language : electron::GetPreferredLanguages()) {
+    if (language == g_browser_process->GetApplicationLocale()) {
+      continue;
+    }
+    accept_languages += language + ",";
+  }
+  accept_languages.pop_back();
+  prefs->accept_languages = accept_languages;
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   // Update font settings.
