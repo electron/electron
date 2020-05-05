@@ -334,7 +334,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
     LoadResourceBundle(locale);
   }
 
-#if defined(OS_MACOSX) && !defined(MAS_BUILD)
+#if defined(OS_WIN) || (defined(OS_MACOSX) && !defined(MAS_BUILD))
   // In the main process, we wait for JS to call crashReporter.start() before
   // initializing crashpad. If we're in the renderer, we want to initialize it
   // immediately at boot.
