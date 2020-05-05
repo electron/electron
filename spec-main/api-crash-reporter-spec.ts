@@ -495,7 +495,8 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
             crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
             return crashReporter.getCrashesDirectory();
           });
-          const newFileAppeared = waitForNewFileInDir(path.join(crashesDir, 'completed'));
+          const reportsDir = process.platform === "darwin" ? path.join(crashesDir, 'completed') : path.join(crashesDir, 'reports');
+          const newFileAppeared = waitForNewFileInDir(reportsDir);
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
           expect(newFiles).to.have.length(1);
@@ -513,7 +514,8 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
           }, crashesDir);
           expect(remoteCrashesDir).to.equal(crashesDir);
 
-          const newFileAppeared = waitForNewFileInDir(path.join(crashesDir, 'completed'));
+          const reportsDir = process.platform === "darwin" ? path.join(crashesDir, 'completed') : path.join(crashesDir, 'reports');
+          const newFileAppeared = waitForNewFileInDir(reportsDir);
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
           expect(newFiles).to.have.length(1);
