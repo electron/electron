@@ -330,6 +330,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       const dir = await remotely(() => require('electron').app.getPath('crashDumps'));
       try {
         fs.rmdirSync(dir, { recursive: true });
+        fs.mkdirSync(dir);
       } catch (e) { /* ignore */ }
 
       // 1. start the crash reporter.
@@ -491,7 +492,10 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     }
 
     for (const crashingProcess of ['main', 'renderer', 'sandboxed-renderer', 'node']) {
-      describe(`when ${crashingProcess} crashes`, () => {
+      // TODO(jeremy): breakpad on linux disables itself when uploadToServer is
+      // false, so we should figure out a different way to test the crash dump
+      // dir on linux.
+      ifdescribe(process.platform !== 'linux')(`when ${crashingProcess} crashes`, () => {
         it('stores crashes in the crash dump directory when uploadToServer: false', async () => {
           const { remotely } = await startRemoteControlApp();
           const crashesDir = await remotely(() => {
