@@ -46,3 +46,16 @@ index 12e1923fd2943af92aaf6f691d28212bdd2a73dd..3b66abb180df5f3da7c4fa8de7727962
      host()->WasHidden();
      aura::WindowTreeHost* host = window_->GetHost();
      if (delegated_frame_host_) {
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
+index 9fe6d55cc0db..8ae2e0ab6457 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac.mm
++++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
+@@ -437,7 +437,7 @@ void RenderWidgetHostViewMac::Hide() {
+ }
+ 
+ void RenderWidgetHostViewMac::WasUnOccluded() {
+-  if (!host()->is_hidden())
++  if (!host()->is_hidden() || host()->disable_hidden_)
+     return;
+ 
+   browser_compositor_->SetRenderWidgetHostIsHidden(false);
