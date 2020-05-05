@@ -55,6 +55,7 @@
 
 #if defined(OS_WIN)
 #include "base/win/win_util.h"
+#include "chrome/child/v8_crashpad_support_win.h"
 #endif
 
 #if defined(OS_POSIX) && !defined(OS_MACOSX)
@@ -181,9 +182,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
 
   logging::LoggingSettings settings;
 #if defined(OS_WIN)
-#if defined(_WIN64)
-  // crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
-#endif
+  v8_crashpad_support::SetUp();
 
   // On Windows the terminal returns immediately, so we add a new line to
   // prevent output in the same line as the prompt.

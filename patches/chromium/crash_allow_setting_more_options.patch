@@ -166,3 +166,36 @@ index b579521d55860823722df2ee849f6b1628b3c950..f4f71e5174cf8fb706a2f8385252ba87
        if (crash_reporter_client->ShouldMonitorCrashHandlerExpensively()) {
          arguments.push_back("--monitor-self");
        }
+diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
+index 669f5bea844d75f0e5c34b58994f4cfb8e856af0..8c1fb8fb8f2e02466b51ef08de25b056f8b2052d 100644
+--- a/components/crash/core/app/crashpad_win.cc
++++ b/components/crash/core/app/crashpad_win.cc
+@@ -84,12 +84,14 @@ base::FilePath PlatformCrashpadInitialization(
+ 
+     std::map<std::string, std::string> process_annotations;
+     GetPlatformCrashpadAnnotations(&process_annotations);
++    crash_reporter_client->GetProcessSimpleAnnotations(&process_annotations);
+ 
+ #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+     std::string url = "https://clients2.google.com/cr/report";
+ #else
+     std::string url;
+ #endif
++    crash_reporter_client->GetUploadUrl(&url);
+ 
+     // Allow the crash server to be overridden for testing. If the variable
+     // isn't present in the environment then the default URL will remain.
+@@ -126,6 +128,13 @@ base::FilePath PlatformCrashpadInitialization(
+ 
+     std::vector<std::string> arguments(start_arguments);
+ 
++    if (!crash_reporter_client->GetShouldRateLimit()) {
++      arguments.push_back("--no-rate-limit");
++    }
++    if (!crash_reporter_client->GetShouldCompressUploads()) {
++      arguments.push_back("--no-upload-gzip");
++    }
++
+     if (crash_reporter_client->ShouldMonitorCrashHandlerExpensively()) {
+       arguments.push_back("--monitor-self");
+       for (const std::string& start_argument : start_arguments) {

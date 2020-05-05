@@ -57,6 +57,8 @@ static_library("chrome") {
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
     "//chrome/browser/win/chrome_process_finder.cc",
     "//chrome/browser/win/chrome_process_finder.h",
+    "//chrome/child/v8_crashpad_support_win.cc",
+    "//chrome/child/v8_crashpad_support_win.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
   ]

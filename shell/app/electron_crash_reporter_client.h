@@ -5,8 +5,6 @@
 #ifndef SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_
 #define SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_
 
-#if !defined(OS_WIN)
-
 #include <memory>
 
 #include "base/compiler_specific.h"
@@ -28,12 +26,9 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
       const std::map<std::string, std::string>& annotations);
 
   // crash_reporter::CrashReporterClient implementation.
-#if !defined(OS_MACOSX) && !defined(OS_WIN)
+#if defined(OS_LINUX)
   void SetCrashReporterClientIdFromGUID(
       const std::string& client_guid) override;
-#endif
-
-#if defined(OS_POSIX) && !defined(OS_MACOSX)
   void GetProductNameAndVersion(const char** product_name,
                                 const char** version) override;
   void GetProductNameAndVersion(std::string* product_name,
@@ -42,7 +37,19 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   base::FilePath GetReporterLogFilename() override;
 #endif
 
+#if defined(OS_WIN)
+  void GetProductNameAndVersion(const base::string16& exe_path,
+                                base::string16* product_name,
+                                base::string16* version,
+                                base::string16* special_build,
+                                base::string16* channel_name) override;
+#endif
+
+#if defined(OS_WIN)
+  bool GetCrashDumpLocation(base::string16* crash_dir) override;
+#else
   bool GetCrashDumpLocation(base::FilePath* crash_dir) override;
+#endif
 
 #if defined(OS_MACOSX) || defined(OS_LINUX)
   bool GetCrashMetricsLocation(base::FilePath* metrics_dir) override;
@@ -84,7 +91,5 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
 
   DISALLOW_COPY_AND_ASSIGN(ElectronCrashReporterClient);
 };
-
-#endif  // OS_WIN
 
 #endif  // SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_

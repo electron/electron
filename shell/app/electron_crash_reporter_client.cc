@@ -88,14 +88,11 @@ ElectronCrashReporterClient::ElectronCrashReporterClient() {}
 
 ElectronCrashReporterClient::~ElectronCrashReporterClient() {}
 
-#if !defined(OS_MACOSX) && !defined(OS_WIN)
+#if defined(OS_LINUX)
 void ElectronCrashReporterClient::SetCrashReporterClientIdFromGUID(
     const std::string& client_guid) {
   crash_keys::SetMetricsClientIdFromGUID(client_guid);
 }
-#endif
-
-#if defined(OS_POSIX) && !defined(OS_MACOSX)
 void ElectronCrashReporterClient::GetProductNameAndVersion(
     const char** product_name,
     const char** version) {
@@ -122,10 +119,33 @@ base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
 }
 #endif
 
+#if defined(OS_WIN)
+void ElectronCrashReporterClient::GetProductNameAndVersion(
+    const base::string16& exe_path,
+    base::string16* product_name,
+    base::string16* version,
+    base::string16* special_build,
+    base::string16* channel_name) {
+  *product_name = base::UTF8ToUTF16(ELECTRON_PRODUCT_NAME);
+  *version = base::UTF8ToUTF16(ELECTRON_VERSION_STRING);
+}
+#endif
+
+#if defined(OS_WIN)
+bool ElectronCrashReporterClient::GetCrashDumpLocation(
+    base::string16* crash_dir_str) {
+  base::FilePath crash_dir;
+  if (!base::PathService::Get(electron::DIR_CRASH_DUMPS, &crash_dir))
+    return false;
+  *crash_dir_str = crash_dir.value();
+  return true;
+}
+#else
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
     base::FilePath* crash_dir) {
   return base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
 }
+#endif
 
 #if defined(OS_MACOSX) || defined(OS_LINUX)
 bool ElectronCrashReporterClient::GetCrashMetricsLocation(

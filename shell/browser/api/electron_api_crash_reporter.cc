@@ -11,6 +11,7 @@
 #include "base/command_line.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/browser/crash_upload_list/crash_upload_list_crashpad.h"
 #include "chrome/common/chrome_paths.h"
@@ -24,6 +25,7 @@
 #include "services/service_manager/embedder/switches.h"
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/common/crash_keys.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/time_converter.h"
@@ -31,7 +33,7 @@
 #include "shell/common/node_includes.h"
 #include "third_party/crashpad/crashpad/client/crashpad_info.h"
 
-#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#if defined(OS_LINUX)
 #include "components/crash/core/app/breakpad_linux.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
@@ -108,6 +110,14 @@ void Start(const std::string& submit_url,
     crashpad::CrashpadInfo::GetCrashpadInfo()
         ->set_system_crash_reporter_forwarding(crashpad::TriState::kDisabled);
   }
+#elif defined(OS_WIN)
+  for (const auto& pair : extra)
+    electron::crash_keys::SetCrashKey(pair.first, pair.second);
+  base::FilePath user_data_dir;
+  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  ::crash_reporter::InitializeCrashpadWithEmbeddedHandler(
+      process_type.empty(), process_type,
+      base::UTF16ToUTF8(user_data_dir.value()), base::FilePath());
 #endif
 #endif
 }
