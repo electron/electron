@@ -352,6 +352,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       const firstReport = await remotely(() => require('electron').crashReporter.getLastCrashReport());
       expect(firstReport).to.not.be.null();
       expect(firstReport.date).to.be.an.instanceOf(Date);
+      expect((+new Date) - (+firstReport.date)).to.be.lessThan(30000)
     });
   });
 
@@ -511,7 +512,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
           expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
         });
 
-        it('respects an overridden cash dump directory', async () => {
+        it('respects an overridden crash dump directory', async () => {
           const { remotely } = await startRemoteControlApp();
           const crashesDir = path.join(app.getPath('temp'), uuid.v4());
           const remoteCrashesDir = await remotely((crashesDir: string) => {
