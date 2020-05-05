@@ -1032,6 +1032,7 @@ if (is_mac) {
       ":electron_app_manifest",
       ":electron_lib",
       ":packed_resources",
+      "//components/crash/core/app",
       "//content:sandbox_helper_win",
       "//electron/buildflags",
       "//ui/strings",
