@@ -120,7 +120,9 @@ v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
+#if defined(OS_WIN)
   v8_crashpad_support::SetUp();
+#endif
 
 #if !defined(MAS_BUILD)
   ElectronCrashReporterClient::Create();
