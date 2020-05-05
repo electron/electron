@@ -231,8 +231,6 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
       tracing::TracingSamplerProfiler::CreateOnMainThread();
 
   chrome::RegisterPathProvider();
-  // Registering our own path provider _after_ the chrome path provider allows
-  // us to insert our own overrides.
   electron::RegisterPathProvider();
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

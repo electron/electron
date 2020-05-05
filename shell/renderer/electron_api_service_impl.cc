@@ -236,14 +236,6 @@ void ElectronApiServiceImpl::DereferenceRemoteJSCallback(
 }
 #endif
 
-void ElectronApiServiceImpl::UpdateCrashpadPipeName(
-    const std::string& pipe_name) {
-#if defined(OS_WIN)
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  env->SetVar(kCrashpadPipeName, pipe_name);
-#endif
-}
-
 void ElectronApiServiceImpl::TakeHeapSnapshot(
     mojo::ScopedHandle file,
     TakeHeapSnapshotCallback callback) {
