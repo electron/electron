@@ -5,7 +5,8 @@
 #ifndef SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_
 #define SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_
 
-#include <memory>
+#include <map>
+#include <string>
 
 #include "base/compiler_specific.h"
 #include "base/macros.h"

@@ -4,8 +4,11 @@
 
 #include "shell/browser/api/electron_api_crash_reporter.h"
 
+#include <limits>
 #include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "base/bind.h"
 #include "base/command_line.h"

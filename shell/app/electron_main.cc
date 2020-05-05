@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 #if defined(OS_WIN)
@@ -55,10 +57,12 @@
 
 namespace {
 
+#if defined(OS_WIN)
 // Redefined here so we don't have to introduce a dependency on //content
 // from //electron:electron_app
 const char kUserDataDir[] = "user-data-dir";
 const char kProcessType[] = "type";
+#endif
 
 ALLOW_UNUSED_TYPE bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)

@@ -721,7 +721,6 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
 #if defined(OS_LINUX)
-  // TODO: only when crash reporter is enabled in main process
   bool enable_crash_reporter = false;
   enable_crash_reporter = breakpad::IsCrashReporterEnabled();
   if (enable_crash_reporter) {
@@ -734,8 +733,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       switch_value += "=";
       switch_value += pair.second;
     }
-    // TODO: make global-crash-keys a constant
-    command_line->AppendSwitchASCII("global-crash-keys", switch_value);
+    command_line->AppendSwitchASCII(switches::kGlobalCrashKeys, switch_value);
   }
 #endif
 

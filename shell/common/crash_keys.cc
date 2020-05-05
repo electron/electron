@@ -5,6 +5,7 @@
 #include "shell/common/crash_keys.h"
 
 #include <deque>
+#include <utility>
 #include <vector>
 
 #include "base/command_line.h"
@@ -14,6 +15,7 @@
 #include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"
 #include "shell/common/electron_constants.h"
+#include "shell/common/options_switches.h"
 
 namespace electron {
 
@@ -81,10 +83,10 @@ bool IsRunningAsNode() {
 
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line) {
 #if defined(OS_LINUX)
-  if (command_line.HasSwitch("global-crash-keys")) {
+  if (command_line.HasSwitch(switches::kGlobalCrashKeys)) {
     std::vector<std::pair<std::string, std::string>> global_crash_keys;
     base::SplitStringIntoKeyValuePairs(
-        command_line.GetSwitchValueASCII("global-crash-keys"), '=', ',',
+        command_line.GetSwitchValueASCII(switches::kGlobalCrashKeys), '=', ',',
         &global_crash_keys);
     for (const auto& pair : global_crash_keys) {
       SetCrashKey(pair.first, pair.second);
@@ -99,7 +101,7 @@ void SetCrashKeysFromCommandLine(const base::CommandLine& command_line) {
     process_type_key.Set("node");
   } else {
     std::string process_type =
-        command_line.GetSwitchValueASCII(switches::kProcessType);
+        command_line.GetSwitchValueASCII(::switches::kProcessType);
     if (process_type.empty()) {
       process_type_key.Set("browser");
     } else {
