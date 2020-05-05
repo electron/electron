@@ -529,9 +529,7 @@ source_set("electron_lib") {
   if (is_win) {
     libs += [ "dwmapi.lib" ]
     deps += [
-      "//components/browser_watcher:browser_watcher_client",
       "//components/crash/core/app:crash_export_thunks",
-      "//components/crash/core/app:run_as_crashpad_handler",
       "//ui/native_theme:native_theme_browser",
       "//ui/views/controls/webview",
       "//ui/wm",
@@ -1061,6 +1059,11 @@ if (is_mac) {
         # TODO: we should be generating our .rc files more like how chrome does
         "shell/browser/resources/win/electron.rc",
         "shell/browser/resources/win/resource.h",
+      ]
+
+      deps += [
+        "//components/browser_watcher:browser_watcher_client",
+        "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
       libs = [

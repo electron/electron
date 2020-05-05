@@ -22,10 +22,13 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
 #include "components/browser_watcher/exit_code_watcher_win.h"
+#include "components/crash/core/app/crash_switches.h"
+#include "components/crash/core/app/run_as_crashpad_handler_win.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
 #include "shell/app/command_line_args.h"
 #include "shell/app/electron_main_delegate.h"
+#include "third_party/crashpad/crashpad/util/win/initial_client_data.h"
 
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 #include <unistd.h>
@@ -39,13 +42,6 @@
 #include "shell/app/electron_library_main.h"
 #endif  // defined(OS_MACOSX)
 
-#include "components/crash/core/app/crash_switches.h"
-#include "content/public/common/content_switches.h"
-//#include "components/crash/core/app/crashpad.h"
-#include "chrome/common/chrome_switches.h"
-#include "components/crash/core/app/run_as_crashpad_handler_win.h"
-#include "third_party/crashpad/crashpad/util/win/initial_client_data.h"
-
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 #include "electron/buildflags/buildflags.h"
@@ -58,6 +54,11 @@
 #endif
 
 namespace {
+
+// Redefined here so we don't have to introduce a dependency on //content
+// from //electron:electron_app
+const char kUserDataDir[] = "user-data-dir";
+const char kProcessType[] = "type";
 
 ALLOW_UNUSED_TYPE bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)
@@ -150,7 +151,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
       base::CommandLine::ForCurrentProcess();
 
   const std::string process_type =
-      command_line->GetSwitchValueASCII(switches::kProcessType);
+      command_line->GetSwitchValueASCII(kProcessType);
 
   if (process_type == crash_reporter::switches::kCrashpadHandler) {
     // Check if we should monitor the exit code of this process
@@ -179,13 +180,13 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
     // The handler process must always be passed the user data dir on the
     // command line.
-    DCHECK(command_line->HasSwitch(switches::kUserDataDir));
+    DCHECK(command_line->HasSwitch(kUserDataDir));
 
     base::FilePath user_data_dir =
-        command_line->GetSwitchValuePath(switches::kUserDataDir);
+        command_line->GetSwitchValuePath(kUserDataDir);
     int crashpad_status = crash_reporter::RunAsCrashpadHandler(
-        *base::CommandLine::ForCurrentProcess(), user_data_dir,
-        switches::kProcessType, switches::kUserDataDir);
+        *base::CommandLine::ForCurrentProcess(), user_data_dir, kProcessType,
+        kUserDataDir);
     if (crashpad_status != 0 && exit_code_watcher) {
       // Crashpad failed to initialize, explicitly stop the exit code watcher
       // so the crashpad-handler process can exit with an error
