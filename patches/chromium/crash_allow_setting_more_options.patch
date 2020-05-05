@@ -9,7 +9,7 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 192b0a7f137f311abb6a991f997e11f5eba52256..eaf614ea01f631ff1413c46887205199b8af45f2 100644
+index 192b0a7f137f311abb6a991f997e11f5eba52256..364af690879d79d25d118d5b2fdbaabe21a1c52d 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -103,9 +103,18 @@ namespace {
@@ -36,7 +36,7 @@ index 192b0a7f137f311abb6a991f997e11f5eba52256..eaf614ea01f631ff1413c46887205199
    char* status_fd_path =
        StringFromPrefixAndUint("/dev/fd/", upload_status_fd, allocator);
  
-+  char* upload_url = g_upload_url ? g_upload_url : kDefaultUploadURL;
++  const char* upload_url = g_upload_url ? g_upload_url : kDefaultUploadURL;
 +
    static const char kWgetBinary[] = "/usr/bin/wget";
    const char* args[] = {
