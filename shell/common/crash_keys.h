@@ -18,9 +18,7 @@ namespace crash_keys {
 
 void SetCrashKey(const std::string& key, const std::string& value);
 void ClearCrashKey(const std::string& key);
-#if !defined(OS_LINUX)
 void GetCrashKeys(std::map<std::string, std::string>* keys);
-#endif
 
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line);
 void SetPlatformCrashKey();

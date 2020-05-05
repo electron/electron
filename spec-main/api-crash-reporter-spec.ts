@@ -390,8 +390,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         });
       });
       const parameters = await remotely(() => require('electron').crashReporter.getParameters());
-      expect(parameters).to.be.an('object');
-      expect(parameters.extra1).to.equal('hi');
+      expect(parameters).to.have.property('extra1', 'hi');
     });
 
     it('reflects added and removed parameters', async () => {
@@ -402,8 +401,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       });
       {
         const parameters = await remotely(() => require('electron').crashReporter.getParameters());
-        expect(parameters).to.have.property('hello');
-        expect(parameters.hello).to.equal('world');
+        expect(parameters).to.have.property('hello', 'world');
       }
 
       await remotely(() => { require('electron').crashReporter.removeExtraParameter('hello'); });
@@ -424,7 +422,13 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         await bw.webContents.executeJavaScript(`require('electron').crashReporter.addExtraParameter('hello', 'world')`);
         return bw.webContents.executeJavaScript(`require('electron').crashReporter.getParameters()`);
       });
-      expect(rendererParameters).to.deep.equal({ hello: 'world' });
+      if (process.platform === 'linux') {
+        // On Linux, 'getParameters' will also include the global parameters,
+        // because breakpad doesn't support global parameters.
+        expect(rendererParameters).to.have.property('hello', 'world');
+      } else {
+        expect(rendererParameters).to.deep.equal({ hello: 'world' });
+      }
     });
 
     it('can be called in a node child process', async () => {

@@ -3,8 +3,6 @@ import { app } from 'electron';
 const binding = process.electronBinding('crash_reporter');
 
 class CrashReporter {
-  _extra: Record<string, string> = {};
-
   start (options: Electron.CrashReporterStartOptions) {
     const {
       productName = app.name,
@@ -23,14 +21,6 @@ class CrashReporter {
     const appVersion = app.getVersion();
 
     if (companyName && globalExtra._companyName == null) globalExtra._companyName = companyName;
-
-    if (process.platform === 'linux') {
-      // Linux (breakpad) doesn't allow fetching the value of the crash keys in
-      // C++, so we shim it here.
-      for (const [k, v] of Object.entries(extra)) {
-        this._extra[k] = String(v);
-      }
-    }
 
     const globalExtraAmended = {
       _productName: productName,
@@ -79,16 +69,14 @@ class CrashReporter {
 
   addExtraParameter (key: string, value: string) {
     binding.addExtraParameter(key, value);
-    if (process.platform === 'linux') { this._extra[key] = String(value); }
   }
 
   removeExtraParameter (key: string) {
     binding.removeExtraParameter(key);
-    if (process.platform === 'linux') { delete this._extra[key]; }
   }
 
   getParameters () {
-    if (process.platform === 'linux') { return { ...this._extra }; } else { return binding.getParameters(); }
+    return binding.getParameters();
   }
 }
 
