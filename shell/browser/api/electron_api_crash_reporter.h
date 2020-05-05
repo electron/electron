@@ -37,4 +37,4 @@ void Start(const std::string& submit_url,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_NET_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_CRASH_REPORTER_H_
