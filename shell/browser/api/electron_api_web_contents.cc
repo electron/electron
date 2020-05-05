@@ -178,22 +178,22 @@ struct Converter<printing::MarginType> {
 };
 
 template <>
-struct Converter<printing::DuplexMode> {
+struct Converter<printing::mojom::DuplexMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     printing::DuplexMode* out) {
+                     printing::mojom::DuplexMode* out) {
     std::string mode;
     if (ConvertFromV8(isolate, val, &mode)) {
       if (mode == "simplex") {
-        *out = printing::SIMPLEX;
+        *out = printing::mojom::DuplexMode::kSimplex;
         return true;
       }
       if (mode == "longEdge") {
-        *out = printing::LONG_EDGE;
+        *out = printing::mojom::DuplexMode::kLongEdge;
         return true;
       }
       if (mode == "shortEdge") {
-        *out = printing::SHORT_EDGE;
+        *out = printing::mojom::DuplexMode::kShortEdge;
         return true;
       }
     }
@@ -2037,9 +2037,10 @@ void WebContents::Print(gin_helper::Arguments* args) {
   }
 
   // Duplex type user wants to use.
-  printing::DuplexMode duplex_mode;
+  printing::mojom::DuplexMode duplex_mode;
   options.Get("duplexMode", &duplex_mode);
-  settings.SetIntKey(printing::kSettingDuplexMode, duplex_mode);
+  settings.SetIntKey(printing::kSettingDuplexMode,
+                     static_cast<int>(duplex_mode));
 
   // We've already done necessary parameter sanitization at the
   // JS level, so we can simply pass this through.
