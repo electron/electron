@@ -38,6 +38,10 @@
 #include "components/crash/core/app/breakpad_linux.h"
 #endif
 
+#if defined(OS_WIN)
+#include "chrome/child/v8_crashpad_support_win.h"
+#endif
+
 namespace {
 
 // Initialize Node.js cli options to pass to Node.js
@@ -116,11 +120,13 @@ v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
+  v8_crashpad_support::SetUp();
+
 #if !defined(MAS_BUILD)
   ElectronCrashReporterClient::Create();
 #endif
 
-#if defined(OS_MACOSX) && !defined(MAS_BUILD)
+#if defined(OS_WIN) || (defined(OS_MACOSX) && !defined(MAS_BUILD))
   crash_reporter::InitializeCrashpad(false, "node");
 #endif
 
@@ -142,10 +148,6 @@ int NodeMain(int argc, char* argv[]) {
     auto feature_list = std::make_unique<base::FeatureList>();
     feature_list->InitializeFromCommandLine("", "");
     base::FeatureList::SetInstance(std::move(feature_list));
-
-#if defined(_WIN64)
-    // crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
-#endif
 
     // We do not want to double-set the error level and promise rejection
     // callback.
