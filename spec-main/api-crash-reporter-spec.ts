@@ -267,7 +267,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     expect(crash).to.have.property('longParam', 'a'.repeat(127));
   });
 
-  it('should omit extra keys with names longer than 64 characters', async () => {
+  it('should omit extra keys with names longer than 63 characters', async () => {
     const { port, waitForCrash } = await startServer();
     const { remotely } = await startRemoteControlApp();
     remotely((port: number) => {
@@ -276,20 +276,20 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         ignoreSystemCrashHandler: true,
         extra: {
           ['a'.repeat(70)]: 'value',
-          ['b'.repeat(64)]: 'value',
+          ['b'.repeat(63)]: 'value',
           'not-long': 'not-long-value'
         }
       });
-      require('electron').crashReporter.addExtraParameter('b'.repeat(70), 'value');
+      require('electron').crashReporter.addExtraParameter('c'.repeat(70), 'value');
       setTimeout(() => process.crash());
     }, port);
     const crash = await waitForCrash();
     expect(crash).not.to.have.property('a'.repeat(70));
     expect(crash).not.to.have.property('a'.repeat(64));
-    expect(crash).not.to.have.property('b'.repeat(70));
-    expect(crash).not.to.have.property('b'.repeat(64));
+    expect(crash).to.have.property('b'.repeat(63), 'value');
     expect(crash).to.have.property('not-long', 'not-long-value');
-    expect(crash).to.have.property('b'.repeat(64), 'value');
+    expect(crash).not.to.have.property('c'.repeat(70));
+    expect(crash).not.to.have.property('c'.repeat(64));
   });
 
   describe('globalExtra', () => {

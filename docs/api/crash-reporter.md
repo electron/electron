@@ -94,7 +94,7 @@ first call `start` you can call `addExtraParameter`.
 
 **Note:** Parameters passed in `extra`, `globalExtra` or set with
 `addExtraParameter` have limits on the length of the keys and values. Key names
-must be at most 64 bytes long, and values must be no longer than 127 bytes.
+must be at most 63 bytes long, and values must be no longer than 127 bytes.
 Keys with names longer than the maximum will be silently ignored. Key values
 longer than the maximum length will be truncated.
 
@@ -142,8 +142,8 @@ Returns `String` - The directory where crashes are temporarily stored before bei
 
 ### `crashReporter.addExtraParameter(key, value)`
 
-* `key` String - Parameter key, must be less than 64 characters long.
-* `value` String - Parameter value, must be less than 64 characters long.
+* `key` String - Parameter key, must be no longer than 63 bytes.
+* `value` String - Parameter value, must be no longer than 127 bytes.
 
 Set an extra parameter to be sent with the crash report. The values specified
 here will be sent in addition to any values set via the `extra` option when
@@ -157,13 +157,13 @@ parameters in a renderer process will not result in those parameters being sent
 with crashes that occur in other renderer processes or in the main process.
 
 **Note:** Parameters have limits on the length of the keys and values. Key
-names must be at most 64 bytes long, and values must be no longer than 127
+names must be no longer than 63 bytes, and values must be no longer than 127
 bytes. Keys with names longer than the maximum will be silently ignored. Key
 values longer than the maximum length will be truncated.
 
 ### `crashReporter.removeExtraParameter(key)`
 
-* `key` String - Parameter key, must be less than 64 characters long.
+* `key` String - Parameter key, must be no longer than 63 bytes.
 
 Remove a extra parameter from the current set of parameters. Future crashes
 will not include this parameter.
