@@ -37,13 +37,15 @@ std::deque<std::string>& GetExtraCrashKeyNames() {
 
 }  // namespace
 
-constexpr uint32_t kMaxCrashKeyNameLength =
-    std::min(crash_reporter::internal::kCrashKeyStorageKeySize,
-             crashpad::Annotation::kNameMaxLength);
-static_assert(
-    kMaxCrashKeyNameLength == 40,
-    "looks like the maximum crash key name length changed! That's okay, we "
-    "just need to update docs + tests, and this static_assert.");
+constexpr uint32_t kMaxCrashKeyNameLength = 40;
+#if defined(OS_LINUX)
+static_assert(kMaxCrashKeyNameLength <=
+                  crash_reporter::internal::kCrashKeyStorageKeySize,
+              "max crash key name length above what breakpad supports");
+#else
+static_assert(kMaxCrashKeyNameLength <= crashpad::Annotation::kNameMaxLength,
+              "max crash key name length above what crashpad supports");
+#endif
 
 void SetCrashKey(const std::string& key, const std::string& value) {
   // Chrome DCHECK()s if we try to set an annotation with a name longer than
