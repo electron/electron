@@ -381,6 +381,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `disableHtmlFullscreenWindowResize` Boolean (optional) - Whether to
       prevent the window from resizing when entering HTML Fullscreen. Default
       is `false`.
+    * `enableWebSQL` Boolean (optional) - Whether to enable the [WebSQL api](https://www.w3.org/TR/webdatabase/).
+      Default is `true`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

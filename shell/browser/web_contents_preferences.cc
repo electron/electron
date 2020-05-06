@@ -130,6 +130,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kImages, true);
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
   SetDefaultBoolIfUndefined(options::kWebGL, true);
+  SetDefaultBoolIfUndefined(options::kEnableWebSQL, true);
   bool webSecurity = true;
   SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
   // If webSecurity was explicity set to false, let's inherit that into
@@ -411,6 +412,10 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
   if (IsEnabled(options::kNodeIntegrationInSubFrames))
     command_line->AppendSwitch(switches::kNodeIntegrationInSubFrames);
+
+  // Whether to allow the WebSQL api
+  if (IsEnabled(options::kEnableWebSQL))
+    command_line->AppendSwitch(switches::kEnableWebSQL);
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents

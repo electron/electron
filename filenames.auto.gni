@@ -178,8 +178,6 @@ auto_filenames = {
 
   isolated_bundle_deps = [
     "lib/common/electron-binding-setup.ts",
-    "lib/common/error-utils.ts",
-    "lib/common/webpack-globals-provider.ts",
     "lib/isolated_renderer/init.js",
     "lib/renderer/web-view/web-view-constants.ts",
     "lib/renderer/web-view/web-view-element.ts",

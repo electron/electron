@@ -5,6 +5,7 @@
 #include "shell/renderer/content_settings_observer.h"
 
 #include "content/public/renderer/render_frame.h"
+#include "shell/common/options_switches.h"
 #include "third_party/blink/public/platform/url_conversion.h"
 #include "third_party/blink/public/platform/web_security_origin.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -20,6 +21,11 @@ ContentSettingsObserver::ContentSettingsObserver(
 ContentSettingsObserver::~ContentSettingsObserver() {}
 
 bool ContentSettingsObserver::AllowDatabase() {
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableWebSQL)) {
+    return false;
+  }
+
   blink::WebFrame* frame = render_frame()->GetWebFrame();
   if (frame->GetSecurityOrigin().IsUnique() ||
       frame->Top()->GetSecurityOrigin().IsUnique())
