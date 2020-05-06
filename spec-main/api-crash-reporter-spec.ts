@@ -267,29 +267,30 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     expect(crash).to.have.property('longParam', 'a'.repeat(127));
   });
 
-  it('should omit extra keys with names longer than 63 characters', async () => {
+  it('should omit extra keys with names longer than the maximum', async () => {
+    const kKeyLengthMax = 39;
     const { port, waitForCrash } = await startServer();
     const { remotely } = await startRemoteControlApp();
-    remotely((port: number) => {
+    remotely((port: number, kKeyLengthMax: number) => {
       require('electron').crashReporter.start({
         submitURL: `http://127.0.0.1:${port}`,
         ignoreSystemCrashHandler: true,
         extra: {
-          ['a'.repeat(70)]: 'value',
-          ['b'.repeat(63)]: 'value',
+          ['a'.repeat(kKeyLengthMax + 10)]: 'value',
+          ['b'.repeat(kKeyLengthMax)]: 'value',
           'not-long': 'not-long-value'
         }
       });
-      require('electron').crashReporter.addExtraParameter('c'.repeat(70), 'value');
+      require('electron').crashReporter.addExtraParameter('c'.repeat(kKeyLengthMax + 10), 'value');
       setTimeout(() => process.crash());
-    }, port);
+    }, port, kKeyLengthMax);
     const crash = await waitForCrash();
-    expect(crash).not.to.have.property('a'.repeat(70));
-    expect(crash).not.to.have.property('a'.repeat(64));
-    expect(crash).to.have.property('b'.repeat(63), 'value');
+    expect(crash).not.to.have.property('a'.repeat(kKeyLengthMax + 10));
+    expect(crash).not.to.have.property('a'.repeat(kKeyLengthMax));
+    expect(crash).to.have.property('b'.repeat(kKeyLengthMax), 'value');
     expect(crash).to.have.property('not-long', 'not-long-value');
-    expect(crash).not.to.have.property('c'.repeat(70));
-    expect(crash).not.to.have.property('c'.repeat(64));
+    expect(crash).not.to.have.property('c'.repeat(kKeyLengthMax + 10));
+    expect(crash).not.to.have.property('c'.repeat(kKeyLengthMax));
   });
 
   describe('globalExtra', () => {
