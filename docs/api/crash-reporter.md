@@ -170,7 +170,7 @@ will not include this parameter.
 
 ### `crashReporter.getParameters()`
 
-Returns `Object` - The current 'extra' parameters of the crash reporter.
+Returns `Record<String, String>` - The current 'extra' parameters of the crash reporter.
 
 ## Crash Report Payload
 
