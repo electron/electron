@@ -94,7 +94,7 @@ first call `start` you can call `addExtraParameter`.
 
 **Note:** Parameters passed in `extra`, `globalExtra` or set with
 `addExtraParameter` have limits on the length of the keys and values. Key names
-must be at most 64 bytes long, and values must be no longer than 128 bytes.
+must be at most 64 bytes long, and values must be no longer than 127 bytes.
 Keys with names longer than the maximum will be silently ignored. Key values
 longer than the maximum length will be truncated.
 
@@ -157,7 +157,7 @@ parameters in a renderer process will not result in those parameters being sent
 with crashes that occur in other renderer processes or in the main process.
 
 **Note:** Parameters have limits on the length of the keys and values. Key
-names must be at most 64 bytes long, and values must be no longer than 128
+names must be at most 64 bytes long, and values must be no longer than 127
 bytes. Keys with names longer than the maximum will be silently ignored. Key
 values longer than the maximum length will be truncated.
 
