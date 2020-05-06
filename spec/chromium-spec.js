@@ -190,7 +190,7 @@ describe('chromium feature', () => {
   describe('navigator.languages', () => {
     it('should return the system locale only', async () => {
       const appLocale = app.getLocale();
-      const w = new BrowserWindow({ show: false });
+      w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
       const languages = await w.webContents.executeJavaScript('navigator.languages');
       expect(languages.length).to.be.greaterThan(0);
