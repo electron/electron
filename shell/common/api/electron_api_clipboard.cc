@@ -29,10 +29,8 @@ ui::ClipboardBuffer Clipboard::GetClipboardBuffer(gin_helper::Arguments* args) {
 std::vector<base::string16> Clipboard::AvailableFormats(
     gin_helper::Arguments* args) {
   std::vector<base::string16> format_types;
-  bool ignore;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  clipboard->ReadAvailableTypes(GetClipboardBuffer(args), &format_types,
-                                &ignore);
+  clipboard->ReadAvailableTypes(GetClipboardBuffer(args), &format_types);
   return format_types;
 }
 
