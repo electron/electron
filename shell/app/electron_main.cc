@@ -161,8 +161,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     // Check if we should monitor the exit code of this process
     std::unique_ptr<browser_watcher::ExitCodeWatcher> exit_code_watcher;
 
-    // crash_reporter::SetupFallbackCrashHandling(*command_line);
-
     // Retrieve the client process from the command line
     crashpad::InitialClientData initial_client_data;
     if (initial_client_data.InitializeFromString(
@@ -189,8 +187,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     base::FilePath user_data_dir =
         command_line->GetSwitchValuePath(kUserDataDir);
     int crashpad_status = crash_reporter::RunAsCrashpadHandler(
-        *base::CommandLine::ForCurrentProcess(), user_data_dir, kProcessType,
-        kUserDataDir);
+        *command_line, user_data_dir, kProcessType, kUserDataDir);
     if (crashpad_status != 0 && exit_code_watcher) {
       // Crashpad failed to initialize, explicitly stop the exit code watcher
       // so the crashpad-handler process can exit with an error

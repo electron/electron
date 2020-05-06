@@ -154,7 +154,7 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
 #if defined(OS_MACOSX) || defined(OS_LINUX)
 bool ElectronCrashReporterClient::GetCrashMetricsLocation(
     base::FilePath* metrics_dir) {
-  return base::PathService::Get(chrome::DIR_USER_DATA, metrics_dir);
+  return base::PathService::Get(electron::DIR_USER_DATA, metrics_dir);
 }
 #endif  // OS_MACOSX || OS_LINUX
 
