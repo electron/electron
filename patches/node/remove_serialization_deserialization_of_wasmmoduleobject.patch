@@ -3,6 +3,8 @@ From: John Kleinschmidt <jkleinsc@github.com>
 Date: Tue, 28 Jan 2020 12:12:28 -0500
 Subject: Remove serialization/deserialization of WasmModuleObject
 
+This is already present in Node.js v14 and can be removed when we upgrade.
+
 Serialization of WasmModuleObject was removed here:
 https://chromium.googlesource.com/v8/v8/+/30e4ba6df4cdf5582de4d79850bcd270e6a75a7a
 

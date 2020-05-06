@@ -4,7 +4,7 @@ Date: Mon, 2 Dec 2019 17:25:38 -0800
 Subject: refactor: TransferrableModule is deprecated, use CompiledWasmModule
  instead
 
-This will be upstreamed to nodejs/node
+This is already present in Node.js v14 and can be removed when we upgrade.
 
 diff --git a/src/node_messaging.cc b/src/node_messaging.cc
 index c7c46063731a5b49366d8e8702b625162b361471..a8cfbec2f5bf2387312237114ab5eb058561b898 100644
