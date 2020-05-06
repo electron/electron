@@ -439,10 +439,14 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   content::WebUIControllerFactory::RegisterFactory(
       ElectronWebUIControllerFactory::GetInstance());
 
-  // --remote-debugging-port
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
+  if (command_line->HasSwitch(switches::kRemoteDebuggingPipe)) {
+    // --remote-debugging-pipe
+    content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler();
+  } else if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {
+    // --remote-debugging-port
     DevToolsManagerDelegate::StartHttpHandler();
+  }
 
 #if !defined(OS_MACOSX)
   // The corresponding call in macOS is in ElectronApplicationDelegate.
@@ -511,6 +515,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   node_env_.reset();
 
   fake_browser_process_->PostMainMessageLoopRun();
+  content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
 }
 
 #if !defined(OS_MACOSX)
