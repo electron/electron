@@ -204,7 +204,7 @@ index 1efef99651721d7cdb159ef9fe1aea6c5fb299f0..efcdc1dbe7207f66862a7ab93f0f226c
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index df62f2d8d86cf5d731b4cfe61ed588be1269604e..1997bddb373d6fb23f01e384ddaf299ee26285db 100644
+index 1aeb66f8ad5788a34c61c342026239812cfff5b9..3a49ca27819d71cebb8d39293c09536ace457ba2 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -209,6 +209,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -236,10 +236,10 @@ index f991ec5e915b6ea7dedce5b141606861577b6c64..a07ebeb27d1a9367ab60618b957efe69
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index acacc8c53b82503cc7642ddfd849bf910a3384f6..905a95be30a673a86fceccc6078c9db412cb7894 100644
+index f0f17fb03f25587b758f75c8291a48c0833e31e1..be6b5a73f0dd4eb089b6953bed7306a183f23e7a 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2578,6 +2578,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2573,6 +2573,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

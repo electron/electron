@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 3c985180c83e6142f25314f11096800a75450c47..4898c47ad8b3eeec709c22fbb91230225c1d4a16 100644
+index 7a36cf96a9aad04a9a039ec4ed97fb83975c9cb6..56d032d9a0853318a329624549254f4c3ceb69db 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1257,6 +1257,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1269,6 +1269,24 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -220,10 +220,10 @@ index 95b8691b881b2960f00e05aac6436437d99b8b4d..156901c6deb9df98ada76920fd97496a
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 6fa5df1a29385cc693f96b3dcbe93c4effeea04a..6a1416ed8f16e935a40a5a982da99820325854ee 100644
+index fde403495994f4265345c549a4a698a7aac35eed..5cd8958090cf48b98fac0205ecaa3b1ef15cdaba 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -233,8 +233,45 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -235,8 +235,45 @@ class CONTENT_EXPORT ContentBrowserClient {
    using IsClipboardPasteAllowedCallback =
        base::OnceCallback<void(ClipboardPasteAllowed)>;
  
