@@ -20,7 +20,7 @@ least harm in the interim by removing the check that prevents more than
 one tracker from existing at a time.
 
 diff --git a/ui/gfx/x/x11_error_tracker.cc b/ui/gfx/x/x11_error_tracker.cc
-index af031de356c5e0938fd3b84a494e48dc9a0e0476..2a5c18dc473a4f88fc0427bec69142917159bbd9 100644
+index a6f054f5ba271766a9bc580658e0e25db6c33010..f0880e7a145b758b3ac6f35017f92cda63ab53a3 100644
 --- a/ui/gfx/x/x11_error_tracker.cc
 +++ b/ui/gfx/x/x11_error_tracker.cc
 @@ -24,7 +24,7 @@ namespace gfx {

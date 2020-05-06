@@ -453,10 +453,10 @@ index 119aa4a49c32c2cb14832fd88a520e8645b732bd..e1f99e1fc7a3e42173250f5980a35378
    };
    AddItem("No minor content", base::string16(), ui::ThemedVectorIcon());
 diff --git a/ui/views/controls/menu/menu_model_adapter.cc b/ui/views/controls/menu/menu_model_adapter.cc
-index cbf9288765ade430451251f8f266975b2047828d..2aea7766d807120866872cbd7fa17776259f30b8 100644
+index 79af9195b11f2e5a18bb922ddc96ae37639333ff..7df27c7949e77abf2a19c29e0914f180ead1841f 100644
 --- a/ui/views/controls/menu/menu_model_adapter.cc
 +++ b/ui/views/controls/menu/menu_model_adapter.cc
-@@ -99,8 +99,9 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
+@@ -100,8 +100,9 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
  
    if (*type == MenuItemView::Type::kSeparator) {
      return menu->AddMenuItemAt(menu_index, item_id, base::string16(),
@@ -468,7 +468,7 @@ index cbf9288765ade430451251f8f266975b2047828d..2aea7766d807120866872cbd7fa17776
                                 model->GetSeparatorTypeAt(model_index));
    }
  
-@@ -108,6 +109,7 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
+@@ -109,6 +110,7 @@ MenuItemView* MenuModelAdapter::AddMenuItemFromModelAt(ui::MenuModel* model,
    ui::ImageModel minor_icon = model->GetMinorIconAt(model_index);
    return menu->AddMenuItemAt(
        menu_index, item_id, model->GetLabelAt(model_index),

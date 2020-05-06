@@ -66,7 +66,7 @@ index 0f8b1561d7c6fd8c1abb89dceaacd6f140a82e37..95b8691b881b2960f00e05aac6436437
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index d39f58fc8c3639067eda370a31269890dd39899e..fde403495994f4265345c549a4a698a7aac35eed 100644
+index a4475a580512fa2a5bd0c3be8e702c2d1f6ba16a..85eaaaf8a27b0214f057d4b41956352b9bd61074 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -145,6 +145,7 @@ class NetworkService;
