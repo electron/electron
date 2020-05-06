@@ -54,10 +54,6 @@ app.whenReady().then(() => {
     const crashPath = path.join(__dirname, 'node-crash.js');
     const child = childProcess.fork(crashPath, [url, version, crashesDir], { silent: true });
     child.on('exit', () => process.exit(0));
-  } else if (crashType === 'long-extra') {
-    const longString = '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef-and-a-few-more';
-    crashReporter.addExtraParameter('longParam', longString);
-    process.crash();
   } else {
     console.error(`Unrecognized crash type: '${crashType}'`);
     process.exit(1);

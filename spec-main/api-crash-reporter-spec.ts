@@ -239,10 +239,52 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
 
   it('should be able to send extra values longer than 64 characters', async () => {
     const { port, waitForCrash } = await startServer();
-    runCrashApp('long-extra', port);
+    const { remotely } = await startRemoteControlApp();
+    remotely((port: number) => {
+      require('electron').crashReporter.start({
+        submitURL: `http://127.0.0.1:${port}`,
+        ignoreSystemCrashHandler: true,
+        extra: { 'longParam': 'a'.repeat(64) }
+      });
+      setTimeout(() => process.crash());
+    }, port);
     const crash = await waitForCrash();
-    const longString = '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef-and-a-few-more';
-    expect(crash.longParam).to.equal(longString);
+    expect(crash.longParam).to.equal('a'.repeat(64));
+  });
+
+  it('should truncate extra values longer than 128 characters', async () => {
+    const { port, waitForCrash } = await startServer();
+    const { remotely } = await startRemoteControlApp();
+    remotely((port: number) => {
+      require('electron').crashReporter.start({
+        submitURL: `http://127.0.0.1:${port}`,
+        ignoreSystemCrashHandler: true,
+        extra: { 'longParam': 'a'.repeat(130) }
+      });
+      setTimeout(() => process.crash());
+    }, port);
+    const crash = await waitForCrash();
+    expect(crash.longParam).to.equal('a'.repeat(128));
+  });
+
+  it('should omit extra keys with names longer than 64 characters', async () => {
+    const { port, waitForCrash } = await startServer();
+    const { remotely } = await startRemoteControlApp();
+    remotely((port: number) => {
+      require('electron').crashReporter.start({
+        submitURL: `http://127.0.0.1:${port}`,
+        ignoreSystemCrashHandler: true,
+        extra: { ['a'.repeat(70)]: 'value', 'not-long': 'not-long-value' }
+      });
+      require('electron').crashReporter.addExtraParameter('b'.repeat(70), 'value');
+      setTimeout(() => process.crash());
+    }, port);
+    const crash = await waitForCrash();
+    expect(crash).not.to.have.property('a'.repeat(70));
+    expect(crash).not.to.have.property('a'.repeat(64));
+    expect(crash).not.to.have.property('b'.repeat(70));
+    expect(crash).not.to.have.property('b'.repeat(64));
+    expect(crash).to.have.property('not-long', 'not-long-value');
   });
 
   describe('globalExtra', () => {
@@ -352,7 +394,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       const firstReport = await remotely(() => require('electron').crashReporter.getLastCrashReport());
       expect(firstReport).to.not.be.null();
       expect(firstReport.date).to.be.an.instanceOf(Date);
-      expect((+new Date) - (+firstReport.date)).to.be.lessThan(30000)
+      expect((+new Date()) - (+firstReport.date)).to.be.lessThan(30000);
     });
   });
 

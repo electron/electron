@@ -16,6 +16,7 @@
 #include "content/public/common/content_switches.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/options_switches.h"
+#include "third_party/crashpad/crashpad/client/annotation.h"
 
 namespace electron {
 
@@ -37,6 +38,11 @@ std::deque<std::string>& GetExtraCrashKeyNames() {
 }  // namespace
 
 void SetCrashKey(const std::string& key, const std::string& value) {
+  // Chrome DCHECK()s if we try to set an annotation with a name longer than
+  // the max.
+  // TODO(nornagon): warn the developer (via console.warn) when this happens.
+  if (key.size() > crashpad::Annotation::kNameMaxLength)
+    return;
   auto& crash_key_names = GetExtraCrashKeyNames();
 
   auto iter = std::find(crash_key_names.begin(), crash_key_names.end(), key);

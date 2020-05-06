@@ -92,6 +92,12 @@ by the crash reporter.
 **Note:** If you need to send additional/updated `extra` parameters after your
 first call `start` you can call `addExtraParameter`.
 
+**Note:** Parameters passed in `extra`, `globalExtra` or set with
+`addExtraParameter` have limits on the length of the keys and values. Key names
+must be at most 64 bytes long, and values must be no longer than 128 bytes.
+Keys with names longer than the maximum will be silently ignored. Key values
+longer than the maximum length will be truncated.
+
 **Note:** Calling this method from the renderer process is deprecated.
 
 ### `crashReporter.getLastCrashReport()`
@@ -149,6 +155,11 @@ parameters in the main process will not cause those parameters to be sent along
 with crashes from renderer or other child processes. Similarly, adding extra
 parameters in a renderer process will not result in those parameters being sent
 with crashes that occur in other renderer processes or in the main process.
+
+**Note:** Parameters have limits on the length of the keys and values. Key
+names must be at most 64 bytes long, and values must be no longer than 128
+bytes. Keys with names longer than the maximum will be silently ignored. Key
+values longer than the maximum length will be truncated.
 
 ### `crashReporter.removeExtraParameter(key)`
 
