@@ -69,8 +69,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       mojo::GenericPendingReceiver receiver) override;
   void RegisterBrowserInterfaceBindersForFrame(
       content::RenderFrameHost* render_frame_host,
-      service_manager::BinderMapWithContext<content::RenderFrameHost*>* map)
-      override;
+      mojo::BinderMapWithContext<content::RenderFrameHost*>* map) override;
 #if defined(OS_LINUX)
   void GetAdditionalMappedFilesForChildProcess(
       const base::CommandLine& command_line,

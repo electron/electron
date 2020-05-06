@@ -51,6 +51,7 @@
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/switches.h"
+#include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/buildflags/buildflags.h"
@@ -59,7 +60,6 @@
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request_body.h"
-#include "services/service_manager/public/cpp/binder_map.h"
 #include "shell/app/manifests.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
@@ -1591,7 +1591,7 @@ void BindBeforeUnloadControl(
 
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
     content::RenderFrameHost* render_frame_host,
-    service_manager::BinderMapWithContext<content::RenderFrameHost*>* map) {
+    mojo::BinderMapWithContext<content::RenderFrameHost*>* map) {
   map->Add<network_hints::mojom::NetworkHintsHandler>(
       base::BindRepeating(&BindNetworkHintsHandler));
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
