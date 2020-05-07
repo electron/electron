@@ -81,7 +81,9 @@ const startRemoteControlApp = async () => {
         const chunks = [] as Buffer[];
         res.on('data', chunk => { chunks.push(chunk); });
         res.on('end', () => {
-          const ret = v8.deserialize(Buffer.concat(chunks));
+          // NOTE: v8.deserialize has existed since node 8.0.0, but apparently
+          // the typings we're using don't recognize it.
+          const ret = (v8 as any).deserialize(Buffer.concat(chunks));
           if (Object.prototype.hasOwnProperty.call(ret, 'error')) {
             reject(new Error(`remote error: ${ret.error}\n\nTriggered at:`));
           } else {
