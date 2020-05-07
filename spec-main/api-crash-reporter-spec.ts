@@ -10,6 +10,7 @@ import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as v8 from 'v8';
 import * as uuid from 'uuid';
+import * as rimraf from 'rimraf';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm');
@@ -376,7 +377,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       // 0. clear the crash reports directory.
       const dir = await remotely(() => require('electron').app.getPath('crashDumps'));
       try {
-        fs.rmdirSync(dir, { recursive: true });
+        rimraf.sync(dir);
         fs.mkdirSync(dir);
       } catch (e) { /* ignore */ }
 
