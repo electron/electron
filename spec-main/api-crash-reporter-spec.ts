@@ -123,7 +123,6 @@ const startServer = async () => {
       fields[fieldname] = val;
     });
     busboy.on('finish', () => {
-      // const reportId = 'abc-123-def-456-abc-789-abc-123-abcd';
       // breakpad id must be 16 hex digits.
       const reportId = Math.random().toString(16).split('.')[1].padStart(16, '0');
       res.end(reportId, async () => {
@@ -566,7 +565,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
           const newFileAppeared = waitForNewFileInDir(reportsDir);
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
-          expect(newFiles).to.have.length(1);
+          expect(newFiles).to.have.length(1, `Files that appeared: ${JSON.stringify(newFiles)}`);
           expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
         });
       });
