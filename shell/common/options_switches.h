@@ -147,6 +147,8 @@ extern const char kEnableSpellcheck[];
 extern const char kEnableRemoteModule[];
 #endif
 
+extern const char kGlobalCrashKeys[];
+
 }  // namespace switches
 
 }  // namespace electron

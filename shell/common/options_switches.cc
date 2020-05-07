@@ -280,6 +280,8 @@ const char kEnableSpellcheck[] = "enable-spellcheck";
 const char kEnableRemoteModule[] = "enable-remote-module";
 #endif
 
+const char kGlobalCrashKeys[] = "global-crash-keys";
+
 }  // namespace switches
 
 }  // namespace electron

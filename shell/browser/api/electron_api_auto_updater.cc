@@ -9,27 +9,11 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
-
-namespace gin {
-
-template <>
-struct Converter<base::Time> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const base::Time& val) {
-    v8::MaybeLocal<v8::Value> date =
-        v8::Date::New(isolate->GetCurrentContext(), val.ToJsTime());
-    if (date.IsEmpty())
-      return v8::Null(isolate);
-    else
-      return date.ToLocalChecked();
-  }
-};
-
-}  // namespace gin
 
 namespace electron {
 
