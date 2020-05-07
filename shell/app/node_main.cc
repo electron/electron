@@ -104,6 +104,13 @@ void CrashReporterStart(gin_helper::Dictionary options) {
   options.Get("compress", &compress);
   options.Get("extra", &extra);
   options.Get("globalExtra", &global_extra);
+
+  std::string product_name;
+  if (options.Get("productName", &product_name))
+    global_extra["_productName"] = product_name;
+  std::string company_name;
+  if (options.Get("companyName", &company_name))
+    global_extra("_companyName"] = company_name;
   api::crash_reporter::Start(submit_url, upload_to_server,
                              ignore_system_crash_handler, rate_limit, compress,
                              global_extra, extra, true);
