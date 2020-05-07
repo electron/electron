@@ -186,7 +186,8 @@ function waitForNewFileInDir (dir: string): Promise<string[]> {
   });
 }
 
-ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
+// TODO(nornagon): Fix tests on linux/arm.
+ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
   afterEach(cleanup);
 
   describe('should send minidump', () => {
@@ -206,7 +207,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       expect(crash.mainProcessSpecific).to.be.undefined();
     });
 
-    // TODO(jeremy): Minidump generation in main/node process on Linux/Arm is
+    // TODO(nornagon): Minidump generation in main/node process on Linux/Arm is
     // broken (//components/crash prints "Failed to generate minidump"). Figure
     // out why.
     ifit(!isLinuxOnArm)('when main process crashes', async () => {
@@ -367,7 +368,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     });
   });
 
-  // TODO(jeremy): re-enable on woa
+  // TODO(nornagon): re-enable on woa
   ifdescribe(!isWindowsOnArm)('getLastCrashReport', () => {
     it('returns the last uploaded report', async () => {
       const { remotely } = await startRemoteControlApp();
@@ -540,9 +541,9 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     }
 
     for (const crashingProcess of ['main', 'renderer', 'sandboxed-renderer', 'node']) {
-      // TODO(jeremy): breakpad on linux disables itself when uploadToServer is
-      // false, so we should figure out a different way to test the crash dump
-      // dir on linux.
+      // TODO(nornagon): breakpad on linux disables itself when uploadToServer
+      // is false, so we should figure out a different way to test the crash
+      // dump dir on linux.
       ifdescribe(process.platform !== 'linux')(`when ${crashingProcess} crashes`, () => {
         it('stores crashes in the crash dump directory when uploadToServer: false', async () => {
           const { remotely } = await startRemoteControlApp();
