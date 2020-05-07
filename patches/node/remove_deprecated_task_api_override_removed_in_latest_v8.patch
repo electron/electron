@@ -3,7 +3,7 @@ From: Andy Locascio <andy@slack-corp.com>
 Date: Thu, 9 Jan 2020 15:48:36 -0800
 Subject: remove deprecated task API override removed in latest v8
 
-Node.js will pick this up when they roll next.
+This is already present in Node.js v14 and can be removed when we upgrade.
 
 CL: https://chromium-review.googlesource.com/c/v8/v8/+/1868620
 

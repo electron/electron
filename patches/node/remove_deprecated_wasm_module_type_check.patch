@@ -6,6 +6,8 @@ Subject: Remove deprecated wasm module type check
 The method was deprecated in favor of {IsWasmModuleObject}.
 https://chromium-review.googlesource.com/c/v8/v8/+/2033170
 
+This is already present in Node.js v14 and can be removed when we upgrade.
+
 diff --git a/src/node_types.cc b/src/node_types.cc
 index a53bcba555448fd99d582da7dc0c7af528627ca5..e816e0af54d1cf52f2af9ded49e25625b782d5be 100644
 --- a/src/node_types.cc

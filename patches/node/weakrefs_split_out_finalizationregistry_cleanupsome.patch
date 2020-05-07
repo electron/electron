@@ -5,6 +5,8 @@ Subject: Split out FinalizationRegistry#cleanupSome to a different flag
 
 https://chromium-review.googlesource.com/c/v8/v8/+/2141011
 
+This is already present in Node.js v14 and can be removed when we upgrade.
+
 diff --git a/test/parallel/test-finalization-group-error.js b/test/parallel/test-finalization-group-error.js
 index 46a670073b1dbba9729e54166378991a7edba5a0..0857bedd043f0436bddc6d8641c51e78a8b4c562 100644
 --- a/test/parallel/test-finalization-group-error.js
