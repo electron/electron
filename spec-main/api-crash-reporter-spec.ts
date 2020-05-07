@@ -184,113 +184,104 @@ function waitForNewFileInDir (dir: string): Promise<string[]> {
 ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
   afterEach(cleanup);
 
-  it('should send minidump when renderer crashes', async () => {
-    const { port, waitForCrash } = await startServer();
-    runCrashApp('renderer', port);
-    const crash = await waitForCrash();
-    checkCrash('renderer', crash);
-    expect(crash.mainProcessSpecific).to.be.undefined();
-  });
+  ifdescribe(!(process.platform === 'linux' && process.arch.includes('arm')))('should send minidump', () => {
+    it('when renderer crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('renderer', port);
+      const crash = await waitForCrash();
+      checkCrash('renderer', crash);
+      expect(crash.mainProcessSpecific).to.be.undefined();
+    });
 
-  it('should send minidump when sandboxed renderer crashes', async () => {
-    const { port, waitForCrash } = await startServer();
-    runCrashApp('sandboxed-renderer', port);
-    const crash = await waitForCrash();
-    checkCrash('renderer', crash);
-    expect(crash.mainProcessSpecific).to.be.undefined();
-  });
+    it('when sandboxed renderer crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('sandboxed-renderer', port);
+      const crash = await waitForCrash();
+      checkCrash('renderer', crash);
+      expect(crash.mainProcessSpecific).to.be.undefined();
+    });
 
-  it('should send minidump with renderer-specific parameters when renderer crashes', async () => {
-    const { port, waitForCrash } = await startServer();
-    runCrashApp('renderer', port, ['--set-extra-parameters-in-renderer']);
-    const crash = await waitForCrash();
-    checkCrash('renderer', crash);
-    expect(crash.mainProcessSpecific).to.be.undefined();
-    expect(crash.rendererSpecific).to.equal('rs');
-    expect(crash.addedThenRemoved).to.be.undefined();
-  });
+    it('when main process crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('main', port);
+      const crash = await waitForCrash();
+      checkCrash('browser', crash);
+      expect(crash.mainProcessSpecific).to.equal('mps');
+    });
 
-  it('should send minidump with updated parameters when sandboxed renderer crashes', async () => {
-    const { port, waitForCrash } = await startServer();
-    runCrashApp('sandboxed-renderer', port, ['--set-extra-parameters-in-renderer']);
-    const crash = await waitForCrash();
-    checkCrash('renderer', crash);
-    expect(crash.mainProcessSpecific).to.be.undefined();
-    expect(crash.rendererSpecific).to.equal('rs');
-    expect(crash.addedThenRemoved).to.be.undefined();
-  });
+    it('when a node process crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('node', port);
+      const crash = await waitForCrash();
+      checkCrash('node', crash);
+      expect(crash.mainProcessSpecific).to.be.undefined();
+      expect(crash.rendererSpecific).to.be.undefined();
+    });
 
-  it('should send minidump when main process crashes', async () => {
-    const { port, waitForCrash } = await startServer();
-    runCrashApp('main', port);
-    const crash = await waitForCrash();
-    checkCrash('browser', crash);
-    expect(crash.mainProcessSpecific).to.equal('mps');
-  });
-
-  it('should send minidump when a node process crashes', async () => {
-    const { port, waitForCrash } = await startServer();
-    runCrashApp('node', port);
-    const crash = await waitForCrash();
-    checkCrash('node', crash);
-    expect(crash.mainProcessSpecific).to.be.undefined();
-    expect(crash.rendererSpecific).to.be.undefined();
-  });
-
-  it('should be able to send extra values longer than 64 characters', async () => {
-    const { port, waitForCrash } = await startServer();
-    const { remotely } = await startRemoteControlApp();
-    remotely((port: number) => {
-      require('electron').crashReporter.start({
-        submitURL: `http://127.0.0.1:${port}`,
-        ignoreSystemCrashHandler: true,
-        extra: { 'longParam': 'a'.repeat(64) }
+    describe('with extra parameters', () => {
+      it('when renderer crashes', async () => {
+        const { port, waitForCrash } = await startServer();
+        runCrashApp('renderer', port, ['--set-extra-parameters-in-renderer']);
+        const crash = await waitForCrash();
+        checkCrash('renderer', crash);
+        expect(crash.mainProcessSpecific).to.be.undefined();
+        expect(crash.rendererSpecific).to.equal('rs');
+        expect(crash.addedThenRemoved).to.be.undefined();
       });
-      setTimeout(() => process.crash());
-    }, port);
-    const crash = await waitForCrash();
-    expect(crash.longParam).to.equal('a'.repeat(64));
+
+      it('when sandboxed renderer crashes', async () => {
+        const { port, waitForCrash } = await startServer();
+        runCrashApp('sandboxed-renderer', port, ['--set-extra-parameters-in-renderer']);
+        const crash = await waitForCrash();
+        checkCrash('renderer', crash);
+        expect(crash.mainProcessSpecific).to.be.undefined();
+        expect(crash.rendererSpecific).to.equal('rs');
+        expect(crash.addedThenRemoved).to.be.undefined();
+      });
+    });
   });
 
-  it('should truncate extra values longer than 127 characters', async () => {
-    const { port, waitForCrash } = await startServer();
-    const { remotely } = await startRemoteControlApp();
-    remotely((port: number) => {
-      require('electron').crashReporter.start({
-        submitURL: `http://127.0.0.1:${port}`,
-        ignoreSystemCrashHandler: true,
-        extra: { 'longParam': 'a'.repeat(130) }
-      });
-      setTimeout(() => process.crash());
-    }, port);
-    const crash = await waitForCrash();
-    expect(crash).to.have.property('longParam', 'a'.repeat(127));
-  });
+  describe('extra parameter limits', () => {
+    it('should truncate extra values longer than 127 characters', async () => {
+      const { port, waitForCrash } = await startServer();
+      const { remotely } = await startRemoteControlApp();
+      remotely((port: number) => {
+        require('electron').crashReporter.start({
+          submitURL: `http://127.0.0.1:${port}`,
+          ignoreSystemCrashHandler: true,
+          extra: { 'longParam': 'a'.repeat(130) }
+        });
+        setTimeout(() => process.crash());
+      }, port);
+      const crash = await waitForCrash();
+      expect(crash).to.have.property('longParam', 'a'.repeat(127));
+    });
 
-  it('should omit extra keys with names longer than the maximum', async () => {
-    const kKeyLengthMax = 39;
-    const { port, waitForCrash } = await startServer();
-    const { remotely } = await startRemoteControlApp();
-    remotely((port: number, kKeyLengthMax: number) => {
-      require('electron').crashReporter.start({
-        submitURL: `http://127.0.0.1:${port}`,
-        ignoreSystemCrashHandler: true,
-        extra: {
-          ['a'.repeat(kKeyLengthMax + 10)]: 'value',
-          ['b'.repeat(kKeyLengthMax)]: 'value',
-          'not-long': 'not-long-value'
-        }
-      });
-      require('electron').crashReporter.addExtraParameter('c'.repeat(kKeyLengthMax + 10), 'value');
-      setTimeout(() => process.crash());
-    }, port, kKeyLengthMax);
-    const crash = await waitForCrash();
-    expect(crash).not.to.have.property('a'.repeat(kKeyLengthMax + 10));
-    expect(crash).not.to.have.property('a'.repeat(kKeyLengthMax));
-    expect(crash).to.have.property('b'.repeat(kKeyLengthMax), 'value');
-    expect(crash).to.have.property('not-long', 'not-long-value');
-    expect(crash).not.to.have.property('c'.repeat(kKeyLengthMax + 10));
-    expect(crash).not.to.have.property('c'.repeat(kKeyLengthMax));
+    it('should omit extra keys with names longer than the maximum', async () => {
+      const kKeyLengthMax = 39;
+      const { port, waitForCrash } = await startServer();
+      const { remotely } = await startRemoteControlApp();
+      remotely((port: number, kKeyLengthMax: number) => {
+        require('electron').crashReporter.start({
+          submitURL: `http://127.0.0.1:${port}`,
+          ignoreSystemCrashHandler: true,
+          extra: {
+            ['a'.repeat(kKeyLengthMax + 10)]: 'value',
+            ['b'.repeat(kKeyLengthMax)]: 'value',
+            'not-long': 'not-long-value'
+          }
+        });
+        require('electron').crashReporter.addExtraParameter('c'.repeat(kKeyLengthMax + 10), 'value');
+        setTimeout(() => process.crash());
+      }, port, kKeyLengthMax);
+      const crash = await waitForCrash();
+      expect(crash).not.to.have.property('a'.repeat(kKeyLengthMax + 10));
+      expect(crash).not.to.have.property('a'.repeat(kKeyLengthMax));
+      expect(crash).to.have.property('b'.repeat(kKeyLengthMax), 'value');
+      expect(crash).to.have.property('not-long', 'not-long-value');
+      expect(crash).not.to.have.property('c'.repeat(kKeyLengthMax + 10));
+      expect(crash).not.to.have.property('c'.repeat(kKeyLengthMax));
+    });
   });
 
   describe('globalExtra', () => {
