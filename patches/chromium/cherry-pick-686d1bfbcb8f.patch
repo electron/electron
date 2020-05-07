@@ -1,7 +1,7 @@
-From 686d1bfbcb8f4fc0f1c45f1dea61f41730961b4a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Rouslan Solomakhin <rouslan@chromium.org>
 Date: Wed, 15 Apr 2020 23:03:07 +0000
-Subject: [PATCH] [Merge M81][Web Payment] Browser context owned callback.
+Subject: Browser context owned callback.
 
 Before this patch, an unowned function pointer would be invoked
 asynchronously with a reference to the possibly freed reference to the
@@ -30,12 +30,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2151474
 Reviewed-by: Rouslan Solomakhin <rouslan@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4044@{#942}
 Cr-Branched-From: a6d9daf149a473ceea37f629c41d4527bf2055bd-refs/heads/master@{#737173}
----
- .../payments/payment_app_provider_impl.cc     | 82 ++++++++++++++-----
- 1 file changed, 61 insertions(+), 21 deletions(-)
 
 diff --git a/content/browser/payments/payment_app_provider_impl.cc b/content/browser/payments/payment_app_provider_impl.cc
-index dd962f58c6905..48f89d4ebfe07 100644
+index 9a84066912f0cef926a941a69090af3749d09288..694d7f57ac3814cb8d99ceecd4d90477a4bdd26f 100644
 --- a/content/browser/payments/payment_app_provider_impl.cc
 +++ b/content/browser/payments/payment_app_provider_impl.cc
 @@ -15,6 +15,7 @@
@@ -46,7 +43,7 @@ index dd962f58c6905..48f89d4ebfe07 100644
  #include "base/task/post_task.h"
  #include "base/token.h"
  #include "content/browser/payments/payment_app_context_impl.h"
-@@ -432,28 +433,65 @@ void OnInstallPaymentApp(
+@@ -425,28 +426,65 @@ void OnInstallPaymentApp(
    }
  }
  
@@ -130,7 +127,7 @@ index dd962f58c6905..48f89d4ebfe07 100644
  
  void AbortInvokePaymentApp(BrowserContext* browser_context,
                             PaymentEventResponseType reason) {
-@@ -606,9 +644,11 @@ void PaymentAppProviderImpl::GetAllPaymentApps(
+@@ -599,9 +637,11 @@ void PaymentAppProviderImpl::GetAllPaymentApps(
  
    RunOrPostTaskOnThread(
        FROM_HERE, ServiceWorkerContext::GetCoreThreadId(),
