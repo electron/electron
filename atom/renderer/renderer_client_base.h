@@ -12,7 +12,7 @@
 #include "content/public/renderer/content_renderer_client.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 // In SHARED_INTERMEDIATE_DIR.
-#include "widevine_cdm_version.h"  // NOLINT(build/include)
+#include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
 #include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck

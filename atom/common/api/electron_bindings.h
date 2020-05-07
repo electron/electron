@@ -15,7 +15,7 @@
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
 #include "native_mate/arguments.h"
-#include "uv.h"  // NOLINT(build/include)
+#include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8.h"
 
 namespace mate {
