@@ -110,7 +110,7 @@ void CrashReporterStart(gin_helper::Dictionary options) {
     global_extra["_productName"] = product_name;
   std::string company_name;
   if (options.Get("companyName", &company_name))
-    global_extra("_companyName"] = company_name;
+    global_extra["_companyName"] = company_name;
   api::crash_reporter::Start(submit_url, upload_to_server,
                              ignore_system_crash_handler, rate_limit, compress,
                              global_extra, extra, true);
