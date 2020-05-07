@@ -32,7 +32,7 @@ Cr-Commit-Position: refs/branch-heads/4044@{#942}
 Cr-Branched-From: a6d9daf149a473ceea37f629c41d4527bf2055bd-refs/heads/master@{#737173}
 
 diff --git a/content/browser/payments/payment_app_provider_impl.cc b/content/browser/payments/payment_app_provider_impl.cc
-index 88643bbaa7f37b3005d8a247f87543b9cf5f01e6..ec1ca36b4eb62a4a70b1e8f66cc68cc9c4ce03cc 100644
+index 88643bbaa7f37b3005d8a247f87543b9cf5f01e6..0c3f4b4966a6b2017a143f306f4f6269b35f7f02 100644
 --- a/content/browser/payments/payment_app_provider_impl.cc
 +++ b/content/browser/payments/payment_app_provider_impl.cc
 @@ -8,6 +8,7 @@
@@ -135,7 +135,7 @@ index 88643bbaa7f37b3005d8a247f87543b9cf5f01e6..ec1ca36b4eb62a4a70b1e8f66cc68cc9
 -                     base::BindOnce(&CheckPermissionForPaymentApps,
 -                                    browser_context, std::move(callback))));
 +      base::BindOnce(
-+          &GetAllPaymentAppsOnCoreThread, payment_app_context,
++          &GetAllPaymentAppsOnIO, payment_app_context,
 +          base::BindOnce(&PermissionChecker::CheckPermissionForPaymentApps,
 +                         PermissionChecker::Create(browser_context),
 +                         std::move(callback))));
