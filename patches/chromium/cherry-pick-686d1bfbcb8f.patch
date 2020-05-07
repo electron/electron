@@ -1,7 +1,7 @@
-From 686d1bfbcb8f4fc0f1c45f1dea61f41730961b4a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Rouslan Solomakhin <rouslan@chromium.org>
 Date: Wed, 15 Apr 2020 23:03:07 +0000
-Subject: [PATCH] [Merge M81][Web Payment] Browser context owned callback.
+Subject: Browser context owned callback.
 
 Before this patch, an unowned function pointer would be invoked
 asynchronously with a reference to the possibly freed reference to the
@@ -30,12 +30,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2151474
 Reviewed-by: Rouslan Solomakhin <rouslan@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4044@{#942}
 Cr-Branched-From: a6d9daf149a473ceea37f629c41d4527bf2055bd-refs/heads/master@{#737173}
----
- .../payments/payment_app_provider_impl.cc     | 82 ++++++++++++++-----
- 1 file changed, 61 insertions(+), 21 deletions(-)
 
 diff --git a/content/browser/payments/payment_app_provider_impl.cc b/content/browser/payments/payment_app_provider_impl.cc
-index dd962f58c6905..48f89d4ebfe07 100644
+index 3b813cb22c15e85c9e0da1b0060a4514e6522db5..83c26a3e1801dc780d83ee34136ca1513e343339 100644
 --- a/content/browser/payments/payment_app_provider_impl.cc
 +++ b/content/browser/payments/payment_app_provider_impl.cc
 @@ -15,6 +15,7 @@
