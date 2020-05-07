@@ -7,7 +7,7 @@ app.setVersion('0.1.0');
 const url = app.commandLine.getSwitchValue('crash-reporter-url');
 const uploadToServer = !app.commandLine.hasSwitch('no-upload');
 const setExtraParameters = app.commandLine.hasSwitch('set-extra-parameters-in-renderer');
-const addGlobalParam = app.commandLine.getSwitchValue('add-global-param')?.split(':');
+const addGlobalParam = app.commandLine.getSwitchValue('add-global-param').split(':');
 
 crashReporter.start({
   productName: 'Zombies',
