@@ -13,6 +13,7 @@ import * as v8 from 'v8';
 import * as uuid from 'uuid';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
+const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm');
 
 const afterTest: ((() => void) | (() => Promise<void>))[] = [];
 async function cleanup () {
@@ -183,7 +184,7 @@ function waitForNewFileInDir (dir: string): Promise<string[]> {
 ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
   afterEach(cleanup);
 
-  ifdescribe(!(process.platform === 'linux' && process.arch.includes('arm')))('should send minidump', () => {
+  describe('should send minidump', () => {
     it('when renderer crashes', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('renderer', port);
@@ -200,7 +201,10 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       expect(crash.mainProcessSpecific).to.be.undefined();
     });
 
-    it('when main process crashes', async () => {
+    // TODO(jeremy): Minidump generation in main/node process on Linux/Arm is
+    // broken (//components/crash prints "Failed to generate minidump"). Figure
+    // out why.
+    ifit(!isLinuxOnArm)('when main process crashes', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('main', port);
       const crash = await waitForCrash();
@@ -208,7 +212,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       expect(crash.mainProcessSpecific).to.equal('mps');
     });
 
-    it('when a node process crashes', async () => {
+    ifit(!isLinuxOnArm)('when a node process crashes', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('node', port);
       const crash = await waitForCrash();
@@ -240,7 +244,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     });
   });
 
-  describe('extra parameter limits', () => {
+  ifdescribe(!isLinuxOnArm)('extra parameter limits', () => {
     it('should truncate extra values longer than 127 characters', async () => {
       const { port, waitForCrash } = await startServer();
       const { remotely } = await startRemoteControlApp();
@@ -284,7 +288,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
   });
 
   describe('globalExtra', () => {
-    it('should be sent with main process dumps', async () => {
+    ifit(!isLinuxOnArm)('should be sent with main process dumps', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('main', port, ['--add-global-param=globalParam:globalValue']);
       const crash = await waitForCrash();
@@ -305,14 +309,14 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       expect(crash.globalParam).to.equal('globalValue');
     });
 
-    it('should not be overridden by extra in main process', async () => {
+    ifit(!isLinuxOnArm)('should not be overridden by extra in main process', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('main', port, ['--add-global-param=mainProcessSpecific:global']);
       const crash = await waitForCrash();
       expect(crash.mainProcessSpecific).to.equal('global');
     });
 
-    it('should not be overridden by extra in renderer process', async () => {
+    ifit(!isLinuxOnArm)('should not be overridden by extra in renderer process', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('main', port, ['--add-global-param=rendererSpecific:global']);
       const crash = await waitForCrash();
