@@ -6,11 +6,11 @@ class CrashReporter {
   start (options: Electron.CrashReporterStartOptions) {
     const {
       productName = app.name,
-      companyName,
+      companyName = undefined,
       extra = {},
       globalExtra = {},
       ignoreSystemCrashHandler = false,
-      submitURL,
+      submitURL = undefined,
       uploadToServer = true,
       rateLimit = false,
       compress = false
