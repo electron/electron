@@ -38,7 +38,6 @@
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_download_manager_delegate.h"
-#include "shell/browser/electron_paths.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/pref_store_delegate.h"
@@ -48,6 +47,7 @@
 #include "shell/browser/web_view_manager.h"
 #include "shell/browser/zoom_level_delegate.h"
 #include "shell/common/application_info.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

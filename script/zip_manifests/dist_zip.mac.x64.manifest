@@ -3,11 +3,14 @@ Electron.app/Contents/
 Electron.app/Contents/Frameworks/
 Electron.app/Contents/Frameworks/Electron Framework.framework/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Electron Framework
+Electron.app/Contents/Frameworks/Electron Framework.framework/Helpers
 Electron.app/Contents/Frameworks/Electron Framework.framework/Libraries
 Electron.app/Contents/Frameworks/Electron Framework.framework/Resources
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/chrome_crashpad_handler
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libEGL.dylib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libGLESv2.dylib
@@ -31,7 +34,6 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resourc
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ca.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/chrome_100_percent.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/chrome_200_percent.pak
-Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/crashpad_handler
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/cs.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/cs.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/da.lproj/

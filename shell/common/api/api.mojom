@@ -15,8 +15,6 @@ interface ElectronRenderer {
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
-  UpdateCrashpadPipeName(string pipe_name);
-
   // This is an API specific to the "remote" module, and will ultimately be
   // replaced by generic IPC once WeakRef is generally available.
   [EnableIf=enable_remote_module]

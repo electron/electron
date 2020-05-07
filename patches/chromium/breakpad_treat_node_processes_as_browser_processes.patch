@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 30 Apr 2020 17:04:13 -0700
+Subject: breakpad: treat node processes as browser processes
+
+On Linux, to avoid the need to pass breakpad FDs to child node processes
+spawned by child_process.fork(), each child process must re-initialize
+breakpad independently, as a "browser" process. This patches
+//components/crash so that it will correctly report 'ptype=node' as a
+crash annotation.
+
+diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
+index 390cca9edc26d3153c8dbc86024cb50097d7ac78..2ae2429e6054f2d54e785c49a49fc243469bb72b 100644
+--- a/components/crash/core/app/breakpad_linux.cc
++++ b/components/crash/core/app/breakpad_linux.cc
+@@ -722,8 +722,13 @@ bool CrashDone(const MinidumpDescriptor& minidump,
+   log_path[log_path_len] = '\0';
+   info.log_filename = log_path;
+ #endif
+-  info.process_type = "browser";
+-  info.process_type_length = 7;
++  if (g_is_node) {
++    info.process_type = "node";
++    info.process_type_length = 4;
++  } else {
++    info.process_type = "browser";
++    info.process_type_length = 7;
++  }
+   info.distro = base::g_linux_distro;
+   info.distro_length = my_strlen(base::g_linux_distro);
+   info.upload = upload;
+@@ -2050,8 +2055,13 @@ void InitCrashReporter(const std::string& process_type) {
+       process_type == kWebViewSingleProcessType ||
+       process_type == kBrowserProcessType ||
+ #endif
++      process_type == "node" ||
+       process_type.empty();
+ 
++  if (process_type == "node") {
++    g_is_node = true;
++  }
++
+   std::string upload_url;
+   if (GetCrashReporterClient()->GetUploadUrl(&upload_url))
+     SetUploadURL(upload_url);
