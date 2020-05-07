@@ -139,7 +139,6 @@
     ]
   },
   "dependencies": {
-    "@types/multiparty": "^0.0.32",
     "@types/temp": "^0.8.34"
   }
 }
