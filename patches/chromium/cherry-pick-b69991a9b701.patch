@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hans Wennborg <hans@chromium.org>
+Date: Thu, 30 Apr 2020 00:20:16 +0000
+Subject: SpeechRecognizerImpl: use a WeakPtr to itself for all tasks
+
+It seems that during shutdown, SpeechRecognizerImpl can go away before the
+posted task runs. This is similar to crrev.com/729694.
+
+(cherry picked from commit 0b2aaaa8a4948d88b892c3e6cabc87848f248e52)
+
+(cherry picked from commit 9a8f835f66472f044da1d0a88c574c6b7f6d776f)
+
+Bug: 1067851
+Change-Id: I1c43d3bfaf978891f4abaef8e452a088d0f18c5c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2139701
+Reviewed-by: Primiano Tucci <primiano@chromium.org>
+Reviewed-by: Tommi <tommi@chromium.org>
+Reviewed-by: Olga Sharonova <olka@chromium.org>
+Commit-Queue: Hans Wennborg <hans@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#757385}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2148952
+Reviewed-by: Ben Mason <benmason@chromium.org>
+Reviewed-by: Hans Wennborg <hans@chromium.org>
+Commit-Queue: Ben Mason <benmason@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4044@{#926}
+Cr-Original-Branched-From: a6d9daf149a473ceea37f629c41d4527bf2055bd-refs/heads/master@{#737173}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2173741
+Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
+Commit-Queue: Jorge Lucangeli Obes <jorgelo@chromium.org>
+Cr-Commit-Position: refs/branch-heads/3987@{#1040}
+Cr-Branched-From: c4e8da9871cc266be74481e212f3a5252972509d-refs/heads/master@{#722274}
+
+diff --git a/content/browser/speech/speech_recognizer_impl.cc b/content/browser/speech/speech_recognizer_impl.cc
+index ac501d619c1bd6fac4a09c9510c1b40bc7cb0e54..701dd30054b85024e26e0eef6a2ec4c52d762a88 100644
+--- a/content/browser/speech/speech_recognizer_impl.cc
++++ b/content/browser/speech/speech_recognizer_impl.cc
+@@ -225,7 +225,8 @@ void SpeechRecognizerImpl::StartRecognition(const std::string& device_id) {
+   device_id_ = device_id;
+ 
+   base::PostTask(FROM_HERE, {BrowserThread::IO},
+-                 base::BindOnce(&SpeechRecognizerImpl::DispatchEvent, this,
++                 base::BindOnce(&SpeechRecognizerImpl::DispatchEvent,
++                                weak_ptr_factory_.GetWeakPtr(),
+                                 FSMEventArgs(EVENT_PREPARE)));
+ }
+ 
+@@ -237,7 +238,8 @@ void SpeechRecognizerImpl::AbortRecognition() {
+ 
+ void SpeechRecognizerImpl::StopAudioCapture() {
+   base::PostTask(FROM_HERE, {BrowserThread::IO},
+-                 base::BindOnce(&SpeechRecognizerImpl::DispatchEvent, this,
++                 base::BindOnce(&SpeechRecognizerImpl::DispatchEvent,
++                                weak_ptr_factory_.GetWeakPtr(),
+                                 FSMEventArgs(EVENT_STOP_CAPTURE)));
+ }
+ 
+@@ -276,16 +278,16 @@ void SpeechRecognizerImpl::Capture(const AudioBus* data,
+   // Convert audio from native format to fixed format used by WebSpeech.
+   FSMEventArgs event_args(EVENT_AUDIO_DATA);
+   event_args.audio_data = audio_converter_->Convert(data);
+-  base::PostTask(
+-      FROM_HERE, {BrowserThread::IO},
+-      base::BindOnce(&SpeechRecognizerImpl::DispatchEvent, this, event_args));
++  base::PostTask(FROM_HERE, {BrowserThread::IO},
++                 base::BindOnce(&SpeechRecognizerImpl::DispatchEvent,
++                                weak_ptr_factory_.GetWeakPtr(), event_args));
+   // See http://crbug.com/506051 regarding why one extra convert call can
+   // sometimes be required. It should be a rare case.
+   if (!audio_converter_->data_was_converted()) {
+     event_args.audio_data = audio_converter_->Convert(data);
+-    base::PostTask(
+-        FROM_HERE, {BrowserThread::IO},
+-        base::BindOnce(&SpeechRecognizerImpl::DispatchEvent, this, event_args));
++    base::PostTask(FROM_HERE, {BrowserThread::IO},
++                   base::BindOnce(&SpeechRecognizerImpl::DispatchEvent,
++                                  weak_ptr_factory_.GetWeakPtr(), event_args));
+   }
+   // Something is seriously wrong here and we are most likely missing some
+   // audio segments.
+@@ -294,18 +296,18 @@ void SpeechRecognizerImpl::Capture(const AudioBus* data,
+ 
+ void SpeechRecognizerImpl::OnCaptureError(const std::string& message) {
+   FSMEventArgs event_args(EVENT_AUDIO_ERROR);
+-  base::PostTask(
+-      FROM_HERE, {BrowserThread::IO},
+-      base::BindOnce(&SpeechRecognizerImpl::DispatchEvent, this, event_args));
++  base::PostTask(FROM_HERE, {BrowserThread::IO},
++                 base::BindOnce(&SpeechRecognizerImpl::DispatchEvent,
++                                weak_ptr_factory_.GetWeakPtr(), event_args));
+ }
+ 
+ void SpeechRecognizerImpl::OnSpeechRecognitionEngineResults(
+     const std::vector<blink::mojom::SpeechRecognitionResultPtr>& results) {
+   FSMEventArgs event_args(EVENT_ENGINE_RESULT);
+   event_args.engine_results = mojo::Clone(results);
+-  base::PostTask(
+-      FROM_HERE, {BrowserThread::IO},
+-      base::BindOnce(&SpeechRecognizerImpl::DispatchEvent, this, event_args));
++  base::PostTask(FROM_HERE, {BrowserThread::IO},
++                 base::BindOnce(&SpeechRecognizerImpl::DispatchEvent,
++                                weak_ptr_factory_.GetWeakPtr(), event_args));
+ }
+ 
+ void SpeechRecognizerImpl::OnSpeechRecognitionEngineEndOfUtterance() {
+@@ -317,9 +319,9 @@ void SpeechRecognizerImpl::OnSpeechRecognitionEngineError(
+     const blink::mojom::SpeechRecognitionError& error) {
+   FSMEventArgs event_args(EVENT_ENGINE_ERROR);
+   event_args.engine_error = error;
+-  base::PostTask(
+-      FROM_HERE, {BrowserThread::IO},
+-      base::BindOnce(&SpeechRecognizerImpl::DispatchEvent, this, event_args));
++  base::PostTask(FROM_HERE, {BrowserThread::IO},
++                 base::BindOnce(&SpeechRecognizerImpl::DispatchEvent,
++                                weak_ptr_factory_.GetWeakPtr(), event_args));
+ }
+ 
+ // -----------------------  Core FSM implementation ---------------------------
