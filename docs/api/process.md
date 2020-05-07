@@ -149,6 +149,23 @@ The time is represented as number of milliseconds since epoch. It returns null i
 
 Returns [`CPUUsage`](structures/cpu-usage.md)
 
+### `process.getProfilingMarks()`
+
+Returns an object of name/timestamp pairs that can be used in profiling an application's performance.
+
+FIXME: add more information
+
+Returns `Object`:
+
+* `main` Date
+* `basicStartupComplete` Date
+* `nodeLoadEnvironment` Date
+* `initBegin` Date
+* `initEnd` Date
+* `didCreateScriptContext` Date | null
+* `renderFrameCreated` Date | null
+* `renderThreadStarted` Date | null
+
 ### `process.getIOCounters()` _Windows_ _Linux_
 
 Returns [`IOCounters`](structures/io-counters.md)

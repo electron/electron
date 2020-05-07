@@ -28,6 +28,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/profiling.h"
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
 namespace electron {
@@ -72,6 +73,7 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getCPUUsage",
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
+  process->SetMethod("getProfilingMarks", &GetProfilingMarks);
 
 #if defined(MAS_BUILD)
   process->SetReadOnly("mas", true);

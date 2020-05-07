@@ -44,6 +44,7 @@
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
+#include "shell/common/profiling.h"
 
 #if defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
 #include "sandbox/mac/seatbelt_exec.h"  // nogncheck
@@ -99,6 +100,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
   if (!arguments.argv)
     return -1;
+
+  electron::profiling::Mark("main");
 
 #ifdef _DEBUG
   // Don't display assert dialog boxes in CI test runs
@@ -171,6 +174,7 @@ int main(int argc, char* argv[]) {
   }
 #endif
 
+  electron::profiling::Mark("main");
   electron::ElectronMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;

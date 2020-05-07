@@ -31,6 +31,7 @@
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/profiling.h"
 
 #define ELECTRON_BUILTIN_MODULES(V)      \
   V(electron_browser_app)                \
@@ -451,6 +452,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
+  profiling::Mark("node_load_environment");
   node::LoadEnvironment(env);
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }

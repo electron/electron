@@ -17,6 +17,9 @@ require('../common/reset-search-paths');
 // Import common settings.
 require('@electron/internal/common/init');
 
+const v8Util = process.electronBinding('v8_util');
+v8Util.markInitBegin();
+
 process.electronBinding('event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
 
 if (process.platform === 'win32') {
@@ -206,6 +209,8 @@ const { setDefaultApplicationMenu } = require('@electron/internal/browser/defaul
 // The |will-finish-launching| event is emitted before |ready| event, so default
 // menu is set before any user window is created.
 app.once('will-finish-launching', setDefaultApplicationMenu);
+
+v8Util.markInitEnd();
 
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.

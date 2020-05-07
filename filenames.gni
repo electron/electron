@@ -570,6 +570,8 @@ filenames = {
     "shell/common/platform_util_win.cc",
     "shell/common/process_util.cc",
     "shell/common/process_util.h",
+    "shell/common/profiling.cc",
+    "shell/common/profiling.h",
     "shell/common/skia_util.cc",
     "shell/common/skia_util.h",
     "shell/common/v8_value_converter.cc",

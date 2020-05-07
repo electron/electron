@@ -33,6 +33,7 @@
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/profiling.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 #include "shell/utility/electron_content_utility_client.h"
@@ -130,6 +131,7 @@ const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
     base::size(kNonWildcardDomainNonPortSchemes);
 
 bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
+  profiling::Mark("basic_startup_complete");
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   logging::LoggingSettings settings;

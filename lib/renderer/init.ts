@@ -38,6 +38,7 @@ require('@electron/internal/common/init');
 
 // The global variable will be used by ipc for event dispatching
 const v8Util = process.electronBinding('v8_util');
+v8Util.markInitBegin();
 
 const ipcEmitter = new EventEmitter();
 const ipcInternalEmitter = new EventEmitter();
@@ -187,6 +188,8 @@ if (nodeIntegration) {
     });
   }
 }
+
+v8Util.markInitEnd();
 
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {

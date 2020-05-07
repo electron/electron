@@ -24,6 +24,7 @@
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/profiling.h"
 #include "shell/common/world_ids.h"
 #include "shell/renderer/browser_exposed_renderer_interfaces.h"
 #include "shell/renderer/content_settings_observer.h"
@@ -124,6 +125,7 @@ void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
   // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
+  profiling::Mark("did_create_script_context");
   auto context_id = base::StringPrintf(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
   gin_helper::Dictionary global(context->GetIsolate(), context->Global());
@@ -142,6 +144,7 @@ void RendererClientBase::AddRenderBindings(
     v8::Local<v8::Object> binding_object) {}
 
 void RendererClientBase::RenderThreadStarted() {
+  profiling::Mark("render_thread_started");
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
 #if BUILDFLAG(USE_EXTERNAL_POPUP_MENU)
@@ -243,6 +246,7 @@ void RendererClientBase::ExposeInterfacesToBrowser(mojo::BinderMap* binders) {
 
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+  profiling::Mark("render_frame_created");
 #if defined(TOOLKIT_VIEWS)
   new AutofillAgent(render_frame,
                     render_frame->GetAssociatedInterfaceRegistry());

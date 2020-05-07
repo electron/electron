@@ -13,8 +13,10 @@
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/mac/main_application_bundle.h"
+#include "shell/common/profiling.h"
 
 int ElectronMain(int argc, char* argv[]) {
+  electron::profiling::Mark("main");
   electron::ElectronMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;

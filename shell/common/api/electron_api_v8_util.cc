@@ -11,6 +11,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/profiling.h"
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
 
@@ -102,6 +103,14 @@ void TakeHeapSnapshot(v8::Isolate* isolate) {
   isolate->GetHeapProfiler()->TakeHeapSnapshot();
 }
 
+void MarkInitBegin() {
+  electron::profiling::Mark("init_begin");
+}
+
+void MarkInitEnd() {
+  electron::profiling::Mark("init_end");
+}
+
 void RequestGarbageCollectionForTesting(v8::Isolate* isolate) {
   isolate->RequestGarbageCollectionForTesting(
       v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
@@ -135,6 +144,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);
+  dict.SetMethod("markInitBegin", &MarkInitBegin);
+  dict.SetMethod("markInitEnd", &MarkInitEnd);
 }
 
 }  // namespace
