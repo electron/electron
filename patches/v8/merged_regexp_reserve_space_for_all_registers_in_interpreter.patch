@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Gruber <jgruber@chromium.org>
+Date: Mon, 6 Apr 2020 15:48:53 +0200
+Subject: Merged: [regexp] Reserve space for all registers in interpreter
+
+This is a minimal version of https://crrev.com/c/2135642 intended for
+backmerges.
+
+Ensure that the interpreter has space for all required registers.
+
+(cherry picked from commit 30658b6b1b672e535e6046fa84674882e29b2279)
+
+Tbr: leszeks@chromium.org
+No-Try: true
+No-Presubmit: true
+No-Treechecks: true
+Bug: chromium:1067270
+Change-Id: Iefd016b4845fb8698d1e0ef5f6a03df0e66aa576
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2137403
+Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#67013}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2144052
+Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.1@{#61}
+Cr-Branched-From: a4dcd39d521d14c4b1cac020812e44ee04a7f244-refs/heads/8.1.307@{#1}
+Cr-Branched-From: f22c213304ec3542df87019aed0909b7dafeaa93-refs/heads/master@{#66031}
+
+diff --git a/src/regexp/regexp-interpreter.cc b/src/regexp/regexp-interpreter.cc
+index cf2fb55e4a861ce4916f9c27ac0fde1c3085f84f..42f477543b675fbf478587242e34ddcb801e35a3 100644
+--- a/src/regexp/regexp-interpreter.cc
++++ b/src/regexp/regexp-interpreter.cc
+@@ -869,8 +869,29 @@ IrregexpInterpreter::Result IrregexpInterpreter::MatchForCallFromJs(
+   String subject_string = String::cast(Object(subject));
+   JSRegExp regexp_obj = JSRegExp::cast(Object(regexp));
+ 
+-  return Match(isolate, regexp_obj, subject_string, registers, registers_length,
+-               start_position, call_origin);
++  // In generated code, registers are allocated on the stack. The given
++  // `registers` argument is only guaranteed to hold enough space for permanent
++  // registers (i.e. for captures), and not for temporary registers used only
++  // during matcher execution. We match that behavior in the interpreter by
++  // using a SmallVector as internal register storage.
++  static constexpr int kBaseRegisterArraySize = 64;  // Arbitrary.
++  const int internal_register_count =
++      Smi::ToInt(regexp_obj.DataAt(JSRegExp::kIrregexpMaxRegisterCountIndex));
++  base::SmallVector<int, kBaseRegisterArraySize> internal_registers(
++      internal_register_count);
++
++  Result result =
++      Match(isolate, regexp_obj, subject_string, internal_registers.data(),
++            internal_register_count, start_position, call_origin);
++
++  // Copy capture registers to the output array.
++  if (result == IrregexpInterpreter::SUCCESS) {
++    CHECK_GE(internal_registers.size(), registers_length);
++    MemCopy(registers, internal_registers.data(),
++            registers_length * sizeof(registers[0]));
++  }
++
++  return result;
+ }
+ 
+ IrregexpInterpreter::Result IrregexpInterpreter::MatchForCallFromRuntime(
+diff --git a/test/mjsunit/regress/regress-1067270.js b/test/mjsunit/regress/regress-1067270.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1c6eddf505aa55e622df9d7116ea7fbb2f516713
+--- /dev/null
++++ b/test/mjsunit/regress/regress-1067270.js
+@@ -0,0 +1,11 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// Flags: --allow-natives-syntax
++
++const needle = Array(1802).join(" +") + Array(16884).join("A");
++const string = "A";
++
++assertEquals(string.search(needle), -1);
++assertEquals(string.search(needle), -1);
