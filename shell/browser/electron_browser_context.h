@@ -139,6 +139,8 @@ class ElectronBrowserContext
   }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Guard usages of extension_system() with !IsOffTheRecord()
+  // There is no extension system for in-memory sessions
   extensions::ElectronExtensionSystem* extension_system() {
     return extension_system_;
   }

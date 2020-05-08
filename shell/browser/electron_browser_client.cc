@@ -917,24 +917,26 @@ void ElectronBrowserClient::SiteInstanceGotProcess(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context =
       static_cast<ElectronBrowserContext*>(site_instance->GetBrowserContext());
-  extensions::ExtensionRegistry* registry =
-      extensions::ExtensionRegistry::Get(browser_context);
-  const extensions::Extension* extension =
-      registry->enabled_extensions().GetExtensionOrAppByURL(
-          site_instance->GetSiteURL());
-  if (!extension)
-    return;
+  if (!browser_context->IsOffTheRecord()) {
+    extensions::ExtensionRegistry* registry =
+        extensions::ExtensionRegistry::Get(browser_context);
+    const extensions::Extension* extension =
+        registry->enabled_extensions().GetExtensionOrAppByURL(
+            site_instance->GetSiteURL());
+    if (!extension)
+      return;
 
-  extensions::ProcessMap::Get(browser_context)
-      ->Insert(extension->id(), site_instance->GetProcess()->GetID(),
-               site_instance->GetId());
+    extensions::ProcessMap::Get(browser_context)
+        ->Insert(extension->id(), site_instance->GetProcess()->GetID(),
+                 site_instance->GetId());
 
-  base::PostTask(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&extensions::InfoMap::RegisterExtensionProcess,
-                     browser_context->extension_system()->info_map(),
-                     extension->id(), site_instance->GetProcess()->GetID(),
-                     site_instance->GetId()));
+    base::PostTask(
+        FROM_HERE, {BrowserThread::IO},
+        base::BindOnce(&extensions::InfoMap::RegisterExtensionProcess,
+                       browser_context->extension_system()->info_map(),
+                       extension->id(), site_instance->GetProcess()->GetID(),
+                       site_instance->GetId()));
+  }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
 
@@ -999,25 +1001,27 @@ void ElectronBrowserClient::SiteInstanceDeleting(
 
   auto* browser_context =
       static_cast<ElectronBrowserContext*>(site_instance->GetBrowserContext());
-  // If this isn't an extension renderer there's nothing to do.
-  extensions::ExtensionRegistry* registry =
-      extensions::ExtensionRegistry::Get(browser_context);
-  const extensions::Extension* extension =
-      registry->enabled_extensions().GetExtensionOrAppByURL(
-          site_instance->GetSiteURL());
-  if (!extension)
-    return;
+  if (!browser_context->IsOffTheRecord()) {
+    // If this isn't an extension renderer there's nothing to do.
+    extensions::ExtensionRegistry* registry =
+        extensions::ExtensionRegistry::Get(browser_context);
+    const extensions::Extension* extension =
+        registry->enabled_extensions().GetExtensionOrAppByURL(
+            site_instance->GetSiteURL());
+    if (!extension)
+      return;
 
-  extensions::ProcessMap::Get(browser_context)
-      ->Remove(extension->id(), site_instance->GetProcess()->GetID(),
-               site_instance->GetId());
+    extensions::ProcessMap::Get(browser_context)
+        ->Remove(extension->id(), site_instance->GetProcess()->GetID(),
+                 site_instance->GetId());
 
-  base::PostTask(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&extensions::InfoMap::UnregisterExtensionProcess,
-                     browser_context->extension_system()->info_map(),
-                     extension->id(), site_instance->GetProcess()->GetID(),
-                     site_instance->GetId()));
+    base::PostTask(
+        FROM_HERE, {BrowserThread::IO},
+        base::BindOnce(&extensions::InfoMap::UnregisterExtensionProcess,
+                       browser_context->extension_system()->info_map(),
+                       extension->id(), site_instance->GetProcess()->GetID(),
+                       site_instance->GetId()));
+  }
 #endif
 }
 
