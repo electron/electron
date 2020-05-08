@@ -8,10 +8,10 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 302b1789b5e10b8bc0db89a66cb3214fdfd20099..095895547f534747a3e2dc53f887d0242308bc75 100644
+index 6679a0a3177895e37631d7df5a6c80f08f435a91..4204efedfbaae3ef58d1b163e9b661a89f06b63e 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -796,9 +796,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
+@@ -793,9 +793,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
  
  bool WebContentsViewAura::IsValidDragTarget(
      RenderWidgetHostImpl* target_rwh) const {
@@ -26,7 +26,7 @@ diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser
 index b874b3c4b16ca87c9730c6caaf5788cff0ab3493..2c82d63d646c9201abd6a669b726dae0f8bec12b 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -419,9 +419,7 @@ void DropCompletionCallback(
+@@ -419,9 +419,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {

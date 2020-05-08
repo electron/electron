@@ -128,10 +128,10 @@ index 636192f4968ec7828e4c238ba87221651b19ee87..9817760b2db811c7280fc7c245743909
    std::unique_ptr<FileOpenerForUpload> file_opener_for_upload_;
  
 diff --git a/services/network/url_loader_factory.cc b/services/network/url_loader_factory.cc
-index 7fcf9c7e375f1b37b90d853c7629a14829c04df9..a6dd4af7e14a66540699c3432f226025a753d18a 100644
+index 929be06340bf33f3e8f2b853470faeff76677aa1..3c2d83ef1dfce4263888dcf4a0342d14622ffb07 100644
 --- a/services/network/url_loader_factory.cc
 +++ b/services/network/url_loader_factory.cc
-@@ -73,6 +73,7 @@ URLLoaderFactory::URLLoaderFactory(
+@@ -74,6 +74,7 @@ URLLoaderFactory::URLLoaderFactory(
        resource_scheduler_client_(std::move(resource_scheduler_client)),
        header_client_(std::move(params_->header_client)),
        coep_reporter_(std::move(params_->coep_reporter)),
@@ -139,7 +139,7 @@ index 7fcf9c7e375f1b37b90d853c7629a14829c04df9..a6dd4af7e14a66540699c3432f226025
        cors_url_loader_factory_(cors_url_loader_factory),
        cookie_observer_(std::move(params_->cookie_observer)) {
    DCHECK(context);
-@@ -262,6 +263,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
+@@ -263,6 +264,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
        std::move(keepalive_statistics_recorder),
        std::move(network_usage_accumulator),
        header_client_.is_bound() ? header_client_.get() : nullptr,

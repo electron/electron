@@ -269,7 +269,7 @@ index 2b06f3f4a03227ac7898fc3563ab04518d24a313..f7c42c8cea2d7e8198e1fb58dbb2beaf
      ImageModel minor_icon;
      ImageModel icon;
 diff --git a/ui/views/controls/menu/menu_item_view.cc b/ui/views/controls/menu/menu_item_view.cc
-index 6f45e5ac5d1cec52f6f9a434c06cd894a788e421..2167b02facb30fcff40a166038e093fc7855bf49 100644
+index d00618f37c3ae26228242e7af30f159b6278cc15..679660f11e43902e9003ac9769cb449a63e321a4 100644
 --- a/ui/views/controls/menu/menu_item_view.cc
 +++ b/ui/views/controls/menu/menu_item_view.cc
 @@ -261,6 +261,7 @@ MenuItemView* MenuItemView::AddMenuItemAt(
