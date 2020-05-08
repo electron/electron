@@ -139,13 +139,15 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
   cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(
-      this);
+  if (!in_memory_) {
+    BrowserContextDependencyManager::GetInstance()
+        ->CreateBrowserContextServices(this);
 
-  extension_system_ = static_cast<extensions::ElectronExtensionSystem*>(
-      extensions::ExtensionSystem::Get(this));
-  extension_system_->InitForRegularProfile(true /* extensions_enabled */);
-  extension_system_->FinishInitialization();
+    extension_system_ = static_cast<extensions::ElectronExtensionSystem*>(
+        extensions::ExtensionSystem::Get(this));
+    extension_system_->InitForRegularProfile(true /* extensions_enabled */);
+    extension_system_->FinishInitialization();
+  }
 #endif
 }
 
@@ -171,10 +173,12 @@ void ElectronBrowserContext::InitPrefs() {
   prefs_factory.set_user_prefs(pref_store);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto* ext_pref_store = new ExtensionPrefStore(
-      ExtensionPrefValueMapFactory::GetForBrowserContext(this),
-      IsOffTheRecord());
-  prefs_factory.set_extension_prefs(ext_pref_store);
+  if (!in_memory_) {
+    auto* ext_pref_store = new ExtensionPrefStore(
+        ExtensionPrefValueMapFactory::GetForBrowserContext(this),
+        IsOffTheRecord());
+    prefs_factory.set_extension_prefs(ext_pref_store);
+  }
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
@@ -196,7 +200,8 @@ void ElectronBrowserContext::InitPrefs() {
   ZoomLevelDelegate::RegisterPrefs(registry.get());
   PrefProxyConfigTrackerImpl::RegisterPrefs(registry.get());
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
+  if (!in_memory_)
+    extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
