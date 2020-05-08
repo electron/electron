@@ -9,7 +9,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/cont
 index 69851243f7765e21d0dea0bd418afae70f9c3eb4..4b320104b4e7c9f9e82f7085696b1c97d97ef87d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -472,7 +472,11 @@
+@@ -472,7 +472,11 @@ void RenderWidgetHostViewMac::WasOccluded() {
      return;
  
    host()->WasHidden();
