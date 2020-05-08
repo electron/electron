@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mustafa Emre Acer <meacer@chromium.org>
+Date: Fri, 10 Apr 2020 00:43:45 +0000
+Subject: Don't decode invalid punycode in URL formatter
+
+TBR=meacer@chromium.org
+
+(cherry picked from commit 50c6e900fc4170a14154cbfea57ade2aa50990b5)
+
+Bug: 1063566
+Change-Id: I631ba68718cf69c5972555d7826b089e27fa5150
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2137872
+Reviewed-by: Peter Kasting <pkasting@chromium.org>
+Commit-Queue: Peter Kasting <pkasting@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#756819}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2144830
+Reviewed-by: Mustafa Emre Acer <meacer@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4103@{#62}
+Cr-Branched-From: 8ad47e8d21f6866e4a37f47d83a860d41debf514-refs/heads/master@{#756066}
+
+diff --git a/components/url_formatter/url_formatter.cc b/components/url_formatter/url_formatter.cc
+index edf29bddccdbdab43e87a7ff9e2ce49b13befeb3..e2a73aa3ae00236cd4ac0cf676a95ca9488ac6dc 100644
+--- a/components/url_formatter/url_formatter.cc
++++ b/components/url_formatter/url_formatter.cc
+@@ -374,9 +374,11 @@ bool IDNToUnicodeOneComponent(const base::char16* comp,
+     return false;
+ 
+   // Early return if the input cannot be an IDN component.
++  // Valid punycode must not end with a dash.
+   static const base::char16 kIdnPrefix[] = {'x', 'n', '-', '-'};
+   if (comp_len <= base::size(kIdnPrefix) ||
+-      memcmp(comp, kIdnPrefix, sizeof(kIdnPrefix)) != 0) {
++      memcmp(comp, kIdnPrefix, sizeof(kIdnPrefix)) != 0 ||
++      comp[comp_len - 1] == '-') {
+     out->append(comp, comp_len);
+     return false;
+   }
+diff --git a/components/url_formatter/url_formatter_unittest.cc b/components/url_formatter/url_formatter_unittest.cc
+index 383d2ec2d4256bb376cedad2b63e1f697a73ef87..c3efe47c5a599d37ef88014efa83c988f0f1ff2e 100644
+--- a/components/url_formatter/url_formatter_unittest.cc
++++ b/components/url_formatter/url_formatter_unittest.cc
+@@ -61,6 +61,8 @@ const IDNTestCase kIdnCases[] = {
+     {"www.google.com.", L"www.google.com.", true},
+     {".", L".", true},
+     {"", L"", true},
++    // Invalid IDN
++    {"xn--example-.com", L"xn--example-.com", false},
+     // IDN
+     // Hanzi (Traditional Chinese)
+     {"xn--1lq90ic7f1rc.cn", L"\x5317\x4eac\x5927\x5b78.cn", true},
