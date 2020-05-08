@@ -27,7 +27,9 @@
 #include "net/base/net_errors.h"
 #include "net/socket/stream_socket.h"
 #include "net/socket/tcp_server_socket.h"
+#include "shell/browser/browser.h"
 #include "shell/common/electron_paths.h"
+#include "third_party/inspector_protocol/crdtp/dispatch.h"
 #include "ui/base/resource/resource_bundle.h"
 
 namespace electron {
@@ -80,6 +82,8 @@ std::unique_ptr<content::DevToolsSocketFactory> CreateSocketFactory() {
       new TCPServerSocketFactory("127.0.0.1", port));
 }
 
+const char kBrowserCloseMethod[] = "Browser.close";
+
 }  // namespace
 
 // DevToolsManagerDelegate ---------------------------------------------------
@@ -102,6 +106,20 @@ void DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHostClientChannel* channel,
     base::span<const uint8_t> message,
     NotHandledCallback callback) {
+  crdtp::Dispatchable dispatchable(crdtp::SpanFrom(message));
+  DCHECK(dispatchable.ok());
+  if (crdtp::SpanEquals(crdtp::SpanFrom(kBrowserCloseMethod),
+                        dispatchable.Method())) {
+    // In theory, we should respond over the protocol saying that the
+    // Browser.close was handled. But doing so requires instantiating the
+    // protocol UberDispatcher and generating proper protocol handlers.
+    // Since we only have one method and it is supposed to close Electron,
+    // we don't need to add this complexity. Should we decide to support
+    // metohds like Browser.setWindowBounds, we'll need to do it though.
+    base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                   base::BindOnce([]() { Browser::Get()->Quit(); }));
+    return;
+  }
   std::move(callback).Run(message);
 }
 
