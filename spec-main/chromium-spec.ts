@@ -12,6 +12,7 @@ import { EventEmitter } from 'events';
 import { promisify } from 'util';
 import { ifit, ifdescribe } from './spec-helpers';
 import { AddressInfo } from 'net';
+import { PipeTransport } from './pipe-transport';
 
 const features = process.electronBinding('features');
 
@@ -265,6 +266,40 @@ describe('command line switches', () => {
 
     it('should set the locale', (done) => testLocale('fr', 'fr', done));
     it('should not set an invalid locale', (done) => testLocale('asdfkl', currentLocale, done));
+  });
+
+  describe('--remote-debugging-pipe switch', () => {
+    it('should expose CDP via pipe', async () => {
+      const electronPath = process.execPath;
+      const appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+      });
+      const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
+      const pipe = new PipeTransport(stdio[3], stdio[4]);
+      const versionPromise = new Promise(resolve => { pipe.onmessage = resolve; });
+      pipe.send({ id: 1, method: 'Browser.getVersion', params: {} });
+      const message = (await versionPromise) as any;
+      expect(message.id).to.equal(1);
+      expect(message.result.product).to.contain('Chrome');
+      expect(message.result.userAgent).to.contain('Electron');
+      appProcess.kill();
+    });
+    it('should override --remote-debugging-port switch', async () => {
+      const electronPath = process.execPath;
+      const appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe', '--remote-debugging-port=0'], {
+        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+      });
+      let stderr = '';
+      appProcess.stderr.on('data', (data) => { stderr += data; });
+      const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
+      const pipe = new PipeTransport(stdio[3], stdio[4]);
+      const versionPromise = new Promise(resolve => { pipe.onmessage = resolve; });
+      pipe.send({ id: 1, method: 'Browser.getVersion', params: {} });
+      const message = (await versionPromise) as any;
+      expect(message.id).to.equal(1);
+      expect(stderr).to.not.include('DevTools listening on');
+      appProcess.kill();
+    });
   });
 
   describe('--remote-debugging-port switch', () => {
