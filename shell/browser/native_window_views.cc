@@ -454,7 +454,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 #if defined(OS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
 #elif defined(USE_X11)
-  views::DesktopWindowTreeHostLinux* tree_host =
+  views::DesktopWindowTreeHostPlatform* tree_host =
       views::DesktopWindowTreeHostLinux::GetHostForWidget(
           GetAcceleratedWidget());
   if (enable) {
