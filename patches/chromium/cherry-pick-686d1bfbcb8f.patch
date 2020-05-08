@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rouslan Solomakhin <rouslan@chromium.org>
+Date: Wed, 15 Apr 2020 23:03:07 +0000
+Subject: Browser context owned callback.
+
+Before this patch, an unowned function pointer would be invoked
+asynchronously with a reference to the possibly freed reference to the
+browser context, which could cause use after free in certain
+circumstances.
+
+This patch makes the browser context own the callback and binds the
+function with a weak pointer, so freeing the browser context invalidates
+the weak pointer, which cancels the callback execution.
+
+After this patch, freeing the browser context aborts the asynchronous
+callback that dereferences the browser context, so the use after free
+is prevented.
+
+TBR=rouslan@chromium.org
+
+(cherry picked from commit 2d0aad1e7602a7076d86772cc159b891cf2cf03b)
+
+Bug: 1065298
+Change-Id: Id6de3099a55c4505e94a8a6d21fb25d6d2b34c6c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2144311
+Reviewed-by: Danyao Wang <danyao@chromium.org>
+Commit-Queue: Rouslan Solomakhin <rouslan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#758404}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2151474
+Reviewed-by: Rouslan Solomakhin <rouslan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4044@{#942}
+Cr-Branched-From: a6d9daf149a473ceea37f629c41d4527bf2055bd-refs/heads/master@{#737173}
+
+diff --git a/content/browser/payments/payment_app_provider_impl.cc b/content/browser/payments/payment_app_provider_impl.cc
+index 9a84066912f0cef926a941a69090af3749d09288..694d7f57ac3814cb8d99ceecd4d90477a4bdd26f 100644
+--- a/content/browser/payments/payment_app_provider_impl.cc
++++ b/content/browser/payments/payment_app_provider_impl.cc
+@@ -15,6 +15,7 @@
+ #include "base/metrics/histogram_macros.h"
+ #include "base/strings/string_number_conversions.h"
+ #include "base/strings/string_util.h"
++#include "base/supports_user_data.h"
+ #include "base/task/post_task.h"
+ #include "base/token.h"
+ #include "content/browser/payments/payment_app_context_impl.h"
+@@ -425,28 +426,65 @@ void OnInstallPaymentApp(
+   }
+ }
+ 
+-void CheckPermissionForPaymentApps(
+-    BrowserContext* browser_context,
+-    PaymentAppProvider::GetAllPaymentAppsCallback callback,
+-    PaymentAppProvider::PaymentApps apps) {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
++// Callbacks for checking permissions asynchronously. Owned by the browser
++// context to avoid using the browser context after it has been freed. Deleted
++// after the callback is invoked.
++// Sample usage:
++//   PostTask(&PermissionChecker::CheckPermissionForPaymentApps,
++//       PermissionChecker::Create(browser_context), std::move(callback));
++class PermissionChecker : public base::SupportsUserData::Data {
++ public:
++  static base::WeakPtr<PermissionChecker> Create(
++      BrowserContext* browser_context) {
++    auto owned = std::make_unique<PermissionChecker>(browser_context);
++    auto weak_pointer_result = owned->weak_ptr_factory_.GetWeakPtr();
++    void* key = owned.get();
++    browser_context->SetUserData(key, std::move(owned));
++    return weak_pointer_result;
++  }
++
++  // Do not use this method directly! Use the static PermissionChecker::Create()
++  // method instead. (The constructor must be public for std::make_unique<> in
++  // the Create() method.)
++  explicit PermissionChecker(BrowserContext* browser_context)
++      : browser_context_(browser_context) {}
++  ~PermissionChecker() override = default;
++
++  // Disallow copy and assign.
++  PermissionChecker(const PermissionChecker& other) = delete;
++  PermissionChecker& operator=(const PermissionChecker& other) = delete;
++
++  void CheckPermissionForPaymentApps(
++      PaymentAppProvider::GetAllPaymentAppsCallback callback,
++      PaymentAppProvider::PaymentApps apps) {
++    DCHECK_CURRENTLY_ON(BrowserThread::UI);
+ 
+-  PermissionController* permission_controller =
+-      BrowserContext::GetPermissionController(browser_context);
+-  DCHECK(permission_controller);
+-
+-  PaymentAppProvider::PaymentApps permitted_apps;
+-  for (auto& app : apps) {
+-    GURL origin = app.second->scope.GetOrigin();
+-    if (permission_controller->GetPermissionStatus(
+-            PermissionType::PAYMENT_HANDLER, origin, origin) ==
+-        blink::mojom::PermissionStatus::GRANTED) {
+-      permitted_apps[app.first] = std::move(app.second);
++    PermissionController* permission_controller =
++        BrowserContext::GetPermissionController(browser_context_);
++    DCHECK(permission_controller);
++
++    PaymentAppProvider::PaymentApps permitted_apps;
++    for (auto& app : apps) {
++      GURL origin = app.second->scope.GetOrigin();
++      if (permission_controller->GetPermissionStatus(
++              PermissionType::PAYMENT_HANDLER, origin, origin) ==
++          blink::mojom::PermissionStatus::GRANTED) {
++        permitted_apps[app.first] = std::move(app.second);
++      }
+     }
++
++    std::move(callback).Run(std::move(permitted_apps));
++
++    // Deletes this PermissionChecker object.
++    browser_context_->RemoveUserData(/*key=*/this);
+   }
+ 
+-  std::move(callback).Run(std::move(permitted_apps));
+-}
++ private:
++  // Owns this PermissionChecker object, so it's always valid.
++  BrowserContext* browser_context_;
++
++  base::WeakPtrFactory<PermissionChecker> weak_ptr_factory_{this};
++};
+ 
+ void AbortInvokePaymentApp(BrowserContext* browser_context,
+                            PaymentEventResponseType reason) {
+@@ -599,9 +637,11 @@ void PaymentAppProviderImpl::GetAllPaymentApps(
+ 
+   RunOrPostTaskOnThread(
+       FROM_HERE, ServiceWorkerContext::GetCoreThreadId(),
+-      base::BindOnce(&GetAllPaymentAppsOnCoreThread, payment_app_context,
+-                     base::BindOnce(&CheckPermissionForPaymentApps,
+-                                    browser_context, std::move(callback))));
++      base::BindOnce(
++          &GetAllPaymentAppsOnCoreThread, payment_app_context,
++          base::BindOnce(&PermissionChecker::CheckPermissionForPaymentApps,
++                         PermissionChecker::Create(browser_context),
++                         std::move(callback))));
+ }
+ 
+ void PaymentAppProviderImpl::InvokePaymentApp(
