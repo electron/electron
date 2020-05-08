@@ -1,18 +1,19 @@
 import { expect } from 'chai';
 import * as childProcess from 'child_process';
-import * as fs from 'fs';
 import * as http from 'http';
-import * as multiparty from 'multiparty';
+import * as Busboy from 'busboy';
 import * as path from 'path';
 import { ifdescribe, ifit } from './spec-helpers';
-import * as temp from 'temp';
-import * as url from 'url';
-import { ipcMain, app, BrowserWindow, crashReporter, BrowserWindowConstructorOptions } from 'electron';
+import { app, crashReporter } from 'electron';
 import { AddressInfo } from 'net';
-import { closeWindow, closeAllWindows } from './window-helpers';
 import { EventEmitter } from 'events';
+import * as fs from 'fs';
+import * as v8 from 'v8';
+import * as uuid from 'uuid';
+import * as rimraf from 'rimraf';
 
-temp.track();
+const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
+const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm');
 
 const afterTest: ((() => void) | (() => Promise<void>))[] = [];
 async function cleanup () {
@@ -23,374 +24,84 @@ async function cleanup () {
   afterTest.length = 0;
 }
 
-// TODO(alexeykuzmin): [Ch66] This test fails on Linux. Fix it and enable back.
-ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS && process.platform !== 'linux')('crashReporter module', function () {
-  let originalTempDirectory: string;
-  let tempDirectory = null;
-  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
-
-  before(() => {
-    tempDirectory = temp.mkdirSync('electronCrashReporterSpec-');
-    originalTempDirectory = app.getPath('temp');
-    app.setPath('temp', tempDirectory);
-  });
-
-  after(() => {
-    app.setPath('temp', originalTempDirectory);
-    try {
-      temp.cleanupSync();
-    } catch (e) {
-      // ignore.
-      console.warn(e.stack);
-    }
-  });
-
-  afterEach(cleanup);
-
-  it('should send minidump when node processes crash', async () => {
-    const { port, waitForCrash } = await startServer();
-
-    const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`);
-    const version = app.getVersion();
-    const crashPath = path.join(fixtures, 'module', 'crash.js');
-    childProcess.fork(crashPath, [port.toString(), version, crashesDir], { silent: true });
-    const crash = await waitForCrash();
-    checkCrash('node', crash);
-  });
-
-  const generateSpecs = (description: string, browserWindowOpts: BrowserWindowConstructorOptions) => {
-    describe(description, () => {
-      let w: BrowserWindow;
-
-      beforeEach(() => {
-        w = new BrowserWindow(Object.assign({ show: false }, browserWindowOpts));
-      });
-
-      afterEach(async () => {
-        await closeWindow(w);
-        w = null as unknown as BrowserWindow;
-      });
-
-      it('should send minidump when renderer crashes', async () => {
-        const { port, waitForCrash } = await startServer();
-        w.loadFile(path.join(fixtures, 'api', 'crash.html'), { query: { port: port.toString() } });
-        const crash = await waitForCrash();
-        checkCrash('renderer', crash);
-      });
-
-      ifit(!browserWindowOpts.webPreferences!.sandbox)('should send minidump when node processes crash', async function () {
-        const { port, waitForCrash } = await startServer();
-        const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`);
-        const version = app.getVersion();
-        const crashPath = path.join(fixtures, 'module', 'crash.js');
-        w.loadFile(path.join(fixtures, 'api', 'crash_child.html'), { query: { port: port.toString(), crashesDir, crashPath, version } });
-        const crash = await waitForCrash();
-        expect(String((crash as any).newExtra)).to.equal('newExtra');
-        expect((crash as any).removeExtra).to.be.undefined();
-        checkCrash('node', crash);
-      });
-
-      describe('when uploadToServer is false', () => {
-        after(() => { crashReporter.setUploadToServer(true); });
-
-        it('should not send minidump', async () => {
-          const { port, getCrashes } = await startServer();
-          crashReporter.setUploadToServer(false);
-
-          let crashesDir = crashReporter.getCrashesDirectory();
-          const existingDumpFiles = new Set();
-          // crashpad puts the dump files in the "completed" subdirectory
-          if (process.platform === 'darwin') {
-            crashesDir = path.join(crashesDir, 'completed');
-          } else {
-            crashesDir = path.join(crashesDir, 'reports');
-          }
-
-          const crashUrl = url.format({
-            protocol: 'file',
-            pathname: path.join(fixtures, 'api', 'crash.html'),
-            search: `?port=${port}&skipUpload=1`
-          });
-          w.loadURL(crashUrl);
-
-          await new Promise(resolve => {
-            ipcMain.once('list-existing-dumps', (event) => {
-              fs.readdir(crashesDir, (err, files) => {
-                if (!err) {
-                  for (const file of files) {
-                    if (/\.dmp$/.test(file)) {
-                      existingDumpFiles.add(file);
-                    }
-                  }
-                }
-                event.returnValue = null; // allow the renderer to crash
-                resolve();
-              });
-            });
-          });
-
-          const dumpFileCreated = async () => {
-            async function getDumps () {
-              const files = await fs.promises.readdir(crashesDir);
-              return files.filter((file) => /\.dmp$/.test(file) && !existingDumpFiles.has(file));
-            }
-            for (let i = 0; i < 30; i++) {
-              const dumps = await getDumps();
-              if (dumps.length) {
-                return path.join(crashesDir, dumps[0]);
-              }
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          };
-
-          const dumpFile = await dumpFileCreated();
-          expect(dumpFile).to.be.a('string');
-
-          // dump file should not be deleted when not uploading, so we wait
-          // 1s and assert it still exists
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          expect(fs.existsSync(dumpFile!)).to.be.true();
-
-          // the server should not have received any crashes.
-          expect(getCrashes()).to.be.empty();
-        });
-      });
-
-      it('should send minidump with updated extra parameters', async function () {
-        const { port, waitForCrash } = await startServer();
-
-        const crashUrl = url.format({
-          protocol: 'file',
-          pathname: path.join(fixtures, 'api', 'crash-restart.html'),
-          search: `?port=${port}`
-        });
-        w.loadURL(crashUrl);
-        const crash = await waitForCrash();
-        checkCrash('renderer', crash);
-      });
-    });
-  };
-
-  generateSpecs('without sandbox', {
-    webPreferences: {
-      nodeIntegration: true
-    }
-  });
-  generateSpecs('with sandbox', {
-    webPreferences: {
-      sandbox: true,
-      preload: path.join(fixtures, 'module', 'preload-sandbox.js')
-    }
-  });
-
-  describe('start(options)', () => {
-    it('requires that the companyName and submitURL options be specified', () => {
-      expect(() => {
-        crashReporter.start({ companyName: 'Missing submitURL' } as any);
-      }).to.throw('submitURL is a required option to crashReporter.start');
-      expect(() => {
-        crashReporter.start({ submitURL: 'Missing companyName' } as any);
-      }).to.throw('companyName is a required option to crashReporter.start');
-    });
-    it('can be called multiple times', () => {
-      expect(() => {
-        crashReporter.start({
-          companyName: 'Umbrella Corporation',
-          submitURL: 'http://127.0.0.1/crashes'
-        });
-
-        crashReporter.start({
-          companyName: 'Umbrella Corporation 2',
-          submitURL: 'http://127.0.0.1/more-crashes'
-        });
-      }).to.not.throw();
-    });
-  });
-
-  describe('getCrashesDirectory', () => {
-    it('correctly returns the directory', () => {
-      const crashesDir = crashReporter.getCrashesDirectory();
-      const dir = path.join(app.getPath('temp'), 'Electron Test Main Crashes');
-      expect(crashesDir).to.equal(dir);
-    });
-  });
-
-  describe('getUploadedReports', () => {
-    it('returns an array of reports', () => {
-      const reports = crashReporter.getUploadedReports();
-      expect(reports).to.be.an('array');
-    });
-  });
-
-  // TODO(alexeykuzmin): This suite should explicitly
-  // generate several crash reports instead of hoping
-  // that there will be enough of them already.
-  describe('getLastCrashReport', () => {
-    it('correctly returns the most recent report', () => {
-      const reports = crashReporter.getUploadedReports();
-      expect(reports).to.be.an('array');
-      expect(reports).to.have.lengthOf.at.least(2,
-        'There are not enough reports for this test');
-
-      const lastReport = crashReporter.getLastCrashReport();
-      expect(lastReport).to.be.an('object');
-      expect(lastReport.date).to.be.an.instanceOf(Date);
-
-      // Let's find the newest report.
-      const { report: newestReport } = reports.reduce((acc, cur) => {
-        const timestamp = new Date(cur.date).getTime();
-        return (timestamp > acc.timestamp)
-          ? { report: cur, timestamp: timestamp }
-          : acc;
-      }, { timestamp: -Infinity } as { timestamp: number, report?: any });
-      expect(newestReport).to.be.an('object');
-
-      expect(lastReport.date.getTime()).to.be.equal(
-        newestReport.date.getTime(),
-        'Last report is not the newest.');
-    });
-  });
-
-  describe('getUploadToServer()', () => {
-    it('returns true when uploadToServer is set to true', function () {
-      crashReporter.start({
-        companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes',
-        uploadToServer: true
-      });
-      expect(crashReporter.getUploadToServer()).to.be.true();
-    });
-    it('returns false when uploadToServer is set to false', function () {
-      crashReporter.start({
-        companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes',
-        uploadToServer: true
-      });
-      crashReporter.setUploadToServer(false);
-      expect(crashReporter.getUploadToServer()).to.be.false();
-    });
-  });
-
-  describe('setUploadToServer(uploadToServer)', () => {
-    afterEach(closeAllWindows);
-    it('throws an error when called from the renderer process', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-      w.loadURL('about:blank');
-      await expect(
-        w.webContents.executeJavaScript(`require('electron').crashReporter.setUploadToServer(true)`)
-      ).to.eventually.be.rejected();
-      await expect(
-        w.webContents.executeJavaScript(`require('electron').crashReporter.getUploadToServer()`)
-      ).to.eventually.be.rejected();
-    });
-    it('sets uploadToServer false when called with false', function () {
-      crashReporter.start({
-        companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes',
-        uploadToServer: true
-      });
-      crashReporter.setUploadToServer(false);
-      expect(crashReporter.getUploadToServer()).to.be.false();
-    });
-    it('sets uploadToServer true when called with true', function () {
-      crashReporter.start({
-        companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes',
-        uploadToServer: false
-      });
-      crashReporter.setUploadToServer(true);
-      expect(crashReporter.getUploadToServer()).to.be.true();
-    });
-  });
-
-  describe('Parameters', () => {
-    it('returns all of the current parameters', () => {
-      crashReporter.start({
-        companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes'
-      });
-
-      const parameters = crashReporter.getParameters();
-      expect(parameters).to.be.an('object');
-    });
-    it('adds a parameter to current parameters', function () {
-      crashReporter.start({
-        companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes'
-      });
-
-      crashReporter.addExtraParameter('hello', 'world');
-      expect(crashReporter.getParameters()).to.have.property('hello');
-    });
-    it('removes a parameter from current parameters', function () {
-      crashReporter.start({
-        companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes'
-      });
-
-      crashReporter.addExtraParameter('hello', 'world');
-      expect(crashReporter.getParameters()).to.have.property('hello');
-
-      crashReporter.removeExtraParameter('hello');
-      expect(crashReporter.getParameters()).to.not.have.property('hello');
-    });
-  });
-
-  describe('when not started', () => {
-    it('does not prevent process from crashing', (done) => {
-      const appPath = path.join(fixtures, 'api', 'cookie-app');
-      const appProcess = childProcess.spawn(process.execPath, [appPath]);
-      appProcess.once('exit', () => {
-        done();
-      });
-    });
-  });
-});
-
 type CrashInfo = {
   prod: string
   ver: string
   process_type: string // eslint-disable-line camelcase
+  ptype: string
   platform: string
-  extra1: string
-  extra2: string
-  extra3: undefined
   _productName: string
-  _companyName: string
   _version: string
-}
-
-async function waitForCrashReport () {
-  for (let times = 0; times < 10; times++) {
-    if (crashReporter.getLastCrashReport() != null) {
-      return;
-    }
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  throw new Error('No crash report available');
-}
-
-async function checkReport (reportId: string) {
-  await waitForCrashReport();
-  expect(crashReporter.getLastCrashReport().id).to.equal(reportId);
-  expect(crashReporter.getUploadedReports()).to.be.an('array').that.is.not.empty();
-  expect(crashReporter.getUploadedReports()[0].id).to.equal(reportId);
+  upload_file_minidump: Buffer // eslint-disable-line camelcase
+  mainProcessSpecific: 'mps' | undefined
+  rendererSpecific: 'rs' | undefined
+  globalParam: 'globalValue' | undefined
+  addedThenRemoved: 'to-be-removed' | undefined
+  longParam: string | undefined
 }
 
 function checkCrash (expectedProcessType: string, fields: CrashInfo) {
-  expect(String(fields.prod)).to.equal('Electron');
-  expect(String(fields.ver)).to.equal(process.versions.electron);
-  expect(String(fields.process_type)).to.equal(expectedProcessType);
-  expect(String(fields.platform)).to.equal(process.platform);
-  expect(String(fields.extra1)).to.equal('extra1');
-  expect(String(fields.extra2)).to.equal('extra2');
-  expect(fields.extra3).to.be.undefined();
-  expect(String(fields._productName)).to.equal('Zombies');
-  expect(String(fields._companyName)).to.equal('Umbrella Corporation');
-  expect(String(fields._version)).to.equal(app.getVersion());
+  expect(String(fields.prod)).to.equal('Electron', 'prod');
+  expect(String(fields.ver)).to.equal(process.versions.electron, 'ver');
+  expect(String(fields.ptype)).to.equal(expectedProcessType, 'ptype');
+  expect(String(fields.process_type)).to.equal(expectedProcessType, 'process_type');
+  expect(String(fields.platform)).to.equal(process.platform, 'platform');
+  expect(String(fields._productName)).to.equal('Zombies', '_productName');
+  expect(String(fields._version)).to.equal(app.getVersion(), '_version');
+  expect(fields.upload_file_minidump).to.be.an.instanceOf(Buffer);
+
+  // TODO(nornagon): minidumps are sometimes (not always) turning up empty on
+  // 32-bit Linux.  Figure out why.
+  if (!(process.platform === 'linux' && process.arch === 'ia32')) {
+    expect(fields.upload_file_minidump.length).to.be.greaterThan(0);
+  }
 }
 
-let crashReporterPort = 0;
+const startRemoteControlApp = async () => {
+  const appPath = path.join(__dirname, 'fixtures', 'apps', 'remote-control');
+  const appProcess = childProcess.spawn(process.execPath, [appPath]);
+  appProcess.stderr.on('data', d => {
+    process.stderr.write(d);
+  });
+  const port = await new Promise<number>(resolve => {
+    appProcess.stdout.on('data', d => {
+      const m = /Listening: (\d+)/.exec(d.toString());
+      if (m && m[1] != null) {
+        resolve(Number(m[1]));
+      }
+    });
+  });
+  function remoteEval (js: string): any {
+    return new Promise((resolve, reject) => {
+      const req = http.request({
+        host: '127.0.0.1',
+        port,
+        method: 'POST'
+      }, res => {
+        const chunks = [] as Buffer[];
+        res.on('data', chunk => { chunks.push(chunk); });
+        res.on('end', () => {
+          // NOTE: v8.deserialize has existed since node 8.0.0, but apparently
+          // the typings we're using don't recognize it.
+          const ret = (v8 as any).deserialize(Buffer.concat(chunks));
+          if (Object.prototype.hasOwnProperty.call(ret, 'error')) {
+            reject(new Error(`remote error: ${ret.error}\n\nTriggered at:`));
+          } else {
+            resolve(ret.result);
+          }
+        });
+      });
+      req.write(js);
+      req.end();
+    });
+  }
+  function remotely (script: Function, ...args: any[]): Promise<any> {
+    return remoteEval(`(${script})(...${JSON.stringify(args)})`);
+  }
+  afterTest.push(() => { appProcess.kill('SIGINT'); });
+  return { remoteEval, remotely };
+};
+
 const startServer = async () => {
   const crashes: CrashInfo[] = [];
   function getCrashes () { return crashes; }
@@ -404,36 +115,479 @@ const startServer = async () => {
   }
 
   const server = http.createServer((req, res) => {
-    const form = new multiparty.Form();
-    form.parse(req, (error, fields) => {
-      crashes.push(fields);
-      if (error) throw error;
-      const reportId = 'abc-123-def-456-abc-789-abc-123-abcd';
-      res.end(reportId, async () => {
-        await checkReport(reportId);
-        req.socket.destroy();
-        emitter.emit('crash', fields);
+    const busboy = new Busboy({ headers: req.headers });
+    const fields = {} as Record<string, any>;
+    const files = {} as Record<string, Buffer>;
+    busboy.on('file', (fieldname, file) => {
+      const chunks = [] as Array<Buffer>;
+      file.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+      file.on('end', () => {
+        files[fieldname] = Buffer.concat(chunks);
       });
     });
+    busboy.on('field', (fieldname, val) => {
+      fields[fieldname] = val;
+    });
+    busboy.on('finish', () => {
+      // breakpad id must be 16 hex digits.
+      const reportId = Math.random().toString(16).split('.')[1].padStart(16, '0');
+      res.end(reportId, async () => {
+        req.socket.destroy();
+        emitter.emit('crash', { ...fields, ...files });
+      });
+    });
+    req.pipe(busboy);
   });
 
   await new Promise(resolve => {
-    server.listen(crashReporterPort, '127.0.0.1', () => { resolve(); });
+    server.listen(0, '127.0.0.1', () => { resolve(); });
   });
 
   const port = (server.address() as AddressInfo).port;
-
-  if (crashReporterPort === 0) {
-    // We can only start the crash reporter once, and after that these
-    // parameters are fixed.
-    crashReporter.start({
-      companyName: 'Umbrella Corporation',
-      submitURL: 'http://127.0.0.1:' + port
-    });
-    crashReporterPort = port;
-  }
 
   afterTest.push(() => { server.close(); });
 
   return { getCrashes, port, waitForCrash };
 };
+
+function runApp (appPath: string, args: Array<string> = []) {
+  const appProcess = childProcess.spawn(process.execPath, [appPath, ...args]);
+  return new Promise(resolve => {
+    appProcess.once('exit', resolve);
+  });
+}
+
+function runCrashApp (crashType: string, port: number, extraArgs: Array<string> = []) {
+  const appPath = path.join(__dirname, 'fixtures', 'apps', 'crash');
+  return runApp(appPath, [
+    `--crash-type=${crashType}`,
+    `--crash-reporter-url=http://127.0.0.1:${port}`,
+    ...extraArgs
+  ]);
+}
+
+function waitForNewFileInDir (dir: string): Promise<string[]> {
+  function readdirIfPresent (dir: string): string[] {
+    try {
+      return fs.readdirSync(dir);
+    } catch (e) {
+      return [];
+    }
+  }
+  const initialFiles = readdirIfPresent(dir);
+  return new Promise(resolve => {
+    const ivl = setInterval(() => {
+      const newCrashFiles = readdirIfPresent(dir).filter(f => !initialFiles.includes(f));
+      if (newCrashFiles.length) {
+        clearInterval(ivl);
+        resolve(newCrashFiles);
+      }
+    }, 1000);
+  });
+}
+
+// TODO(nornagon): Fix tests on linux/arm.
+ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
+  afterEach(cleanup);
+
+  describe('should send minidump', () => {
+    it('when renderer crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('renderer', port);
+      const crash = await waitForCrash();
+      checkCrash('renderer', crash);
+      expect(crash.mainProcessSpecific).to.be.undefined();
+    });
+
+    it('when sandboxed renderer crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('sandboxed-renderer', port);
+      const crash = await waitForCrash();
+      checkCrash('renderer', crash);
+      expect(crash.mainProcessSpecific).to.be.undefined();
+    });
+
+    // TODO(nornagon): Minidump generation in main/node process on Linux/Arm is
+    // broken (//components/crash prints "Failed to generate minidump"). Figure
+    // out why.
+    ifit(!isLinuxOnArm)('when main process crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('main', port);
+      const crash = await waitForCrash();
+      checkCrash('browser', crash);
+      expect(crash.mainProcessSpecific).to.equal('mps');
+    });
+
+    ifit(!isLinuxOnArm)('when a node process crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('node', port);
+      const crash = await waitForCrash();
+      checkCrash('node', crash);
+      expect(crash.mainProcessSpecific).to.be.undefined();
+      expect(crash.rendererSpecific).to.be.undefined();
+    });
+
+    describe('with extra parameters', () => {
+      it('when renderer crashes', async () => {
+        const { port, waitForCrash } = await startServer();
+        runCrashApp('renderer', port, ['--set-extra-parameters-in-renderer']);
+        const crash = await waitForCrash();
+        checkCrash('renderer', crash);
+        expect(crash.mainProcessSpecific).to.be.undefined();
+        expect(crash.rendererSpecific).to.equal('rs');
+        expect(crash.addedThenRemoved).to.be.undefined();
+      });
+
+      it('when sandboxed renderer crashes', async () => {
+        const { port, waitForCrash } = await startServer();
+        runCrashApp('sandboxed-renderer', port, ['--set-extra-parameters-in-renderer']);
+        const crash = await waitForCrash();
+        checkCrash('renderer', crash);
+        expect(crash.mainProcessSpecific).to.be.undefined();
+        expect(crash.rendererSpecific).to.equal('rs');
+        expect(crash.addedThenRemoved).to.be.undefined();
+      });
+    });
+  });
+
+  ifdescribe(!isLinuxOnArm)('extra parameter limits', () => {
+    it('should truncate extra values longer than 127 characters', async () => {
+      const { port, waitForCrash } = await startServer();
+      const { remotely } = await startRemoteControlApp();
+      remotely((port: number) => {
+        require('electron').crashReporter.start({
+          submitURL: `http://127.0.0.1:${port}`,
+          ignoreSystemCrashHandler: true,
+          extra: { 'longParam': 'a'.repeat(130) }
+        });
+        setTimeout(() => process.crash());
+      }, port);
+      const crash = await waitForCrash();
+      expect(crash).to.have.property('longParam', 'a'.repeat(127));
+    });
+
+    it('should omit extra keys with names longer than the maximum', async () => {
+      const kKeyLengthMax = 39;
+      const { port, waitForCrash } = await startServer();
+      const { remotely } = await startRemoteControlApp();
+      remotely((port: number, kKeyLengthMax: number) => {
+        require('electron').crashReporter.start({
+          submitURL: `http://127.0.0.1:${port}`,
+          ignoreSystemCrashHandler: true,
+          extra: {
+            ['a'.repeat(kKeyLengthMax + 10)]: 'value',
+            ['b'.repeat(kKeyLengthMax)]: 'value',
+            'not-long': 'not-long-value'
+          }
+        });
+        require('electron').crashReporter.addExtraParameter('c'.repeat(kKeyLengthMax + 10), 'value');
+        setTimeout(() => process.crash());
+      }, port, kKeyLengthMax);
+      const crash = await waitForCrash();
+      expect(crash).not.to.have.property('a'.repeat(kKeyLengthMax + 10));
+      expect(crash).not.to.have.property('a'.repeat(kKeyLengthMax));
+      expect(crash).to.have.property('b'.repeat(kKeyLengthMax), 'value');
+      expect(crash).to.have.property('not-long', 'not-long-value');
+      expect(crash).not.to.have.property('c'.repeat(kKeyLengthMax + 10));
+      expect(crash).not.to.have.property('c'.repeat(kKeyLengthMax));
+    });
+  });
+
+  describe('globalExtra', () => {
+    ifit(!isLinuxOnArm)('should be sent with main process dumps', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('main', port, ['--add-global-param=globalParam:globalValue']);
+      const crash = await waitForCrash();
+      expect(crash.globalParam).to.equal('globalValue');
+    });
+
+    it('should be sent with renderer process dumps', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('renderer', port, ['--add-global-param=globalParam:globalValue']);
+      const crash = await waitForCrash();
+      expect(crash.globalParam).to.equal('globalValue');
+    });
+
+    it('should be sent with sandboxed renderer process dumps', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('sandboxed-renderer', port, ['--add-global-param=globalParam:globalValue']);
+      const crash = await waitForCrash();
+      expect(crash.globalParam).to.equal('globalValue');
+    });
+
+    ifit(!isLinuxOnArm)('should not be overridden by extra in main process', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('main', port, ['--add-global-param=mainProcessSpecific:global']);
+      const crash = await waitForCrash();
+      expect(crash.mainProcessSpecific).to.equal('global');
+    });
+
+    ifit(!isLinuxOnArm)('should not be overridden by extra in renderer process', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('main', port, ['--add-global-param=rendererSpecific:global']);
+      const crash = await waitForCrash();
+      expect(crash.rendererSpecific).to.equal('global');
+    });
+  });
+
+  // TODO(nornagon): also test crashing main / sandboxed renderers.
+  ifit(!isWindowsOnArm)('should not send a minidump when uploadToServer is false', async () => {
+    const { port, waitForCrash, getCrashes } = await startServer();
+    waitForCrash().then(() => expect.fail('expected not to receive a dump'));
+    await runCrashApp('renderer', port, ['--no-upload']);
+    // wait a sec in case the crash reporter is about to upload a crash
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    expect(getCrashes()).to.have.length(0);
+  });
+
+  describe('start() option validation', () => {
+    it('requires that the submitURL option be specified', () => {
+      expect(() => {
+        crashReporter.start({} as any);
+      }).to.throw('submitURL is a required option to crashReporter.start');
+    });
+
+    it('can be called twice', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await expect(remotely(() => {
+        const { crashReporter } = require('electron');
+        crashReporter.start({ submitURL: 'http://127.0.0.1' });
+        crashReporter.start({ submitURL: 'http://127.0.0.1' });
+      })).to.be.fulfilled();
+    });
+  });
+
+  describe('getUploadedReports', () => {
+    it('returns an array of reports', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => {
+        require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' });
+      });
+      const reports = await remotely(() => require('electron').crashReporter.getUploadedReports());
+      expect(reports).to.be.an('array');
+    });
+  });
+
+  // TODO(nornagon): re-enable on woa
+  ifdescribe(!isWindowsOnArm)('getLastCrashReport', () => {
+    it('returns the last uploaded report', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const { port, waitForCrash } = await startServer();
+
+      // 0. clear the crash reports directory.
+      const dir = await remotely(() => require('electron').app.getPath('crashDumps'));
+      try {
+        rimraf.sync(dir);
+        fs.mkdirSync(dir);
+      } catch (e) { /* ignore */ }
+
+      // 1. start the crash reporter.
+      await remotely((port: number) => {
+        require('electron').crashReporter.start({
+          submitURL: `http://127.0.0.1:${port}`,
+          ignoreSystemCrashHandler: true
+        });
+      }, [port]);
+      // 2. generate a crash in the renderer.
+      remotely(() => {
+        const { BrowserWindow } = require('electron');
+        const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        bw.loadURL('about:blank');
+        bw.webContents.executeJavaScript('process.crash()');
+      });
+      await waitForCrash();
+      // 3. get the crash from getLastCrashReport.
+      const firstReport = await remotely(() => require('electron').crashReporter.getLastCrashReport());
+      expect(firstReport).to.not.be.null();
+      expect(firstReport.date).to.be.an.instanceOf(Date);
+      expect((+new Date()) - (+firstReport.date)).to.be.lessThan(30000);
+    });
+  });
+
+  describe('getUploadToServer()', () => {
+    it('returns true when uploadToServer is set to true (by default)', async () => {
+      const { remotely } = await startRemoteControlApp();
+
+      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' }); });
+      const uploadToServer = await remotely(() => require('electron').crashReporter.getUploadToServer());
+      expect(uploadToServer).to.be.true();
+    });
+
+    it('returns false when uploadToServer is set to false in init', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false }); });
+      const uploadToServer = await remotely(() => require('electron').crashReporter.getUploadToServer());
+      expect(uploadToServer).to.be.false();
+    });
+
+    it('is updated by setUploadToServer', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' }); });
+      await remotely(() => { require('electron').crashReporter.setUploadToServer(false); });
+      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.false();
+      await remotely(() => { require('electron').crashReporter.setUploadToServer(true); });
+      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.true();
+    });
+  });
+
+  describe('getParameters', () => {
+    it('returns all of the current parameters', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => {
+        require('electron').crashReporter.start({
+          submitURL: 'http://127.0.0.1',
+          extra: { 'extra1': 'hi' }
+        });
+      });
+      const parameters = await remotely(() => require('electron').crashReporter.getParameters());
+      expect(parameters).to.have.property('extra1', 'hi');
+    });
+
+    it('reflects added and removed parameters', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => {
+        require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' });
+        require('electron').crashReporter.addExtraParameter('hello', 'world');
+      });
+      {
+        const parameters = await remotely(() => require('electron').crashReporter.getParameters());
+        expect(parameters).to.have.property('hello', 'world');
+      }
+
+      await remotely(() => { require('electron').crashReporter.removeExtraParameter('hello'); });
+
+      {
+        const parameters = await remotely(() => require('electron').crashReporter.getParameters());
+        expect(parameters).not.to.have.property('hello');
+      }
+    });
+
+    it('can be called in the renderer', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const rendererParameters = await remotely(async () => {
+        const { crashReporter, BrowserWindow } = require('electron');
+        crashReporter.start({ submitURL: 'http://' });
+        const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        bw.loadURL('about:blank');
+        await bw.webContents.executeJavaScript(`require('electron').crashReporter.addExtraParameter('hello', 'world')`);
+        return bw.webContents.executeJavaScript(`require('electron').crashReporter.getParameters()`);
+      });
+      if (process.platform === 'linux') {
+        // On Linux, 'getParameters' will also include the global parameters,
+        // because breakpad doesn't support global parameters.
+        expect(rendererParameters).to.have.property('hello', 'world');
+      } else {
+        expect(rendererParameters).to.deep.equal({ hello: 'world' });
+      }
+    });
+
+    it('can be called in a node child process', async () => {
+      function slurp (stream: NodeJS.ReadableStream): Promise<string> {
+        return new Promise((resolve, reject) => {
+          const chunks: Buffer[] = [];
+          stream.on('data', chunk => { chunks.push(chunk); });
+          stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+          stream.on('error', e => reject(e));
+        });
+      }
+      const child = childProcess.fork(path.join(__dirname, 'fixtures', 'module', 'print-crash-parameters.js'), [], { silent: true });
+      const output = await slurp(child.stdout!);
+      expect(JSON.parse(output)).to.deep.equal({ hello: 'world' });
+    });
+  });
+
+  describe('crash dumps directory', () => {
+    it('is set by default', () => {
+      expect(app.getPath('crashDumps')).to.be.a('string');
+    });
+
+    it('is inside the user data dir', () => {
+      expect(app.getPath('crashDumps')).to.include(app.getPath('userData'));
+    });
+
+    it('matches getCrashesDirectory', async () => {
+      expect(app.getPath('crashDumps')).to.equal(require('electron').crashReporter.getCrashesDirectory());
+    });
+
+    function crash (processType: string, remotely: Function) {
+      if (processType === 'main') {
+        return remotely(() => {
+          setTimeout(() => { process.crash(); });
+        });
+      } else if (processType === 'renderer') {
+        return remotely(() => {
+          const { BrowserWindow } = require('electron');
+          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+          bw.loadURL('about:blank');
+          bw.webContents.executeJavaScript('process.crash()');
+        });
+      } else if (processType === 'sandboxed-renderer') {
+        const preloadPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'sandbox-preload.js');
+        return remotely((preload: string) => {
+          const { BrowserWindow } = require('electron');
+          const bw = new BrowserWindow({ show: false, webPreferences: { sandbox: true, preload } });
+          bw.loadURL('about:blank');
+        }, preloadPath);
+      } else if (processType === 'node') {
+        const crashScriptPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');
+        return remotely((crashScriptPath: string) => {
+          const { app } = require('electron');
+          const childProcess = require('child_process');
+          const version = app.getVersion();
+          const url = 'http://127.0.0.1';
+          childProcess.fork(crashScriptPath, [url, version], { silent: true });
+        }, crashScriptPath);
+      }
+    }
+
+    for (const crashingProcess of ['main', 'renderer', 'sandboxed-renderer', 'node']) {
+      // TODO(nornagon): breakpad on linux disables itself when uploadToServer
+      // is false, so we should figure out a different way to test the crash
+      // dump dir on linux.
+      ifdescribe(process.platform !== 'linux')(`when ${crashingProcess} crashes`, () => {
+        it('stores crashes in the crash dump directory when uploadToServer: false', async () => {
+          const { remotely } = await startRemoteControlApp();
+          const crashesDir = await remotely(() => {
+            const { crashReporter } = require('electron');
+            crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
+            return crashReporter.getCrashesDirectory();
+          });
+          const reportsDir = process.platform === 'darwin' ? path.join(crashesDir, 'completed') : path.join(crashesDir, 'reports');
+          const newFileAppeared = waitForNewFileInDir(reportsDir);
+          crash(crashingProcess, remotely);
+          const newFiles = await newFileAppeared;
+          expect(newFiles).to.have.length(1);
+          expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+        });
+
+        it('respects an overridden crash dump directory', async () => {
+          const { remotely } = await startRemoteControlApp();
+          const crashesDir = path.join(app.getPath('temp'), uuid.v4());
+          const remoteCrashesDir = await remotely((crashesDir: string) => {
+            const { crashReporter, app } = require('electron');
+            app.setPath('crashDumps', crashesDir);
+            crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
+            return crashReporter.getCrashesDirectory();
+          }, crashesDir);
+          expect(remoteCrashesDir).to.equal(crashesDir);
+
+          const reportsDir = process.platform === 'darwin' ? path.join(crashesDir, 'completed') : path.join(crashesDir, 'reports');
+          const newFileAppeared = waitForNewFileInDir(reportsDir);
+          crash(crashingProcess, remotely);
+          const newFiles = await newFileAppeared;
+          expect(newFiles).to.have.length(1, `Files that appeared: ${JSON.stringify(newFiles)}`);
+          expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+        });
+      });
+    }
+  });
+
+  describe('when not started', () => {
+    it('does not prevent process from crashing', async () => {
+      const appPath = path.join(__dirname, '..', 'spec', 'fixtures', 'api', 'cookie-app');
+      await runApp(appPath);
+    });
+  });
+});

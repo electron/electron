@@ -36,6 +36,7 @@
   V(atom_browser_auto_updater)       \
   V(atom_browser_browser_view)       \
   V(atom_browser_content_tracing)    \
+  V(atom_browser_crash_reporter)     \
   V(atom_browser_debugger)           \
   V(atom_browser_dialog)             \
   V(atom_browser_download_item)      \
@@ -59,7 +60,6 @@
   V(atom_common_asar)                \
   V(atom_common_clipboard)           \
   V(atom_common_command_line)        \
-  V(atom_common_crash_reporter)      \
   V(atom_common_features)            \
   V(atom_common_native_image)        \
   V(atom_common_native_theme)        \
@@ -68,6 +68,7 @@
   V(atom_common_shell)               \
   V(atom_common_v8_util)             \
   V(atom_renderer_context_bridge)    \
+  V(atom_renderer_crash_reporter)    \
   V(atom_renderer_ipc)               \
   V(atom_renderer_web_frame)
 
