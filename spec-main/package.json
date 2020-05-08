@@ -10,6 +10,7 @@
     "ws": "^7.2.1"
   },
   "dependencies": {
+    "busboy": "^0.3.1",
     "chai-as-promised": "^7.1.1",
     "dirty-chai": "^2.0.1",
     "pdfjs-dist": "^2.2.228"
