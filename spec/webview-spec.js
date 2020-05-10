@@ -1009,13 +1009,7 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('<webview>.printToPDF()', () => {
-    before(() => {
-      if (!features.isPrintingEnabled()) {
-        this.skip();
-      }
-    });
-
+  ifdescribe(features.isPrintingEnabled())('<webview>.printToPDF()', () => {
     it('rejects on incorrectly typed parameters', async () => {
       const badTypes = {
         marginsType: 'terrible',

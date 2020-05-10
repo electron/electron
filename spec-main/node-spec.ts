@@ -128,7 +128,7 @@ describe('node feature', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
-    it('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', (done) => {
+    ifit(features.isRunAsNodeEnabled())('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', (done) => {
       after(async () => {
         const [code, signal] = await exitPromise;
         expect(signal).to.equal(null);
