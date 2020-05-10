@@ -1305,6 +1305,9 @@ On macOS, setting this with any nonzero integer shows on the dock icon. On Linux
 **Note:** Unity launcher requires the existence of a `.desktop` file to work,
 for more information please read [Desktop Environment Integration][unity-requirement].
 
+**Note:** On macOS, you need to ensure that your application has the permission
+to display notifications for this property to take effect.
+
 ### `app.commandLine` _Readonly_
 
 A [`CommandLine`](./command-line.md) object that allows you to read and manipulate the
