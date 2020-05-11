@@ -17,7 +17,7 @@ This document uses the following convention to categorize breaking changes:
 ### Default Changed: `contextIsolation` defaults to `true`
 
 In Electron 12, `contextIsolation` will be enabled by default.  To restore
-original behavior, `contextIsolation: false` must be specified in WebPreferences:
+the previous behavior, `contextIsolation: false` must be specified in WebPreferences.
 
 We [recommend having contextIsolation enabled](https://github.com/electron/electron/blob/master/docs/tutorial/security.md#3-enable-context-isolation-for-remote-content) for the security of your application.
 
