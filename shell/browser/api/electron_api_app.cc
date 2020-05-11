@@ -917,9 +917,10 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
 
 #if defined(OS_WIN)
     // If we get the "recent" path before setting it, set it
-    if (!succeed && name == "recent") {
-      SetRecentPath(thrower, base::Optional<base::FilePath>());
-      succeed = base::PathService::Get(key, &path);
+    if (!succeed && name == "recent" &&
+        platform_util::GetFolderPath(DIR_RECENT, &path)) {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      succeed = base::PathService::Override(DIR_RECENT, path);
     }
 #endif
   }
