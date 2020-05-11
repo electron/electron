@@ -1009,13 +1009,7 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('<webview>.printToPDF()', () => {
-    before(function () {
-      if (!features.isPrintingEnabled()) {
-        this.skip();
-      }
-    });
-
+  ifdescribe(features.isPrintingEnabled())('<webview>.printToPDF()', () => {
     // TODO(deepak1556): Fix and enable after upgrade.
     it.skip('can print to PDF', async () => {
       const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';

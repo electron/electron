@@ -11,6 +11,7 @@ import { emittedOnce } from './events-helpers';
 import { ifit, ifdescribe } from './spec-helpers';
 import { closeWindow } from './window-helpers';
 
+const features = process.electronBinding('features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
@@ -703,7 +704,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    describe('BrowserWindow.moveAbove(mediaSourceId)', () => {
+    ifdescribe(features.isDesktopCapturerEnabled())('BrowserWindow.moveAbove(mediaSourceId)', () => {
       it('should throw an exception if wrong formatting', async () => {
         const fakeSourceIds = [
           'none', 'screen:0', 'window:fake', 'window:1234', 'foobar:1:2'
@@ -714,6 +715,7 @@ describe('BrowserWindow module', () => {
           }).to.throw(/Invalid media source id/);
         });
       });
+
       it('should throw an exception if wrong type', async () => {
         const fakeSourceIds = [null as any, 123 as any];
         fakeSourceIds.forEach((sourceId) => {
@@ -722,6 +724,7 @@ describe('BrowserWindow module', () => {
           }).to.throw(/Error processing argument at index 0 */);
         });
       });
+
       it('should throw an exception if invalid window', async () => {
         // It is very unlikely that these window id exist.
         const fakeSourceIds = ['window:99999999:0', 'window:123456:1',
@@ -732,6 +735,7 @@ describe('BrowserWindow module', () => {
           }).to.throw(/Invalid media source id/);
         });
       });
+
       it('should not throw an exception', async () => {
         const w2 = new BrowserWindow({ show: false, title: 'window2' });
         const w2Shown = emittedOnce(w2, 'show');
@@ -760,9 +764,11 @@ describe('BrowserWindow module', () => {
 
   describe('sizing', () => {
     let w = null as unknown as BrowserWindow;
+
     beforeEach(() => {
       w = new BrowserWindow({ show: false, width: 400, height: 400 });
     });
+
     afterEach(async () => {
       await closeWindow(w);
       w = null as unknown as BrowserWindow;
@@ -4089,7 +4095,6 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  const features = process.electronBinding('features');
   ifdescribe(features.isOffscreenRenderingEnabled())('offscreen rendering', () => {
     let w: BrowserWindow;
     beforeEach(function () {
