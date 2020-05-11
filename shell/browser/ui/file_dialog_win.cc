@@ -16,10 +16,9 @@
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/threading/thread.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "base/win/registry.h"
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/win/dialog_thread.h"
 #include "shell/browser/unresponsive_suppressor.h"
 
 namespace file_dialog {
@@ -63,65 +62,6 @@ void ConvertFilters(const Filters& filters,
     filterspec->push_back(spec);
   }
 }
-
-struct RunState {
-  base::Thread* dialog_thread;
-  scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner;
-};
-
-bool CreateDialogThread(RunState* run_state) {
-  auto thread =
-      std::make_unique<base::Thread>(ELECTRON_PRODUCT_NAME "FileDialogThread");
-  thread->init_com_with_mta(false);
-  if (!thread->Start())
-    return false;
-
-  run_state->dialog_thread = thread.release();
-  run_state->ui_task_runner = base::ThreadTaskRunnerHandle::Get();
-  return true;
-}
-
-void OnDialogOpened(electron::util::Promise promise,
-                    bool canceled,
-                    std::vector<base::FilePath> paths) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
-  dict.Set("canceled", canceled);
-  dict.Set("filePaths", paths);
-  promise.Resolve(dict.GetHandle());
-}
-
-void RunOpenDialogInNewThread(const RunState& run_state,
-                              const DialogSettings& settings,
-                              electron::util::Promise promise) {
-  std::vector<base::FilePath> paths;
-  bool result = ShowOpenDialogSync(settings, &paths);
-  run_state.ui_task_runner->PostTask(
-      FROM_HERE,
-      base::BindOnce(&OnDialogOpened, std::move(promise), !result, paths));
-  run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
-}
-
-void OnSaveDialogDone(electron::util::Promise promise,
-                      bool canceled,
-                      const base::FilePath path) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
-  dict.Set("canceled", canceled);
-  dict.Set("filePath", path);
-  promise.Resolve(dict.GetHandle());
-}
-
-void RunSaveDialogInNewThread(const RunState& run_state,
-                              const DialogSettings& settings,
-                              electron::util::Promise promise) {
-  base::FilePath path;
-  bool result = ShowSaveDialogSync(settings, &path);
-  run_state.ui_task_runner->PostTask(
-      FROM_HERE,
-      base::BindOnce(&OnSaveDialogDone, std::move(promise), !result, path));
-  run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
-}
-
-}  // namespace
 
 static HRESULT GetFileNameFromShellItem(IShellItem* pShellItem,
                                         SIGDN type,
@@ -217,6 +157,8 @@ static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
   }
 }
 
+}  // namespace
+
 bool ShowOpenDialogSync(const DialogSettings& settings,
                         std::vector<base::FilePath>* paths) {
   ATL::CComPtr<IFileOpenDialog> file_open_dialog;
@@ -273,17 +215,17 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 
 void ShowOpenDialog(const DialogSettings& settings,
                     electron::util::Promise promise) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
-  RunState run_state;
-  if (!CreateDialogThread(&run_state)) {
-    dict.Set("canceled", true);
-    dict.Set("filePaths", std::vector<base::FilePath>());
-    promise.Resolve(dict.GetHandle());
-  } else {
-    run_state.dialog_thread->task_runner()->PostTask(
-        FROM_HERE, base::BindOnce(&RunOpenDialogInNewThread, run_state,
-                                  settings, std::move(promise)));
-  }
+  auto done = [](electron::util::Promise promise, bool success,
+                 std::vector<base::FilePath> result) {
+    v8::Locker locker(promise.isolate());
+    v8::HandleScope handle_scope(promise.isolate());
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+    dict.Set("canceled", !success);
+    dict.Set("filePaths", result);
+    promise.Resolve(dict);
+  };
+  dialog_thread::Run(base::BindOnce(ShowOpenDialogSync, settings),
+                     base::BindOnce(done, std::move(promise)));
 }
 
 bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
@@ -318,17 +260,17 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 
 void ShowSaveDialog(const DialogSettings& settings,
                     electron::util::Promise promise) {
-  RunState run_state;
-  if (!CreateDialogThread(&run_state)) {
+  auto done = [](electron::util::Promise promise, bool success,
+                 base::FilePath result) {
+    v8::Locker locker(promise.isolate());
+    v8::HandleScope handle_scope(promise.isolate());
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
-    dict.Set("canceled", true);
-    dict.Set("filePath", base::FilePath());
-    promise.Resolve(dict.GetHandle());
-  } else {
-    run_state.dialog_thread->task_runner()->PostTask(
-        FROM_HERE, base::BindOnce(&RunSaveDialogInNewThread, run_state,
-                                  settings, std::move(promise)));
-  }
+    dict.Set("canceled", !success);
+    dict.Set("filePath", result);
+    promise.Resolve(dict);
+  };
+  dialog_thread::Run(base::BindOnce(ShowSaveDialogSync, settings),
+                     base::BindOnce(done, std::move(promise)));
 }
 
 }  // namespace file_dialog
