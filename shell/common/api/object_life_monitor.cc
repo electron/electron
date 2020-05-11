@@ -3,7 +3,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/api/remote/object_life_monitor.h"
+#include "shell/common/api/object_life_monitor.h"
 
 #include "base/bind.h"
 #include "base/message_loop/message_loop.h"
