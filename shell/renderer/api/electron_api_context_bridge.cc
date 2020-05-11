@@ -149,6 +149,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
     int recursion_depth) {
+  TRACE_EVENT0("electron", "ContextBridge::PassValueToOtherContext");
   if (recursion_depth >= kMaxRecursion) {
     v8::Context::Scope source_scope(source_context);
     {
@@ -348,6 +349,7 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
     size_t func_id,
     bool support_dynamic_properties,
     gin_helper::Arguments* args) {
+  TRACE_EVENT0("electron", "ContextBridge::ProxyFunctionWrapper");
   // Context the proxy function was called from
   v8::Local<v8::Context> calling_context = args->isolate()->GetCurrentContext();
   // Context the function was created in
@@ -516,6 +518,7 @@ gin_helper::Dictionary DebugGC(gin_helper::Dictionary empty) {
 void ExposeAPIInMainWorld(const std::string& key,
                           v8::Local<v8::Object> api_object,
                           gin_helper::Arguments* args) {
+  TRACE_EVENT1("electron", "ContextBridge::ExposeAPIInMainWorld", "key", key);
   auto* render_frame = GetRenderFrame(api_object);
   CHECK(render_frame);
   context_bridge::RenderFrameFunctionStore* store =
