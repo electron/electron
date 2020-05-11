@@ -2363,7 +2363,7 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
   }
 
   gin::Handle<NativeImage> icon;
-  if (!item.Get("icon", &icon)) {
+  if (!item.Get("icon", &icon) || icon->image().IsEmpty()) {
     args->ThrowError("Must specify non-empty 'icon' option");
     return;
   }

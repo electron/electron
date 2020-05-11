@@ -62,7 +62,7 @@ class NativeImage : public gin_helper::Wrappable<NativeImage> {
   static gin::Handle<NativeImage> CreateFromDataURL(v8::Isolate* isolate,
                                                     const GURL& url);
   static gin::Handle<NativeImage> CreateFromNamedImage(gin::Arguments* args,
-                                                       const std::string& name);
+                                                       std::string name);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

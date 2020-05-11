@@ -490,9 +490,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
 }
 
 #if !defined(OS_MACOSX)
-gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(
-    gin::Arguments* args,
-    const std::string& name) {
+gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
+                                                           std::string name) {
   return CreateEmpty(args->isolate());
 }
 #endif
