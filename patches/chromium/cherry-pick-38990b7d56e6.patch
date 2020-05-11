@@ -1,7 +1,7 @@
-From 38990b7d56e6dde6bfdc2d81950db8ddef4e4116 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Marijn Kruisselbrink <mek@chromium.org>
 Date: Tue, 21 Apr 2020 23:51:25 +0000
-Subject: [PATCH] [Blobs] Fix bug when BytesProvider replies with invalid data.
+Subject: Fix bug when BytesProvider replies with invalid data.
 
 Bug: 1072983
 Change-Id: Ideaa0a67680375e770995880a4b8d2014b51d642
@@ -9,16 +9,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2159583
 Reviewed-by: enne <enne@chromium.org>
 Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#761203}
----
- storage/browser/blob/blob_registry_impl.cc    |  6 +++-
- .../blob/blob_registry_impl_unittest.cc       | 30 +++++++++++++++++++
- 2 files changed, 35 insertions(+), 1 deletion(-)
 
 diff --git a/storage/browser/blob/blob_registry_impl.cc b/storage/browser/blob/blob_registry_impl.cc
-index d08c28dfb8500..91430b6f1cb31 100644
+index 1cc34f91e01530754635a27cd6481e367b0a4d4e..b6a12a5c43d0129f6c1dcfe93fbd684ba4f5dc2e 100644
 --- a/storage/browser/blob/blob_registry_impl.cc
 +++ b/storage/browser/blob/blob_registry_impl.cc
-@@ -443,6 +443,10 @@ void BlobRegistryImpl::BlobUnderConstruction::TransportComplete(
+@@ -432,6 +432,10 @@ void BlobRegistryImpl::BlobUnderConstruction::TransportComplete(
    // try to delete |this| again afterwards.
    auto weak_this = weak_ptr_factory_.GetWeakPtr();
  
@@ -29,7 +25,7 @@ index d08c28dfb8500..91430b6f1cb31 100644
    // The blob might no longer have any references, in which case it may no
    // longer exist. If that happens just skip calling Complete.
    // TODO(mek): Stop building sooner if a blob is no longer referenced.
-@@ -456,7 +460,7 @@ void BlobRegistryImpl::BlobUnderConstruction::TransportComplete(
+@@ -445,7 +449,7 @@ void BlobRegistryImpl::BlobUnderConstruction::TransportComplete(
      // BlobTransportStrategy might have already reported a BadMessage on the
      // BytesProvider binding, but just to be safe, also report one on the
      // BlobRegistry binding itself.
@@ -39,10 +35,10 @@ index d08c28dfb8500..91430b6f1cb31 100644
    }
    if (weak_this)
 diff --git a/storage/browser/blob/blob_registry_impl_unittest.cc b/storage/browser/blob/blob_registry_impl_unittest.cc
-index 3e5523f1fe5a9..cf58926cb840e 100644
+index 8cbcc69ec6dc6bd368fdb59a3797e412b286e342..2060676987e267a0d55878a27f6a1b53fe6790b1 100644
 --- a/storage/browser/blob/blob_registry_impl_unittest.cc
 +++ b/storage/browser/blob/blob_registry_impl_unittest.cc
-@@ -773,6 +773,36 @@ TEST_F(BlobRegistryImplTest, Register_ValidBytesAsReply) {
+@@ -770,6 +770,36 @@ TEST_F(BlobRegistryImplTest, Register_ValidBytesAsReply) {
    EXPECT_EQ(0u, BlobsUnderConstruction());
  }
  
