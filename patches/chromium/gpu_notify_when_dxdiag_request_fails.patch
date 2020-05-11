@@ -12,7 +12,7 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index db9780a6c0b679354a5f74b1f89e32a8ff9dd2e3..cc51d41f88a60ccb936b0608973b76ba84c2a47b 100644
+index 80fd68b4b862e59ba255163f3a903846a7768d75..0681822c29b9f9e75c93819a3bf14f398fe24abf 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
 @@ -161,6 +161,11 @@ bool GpuDataManagerImpl::Dx12VulkanRequested() const {
@@ -28,7 +28,7 @@ index db9780a6c0b679354a5f74b1f89e32a8ff9dd2e3..cc51d41f88a60ccb936b0608973b76ba
    base::AutoLock auto_lock(lock_);
    private_->OnBrowserThreadsStarted();
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index d5595c91f4d63362e575ad31070335ee344261fa..19c012313550cf9d9bf591a54e739fc34239e4dd 100644
+index ce8f9551f1b17c7508a0e0bd0ecc55eca2c0ac6e..d5289401110a5fe7d3327d9ca50c160c7b2e876a 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
 @@ -90,6 +90,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
@@ -38,12 +38,12 @@ index d5595c91f4d63362e575ad31070335ee344261fa..19c012313550cf9d9bf591a54e739fc3
 +  bool DxdiagDx12VulkanRequested() const;
    // Called from BrowserMainLoop::BrowserThreadsStarted().
    void OnBrowserThreadsStarted();
- #endif
+   void TerminateInfoCollectionGpuProcess();
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index aae01a85f5d37d4c8e809815540662dee1550dbc..c70dbbc6ec1fc460f8a1f95613dbf1a65482f4f4 100644
+index b09b8ffe7684f511e971d0c470c8b67a46288b6e..fd9dcfef52a0797ec6b2497c2bf331c88f481d75 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -885,6 +885,11 @@ bool GpuDataManagerImplPrivate::Dx12VulkanRequested() const {
+@@ -888,6 +888,11 @@ bool GpuDataManagerImplPrivate::Dx12VulkanRequested() const {
    return gpu_info_dx12_vulkan_requested_;
  }
  
@@ -56,7 +56,7 @@ index aae01a85f5d37d4c8e809815540662dee1550dbc..c70dbbc6ec1fc460f8a1f95613dbf1a6
    // Launch the info collection GPU process to collect DX12 and Vulkan support
    // information. Not to affect Chrome startup, this is done in a delayed mode,
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index 6a082f73e77d9f5e7630cc4dbc18188c7e565c0b..1468b5a9a469e9fa9f9911dc4ca9eb91a20b5cad 100644
+index 37c11fa98c30d2ab0455e550847c9dbecc327304..283fc6455efd3d9c19ebc48779f2d6b7d763ff9b 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
 @@ -70,6 +70,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
@@ -65,5 +65,5 @@ index 6a082f73e77d9f5e7630cc4dbc18188c7e565c0b..1468b5a9a469e9fa9f9911dc4ca9eb91
    bool Dx12VulkanRequested() const;
 +  bool DxdiagDx12VulkanRequested() const;
    void OnBrowserThreadsStarted();
+   void TerminateInfoCollectionGpuProcess();
  #endif
-   void UpdateGpuFeatureInfo(const gpu::GpuFeatureInfo& gpu_feature_info,
