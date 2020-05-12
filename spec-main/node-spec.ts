@@ -261,7 +261,7 @@ describe('node feature', () => {
     expect(result.status).to.equal(0);
   });
 
-  it('handles Promise timeouts correctly', (done) => {
+  ifit(features.isRunAsNodeEnabled())('handles Promise timeouts correctly', (done) => {
     const scriptPath = path.join(fixtures, 'module', 'node-promise-timer.js');
     const child = childProcess.spawn(process.execPath, [scriptPath], {
       env: { ELECTRON_RUN_AS_NODE: 'true' }
