@@ -170,10 +170,10 @@ index 077a460dbf83684dfd3cea37d8261d5905c57a9c..69851243f7765e21d0dea0bd418afae7
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index bacddf58cfa3be529b8cbb990c803ed50c790d97..2d8de72bfe75557016ac8b0c74c4bf089ee2f976 100644
+index 64d753cba8253f5d6d0b081e19c58c41a3b0e185..928181e4fab77bf0573fab58c7ee11e7f004295e 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -305,6 +305,13 @@ jumbo_component("base") {
+@@ -304,6 +304,13 @@ jumbo_component("base") {
      ]
    }
  

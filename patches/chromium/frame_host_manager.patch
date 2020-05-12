@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 603251a4f05cbcaab7f0f28eb7734d88d0c0430b..6bb5041a054d645e2e82c72efe6cd2cb6d37064d 100644
+index 8e11d6eede5983cd06c7eed938cde725e1b688a4..eab490d71ad8bdd9949018c48343a52c9d0d2b91 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1269,6 +1269,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1268,6 +1268,24 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -194,7 +194,7 @@ index 2fbcc699cc316e9c7fc8dda534cd1c0e5ac14c14..6f44f3a1dbb2368f56d3851a3e5b0b7c
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 5e51a55fe08df18b9b144b9c8e78ad175326f316..30262f300b65b8256549fbdb6d61ccbf362932cc 100644
+index db64b786a3ba7917d9dd3718c76e006362c1d261..b2f55d8075155992595d177e1af7e8e62bcc7895 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -59,6 +59,21 @@
@@ -220,7 +220,7 @@ index 5e51a55fe08df18b9b144b9c8e78ad175326f316..30262f300b65b8256549fbdb6d61ccbf
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index dc3d76bded516178bb2217b0dbf4541d2276aa5f..55a792c9bb8d4a296f7e5d5ce79b5a649feb43e2 100644
+index 80e0263be9fa831daa18b24a3fc169cb07fea48c..76aabccf7ba30457a3bf33877564083d422878a8 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -235,8 +235,45 @@ class CONTENT_EXPORT ContentBrowserClient {
