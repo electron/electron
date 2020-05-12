@@ -96,3 +96,4 @@ use_keepselfalive_on_audiocontext_to_keep_it_alive_until_rendering.patch
 never_let_a_non-zero-size_pixel_snap_to_zero_size.patch
 cherry-pick-826a4af58b3d.patch
 cherry-pick-686d1bfbcb8f.patch
+cherry-pick-7101418f85a0.patch
