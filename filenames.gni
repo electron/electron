@@ -401,6 +401,8 @@ filenames = {
     "shell/browser/ui/views/submenu_button.h",
     "shell/browser/ui/views/win_frame_view.cc",
     "shell/browser/ui/views/win_frame_view.h",
+    "shell/browser/ui/win/dialog_thread.cc",
+    "shell/browser/ui/win/dialog_thread.h",
     "shell/browser/ui/win/electron_desktop_native_widget_aura.cc",
     "shell/browser/ui/win/electron_desktop_native_widget_aura.h",
     "shell/browser/ui/win/electron_desktop_window_tree_host_win.cc",
