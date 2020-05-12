@@ -1,7 +1,7 @@
-From 7101418f85a0f17e4f9a35dfe3a9acff76340a93 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Mason Freed <masonfreed@chromium.org>
 Date: Mon, 20 Apr 2020 21:57:52 +0000
-Subject: [PATCH] Fix customized built-in element constructor behavior
+Subject: Fix customized built-in element constructor behavior
 
 This CL implements two changes:
  1. It fixes the implementation to better match the spec for the
@@ -33,20 +33,12 @@ Commit-Queue: Mason Freed <masonfreed@chromium.org>
 Auto-Submit: Mason Freed <masonfreed@chromium.org>
 Reviewed-by: Kent Tamura <tkent@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#760705}
----
- .../v8/script_custom_element_definition.cc    |  1 +
- .../core/html/custom/custom_element.cc        |  3 +-
- .../html/custom/custom_element_definition.cc  | 17 +++--
- .../html/parser/html_construction_site.cc     |  7 +-
- ...mized-built-in-constructor-exceptions.html | 75 +++++++++++++++++++
- 5 files changed, 94 insertions(+), 9 deletions(-)
- create mode 100644 third_party/blink/web_tests/external/wpt/custom-elements/customized-built-in-constructor-exceptions.html
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/script_custom_element_definition.cc b/third_party/blink/renderer/bindings/core/v8/script_custom_element_definition.cc
-index 769795bbf66a8..402e5370fd817 100644
+index dfbfed1ca13e2182dfde470fb9a64bd0a0fd0cd9..89c54511faf05ee401900d4e33c2abaa2fa86405 100644
 --- a/third_party/blink/renderer/bindings/core/v8/script_custom_element_definition.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/script_custom_element_definition.cc
-@@ -137,6 +137,7 @@ HTMLElement* ScriptCustomElementDefinition::HandleCreateElementSyncException(
+@@ -146,6 +146,7 @@ HTMLElement* ScriptCustomElementDefinition::HandleCreateElementSyncException(
  HTMLElement* ScriptCustomElementDefinition::CreateAutonomousCustomElementSync(
      Document& document,
      const QualifiedName& tag_name) {
@@ -55,7 +47,7 @@ index 769795bbf66a8..402e5370fd817 100644
      return CustomElement::CreateFailedElement(document, tag_name);
    ScriptState::Scope scope(script_state_);
 diff --git a/third_party/blink/renderer/core/html/custom/custom_element.cc b/third_party/blink/renderer/core/html/custom/custom_element.cc
-index 2dadc28c0deeb..1a031cecfabe1 100644
+index d21c582052cbf861b792ec6f44e418cc25f3a8cc..1edcd4e60009c9f994c0711a8d373d771b4e8965 100644
 --- a/third_party/blink/renderer/core/html/custom/custom_element.cc
 +++ b/third_party/blink/renderer/core/html/custom/custom_element.cc
 @@ -205,7 +205,8 @@ Element* CustomElement::CreateUncustomizedOrUndefinedElement(
@@ -69,10 +61,10 @@ index 2dadc28c0deeb..1a031cecfabe1 100644
    // "create an element for a token":
    // https://html.spec.whatwg.org/C/#create-an-element-for-the-token
 diff --git a/third_party/blink/renderer/core/html/custom/custom_element_definition.cc b/third_party/blink/renderer/core/html/custom/custom_element_definition.cc
-index b007062a5c043..c5e4a12141687 100644
+index 6126e0d04c48e8f7cebe8dbf39418599fcfcb84e..3341f49f48de367cbe4f736c4acac09c5d59ddbd 100644
 --- a/third_party/blink/renderer/core/html/custom/custom_element_definition.cc
 +++ b/third_party/blink/renderer/core/html/custom/custom_element_definition.cc
-@@ -143,14 +143,19 @@ HTMLElement* CustomElementDefinition::CreateElement(
+@@ -142,14 +142,19 @@ HTMLElement* CustomElementDefinition::CreateElement(
      result->SetCustomElementState(CustomElementState::kUndefined);
      result->SetIsValue(Descriptor().GetName());
  
@@ -99,10 +91,10 @@ index b007062a5c043..c5e4a12141687 100644
    }
  
 diff --git a/third_party/blink/renderer/core/html/parser/html_construction_site.cc b/third_party/blink/renderer/core/html/parser/html_construction_site.cc
-index 451c8bf675df0..a7d8bb84dcc64 100644
+index 1435bcf39f86e3e6811385e61c803d8ca8eb97e4..33d3b37cb9e4f38dca4c66b3540b087db54d02fa 100644
 --- a/third_party/blink/renderer/core/html/parser/html_construction_site.cc
 +++ b/third_party/blink/renderer/core/html/parser/html_construction_site.cc
-@@ -942,8 +942,11 @@ Element* HTMLConstructionSite::CreateElement(
+@@ -914,8 +914,11 @@ Element* HTMLConstructionSite::CreateElement(
      // reactions stack."
      CEReactionsScope reactions;
  
@@ -118,7 +110,7 @@ index 451c8bf675df0..a7d8bb84dcc64 100644
      // setAttributes here because the custom element constructor may have
 diff --git a/third_party/blink/web_tests/external/wpt/custom-elements/customized-built-in-constructor-exceptions.html b/third_party/blink/web_tests/external/wpt/custom-elements/customized-built-in-constructor-exceptions.html
 new file mode 100644
-index 0000000000000..32729bdb6bb2c
+index 0000000000000000000000000000000000000000..32729bdb6bb2c82f54c074c7609ff5c79883a37a
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/custom-elements/customized-built-in-constructor-exceptions.html
 @@ -0,0 +1,75 @@
