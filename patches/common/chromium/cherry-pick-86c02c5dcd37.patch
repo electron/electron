@@ -1,8 +1,7 @@
-From 86c02c5dcd373ac080d7a407ed6b276470386fcc Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Matthias=20K=C3=B6rber?= <koerber@google.com>
 Date: Tue, 14 Apr 2020 16:55:14 +0000
-Subject: [PATCH] [Autofill] Fixed requesting invalid country codes from
- CountryData.
+Subject: Fixed requesting invalid country codes from CountryData.
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -15,15 +14,9 @@ Reviewed-by: Dominic Battré <battre@chromium.org>
 Reviewed-by: Vadym Doroshenko  <dvadym@chromium.org>
 Commit-Queue: Matthias Körber <koerber@google.com>
 Cr-Commit-Position: refs/heads/master@{#758887}
----
- .../core/browser/geo/autofill_country.cc      | 27 +++++++--
- .../browser/geo/autofill_country_unittest.cc  | 29 ++++++++++
- .../autofill/core/browser/geo/country_data.cc | 57 ++++++++++++++++++-
- .../autofill/core/browser/geo/country_data.h  | 20 ++++++-
- 4 files changed, 122 insertions(+), 11 deletions(-)
 
 diff --git a/components/autofill/core/browser/geo/autofill_country.cc b/components/autofill/core/browser/geo/autofill_country.cc
-index 4eb8f2b1a609d..961b1dc7a19f2 100644
+index 260fd019831675afb955ab1b5e279e47379adc29..091bab650b2cb35462e0dbeb1454c9027b0ea31c 100644
 --- a/components/autofill/core/browser/geo/autofill_country.cc
 +++ b/components/autofill/core/browser/geo/autofill_country.cc
 @@ -25,13 +25,28 @@ const size_t kLocaleCapacity =
@@ -62,7 +55,7 @@ index 4eb8f2b1a609d..961b1dc7a19f2 100644
    state_label_ = l10n_util::GetStringUTF16(data.state_label_id);
    address_required_fields_ = data.address_required_fields;
 diff --git a/components/autofill/core/browser/geo/autofill_country_unittest.cc b/components/autofill/core/browser/geo/autofill_country_unittest.cc
-index 8f3994de4f5d8..94315c13967f1 100644
+index e9726a8da766b5463475f086637fe225dc60c13e..586564b4fecd5fa0c46bd8fba3beca7c521f1b59 100644
 --- a/components/autofill/core/browser/geo/autofill_country_unittest.cc
 +++ b/components/autofill/core/browser/geo/autofill_country_unittest.cc
 @@ -14,6 +14,7 @@
@@ -114,7 +107,7 @@ index 8f3994de4f5d8..94315c13967f1 100644
 +
  }  // namespace autofill
 diff --git a/components/autofill/core/browser/geo/country_data.cc b/components/autofill/core/browser/geo/country_data.cc
-index 1105e78ee582c..e00e620356462 100644
+index 1fe65ecf65323ce1917cb786b63d10ea4a7ac0b7..ec78e723ca71972d32ba00c2b46de9673fe91f46 100644
 --- a/components/autofill/core/browser/geo/country_data.cc
 +++ b/components/autofill/core/browser/geo/country_data.cc
 @@ -19,6 +19,17 @@ struct StaticCountryData {
@@ -204,7 +197,7 @@ index 1105e78ee582c..e00e620356462 100644
 +
  }  // namespace autofill
 diff --git a/components/autofill/core/browser/geo/country_data.h b/components/autofill/core/browser/geo/country_data.h
-index b6a9497594b1c..8266102deadd4 100644
+index b6a9497594b1c22a5521a9c40fab2decae449c3f..8266102deadd40e5f2b9b24703123f59034a9781 100644
 --- a/components/autofill/core/browser/geo/country_data.h
 +++ b/components/autofill/core/browser/geo/country_data.h
 @@ -58,10 +58,23 @@ class CountryDataMap {
