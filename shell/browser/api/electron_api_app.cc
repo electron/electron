@@ -876,30 +876,6 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
 }
 #endif
 
-#if defined(OS_WIN)
-void App::SetRecentPath(gin_helper::ErrorThrower thrower,
-                        base::Optional<base::FilePath> custom_path) {
-  if (custom_path.has_value()) {
-    if (!custom_path->IsAbsolute()) {
-      thrower.ThrowError("Path must be absolute");
-      return;
-    }
-    {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
-      base::PathService::Override(DIR_RECENT, custom_path.value());
-    }
-  } else {
-    base::FilePath path;
-    if (platform_util::GetFolderPath(DIR_RECENT, &path)) {
-      {
-        base::ThreadRestrictions::ScopedAllowIO allow_io;
-        base::PathService::Override(DIR_RECENT, path);
-      }
-    }
-  }
-}
-#endif
-
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
   bool succeed = false;
