@@ -36,6 +36,10 @@ export const browserModuleNames = [
   'WebContentsView'
 ];
 
+if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
+  browserModuleNames.push('desktopCapturer');
+}
+
 if (BUILDFLAG(ENABLE_VIEWS_API)) {
   browserModuleNames.push(
     'ImageView'
