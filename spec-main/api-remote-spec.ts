@@ -5,6 +5,7 @@ import { ifdescribe } from './spec-helpers';
 
 import { ipcMain, BrowserWindow } from 'electron/main';
 import { emittedOnce } from './events-helpers';
+import { nativeImage } from 'electron/common';
 
 const features = process.electronBinding('features');
 
@@ -219,6 +220,74 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       });
 
       w.loadFile(path.join(fixtures, 'api', 'render-view-deleted.html'));
+    });
+  });
+
+  describe('nativeImage serialization', () => {
+    const w = makeWindow();
+    const remotely = makeRemotely(w);
+
+    it('can serialize an empty nativeImage', async () => {
+      const getEmptyImage = (img: nativeImage) => {
+        return new Promise((resolve, reject) => {
+          if (img.isEmpty()) {
+            resolve('empty image');
+          } else {
+            reject(new Error('incorrectly serialized image'));
+          }
+        });
+      };
+
+      w().webContents.once('remote-get-global', (event) => {
+        event.returnValue = getEmptyImage;
+      });
+
+      await expect(remotely(() => {
+        const emptyImage = require('electron').nativeImage.createEmpty();
+        return require('electron').remote.getGlobal('someFunction')(emptyImage);
+      })).to.eventually.equal('empty image');
+    });
+
+    it('can serialize a non-empty nativeImage', async () => {
+      const getNonEmptyImage = (img: nativeImage) => {
+        return new Promise((resolve, reject) => {
+          if (img.isEmpty()) {
+            reject(new Error('incorrectly serialized image'));
+          } else {
+            const size = img.getSize();
+            if (size.height !== 0 && size.width !== 0) {
+              resolve('non-empty image');
+            }
+          }
+        });
+      };
+
+      w().webContents.once('remote-get-global', (event) => {
+        event.returnValue = getNonEmptyImage;
+      });
+
+      await expect(remotely(() => {
+        const { nativeImage } = require('electron');
+        const nonEmptyImage = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==');
+        return require('electron').remote.getGlobal('someFunction')(nonEmptyImage);
+      })).to.eventually.equal('non-empty image');
+    });
+
+    it('can properly create a menu with an nativeImage icon in the renderer', (done) => {
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          enableRemoteModule: true
+        }
+      });
+
+      ipcMain.once('make-menu', (event, message) => {
+        expect(message).to.match(/^No error thrown/);
+        done();
+      });
+
+      win.loadFile(path.join(fixtures, 'api', 'nativeimage-serialization.html'));
     });
   });
 
