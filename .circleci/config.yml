@@ -1287,6 +1287,9 @@ commands:
       preserve-vendor-dirs:
         type: boolean
         default: false
+      build-nonproprietary-ffmpeg:
+        type: boolean
+        default: true
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1403,10 +1406,13 @@ commands:
             - *step-electron-chromedriver-build
             - *step-electron-chromedriver-store
 
-            # ffmpeg
-            - *step-ffmpeg-gn-gen
-            - *step-ffmpeg-build
-            - *step-ffmpeg-store
+            - when:
+              condition: << parameters.build-nonproprietary-ffmpeg >>
+              steps:
+                # ffmpeg
+                - *step-ffmpeg-gn-gen
+                - *step-ffmpeg-build
+                - *step-ffmpeg-store
 
             # hunspell
             - *step-hunspell-build
@@ -1661,6 +1667,7 @@ jobs:
           persist: true
           checkout: true
           use-out-cache: false
+          build-nonproprietary-ffmpeg: false
 
   linux-x64-testing-no-run-as-node:
     <<: *machine-linux-2xlarge
