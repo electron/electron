@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Cheng <dcheng@chromium.org>
+Date: Fri, 10 Apr 2020 00:43:45 +0000
+Subject: Use std::deque to store the stack of currently executing tasks
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The stack of currently executing stacks includes a PendingTask field. A
+pointer to this field is stored in TLS. However, std::vector does not
+guarantee pointer stability on resize.
+
+(cherry picked from commit c34431a597aba8f4374975217d97a73eaf7d1f18)
+
+Bug: 1064891
+Change-Id: I04eb06c9521722f08fd72826f552cedaffe61b53
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2146349
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Sami Kyöstilä <skyostil@chromium.org>
+Reviewed-by: François Doray <fdoray@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#759017}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2158048
+Cr-Commit-Position: refs/branch-heads/4044@{#970}
+Cr-Branched-From: a6d9daf149a473ceea37f629c41d4527bf2055bd-refs/heads/master@{#737173}
+
+diff --git a/base/task/sequence_manager/sequence_manager_impl.cc b/base/task/sequence_manager/sequence_manager_impl.cc
+index 55d82917a4eb17e5da7b88221cc623ae2b1b8c05..252500a534822dcc305b10690d4636c4c3e0dd05 100644
+--- a/base/task/sequence_manager/sequence_manager_impl.cc
++++ b/base/task/sequence_manager/sequence_manager_impl.cc
+@@ -44,13 +44,6 @@ GetTLSSequenceManagerImpl() {
+ 
+ }  // namespace
+ 
+-// This controls how big the the initial for
+-// |MainThreadOnly::task_execution_stack| should be. We don't expect to see
+-// depths of more than 2 unless cooperative scheduling is used on Blink, where
+-// we might get up to 6. Anyway 10 was chosen because it's a round number
+-// greater than current anticipated usage.
+-static constexpr const size_t kInitialTaskExecutionStackReserveCount = 10;
+-
+ std::unique_ptr<SequenceManager> CreateSequenceManagerOnCurrentThread(
+     SequenceManager::Settings settings) {
+   return internal::SequenceManagerImpl::CreateOnCurrentThread(
+@@ -221,7 +214,6 @@ SequenceManagerImpl::MainThreadOnly::MainThreadOnly(
+     random_generator = std::mt19937_64(RandUint64());
+     uniform_distribution = std::uniform_real_distribution<double>(0.0, 1.0);
+   }
+-  task_execution_stack.reserve(kInitialTaskExecutionStackReserveCount);
+ }
+ 
+ SequenceManagerImpl::MainThreadOnly::~MainThreadOnly() = default;
+diff --git a/base/task/sequence_manager/sequence_manager_impl.h b/base/task/sequence_manager/sequence_manager_impl.h
+index eb80e6a0792cca841af742f1ae560472a69ca38a..7395fd8af8ccadc084c2e19b4e53234c58e6423e 100644
+--- a/base/task/sequence_manager/sequence_manager_impl.h
++++ b/base/task/sequence_manager/sequence_manager_impl.h
+@@ -5,6 +5,7 @@
+ #ifndef BASE_TASK_SEQUENCE_MANAGER_SEQUENCE_MANAGER_IMPL_H_
+ #define BASE_TASK_SEQUENCE_MANAGER_SEQUENCE_MANAGER_IMPL_H_
+ 
++#include <deque>
+ #include <list>
+ #include <map>
+ #include <memory>
+@@ -12,7 +13,6 @@
+ #include <set>
+ #include <unordered_map>
+ #include <utility>
+-#include <vector>
+ 
+ #include "base/atomic_sequence_num.h"
+ #include "base/cancelable_callback.h"
+@@ -298,7 +298,9 @@ class BASE_EXPORT SequenceManagerImpl
+     bool nesting_observer_registered_ = false;
+ 
+     // Due to nested runloops more than one task can be executing concurrently.
+-    std::vector<ExecutingTask> task_execution_stack;
++    // Note that this uses std::deque for pointer stability, since pointers to
++    // objects in this container are stored in TLS.
++    std::deque<ExecutingTask> task_execution_stack;
+ 
+     Observer* observer = nullptr;  // NOT OWNED
+ 
